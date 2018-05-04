@@ -1,0 +1,14 @@
+- create an EC2 instance on AWS  
+
+sudo yum -y update
+sudo yum install wget
+
+# enable EPEL repository
+wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sudo rpm -ivh epel-release-latest-7.noarch.rpm
+
+sudo yum install -y awscli
+sudo yum install -y python-pip
+sudo pip install --upgrade pip
+sudo pip install boto3
+pip install --user --upgrade awscli
