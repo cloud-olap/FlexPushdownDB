@@ -1,8 +1,6 @@
 import boto3
 
-s3 = boto3.client('s3',
-	aws_access_key_id=ACCESS_KEY,
-	aws_secret_access_key=SECRET_ACCESS_KEY)
+s3 = boto3.client('s3')
 
 for table in ['customer.csv', 'lineitem.csv', 'nation.csv', 'orders.csv', 'part.csv', 'partsupp.csv', 'region.csv', 'supplier.csv']:
 	print(table)
