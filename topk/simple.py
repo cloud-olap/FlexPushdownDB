@@ -11,18 +11,18 @@ from sql.cursor import Cursor
 
 LIMIT = 500
 
-print ("Starting")
-
 cur = Cursor()\
     .select('customer.csv')
 
-rows = cur.execute()
+try:
+    rows = cur.execute()
 
-i = 0
-for r in rows:
-    i += 1
-    print("Row {}:".format(i), r)
-    if i >= LIMIT:
-        break
+    i = 0
+    for r in rows:
+        i += 1
+        print("Row {}: {}".format(i, r))
+        if i >= LIMIT:
+            break
 
-cur.close()
+finally:
+    cur.close()

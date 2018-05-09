@@ -17,9 +17,11 @@ cur = Cursor()\
     .select('customer.csv')\
     .limit(LIMIT, LimitStrategy.OP)
 
-rows = cur.execute()
+try:
+    rows = cur.execute()
 
-for r in rows:
-    print(r)
+    for r in rows:
+        print("Row: {}".format(r))
 
-cur.close()
+finally:
+    cur.close()

@@ -5,7 +5,6 @@
 import boto3
 import csv
 import util.constants
-import itertools
 import io
 
 
@@ -23,10 +22,10 @@ class Cursor(object):
     """
 
     def __init__(self):
-        self.lim = 0
-        self.op = ''
-        self.key = ''
-        self.limit_strategy = LimitStrategy.NONE
+        self.lim = None
+        self.op = None
+        self.key = None
+        self.limit_strategy = None
         self.event_stream = None
 
     def select(self, key):
@@ -53,33 +52,41 @@ class Cursor(object):
         return self
 
     def execute(self):
-        """Executes the fetch operation. This is different to the DB API as it returns an interable. Of course we could
+        """Executes the fetch operation. This is different to the DB API as it returns an iterable. Of course we could
         model that API more precisely in future.
 
         :return: An iterable of the records fetched
         """
         if self.op == Operator.SELECT:
             if self.limit_strategy == LimitStrategy.OP:
-                rows = self.do_execute("select * from s3object s limit {};".format(self.lim + 1))
+                rows = self.__do_execute("select * from s3object s limit {};".format(self.lim))
                 return rows
-            if self.limit_strategy == LimitStrategy.NONE:
-                rows = self.do_execute("select * from s3object s;")
+            if self.limit_strategy is None:
+                rows = self.__do_execute("select * from s3object s;")
                 return rows
             else:
                 raise Exception("Unrecognized limit strategy {}".format(self.limit_strategy))
         else:
             raise Exception("Unrecognized operator {}".format(self.op))
 
-    def do_execute(self, sql):
+    def __do_execute(self, sql):
         """ Executes the defined cursor using the given SQL
 
-        :param key:
-        :param sql:
-        :return:
+        :param sql: The sql statement to execute against S3
+        :return: An iterable of the records fetched
         """
         s3 = boto3.client('s3')
 
-        print("Executing select_object_content")
+        # print("Executing select_object_content")
+
+        # Note:
+        #
+        # CSV files use | as a delimiter and have a trailing delimiter so record delimiter is |\n
+        #
+        # NOTE: As responses are chunked the file headers are only returned in the first chunk. We ignore them for now
+        # just because its simpler. It does mean the records are returned as a list instead of a dict though (can change
+        # in future).
+        #
         response = s3.select_object_content(
             Bucket=util.constants.S3_BUCKET_NAME,
             Key=self.key,
@@ -90,35 +97,80 @@ class Cursor(object):
         )
 
         self.event_stream = response['Payload']
+
+        return self.parse_event_stream()
+
+    def parse_event_stream(self):
+        """Generator that hands out records from the event stream lazily
+
+        """
+
+        prev_record_str = None
+
         for event in self.event_stream:
+
             if 'Records' in event:
-                print("Records Event")
+
                 records_str = event['Records']['Payload'].decode('utf-8')
-                records_rdr = csv.reader(io.StringIO(records_str))
-                for r in records_rdr:
-                    yield r
+
+                # print("Records Event {}".format(records_str))
+
+                # Note that the select_object_content service may return partial chunks so we cant simply pass the
+                # str to the csv reader. We need to examine the string itself to see if it's an incomplete record
+                # (it won't end with a newline if its incomplete)
+
+                records_str_rdr = io.StringIO(records_str)
+
+                for record_str in records_str_rdr:
+
+                    if record_str.endswith('\n'):  # It's a complete record
+
+                        if prev_record_str is not None:  # There was an incomplete record present in the last payload
+                            # Append the current record to the previous incomplete record
+                            # print("Appending: {} {}".format(prev_record_str, record_str))
+                            record_str = prev_record_str + record_str
+                            prev_record_str = None
+
+                        # print("Complete: {}".format(record_str))
+
+                        # Parse CSV
+                        record_rdr = csv.reader([record_str])
+                        record = record_rdr.next()
+
+                        # print("Parsed: {}".format(record))
+
+                        yield record
+
+                    else:
+                        # It's an incomplete record, save for next iteration
+                        # print("Incomplete: {}".format(record_str))
+                        prev_record_str = record_str
 
             elif 'Stats' in event:
-                bytes_scanned = event['Stats']['Details']['BytesScanned']
-                bytes_processed = event['Stats']['Details']['BytesProcessed']
-                print("Stats Event: bytes scanned: {}, bytes processed: {}".format(bytes_scanned, bytes_processed))
+                pass
+                # bytes_scanned = event['Stats']['Details']['BytesScanned']
+                # bytes_processed = event['Stats']['Details']['BytesProcessed']
+                # print("Stats Event: bytes scanned: {}, bytes processed: {}".format(bytes_scanned, bytes_processed))
 
             elif 'Progress' in event:
-                print("Progress Event")
+                pass
+                # print("Progress Event")
 
             elif 'End' in event:
-                print("End Event")
+                pass
+                # print("End Event")
 
             elif 'Cont' in event:
-                print("Cont Event")
+                pass
+                # print("Cont Event")
 
     def close(self):
-        self.event_stream.close()
+        if self.event_stream:
+            self.event_stream.close()
 
 
 class LimitStrategy:
     OP = 'OP'
-    NONE = 'NONE'
 
     def __init__(self):
         pass
