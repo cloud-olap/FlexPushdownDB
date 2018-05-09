@@ -123,7 +123,8 @@ class Cursor(object):
 
                 for record_str in records_str_rdr:
 
-                    if record_str.endswith('\n'):  # It's a complete record
+                    # Check record ends with newline (excluding an escaped newline)
+                    if record_str.endswith('\n') and not record_str.endswith('\\n'):  # It's a complete record
 
                         if prev_record_str is not None:  # There was an incomplete record present in the last payload
                             # Append the current record to the previous incomplete record
