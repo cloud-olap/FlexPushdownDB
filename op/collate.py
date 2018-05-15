@@ -15,7 +15,7 @@ class Collate(Operator):
         Operator.__init__(self)
         self.tuples = []
 
-    def emit(self, t):
+    def emit(self, t, producer=None):
         # print("Collate | {}".format(t))
         self.tuples.append(t)
 

@@ -50,7 +50,7 @@ class TableScan(Operator):
 
             # print("Table Scan | {}".format(t))
 
-            self.consumer.emit(t)
+            self.consumer.emit(t, self)
 
         self.consumer.done()
 

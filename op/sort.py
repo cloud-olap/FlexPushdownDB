@@ -2,7 +2,7 @@
 """
 
 """
-from heapq import heapify, heappush, heappop
+from heapq import heappush, heappop
 
 from op.operator import Operator
 
@@ -39,10 +39,11 @@ class Sort(Operator):
     def set_consumer(self, operator):
         self.consumer = operator
 
-    def emit(self, t):
+    def emit(self, t, producer=None):
         """ Collects tuples into a heap.
 
         :param t: The received tuple.
+        :param producer: The producer that emitted the tuple
         :return: None
         """
         # print("Sort Emit | {}".format(t))
@@ -80,8 +81,8 @@ class HeapSortableTuple:
 
     """
 
-    def __init__(self, tuple, sort_key_index, sort_key_type, sort_order):
-        self.tuple = tuple
+    def __init__(self, t, sort_key_index, sort_key_type, sort_order):
+        self.tuple = t
         self.sort_key_index = sort_key_index
         self.sort_key_type = sort_key_type
         self.sort_order = sort_order

@@ -85,7 +85,7 @@ class Cursor(object):
 
         prev_record_str = None
 
-        first_record = True
+        # first_record = True
 
         for event in self.event_stream:
 

@@ -13,5 +13,6 @@ class Log(Operator):
     def __init__(self):
         Operator.__init__(self)
 
-    def emit(self, t):
+    @staticmethod
+    def emit(t, producer=None):
         print("Print | {}".format(t))
