@@ -22,32 +22,19 @@ class Cursor(object):
     """
 
     def __init__(self):
-        self.lim = None
-        self.op = None
         self.key = None
-        self.limit_strategy = None
+        self.sql = None
         self.event_stream = None
 
-    def select(self, key):
+    def select(self, key, sql):
         """Creates a select cursor
 
+        :param sql:  the sql to execute
         :param key: the s3 key to select against
         :return: the cursor
         """
-        self.op = Operator.SELECT
         self.key = key
-
-        return self
-
-    def limit(self, num, strategy):
-        """Defines a limit clause
-
-        :param num: Number of records to limit a select to
-        :param strategy: Which limit strategy to use
-        :return: the cursor
-        """
-        self.lim = num
-        self.limit_strategy = strategy
+        self.sql = sql
 
         return self
 
@@ -57,17 +44,8 @@ class Cursor(object):
 
         :return: An iterable of the records fetched
         """
-        if self.op == Operator.SELECT:
-            if self.limit_strategy == LimitStrategy.OP:
-                rows = self.__do_execute("select * from s3object s limit {};".format(self.lim))
-                return rows
-            if self.limit_strategy is None:
-                rows = self.__do_execute("select * from s3object s;")
-                return rows
-            else:
-                raise Exception("Unrecognized limit strategy {}".format(self.limit_strategy))
-        else:
-            raise Exception("Unrecognized operator {}".format(self.op))
+
+        return self.__do_execute(self.sql)
 
     def __do_execute(self, sql):
         """ Executes the defined cursor using the given SQL
@@ -92,7 +70,7 @@ class Cursor(object):
             Key=self.key,
             ExpressionType='SQL',
             Expression=sql,
-            InputSerialization={'CSV': {'FileHeaderInfo': 'Ignore', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
+            InputSerialization={'CSV': {'FileHeaderInfo': 'Use', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
             OutputSerialization={'CSV': {}}
         )
 
@@ -106,6 +84,8 @@ class Cursor(object):
         """
 
         prev_record_str = None
+
+        first_record = True
 
         for event in self.event_stream:
 
@@ -140,6 +120,14 @@ class Cursor(object):
 
                         # print("Parsed: {}".format(record))
 
+                        # if first_record:
+                        #     # This will be the headers, keep them around
+                        #     header = record
+                        #     first_record = False
+                        # else:
+                        #     record_dict = dict(zip(header, record))
+                        #     yield record_dict
+
                         yield record
 
                     else:
@@ -168,17 +156,3 @@ class Cursor(object):
     def close(self):
         if self.event_stream:
             self.event_stream.close()
-
-
-class LimitStrategy:
-    OP = 'OP'
-
-    def __init__(self):
-        pass
-
-
-class Operator:
-    SELECT = 'SELECT'
-
-    def __init__(self):
-        pass
