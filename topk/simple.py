@@ -7,22 +7,35 @@ method of loading of records.
 
 """
 
-from sql.cursor import Cursor
+import timeit
+from op.collate import Collate
+from op.table_scan import TableScan
+from op.top import Top
 
-LIMIT = 500
 
-cur = Cursor()\
-    .select('customer.csv')
+def main():
 
-try:
-    rows = cur.execute()
+    limit = 500
 
-    i = 0
-    for r in rows:
-        i += 1
-        print("Row {}: {}".format(i, r))
-        if i >= LIMIT:
-            break
+    # Query plan
+    ts = TableScan('customer.csv', 'select * from S3Object;')
+    t = Top(limit)
+    c = Collate()
 
-finally:
-    cur.close()
+    ts.connect(t)
+    t.connect(c)
+
+    start_time = timeit.default_timer()
+
+    # Start the query
+    ts.start()
+
+    # Metrics
+    num_rows = len(c.tuples)
+    elapsed = timeit.default_timer() - start_time
+
+    print ({'simple': {'row_count': num_rows, 'elapsed_seconds': elapsed}})
+
+
+if __name__ == "__main__":
+    main()

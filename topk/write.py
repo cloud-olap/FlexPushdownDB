@@ -5,7 +5,6 @@
 import boto3
 from util import constants
 from sql.cursor import Cursor
-from sql.cursor import LimitStrategy
 
 s3 = boto3.client('s3')
 
@@ -16,8 +15,7 @@ f.close()
 
 # Read it back out
 cur = Cursor()\
-    .select('write.csv')\
-    .limit(3, LimitStrategy.OP)
+    .select('write.csv', 'select * from S3Object;')
 
 rows = cur.execute()
 

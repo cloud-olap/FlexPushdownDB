@@ -8,20 +8,32 @@ specified in the limit clause.
 
 """
 
-from sql.cursor import Cursor
-from sql.cursor import LimitStrategy
+import timeit
+from op.collate import Collate
+from op.table_scan import TableScan
 
-LIMIT = 500
 
-cur = Cursor()\
-    .select('customer.csv')\
-    .limit(LIMIT, LimitStrategy.OP)
+def main():
 
-try:
-    rows = cur.execute()
+    limit = 500
 
-    for r in rows:
-        print("Row: {}".format(r))
+    # Query plan
+    ts = TableScan('customer.csv', 'select * from S3Object limit {};'.format(limit))
+    c = Collate()
 
-finally:
-    cur.close()
+    ts.connect(c)
+
+    start_time = timeit.default_timer()
+
+    # Start the query
+    ts.start()
+
+    # Metrics
+    num_rows = len(c.tuples)
+    elapsed = timeit.default_timer() - start_time
+
+    print ({'limit': {'row_count': num_rows, 'elapsed_seconds': elapsed}})
+
+
+if __name__ == "__main__":
+    main()
