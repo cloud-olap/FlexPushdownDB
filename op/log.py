@@ -2,7 +2,7 @@
 """
 
 """
-from op.operator import Operator
+from op.operator_base import Operator
 
 
 class Log(Operator):
@@ -13,6 +13,13 @@ class Log(Operator):
     def __init__(self):
         Operator.__init__(self)
 
-    @staticmethod
-    def on_emit(t, producer=None):
+    def on_emit(self, t, producer=None):
         print("Print | {}".format(t))
+        self.do_emit(t)
+
+    # TODO: These should may be on the base class as defaults that can be overridden
+    def on_done(self):
+        self.do_done()
+
+    def on_stop(self):
+        self.do_stop()

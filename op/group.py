@@ -2,7 +2,9 @@
 """
 
 """
-from op.operator import Operator
+from operator import itemgetter
+
+from op.operator_base import Operator
 
 
 class Group(Operator):
@@ -15,7 +17,7 @@ class Group(Operator):
     tuples, etc.
     """
 
-    def __init__(self, group_col_index, aggregate_col_index, aggregate_col_type, aggregate_fn):
+    def __init__(self, group_col_indexes, aggregate_col_index, aggregate_col_type, aggregate_fn):
         """Creates a new group by operator.
 
         :param group_col_index: The index of the column to group by
@@ -25,7 +27,7 @@ class Group(Operator):
         """
         Operator.__init__(self)
 
-        self.group_col_index = group_col_index
+        self.group_col_indexes = group_col_indexes
         self.aggregate_col_index = aggregate_col_index
         self.aggregate_col_type = aggregate_col_type
         self.aggregate_fn = aggregate_fn
@@ -42,19 +44,29 @@ class Group(Operator):
 
         # print("Group | {}".format(t))
 
-        group_col = t[self.group_col_index]
+        def get_items():
+            """Needed to handle single item tuples properly, note the trailing comma
+
+            """
+            if len(self.group_col_indexes) == 1:
+                return itemgetter(*self.group_col_indexes)(t),
+            else:
+                return itemgetter(*self.group_col_indexes)(t)
+
+        group_cols_tuple = get_items()
+
         aggregate_col = t[self.aggregate_col_index]
 
-        grouped_tuple = self.tuples.get(group_col, [group_col, 0])
+        aggregate_val = self.tuples.get(group_cols_tuple, 0)
 
         if self.aggregate_fn is 'COUNT':
-            grouped_tuple[1] += 1
+            aggregate_val += 1
         elif self.aggregate_fn is 'SUM':
-            grouped_tuple[1] += self.aggregate_col_type(aggregate_col)
+            aggregate_val += self.aggregate_col_type(aggregate_col)
         else:
-            raise Exception('Unrecognized aggregate funcion {}.'.format(self.aggregate_fn))
+            raise Exception('Unrecognized aggregate function {}.'.format(self.aggregate_fn))
 
-        self.tuples[group_col] = grouped_tuple
+        self.tuples[group_cols_tuple] = aggregate_val
 
     def on_stop(self):
         """This allows consuming producers to indicate that the operator can stop.
@@ -73,8 +85,9 @@ class Group(Operator):
 
         """
 
-        for t in self.tuples.values():
+        for k, v in self.tuples.iteritems():
             if self.running:
+                t = list(k) + [v]
                 self.do_emit(t)
             else:
                 break

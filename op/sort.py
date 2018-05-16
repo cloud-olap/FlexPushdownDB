@@ -4,7 +4,7 @@
 """
 from heapq import heappush, heappop
 
-from op.operator import Operator
+from op.operator_base import Operator
 
 
 class Sort(Operator):
