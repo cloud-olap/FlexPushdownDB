@@ -21,11 +21,11 @@ def test_join():
     j = Join('supplier.csv', 3, 'nation.csv', 0)
     c = Collate()
 
-    ts1.set_consumer(j)
-    ts2.set_consumer(j)
-    j.set_producer1(ts1)
-    j.set_producer2(ts2)
-    j.set_consumer(c)
+    ts1.add_consumer(j)
+    ts2.add_consumer(j)
+    j.add_producer(ts1)
+    j.add_producer(ts2)
+    j.add_consumer(c)
 
     # Start the query
     ts1.start()

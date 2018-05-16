@@ -14,5 +14,5 @@ class Log(Operator):
         Operator.__init__(self)
 
     @staticmethod
-    def emit(t, producer=None):
+    def on_emit(t, producer=None):
         print("Print | {}".format(t))

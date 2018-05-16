@@ -62,13 +62,13 @@ def test_join_topk():
     t = Top(limit)
     c = Collate()
 
-    ts1.set_consumer(j)
-    ts2.set_consumer(j)
-    j.set_producer1(ts1)
-    j.set_producer2(ts2)
-    j.set_consumer(t)
-    t.set_producer(j)
-    t.set_consumer(c)
+    ts1.add_consumer(j)
+    ts2.add_consumer(j)
+    j.add_producer(ts1)
+    j.add_producer(ts2)
+    j.add_consumer(t)
+    t.add_producer(j)
+    t.add_consumer(c)
 
     # Start the query
     ts1.start()

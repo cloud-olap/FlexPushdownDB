@@ -33,25 +33,16 @@ class Join(Operator):
         self.tuples_2 = []
         self.joined_tuples = []
 
-        self.producer1 = None
-        self.producer2 = None
-
         self.running = True
 
-    def set_producer1(self, operator):
-        self.producer1 = operator
-
-    def set_producer2(self, operator):
-        self.producer2 = operator
-
-    def emit(self, t, producer):
+    def on_emit(self, t, producer):
         if producer.key == self.join_key_1:
             self.tuples_1.append(t)
         elif producer.key == self.join_key_2:
             self.tuples_2.append(t)
 
-    def stop(self):
-        """This allows consuming producers to indicate that the operator can stop.
+    def on_stop(self):
+        """This allows consuming operators to indicate that the operator can stop.
 
         TODO: Need to verify that this is actually useful.
 
@@ -60,11 +51,10 @@ class Join(Operator):
 
         # print("Sort Stop | ")
         self.running = False
-        self.producer1.stop()
-        self.producer2.stop()
+        self.do_stop()
 
-    def done(self):
-        """When this operator receives a done it emits the joined tuples.
+    def on_done(self):
+        """When this operator receives a done it emits the joined tuples, and signals to consumers that it is done.
 
         :return: None
         """

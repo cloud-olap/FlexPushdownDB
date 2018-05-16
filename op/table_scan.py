@@ -51,7 +51,7 @@ class TableScan(Operator):
 
         self.do_done()
 
-    def stop(self):
+    def on_stop(self):
         """This allows consumers to indicate that the scan can stop such as when a Top operator has received all the
         tuples it requires.
 

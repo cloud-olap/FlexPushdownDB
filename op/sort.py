@@ -29,14 +29,9 @@ class Sort(Operator):
 
         self.heap = []
 
-        self.producer = None
-
         self.running = True
 
-    def set_producer(self, operator):
-        self.producer = operator
-
-    def emit(self, t, producer=None):
+    def on_emit(self, t, producer=None):
         """ Collects tuples into a heap.
 
         :param t: The received tuple.
@@ -47,7 +42,7 @@ class Sort(Operator):
         t = HeapSortableTuple(t, self.col_index, self.col_type, self.sort_order)
         heappush(self.heap, t)
 
-    def stop(self):
+    def on_stop(self):
         """This allows consuming producers to indicate that the operator can stop.
 
         TODO: Need to verify that this is actually useful.
@@ -57,9 +52,9 @@ class Sort(Operator):
 
         # print("Sort Stop | ")
         self.running = False
-        self.producer.stop()
+        self.do_stop()
 
-    def done(self):
+    def on_done(self):
         """When this operator receives a done it emits the sorted tuples.
 
         """
