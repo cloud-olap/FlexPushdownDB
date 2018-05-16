@@ -25,9 +25,6 @@ class TableScan(Operator):
         self.sql = sql
         self.running = False
 
-    def set_consumer(self, operator):
-        self.consumer = operator
-
     def start(self):
         """Executes the query and begins emitting tuples.
 
@@ -50,9 +47,9 @@ class TableScan(Operator):
 
             # print("Table Scan | {}".format(t))
 
-            self.consumer.emit(t, self)
+            self.do_emit(t)
 
-        self.consumer.done()
+        self.do_done()
 
     def stop(self):
         """This allows consumers to indicate that the scan can stop such as when a Top operator has received all the

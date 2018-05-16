@@ -18,9 +18,6 @@ class Top(Operator):
     def set_producer(self, operator):
         self.producer = operator
 
-    def set_consumer(self, operator):
-        self.consumer = operator
-
     def emit(self, t, producer=None):
         """Consumes tuples as they are produced. When the number of tuples reaches max it informs the producer to stop
         producing. This allows table scans to stop once enough tuples have been retrieved. It also informs any consumers
@@ -31,11 +28,11 @@ class Top(Operator):
         :return: None
         """
         # print("Top | {}".format(t))
-        self.consumer.emit(t)
+        self.do_emit(t)
         self.current += 1
         if self.current == self.max_tuples:
             self.producer.stop()
-            self.consumer.done()
+            self.do_done()
 
     def done(self):
         pass

@@ -36,9 +36,6 @@ class Sort(Operator):
     def set_producer(self, operator):
         self.producer = operator
 
-    def set_consumer(self, operator):
-        self.consumer = operator
-
     def emit(self, t, producer=None):
         """ Collects tuples into a heap.
 
@@ -70,7 +67,7 @@ class Sort(Operator):
         while self.heap:
             if self.running:
                 t = heappop(self.heap).tuple
-                self.consumer.emit(t)
+                self.do_emit(t)
             else:
                 break
 

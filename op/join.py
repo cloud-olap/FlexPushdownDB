@@ -44,9 +44,6 @@ class Join(Operator):
     def set_producer2(self, operator):
         self.producer2 = operator
 
-    def set_consumer(self, operator):
-        self.consumer = operator
-
     def emit(self, t, producer):
         if producer.key == self.join_key_1:
             self.tuples_1.append(t)
@@ -75,6 +72,12 @@ class Join(Operator):
         for t1 in self.tuples_1:
             for t2 in self.tuples_2:
                 if t1[self.join_col_1_index] == t2[self.join_col_2_index]:
-                    self.consumer.emit(t1 + t2)
+                    self.do_emit(t1 + t2)
 
-        self.consumer.done()
+                if not self.running:
+                    break
+
+            if not self.running:
+                break
+
+        self.do_done()
