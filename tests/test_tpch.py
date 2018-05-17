@@ -2,12 +2,13 @@
 """TPC-H query tests
 
 """
-from datetime import date, timedelta, datetime
+from datetime import datetime, timedelta
 
 from op.collate import Collate
 from op.group import Group
 from op.log import Log
 from op.table_scan import TableScan
+from util import aggregateexpression
 
 
 def test_tpch_q1():
@@ -50,7 +51,14 @@ def test_tpch_q1():
                    "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp) "
                    "limit 10 ".format(shipped_date.strftime('%Y-%m-%d')))
     log = Log()
-    g = Group([8, 9], 4, float, 'SUM')
+    # g = Group(group_col_indexes=[8, 9],
+    #           aggregate_exprs=[
+    #               'sum(_5 * (1 - _6) * (1 + _7))' # sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge
+    #           ])
+    g = Group(group_col_indexes=[8, 9],
+              aggregate_expr_strs=[
+                  'sum(_5)' # sum(l_extendedprice)
+              ])
     c = Collate()
 
     ts.connect(log)

@@ -2,9 +2,11 @@
 """
 
 """
-from operator import itemgetter
 
+import itertools
+from operator import itemgetter
 from op.operator_base import Operator
+from util.aggregateexpression import AggregateExpression
 
 
 class Group(Operator):
@@ -17,20 +19,17 @@ class Group(Operator):
     tuples, etc.
     """
 
-    def __init__(self, group_col_indexes, aggregate_col_index, aggregate_col_type, aggregate_fn):
+    def __init__(self, group_col_indexes, aggregate_expr_strs):
         """Creates a new group by operator.
 
-        :param group_col_index: The index of the column to group by
-        :param aggregate_col_index: The index of the column being aggregated
-        :param aggregate_col_type: The type of the aggregate column (essentially a Python cast operator to apply)
-        :param aggregate_fn: The aggregate function.
+        :param group_col_index: The indexes of the columns to group by
+        :param aggregate_expr_strs: The list of aggregate expressions
         """
         Operator.__init__(self)
 
         self.group_col_indexes = group_col_indexes
-        self.aggregate_col_index = aggregate_col_index
-        self.aggregate_col_type = aggregate_col_type
-        self.aggregate_fn = aggregate_fn
+        self.aggregate_expr_strs = aggregate_expr_strs
+        self.aggregate_exprs = list(AggregateExpression(a_expr) for a_expr in self.aggregate_expr_strs)
 
         self.tuples = {}
 
@@ -53,20 +52,25 @@ class Group(Operator):
             else:
                 return itemgetter(*self.group_col_indexes)(t)
 
+        # Create a tuple of columns to group by, we use this as the key for a dict of groups and their associated
+        # aggregate values
         group_cols_tuple = get_items()
+        # print(group_cols_tuple)
 
-        aggregate_col = t[self.aggregate_col_index]
+        # Get the current list of aggregates for this group
+        group_aggregate_vals = self.tuples.get(group_cols_tuple, list(itertools.repeat(0, len(self.aggregate_exprs))))
+        # print(group_aggregate_vals)
 
-        aggregate_val = self.tuples.get(group_cols_tuple, 0)
+        for i in range(0, len(self.aggregate_exprs)):
+            e = self.aggregate_exprs[i]
+            v = group_aggregate_vals[i]
+            e.val = v
+            e.eval(t)
+            group_aggregate_vals[i] = e.val
 
-        if self.aggregate_fn is 'COUNT':
-            aggregate_val += 1
-        elif self.aggregate_fn is 'SUM':
-            aggregate_val += self.aggregate_col_type(aggregate_col)
-        else:
-            raise Exception('Unrecognized aggregate function {}.'.format(self.aggregate_fn))
+        # print(list(group_cols_tuple) + group_aggregate_vals)
 
-        self.tuples[group_cols_tuple] = aggregate_val
+        self.tuples[group_cols_tuple] = group_aggregate_vals
 
     def on_stop(self):
         """This allows consuming producers to indicate that the operator can stop.
@@ -87,7 +91,7 @@ class Group(Operator):
 
         for k, v in self.tuples.iteritems():
             if self.running:
-                t = list(k) + [v]
+                t = list(k) + v
                 self.do_emit(t)
             else:
                 break
