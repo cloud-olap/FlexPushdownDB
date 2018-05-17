@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from op.collate import Collate
 from op.group import Group
 from op.log import Log
-from op.sort import Sort
+from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
 from util import aggregateexpression
 
@@ -44,7 +44,8 @@ def test_tpch_q1():
     #   l_returnflag,
     #   l_linestatus;
 
-    shipped_date = datetime.strptime('1998-10-01', '%Y-%m-%d') - timedelta(days=60)
+    delta_days = 60  # TODO: This is supposed to be randomized I think
+    shipped_date = datetime.strptime('1998-10-01', '%Y-%m-%d') - timedelta(days=delta_days)
     print(shipped_date.strftime('%Y-%m-%d'))
 
     ts = TableScan('lineitem.csv',
@@ -67,11 +68,10 @@ def test_tpch_q1():
             'avg(_6)',  # avg(l_discount)
             'count(_0)'  # count(*) as count_order
         ])
-    # g = Group(group_col_indexes=[8, 9],
-    #           aggregate_expr_strs=[
-    #               'sum(_5)' # sum(l_extendedprice)
-    #           ])
-    s = Sort(0, str, 'ASC')
+    s = Sort([
+        SortExpression(0, str, 'ASC'),
+        SortExpression(1, str, 'ASC')
+    ])
     c = Collate()
 
     ts.connect(log)

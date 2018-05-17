@@ -4,7 +4,7 @@
 """
 
 from op.collate import Collate
-from op.sort import Sort
+from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
 
 
@@ -18,7 +18,7 @@ def test_sort_asc():
 
     # Query plan
     ts = TableScan('supplier.csv', 'select * from S3Object;')
-    s = Sort(5, float, 'ASC')
+    s = Sort([SortExpression(5, float, 'ASC')])
     c = Collate()
 
     ts.connect(s)
@@ -50,7 +50,7 @@ def test_sort_desc():
 
     # Query plan
     ts = TableScan('supplier.csv', 'select * from S3Object;')
-    s = Sort(5, float, 'DESC')
+    s = Sort([SortExpression(5, float, 'DESC')])
     c = Collate()
 
     ts.connect(s)

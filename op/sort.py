@@ -1,10 +1,27 @@
 # -*- coding: utf-8 -*-
-"""
+"""Order by support
 
 """
+
 from heapq import heappush, heappop
-
 from op.operator_base import Operator
+
+
+class SortExpression:
+    """Represents an order by clause expression.
+
+    """
+
+    def __init__(self, col_index, col_type, sort_order):
+        """Create a new order by expression
+
+        :param col_index: column to sort on
+        :param col_type: columns type
+        :param sort_order: sort order, can be 'ASC' or 'DESC'
+        """
+        self.col_index = col_index
+        self.col_type = col_type
+        self.sort_order = sort_order
 
 
 class Sort(Operator):
@@ -14,7 +31,7 @@ class Sort(Operator):
 
     """
 
-    def __init__(self, col_index, col_type, sort_order):
+    def __init__(self, sort_expressions):
         """Creates a new Sort operator.
 
         :param col_index: The column to sort on.
@@ -23,9 +40,7 @@ class Sort(Operator):
         """
         Operator.__init__(self)
 
-        self.col_index = col_index
-        self.col_type = col_type
-        self.sort_order = sort_order
+        self.sort_expressions = sort_expressions
 
         self.heap = []
 
@@ -39,8 +54,8 @@ class Sort(Operator):
         :return: None
         """
         # print("Sort Emit | {}".format(t))
-        t = HeapSortableTuple(t, self.col_index, self.col_type, self.sort_order)
-        heappush(self.heap, t)
+        sortable_t = HeapSortableTuple(t, self.sort_expressions)
+        heappush(self.heap, sortable_t)
 
     def on_stop(self):
         """This allows consuming producers to indicate that the operator can stop.
@@ -73,42 +88,24 @@ class HeapSortableTuple:
 
     """
 
-    def __init__(self, t, sort_key_index, sort_key_type, sort_order):
+    def __init__(self, t, sort_expressions):
         self.tuple = t
-        self.sort_key_index = sort_key_index
-        self.sort_key_type = sort_key_type
-        self.sort_order = sort_order
+        self.sort_expressions = sort_expressions
 
     def __lt__(self, o):
 
-        v1 = self.sort_key_type(self.tuple[self.sort_key_index])
-        v2 = self.sort_key_type(o[self.sort_key_index])
+        # Iterate through the sorting expressions and apply them to matching values in each tuple
+        for ex in self.sort_expressions:
 
-        if self.sort_order == 'ASC':
-            return v1 < v2
-        elif self.sort_order == 'DESC':
-            return v1 > v2
-        else:
-            raise Exception("Unrecognised sort order {}".format(self.sort_order))
+            v1 = ex.col_type(self.tuple[ex.col_index])
+            v2 = ex.col_type(o.tuple[ex.col_index])
 
-    def __eq__(self, o):
-
-        v1 = self.sort_key_type(self.tuple[self.sort_key_index])
-        v2 = self.sort_key_type(o[self.sort_key_index])
-
-        return v1 == v2
-
-    def __gt__(self, o):
-
-        v1 = self.sort_key_type(self.tuple[self.sort_key_index])
-        v2 = self.sort_key_type(o[self.sort_key_index])
-
-        if self.sort_order == 'ASC':
-            return v1 > v2
-        elif self.sort_order == 'DESC':
-            return v1 < v2
-        else:
-            raise Exception("Unrecognised sort order {}".format(self.sort_order))
-
-    def __getitem__(self, k):
-        return self.sort_key_type(self.tuple[k])
+            if v1 == v2:
+                pass
+            else:
+                if ex.sort_order == 'ASC':
+                    return v1 < v2
+                elif ex.sort_order == 'DESC':
+                    return v1 > v2
+                else:
+                    raise Exception("Unrecognised sort order {}".format(ex.sort_order))

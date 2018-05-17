@@ -5,7 +5,7 @@
 
 from op.collate import Collate
 from op.join import Join
-from op.sort import Sort
+from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
 from op.top import Top
 
@@ -22,7 +22,9 @@ def test_sort_topk():
 
     # Query plan
     ts = TableScan('supplier.csv', 'select * from S3Object;')
-    s = Sort(5, float, 'ASC')
+    s = Sort([
+        SortExpression(5, float, 'ASC')
+    ])
     t = Top(limit)
     c = Collate()
 
