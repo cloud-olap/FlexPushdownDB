@@ -111,4 +111,4 @@ class HeapSortableTuple:
             raise Exception("Unrecognised sort order {}".format(self.sort_order))
 
     def __getitem__(self, k):
-        return float(self.tuple[k])
+        return self.sort_key_type(self.tuple[k])

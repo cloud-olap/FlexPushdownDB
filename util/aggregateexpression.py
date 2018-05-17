@@ -26,10 +26,17 @@ class AggregateExpression:
         self.expr = sympy.sympify(self.expr_str, evaluate=False)
 
         # Converting the expression to a lambda is required for speed apparently
-        self.lambda_fn = sympy.lambdify(self.expr.free_symbols, self.expr, {'sum': self.sum_fn, 'count': self.count_fn})
+        self.lambda_fn = sympy.lambdify(self.expr.free_symbols,
+                                        self.expr,
+                                        {
+                                            'count': self.count_fn,
+                                            'sum': self.sum_fn,
+                                            'avg': self.avg_fn
+                                        })
 
         # The computed aggregate value
         self.val = 0
+        self.count = 0
 
     def sum_fn(self, v):
         """ Accumulates a sum of the given values passed via v
@@ -37,7 +44,10 @@ class AggregateExpression:
         :param v: Value of evaluated aggregate expression.
         :return: None
         """
+
+        self.count += 1
         self.val += v
+
 
     def count_fn(self, v):
         """ Accumulates a sum of the given values passed via v
@@ -45,7 +55,19 @@ class AggregateExpression:
         :param v: Value of evaluated aggregate expression.
         :return: None
         """
+
+        self.count += 1
         self.val += 1
+
+    def avg_fn(self, v):
+        """ Accumulates a sum of the given values passed via v
+
+        :param v: Value of evaluated aggregate expression.
+        :return: None
+        """
+
+        self.count += 1
+        self.val = (self.val * (self.count - 1) + v) / self.count
 
     def eval(self, t):
         """Evaluates the expression for the given tuple.

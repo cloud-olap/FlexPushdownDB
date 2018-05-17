@@ -95,3 +95,5 @@ class Group(Operator):
                 self.do_emit(t)
             else:
                 break
+
+        self.do_done()
