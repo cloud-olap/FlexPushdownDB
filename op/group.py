@@ -9,6 +9,13 @@ from op.operator_base import Operator
 from sql.aggregate_expr import AggregateExpr
 
 
+class AggregateExprContext:
+
+    def __init__(self, count=0, val=0):
+        self.count = count
+        self.val = val
+
+
 class Group(Operator):
     """A crude group by operator. Allows multiple grouping columns to be specified along with multiple aggregate
     expressions.
@@ -60,15 +67,27 @@ class Group(Operator):
         # print(group_cols_tuple)
 
         # Get the current list of aggregates for this group
-        group_aggregate_vals = self.tuples.get(group_cols_tuple, list(itertools.repeat(0, len(self.aggregate_exprs))))
+        # group_aggregate_vals = self.tuples.get(group_cols_tuple, list(itertools.repeat(AggregateExprContext(), len(self.aggregate_exprs))))
+
+        group_aggregate_vals = self.tuples.get(group_cols_tuple)
+
+        if group_aggregate_vals is None:
+            group_aggregate_vals = []
+            for expr in self.aggregate_exprs:
+                ctx = AggregateExprContext()
+                group_aggregate_vals.append(ctx)
+
         # print(group_aggregate_vals)
 
         for i in range(0, len(self.aggregate_exprs)):
             e = self.aggregate_exprs[i]
             v = group_aggregate_vals[i]
-            e.val = v
+            e.val = v.val
+            e.count = v.count
             e.eval(t)
-            group_aggregate_vals[i] = e.val
+            v.val = e.val
+            v.count = e.count
+            group_aggregate_vals[i] = v
 
         # print(list(group_cols_tuple) + group_aggregate_vals)
 
@@ -84,7 +103,11 @@ class Group(Operator):
 
         for k, v in self.tuples.items():
             if not self.is_completed():
-                t = list(k) + v
+
+                # Convert the aggregate contexts to their results
+                vs = list(ac.val for ac in v)
+
+                t = list(k) + vs
                 self.send(t)
             else:
                 break

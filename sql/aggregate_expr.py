@@ -67,7 +67,9 @@ class AggregateExpr:
         """
 
         self.count += 1
-        self.val = (self.val * (self.count - 1) + v) / self.count
+        self.val = (self.val * (float(self.count - 1)) + v) / self.count
+
+        pass
 
     def eval(self, t):
         """Evaluates the expression for the given tuple.
@@ -96,3 +98,5 @@ class AggregateExpr:
             symbol_values.append(tuple_element)
 
         self.lambda_fn(*sympy.flatten(symbol_values))
+
+        pass

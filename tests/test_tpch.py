@@ -86,3 +86,13 @@ def test_tpch_q1():
     for t in c.tuples():
         num_rows += 1
         print("{}:{}".format(num_rows, t))
+
+    t1 = c.tuples()[0]
+    t2 = c.tuples()[1]
+    t3 = c.tuples()[2]
+
+    # These are correct (ish) though the rounding is arbitrary
+    # TODO: Standardise on a rounding for aggregates
+    assert t1 == ['A', 'F', 27, 39890.88, 37497.4272, 40122.247104, 27.0, 39890.88, 0.06, 1]
+    assert t2 == ['N', 'O', 183, 226555.73, 211877.68959999998, 220594.690152, 26.142857142857142, 32365.104285714286, 0.07000000000000002, 7]
+    assert t3 == ['R', 'F', 94.0, 100854.52, 92931.39000000001, 92931.39000000001, 47, 50427.26, 0.08, 2]
