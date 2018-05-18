@@ -18,7 +18,7 @@ def main():
     limit = 500
 
     # Query plan
-    ts = TableScan('customer.csv', 'select * from S3Object;')
+    ts = TableScan('supplier.csv', 'select * from S3Object;')
     t = Top(limit)
     c = Collate()
 
@@ -31,7 +31,7 @@ def main():
     ts.start()
 
     # Metrics
-    num_rows = len(c.tuples)
+    num_rows = len(c.tuples())
     elapsed = timeit.default_timer() - start_time
 
     print ({'simple': {'row_count': num_rows, 'elapsed_seconds': elapsed}})

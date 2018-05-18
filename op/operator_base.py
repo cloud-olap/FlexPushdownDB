@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""Operator support
 
 """
 
@@ -11,8 +11,21 @@ class Operator(object):
     """
 
     def __init__(self):
+        """Constructs a new operator
+
+        """
+
         self.producers = []
         self.consumers = []
+
+        self.__completed = False
+
+    def is_completed(self):
+        """Accessor for completed status.
+
+        :return: Boolean indicating whether the operator has completed or not.
+        """
+        return self.__completed
 
     def connect(self, consumer):
         """Utility method that appends the given consuming operators to this operators list of consumers and appends the
@@ -24,6 +37,7 @@ class Operator(object):
         :param consumer: An operator that will consume the results of this operator.
         :return: None
         """
+
         self.consumers.append(consumer)
         consumer.producers.append(self)
 
@@ -33,6 +47,7 @@ class Operator(object):
         :param consumer: An operator that will consume the results of this operator.
         :return: None
         """
+
         self.consumers.append(consumer)
 
     def add_producer(self, producer):
@@ -41,29 +56,62 @@ class Operator(object):
         :param producer: An operator that will produce the tuples for this operator.
         :return: None
         """
+
         self.producers.append(producer)
 
-    def do_emit(self, t):
-        """Emits the given tuple to each of the connected consuming operators.
+    def send(self, t):
+        """Emits the given tuple to each of the connected consumers.
 
         :param t: The tuple to emit
         :return: None
         """
-        for c in self.consumers:
-            c.on_emit(t, self)
 
-    def do_done(self):
-        """ Signals to consuming operators that this operator has completed what it was doing.
+        for c in self.consumers:
+            c.on_receive(t, self)
+
+    def complete(self):
+        """Sets the operator to complete, meaning it has completed what it needed to do. This includes marking the
+        operator as completed and signalling to to connected operators that this operator has
+        completed what it was doing.
 
         :return: None
         """
-        for c in self.consumers:
-            c.on_done()
 
-    def do_stop(self):
-        """ Signals to producing operators that this operator needs no more tuples.
+        if not self.is_completed():
 
+            # print("{} | Complete".format(self.__class__.__name__))
+
+            self.__completed = True
+
+            for c in self.consumers:
+                c.on_producer_completed(self)
+
+            for p in self.producers:
+                p.on_consumer_completed(self)
+
+        else:
+            raise Exception("Cannot complete an already completed operator")
+
+    def on_producer_completed(self, _producer):
+        """Handles a signal from producing operators that they have completed what they needed to do. This is useful in
+        circumstances where a producer has no more tuples to supply (such as completion of a table scan). This is often
+        overridden but this default implementation simply completes this operator.
+
+        :param _producer: The producer that has completed
         :return: None
         """
-        for p in self.producers:
-            p.on_stop()
+
+        if not self.is_completed():
+            self.complete()
+
+    def on_consumer_completed(self, _consumer):
+        """Handles a signal from consuming operators that they have completed what they needed to do. This is useful in
+        circumstances where a consumer needs no more tuples (such as a top operator reaching the number of tuples it
+        needs). This is often overridden but this default implementation simply simply completes this operator.
+
+        :param _consumer: The consumer that has completed
+        :return: None
+        """
+
+        if not self.is_completed():
+            self.complete()

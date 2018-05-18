@@ -1,44 +1,46 @@
 # -*- coding: utf-8 -*-
-"""
+"""Group by with aggregate support
 
 """
 
 import itertools
 from operator import itemgetter
 from op.operator_base import Operator
-from util.aggregateexpression import AggregateExpression
+from sql.aggregate_expr import AggregateExpr
 
 
 class Group(Operator):
-    """A crude group by operator. Allows a group by column and an aggregate to be specified, which will produce a list
-    of tuples where the structure of each tuple is:
+    """A crude group by operator. Allows multiple grouping columns to be specified along with multiple aggregate
+    expressions.
 
-    [group_col, aggregate]
-
-    TODO: Extend this to support aggregates other than COUNT and SUM, flexibility on the structure of returned
-    tuples, etc.
     """
 
     def __init__(self, group_col_indexes, aggregate_expr_strs):
         """Creates a new group by operator.
 
-        :param group_col_index: The indexes of the columns to group by
+        :param group_col_indexes: The indexes of the columns to group by
         :param aggregate_expr_strs: The list of aggregate expressions
         """
+
         Operator.__init__(self)
 
         self.group_col_indexes = group_col_indexes
         self.aggregate_expr_strs = aggregate_expr_strs
-        self.aggregate_exprs = list(AggregateExpression(a_expr) for a_expr in self.aggregate_expr_strs)
+        self.aggregate_exprs = list(AggregateExpr(a_expr) for a_expr in self.aggregate_expr_strs)
 
+        # Dict of tuples hashed by the values of each grouping columns
         self.tuples = {}
 
-        self.running = True
+    # noinspection PyUnusedLocal
+    def on_receive(self, t, producer):
+        """ Handles the event of receiving a new tuple from a producer. Applies each aggregate function to the tuple and
+        then inserts those aggregates into the tuples dict indexed by the grouping columns values.
 
-    def on_emit(self, t, producer=None):
-        """Incrementally applies an aggregate function to groups of tuples as specified by the group_col_index
-        The grouped tuples are not emitted to downstream operators until a done signal is received.
+        Once downstream producers are completed the tuples will be send to downstream consumers.
 
+        :param t: The received tuples
+        :param producer: The producer of the tuple
+        :return: None
         """
 
         # print("Group | {}".format(t))
@@ -72,28 +74,19 @@ class Group(Operator):
 
         self.tuples[group_cols_tuple] = group_aggregate_vals
 
-    def on_stop(self):
-        """This allows consuming producers to indicate that the operator can stop.
+    def on_producer_completed(self, producer):
+        """Handles the event where the producer has completed producing all the tuples it will produce. Once this
+        occurs the tuples can be sent to consumers downstream.
 
-        TODO: Need to verify that this is actually useful.
-
+        :param producer: The producer that has completed
         :return: None
         """
 
-        # print("Group Stop | ")
-        self.running = False
-        self.do_stop()
-
-    def on_done(self):
-        """Once a done signal is received the grouped tuples can be emitted to downstream operators.
-
-        """
-
-        for k, v in self.tuples.iteritems():
-            if self.running:
+        for k, v in self.tuples.items():
+            if not self.is_completed():
                 t = list(k) + v
-                self.do_emit(t)
+                self.send(t)
             else:
                 break
 
-        self.do_done()
+        Operator.on_producer_completed(self, producer)

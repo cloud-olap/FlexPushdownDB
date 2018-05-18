@@ -13,12 +13,13 @@ class SortExpression:
     """
 
     def __init__(self, col_index, col_type, sort_order):
-        """Create a new order by expression
+        """Create a new sorting expression
 
         :param col_index: column to sort on
-        :param col_type: columns type
+        :param col_type: column type
         :param sort_order: sort order, can be 'ASC' or 'DESC'
         """
+
         self.col_index = col_index
         self.col_type = col_type
         self.sort_order = sort_order
@@ -34,19 +35,17 @@ class Sort(Operator):
     def __init__(self, sort_expressions):
         """Creates a new Sort operator.
 
-        :param col_index: The column to sort on.
-        :param col_type: The type of the sorting column (use the Python casting operators such as 'float'
-        :param sort_order: The sort order. Can be ASC or DESC.
+        :param sort_expressions: The sort expressions to apply to each tuple
         """
+
         Operator.__init__(self)
 
         self.sort_expressions = sort_expressions
 
         self.heap = []
 
-        self.running = True
-
-    def on_emit(self, t, producer=None):
+    # noinspection PyUnusedLocal
+    def on_receive(self, t, producer):
         """ Collects tuples into a heap.
 
         :param t: The received tuple.
@@ -57,34 +56,24 @@ class Sort(Operator):
         sortable_t = HeapSortableTuple(t, self.sort_expressions)
         heappush(self.heap, sortable_t)
 
-    def on_stop(self):
-        """This allows consuming producers to indicate that the operator can stop.
-
-        TODO: Need to verify that this is actually useful.
-
-        :return: None
-        """
-
-        # print("Sort Stop | ")
-        self.running = False
-        self.do_stop()
-
-    def on_done(self):
+    def on_producer_completed(self, producer):
         """When this operator receives a done it emits the sorted tuples.
 
         """
         # print("Sort Done | ")
         while self.heap:
-            if self.running:
+            if not self.is_completed():
                 t = heappop(self.heap).tuple
-                self.do_emit(t)
+                self.send(t)
             else:
                 break
+
+        Operator.on_producer_completed(self, producer)
 
 
 class HeapSortableTuple:
     """Pythons heap algorithm requires a tuple where the first element is comparable. This class represents that tuple
-    with comparing functions (lt, gt and eq) defined.
+    with comparing functions (lt) defined.
 
     """
 

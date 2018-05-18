@@ -17,7 +17,7 @@ def test_limit_topk():
     num_rows = 0
 
     # Query plan
-    ts = TableScan('customer.csv', 'select * from S3Object limit {};'.format(limit))
+    ts = TableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit))
     c = Collate()
 
     ts.connect(c)
@@ -26,7 +26,7 @@ def test_limit_topk():
     ts.start()
 
     # Assert the results
-    for _ in c.tuples:
+    for _ in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
@@ -44,7 +44,7 @@ def test_abort_topk():
     num_rows = 0
 
     # Query plan
-    ts = TableScan('customer.csv', 'select * from S3Object;')
+    ts = TableScan('supplier.csv', 'select * from S3Object;')
     t = Top(limit)
     c = Collate()
 
@@ -55,7 +55,7 @@ def test_abort_topk():
     ts.start()
 
     # Assert the results
-    for _ in c.tuples:
+    for _ in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 

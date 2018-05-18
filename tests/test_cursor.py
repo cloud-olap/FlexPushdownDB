@@ -122,7 +122,7 @@ def test_large_results():
     num_rows = 0
 
     cur = Cursor() \
-        .select('customer.csv', 'select * from S3Object')
+        .select('lineitem.csv', 'select * from S3Object limit 150000')
 
     try:
         rows = cur.execute()

@@ -29,7 +29,7 @@ def test_sort_asc():
 
     # Assert the results
     prev = None
-    for t in c.tuples:
+    for t in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
         if prev is None:
@@ -61,7 +61,7 @@ def test_sort_desc():
 
     # Assert the results
     prev = None
-    for t in c.tuples:
+    for t in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
         if prev is None:

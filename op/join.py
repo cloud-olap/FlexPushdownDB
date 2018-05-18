@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""Join support
 
 """
 
@@ -33,41 +33,43 @@ class Join(Operator):
         self.tuples_2 = []
         self.joined_tuples = []
 
-        self.running = True
+    def on_receive(self, t, producer):
+        """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
+        lists corresponding to the producer that sent the tuple.
 
-    def on_emit(self, t, producer):
+        :param t: The received tuples
+        :param producer: The producer of the tuple
+        :return: None
+        """
+
         if producer.key == self.join_key_1:
             self.tuples_1.append(t)
         elif producer.key == self.join_key_2:
             self.tuples_2.append(t)
 
-    def on_stop(self):
-        """This allows consuming operators to indicate that the operator can stop.
+    def on_producer_completed(self, producer):
+        """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
+        Join operator may have multiple producers. Once all producers are complete the operator can send the tuples
+        it contains to downstream consumers.
 
-        TODO: Need to verify that this is actually useful.
-
+        :type producer: The producer that has completed
         :return: None
         """
 
-        # print("Sort Stop | ")
-        self.running = False
-        self.do_stop()
+        # Check that we have received a completed event from all the producers
+        is_all_producers_done = all(p.is_completed() for p in self.producers)
 
-    def on_done(self):
-        """When this operator receives a done it emits the joined tuples, and signals to consumers that it is done.
+        if is_all_producers_done:
 
-        :return: None
-        """
-        # print("Sort Done | ")
-        for t1 in self.tuples_1:
-            for t2 in self.tuples_2:
-                if t1[self.join_col_1_index] == t2[self.join_col_2_index]:
-                    self.do_emit(t1 + t2)
+            for t1 in self.tuples_1:
+                for t2 in self.tuples_2:
+                    if t1[self.join_col_1_index] == t2[self.join_col_2_index]:
+                        self.send(t1 + t2)
 
-                if not self.running:
+                    if self.is_completed():
+                        break
+
+                if self.is_completed():
                     break
 
-            if not self.running:
-                break
-
-        self.do_done()
+            Operator.on_producer_completed(self, producer)

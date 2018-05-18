@@ -26,16 +26,17 @@ def test_join():
     j.add_producer(ts1)
     j.add_producer(ts2)
     j.add_consumer(c)
+    c.add_producer(j)
 
     # Start the query
     ts1.start()
     ts2.start()
 
     # Assert the results
-    for t in c.tuples:
+    for t in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
         # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
         assert t[3] == t[7]
 
-    assert len(c.tuples) == 10000
+    assert len(c.tuples()) == 10000

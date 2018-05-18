@@ -23,7 +23,6 @@ class TableScan(Operator):
 
         self.key = key
         self.sql = sql
-        self.running = False
 
     def start(self):
         """Executes the query and begins emitting tuples.
@@ -32,32 +31,19 @@ class TableScan(Operator):
         """
         # print("Table Scan | Start {} {}".format(self.key, self.sql))
 
-        self.running = True
-
-        cur = Cursor() \
-            .select(self.key, self.sql)
+        cur = Cursor().select(self.key, self.sql)
 
         tuples = cur.execute()
 
         # Push the tuples to the consumer
         for t in tuples:
 
-            if not self.running:
+            if self.is_completed():
                 break
 
             # print("Table Scan | {}".format(t))
 
-            self.do_emit(t)
+            self.send(t)
 
-        self.do_done()
-
-    def on_stop(self):
-        """This allows consumers to indicate that the scan can stop such as when a Top operator has received all the
-        tuples it requires.
-
-        :return: None
-        """
-
-        # print("Table Scan | Stop")
-
-        self.running = False
+        if not self.is_completed():
+            self.complete()

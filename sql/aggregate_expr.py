@@ -6,7 +6,7 @@ SQL aggregate function support
 import sympy
 
 
-class AggregateExpression:
+class AggregateExpr:
     """Represents an SQL aggregate such as SUM(x + y - 1)
 
     Intended to be built and retained during operator execution as it accumulates its internal aggregate value. At the
@@ -48,9 +48,9 @@ class AggregateExpression:
         self.count += 1
         self.val += v
 
-
+    # noinspection PyUnusedLocal
     def count_fn(self, v):
-        """ Accumulates a sum of the given values passed via v
+        """ Accumulates a count of the number of times it is invoked.
 
         :param v: Value of evaluated aggregate expression.
         :return: None
@@ -60,7 +60,7 @@ class AggregateExpression:
         self.val += 1
 
     def avg_fn(self, v):
-        """ Accumulates a sum of the given values passed via v
+        """ Accumulates an average of the given values passed via v.
 
         :param v: Value of evaluated aggregate expression.
         :return: None
@@ -83,7 +83,7 @@ class AggregateExpression:
         #
         # The 'free' symbols are _1 and _2
         #
-        # We then need to extract the values for element _1 and _2 from the tuple and substiture them in the
+        # We then need to extract the values for element _1 and _2 from the tuple and substitute them in the
         # expression.
 
         symbol_values = []

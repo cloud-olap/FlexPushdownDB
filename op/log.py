@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+"""Logging support
 
 """
 from op.operator_base import Operator
@@ -11,15 +11,19 @@ class Log(Operator):
     """
 
     def __init__(self):
+        """Constructs a new Log operator
+
+        """
         Operator.__init__(self)
 
-    def on_emit(self, t, producer=None):
-        print("Print | {}".format(t))
-        self.do_emit(t)
+    # noinspection PyUnusedLocal
+    def on_receive(self, t, producer):
+        """Handles the event of receiving a new tuple from a producer. Will simply print the tuple.
 
-    # TODO: These should may be on the base class as defaults that can be overridden
-    def on_done(self):
-        self.do_done()
+        :param t: The received tuples
+        :param producer: The producer of the tuple
+        :return: None
+        """
 
-    def on_stop(self):
-        self.do_stop()
+        print("Log | {}".format(t))
+        self.send(t)

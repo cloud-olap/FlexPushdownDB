@@ -21,7 +21,7 @@ def test_group_count():
     ts = TableScan('supplier.csv', 'select * from S3Object;')
     g = Group([3],
               aggregate_expr_strs=[
-                  'count(_0)' # count(s_suppkey)
+                  'count(_0)'  # count(s_suppkey)
               ])
     c = Collate()
 
@@ -32,11 +32,11 @@ def test_group_count():
     ts.start()
 
     # Assert the results
-    for _ in c.tuples:
+    for _ in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    nation_24 = filter(lambda t: t[0] == '24', c.tuples)[0]
+    nation_24 = filter(lambda t: t[0] == '24', c.tuples())[0]
     assert nation_24[1] == 393
     assert num_rows == 25
 
@@ -54,7 +54,7 @@ def test_group_sum():
     ts = TableScan('supplier.csv', 'select * from S3Object;')
     g = Group([3],
               aggregate_expr_strs=[
-                  'sum(_5)' # sum(l_extendedprice)
+                  'sum(_5)'  # sum(l_extendedprice)
               ])
     c = Collate()
 
@@ -65,10 +65,10 @@ def test_group_sum():
     ts.start()
 
     # Assert the results
-    for _ in c.tuples:
+    for _ in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    nation_24 = filter(lambda t: t[0] == '24', c.tuples)[0]
+    nation_24 = filter(lambda t: t[0] == '24', c.tuples())[0]
     assert round(nation_24[1], 2) == 1833872.56
     assert num_rows == 25

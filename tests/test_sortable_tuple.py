@@ -81,7 +81,7 @@ def test_sort_desc_asc():
     assert popped_t4 == (1, 2)
 
 
-def test_sort_desc_asc():
+def test_sort_desc_desc():
     sort_expressions = [
         SortExpression(0, float, 'DESC'),
         SortExpression(1, float, 'DESC')

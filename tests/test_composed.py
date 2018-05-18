@@ -37,7 +37,7 @@ def test_sort_topk():
 
     # Assert the results
     prev = None
-    for t in c.tuples:
+    for t in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
         if prev is None:
@@ -77,10 +77,10 @@ def test_join_topk():
     ts2.start()
 
     # Assert the results
-    for t in c.tuples:
+    for t in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
         # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
         assert t[3] == t[7]
 
-    assert len(c.tuples) == limit
+    assert len(c.tuples()) == limit

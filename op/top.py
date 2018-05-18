@@ -14,7 +14,8 @@ class Top(Operator):
         self.max_tuples = max_tuples
         self.current = 0
 
-    def on_emit(self, t, producer=None):
+    # noinspection PyUnusedLocal
+    def on_receive(self, t, producer):
         """Consumes tuples as they are produced. When the number of tuples reaches max it informs the producer to stop
         producing. This allows table scans to stop once enough tuples have been retrieved. It also informs any consumers
         that it is done producing tuples.
@@ -23,12 +24,12 @@ class Top(Operator):
         :param producer: The producer that emitted the tuple
         :return: None
         """
+
         # print("Top | {}".format(t))
-        self.do_emit(t)
+        self.send(t)
         self.current += 1
         if self.current == self.max_tuples:
-            self.do_stop()
-            self.do_done()
 
-    def on_done(self):
-        pass
+            # Set this operator to complete
+            self.complete()
+

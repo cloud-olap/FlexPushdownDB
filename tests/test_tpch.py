@@ -2,6 +2,7 @@
 """TPC-H query tests
 
 """
+
 from datetime import datetime, timedelta
 
 from op.collate import Collate
@@ -9,7 +10,6 @@ from op.group import Group
 from op.log import Log
 from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
-from util import aggregateexpression
 
 
 def test_tpch_q1():
@@ -83,6 +83,6 @@ def test_tpch_q1():
     ts.start()
 
     # Assert the results
-    for t in c.tuples:
+    for t in c.tuples():
         num_rows += 1
         print("{}:{}".format(num_rows, t))
