@@ -6,6 +6,7 @@
 from op.collate import Collate
 from op.group import Group
 from op.table_scan import TableScan
+from op.tuple import LabelledTuple
 
 
 def test_group_count():
@@ -36,9 +37,11 @@ def test_group_count():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    nation_24 = filter(lambda t: t[0] == '24', c.tuples())[0]
+    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
+
+    nation_24 = filter(lambda t: LabelledTuple(t, field_names)['_0'] == '24', c.tuples())[0]
     assert nation_24[1] == 393
-    assert num_rows == 25
+    assert num_rows == 25 + 1
 
 
 def test_group_sum():
@@ -69,6 +72,8 @@ def test_group_sum():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    nation_24 = filter(lambda t: t[0] == '24', c.tuples())[0]
+    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
+
+    nation_24 = filter(lambda t: LabelledTuple(t, field_names)['_0'] == '24', c.tuples())[0]
     assert round(nation_24[1], 2) == 1833872.56
-    assert num_rows == 25
+    assert num_rows == 25 + 1

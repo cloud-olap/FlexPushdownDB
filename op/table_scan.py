@@ -3,6 +3,7 @@
 
 """
 from op.operator_base import Operator
+from op.tuple import Tuple, LabelledTuple
 from sql.cursor import Cursor
 
 
@@ -35,15 +36,21 @@ class TableScan(Operator):
 
         tuples = cur.execute()
 
-        # Push the tuples to the consumer
+        first_tuple = True
         for t in tuples:
+
+            # print("Table Scan | {}".format(t))
+
+            if first_tuple:
+                # Create and send the record field names
+                lt = LabelledTuple(t)
+                first_tuple = False
+                self.send(Tuple(lt.labels))
 
             if self.is_completed():
                 break
 
-            # print("Table Scan | {}".format(t))
-
-            self.send(t)
+            self.send(Tuple(t))
 
         if not self.is_completed():
             self.complete()

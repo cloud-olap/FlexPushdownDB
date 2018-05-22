@@ -33,6 +33,9 @@ class Join(Operator):
         self.tuples_2 = []
         self.joined_tuples = []
 
+        # Dict of field names indexed by producer key
+        self.field_names = {}
+
     def on_receive(self, t, producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         lists corresponding to the producer that sent the tuple.
@@ -42,10 +45,13 @@ class Join(Operator):
         :return: None
         """
 
-        if producer.key == self.join_key_1:
-            self.tuples_1.append(t)
-        elif producer.key == self.join_key_2:
-            self.tuples_2.append(t)
+        if producer.key not in self.field_names:
+            self.field_names[producer.key] = t
+        else:
+            if producer.key == self.join_key_1:
+                self.tuples_1.append(t)
+            elif producer.key == self.join_key_2:
+                self.tuples_2.append(t)
 
     def on_producer_completed(self, producer):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
@@ -61,9 +67,22 @@ class Join(Operator):
 
         if is_all_producers_done:
 
+            # Send the field names first, each field name is prepended with the key of the producer who send it.
+            joined_field_names = []
+            field_names_1 = self.field_names[self.join_key_1]
+            field_names_2 = self.field_names[self.join_key_2]
+            for field_name in field_names_1:
+                joined_field_names.append(self.join_key_1 + '.' + field_name)
+            for field_name in field_names_2:
+                joined_field_names.append(self.join_key_2 + '.' + field_name)
+
+            self.send(joined_field_names)
+
             for t1 in self.tuples_1:
                 for t2 in self.tuples_2:
-                    if t1[self.join_col_1_index] == t2[self.join_col_2_index]:
+                    field_name_index_1 = self.field_names[self.join_key_1].index(self.join_col_1_index)
+                    field_name_index_2 = self.field_names[self.join_key_2].index(self.join_col_2_index)
+                    if t1[field_name_index_1] == t2[field_name_index_2]:
                         self.send(t1 + t2)
 
                     if self.is_completed():

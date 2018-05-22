@@ -13,6 +13,7 @@ class Top(Operator):
         Operator.__init__(self)
         self.max_tuples = max_tuples
         self.current = 0
+        self.first_tuple = True
 
     # noinspection PyUnusedLocal
     def on_receive(self, t, producer):
@@ -26,8 +27,14 @@ class Top(Operator):
         """
 
         # print("Top | {}".format(t))
+
         self.send(t)
-        self.current += 1
+
+        if not self.first_tuple:
+            self.current += 1
+        else:
+            self.first_tuple = False
+
         if self.current == self.max_tuples:
 
             # Set this operator to complete

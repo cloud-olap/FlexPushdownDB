@@ -10,6 +10,7 @@ from op.group import Group
 from op.log import Log
 from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
+from op.tuple import LabelledTuple
 
 
 def test_tpch_q1():
@@ -69,8 +70,8 @@ def test_tpch_q1():
             'count(_0)'  # count(*) as count_order
         ])
     s = Sort([
-        SortExpression(0, str, 'ASC'),
-        SortExpression(1, str, 'ASC')
+        SortExpression('_0', str, 'ASC'),
+        SortExpression('_1', str, 'ASC')
     ])
     c = Collate()
 
@@ -85,14 +86,20 @@ def test_tpch_q1():
     # Assert the results
     for t in c.tuples():
         num_rows += 1
-        print("{}:{}".format(num_rows, t))
+        # print("{}:{}".format(num_rows, t))
 
-    t1 = c.tuples()[0]
-    t2 = c.tuples()[1]
-    t3 = c.tuples()[2]
+    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8', '_9', '_10', '_11', '_12', '_13', '_14', '_15']
+
+    assert c.tuples()[0] == field_names
 
     # These are correct (ish) though the rounding is arbitrary
     # TODO: Standardise on a rounding for aggregates
-    assert t1 == ['A', 'F', 27, 39890.88, 37497.4272, 40122.247104, 27.0, 39890.88, 0.06, 1]
-    assert t2 == ['N', 'O', 183, 226555.73, 211877.68959999998, 220594.690152, 26.142857142857142, 32365.104285714286, 0.07000000000000002, 7]
-    assert t3 == ['R', 'F', 94.0, 100854.52, 92931.39000000001, 92931.39000000001, 47, 50427.26, 0.08, 2]
+    assert LabelledTuple(c.tuples()[1], field_names) == \
+           ['A', 'F', 27, 39890.88, 37497.4272,
+            40122.247104, 27.0, 39890.88, 0.06, 1]
+    assert LabelledTuple(c.tuples()[2], field_names) == \
+           ['N', 'O', 183, 226555.73, 211877.68959999998,
+            220594.690152, 26.142857142857142, 32365.104285714286, 0.07000000000000002, 7]
+    assert LabelledTuple(c.tuples()[3], field_names) == \
+           ['R', 'F', 94.0, 100854.52, 92931.39000000001,
+            92931.39000000001, 47, 50427.26, 0.08, 2]

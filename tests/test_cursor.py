@@ -4,6 +4,7 @@
 """
 import pytest
 from sql.cursor import Cursor
+from op.tuple import LabelledTuple
 
 
 def test_non_existent_key():
@@ -82,7 +83,8 @@ def test_where_predicate():
         rows = cur.execute()
         for r in rows:
             num_rows += 1
-            assert (r[1] == 'AMERICA')  # Note columns are accessed using ordinals for now
+            lt = LabelledTuple(r)
+            assert lt['_1'] == 'AMERICA'
             # print("{}:{}".format(num_rows, r))
 
         assert num_rows == 1
@@ -105,7 +107,8 @@ def test_aggregate():
         rows = cur.execute()
         for r in rows:
             num_rows += 1
-            assert int(r[0]) == 5
+            lt = LabelledTuple(r)
+            assert lt['_0'] == '5'
             # print("{}:{}".format(num_rows, r))
 
         assert num_rows == 1

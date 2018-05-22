@@ -30,7 +30,7 @@ def test_limit_topk():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    assert num_rows == limit
+    assert num_rows == limit + 1
 
 
 def test_abort_topk():
@@ -59,4 +59,4 @@ def test_abort_topk():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    assert num_rows == limit
+    assert num_rows == limit + 1

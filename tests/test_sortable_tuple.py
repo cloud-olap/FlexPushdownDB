@@ -10,17 +10,19 @@ from op.sort import HeapSortableTuple, SortExpression
 
 def test_sort_asc_asc():
 
+    field_names = ('_0', '_1')
+
     sort_expressions = [
-        SortExpression(0, float, 'ASC'),
-        SortExpression(1, float, 'ASC')
+        SortExpression('_0', float, 'ASC'),
+        SortExpression('_1', float, 'ASC')
     ]
 
     heap = []
 
-    heappush(heap, HeapSortableTuple((1, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((1, 2), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 2), sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 2), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 2), field_names, sort_expressions))
 
     popped_t1 = heappop(heap).tuple
     popped_t2 = heappop(heap).tuple
@@ -34,17 +36,20 @@ def test_sort_asc_asc():
 
 
 def test_sort_asc_desc():
+
+    field_names = ('_0', '_1')
+
     sort_expressions = [
-        SortExpression(0, float, 'ASC'),
-        SortExpression(1, float, 'DESC')
+        SortExpression('_0', float, 'ASC'),
+        SortExpression('_1', float, 'DESC')
     ]
 
     heap = []
 
-    heappush(heap, HeapSortableTuple((1, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((1, 2), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 2), sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 2), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 2), field_names, sort_expressions))
 
     popped_t1 = heappop(heap).tuple
     popped_t2 = heappop(heap).tuple
@@ -58,17 +63,20 @@ def test_sort_asc_desc():
 
 
 def test_sort_desc_asc():
+
+    field_names = ('_0', '_1')
+
     sort_expressions = [
-        SortExpression(0, float, 'DESC'),
-        SortExpression(1, float, 'ASC')
+        SortExpression('_0', float, 'DESC'),
+        SortExpression('_1', float, 'ASC')
     ]
 
     heap = []
 
-    heappush(heap, HeapSortableTuple((1, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((1, 2), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 2), sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 2), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 2), field_names, sort_expressions))
 
     popped_t1 = heappop(heap).tuple
     popped_t2 = heappop(heap).tuple
@@ -82,17 +90,20 @@ def test_sort_desc_asc():
 
 
 def test_sort_desc_desc():
+
+    field_names = ('_0', '_1')
+
     sort_expressions = [
-        SortExpression(0, float, 'DESC'),
-        SortExpression(1, float, 'DESC')
+        SortExpression('_0', float, 'DESC'),
+        SortExpression('_1', float, 'DESC')
     ]
 
     heap = []
 
-    heappush(heap, HeapSortableTuple((1, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((1, 2), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 1), sort_expressions))
-    heappush(heap, HeapSortableTuple((2, 2), sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((1, 2), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 1), field_names, sort_expressions))
+    heappush(heap, HeapSortableTuple((2, 2), field_names, sort_expressions))
 
     popped_t1 = heappop(heap).tuple
     popped_t2 = heappop(heap).tuple

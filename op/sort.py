@@ -24,6 +24,8 @@ class SortExpression:
         self.col_type = col_type
         self.sort_order = sort_order
 
+        self._first_tuple = True
+
 
 class Sort(Operator):
     """A sorting operator to sort the tuples emitted by the producing operator. Being a sort it needs to block until
@@ -44,17 +46,24 @@ class Sort(Operator):
 
         self.heap = []
 
-    # noinspection PyUnusedLocal
-    def on_receive(self, t, producer):
+        self.field_names = None
+
+    def on_receive(self, t, _producer):
         """ Collects tuples into a heap.
 
         :param t: The received tuple.
-        :param producer: The producer that emitted the tuple
+        :param _producer: The producer that emitted the tuple
         :return: None
         """
         # print("Sort Emit | {}".format(t))
-        sortable_t = HeapSortableTuple(t, self.sort_expressions)
-        heappush(self.heap, sortable_t)
+
+        if not self.field_names:
+            # Collect and send field names through
+            self.field_names = t
+            self.send(t)
+        else:
+            sortable_t = HeapSortableTuple(t, self.field_names, self.sort_expressions)
+            heappush(self.heap, sortable_t)
 
     def on_producer_completed(self, producer):
         """When this operator receives a done it emits the sorted tuples.
@@ -77,8 +86,9 @@ class HeapSortableTuple:
 
     """
 
-    def __init__(self, t, sort_expressions):
+    def __init__(self, t, field_names, sort_expressions):
         self.tuple = t
+        self.field_names = field_names
         self.sort_expressions = sort_expressions
 
     def __lt__(self, o):
@@ -86,8 +96,9 @@ class HeapSortableTuple:
         # Iterate through the sorting expressions and apply them to matching values in each tuple
         for ex in self.sort_expressions:
 
-            v1 = ex.col_type(self.tuple[ex.col_index])
-            v2 = ex.col_type(o.tuple[ex.col_index])
+            field_index = self.field_names.index(ex.col_index)
+            v1 = ex.col_type(self.tuple[field_index])
+            v2 = ex.col_type(o.tuple[field_index])
 
             if v1 == v2:
                 pass

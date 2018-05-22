@@ -3,7 +3,6 @@
 
 """
 
-import itertools
 from operator import itemgetter
 from op.operator_base import Operator
 from sql.aggregate_expr import AggregateExpr
@@ -38,6 +37,8 @@ class Group(Operator):
         # Dict of tuples hashed by the values of each grouping columns
         self.tuples = {}
 
+        self.field_names = None
+
     # noinspection PyUnusedLocal
     def on_receive(self, t, producer):
         """ Handles the event of receiving a new tuple from a producer. Applies each aggregate function to the tuple and
@@ -61,37 +62,41 @@ class Group(Operator):
             else:
                 return itemgetter(*self.group_col_indexes)(t)
 
-        # Create a tuple of columns to group by, we use this as the key for a dict of groups and their associated
-        # aggregate values
-        group_cols_tuple = get_items()
-        # print(group_cols_tuple)
+        if not self.field_names:
 
-        # Get the current list of aggregates for this group
-        # group_aggregate_vals = self.tuples.get(group_cols_tuple, list(itertools.repeat(AggregateExprContext(), len(self.aggregate_exprs))))
+            self.field_names = t
+            self.send(t)
 
-        group_aggregate_vals = self.tuples.get(group_cols_tuple)
+        else:
 
-        if group_aggregate_vals is None:
-            group_aggregate_vals = []
-            for expr in self.aggregate_exprs:
-                ctx = AggregateExprContext()
-                group_aggregate_vals.append(ctx)
+            # Create a tuple of columns to group by, we use this as the key for a dict of groups and their associated
+            # aggregate values
+            group_cols_tuple = get_items()
+            # print(group_cols_tuple)
 
-        # print(group_aggregate_vals)
+            group_aggregate_vals = self.tuples.get(group_cols_tuple)
 
-        for i in range(0, len(self.aggregate_exprs)):
-            e = self.aggregate_exprs[i]
-            v = group_aggregate_vals[i]
-            e.val = v.val
-            e.count = v.count
-            e.eval(t)
-            v.val = e.val
-            v.count = e.count
-            group_aggregate_vals[i] = v
+            if group_aggregate_vals is None:
+                group_aggregate_vals = []
+                for expr in self.aggregate_exprs:
+                    ctx = AggregateExprContext()
+                    group_aggregate_vals.append(ctx)
 
-        # print(list(group_cols_tuple) + group_aggregate_vals)
+            # print(group_aggregate_vals)
 
-        self.tuples[group_cols_tuple] = group_aggregate_vals
+            for i in range(0, len(self.aggregate_exprs)):
+                e = self.aggregate_exprs[i]
+                v = group_aggregate_vals[i]
+                e.val = v.val
+                e.count = v.count
+                e.eval(t)
+                v.val = e.val
+                v.count = e.count
+                group_aggregate_vals[i] = v
+
+            # print(list(group_cols_tuple) + group_aggregate_vals)
+
+            self.tuples[group_cols_tuple] = group_aggregate_vals
 
     def on_producer_completed(self, producer):
         """Handles the event where the producer has completed producing all the tuples it will produce. Once this
