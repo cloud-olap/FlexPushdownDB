@@ -7,7 +7,7 @@ from heapq import heappush, heappop
 from op.operator_base import Operator
 
 
-class SortExpression:
+class SortExpression(object):
     """Represents an order by clause expression.
 
     """

@@ -8,7 +8,7 @@ from op.operator_base import Operator
 from sql.aggregate_expr import AggregateExpr
 
 
-class AggregateExprContext:
+class AggregateExprContext(object):
 
     def __init__(self, count=0, val=0):
         self.count = count

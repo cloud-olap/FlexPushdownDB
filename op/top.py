@@ -15,14 +15,13 @@ class Top(Operator):
         self.current = 0
         self.first_tuple = True
 
-    # noinspection PyUnusedLocal
-    def on_receive(self, t, producer):
+    def on_receive(self, t, _producer):
         """Consumes tuples as they are produced. When the number of tuples reaches max it informs the producer to stop
         producing. This allows table scans to stop once enough tuples have been retrieved. It also informs any consumers
         that it is done producing tuples.
 
         :param t: The produced tuple.
-        :param producer: The producer that emitted the tuple
+        :param _producer: The producer that emitted the tuple
         :return: None
         """
 

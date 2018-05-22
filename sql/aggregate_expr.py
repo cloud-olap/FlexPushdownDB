@@ -6,7 +6,7 @@ SQL aggregate function support
 import sympy
 
 
-class AggregateExpr:
+class AggregateExpr(object):
     """Represents an SQL aggregate such as SUM(x + y - 1)
 
     Intended to be built and retained during operator execution as it accumulates its internal aggregate value. At the

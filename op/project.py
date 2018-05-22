@@ -7,7 +7,7 @@ from op.operator_base import Operator
 from op.tuple import Tuple
 
 
-class ProjectExpr:
+class ProjectExpr(object):
     """Represents a projection expression, where one record field can be renamed to another.
 
     """

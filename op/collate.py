@@ -18,6 +18,7 @@ class Collate(Operator):
         """
 
         Operator.__init__(self)
+
         self.__tuples = []
 
     def tuples(self):
@@ -27,13 +28,12 @@ class Collate(Operator):
         """
         return self.__tuples
 
-    # noinspection PyUnusedLocal
-    def on_receive(self, t, producer):
+    def on_receive(self, t, _producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         list.
 
         :param t: The received tuples
-        :param producer: The producer of the tuple
+        :param _producer: The producer of the tuple
         :return: None
         """
 
