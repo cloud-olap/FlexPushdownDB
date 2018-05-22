@@ -4,7 +4,7 @@
 """
 
 from op.collate import Collate
-from op.join import Join
+from op.join import Join, JoinExpression
 from op.table_scan import TableScan
 from op.tuple import LabelledTuple
 
@@ -18,7 +18,7 @@ def test_join():
     # Query plan
     ts1 = TableScan('supplier.csv', 'select * from S3Object;')
     ts2 = TableScan('nation.csv', 'select * from S3Object;')
-    j = Join('supplier.csv', '_3', 'nation.csv', '_0')
+    j = Join(JoinExpression('supplier.csv', '_3', 'nation.csv', '_0'))
     c = Collate()
 
     ts1.connect(j)

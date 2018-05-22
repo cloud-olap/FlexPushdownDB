@@ -6,32 +6,44 @@
 from op.operator_base import Operator
 
 
-class Join(Operator):
-    """Implements a crude join using nested loops.
+class JoinExpression(object):
+    """Represents a join expression, as in the table name (key) and column name (field) to join on.
 
-    TODO: This is a bit of a hack at the moment for a few reasons but mostly because A) it's inefficient and B) only
-    allows joins on two columns.
     """
 
-    def __init__(self, join_key_1, join_col_1_index, join_key_2, join_col_2_index):
+    def __init__(self, l_key, l_field, r_key, r_field):
+        """Creates a new join expression.
+
+        :param l_key: Key of the producer of the left tuple to join on
+        :param l_field: Field of the left tuple to join on
+        :param r_key: Key of the producer of the right tuple to join on
+        :param r_field: Field of the right tuple to join on
+        """
+
+        self.l_key = l_key
+        self.l_field = l_field
+        self.r_key = r_key
+        self.r_field = r_field
+
+
+class Join(Operator):
+    """Implements a join using nested loops.
+
+    """
+
+    def __init__(self, join_expr):
         """
         Creates a new join operator.
 
-        :param join_key_1: The 1st key to join on (effectively join table 1 in a SQL statement)
-        :param join_col_1_index: The 1st column index to join on (effectively join column 1 in a SQL statement)
-        :param join_key_2: The 2nd key to join on (effectively join table 1 in a SQL statement)
-        :param join_col_2_index: The 2nd column index to join on (effectively join column 1 in a SQL statement)
+        :param join_expr: The join expression indicating which fields of which key to join on
         """
+
         Operator.__init__(self)
 
-        self.join_key_1 = join_key_1
-        self.join_col_1_index = join_col_1_index
-        self.join_key_2 = join_key_2
-        self.join_col_2_index = join_col_2_index
+        self.join_expr = join_expr
 
-        self.tuples_1 = []
-        self.tuples_2 = []
-        self.joined_tuples = []
+        self.l_tuples = []
+        self.r_tuples = []
 
         # Dict of field names indexed by producer key
         self.field_names = {}
@@ -46,12 +58,15 @@ class Join(Operator):
         """
 
         if producer.key not in self.field_names:
+            # This is essentially testing if we have seen tuples from a producer before. If we haven't then the tuple
+            # should be the first tuple from that producer meaning it will be the tuple of field names.
             self.field_names[producer.key] = t
         else:
-            if producer.key == self.join_key_1:
-                self.tuples_1.append(t)
-            elif producer.key == self.join_key_2:
-                self.tuples_2.append(t)
+            # The tuple is a data tuple, we just need to store it for joining later.
+            if producer.key == self.join_expr.l_key:
+                self.l_tuples.append(t)
+            elif producer.key == self.join_expr.r_key:
+                self.r_tuples.append(t)
 
     def on_producer_completed(self, producer):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
@@ -67,28 +82,53 @@ class Join(Operator):
 
         if is_all_producers_done:
 
-            # Send the field names first, each field name is prepended with the key of the producer who send it.
-            joined_field_names = []
-            field_names_1 = self.field_names[self.join_key_1]
-            field_names_2 = self.field_names[self.join_key_2]
-            for field_name in field_names_1:
-                joined_field_names.append(self.join_key_1 + '.' + field_name)
-            for field_name in field_names_2:
-                joined_field_names.append(self.join_key_2 + '.' + field_name)
+            # Send the field names first, each field name is prepended with the key of the producer who sent it.
+            self.join_field_names()
 
-            self.send(joined_field_names)
+            # Send the joined data tuples
+            self.nested_loop()
 
-            for t1 in self.tuples_1:
-                for t2 in self.tuples_2:
-                    field_name_index_1 = self.field_names[self.join_key_1].index(self.join_col_1_index)
-                    field_name_index_2 = self.field_names[self.join_key_2].index(self.join_col_2_index)
-                    if t1[field_name_index_1] == t2[field_name_index_2]:
-                        self.send(t1 + t2)
+            Operator.on_producer_completed(self, producer)
 
-                    if self.is_completed():
-                        break
+    def nested_loop(self):
+        """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.
+        Allows for the loop to be broken if the operator completes while executing.
+
+        :return: None
+        """
+
+        for l_tuple in self.l_tuples:
+            for r_tuple in self.r_tuples:
+
+                # TODO: Can probably use a dict to speed up lookups
+                l_field_name_index = self.field_names[self.join_expr.l_key].index(self.join_expr.l_field)
+                r_field_name_index = self.field_names[self.join_expr.r_key].index(self.join_expr.r_field)
+
+                if l_tuple[l_field_name_index] == r_tuple[r_field_name_index]:
+                    self.send(l_tuple + r_tuple)
 
                 if self.is_completed():
                     break
 
-            Operator.on_producer_completed(self, producer)
+            if self.is_completed():
+                break
+
+    def join_field_names(self):
+        """Examines the collected field names and joins them into a single list, left field names followed by right
+        field names. The joined field names tuple is then sent.
+
+        :return: None
+        """
+
+        joined_field_names = []
+
+        l_field_names = self.field_names[self.join_expr.l_key]
+        r_field_names = self.field_names[self.join_expr.r_key]
+
+        for field_name in l_field_names:
+            joined_field_names.append(self.join_expr.l_key + '.' + field_name)
+
+        for field_name in r_field_names:
+            joined_field_names.append(self.join_expr.r_key + '.' + field_name)
+
+        self.send(joined_field_names)

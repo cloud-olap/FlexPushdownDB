@@ -5,7 +5,7 @@
 
 from datetime import datetime, timedelta
 from op.collate import Collate
-from op.join import Join
+from op.join import Join, JoinExpression
 from op.table_scan import TableScan
 
 
@@ -45,7 +45,7 @@ def test_join():
     ts2 = TableScan('part.csv',
                     "select * from S3Object "
                     ";")
-    j = Join('lineitem.csv', '_1', 'part.csv', '_0')
+    j = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'))
     c = Collate()
 
     ts1.connect(j)
