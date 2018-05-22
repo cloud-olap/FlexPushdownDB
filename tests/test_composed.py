@@ -4,7 +4,7 @@
 """
 
 from op.collate import Collate
-from op.join import Join
+from op.join import Join, JoinExpression
 from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
 from op.top import Top
@@ -72,7 +72,7 @@ def test_join_topk():
     # Query plan
     ts1 = TableScan('supplier.csv', 'select * from S3Object;')
     ts2 = TableScan('nation.csv', 'select * from S3Object;')
-    j = Join('supplier.csv', '_3', 'nation.csv', '_0')
+    j = Join(JoinExpression('supplier.csv', '_3', 'nation.csv', '_0'))
     t = Top(limit)
     c = Collate()
 
