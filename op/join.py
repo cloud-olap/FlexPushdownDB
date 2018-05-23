@@ -48,6 +48,16 @@ class Join(Operator):
         # Dict of field names indexed by producer key
         self.field_names = {}
 
+        self.key = ""
+
+    def add_producer(self, producer):
+
+        # TODO: This is a bit of a hack, but some operators expect a key to exist (Need to think about how best to
+        # handle this)
+
+        self.key += producer.name
+        Operator.add_producer(self, producer)
+
     def on_receive(self, t, producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         lists corresponding to the producer that sent the tuple.

@@ -10,20 +10,31 @@ class Log(Operator):
 
     """
 
-    def __init__(self):
+    def __init__(self, name, enabled):
         """Constructs a new Log operator
 
         """
         Operator.__init__(self)
 
+        self.__name = name
+        self.__enabled = enabled
+
+        # TODO: This should perhaps be set when a producer is connected to this operator.
+        # E.g. When a table scan from a particular table is connected then this op should acquire it's key.
+        self.key = None
+
     # noinspection PyUnusedLocal
-    def on_receive(self, t, producer):
+    def on_receive(self, t, _producer):
         """Handles the event of receiving a new tuple from a producer. Will simply print the tuple.
 
         :param t: The received tuples
-        :param producer: The producer of the tuple
+        :param _producer: The producer of the tuple
         :return: None
         """
 
-        print("Log | {}".format(t))
+        if self.__enabled:
+            print("Log [{}] | {}: {}".format(self.__name, _producer.key, t))
+
+        self.key = _producer.key
+
         self.send(t)

@@ -79,7 +79,7 @@ class Operator(object):
 
         if not self.is_completed():
 
-            print("{} | Complete".format(self.__class__.__name__))
+            # print("{} | Complete".format(self.__class__.__name__))
 
             self.__completed = True
 

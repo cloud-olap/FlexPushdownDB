@@ -47,13 +47,12 @@ def test_tpch_q1():
 
     delta_days = 60  # TODO: This is supposed to be randomized I think
     shipped_date = datetime.strptime('1998-10-01', '%Y-%m-%d') - timedelta(days=delta_days)
-    print(shipped_date.strftime('%Y-%m-%d'))
 
     ts = TableScan('lineitem.csv',
                    "select * from S3Object "
                    "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp) "
                    "limit 10 ".format(shipped_date.strftime('%Y-%m-%d')))
-    log = Log()
+    log = Log("TableScan", False)
     g = Group(
         group_col_indexes=[
             8,  # l_returnflag

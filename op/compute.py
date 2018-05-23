@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -*-
-"""Filter support
+"""Aggregate support
 
 """
 
 from op.operator_base import Operator
-from op.tuple import LabelledTuple
+from op.tuple import LabelledTuple, Tuple
 
 
-class PredicateExpression(object):
+class ComputeExpression(object):
 
     def __init__(self, expr):
         self.expr = expr
 
     def eval(self, t, field_names):
-        v = self.expr(LabelledTuple(t, field_names))
-        return v
+        return self.expr(LabelledTuple(t, field_names))
+
+    # def val(self, i, ctx):
+    #     return ctx[i]
 
 
-class Filter(Operator):
+class Compute(Operator):
 
     def __init__(self, expr):
 
@@ -33,13 +35,13 @@ class Filter(Operator):
 
     def on_receive(self, t, _producer):
 
-        # print("Filter | {}".format(t))
+        # print("Aggregate | {}".format(t))
 
         self.key = _producer.key
 
         if not self.field_names:
             self.field_names = t
-            self.send(t)
         else:
-            if self.expr.eval(t, self.field_names):
-                self.send(t)
+            ct = self.expr.eval(t, self.field_names)
+            self.send(Tuple(['_0']))
+            self.send(Tuple([ct]))
