@@ -31,14 +31,14 @@ class Join(Operator):
 
     """
 
-    def __init__(self, join_expr):
+    def __init__(self, join_expr, name, log_enabled):
         """
         Creates a new join operator.
 
         :param join_expr: The join expression indicating which fields of which key to join on
         """
 
-        Operator.__init__(self)
+        Operator.__init__(self, name, log_enabled)
 
         self.join_expr = join_expr
 
@@ -90,7 +90,13 @@ class Join(Operator):
         # Check that we have received a completed event from all the producers
         is_all_producers_done = all(p.is_completed() for p in self.producers)
 
-        if is_all_producers_done:
+        if self.log_enabled:
+            print("{}('{}') | Producer completed [{}]".format(
+                self.__class__.__name__,
+                self.name,
+                {'completed_producer': producer.name, 'all_producers_completed': is_all_producers_done}))
+
+        if is_all_producers_done and not self.is_completed():
 
             # Send the field names first, each field name is prepended with the key of the producer who sent it.
             self.join_field_names()
@@ -115,7 +121,15 @@ class Join(Operator):
                 r_field_name_index = self.field_names[self.join_expr.r_key].index(self.join_expr.r_field)
 
                 if l_tuple[l_field_name_index] == r_tuple[r_field_name_index]:
-                    self.send(l_tuple + r_tuple)
+                    t = l_tuple + r_tuple
+
+                    if self.log_enabled:
+                        print("{}('{}') | Sending data [{}]".format(
+                            self.__class__.__name__,
+                            self.name,
+                            {'data': t}))
+
+                    self.send(t)
 
                 if self.is_completed():
                     break
@@ -140,5 +154,11 @@ class Join(Operator):
 
         for field_name in r_field_names:
             joined_field_names.append(self.join_expr.r_key + '.' + field_name)
+
+        if self.log_enabled:
+            print("{}('{}') | Sending field names [{}]".format(
+                self.__class__.__name__,
+                self.name,
+                {'field_names': joined_field_names}))
 
         self.send(joined_field_names)

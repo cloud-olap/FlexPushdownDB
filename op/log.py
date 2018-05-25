@@ -23,6 +23,12 @@ class Log(Operator):
         # E.g. When a table scan from a particular table is connected then this op should acquire it's key.
         self.key = None
 
+        self.__bloom_consumers = []
+
+    def connect_bloom_consumer(self, consumer):
+        self.__bloom_consumers.append(consumer)
+        Operator.connect(self, consumer)
+
     # noinspection PyUnusedLocal
     def on_receive(self, t, _producer):
         """Handles the event of receiving a new tuple from a producer. Will simply print the tuple.

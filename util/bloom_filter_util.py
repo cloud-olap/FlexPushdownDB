@@ -100,3 +100,9 @@ class Bloom(object):
         self.__ensure_set(v1_hash_2)
         v1_hash_3 = self.__hash_3(v)
         self.__ensure_set(v1_hash_3)
+
+    def __str__(self):
+        return str(self.__bit_array_indexes)
+
+    def __repr__(self):
+        return self.__bit_array_indexes.__repr__()

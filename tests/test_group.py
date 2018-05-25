@@ -19,7 +19,7 @@ def test_group_count():
 
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
-    ts = TableScan('supplier.csv', 'select * from S3Object;')
+    ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
     g = Group([3],
               aggregate_expr_strs=[
                   'count(_0)'  # count(s_suppkey)
@@ -54,7 +54,7 @@ def test_group_sum():
 
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
-    ts = TableScan('supplier.csv', 'select * from S3Object;')
+    ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
     g = Group([3],
               aggregate_expr_strs=[
                   'sum(_5)'  # sum(l_extendedprice)

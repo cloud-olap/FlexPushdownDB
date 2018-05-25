@@ -16,9 +16,9 @@ def test_join():
     """
 
     # Query plan
-    ts1 = TableScan('supplier.csv', 'select * from S3Object;')
-    ts2 = TableScan('nation.csv', 'select * from S3Object;')
-    j = Join(JoinExpression('supplier.csv', '_3', 'nation.csv', '_0'))
+    ts1 = TableScan('supplier.csv', 'select * from S3Object;', 'ts1', False)
+    ts2 = TableScan('nation.csv', 'select * from S3Object;', 'ts2', False)
+    j = Join(JoinExpression('supplier.csv', '_3', 'nation.csv', '_0'), 'j', False)
     c = Collate()
 
     ts1.connect(j)

@@ -19,7 +19,7 @@ def test_scan():
     # Query plan
     ts = TableScan('nation.csv',
                    'select * from S3Object '
-                   'limit 3;')
+                   'limit 3;', 'ts', False)
     c = Collate()
 
     ts.connect(c)

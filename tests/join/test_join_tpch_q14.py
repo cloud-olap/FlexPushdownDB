@@ -76,13 +76,12 @@ where
 import re
 from datetime import datetime, timedelta
 from op.aggregate import Aggregate, AggregateExpression
-from op.table_scan_bloom_create import TableScanBloomCreate
+from op.bloom_create import BloomCreate
 from op.table_scan_bloom_use import TableScanBloomUse
 from op.collate import Collate
 from op.compute import Compute, ComputeExpression
 from op.filter import Filter, PredicateExpression
 from op.join import Join, JoinExpression
-from op.log import Log
 from op.table_scan import TableScan
 from sql.function import cast, timestamp, sum_fn
 
@@ -115,20 +114,15 @@ def test_join_baseline():
                              "(l_orderkey = '15427' and l_partkey = '125586') or "
                              "(l_orderkey = '11590' and l_partkey = '162359') or "
                              "(l_orderkey = '2945' and l_partkey = '126197') or "
-                             "(l_orderkey = '15648' and l_partkey = '143904');")
+                             "(l_orderkey = '15648' and l_partkey = '143904');", 'table_scan_1', False)
     table_scan_2 = TableScan('part.csv',
-                             "select * from S3Object;")
-    table_scan_1_log = Log('TableScan1', False)
-    table_scan_2_log = Log('TableScan2', False)
+                             "select * from S3Object;", 'table_scan_2', False)
     op_filter = Filter(PredicateExpression(lambda t:
                                            (cast(t['_10'], timestamp) >= cast(min_shipped_date, timestamp)) and
                                            (cast(t['_10'], timestamp) < cast(max_shipped_date, timestamp))
                                            ))
-    filter_log = Log('Filter 1', False)
     op_filter_2 = Filter(PredicateExpression(lambda t: t['_3'] == 'Brand#12'))  # p_brand
-    op_filter_2_log = Log('Filter 2', False)
-    join = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'))  # l_partkey and p_partkey
-    join_log = Log('Join', False)
+    join = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'), 'join', False)  # l_partkey and p_partkey
 
     def ex1(t, ctx):
 
@@ -150,26 +144,16 @@ def test_join_baseline():
         sum_fn(v1, 1, ctx)
 
     aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
-    aggregate_log = Log('Aggregate', False)
     compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
-    compute_log = Log('Compute', False)
     collate = Collate()
 
-    table_scan_1.connect(table_scan_1_log)
-    table_scan_1_log.connect(op_filter)
-    op_filter.connect(filter_log)
-    filter_log.connect(join)
-    table_scan_2.connect(table_scan_2_log)
-    # table_scan_2_log.connect(join)
-    table_scan_2_log.connect(op_filter_2)
-    op_filter_2.connect(op_filter_2_log)
-    op_filter_2_log.connect(join)
-    join.connect(join_log)
-    join_log.connect(aggregate)
-    aggregate.connect(aggregate_log)
-    aggregate_log.connect(compute)
-    compute.connect(compute_log)
-    compute_log.connect(collate)
+    table_scan_1.connect(op_filter)
+    op_filter.connect(join)
+    table_scan_2.connect(op_filter_2)
+    op_filter_2.connect(join)
+    join.connect(aggregate)
+    aggregate.connect(compute)
+    compute.connect(collate)
 
     # Start the query
     table_scan_1.start()
@@ -224,17 +208,15 @@ def test_join_filtered():
                              "(l_orderkey = '2945' and l_partkey = '126197') or "
                              "(l_orderkey = '15648' and l_partkey = '143904')"
                              ") "
-                             ";".format(min_shipped_date.strftime('%Y-%m-%d'), max_shipped_date.strftime('%Y-%m-%d')))
+                             ";".format(min_shipped_date.strftime('%Y-%m-%d'), max_shipped_date.strftime('%Y-%m-%d')),
+                             'table_scan_1', False)
     table_scan_2 = TableScan('part.csv',
                              "select "
                              "  p_partkey, p_type from S3Object "
                              "where "
                              "  p_brand = 'Brand#12' "
-                             ";")
-    table_scan_1_log = Log('TableScan1', False)
-    table_scan_2_log = Log('TableScan2', False)
-    join = Join(JoinExpression('lineitem.csv', '_0', 'part.csv', '_0'))  # l_partkey and p_partkey
-    join_log = Log('Join', False)
+                             " ", 'table_scan_2', False)
+    join = Join(JoinExpression('lineitem.csv', '_0', 'part.csv', '_0'), 'join', False)  # l_partkey and p_partkey
 
     def ex1(t, ctx):
 
@@ -256,21 +238,14 @@ def test_join_filtered():
         sum_fn(v1, 1, ctx)
 
     aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
-    aggregate_log = Log('Aggregate', False)
     compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
-    compute_log = Log('Compute', False)
     collate = Collate()
 
-    table_scan_1.connect(table_scan_1_log)
-    table_scan_1_log.connect(join)
-    table_scan_2.connect(table_scan_2_log)
-    table_scan_2_log.connect(join)
-    join.connect(join_log)
-    join_log.connect(aggregate)
-    aggregate.connect(aggregate_log)
-    aggregate_log.connect(compute)
-    compute.connect(compute_log)
-    compute_log.connect(collate)
+    table_scan_1.connect(join)
+    table_scan_2.connect(join)
+    join.connect(aggregate)
+    aggregate.connect(compute)
+    compute.connect(collate)
 
     # Start the query
     table_scan_1.start()
@@ -304,13 +279,13 @@ def test_join_bloom():
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    table_scan_1 = TableScanBloomCreate('part.csv',
-                                        "select "
-                                        "  p_partkey, p_type from S3Object "
-                                        "where "
-                                        "  p_brand = 'Brand#12' "
-                                        ";",
-                                        0)
+    table_scan_1 = TableScan('part.csv',
+                             "select "
+                             "  p_partkey, p_type from S3Object "
+                             "where "
+                             "  p_brand = 'Brand#12' "
+                             " ", 'table_scan_1', False)
+    part_bloom_create = BloomCreate('_0', 'part_bloom_create', False)  # p_partkey
     table_scan_2 = TableScanBloomUse('lineitem.csv',
                                      "select "
                                      "  l_partkey, l_extendedprice, l_discount from S3Object "
@@ -322,23 +297,25 @@ def test_join_bloom():
                                      "      (l_orderkey = '18720' and l_partkey = '92764') or "
                                      "      (l_orderkey = '12482' and l_partkey = '117405') or "
                                      "      (l_orderkey = '27623' and l_partkey = '137010') or "
-        
+
                                      "      (l_orderkey = '10407' and l_partkey = '43275') or "
                                      "      (l_orderkey = '17027' and l_partkey = '172729') or "
                                      "      (l_orderkey = '23302' and l_partkey = '18523') or "
                                      "      (l_orderkey = '27334' and l_partkey = '94308') or "
-        
+
                                      "      (l_orderkey = '15427' and l_partkey = '125586') or "
                                      "      (l_orderkey = '11590' and l_partkey = '162359') or "
                                      "      (l_orderkey = '2945' and l_partkey = '126197') or "
                                      "      (l_orderkey = '15648' and l_partkey = '143904') "
                                      "  ) "
-                                     " ".format(min_shipped_date.strftime('%Y-%m-%d'), max_shipped_date.strftime('%Y-%m-%d'))
-                                     , 0)
-    table_scan_1_log = Log('TableScanBloomCreate', False)
-    table_scan_2_log = Log('TableScanBloomUse', False)
-    join = Join(JoinExpression('lineitem.csv', '_0', 'part.csv', '_0'))  # l_partkey and p_partkey
-    join_log = Log('Join', True)
+                                     " ".format(
+                                         min_shipped_date.strftime('%Y-%m-%d'),
+                                         max_shipped_date.strftime('%Y-%m-%d'))
+                                     ,
+                                     'l_partkey',
+                                     'table_scan_2',
+                                     False)
+    join = Join(JoinExpression('lineitem.csv', '_0', 'part.csv', '_0'), 'join', False)  # l_partkey and p_partkey
 
     def ex1(t, ctx):
 
@@ -360,13 +337,12 @@ def test_join_bloom():
         sum_fn(v1, 1, ctx)
 
     aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
-    aggregate_log = Log('Aggregate', False)
     compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
-    compute_log = Log('Compute', False)
     collate = Collate()
 
-    table_scan_1.connect_tuple_consumer(join)
-    table_scan_1.connect_bloom_consumer(table_scan_2)
+    table_scan_1.connect(part_bloom_create)
+    part_bloom_create.connect_bloom_consumer(table_scan_2)
+    table_scan_1.connect(join)
     table_scan_2.connect(join)
     join.connect(aggregate)
     aggregate.connect(compute)
@@ -379,7 +355,148 @@ def test_join_bloom():
     num_rows = 0
     for t in collate.tuples():
         num_rows += 1
-        print("{}:{}".format(num_rows, t))
+        # print("{}:{}".format(num_rows, t))
+
+    field_names = ['_0']
+
+    assert len(collate.tuples()) == 1 + 1
+
+    assert collate.tuples()[0] == field_names
+
+    # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
+    assert collate.tuples()[1] == [33.42623264199327]
+
+
+def test_join_semi():
+    """
+
+    :return: None
+    """
+
+    # Query plan
+    # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
+    date = '1996-03-13'
+    min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
+    max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
+
+    part_table_scan_1 = TableScan('part.csv',
+                                  "select "
+                                  "  p_partkey from S3Object "
+                                  "where "
+                                  "  p_brand = 'Brand#12' "
+                                  " ", 'part_table_scan_1', False)
+    part_bloom_create = BloomCreate('_0', 'part_bloom_create', False)  # p_partkey
+    lineitem_table_scan_1 = TableScanBloomUse('lineitem.csv',
+                                              "select "
+                                              "  l_partkey from S3Object "
+                                              "where "
+                                              "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                                              "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                                              "  ( "
+                                              "      (l_orderkey = '18436' and l_partkey = '164584') or "
+                                              "      (l_orderkey = '18720' and l_partkey = '92764') or "
+                                              "      (l_orderkey = '12482' and l_partkey = '117405') or "
+                                              "      (l_orderkey = '27623' and l_partkey = '137010') or "
+
+                                              "      (l_orderkey = '10407' and l_partkey = '43275') or "
+                                              "      (l_orderkey = '17027' and l_partkey = '172729') or "
+                                              "      (l_orderkey = '23302' and l_partkey = '18523') or "
+                                              "      (l_orderkey = '27334' and l_partkey = '94308') or "
+
+                                              "      (l_orderkey = '15427' and l_partkey = '125586') or "
+                                              "      (l_orderkey = '11590' and l_partkey = '162359') or "
+                                              "      (l_orderkey = '2945' and l_partkey = '126197') or "
+                                              "      (l_orderkey = '15648' and l_partkey = '143904') "
+                                              "  ) "
+                                              " ".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                                         max_shipped_date.strftime('%Y-%m-%d'))
+                                              ,
+                                              'l_partkey', 'lineitem_table_scan_1', False)
+    part_lineitem_join_1 = Join(JoinExpression('lineitem.csv', '_0', 'part.csv', '_0'), 'part_lineitem_join_1',
+                                False)  # l_partkey and p_partkey
+    join_bloom_create = BloomCreate('lineitem.csv._0', 'join_bloom_create',
+                                    False)  # l_partkey (= p_partkey truth be told :) )
+    part_table_scan_2 = TableScanBloomUse('part.csv',
+                                          "select "
+                                          "  p_partkey, p_type from S3Object "
+                                          "where "
+                                          "  p_brand = 'Brand#12' "
+                                          " ",
+                                          'p_partkey',
+                                          'part_table_scan_2',
+                                          False)
+    lineitem_table_scan_2 = TableScanBloomUse('lineitem.csv',
+                                              "select "
+                                              "  l_partkey, l_extendedprice, l_discount from S3Object "
+                                              "where "
+                                              "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                                              "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                                              "  ( "
+                                              "      (l_orderkey = '18436' and l_partkey = '164584') or "
+                                              "      (l_orderkey = '18720' and l_partkey = '92764') or "
+                                              "      (l_orderkey = '12482' and l_partkey = '117405') or "
+                                              "      (l_orderkey = '27623' and l_partkey = '137010') or "
+
+                                              "      (l_orderkey = '10407' and l_partkey = '43275') or "
+                                              "      (l_orderkey = '17027' and l_partkey = '172729') or "
+                                              "      (l_orderkey = '23302' and l_partkey = '18523') or "
+                                              "      (l_orderkey = '27334' and l_partkey = '94308') or "
+
+                                              "      (l_orderkey = '15427' and l_partkey = '125586') or "
+                                              "      (l_orderkey = '11590' and l_partkey = '162359') or "
+                                              "      (l_orderkey = '2945' and l_partkey = '126197') or "
+                                              "      (l_orderkey = '15648' and l_partkey = '143904') "
+                                              "  ) "
+                                              " ".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                                         max_shipped_date.strftime('%Y-%m-%d'))
+                                              , 'l_partkey', 'lineitem_table_scan_2', False)
+    part_lineitem_join_2 = Join(JoinExpression('lineitem.csv', '_0', 'part.csv', '_0'), 'part_lineitem_join_2',
+                                False)  # l_partkey and p_partkey
+
+    def ex1(t, ctx):
+
+        v1 = float(t['lineitem.csv._1']) * (1.0 - float(t['lineitem.csv._2']))  # l_extendedprice and l_discount
+
+        rx = re.compile('^PROMO.*$')
+
+        if rx.search(t['part.csv._1']):  # p_type
+            v2 = v1
+        else:
+            v2 = 0.0
+
+        sum_fn(v2, 0, ctx)
+
+    def ex2(t, ctx):
+
+        v1 = float(t['lineitem.csv._1']) * (1.0 - float(t['lineitem.csv._2']))  # l_extendedprice and l_discount
+
+        sum_fn(v1, 1, ctx)
+
+    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
+    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
+    collate = Collate()
+
+    part_table_scan_1.connect(part_bloom_create)
+    part_bloom_create.connect_bloom_consumer(lineitem_table_scan_1)
+    part_table_scan_1.connect(part_lineitem_join_1)
+    lineitem_table_scan_1.connect(part_lineitem_join_1)
+    part_lineitem_join_1.connect(join_bloom_create)
+    join_bloom_create.connect_bloom_consumer(part_table_scan_2)
+    join_bloom_create.connect_bloom_consumer(lineitem_table_scan_2)
+    part_table_scan_2.connect(part_lineitem_join_2)
+    lineitem_table_scan_2.connect(part_lineitem_join_2)
+    part_lineitem_join_2.connect(aggregate)
+    aggregate.connect(compute)
+    compute.connect(collate)
+
+    # Start the query
+    part_table_scan_1.start()
+
+    # Assert the results
+    num_rows = 0
+    for t in collate.tuples():
+        num_rows += 1
+        # print("{}:{}".format(num_rows, t))
 
     field_names = ['_0']
 

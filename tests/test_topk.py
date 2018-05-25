@@ -17,7 +17,7 @@ def test_limit_topk():
     num_rows = 0
 
     # Query plan
-    ts = TableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit))
+    ts = TableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit), 'ts', False)
     c = Collate()
 
     ts.connect(c)
@@ -44,7 +44,7 @@ def test_abort_topk():
     num_rows = 0
 
     # Query plan
-    ts = TableScan('supplier.csv', 'select * from S3Object;')
+    ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
     t = Top(limit)
     c = Collate()
 

@@ -51,7 +51,7 @@ def test_tpch_q1():
     ts = TableScan('lineitem.csv',
                    "select * from S3Object "
                    "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp) "
-                   "limit 10 ".format(shipped_date.strftime('%Y-%m-%d')))
+                   "limit 10 ".format(shipped_date.strftime('%Y-%m-%d')), 'ts', False)
     log = Log("TableScan", False)
     g = Group(
         group_col_indexes=[

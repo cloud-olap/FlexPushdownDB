@@ -20,7 +20,7 @@ def test_project():
     # Query plan
     ts = TableScan('nation.csv',
                    'select * from S3Object '
-                   'limit 3;')
+                   'limit 3;', 'ts', False)
     p = Project([
         ProjectExpr('_2', 'n_regionkey'),
         ProjectExpr('_0', 'n_nationkey'),

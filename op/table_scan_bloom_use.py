@@ -9,9 +9,9 @@ from sql.cursor import Cursor
 
 class TableScanBloomUse(Operator):
 
-    def __init__(self, key, sql, join_field_name):
+    def __init__(self, key, sql, bloom_filter_field_name, name, log_enabled):
 
-        Operator.__init__(self)
+        Operator.__init__(self, name, log_enabled)
 
         self.key = key
         self.sql = sql
@@ -20,7 +20,12 @@ class TableScanBloomUse(Operator):
         self.__tuples = []
 
         self.__bloom_filter = None
-        self.__join_field_name = join_field_name
+
+        if type(bloom_filter_field_name) is str:
+            self.__bloom_filter_field_name = bloom_filter_field_name
+        else:
+            raise Exception("Bloom filter field name is of type {}. Field name must be of type string to be "
+                            "used in SQL predicate".format(type(bloom_filter_field_name)))
 
     def on_receive(self, t, _producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
@@ -44,11 +49,12 @@ class TableScanBloomUse(Operator):
 
     def on_producer_completed(self, _producer):
 
-        bloom_filter_sql_predicate = self.__bloom_filter.sql_predicate(self.__join_field_name)
+        bloom_filter_sql_predicate = self.__bloom_filter.sql_predicate(self.__bloom_filter_field_name)
 
         # print(bloom_filter_sql_predicate)
 
-        cur = Cursor().select(self.key, self.sql + " and " + bloom_filter_sql_predicate)
+        sql = self.sql + " and " + bloom_filter_sql_predicate
+        cur = Cursor().select(self.key, sql)
 
         tuples = cur.execute()
 
@@ -57,16 +63,38 @@ class TableScanBloomUse(Operator):
 
             # print("Table Scan | {}".format(t))
 
-            if first_tuple:
-                # Create and send the record field names
-                lt = LabelledTuple(t)
-                first_tuple = False
-                self.send(Tuple(lt.labels))
-
             if self.is_completed():
                 break
 
-            self.send(Tuple(t))
+            if first_tuple:
+                self.send_field_names(t)
+                first_tuple = False
+
+            self.send_data(t)
 
         if not self.is_completed():
             self.complete()
+
+    def send_data(self, t):
+
+        if self.log_enabled:
+            print("{}('{}') | Sending data [{}]".format(self.__class__.__name__, self.name, {'data': t}))
+
+        self.send(Tuple(t))
+
+    def send_field_names(self, t):
+
+        # Create and send the record field names
+        lt = LabelledTuple(t)
+        labels = Tuple(lt.labels)
+
+        if self.log_enabled:
+            print("{}('{}') | Sending field names [{}]".format(
+                self.__class__.__name__,
+                self.name,
+                {'field_names': labels}))
+
+        self.send(labels)
+
+    def __repr__(self):
+        return {'name': self.name.__repr__(), 'key': self.key.__repr__()}.__repr__()

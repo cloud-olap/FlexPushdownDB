@@ -13,14 +13,14 @@ class TableScan(Operator):
 
     """
 
-    def __init__(self, key, sql):
+    def __init__(self, key, sql, name, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 
         :param key: The object key to select against
         :param sql: The s3 select sql
         """
 
-        Operator.__init__(self)
+        Operator.__init__(self, name, log_enabled)
 
         self.key = key
         self.sql = sql
@@ -41,14 +41,14 @@ class TableScan(Operator):
 
             # print("Table Scan | {}".format(t))
 
+            if self.is_completed():
+                break
+
             if first_tuple:
                 # Create and send the record field names
                 lt = LabelledTuple(t)
                 first_tuple = False
                 self.send(Tuple(lt.labels))
-
-            if self.is_completed():
-                break
 
             self.send(Tuple(t))
 

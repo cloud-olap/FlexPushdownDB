@@ -10,10 +10,12 @@ class Operator(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, name='', log_enabled=False):
         """Constructs a new operator
 
         """
+        self.name = name
+        self.log_enabled = log_enabled
 
         self.producers = []
         self.consumers = []
@@ -79,7 +81,8 @@ class Operator(object):
 
         if not self.is_completed():
 
-            # print("{} | Complete".format(self.__class__.__name__))
+            if self.log_enabled:
+                print("{}('{}') | Completed".format(self.__class__.__name__, self.name))
 
             self.__completed = True
 

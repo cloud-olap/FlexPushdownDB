@@ -18,7 +18,7 @@ def main():
     limit = 500
 
     # Query plan
-    ts = TableScan('supplier.csv', 'select * from S3Object;')
+    ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
     t = Top(limit)
     c = Collate()
 

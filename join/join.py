@@ -41,11 +41,15 @@ def main():
                     "where "
                     "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
                     "cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
-                    "limit 3;".format(min_shipped_date.strftime('%Y-%m-%d'), max_shipped_date.strftime('%Y-%m-%d')))
+                    "limit 3;".format(
+                        min_shipped_date.strftime('%Y-%m-%d'),
+                        max_shipped_date.strftime('%Y-%m-%d')),
+                    'ts1',
+                    False)
     ts2 = TableScan('part.csv',
                     "select * from S3Object "
-                    ";")
-    j = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'))
+                    ";", 'ts2', False)
+    j = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'), 'j', False)
     c = Collate()
 
     ts1.connect(j)
