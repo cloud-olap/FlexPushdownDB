@@ -2,9 +2,27 @@
 """
 
 """
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
 from op.tuple import Tuple, LabelledTuple
 from sql.cursor import Cursor
+from util.timer import Timer
+
+
+class TableScanMetrics(OpMetrics):
+
+    def __init__(self):
+        super(TableScanMetrics, self).__init__()
+        self.rows_scanned = 0
+        self.time_to_first_response_timer = Timer()
+
+    def __repr__(self):
+        return {
+            'elapsed_time': round(self.elapsed_time(), 5),
+            'time_to_first_response': round(self.time_to_first_response_timer.elapsed(), 5),
+            'rows_scanned': self.rows_scanned
+        }.__repr__()
 
 
 class TableScan(Operator):
@@ -20,7 +38,7 @@ class TableScan(Operator):
         :param sql: The s3 select sql
         """
 
-        Operator.__init__(self, name, log_enabled)
+        super(TableScan, self).__init__(name, TableScanMetrics(), log_enabled)
 
         self.key = key
         self.sql = sql
@@ -32,6 +50,9 @@ class TableScan(Operator):
         """
         # print("Table Scan | Start {} {}".format(self.key, self.sql))
 
+        self.op_metrics.timer_start()
+        self.op_metrics.time_to_first_response_timer.start()
+
         cur = Cursor().select(self.key, self.sql)
 
         tuples = cur.execute()
@@ -39,18 +60,25 @@ class TableScan(Operator):
         first_tuple = True
         for t in tuples:
 
-            # print("Table Scan | {}".format(t))
+            if self.log_enabled:
+                print("Table Scan('{}') | {}".format(self.__class__.__name__, t))
 
             if self.is_completed():
                 break
+
+            self.op_metrics.time_to_first_response_timer.stop()
+
+            self.op_metrics.rows_scanned += 1
 
             if first_tuple:
                 # Create and send the record field names
                 lt = LabelledTuple(t)
                 first_tuple = False
-                self.send(Tuple(lt.labels))
+                self.send(TupleMessage(Tuple(lt.labels)), self.consumers)
 
-            self.send(Tuple(t))
+            self.send(TupleMessage(Tuple(t)), self.consumers)
 
         if not self.is_completed():
             self.complete()
+
+        self.op_metrics.timer_stop()

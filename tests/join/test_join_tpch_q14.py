@@ -75,6 +75,8 @@ where
 
 import re
 from datetime import datetime, timedelta
+
+from metric.op_metrics import OpMetrics
 from op.aggregate import Aggregate, AggregateExpression
 from op.bloom_create import BloomCreate
 from op.table_scan_bloom_use import TableScanBloomUse
@@ -91,6 +93,8 @@ def test_join_baseline():
 
     :return: None
     """
+
+    print("Baseline Join")
 
     # Query plan
     # This date is chosen because it triggers the filter to filter out 1 of the rows in the root data set.
@@ -117,11 +121,11 @@ def test_join_baseline():
                              "(l_orderkey = '15648' and l_partkey = '143904');", 'table_scan_1', False)
     table_scan_2 = TableScan('part.csv',
                              "select * from S3Object;", 'table_scan_2', False)
-    op_filter = Filter(PredicateExpression(lambda t:
+    lineitem_filter = Filter(PredicateExpression(lambda t:
                                            (cast(t['_10'], timestamp) >= cast(min_shipped_date, timestamp)) and
                                            (cast(t['_10'], timestamp) < cast(max_shipped_date, timestamp))
-                                           ))
-    op_filter_2 = Filter(PredicateExpression(lambda t: t['_3'] == 'Brand#12'))  # p_brand
+                                           ), 'lineitem_filter', False)
+    part_filter = Filter(PredicateExpression(lambda t: t['_3'] == 'Brand#12'), 'part_filter', False)  # p_brand
     join = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'), 'join', False)  # l_partkey and p_partkey
 
     def ex1(t, ctx):
@@ -143,14 +147,14 @@ def test_join_baseline():
 
         sum_fn(v1, 1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
-    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
-    collate = Collate()
+    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
+    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']), 'compute', False)
+    collate = Collate('collate', False)
 
-    table_scan_1.connect(op_filter)
-    op_filter.connect(join)
-    table_scan_2.connect(op_filter_2)
-    op_filter_2.connect(join)
+    table_scan_1.connect(lineitem_filter)
+    lineitem_filter.connect(join)
+    table_scan_2.connect(part_filter)
+    part_filter.connect(join)
     join.connect(aggregate)
     aggregate.connect(compute)
     compute.connect(collate)
@@ -174,12 +178,25 @@ def test_join_baseline():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
+    OpMetrics.print_metrics([
+        table_scan_1,
+        table_scan_2,
+        lineitem_filter,
+        part_filter,
+        join,
+        aggregate,
+        compute,
+        collate
+    ])
+
 
 def test_join_filtered():
     """The filtered test uses nested loop joins but first projections and filtering is pushed down to s3.
 
     :return: None
     """
+
+    print("Filtered Join")
 
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
@@ -237,9 +254,9 @@ def test_join_filtered():
 
         sum_fn(v1, 1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
-    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
-    collate = Collate()
+    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
+    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']), 'compute', False)
+    collate = Collate('collate', False)
 
     table_scan_1.connect(join)
     table_scan_2.connect(join)
@@ -266,12 +283,17 @@ def test_join_filtered():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
+    OpMetrics.print_metrics(
+        [table_scan_1, table_scan_2, join, aggregate, compute, collate])
+
 
 def test_join_bloom():
     """
 
     :return: None
     """
+
+    print("Bloom Join")
 
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
@@ -336,9 +358,9 @@ def test_join_bloom():
 
         sum_fn(v1, 1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
-    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
-    collate = Collate()
+    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
+    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']), 'compute', False)
+    collate = Collate('collate', False)
 
     table_scan_1.connect(part_bloom_create)
     part_bloom_create.connect_bloom_consumer(table_scan_2)
@@ -366,12 +388,17 @@ def test_join_bloom():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
+    OpMetrics.print_metrics(
+        [table_scan_1, part_bloom_create, table_scan_2, join, aggregate, compute, collate])
+
 
 def test_join_semi():
     """
 
     :return: None
     """
+
+    print("Semi Join")
 
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
@@ -472,9 +499,9 @@ def test_join_semi():
 
         sum_fn(v1, 1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)])
-    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']))
-    collate = Collate()
+    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
+    compute = Compute(ComputeExpression(lambda t: 100 * t['_0'] / t['_1']), 'compute', False)
+    collate = Collate('collate', False)
 
     part_table_scan_1.connect(part_bloom_create)
     part_bloom_create.connect_bloom_consumer(lineitem_table_scan_1)
@@ -506,3 +533,17 @@ def test_join_semi():
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
+
+    OpMetrics.print_metrics([
+        part_table_scan_1,
+        part_bloom_create,
+        lineitem_table_scan_1,
+        part_lineitem_join_1,
+        join_bloom_create,
+        part_table_scan_2,
+        lineitem_table_scan_2,
+        part_lineitem_join_2,
+        aggregate,
+        compute,
+        collate
+    ])

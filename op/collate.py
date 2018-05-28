@@ -2,8 +2,9 @@
 """Collation support
 
 """
-
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
 
 
 class Collate(Operator):
@@ -12,12 +13,12 @@ class Collate(Operator):
 
     """
 
-    def __init__(self):
+    def __init__(self, name, log_enabled):
         """Constructs a new Collate operator.
 
         """
 
-        Operator.__init__(self)
+        super(Collate, self).__init__(name, OpMetrics(), log_enabled)
 
         self.__tuples = []
 
@@ -28,7 +29,7 @@ class Collate(Operator):
         """
         return self.__tuples
 
-    def on_receive(self, t, _producer):
+    def on_receive(self, m, _producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         list.
 
@@ -38,4 +39,10 @@ class Collate(Operator):
         """
 
         # print("Collate | {}".format(t))
-        self.__tuples.append(t)
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_tuple(self, tuple_):
+        self.__tuples.append(tuple_)

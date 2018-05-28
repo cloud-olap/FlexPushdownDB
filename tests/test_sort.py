@@ -21,8 +21,8 @@ def test_sort_asc():
     ts = TableScan('supplier.csv',
                    'select * from S3Object '
                    'limit 3;', 'ts', False)
-    s = Sort([SortExpression('_5', float, 'ASC')])
-    c = Collate()
+    s = Sort([SortExpression('_5', float, 'ASC')], 's', False)
+    c = Collate('c', False)
 
     ts.connect(s)
     s.connect(c)
@@ -62,8 +62,8 @@ def test_sort_desc():
     ts = TableScan('supplier.csv',
                    'select * from S3Object '
                    'limit 3;', 'ts', False)
-    s = Sort([SortExpression('_5', float, 'DESC')])
-    c = Collate()
+    s = Sort([SortExpression('_5', float, 'DESC')], 's', False)
+    c = Collate('c', False)
 
     ts.connect(s)
     s.connect(c)

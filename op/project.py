@@ -2,8 +2,9 @@
 """Projection support
 
 """
-
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
 from op.tuple import Tuple
 
 
@@ -28,13 +29,13 @@ class Project(Operator):
 
     """
 
-    def __init__(self, project_exprs):
+    def __init__(self, project_exprs, name, log_enabled):
         """Constructs a new Project operator.
 
         :param project_exprs: The expressions defining the projection.
         """
 
-        Operator.__init__(self)
+        super(Project, self).__init__(name, OpMetrics(), log_enabled)
 
         self.project_exprs = project_exprs
 
@@ -42,7 +43,7 @@ class Project(Operator):
 
         self.projection_mappings = None
 
-    def on_receive(self, t, _producer):
+    def on_receive(self, m, _producer):
         """Handles the event of receiving a new tuple from a producer. Will remove unreferenced tuples and apply an alias
         to each element if specified.
 
@@ -53,6 +54,14 @@ class Project(Operator):
 
         # print("Project | {}".format(t))
 
+        if type(m) is TupleMessage:
+
+            self.on_receive_tuple(m.tuple_)
+
+        else:
+            raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_tuple(self, tuple_):
         if not self.projection_mappings:
             # The record field names come from the first tuple, collect them and project them, while also storing the
             # mappings so subsequent tuple values can be projected.
@@ -62,12 +71,12 @@ class Project(Operator):
             # TODO: I'm sure there is a more functional/concise way to do this
             self.projection_mappings = []
             for expr in self.project_exprs:
-                if expr.field_name in t:
-                    field_index = t.index(expr.field_name)
+                if expr.field_name in tuple_:
+                    field_index = tuple_.index(expr.field_name)
                     self.projection_mappings.append(field_index)
                     projected_field_names_tuple.append(expr.new_field_name)
 
-            self.send(projected_field_names_tuple)
+            self.send(TupleMessage(projected_field_names_tuple), self.consumers)
 
         else:
             # The record field values come from the remaining tuples, project them using the mappings collected
@@ -76,6 +85,6 @@ class Project(Operator):
             projected_field_values_tuple = Tuple()
 
             for field_index in self.projection_mappings:
-                projected_field_values_tuple.append(t[field_index])
+                projected_field_values_tuple.append(tuple_[field_index])
 
-            self.send(projected_field_values_tuple)
+            self.send(TupleMessage(projected_field_values_tuple), self.consumers)

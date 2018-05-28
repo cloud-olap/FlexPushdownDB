@@ -4,7 +4,11 @@
 """
 
 from operator import itemgetter
+
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
+from op.tuple import Tuple
 from sql.aggregate_expr import AggregateExpr
 
 
@@ -21,14 +25,14 @@ class Group(Operator):
 
     """
 
-    def __init__(self, group_col_indexes, aggregate_expr_strs):
+    def __init__(self, group_col_indexes, aggregate_expr_strs, name, log_enabled):
         """Creates a new group by operator.
 
         :param group_col_indexes: The indexes of the columns to group by
         :param aggregate_expr_strs: The list of aggregate expressions
         """
 
-        Operator.__init__(self)
+        super(Group, self).__init__(name, OpMetrics(), log_enabled)
 
         self.group_col_indexes = group_col_indexes
         self.aggregate_expr_strs = aggregate_expr_strs
@@ -39,15 +43,14 @@ class Group(Operator):
 
         self.field_names = None
 
-    # noinspection PyUnusedLocal
-    def on_receive(self, t, producer):
+    def on_receive(self, m, _producer):
         """ Handles the event of receiving a new tuple from a producer. Applies each aggregate function to the tuple and
         then inserts those aggregates into the tuples dict indexed by the grouping columns values.
 
         Once downstream producers are completed the tuples will be send to downstream consumers.
 
-        :param t: The received tuples
-        :param producer: The producer of the tuple
+        :param m: The received tuples
+        :param _producer: The producer of the tuple
         :return: None
         """
 
@@ -58,14 +61,22 @@ class Group(Operator):
 
             """
             if len(self.group_col_indexes) == 1:
-                return itemgetter(*self.group_col_indexes)(t),
+                return itemgetter(*self.group_col_indexes)(m.tuple_),
             else:
-                return itemgetter(*self.group_col_indexes)(t)
+                return itemgetter(*self.group_col_indexes)(m.tuple_)
 
+        if type(m) is TupleMessage:
+
+            self.on_receive_tuple(get_items, m.tuple_)
+
+        else:
+            raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_tuple(self, get_items, tuple_):
         if not self.field_names:
 
-            self.field_names = t
-            self.send(t)
+            self.field_names = tuple_
+            self.send(TupleMessage(tuple_), self.consumers)
 
         else:
 
@@ -89,7 +100,7 @@ class Group(Operator):
                 v = group_aggregate_vals[i]
                 e.val = v.val
                 e.count = v.count
-                e.eval(t)
+                e.eval(tuple_)
                 v.val = e.val
                 v.count = e.count
                 group_aggregate_vals[i] = v
@@ -113,7 +124,7 @@ class Group(Operator):
                 vs = list(ac.val for ac in v)
 
                 t = list(k) + vs
-                self.send(t)
+                self.send(TupleMessage(Tuple(t)), self.consumers)
             else:
                 break
 

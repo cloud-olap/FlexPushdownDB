@@ -2,8 +2,10 @@
 """Join support
 
 """
-
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
+from op.tuple import Tuple
 
 
 class JoinExpression(object):
@@ -38,7 +40,7 @@ class Join(Operator):
         :param join_expr: The join expression indicating which fields of which key to join on
         """
 
-        Operator.__init__(self, name, log_enabled)
+        super(Join, self).__init__(name, OpMetrics(), log_enabled)
 
         self.join_expr = join_expr
 
@@ -50,15 +52,20 @@ class Join(Operator):
 
         self.key = ""
 
+        self.__producer_completions = {}
+
     def add_producer(self, producer):
 
         # TODO: This is a bit of a hack, but some operators expect a key to exist (Need to think about how best to
         # handle this)
 
         self.key += producer.name
+
+        self.__producer_completions[producer.name] = False
+
         Operator.add_producer(self, producer)
 
-    def on_receive(self, t, producer):
+    def on_receive(self, m, producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         lists corresponding to the producer that sent the tuple.
 
@@ -67,34 +74,44 @@ class Join(Operator):
         :return: None
         """
 
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_, producer)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_tuple(self, tuple_, producer):
         if producer.key not in self.field_names:
             # This is essentially testing if we have seen tuples from a producer before. If we haven't then the tuple
             # should be the first tuple from that producer meaning it will be the tuple of field names.
-            self.field_names[producer.key] = t
+            self.field_names[producer.key] = tuple_
         else:
             # The tuple is a data tuple, we just need to store it for joining later.
             if producer.key == self.join_expr.l_key:
-                self.l_tuples.append(t)
+                self.l_tuples.append(tuple_)
             elif producer.key == self.join_expr.r_key:
-                self.r_tuples.append(t)
+                self.r_tuples.append(tuple_)
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, _producer):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
         Join operator may have multiple producers. Once all producers are complete the operator can send the tuples
         it contains to downstream consumers.
 
-        :type producer: The producer that has completed
+        :type _producer: The producer that has completed
         :return: None
         """
 
+        self.__producer_completions[_producer.name] = True
+
+        is_all_producers_done = all(pc for pc in self.__producer_completions.values())
+
         # Check that we have received a completed event from all the producers
-        is_all_producers_done = all(p.is_completed() for p in self.producers)
+        # is_all_producers_done = all(p.is_completed() for p in self.producers)
 
         if self.log_enabled:
             print("{}('{}') | Producer completed [{}]".format(
                 self.__class__.__name__,
                 self.name,
-                {'completed_producer': producer.name, 'all_producers_completed': is_all_producers_done}))
+                {'completed_producer': _producer.name, 'all_producers_completed': is_all_producers_done}))
 
         if is_all_producers_done and not self.is_completed():
 
@@ -104,7 +121,7 @@ class Join(Operator):
             # Send the joined data tuples
             self.nested_loop()
 
-            Operator.on_producer_completed(self, producer)
+            Operator.on_producer_completed(self, _producer)
 
     def nested_loop(self):
         """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.
@@ -129,7 +146,7 @@ class Join(Operator):
                             self.name,
                             {'data': t}))
 
-                    self.send(t)
+                    self.send(TupleMessage(Tuple(t)), self.consumers)
 
                 if self.is_completed():
                     break
@@ -161,4 +178,4 @@ class Join(Operator):
                 self.name,
                 {'field_names': joined_field_names}))
 
-        self.send(joined_field_names)
+        self.send(TupleMessage(Tuple(joined_field_names)), self.consumers)

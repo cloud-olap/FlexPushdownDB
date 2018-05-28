@@ -52,13 +52,12 @@ def test_tpch_q1():
                    "select * from S3Object "
                    "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp) "
                    "limit 10 ".format(shipped_date.strftime('%Y-%m-%d')), 'ts', False)
-    log = Log("TableScan", False)
     g = Group(
-        group_col_indexes=[
+        [
             8,  # l_returnflag
             9  # l_linestatus
         ],
-        aggregate_expr_strs=[
+        [
             'sum(_4)',  # sum(l_quantity)
             'sum(_5)',  # sum(l_extendedprice) as sum_base_price
             'sum(_5 * (1 - _6))',  # sum(l_extendedprice * (1 - l_discount)) as sum_disc_price
@@ -67,15 +66,15 @@ def test_tpch_q1():
             'avg(_5)',  # avg(l_extendedprice)
             'avg(_6)',  # avg(l_discount)
             'count(_0)'  # count(*) as count_order
-        ])
+        ],
+        'g', False)
     s = Sort([
         SortExpression('_0', str, 'ASC'),
         SortExpression('_1', str, 'ASC')
-    ])
-    c = Collate()
+    ], 's', False)
+    c = Collate('c', False)
 
-    ts.connect(log)
-    log.connect(g)
+    ts.connect(g)
     g.connect(s)
     s.connect(c)
 

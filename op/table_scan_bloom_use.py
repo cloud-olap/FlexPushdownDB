@@ -2,7 +2,10 @@
 """
 
 """
+
 from op.operator_base import Operator
+from op.message import TupleMessage, BloomMessage
+from op.table_scan import TableScanMetrics
 from op.tuple import Tuple, LabelledTuple
 from sql.cursor import Cursor
 
@@ -11,7 +14,7 @@ class TableScanBloomUse(Operator):
 
     def __init__(self, key, sql, bloom_filter_field_name, name, log_enabled):
 
-        Operator.__init__(self, name, log_enabled)
+        super(TableScanBloomUse, self).__init__(name, TableScanMetrics(), log_enabled)
 
         self.key = key
         self.sql = sql
@@ -27,7 +30,7 @@ class TableScanBloomUse(Operator):
             raise Exception("Bloom filter field name is of type {}. Field name must be of type string to be "
                             "used in SQL predicate".format(type(bloom_filter_field_name)))
 
-    def on_receive(self, t, _producer):
+    def on_receive(self, m, _producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         list.
 
@@ -37,15 +40,19 @@ class TableScanBloomUse(Operator):
         """
 
         # print("BloomScan | {}".format(t))
-        if not self.__field_names:
-            self.__field_names = t
+
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_)
+        elif type(m) is BloomMessage:
+            self.__bloom_filter = m.bloom_filter
         else:
-            self.__tuples.append(t)
+            raise Exception("Unrecognized message {}".format(t))
 
-    def on_receive_bloom_filter(self, bloom_filter, _producer):
-
-        # print("BloomScan | {}".format(t))
-        self.__bloom_filter = bloom_filter
+    def on_receive_tuple(self, tuple_):
+        if not self.__field_names:
+            self.__field_names = tuple_
+        else:
+            self.__tuples.append(tuple_)
 
     def on_producer_completed(self, _producer):
 
@@ -66,6 +73,8 @@ class TableScanBloomUse(Operator):
             if self.is_completed():
                 break
 
+            self.op_metrics.rows_scanned += 1
+
             if first_tuple:
                 self.send_field_names(t)
                 first_tuple = False
@@ -80,7 +89,7 @@ class TableScanBloomUse(Operator):
         if self.log_enabled:
             print("{}('{}') | Sending data [{}]".format(self.__class__.__name__, self.name, {'data': t}))
 
-        self.send(Tuple(t))
+        self.send(TupleMessage(Tuple(t)), self.consumers)
 
     def send_field_names(self, t):
 
@@ -94,7 +103,7 @@ class TableScanBloomUse(Operator):
                 self.name,
                 {'field_names': labels}))
 
-        self.send(labels)
+        self.send(TupleMessage(labels), self.consumers)
 
     def __repr__(self):
-        return {'name': self.name.__repr__(), 'key': self.key.__repr__()}.__repr__()
+        return "{}({})".format(self.__class__.__name__, {'name': self.name, 'key': self.key})

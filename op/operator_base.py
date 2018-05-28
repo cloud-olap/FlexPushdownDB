@@ -10,11 +10,15 @@ class Operator(object):
 
     """
 
-    def __init__(self, name='', log_enabled=False):
+    def __init__(self, name, op_metrics, log_enabled=False):
         """Constructs a new operator
 
         """
+
         self.name = name
+
+        self.op_metrics = op_metrics
+
         self.log_enabled = log_enabled
 
         self.producers = []
@@ -40,8 +44,8 @@ class Operator(object):
         :return: None
         """
 
-        self.consumers.append(consumer)
-        consumer.producers.append(self)
+        self.add_consumer(consumer)
+        consumer.add_producer(self)
 
     def add_consumer(self, consumer):
         """Appends the given consuming operator to this operators list of consumers
@@ -49,6 +53,9 @@ class Operator(object):
         :param consumer: An operator that will consume the results of this operator.
         :return: None
         """
+
+        if any(consumer.name == name for name in self.consumers):
+            raise Exception("Consumer with name '{}' already added".format(consumer.name))
 
         self.consumers.append(consumer)
 
@@ -58,18 +65,40 @@ class Operator(object):
         :param producer: An operator that will produce the tuples for this operator.
         :return: None
         """
+        if any(producer.name == name for name in self.producers):
+            raise Exception("Producer with name '{}' already added".format(producer.name))
 
         self.producers.append(producer)
 
-    def send(self, t):
+    def switch_context(self, from_op, to_op):
+        """Handles a context switch from one operator to another. This is used to stop the sending operators
+        timer and start the receiving operators timer.
+
+        :param from_op: Operator switching context from
+        :param to_op: Operator switching context to
+        :return: None
+        """
+
+        from_op.op_metrics.timer_stop()
+        to_op.op_metrics.timer_start()
+
+    def send(self, message, operators):
         """Emits the given tuple to each of the connected consumers.
 
         :param t: The tuple to emit
         :return: None
         """
 
-        for c in self.consumers:
-            c.on_receive(t, self)
+        for op in operators:
+            self.fire_on_received(message, op)
+
+    def fire_on_received(self, message, consumer):
+
+        self.switch_context(self, consumer)
+
+        consumer.on_receive(message, self)
+
+        self.switch_context(consumer, self)
 
     def complete(self):
         """Sets the operator to complete, meaning it has completed what it needed to do. This includes marking the
@@ -95,7 +124,7 @@ class Operator(object):
         else:
             raise Exception("Cannot complete an already completed operator")
 
-    def on_producer_completed(self, _producer):
+    def on_producer_completed(self, producer):
         """Handles a signal from producing operators that they have completed what they needed to do. This is useful in
         circumstances where a producer has no more tuples to supply (such as completion of a table scan). This is often
         overridden but this default implementation simply completes this operator.
@@ -104,10 +133,14 @@ class Operator(object):
         :return: None
         """
 
+        self.switch_context(producer, self)
+
         if not self.is_completed():
             self.complete()
 
-    def on_consumer_completed(self, _consumer):
+        self.switch_context(self, producer)
+
+    def on_consumer_completed(self, consumer):
         """Handles a signal from consuming operators that they have completed what they needed to do. This is useful in
         circumstances where a consumer needs no more tuples (such as a top operator reaching the number of tuples it
         needs). This is often overridden but this default implementation simply simply completes this operator.
@@ -116,5 +149,12 @@ class Operator(object):
         :return: None
         """
 
+        self.switch_context(consumer, self)
+
         if not self.is_completed():
             self.complete()
+
+        self.switch_context(self, consumer)
+
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, {'name': self.name})

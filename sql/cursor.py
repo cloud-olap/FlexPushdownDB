@@ -2,6 +2,8 @@
 """Cursor support
 
 """
+import timeit
+
 import boto3
 import csv
 import util.constants
@@ -93,7 +95,8 @@ class Cursor(object):
 
                 records_str = event['Records']['Payload'].decode('utf-8')
 
-                # print("Records Event {}".format(records_str))
+                # print("{} Records Event {}".format(timeit.default_timer(), records_str))
+                # print("{} Records Event".format(timeit.default_timer()))
 
                 # Note that the select_object_content service may return partial chunks so we cant simply pass the
                 # str to the csv reader. We need to examine the string itself to see if it's an incomplete record
@@ -137,21 +140,21 @@ class Cursor(object):
 
             elif 'Stats' in event:
                 pass
-                # bytes_scanned = event['Stats']['Details']['BytesScanned']
-                # bytes_processed = event['Stats']['Details']['BytesProcessed']
-                # print("Stats Event: bytes scanned: {}, bytes processed: {}".format(bytes_scanned, bytes_processed))
+                bytes_scanned = event['Stats']['Details']['BytesScanned']
+                bytes_processed = event['Stats']['Details']['BytesProcessed']
+                # print("{} Stats Event: bytes scanned: {}, bytes processed: {}".format(timeit.default_timer(), bytes_scanned, bytes_processed))
 
             elif 'Progress' in event:
                 pass
-                # print("Progress Event")
+                # print("{} Progress Event".format(timeit.default_timer()))
 
             elif 'End' in event:
-                pass
-                # print("End Event")
+                # print("{} End Event".format(timeit.default_timer()))
+                return
 
             elif 'Cont' in event:
                 pass
-                # print("Cont Event")
+                # print("{} Cont Event".format(timeit.default_timer()))
 
     def close(self):
         if self.event_stream:

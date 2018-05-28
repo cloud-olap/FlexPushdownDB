@@ -24,9 +24,9 @@ def test_sort_topk():
     ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
     s = Sort([
         SortExpression('_5', float, 'ASC')
-    ])
-    t = Top(limit)
-    c = Collate()
+    ], 's', False)
+    t = Top(limit, 't', False)
+    c = Collate('c', False)
 
     ts.connect(s)
     s.connect(t)
@@ -73,8 +73,8 @@ def test_join_topk():
     ts1 = TableScan('supplier.csv', 'select * from S3Object;', 'ts1', False)
     ts2 = TableScan('nation.csv', 'select * from S3Object;', 'ts2', False)
     j = Join(JoinExpression('supplier.csv', '_3', 'nation.csv', '_0'), 'j', False)
-    t = Top(limit)
-    c = Collate()
+    t = Top(limit, 't', False)
+    c = Collate('c', False)
 
     ts1.connect(j)
     ts2.connect(j)

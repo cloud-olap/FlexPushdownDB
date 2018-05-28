@@ -3,7 +3,9 @@
 
 """
 
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
 from op.tuple import LabelledTuple, Tuple
 
 
@@ -15,15 +17,12 @@ class AggregateExpression(object):
     def eval(self, t, field_names, ctx):
         self.expr(LabelledTuple(t, field_names), ctx)
 
-    # def val(self, i, ctx):
-    #     return ctx[i]
-
 
 class Aggregate(Operator):
 
-    def __init__(self, exprs):
+    def __init__(self, exprs, name, log_enabled):
 
-        Operator.__init__(self)
+        super(Aggregate, self).__init__(name, OpMetrics(), log_enabled)
 
         self.exprs = exprs
 
@@ -35,26 +34,33 @@ class Aggregate(Operator):
 
         self.ctx = {}
 
-    def on_receive(self, t, _producer):
+    def on_receive(self, m, producer):
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_, producer)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
-        # print("Aggregate | {}".format(t))
+    def on_receive_tuple(self, tuple_, producer):
 
-        self.key = _producer.key
+        self.key = producer.key
 
         if not self.field_names:
-            self.field_names = t
+            self.field_names = tuple_
         else:
-            for expr in self.exprs:
-                expr.eval(t, self.field_names, self.ctx)
+            self.evaluate_aggregates(tuple_)
+
+    def evaluate_aggregates(self, tuple_):
+        for expr in self.exprs:
+            expr.eval(tuple_, self.field_names, self.ctx)
 
     def on_producer_completed(self, producer):
 
-        # Send the headers
+        # Send the field names
         lt = LabelledTuple(self.exprs)
-        self.send(lt.labels)
+        self.send(TupleMessage(Tuple(lt.labels)), self.consumers)
 
         fields = Tuple()
         for k, v in self.ctx.items():
             fields.append(v)
 
-        self.send(fields)
+        self.send(TupleMessage(fields), self.consumers)

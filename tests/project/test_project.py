@@ -25,8 +25,8 @@ def test_project():
         ProjectExpr('_2', 'n_regionkey'),
         ProjectExpr('_0', 'n_nationkey'),
         ProjectExpr('_3', 'n_comment')
-    ])
-    c = Collate()
+    ], 'p', False)
+    c = Collate('c', False)
 
     ts.connect(p)
     p.connect(c)

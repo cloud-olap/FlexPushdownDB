@@ -4,7 +4,10 @@
 """
 
 from heapq import heappush, heappop
+
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
 
 
 class SortExpression(object):
@@ -34,13 +37,13 @@ class Sort(Operator):
 
     """
 
-    def __init__(self, sort_expressions):
+    def __init__(self, sort_expressions, name, log_enabled):
         """Creates a new Sort operator.
 
         :param sort_expressions: The sort expressions to apply to each tuple
         """
 
-        Operator.__init__(self)
+        super(Sort, self).__init__(name, OpMetrics(), log_enabled)
 
         self.sort_expressions = sort_expressions
 
@@ -48,7 +51,7 @@ class Sort(Operator):
 
         self.field_names = None
 
-    def on_receive(self, t, _producer):
+    def on_receive(self, m, _producer):
         """ Collects tuples into a heap.
 
         :param t: The received tuple.
@@ -56,13 +59,18 @@ class Sort(Operator):
         :return: None
         """
         # print("Sort Emit | {}".format(t))
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
+    def on_receive_tuple(self, tuple_):
         if not self.field_names:
             # Collect and send field names through
-            self.field_names = t
-            self.send(t)
+            self.field_names = tuple_
+            self.send(TupleMessage(tuple_), self.consumers)
         else:
-            sortable_t = HeapSortableTuple(t, self.field_names, self.sort_expressions)
+            sortable_t = HeapSortableTuple(tuple_, self.field_names, self.sort_expressions)
             heappush(self.heap, sortable_t)
 
     def on_producer_completed(self, producer):
@@ -73,7 +81,7 @@ class Sort(Operator):
         while self.heap:
             if not self.is_completed():
                 t = heappop(self.heap).tuple
-                self.send(t)
+                self.send(TupleMessage(t), self.consumers)
             else:
                 break
 

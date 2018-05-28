@@ -3,7 +3,9 @@
 
 """
 
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
+from op.message import TupleMessage
 from op.tuple import LabelledTuple
 
 
@@ -19,9 +21,9 @@ class PredicateExpression(object):
 
 class Filter(Operator):
 
-    def __init__(self, expr):
+    def __init__(self, expr, name, log_enabled):
 
-        Operator.__init__(self)
+        super(Filter, self).__init__(name, OpMetrics(), log_enabled)
 
         self.expr = expr
 
@@ -31,15 +33,30 @@ class Filter(Operator):
 
         self.field_names = None
 
-    def on_receive(self, t, _producer):
+    def on_receive(self, m, _producer):
 
         # print("Filter | {}".format(t))
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(_producer, m.tuple_)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_tuple(self, _producer, tuple_):
 
         self.key = _producer.key
 
         if not self.field_names:
-            self.field_names = t
-            self.send(t)
+            self.field_names = tuple_
+            self.send_field_names(tuple_)
         else:
-            if self.expr.eval(t, self.field_names):
-                self.send(t)
+            if self.evaluate_filter(tuple_):
+                self.send_fields(tuple_)
+
+    def send_fields(self, tuple_):
+        self.send(TupleMessage(tuple_), self.consumers)
+
+    def evaluate_filter(self, tuple_):
+        return self.expr.eval(tuple_, self.field_names)
+
+    def send_field_names(self, tuple_):
+        self.send(TupleMessage(tuple_), self.consumers)

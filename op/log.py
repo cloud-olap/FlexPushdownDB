@@ -2,6 +2,7 @@
 """Logging support
 
 """
+from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
 
 
@@ -10,14 +11,15 @@ class Log(Operator):
 
     """
 
-    def __init__(self, name, enabled):
+    def __init__(self, name, log_enabled):
         """Constructs a new Log operator
 
         """
-        Operator.__init__(self)
+
+        super(Log, self).__init__(name, OpMetrics(), log_enabled)
 
         self.__name = name
-        self.__enabled = enabled
+        self.__enabled = log_enabled
 
         # TODO: This should perhaps be set when a producer is connected to this operator.
         # E.g. When a table scan from a particular table is connected then this op should acquire it's key.

@@ -2,7 +2,7 @@
 """Table scan tests
 
 """
-
+from metric.op_metrics import OpMetrics
 from op.collate import Collate
 from op.table_scan import TableScan
 from op.tuple import LabelledTuple
@@ -20,7 +20,7 @@ def test_scan():
     ts = TableScan('nation.csv',
                    'select * from S3Object '
                    'limit 3;', 'ts', False)
-    c = Collate()
+    c = Collate('c', False)
 
     ts.connect(c)
 
@@ -42,3 +42,5 @@ def test_scan():
            ['1', 'ARGENTINA', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
     assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
            ['2', 'BRAZIL', '1', 'y alongside of the pending deposits. carefully special packages are about the ironic forges. slyly special ']
+
+    OpMetrics.print_metrics([ts, c])
