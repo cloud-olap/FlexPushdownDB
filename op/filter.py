@@ -43,8 +43,6 @@ class Filter(Operator):
 
     def on_receive_tuple(self, _producer, tuple_):
 
-        self.key = _producer.key
-
         if not self.field_names:
             self.field_names = tuple_
             self.send_field_names(tuple_)

@@ -4,13 +4,13 @@
 """
 
 from datetime import datetime, timedelta
-
+from op.aggregate import AggregateExpression
 from op.collate import Collate
 from op.group import Group
-from op.log import Log
 from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
 from op.tuple import LabelledTuple
+from sql.function import sum_fn, avg_fn, count_fn
 
 
 def test_tpch_q1():
@@ -37,7 +37,7 @@ def test_tpch_q1():
     # from
     #   lineitem
     # where
-    #   l_shipdate <= date '1998-12-01' - interval '[DELTA]' day(3)
+    #   l_shipdate <= date '1992-04-01' - interval '[DELTA]' day(3)
     # group by
     #   l_returnflag,
     #   l_linestatus
@@ -46,33 +46,48 @@ def test_tpch_q1():
     #   l_linestatus;
 
     delta_days = 60  # TODO: This is supposed to be randomized I think
-    shipped_date = datetime.strptime('1998-10-01', '%Y-%m-%d') - timedelta(days=delta_days)
+    shipped_date = datetime.strptime('1992-04-01', '%Y-%m-%d') - timedelta(days=delta_days)
 
-    ts = TableScan('lineitem.csv',
+    ts = TableScan("lineitem.csv",
                    "select * from S3Object "
-                   "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp) "
-                   "limit 10 ".format(shipped_date.strftime('%Y-%m-%d')), 'ts', False)
+                   "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp)"
+                   .format(shipped_date.strftime('%Y-%m-%d')),
+                   'lineitem',
+                   False)
     g = Group(
         [
-            8,  # l_returnflag
-            9  # l_linestatus
+            '_8',  # l_returnflag
+            '_9'  # l_linestatus
         ],
         [
-            'sum(_4)',  # sum(l_quantity)
-            'sum(_5)',  # sum(l_extendedprice) as sum_base_price
-            'sum(_5 * (1 - _6))',  # sum(l_extendedprice * (1 - l_discount)) as sum_disc_price
-            'sum(_5 * (1 - _6) * (1 + _7))',  # sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge
-            'avg(_4)',  # avg(l_quantity)
-            'avg(_5)',  # avg(l_extendedprice)
-            'avg(_6)',  # avg(l_discount)
-            'count(_0)'  # count(*) as count_order
+            # sum(l_quantity)
+            AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_4']), ctx)),
+            # sum(l_extendedprice) as sum_base_price
+            AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']), ctx)),
+            # sum(l_extendedprice * (1 - l_discount)) as sum_disc_price
+            AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']) * (1 - float(t_['_6'])), ctx)),
+            # sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge
+            AggregateExpression(
+                lambda t_, ctx: sum_fn(float(t_['_5']) * (1 - float(t_['_6'])) * (1 + float(t_['_7'])), ctx)),
+            # avg(l_quantity)
+            AggregateExpression(lambda t_, ctx: avg_fn(float(t_['_4']), ctx)),
+            # avg(l_extendedprice)
+            AggregateExpression(lambda t_, ctx: avg_fn(float(t_['_5']), ctx)),
+            # avg(l_discount)
+            AggregateExpression(lambda t_, ctx: avg_fn(float(t_['_6']), ctx)),
+            # count(*) as count_order
+            AggregateExpression(lambda t_, ctx: count_fn(t_['_0'], ctx))
         ],
-        'g', False)
-    s = Sort([
-        SortExpression('_0', str, 'ASC'),
-        SortExpression('_1', str, 'ASC')
-    ], 's', False)
-    c = Collate('c', False)
+        'lineitem_grouped',
+        False)
+    s = Sort(
+        [
+            SortExpression('_0', str, 'ASC'),
+            SortExpression('_1', str, 'ASC')
+        ],
+        'lineitem_group_sorted',
+        False)
+    c = Collate('collation', False)
 
     ts.connect(g)
     g.connect(s)
@@ -86,18 +101,16 @@ def test_tpch_q1():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8', '_9', '_10', '_11', '_12', '_13', '_14', '_15']
+    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8', '_9']
 
     assert c.tuples()[0] == field_names
 
-    # These are correct (ish) though the rounding is arbitrary
-    # TODO: Standardise on a rounding for aggregates
+    assert len(c.tuples()) == 2 + 1
+
+    # These have been verified in Postgres
     assert LabelledTuple(c.tuples()[1], field_names) == \
-           ['A', 'F', 27, 39890.88, 37497.4272,
-            40122.247104, 27.0, 39890.88, 0.06, 1]
+           ["A", "F", 129850, 194216048.19000033, 184525343.78730044, 191943492.96455324, 25.445816186556925,
+            38059.19031746035, 0.050005878894768374, 5103]
     assert LabelledTuple(c.tuples()[2], field_names) == \
-           ['N', 'O', 183, 226555.73, 211877.68959999998,
-            220594.690152, 26.142857142857142, 32365.104285714286, 0.07000000000000002, 7]
-    assert LabelledTuple(c.tuples()[3], field_names) == \
-           ['R', 'F', 94.0, 100854.52, 92931.39000000001,
-            92931.39000000001, 47, 50427.26, 0.08, 2]
+           ["R", "F", 129740, 193438367.33999985, 183701990.7670003, 191045646.36937532, 25.509241053873353,
+            38033.49731419579, 0.05061541486433399, 5086]

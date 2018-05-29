@@ -19,7 +19,7 @@ def main():
 
     # Query plan
     ts = TableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit), 'ts', False)
-    c = Collate()
+    c = Collate('c', False)
 
     ts.connect(c)
 

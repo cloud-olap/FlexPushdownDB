@@ -4,6 +4,7 @@
 """
 
 from metric.op_metrics import OpMetrics
+from op.group import AggregateExprContext2
 from op.operator_base import Operator
 from op.message import TupleMessage
 from op.tuple import LabelledTuple, Tuple
@@ -32,6 +33,8 @@ class Aggregate(Operator):
 
         self.field_names = None
 
+        # Dict of aggregate contexts. Each item is indexed by the aggregate order and contains a dict of the
+        # evaluated aggregate results
         self.ctx = {}
 
     def on_receive(self, m, producer):
@@ -40,9 +43,7 @@ class Aggregate(Operator):
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_, producer):
-
-        self.key = producer.key
+    def on_receive_tuple(self, tuple_, _producer):
 
         if not self.field_names:
             self.field_names = tuple_
@@ -50,8 +51,12 @@ class Aggregate(Operator):
             self.evaluate_aggregates(tuple_)
 
     def evaluate_aggregates(self, tuple_):
+        i = 0
         for expr in self.exprs:
-            expr.eval(tuple_, self.field_names, self.ctx)
+            aggregate_ctx = self.ctx.get(i, AggregateExprContext2(0.0, {}))
+            expr.eval(tuple_, self.field_names, aggregate_ctx)
+            self.ctx[i] = aggregate_ctx
+            i += 1
 
     def on_producer_completed(self, producer):
 
@@ -59,8 +64,14 @@ class Aggregate(Operator):
         lt = LabelledTuple(self.exprs)
         self.send(TupleMessage(Tuple(lt.labels)), self.consumers)
 
-        fields = Tuple()
-        for k, v in self.ctx.items():
-            fields.append(v)
+        field_values = []
+        for aggregate_idx, aggregate_context in self.ctx.items():
 
-        self.send(TupleMessage(fields), self.consumers)
+            if self.is_completed():
+                break
+
+            field_values.append(aggregate_context.result)
+
+        self.send(TupleMessage(Tuple(field_values)), self.consumers)
+
+        Operator.on_producer_completed(self, producer)

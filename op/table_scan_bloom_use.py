@@ -12,12 +12,12 @@ from sql.cursor import Cursor
 
 class TableScanBloomUse(Operator):
 
-    def __init__(self, key, sql, bloom_filter_field_name, name, log_enabled):
+    def __init__(self, s3key, s3sql, bloom_filter_field_name, name, log_enabled):
 
         super(TableScanBloomUse, self).__init__(name, TableScanMetrics(), log_enabled)
 
-        self.key = key
-        self.sql = sql
+        self.s3key = s3key
+        self.s3sql = s3sql
 
         self.__field_names = None
         self.__tuples = []
@@ -34,7 +34,7 @@ class TableScanBloomUse(Operator):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         list.
 
-        :param t: The received tuples
+        :param m: The received tuples
         :param _producer: The producer of the tuple
         :return: None
         """
@@ -46,7 +46,7 @@ class TableScanBloomUse(Operator):
         elif type(m) is BloomMessage:
             self.__bloom_filter = m.bloom_filter
         else:
-            raise Exception("Unrecognized message {}".format(t))
+            raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_):
         if not self.__field_names:
@@ -60,8 +60,8 @@ class TableScanBloomUse(Operator):
 
         # print(bloom_filter_sql_predicate)
 
-        sql = self.sql + " and " + bloom_filter_sql_predicate
-        cur = Cursor().select(self.key, sql)
+        sql = self.s3sql + " and " + bloom_filter_sql_predicate
+        cur = Cursor().select(self.s3key, sql)
 
         tuples = cur.execute()
 
@@ -106,4 +106,4 @@ class TableScanBloomUse(Operator):
         self.send(TupleMessage(labels), self.consumers)
 
     def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, {'name': self.name, 'key': self.key})
+        return "{}({})".format(self.__class__.__name__, {'name': self.name, 's3key': self.s3key})

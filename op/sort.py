@@ -54,7 +54,7 @@ class Sort(Operator):
     def on_receive(self, m, _producer):
         """ Collects tuples into a heap.
 
-        :param t: The received tuple.
+        :param m: The received tuple.
         :param _producer: The producer that emitted the tuple
         :return: None
         """

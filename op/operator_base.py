@@ -4,6 +4,19 @@
 """
 
 
+def switch_context(from_op, to_op):
+    """Handles a context switch from one operator to another. This is used to stop the sending operators
+    timer and start the receiving operators timer.
+
+    :param from_op: Operator switching context from
+    :param to_op: Operator switching context to
+    :return: None
+    """
+
+    from_op.op_metrics.timer_stop()
+    to_op.op_metrics.timer_start()
+
+
 class Operator(object):
     """Base class for an operator. An operator is a class that can receive tuples from other
     operators (a.k.a. producers) and send tuples to other operators (a.k.a. consumers).
@@ -70,22 +83,11 @@ class Operator(object):
 
         self.producers.append(producer)
 
-    def switch_context(self, from_op, to_op):
-        """Handles a context switch from one operator to another. This is used to stop the sending operators
-        timer and start the receiving operators timer.
-
-        :param from_op: Operator switching context from
-        :param to_op: Operator switching context to
-        :return: None
-        """
-
-        from_op.op_metrics.timer_stop()
-        to_op.op_metrics.timer_start()
-
     def send(self, message, operators):
         """Emits the given tuple to each of the connected consumers.
 
-        :param t: The tuple to emit
+        :param operators:
+        :param message: The message to emit
         :return: None
         """
 
@@ -94,11 +96,11 @@ class Operator(object):
 
     def fire_on_received(self, message, consumer):
 
-        self.switch_context(self, consumer)
+        switch_context(self, consumer)
 
         consumer.on_receive(message, self)
 
-        self.switch_context(consumer, self)
+        switch_context(consumer, self)
 
     def complete(self):
         """Sets the operator to complete, meaning it has completed what it needed to do. This includes marking the
@@ -129,32 +131,32 @@ class Operator(object):
         circumstances where a producer has no more tuples to supply (such as completion of a table scan). This is often
         overridden but this default implementation simply completes this operator.
 
-        :param _producer: The producer that has completed
+        :param producer: The producer that has completed
         :return: None
         """
 
-        self.switch_context(producer, self)
+        switch_context(producer, self)
 
         if not self.is_completed():
             self.complete()
 
-        self.switch_context(self, producer)
+        switch_context(self, producer)
 
     def on_consumer_completed(self, consumer):
         """Handles a signal from consuming operators that they have completed what they needed to do. This is useful in
         circumstances where a consumer needs no more tuples (such as a top operator reaching the number of tuples it
         needs). This is often overridden but this default implementation simply simply completes this operator.
 
-        :param _consumer: The consumer that has completed
+        :param consumer: The consumer that has completed
         :return: None
         """
 
-        self.switch_context(consumer, self)
+        switch_context(consumer, self)
 
         if not self.is_completed():
             self.complete()
 
-        self.switch_context(self, consumer)
+        switch_context(self, consumer)
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, {'name': self.name})

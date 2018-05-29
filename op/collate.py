@@ -33,7 +33,7 @@ class Collate(Operator):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
         list.
 
-        :param t: The received tuples
+        :param m: The received message
         :param _producer: The producer of the tuple
         :return: None
         """

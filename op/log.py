@@ -45,4 +45,4 @@ class Log(Operator):
 
         self.key = _producer.key
 
-        self.send(t)
+        self.send(t, self.consumers)

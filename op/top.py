@@ -24,7 +24,7 @@ class Top(Operator):
         producing. This allows table scans to stop once enough tuples have been retrieved. It also informs any consumers
         that it is done producing tuples.
 
-        :param t: The produced tuple.
+        :param m: The produced tuple.
         :param _producer: The producer that emitted the tuple
         :return: None
         """

@@ -50,7 +50,7 @@ def main():
                     "select * from S3Object "
                     ";", 'ts2', False)
     j = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'), 'j', False)
-    c = Collate()
+    c = Collate('c', False)
 
     ts1.connect(j)
     ts2.connect(j)

@@ -14,7 +14,7 @@ def test_filter():
 
     # Query plan
     ts = TableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', False)
-    f = Filter(PredicateExpression(lambda t: cast(t['_10'], timestamp) >= cast('1996-03-01', timestamp)), 'f', False)
+    f = Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)), 'f', False)
     c = Collate('c', False)
 
     ts.connect(f)

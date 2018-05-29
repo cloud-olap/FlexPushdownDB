@@ -48,5 +48,9 @@ class LabelledTuple(Tuple):
         :param item: The label to access the tuple via.
         :return: The accessed tuple field.
         """
-        i = self.labels.index(item)
-        return super(LabelledTuple, self).__getitem__(i)
+
+        if type(item) is str:
+            i = self.labels.index(item)
+            return super(LabelledTuple, self).__getitem__(i)
+        else:
+            return super(LabelledTuple, self).__getitem__(item)

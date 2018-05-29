@@ -31,7 +31,7 @@ class TableScan(Operator):
 
     """
 
-    def __init__(self, key, sql, name, log_enabled):
+    def __init__(self, s3key, s3sql, name, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 
         :param key: The object key to select against
@@ -40,8 +40,8 @@ class TableScan(Operator):
 
         super(TableScan, self).__init__(name, TableScanMetrics(), log_enabled)
 
-        self.key = key
-        self.sql = sql
+        self.s3key = s3key
+        self.s3sql = s3sql
 
     def start(self):
         """Executes the query and begins emitting tuples.
@@ -53,7 +53,7 @@ class TableScan(Operator):
         self.op_metrics.timer_start()
         self.op_metrics.time_to_first_response_timer.start()
 
-        cur = Cursor().select(self.key, self.sql)
+        cur = Cursor().select(self.s3key, self.s3sql)
 
         tuples = cur.execute()
 

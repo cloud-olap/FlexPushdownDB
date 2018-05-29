@@ -19,8 +19,8 @@ def main():
 
     # Query plan
     ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
-    t = Top(limit)
-    c = Collate()
+    t = Top(limit, 't', False)
+    c = Collate('c', False)
 
     ts.connect(t)
     t.connect(c)

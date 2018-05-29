@@ -72,7 +72,7 @@ def test_join_topk():
     # Query plan
     ts1 = TableScan('supplier.csv', 'select * from S3Object;', 'ts1', False)
     ts2 = TableScan('nation.csv', 'select * from S3Object;', 'ts2', False)
-    j = Join(JoinExpression('supplier.csv', '_3', 'nation.csv', '_0'), 'j', False)
+    j = Join(JoinExpression('ts1', '_3', 'ts2', '_0'), 'j', False)
     t = Top(limit, 't', False)
     c = Collate('c', False)
 
@@ -91,9 +91,9 @@ def test_join_topk():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    field_names = ['supplier.csv._0', 'supplier.csv._1', 'supplier.csv._2', 'supplier.csv._3', 'supplier.csv._4',
-                   'supplier.csv._5', 'supplier.csv._6', 'nation.csv._0', 'nation.csv._1', 'nation.csv._2',
-                   'nation.csv._3']
+    field_names = ['ts1._0', 'ts1._1', 'ts1._2', 'ts1._3', 'ts1._4',
+                   'ts1._5', 'ts1._6', 'ts2._0', 'ts2._1', 'ts2._2',
+                   'ts2._3']
 
     assert len(c.tuples()) == limit + 1
 
@@ -105,4 +105,4 @@ def test_join_topk():
         # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
         if num_rows > 1:
             lt = LabelledTuple(t, field_names)
-            assert lt['supplier.csv._3'] == lt['nation.csv._0']
+            assert lt['ts1._3'] == lt['ts2._0']

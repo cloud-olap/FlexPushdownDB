@@ -47,7 +47,7 @@ class BloomCreate(Operator):
         if type(m) is TupleMessage:
             self.on_receive_tuple(m.tuple_)
         else:
-            raise Exception("Unrecognized message {}".format(t))
+            raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_):
         if not self.__field_names:

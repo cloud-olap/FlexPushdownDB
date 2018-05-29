@@ -2,11 +2,12 @@
 """Group by query tests
 
 """
-
+from op.aggregate import AggregateExpression
 from op.collate import Collate
 from op.group import Group
 from op.table_scan import TableScan
 from op.tuple import LabelledTuple
+from sql.function import count_fn, sum_fn
 
 
 def test_group_count():
@@ -20,11 +21,12 @@ def test_group_count():
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
     ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
-    g = Group([3],
+    g = Group(['_3'],
               [
-                  'count(_0)'  # count(s_suppkey)
+                  AggregateExpression(lambda t_, ctx: count_fn(t_['_0'], ctx))  # count(s_suppkey)
               ],
-              'g', False)
+              'g',
+              False)
     c = Collate('c', False)
 
     ts.connect(g)
@@ -56,10 +58,12 @@ def test_group_sum():
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
     ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
-    g = Group([3],
+    g = Group(['_3'],
               [
-                  'sum(_5)'  # sum(l_extendedprice)
-              ], 'g', False)
+                  AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']), ctx))
+              ],
+              'g',
+              False)
     c = Collate('c', False)
 
     ts.connect(g)
@@ -69,9 +73,9 @@ def test_group_sum():
     ts.start()
 
     # Assert the results
-    for _ in c.tuples():
+    for t_ in c.tuples():
         num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+        # print("{}:{}".format(num_rows, t_))
 
     field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 

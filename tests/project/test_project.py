@@ -21,11 +21,14 @@ def test_project():
     ts = TableScan('nation.csv',
                    'select * from S3Object '
                    'limit 3;', 'ts', False)
-    p = Project([
-        ProjectExpr('_2', 'n_regionkey'),
-        ProjectExpr('_0', 'n_nationkey'),
-        ProjectExpr('_3', 'n_comment')
-    ], 'p', False)
+    p = Project(
+        [
+            ProjectExpr(lambda t_: t_['_2'], 'n_regionkey'),  # identity lambda
+            ProjectExpr(lambda t_: t_['_0'], 'n_nationkey'),  # identity lambda
+            ProjectExpr(lambda t_: t_['_3'], 'n_comment')  # identity lambda
+        ],
+        'p',
+        False)
     c = Collate('c', False)
 
     ts.connect(p)
