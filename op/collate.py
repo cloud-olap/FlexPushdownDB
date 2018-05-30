@@ -27,10 +27,11 @@ class Collate(Operator):
 
         :return: The collated tuples
         """
+
         return self.__tuples
 
     def on_receive(self, m, _producer):
-        """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
+        """Handles the event of receiving a message from a producer. Will simply append the tuple to the internal
         list.
 
         :param m: The received message
@@ -40,9 +41,15 @@ class Collate(Operator):
 
         # print("Collate | {}".format(t))
         if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_)
+            self.__on_receive_tuple(m.tuple_)
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_):
+    def __on_receive_tuple(self, tuple_):
+        """
+
+        :param tuple_:
+        :return:
+        """
+
         self.__tuples.append(tuple_)

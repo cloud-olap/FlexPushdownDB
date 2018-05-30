@@ -42,7 +42,17 @@ class Bloom(object):
 
     The returned records should be those with the key we want to retrieve, in addition to some false positives. In
     example implemented below, 400 records should be returned, even though there are 200000 records in the table. At
-    worst we will only ever send a maximum of 1000 keys to s3 (which is the maximum size of our bit indexes array.
+    worst we will only ever send a maximum of 1000 keys (per has function) to s3 (which is the maximum size of our bit
+    indexes array).
+
+    select
+        p_partkey
+    from
+        S3Object
+    where
+        cast(p_partkey as int) % 1000 in (12, 64)
+        (cast(p_partkey as int) * cast(p_partkey as int)) % 1000 in (12, 64)
+        ((cast(p_partkey as int) + 1) * cast(p_partkey as int)) % 1000 in (12, 64)
 
     """
 

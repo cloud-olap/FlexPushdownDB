@@ -2,7 +2,7 @@
 """Group by query tests
 
 """
-from op.aggregate import AggregateExpression
+from op.aggregate_expression import AggregateExpression
 from op.collate import Collate
 from op.group import Group
 from op.table_scan import TableScan

@@ -4,74 +4,131 @@
 """
 
 from metric.op_metrics import OpMetrics
-from op.group import AggregateExprContext2
+from op.aggregate_expression import AggregateExpression
+from op.group import AggregateExpressionContext
 from op.operator_base import Operator
 from op.message import TupleMessage
 from op.tuple import LabelledTuple, Tuple
 
 
-class AggregateExpression(object):
-
-    def __init__(self, expr):
-        self.expr = expr
-
-    def eval(self, t, field_names, ctx):
-        self.expr(LabelledTuple(t, field_names), ctx)
-
-
 class Aggregate(Operator):
+    """
 
-    def __init__(self, exprs, name, log_enabled):
+    """
+
+    def __init__(self, expressions, name, log_enabled):
+        """
+
+        :param expressions:
+        :param name:
+        :param log_enabled:
+        """
 
         super(Aggregate, self).__init__(name, OpMetrics(), log_enabled)
 
-        self.exprs = exprs
+        for e in expressions:
+            if type(e) is not AggregateExpression:
+                raise Exception("Illegal expression type {}. All expressions must be of type {}".format(type(e), AggregateExpression.__class__.__name__))
 
-        # TODO: This should perhaps be set when a producer is connected to this operator.
-        # E.g. When a table scan from a particular table is connected then this op should acquire it's key.
-        self.key = None
+        self.__expressions = expressions
 
-        self.field_names = None
+        self.__field_names = None
 
         # Dict of aggregate contexts. Each item is indexed by the aggregate order and contains a dict of the
         # evaluated aggregate results
-        self.ctx = {}
+        self.__aggregate_contexts = {}
 
-    def on_receive(self, m, producer):
+    def on_receive(self, m, _producer):
+        """
+
+        :param m:
+        :param _producer:
+        :return:
+        """
+
         if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_, producer)
+            self.__on_receive_tuple(m.tuple_)
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_, _producer):
-
-        if not self.field_names:
-            self.field_names = tuple_
-        else:
-            self.evaluate_aggregates(tuple_)
-
-    def evaluate_aggregates(self, tuple_):
-        i = 0
-        for expr in self.exprs:
-            aggregate_ctx = self.ctx.get(i, AggregateExprContext2(0.0, {}))
-            expr.eval(tuple_, self.field_names, aggregate_ctx)
-            self.ctx[i] = aggregate_ctx
-            i += 1
-
     def on_producer_completed(self, producer):
+        """
+
+        :param producer:
+        :return:
+        """
 
         # Send the field names
-        lt = LabelledTuple(self.exprs)
-        self.send(TupleMessage(Tuple(lt.labels)), self.consumers)
+        aggregate_field_names = self.__build_aggregate_field_names()
+        self.send(TupleMessage(Tuple(aggregate_field_names)), self.consumers)
 
-        field_values = []
-        for aggregate_idx, aggregate_context in self.ctx.items():
+        # Send the field values
+        aggregate_field_values = self.__build_aggregate_field_values()
+        self.send(TupleMessage(Tuple(aggregate_field_values)), self.consumers)
+
+        del self.__field_names
+        del self.__aggregate_contexts
+
+        Operator.on_producer_completed(self, producer)
+
+    def __on_receive_tuple(self, tuple_):
+        """
+
+        :param tuple_:
+        :param _producer:
+        :return:
+        """
+
+        if not self.__field_names:
+            self.__field_names = tuple_
+        else:
+            self.__evaluate_aggregates(tuple_)
+
+    def __evaluate_aggregates(self, tuple_):
+        """
+
+        :param tuple_:
+        :return:
+        """
+
+        i = 0
+        for e in self.__expressions:
+            ctx = self.__get_aggregate_context(i)
+            e.eval(tuple_, self.__field_names, ctx)
+            i += 1
+
+    def __get_aggregate_context(self, i):
+        """
+
+        :param i:
+        :return:
+        """
+
+        ctx = self.__aggregate_contexts.get(i, AggregateExpressionContext(0.0, {}))
+        self.__aggregate_contexts[i] = ctx
+        return ctx
+
+    def __build_aggregate_field_values(self):
+        """
+
+        :return:
+        """
+
+        aggregate_field_values = []
+        for i in range(0, len(self.__expressions)):
 
             if self.is_completed():
                 break
 
-            field_values.append(aggregate_context.result)
+            aggregate_context = self.__aggregate_contexts[i]
+            aggregate_field_values.append(aggregate_context.result)
 
-        self.send(TupleMessage(Tuple(field_values)), self.consumers)
+        return aggregate_field_values
 
-        Operator.on_producer_completed(self, producer)
+    def __build_aggregate_field_names(self):
+        """
+
+        :return:
+        """
+
+        return LabelledTuple(self.__expressions).labels

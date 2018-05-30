@@ -5,6 +5,7 @@
 
 from op.collate import Collate
 from op.join import Join, JoinExpression
+from op.project import Project, ProjectExpr
 from op.sort import Sort, SortExpression
 from op.table_scan import TableScan
 from op.top import Top
@@ -71,13 +72,17 @@ def test_join_topk():
 
     # Query plan
     ts1 = TableScan('supplier.csv', 'select * from S3Object;', 'ts1', False)
+    ts1_project = Project([ProjectExpr(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False)
     ts2 = TableScan('nation.csv', 'select * from S3Object;', 'ts2', False)
-    j = Join(JoinExpression('ts1', '_3', 'ts2', '_0'), 'j', False)
+    ts2_project = Project([ProjectExpr(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False)
+    j = Join(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False)
     t = Top(limit, 't', False)
     c = Collate('c', False)
 
-    ts1.connect(j)
-    ts2.connect(j)
+    ts1.connect(ts1_project)
+    ts2.connect(ts2_project)
+    j.connect_left_producer(ts1_project)
+    j.connect_right_producer(ts2_project)
     j.connect(t)
     t.connect(c)
 
@@ -91,9 +96,7 @@ def test_join_topk():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    field_names = ['ts1._0', 'ts1._1', 'ts1._2', 'ts1._3', 'ts1._4',
-                   'ts1._5', 'ts1._6', 'ts2._0', 'ts2._1', 'ts2._2',
-                   'ts2._3']
+    field_names = ['s_nationkey', 'n_nationkey']
 
     assert len(c.tuples()) == limit + 1
 
@@ -105,4 +108,4 @@ def test_join_topk():
         # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
         if num_rows > 1:
             lt = LabelledTuple(t, field_names)
-            assert lt['ts1._3'] == lt['ts2._0']
+            assert lt['s_nationkey'] == lt['n_nationkey']

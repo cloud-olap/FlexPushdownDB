@@ -50,7 +50,13 @@ class LabelledTuple(Tuple):
         """
 
         if type(item) is str:
-            i = self.labels.index(item)
-            return super(LabelledTuple, self).__getitem__(i)
+            if item not in self.labels:
+                raise Exception("Label {} is not in tuple labels {}".format(item, self.labels))
+            else:
+                i = self.labels.index(item)
+                return super(LabelledTuple, self).__getitem__(i)
         else:
             return super(LabelledTuple, self).__getitem__(item)
+
+    def __contains__(self, item):
+        return self.labels.__contains__(item)

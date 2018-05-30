@@ -4,19 +4,10 @@
 """
 
 from metric.op_metrics import OpMetrics
+from op.aggregate_expression import AggregateExpressionContext
 from op.operator_base import Operator
 from op.message import TupleMessage
 from op.tuple import Tuple, LabelledTuple
-
-
-class AggregateExprContext2(object):
-
-    def __init__(self, result, vars_):
-        self.result = result
-        self.vars_ = vars_
-
-    def __repr__(self):
-        return "({}, {})".format(self.result, self.vars_)
 
 
 class Group(Operator):
@@ -25,23 +16,23 @@ class Group(Operator):
 
     """
 
-    def __init__(self, group_col_indexes, aggregate_exprs, name, log_enabled):
+    def __init__(self, group_field_names, aggregate_expressions, name, log_enabled):
         """Creates a new group by operator.
 
-        :param group_col_indexes: The indexes of the columns to group by
-        :param aggregate_exprs: The list of aggregate expressions
+        :param group_field_names: The names of the columns to group by
+        :param aggregate_expressions: The list of aggregate expressions
         """
 
         super(Group, self).__init__(name, OpMetrics(), log_enabled)
 
-        self.group_field_names = group_col_indexes
-        self.aggregate_exprs = aggregate_exprs
+        self.group_field_names = group_field_names
+        self.aggregate_expressions = aggregate_expressions
 
         self.field_names = None
 
         # Dict of group contexts. Each item is indexed by a tuple of the group columns and contains a dict of the
         # evaluated aggregate results
-        self.ctx = {}
+        self.group_contexts = {}
 
     def on_receive(self, m, _producer):
         """ Handles the event of receiving a new tuple from a producer. Applies each aggregate function to the tuple and
@@ -54,44 +45,44 @@ class Group(Operator):
         :return: None
         """
 
-        # print("Group | {}".format(t))
-
         if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_)
+            self.__on_receive_tuple(m.tuple_)
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_):
+    def __on_receive_tuple(self, tuple_):
 
         if not self.field_names:
-
             # Save the field names
             self.field_names = tuple_
-
         else:
 
             # Create a tuple of column values to group by, we use this as the key for a dict of groups and their associated
             # aggregate values
-            lt = LabelledTuple(tuple_, self.field_names)
-            group_fields =[]
-            for f in self.group_field_names:
-                group_fields.append(lt[f])
-            group_fields_tuple = tuple(group_fields)
+            group_field_values_tuple = self.__build_group_field_values_tuple(tuple_)
             # print(group_fields_tuple)
 
             # Get or create the group context
-            group_ctxs = self.ctx.get(group_fields_tuple, {})
+            group_aggregate_expression_contexts = self.group_contexts.get(group_field_values_tuple, {})
 
             # Evaluate all the expressions for the group
             i = 0
-            for e in self.aggregate_exprs:
-                group_ctx = group_ctxs.get(i, AggregateExprContext2(0.0, {}))
-                e.eval(tuple_, self.field_names, group_ctx)
-                group_ctxs[i] = group_ctx
+            for e in self.aggregate_expressions:
+                group_aggregate_expression_context = group_aggregate_expression_contexts.get(i, AggregateExpressionContext(0.0, {}))
+                e.eval(tuple_, self.field_names, group_aggregate_expression_context)
+                group_aggregate_expression_contexts[i] = group_aggregate_expression_context
                 i += 1
 
             # Store the group context indexed by the group
-            self.ctx[group_fields_tuple] = group_ctxs
+            self.group_contexts[group_field_values_tuple] = group_aggregate_expression_contexts
+
+    def __build_group_field_values_tuple(self, tuple_):
+        lt = LabelledTuple(tuple_, self.field_names)
+        group_fields = []
+        for f in self.group_field_names:
+            group_fields.append(lt[f])
+        group_fields_tuple = tuple(group_fields)
+        return group_fields_tuple
 
     def on_producer_completed(self, producer):
         """Handles the event where the producer has completed producing all the tuples it will produce. Once this
@@ -102,10 +93,10 @@ class Group(Operator):
         """
 
         # Send the field names
-        lt = LabelledTuple(self.group_field_names + self.aggregate_exprs)
+        lt = LabelledTuple(self.group_field_names + self.aggregate_expressions)
         self.send(TupleMessage(Tuple(lt.labels)), self.consumers)
 
-        for group_tuple, group_aggregate_contexts in self.ctx.items():
+        for group_tuple, group_aggregate_contexts in self.group_contexts.items():
 
             if self.is_completed():
                 break

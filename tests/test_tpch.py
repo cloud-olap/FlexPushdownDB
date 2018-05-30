@@ -4,7 +4,7 @@
 """
 
 from datetime import datetime, timedelta
-from op.aggregate import AggregateExpression
+from op.aggregate_expression import AggregateExpression
 from op.collate import Collate
 from op.group import Group
 from op.sort import Sort, SortExpression

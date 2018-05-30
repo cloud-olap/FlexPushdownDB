@@ -41,18 +41,10 @@ class TableScanBloomUse(Operator):
 
         # print("BloomScan | {}".format(t))
 
-        if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_)
-        elif type(m) is BloomMessage:
+        if type(m) is BloomMessage:
             self.__bloom_filter = m.bloom_filter
         else:
             raise Exception("Unrecognized message {}".format(m))
-
-    def on_receive_tuple(self, tuple_):
-        if not self.__field_names:
-            self.__field_names = tuple_
-        else:
-            self.__tuples.append(tuple_)
 
     def on_producer_completed(self, _producer):
 

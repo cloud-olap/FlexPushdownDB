@@ -15,24 +15,66 @@ class BloomCreate(Operator):
 
     """
 
-    def __init__(self, bloom_field, name, log_enabled):
+    def __init__(self, bloom_field_name, name, log_enabled):
+        """
+
+        :param bloom_field_name: The tuple field name to extract values from to create the bloom filter
+        :param name:
+        :param log_enabled:
+        """
 
         super(BloomCreate, self).__init__(name, OpMetrics(), log_enabled)
 
-        self.__bloom_field = bloom_field
+        self.__bloom_field_name = bloom_field_name
 
         self.__field_names = None
-        self.__tuples = []
+        # self.__tuples = []
 
         self.__bloom_consumers = []
 
         self.__bloom_filter = Bloom()
 
     def connect_bloom_consumer(self, consumer):
+        """
+
+        :param consumer:
+        :return:
+        """
+
         self.__bloom_consumers.append(consumer)
         Operator.connect(self, consumer)
 
-    def send_bloom_filter(self):
+    def on_receive(self, m, _producer):
+        """
+
+        :param m:
+        :param _producer:
+        :return:
+        """
+
+        if type(m) is TupleMessage:
+            self.__on_receive_tuple(m.tuple_)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
+
+    def on_producer_completed(self, producer):
+        """
+
+        :param producer:
+        :return:
+        """
+
+        # Send the bloom filter
+        self.__send_bloom_filter()
+
+        if not self.is_completed():
+            self.complete()
+
+    def __send_bloom_filter(self):
+        """
+
+        :return:
+        """
 
         if self.log_enabled:
             print("{}('{}') | Sending bloom filter [{}]".format(
@@ -42,32 +84,22 @@ class BloomCreate(Operator):
 
         self.send(BloomMessage(self.__bloom_filter), self.__bloom_consumers)
 
-    def on_receive(self, m, _producer):
+    def __on_receive_tuple(self, tuple_):
+        """
 
-        if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        :param tuple_:
+        :return:
+        """
 
-    def on_receive_tuple(self, tuple_):
         if not self.__field_names:
             # Don't send the field names, just collect them
             self.__field_names = tuple_
         else:
-            self.__tuples.append(tuple_)
+            lt = LabelledTuple(tuple_, self.__field_names)
 
-    def on_producer_completed(self, producer):
-
-        for t in self.__tuples:
-
-            if self.is_completed():
-                break
-
-            lt = LabelledTuple(t, self.__field_names)
-            self.__bloom_filter.add(lt[self.__bloom_field])
-
-        # Send the bloom filter
-        self.send_bloom_filter()
-
-        if not self.is_completed():
-            self.complete()
+            if self.__bloom_field_name not in lt:
+                raise Exception(
+                    "Received invalid tuple {}. "
+                    "Tuple field names '{}' does not contain field with bloom field name '{}'".format(tuple_, lt.labels, self.__bloom_field_name))
+            else:
+                self.__bloom_filter.add(lt[self.__bloom_field_name])

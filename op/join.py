@@ -5,7 +5,7 @@
 from metric.op_metrics import OpMetrics
 from op.operator_base import Operator
 from op.message import TupleMessage
-from op.tuple import Tuple
+from op.tuple import Tuple, LabelledTuple
 
 
 class JoinExpression(object):
@@ -13,7 +13,7 @@ class JoinExpression(object):
 
     """
 
-    def __init__(self, l_name, l_field, r_name, r_field):
+    def __init__(self, l_field, r_field):
         """Creates a new join expression.
 
         :param l_key: Key of the producer of the left tuple to join on
@@ -22,10 +22,15 @@ class JoinExpression(object):
         :param r_field: Field of the right tuple to join on
         """
 
-        self.l_name = l_name
         self.l_field = l_field
-        self.r_name = r_name
+
         self.r_field = r_field
+
+    def __repr__(self):
+        return {
+            'l_field': self.l_field,
+            'r_field': self.r_field
+        }.__repr__()
 
 
 class Join(Operator):
@@ -47,14 +52,40 @@ class Join(Operator):
         self.l_tuples = []
         self.r_tuples = []
 
-        # Dict of field names indexed by producer key
-        self.field_names = {}
+        self.l_field_names = None
+        self.r_field_names = None
 
-        self.__producer_completions = {}
+        self.__l_producer_name = None
+        self.__r_producer_name = None
 
-    def add_producer(self, producer):
-        self.__producer_completions[producer.name] = False
-        Operator.add_producer(self, producer)
+        self.__l_producer_completed = False
+        self.__r_producer_completed = False
+
+    def connect_left_producer(self, producer):
+
+        if self.__l_producer_name is not None:
+            raise Exception("Only 1 left producer can be added. Left producer '{}' already added"
+                            .format(self.__l_producer_name))
+
+        if producer.name is self.__r_producer_name:
+            raise Exception("Producer cannot be added as both left and right producer. Producer '{}' already added as right producer"
+                            .format(self.__l_producer_name))
+
+        self.__l_producer_name = producer.name
+        Operator.connect(producer, self)
+
+    def connect_right_producer(self, producer):
+
+        if self.__r_producer_name is not None:
+            raise Exception("Only 1 right Producer can be added. Right producer '{}' already added"
+                            .format(self.__r_producer_name))
+
+        if producer.name is self.__l_producer_name:
+            raise Exception("Producer cannot be added as both right and left producer. Producer '{}' already added as left producer"
+                            .format(self.__l_producer_name))
+
+        self.__r_producer_name = producer.name
+        Operator.connect(producer, self)
 
     def on_receive(self, m, producer):
         """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
@@ -71,22 +102,49 @@ class Join(Operator):
             raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_, producer):
+        """Check that the tuple has been produced by a producer in the join expression, and contains a field in the
+        join expression. If it is from a producer we haven't seen before store its data as field names, otherwise add
+        it as a values tuple.
 
-        if not any(producer.name == p.name for p in self.producers):
-            raise Exception("Received tuple from unknown producer {}. Producer must be connected".format(producer.name))
-        else:
-            if producer.name not in self.field_names:
-                # This is essentially testing if we have seen tuples from a producer before. If we haven't then the tuple
-                # should be the first tuple from that producer meaning it will be the tuple of field names.
-                self.field_names[producer.name] = tuple_
+        :param tuple_:
+        :param producer:
+        :return:
+        """
+
+        if self.__l_producer_name is None:
+            raise Exception("Left producer is not connected")
+
+        if self.__r_producer_name is None:
+            raise Exception("Right producer is not connected")
+
+        if producer.name == self.__l_producer_name:
+
+            if self.l_field_names is None:
+                if self.join_expr.l_field in tuple_:
+                    self.l_field_names = tuple_
+                else:
+                    raise Exception("Join Operator '{}' received invalid left field names tuple {}. Tuple must contain join left field name {}."
+                                    .format(self.name, tuple_, self.join_expr.l_field))
             else:
-                # The tuple is a data tuple, we just need to store it for joining later.
-                if producer.name == self.join_expr.l_name:
-                    self.l_tuples.append(tuple_)
-                elif producer.name == self.join_expr.r_name:
-                    self.r_tuples.append(tuple_)
+                self.l_tuples.append(tuple_)
 
-    def on_producer_completed(self, _producer):
+        elif producer.name == self.__r_producer_name:
+
+            if self.r_field_names is None:
+                if self.join_expr.r_field in tuple_:
+                    self.r_field_names = tuple_
+                else:
+                    raise Exception("Join Operator '{}' received invalid right field names tuple {}. Tuple must contain join right field name {}."
+                                    .format(self.name, tuple_, self.join_expr.r_field))
+            else:
+                self.r_tuples.append(tuple_)
+
+        else:
+            raise Exception(
+                "Join Operator '{}' received invalid tuple {} from producer '{}'. Tuple must be sent from connected left producer {} or right producer {}."
+                .format(self.name, tuple_, producer.name, self.__l_producer_name, self.__r_producer_name))
+
+    def on_producer_completed(self, producer):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
         Join operator may have multiple producers. Once all producers are complete the operator can send the tuples
         it contains to downstream consumers.
@@ -95,9 +153,13 @@ class Join(Operator):
         :return: None
         """
 
-        self.__producer_completions[_producer.name] = True
+        if producer.name is self.__l_producer_name:
+            self.__l_producer_completed = True
 
-        is_all_producers_done = all(pc for pc in self.__producer_completions.values())
+        if producer.name is self.__r_producer_name:
+            self.__r_producer_completed = True
+
+        is_all_producers_done = self.__l_producer_completed & self.__r_producer_completed
 
         # Check that we have received a completed event from all the producers
         # is_all_producers_done = all(p.is_completed() for p in self.producers)
@@ -106,7 +168,7 @@ class Join(Operator):
             print("{}('{}') | Producer completed [{}]".format(
                 self.__class__.__name__,
                 self.name,
-                {'completed_producer': _producer.name, 'all_producers_completed': is_all_producers_done}))
+                {'completed_producer': producer.name, 'all_producers_completed': is_all_producers_done}))
 
         if is_all_producers_done and not self.is_completed():
 
@@ -116,7 +178,7 @@ class Join(Operator):
             # Send the joined data tuples
             self.nested_loop()
 
-            Operator.on_producer_completed(self, _producer)
+            Operator.on_producer_completed(self, producer)
 
     def nested_loop(self):
         """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.
@@ -129,8 +191,8 @@ class Join(Operator):
             for r_tuple in self.r_tuples:
 
                 # TODO: Can probably use a dict to speed up lookups
-                l_field_name_index = self.field_names[self.join_expr.l_name].index(self.join_expr.l_field)
-                r_field_name_index = self.field_names[self.join_expr.r_name].index(self.join_expr.r_field)
+                l_field_name_index = self.l_field_names.index(self.join_expr.l_field)
+                r_field_name_index = self.r_field_names.index(self.join_expr.r_field)
 
                 if l_tuple[l_field_name_index] == r_tuple[r_field_name_index]:
                     t = l_tuple + r_tuple
@@ -158,14 +220,14 @@ class Join(Operator):
 
         joined_field_names = []
 
-        l_field_names = self.field_names[self.join_expr.l_name]
-        r_field_names = self.field_names[self.join_expr.r_name]
+        l_field_names = self.l_field_names
+        r_field_names = self.r_field_names
 
         for field_name in l_field_names:
-            joined_field_names.append(self.join_expr.l_name + '.' + field_name)
+            joined_field_names.append(field_name)
 
         for field_name in r_field_names:
-            joined_field_names.append(self.join_expr.r_name + '.' + field_name)
+            joined_field_names.append(field_name)
 
         if self.log_enabled:
             print("{}('{}') | Sending field names [{}]".format(

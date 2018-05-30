@@ -4,7 +4,8 @@
 """
 
 from op.collate import Collate
-from op.filter import PredicateExpression, Filter
+from op.filter import Filter
+from op.predicate_expression import PredicateExpression
 from op.table_scan import TableScan
 from op.tuple import LabelledTuple
 from sql.function import timestamp, cast

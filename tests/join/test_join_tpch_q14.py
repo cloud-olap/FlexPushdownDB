@@ -77,12 +77,14 @@ import re
 from datetime import datetime, timedelta
 
 from metric.op_metrics import OpMetrics
-from op.aggregate import Aggregate, AggregateExpression
+from op.aggregate import Aggregate
+from op.aggregate_expression import AggregateExpression
 from op.bloom_create import BloomCreate
 from op.project import Project, ProjectExpr
 from op.table_scan_bloom_use import TableScanBloomUse
 from op.collate import Collate
-from op.filter import Filter, PredicateExpression
+from op.filter import Filter
+from op.predicate_expression import PredicateExpression
 from op.join import Join, JoinExpression
 from op.table_scan import TableScan
 from sql.function import cast, timestamp, sum_fn
@@ -103,44 +105,73 @@ def test_join_baseline():
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
     lineitem_scan = TableScan('lineitem.csv',
-                             "select * from S3Object "
-                             "where "
-                             "(l_orderkey = '18436' and l_partkey = '164584') or "
-                             "(l_orderkey = '18720' and l_partkey = '92764') or "
-                             "(l_orderkey = '12482' and l_partkey = '117405') or "
-                             "(l_orderkey = '27623' and l_partkey = '137010') or "
+                              "select * from S3Object "
+                              "where "
+                              "(l_orderkey = '18436' and l_partkey = '164584') or "
+                              "(l_orderkey = '18720' and l_partkey = '92764') or "
+                              "(l_orderkey = '12482' and l_partkey = '117405') or "
+                              "(l_orderkey = '27623' and l_partkey = '137010') or "
 
-                             "(l_orderkey = '10407' and l_partkey = '43275') or "
-                             "(l_orderkey = '17027' and l_partkey = '172729') or "
-                             "(l_orderkey = '23302' and l_partkey = '18523') or "
-                             "(l_orderkey = '27334' and l_partkey = '94308') or "
+                              "(l_orderkey = '10407' and l_partkey = '43275') or "
+                              "(l_orderkey = '17027' and l_partkey = '172729') or "
+                              "(l_orderkey = '23302' and l_partkey = '18523') or "
+                              "(l_orderkey = '27334' and l_partkey = '94308') or "
 
-                             "(l_orderkey = '15427' and l_partkey = '125586') or "
-                             "(l_orderkey = '11590' and l_partkey = '162359') or "
-                             "(l_orderkey = '2945' and l_partkey = '126197') or "
-                             "(l_orderkey = '15648' and l_partkey = '143904');",
-                             'lineitem_scan',
-                             False)
+                              "(l_orderkey = '15427' and l_partkey = '125586') or "
+                              "(l_orderkey = '11590' and l_partkey = '162359') or "
+                              "(l_orderkey = '2945' and l_partkey = '126197') or "
+                              "(l_orderkey = '15648' and l_partkey = '143904');",
+                              'lineitem_scan',
+                              False)
+
+    lineitem_scan_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_1'], 'l_partkey'),
+            ProjectExpr(lambda t_: t_['_5'], 'l_extendedprice'),
+            ProjectExpr(lambda t_: t_['_6'], 'l_discount'),
+            ProjectExpr(lambda t_: t_['_10'], 'l_shipdate')
+        ],
+        'lineitem_scan_project',
+        False)
+
     part_scan = TableScan('part.csv',
-                             "select * from S3Object;",
-                             'part_scan',
-                             False)
-    lineitem_filter = Filter(PredicateExpression(lambda t_:
-                                           (cast(t_['_10'], timestamp) >= cast(min_shipped_date, timestamp)) and
-                                           (cast(t_['_10'], timestamp) < cast(max_shipped_date, timestamp))
-                                           ),
-                             'lineitem_filter',
-                             False)
-    part_filter = Filter(PredicateExpression(lambda t: t['_3'] == 'Brand#12'), 'part_filter', False)  # p_brand
-    join = Join(JoinExpression(lineitem_filter.name, '_1', part_filter.name, '_0'), 'join', False)  # l_partkey and p_partkey
+                          "select * from S3Object;",
+                          'part_scan',
+                          False)
+
+    part_scan_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpr(lambda t_: t_['_3'], 'p_brand'),
+            ProjectExpr(lambda t_: t_['_4'], 'p_type')
+        ],
+        'part_scan_project',
+        False)
+
+    lineitem_filter = Filter(
+        PredicateExpression(lambda t_:
+                            (cast(t_['l_shipdate'], timestamp) >= cast(min_shipped_date, timestamp)) and
+                            (cast(t_['l_shipdate'], timestamp) < cast(max_shipped_date, timestamp))),
+        'lineitem_filter',
+        False)
+
+    part_filter = Filter(
+        PredicateExpression(lambda t: t['p_brand'] == 'Brand#12'),
+        'part_filter',
+        False)  # p_brand
+
+    join = Join(
+        JoinExpression('l_partkey', 'p_partkey'),
+        'join',
+        False)  # l_partkey and p_partkey
 
     def ex1(t, ctx):
 
-        v1 = float(t[lineitem_filter.name + '._5']) * (1.0 - float(t[lineitem_filter.name + '._6']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         rx = re.compile('^PROMO.*$')
 
-        if rx.search(t[part_filter.name + '._4']):  # p_type
+        if rx.search(t['p_type']):  # p_type
             v2 = v1
         else:
             v2 = 0.0
@@ -149,18 +180,27 @@ def test_join_baseline():
 
     def ex2(t, ctx):
 
-        v1 = float(t[lineitem_filter.name + '._5']) * (1.0 - float(t[lineitem_filter.name + '._6']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         sum_fn(v1, ctx)
 
     aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
-    project = Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False)
+
+    project = Project(
+        [
+            ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')
+        ],
+        'project',
+        False)
+
     collate = Collate('collate', False)
 
-    lineitem_scan.connect(lineitem_filter)
-    lineitem_filter.connect(join)
-    part_scan.connect(part_filter)
-    part_filter.connect(join)
+    lineitem_scan.connect(lineitem_scan_project)
+    lineitem_scan_project.connect(lineitem_filter)
+    join.connect_left_producer(lineitem_filter)
+    part_scan.connect(part_scan_project)
+    part_scan_project.connect(part_filter)
+    join.connect_right_producer(part_filter)
     join.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
@@ -211,46 +251,65 @@ def test_join_filtered():
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
     lineitem_scan = TableScan('lineitem.csv',
-                             "select l_partkey, l_extendedprice, l_discount from S3Object "
-                             "where "
-                             "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                             "cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
-                             "( "
-                             "(l_orderkey = '18436' and l_partkey = '164584') or "
-                             "(l_orderkey = '18720' and l_partkey = '92764') or "
-                             "(l_orderkey = '12482' and l_partkey = '117405') or "
-                             "(l_orderkey = '27623' and l_partkey = '137010') or "
+                              "select l_partkey, l_extendedprice, l_discount from S3Object "
+                              "where "
+                              "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                              "cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                              "( "
+                              "(l_orderkey = '18436' and l_partkey = '164584') or "
+                              "(l_orderkey = '18720' and l_partkey = '92764') or "
+                              "(l_orderkey = '12482' and l_partkey = '117405') or "
+                              "(l_orderkey = '27623' and l_partkey = '137010') or "
 
-                             "(l_orderkey = '10407' and l_partkey = '43275') or "
-                             "(l_orderkey = '17027' and l_partkey = '172729') or "
-                             "(l_orderkey = '23302' and l_partkey = '18523') or "
-                             "(l_orderkey = '27334' and l_partkey = '94308') or "
+                              "(l_orderkey = '10407' and l_partkey = '43275') or "
+                              "(l_orderkey = '17027' and l_partkey = '172729') or "
+                              "(l_orderkey = '23302' and l_partkey = '18523') or "
+                              "(l_orderkey = '27334' and l_partkey = '94308') or "
 
-                             "(l_orderkey = '15427' and l_partkey = '125586') or "
-                             "(l_orderkey = '11590' and l_partkey = '162359') or "
-                             "(l_orderkey = '2945' and l_partkey = '126197') or "
-                             "(l_orderkey = '15648' and l_partkey = '143904')"
-                             ") "
-                             ";".format(min_shipped_date.strftime('%Y-%m-%d'), max_shipped_date.strftime('%Y-%m-%d')),
-                             'lineitem_scan',
-                             False)
+                              "(l_orderkey = '15427' and l_partkey = '125586') or "
+                              "(l_orderkey = '11590' and l_partkey = '162359') or "
+                              "(l_orderkey = '2945' and l_partkey = '126197') or "
+                              "(l_orderkey = '15648' and l_partkey = '143904')"
+                              ") "
+                              ";".format(min_shipped_date.strftime('%Y-%m-%d'), max_shipped_date.strftime('%Y-%m-%d')),
+                              'lineitem_scan',
+                              False)
+
+    lineitem_scan_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
+            ProjectExpr(lambda t_: t_['_2'], 'l_discount')
+        ],
+        'lineitem_scan_project',
+        False)
+
     part_scan = TableScan('part.csv',
-                             "select "
-                             "  p_partkey, p_type from S3Object "
-                             "where "
-                             "  p_brand = 'Brand#12' "
-                             " ",
-                             'part_scan',
-                             False)
-    join = Join(JoinExpression(lineitem_scan.name, '_0', part_scan.name, '_0'), 'join', False)  # l_partkey and p_partkey
+                          "select "
+                          "  p_partkey, p_type from S3Object "
+                          "where "
+                          "  p_brand = 'Brand#12' "
+                          " ",
+                          'part_scan',
+                          False)
+
+    part_scan_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpr(lambda t_: t_['_1'], 'p_type')
+        ],
+        'part_scan_project',
+        False)
+
+    join = Join(JoinExpression('l_partkey', 'p_partkey'), 'join', False)  # l_partkey and p_partkey
 
     def ex1(t, ctx):
 
-        v1 = float(t[lineitem_scan.name + '._1']) * (1.0 - float(t[lineitem_scan.name + '._2']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         rx = re.compile('^PROMO.*$')
 
-        if rx.search(t[part_scan.name + '._1']):  # p_type
+        if rx.search(t['p_type']):  # p_type
             v2 = v1
         else:
             v2 = 0.0
@@ -259,7 +318,7 @@ def test_join_filtered():
 
     def ex2(t, ctx):
 
-        v1 = float(t[lineitem_scan.name + '._1']) * (1.0 - float(t[lineitem_scan.name + '._2']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         sum_fn(v1, ctx)
 
@@ -267,8 +326,10 @@ def test_join_filtered():
     project = Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False)
     collate = Collate('collate', False)
 
-    lineitem_scan.connect(join)
-    part_scan.connect(join)
+    lineitem_scan.connect(lineitem_scan_project)
+    part_scan.connect(part_scan_project)
+    join.connect_left_producer(lineitem_scan_project)
+    join.connect_right_producer(part_scan_project)
     join.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
@@ -311,52 +372,72 @@ def test_join_bloom():
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
     part_scan = TableScan('part.csv',
-                             "select "
-                             "  p_partkey, p_type from S3Object "
-                             "where "
-                             "  p_brand = 'Brand#12' "
-                             " ",
-                             'part_scan',
-                             False)
-    part_bloom_create = BloomCreate('_0', 'part_bloom_create', False)  # p_partkey
+                          "select "
+                          "  p_partkey, p_type from S3Object "
+                          "where "
+                          "  p_brand = 'Brand#12' "
+                          " ",
+                          'part_scan',
+                          False)
+
+    part_scan_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpr(lambda t_: t_['_1'], 'p_type')
+        ],
+        'part_scan_project',
+        False)
+
+    part_bloom_create = BloomCreate('p_partkey', 'part_bloom_create', False)  # p_partkey
+
     lineitem_scan = TableScanBloomUse('lineitem.csv',
-                                     "select "
-                                     "  l_partkey, l_extendedprice, l_discount from S3Object "
-                                     "where "
-                                     "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                                     "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
-                                     "  ( "
-                                     "      (l_orderkey = '18436' and l_partkey = '164584') or "
-                                     "      (l_orderkey = '18720' and l_partkey = '92764') or "
-                                     "      (l_orderkey = '12482' and l_partkey = '117405') or "
-                                     "      (l_orderkey = '27623' and l_partkey = '137010') or "
+                                      "select "
+                                      "  l_partkey, l_extendedprice, l_discount from S3Object "
+                                      "where "
+                                      "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                                      "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                                      "  ( "
+                                      "      (l_orderkey = '18436' and l_partkey = '164584') or "
+                                      "      (l_orderkey = '18720' and l_partkey = '92764') or "
+                                      "      (l_orderkey = '12482' and l_partkey = '117405') or "
+                                      "      (l_orderkey = '27623' and l_partkey = '137010') or "
 
-                                     "      (l_orderkey = '10407' and l_partkey = '43275') or "
-                                     "      (l_orderkey = '17027' and l_partkey = '172729') or "
-                                     "      (l_orderkey = '23302' and l_partkey = '18523') or "
-                                     "      (l_orderkey = '27334' and l_partkey = '94308') or "
+                                      "      (l_orderkey = '10407' and l_partkey = '43275') or "
+                                      "      (l_orderkey = '17027' and l_partkey = '172729') or "
+                                      "      (l_orderkey = '23302' and l_partkey = '18523') or "
+                                      "      (l_orderkey = '27334' and l_partkey = '94308') or "
 
-                                     "      (l_orderkey = '15427' and l_partkey = '125586') or "
-                                     "      (l_orderkey = '11590' and l_partkey = '162359') or "
-                                     "      (l_orderkey = '2945' and l_partkey = '126197') or "
-                                     "      (l_orderkey = '15648' and l_partkey = '143904') "
-                                     "  ) "
-                                     " ".format(
-                                         min_shipped_date.strftime('%Y-%m-%d'),
-                                         max_shipped_date.strftime('%Y-%m-%d'))
-                                     ,
-                                     'l_partkey',
-                                     'lineitem_scan',
-                                     False)
-    join = Join(JoinExpression(lineitem_scan.name, '_0', part_scan.name, '_0'), 'join', False)  # l_partkey and p_partkey
+                                      "      (l_orderkey = '15427' and l_partkey = '125586') or "
+                                      "      (l_orderkey = '11590' and l_partkey = '162359') or "
+                                      "      (l_orderkey = '2945' and l_partkey = '126197') or "
+                                      "      (l_orderkey = '15648' and l_partkey = '143904') "
+                                      "  ) "
+                                      " ".format(
+                                          min_shipped_date.strftime('%Y-%m-%d'),
+                                          max_shipped_date.strftime('%Y-%m-%d'))
+                                      ,
+                                      'l_partkey',
+                                      'lineitem_scan',
+                                      False)
+
+    lineitem_scan_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
+            ProjectExpr(lambda t_: t_['_2'], 'l_discount')
+        ],
+        'lineitem_scan_project',
+        False)
+
+    join = Join(JoinExpression('p_partkey', 'l_partkey'), 'join', False)  # p_partkey and l_partkey
 
     def ex1(t, ctx):
 
-        v1 = float(t[lineitem_scan.name + '._1']) * (1.0 - float(t[lineitem_scan.name + '._2']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         rx = re.compile('^PROMO.*$')
 
-        if rx.search(t[part_scan.name + '._1']):  # p_type
+        if rx.search(t['p_type']):  # p_type
             v2 = v1
         else:
             v2 = 0.0
@@ -365,7 +446,7 @@ def test_join_bloom():
 
     def ex2(t, ctx):
 
-        v1 = float(t[lineitem_scan.name + '._1']) * (1.0 - float(t[lineitem_scan.name + '._2']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         sum_fn(v1, ctx)
 
@@ -373,10 +454,14 @@ def test_join_bloom():
     project = Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False)
     collate = Collate('collate', False)
 
-    part_scan.connect(part_bloom_create)
+    part_scan.connect(part_scan_project)
+    part_scan_project.connect(part_bloom_create)
     part_bloom_create.connect_bloom_consumer(lineitem_scan)
-    part_scan.connect(join)
-    lineitem_scan.connect(join)
+    # part_scan.connect(join)
+    join.connect_left_producer(part_scan_project)
+    lineitem_scan.connect(lineitem_scan_project)
+    # lineitem_scan.connect(join)
+    join.connect_right_producer(lineitem_scan_project)
     join.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
@@ -417,46 +502,61 @@ def test_join_semi():
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_table_scan_1 = TableScan('part.csv',
-                                  "select "
-                                  "  p_partkey from S3Object "
-                                  "where "
-                                  "  p_brand = 'Brand#12' "
-                                  " ",
-                                  'part_table_scan_1',
-                                  False)
-    part_bloom_create = BloomCreate('_0', 'part_bloom_create', False)  # p_partkey
-    lineitem_table_scan_1 = TableScanBloomUse('lineitem.csv',
-                                              "select "
-                                              "  l_partkey from S3Object "
-                                              "where "
-                                              "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                                              "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
-                                              "  ( "
-                                              "      (l_orderkey = '18436' and l_partkey = '164584') or "
-                                              "      (l_orderkey = '18720' and l_partkey = '92764') or "
-                                              "      (l_orderkey = '12482' and l_partkey = '117405') or "
-                                              "      (l_orderkey = '27623' and l_partkey = '137010') or "
+    part_scan_1 = TableScan('part.csv',
+                            "select "
+                            "  p_partkey from S3Object "
+                            "where "
+                            "  p_brand = 'Brand#12' "
+                            " ",
+                            'part_table_scan_1',
+                            False)
 
-                                              "      (l_orderkey = '10407' and l_partkey = '43275') or "
-                                              "      (l_orderkey = '17027' and l_partkey = '172729') or "
-                                              "      (l_orderkey = '23302' and l_partkey = '18523') or "
-                                              "      (l_orderkey = '27334' and l_partkey = '94308') or "
+    part_scan_1_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'p_partkey')
+        ],
+        'part_scan_1_project',
+        False)
 
-                                              "      (l_orderkey = '15427' and l_partkey = '125586') or "
-                                              "      (l_orderkey = '11590' and l_partkey = '162359') or "
-                                              "      (l_orderkey = '2945' and l_partkey = '126197') or "
-                                              "      (l_orderkey = '15648' and l_partkey = '143904') "
-                                              "  ) "
-                                              " ".format(min_shipped_date.strftime('%Y-%m-%d'),
-                                                         max_shipped_date.strftime('%Y-%m-%d'))
-                                              ,
-                                              'l_partkey',
-                                              'lineitem_table_scan_1',
-                                              False)
-    part_lineitem_join_1 = Join(JoinExpression(lineitem_table_scan_1.name, '_0', part_table_scan_1.name, '_0'), 'part_lineitem_join_1',
-                                False)  # l_partkey and p_partkey
-    join_bloom_create = BloomCreate(lineitem_table_scan_1.name + '._0', 'join_bloom_create',
+    part_bloom_create = BloomCreate('p_partkey', 'part_bloom_create', False)  # p_partkey
+    lineitem_scan_1 = TableScanBloomUse('lineitem.csv',
+                                        "select "
+                                        "  l_partkey from S3Object "
+                                        "where "
+                                        "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                                        "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                                        "  ( "
+                                        "      (l_orderkey = '18436' and l_partkey = '164584') or "
+                                        "      (l_orderkey = '18720' and l_partkey = '92764') or "
+                                        "      (l_orderkey = '12482' and l_partkey = '117405') or "
+                                        "      (l_orderkey = '27623' and l_partkey = '137010') or "
+
+                                        "      (l_orderkey = '10407' and l_partkey = '43275') or "
+                                        "      (l_orderkey = '17027' and l_partkey = '172729') or "
+                                        "      (l_orderkey = '23302' and l_partkey = '18523') or "
+                                        "      (l_orderkey = '27334' and l_partkey = '94308') or "
+
+                                        "      (l_orderkey = '15427' and l_partkey = '125586') or "
+                                        "      (l_orderkey = '11590' and l_partkey = '162359') or "
+                                        "      (l_orderkey = '2945' and l_partkey = '126197') or "
+                                        "      (l_orderkey = '15648' and l_partkey = '143904') "
+                                        "  ) "
+                                        " ".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                                   max_shipped_date.strftime('%Y-%m-%d'))
+                                        ,
+                                        'l_partkey',
+                                        'lineitem_table_scan_1',
+                                        False)
+    lineitem_scan_1_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'l_partkey')
+        ],
+        'lineitem_scan_1_project',
+        False)
+
+    part_lineitem_join_1 = Join(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
+                                False)  # p_partkey and l_partkey
+    join_bloom_create = BloomCreate('l_partkey', 'join_bloom_create',
                                     False)  # l_partkey (= p_partkey truth be told :) )
     part_table_scan_2 = TableScanBloomUse('part.csv',
                                           "select "
@@ -467,6 +567,15 @@ def test_join_semi():
                                           'p_partkey',
                                           'part_table_scan_2',
                                           False)
+
+    part_scan_2_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpr(lambda t_: t_['_1'], 'p_type')
+        ],
+        'part_scan_2_project',
+        False)
+
     lineitem_table_scan_2 = TableScanBloomUse('lineitem.csv',
                                               "select "
                                               "  l_partkey, l_extendedprice, l_discount from S3Object "
@@ -490,21 +599,30 @@ def test_join_semi():
                                               "      (l_orderkey = '15648' and l_partkey = '143904') "
                                               "  ) "
                                               " ".format(min_shipped_date.strftime('%Y-%m-%d'),
-                                                         max_shipped_date.strftime('%Y-%m-%d'))
-                                              , 'l_partkey',
+                                                         max_shipped_date.strftime('%Y-%m-%d')),
+                                              'l_partkey',
                                               'lineitem_table_scan_2',
                                               False)
-    part_lineitem_join_2 = Join(JoinExpression(lineitem_table_scan_2.name, '_0', part_table_scan_2.name, '_0'),
+    lineitem_scan_2_project = Project(
+        [
+            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
+            ProjectExpr(lambda t_: t_['_2'], 'l_discount')
+        ],
+        'lineitem_scan_2_project',
+        False)
+
+    part_lineitem_join_2 = Join(JoinExpression('p_partkey', 'l_partkey'),
                                 'part_lineitem_join_2',
-                                False)  # l_partkey and p_partkey
+                                False)  # p_partkey and l_partkey
 
     def ex1(t, ctx):
 
-        v1 = float(t[lineitem_table_scan_2.name +'._1']) * (1.0 - float(t[lineitem_table_scan_2.name +'._2']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         rx = re.compile('^PROMO.*$')
 
-        if rx.search(t[part_table_scan_2.name +'._1']):  # p_type
+        if rx.search(t['p_type']):  # p_type
             v2 = v1
         else:
             v2 = 0.0
@@ -513,7 +631,7 @@ def test_join_semi():
 
     def ex2(t, ctx):
 
-        v1 = float(t[lineitem_table_scan_2.name +'._1']) * (1.0 - float(t[lineitem_table_scan_2.name +'._2']))  # l_extendedprice and l_discount
+        v1 = float(t['l_extendedprice']) * (1.0 - float(t['l_discount']))  # l_extendedprice and l_discount
 
         sum_fn(v1, ctx)
 
@@ -521,21 +639,25 @@ def test_join_semi():
     project = Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False)
     collate = Collate('collate', False)
 
-    part_table_scan_1.connect(part_bloom_create)
-    part_bloom_create.connect_bloom_consumer(lineitem_table_scan_1)
-    part_table_scan_1.connect(part_lineitem_join_1)
-    lineitem_table_scan_1.connect(part_lineitem_join_1)
+    part_scan_1.connect(part_scan_1_project)
+    part_scan_1_project.connect(part_bloom_create)
+    part_bloom_create.connect_bloom_consumer(lineitem_scan_1)
+    part_lineitem_join_1.connect_left_producer(part_scan_1_project)
+    lineitem_scan_1.connect(lineitem_scan_1_project)
+    part_lineitem_join_1.connect_right_producer(lineitem_scan_1_project)
     part_lineitem_join_1.connect(join_bloom_create)
     join_bloom_create.connect_bloom_consumer(part_table_scan_2)
     join_bloom_create.connect_bloom_consumer(lineitem_table_scan_2)
-    part_table_scan_2.connect(part_lineitem_join_2)
-    lineitem_table_scan_2.connect(part_lineitem_join_2)
+    part_table_scan_2.connect(part_scan_2_project)
+    part_lineitem_join_2.connect_left_producer(part_scan_2_project)
+    lineitem_table_scan_2.connect(lineitem_scan_2_project)
+    part_lineitem_join_2.connect_right_producer(lineitem_scan_2_project)
     part_lineitem_join_2.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
 
     # Start the query
-    part_table_scan_1.start()
+    part_scan_1.start()
 
     # Assert the results
     num_rows = 0
@@ -553,9 +675,9 @@ def test_join_semi():
     assert collate.tuples()[1] == [33.42623264199327]
 
     OpMetrics.print_metrics([
-        part_table_scan_1,
+        part_scan_1,
         part_bloom_create,
-        lineitem_table_scan_1,
+        lineitem_scan_1,
         part_lineitem_join_1,
         join_bloom_create,
         part_table_scan_2,
