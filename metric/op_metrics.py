@@ -19,6 +19,9 @@ class OpMetrics(object):
     def elapsed_time(self):
         return self.__timer.elapsed()
 
+    def timer_running(self):
+        return self.__timer.running
+
     @staticmethod
     def print_metrics(op_list):
         print("")

@@ -42,11 +42,14 @@ class TableScanBloomUse(Operator):
         # print("BloomScan | {}".format(t))
 
         if type(m) is BloomMessage:
+            # TODO: Can probably start the query here as all this operator waits for is the bloom filter
             self.__bloom_filter = m.bloom_filter
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_producer_completed(self, _producer):
+    def on_producer_completed(self, producer):
+
+        self.op_metrics.time_to_first_response_timer.start()
 
         bloom_filter_sql_predicate = self.__bloom_filter.sql_predicate(self.__bloom_filter_field_name)
 
@@ -65,6 +68,8 @@ class TableScanBloomUse(Operator):
             if self.is_completed():
                 break
 
+            self.op_metrics.time_to_first_response_timer.stop()
+
             self.op_metrics.rows_scanned += 1
 
             if first_tuple:
@@ -73,8 +78,7 @@ class TableScanBloomUse(Operator):
 
             self.send_data(t)
 
-        if not self.is_completed():
-            self.complete()
+        Operator.on_producer_completed(self, producer)
 
     def send_data(self, t):
 

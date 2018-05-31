@@ -79,4 +79,5 @@ class Project(Operator):
             for e in self.project_exprs:
                 projected_field = e.expr(lt)
                 projected_fields.append(projected_field)
+
             self.send(TupleMessage(Tuple(projected_fields)), self.consumers)

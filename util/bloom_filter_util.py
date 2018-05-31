@@ -88,6 +88,9 @@ class Bloom(object):
         if v not in self.__bit_array_indexes:
             self.__bit_array_indexes.append(v)
 
+    def bit_array_len(self):
+        return len(self.__bit_array_indexes)
+
     def sql_predicate(self, field):
 
         bit_array_indexes_str = ",".join(map(str, self.__bit_array_indexes))

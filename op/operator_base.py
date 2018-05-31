@@ -13,6 +13,12 @@ def switch_context(from_op, to_op):
     :return: None
     """
 
+    if not from_op.op_metrics.timer_running():
+        raise Exception("Illegal context switch. Attempted to switch from operator '{}' with stopped timer".format(from_op.name))
+
+    if to_op.op_metrics.timer_running():
+        raise Exception("Illegal context switch. Attempted to switch to operator '{}' with running timer".format(from_op.name))
+
     from_op.op_metrics.timer_stop()
     to_op.op_metrics.timer_start()
 
@@ -95,12 +101,19 @@ class Operator(object):
             self.fire_on_received(message, op)
 
     def fire_on_received(self, message, consumer):
-
         switch_context(self, consumer)
-
         consumer.on_receive(message, self)
-
         switch_context(consumer, self)
+
+    def fire_on_producer_completed(self, consumer):
+        switch_context(self, consumer)
+        consumer.on_producer_completed(self)
+        switch_context(consumer, self)
+
+    def fire_on_consumer_completed(self, producer):
+        switch_context(self, producer)
+        producer.on_consumer_completed(self)
+        switch_context(producer, self)
 
     def complete(self):
         """Sets the operator to complete, meaning it has completed what it needed to do. This includes marking the
@@ -118,10 +131,10 @@ class Operator(object):
             self.__completed = True
 
             for c in self.consumers:
-                c.on_producer_completed(self)
+                self.fire_on_producer_completed(c)
 
             for p in self.producers:
-                p.on_consumer_completed(self)
+                self.fire_on_consumer_completed(p)
 
         else:
             raise Exception("Cannot complete an already completed operator")
@@ -135,12 +148,8 @@ class Operator(object):
         :return: None
         """
 
-        switch_context(producer, self)
-
         if not self.is_completed():
             self.complete()
-
-        switch_context(self, producer)
 
     def on_consumer_completed(self, consumer):
         """Handles a signal from consuming operators that they have completed what they needed to do. This is useful in
@@ -151,12 +160,8 @@ class Operator(object):
         :return: None
         """
 
-        switch_context(consumer, self)
-
         if not self.is_completed():
             self.complete()
-
-        switch_context(self, consumer)
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, {'name': self.name})

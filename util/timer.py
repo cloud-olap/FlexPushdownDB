@@ -27,3 +27,6 @@ class Timer(object):
             return (timeit.default_timer() - self.start_time) + self.running_time
         else:
             return self.running_time
+
+    def __repr__(self):
+        return {'start_time': self.start_time, 'running_time': self.running_time, 'running': self.running}.__repr__()
