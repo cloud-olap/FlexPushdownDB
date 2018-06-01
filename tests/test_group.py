@@ -20,17 +20,18 @@ def test_group_count():
 
     num_rows = 0
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("Group Count Test")
 
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
     g = query_plan.add_operator(Group(['_3'],
-              [
-                  AggregateExpression(lambda t_, ctx: count_fn(t_['_0'], ctx))  # count(s_suppkey)
-              ],
-              'g',
-              False))
+                                      [
+                                          AggregateExpression(lambda t_, ctx: count_fn(t_['_0'], ctx))
+                                          # count(s_suppkey)
+                                      ],
+                                      'g',
+                                      False))
     c = query_plan.add_operator(Collate('c', False))
 
     query_plan.write_graph(gen_test_id())
@@ -64,17 +65,17 @@ def test_group_sum():
 
     num_rows = 0
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("Group Sum Test")
 
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
     g = query_plan.add_operator(Group(['_3'],
-              [
-                  AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']), ctx))
-              ],
-              'g',
-              False))
+                                      [
+                                          AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']), ctx))
+                                      ],
+                                      'g',
+                                      False))
     c = query_plan.add_operator(Collate('c', False))
 
     ts.connect(g)
@@ -84,13 +85,13 @@ def test_group_sum():
     ts.start()
 
     # Assert the results
-    for t_ in c.tuples():
+    for t in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t_))
 
     field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
-    nation_24 = filter(lambda t: LabelledTuple(t, field_names)['_0'] == '24', c.tuples())[0]
+    nation_24 = filter(lambda t_: LabelledTuple(t_, field_names)['_0'] == '24', c.tuples())[0]
     assert round(nation_24[1], 2) == 1833872.56
     assert num_rows == 25 + 1
 

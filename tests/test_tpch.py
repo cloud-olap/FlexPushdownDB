@@ -47,17 +47,17 @@ def test_tpch_q1():
     #   l_returnflag,
     #   l_linestatus;
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("TPCH Q1 Test")
 
     delta_days = 60  # TODO: This is supposed to be randomized I think
     shipped_date = datetime.strptime('1992-04-01', '%Y-%m-%d') - timedelta(days=delta_days)
 
     ts = query_plan.add_operator(SQLTableScan("lineitem.csv",
-                   "select * from S3Object "
-                   "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp)"
-                      .format(shipped_date.strftime('%Y-%m-%d')),
-                   'lineitem',
-                      False))
+                                              "select * from S3Object "
+                                              "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp)"
+                                              .format(shipped_date.strftime('%Y-%m-%d')),
+                                              'lineitem',
+                                              False))
     g = query_plan.add_operator(Group(
         [
             '_8',  # l_returnflag

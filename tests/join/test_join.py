@@ -18,13 +18,15 @@ def test_join_baseline():
     :return: None
     """
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("Baseline Join Test")
 
     # Query plan
     ts1 = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts1', False))
-    ts1_project = query_plan.add_operator(Project([ProjectExpr(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False))
+    ts1_project = query_plan.add_operator(
+        Project([ProjectExpr(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False))
     ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', False))
-    ts2_project = query_plan.add_operator(Project([ProjectExpr(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False))
+    ts2_project = query_plan.add_operator(
+        Project([ProjectExpr(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False))
     j = query_plan.add_operator(Join(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
     c = query_plan.add_operator(Collate('c', False))
 

@@ -25,7 +25,8 @@ class Filter(Operator):
         super(Filter, self).__init__(name, OpMetrics(), log_enabled)
 
         if type(expression) is not PredicateExpression:
-            raise Exception("Illegal expression type {}. Expression must be of type PredicateExpression".format(type(expression), PredicateExpression.__class__.__name__))
+            raise Exception("Illegal expression type {}. Expression must be of type PredicateExpression"
+                            .format(type(expression), PredicateExpression.__class__.__name__))
         else:
             self.expression = expression
 

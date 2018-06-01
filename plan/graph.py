@@ -11,7 +11,8 @@ class Graph(object):
 
     def add_operator(self, operator):
 
-        self.graph.add_node(operator.name, label="{}({})".format(operator.__class__.__name__, operator.name), shape="box")
+        self.graph.add_node(operator.name, label="{}({})"
+                            .format(operator.__class__.__name__, operator.name), shape="box")
 
         if type(operator) is Join:
             self.graph.add_edge(operator.producers[0].name, operator.name, "left", label="left")

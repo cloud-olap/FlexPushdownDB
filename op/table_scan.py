@@ -2,13 +2,7 @@
 """
 
 """
-from plan.op_metrics import OpMetrics
-from op.operator_base import Operator
-from op.message import TupleMessage
-from op.sql_table_scan import SQLTableScan, SQLTableScanMetrics
-from op.tuple import Tuple, LabelledTuple
-from sql.cursor import Cursor
-from util.timer import Timer
+from op.sql_table_scan import SQLTableScan
 
 
 class TableScan(SQLTableScan):
@@ -19,7 +13,7 @@ class TableScan(SQLTableScan):
     def __init__(self, s3key, name, log_enabled):
         """Creates a new TableScan operator using the given s3 object key
 
-        :param key: The object key to select against
+        :param s3key: The object key to select against
         """
 
         super(TableScan, self).__init__(

@@ -6,17 +6,18 @@ from collections import OrderedDict
 
 from plan.graph import Graph
 from plan.op_metrics import OpMetrics
-from op.operator_base import Operator
 
 
 class QueryPlan(object):
 
-    def __init__(self, operators=None):
-        # type: (list) -> None
+    def __init__(self, name, operators=None):
+        # type: (str, list) -> None
         """
 
         :param operators:
         """
+
+        self.name = name
 
         if operators is None:
             self.operators = OrderedDict()
@@ -30,7 +31,15 @@ class QueryPlan(object):
         return operator
 
     def print_metrics(self):
+
+        print('')
+        print('')
+        print(self.name)
+        print('-' * len(self.name))
+
         OpMetrics.print_metrics(list(self.operators.values()))
+
+        print('')
 
     def write_graph(self, name):
 

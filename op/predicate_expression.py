@@ -28,4 +28,8 @@ class PredicateExpression(object):
         """
 
         v = self.expr(LabelledTuple(t, field_names))
+
+        if type(v) is not bool:
+            raise Exception("Illegal return type '{}'. Predicate expression must evaluate to bool".format(type(v)))
+
         return v

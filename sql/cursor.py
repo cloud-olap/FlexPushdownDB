@@ -141,7 +141,8 @@ class Cursor(object):
                 pass
                 # bytes_scanned = event['Stats']['Details']['BytesScanned']
                 # bytes_processed = event['Stats']['Details']['BytesProcessed']
-                # print("{} Stats Event: bytes scanned: {}, bytes processed: {}".format(timeit.default_timer(), bytes_scanned, bytes_processed))
+                # print("{} Stats Event: bytes scanned: {}, bytes processed: {}"
+                #       .format(timeit.default_timer(), bytes_scanned, bytes_processed))
 
             elif 'Progress' in event:
                 pass

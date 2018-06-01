@@ -57,8 +57,8 @@ class Group(Operator):
             self.field_names = tuple_
         else:
 
-            # Create a tuple of column values to group by, we use this as the key for a dict of groups and their associated
-            # aggregate values
+            # Create a tuple of column values to group by,
+            # we use this as the key for a dict of groups and their associated aggregate values
             group_field_values_tuple = self.__build_group_field_values_tuple(tuple_)
             # print(group_fields_tuple)
 
@@ -68,7 +68,9 @@ class Group(Operator):
             # Evaluate all the expressions for the group
             i = 0
             for e in self.aggregate_expressions:
-                group_aggregate_expression_context = group_aggregate_expression_contexts.get(i, AggregateExpressionContext(0.0, {}))
+                group_aggregate_expression_context = group_aggregate_expression_contexts.get(
+                    i,
+                    AggregateExpressionContext(0.0, {}))
                 e.eval(tuple_, self.field_names, group_aggregate_expression_context)
                 group_aggregate_expression_contexts[i] = group_aggregate_expression_context
                 i += 1

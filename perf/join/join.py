@@ -37,19 +37,21 @@ def main():
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
     ts1 = SQLTableScan('lineitem.csv',
-                    "select * from S3Object "
-                    "where "
-                    "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                    "cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
-                    "limit 3;".format(
-                        min_shipped_date.strftime('%Y-%m-%d'),
-                        max_shipped_date.strftime('%Y-%m-%d')),
-                    'ts1',
+                       "select * from S3Object "
+                       "where "
+                       "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                       "cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
+                       "limit 3;".format(
+                           min_shipped_date.strftime('%Y-%m-%d'),
+                           max_shipped_date.strftime('%Y-%m-%d')),
+                       'ts1',
                        False)
     ts2 = SQLTableScan('part.csv',
-                    "select * from S3Object "
-                    ";", 'ts2', False)
-    j = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'), 'j', False)
+                       "select * from S3Object "
+                       ";",
+                       'ts2',
+                       False)
+    j = Join(JoinExpression('_1', '_0'), 'j', False)
     c = Collate('c', False)
 
     ts1.connect(j)
@@ -66,12 +68,12 @@ def main():
         num_rows += 1
         print("{}:{}".format(num_rows, t))
 
-    field_names = ['lineitem.csv._0', 'lineitem.csv._1', 'lineitem.csv._2', 'lineitem.csv._3', 'lineitem.csv._4',
-                   'lineitem.csv._5', 'lineitem.csv._6', 'lineitem.csv._7', 'lineitem.csv._8', 'lineitem.csv._9',
-                   'lineitem.csv._10', 'lineitem.csv._11', 'lineitem.csv._12', 'lineitem.csv._13', 'lineitem.csv._14',
-                   'lineitem.csv._15',
-                   'part.csv._0', 'part.csv._1', 'part.csv._2', 'part.csv._3', 'part.csv._4',
-                   'part.csv._5', 'part.csv._6', 'part.csv._7', 'part.csv._8']
+    # field_names = ['lineitem.csv._0', 'lineitem.csv._1', 'lineitem.csv._2', 'lineitem.csv._3', 'lineitem.csv._4',
+    #                'lineitem.csv._5', 'lineitem.csv._6', 'lineitem.csv._7', 'lineitem.csv._8', 'lineitem.csv._9',
+    #                'lineitem.csv._10', 'lineitem.csv._11', 'lineitem.csv._12', 'lineitem.csv._13', 'lineitem.csv._14',
+    #                'lineitem.csv._15',
+    #                'part.csv._0', 'part.csv._1', 'part.csv._2', 'part.csv._3', 'part.csv._4',
+    #                'part.csv._5', 'part.csv._6', 'part.csv._7', 'part.csv._8']
 
 
 if __name__ == "__main__":

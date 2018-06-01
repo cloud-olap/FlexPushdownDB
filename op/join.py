@@ -5,7 +5,7 @@
 from plan.op_metrics import OpMetrics
 from op.operator_base import Operator
 from op.message import TupleMessage
-from op.tuple import Tuple, LabelledTuple
+from op.tuple import Tuple
 
 
 class JoinExpression(object):
@@ -16,9 +16,7 @@ class JoinExpression(object):
     def __init__(self, l_field, r_field):
         """Creates a new join expression.
 
-        :param l_key: Key of the producer of the left tuple to join on
         :param l_field: Field of the left tuple to join on
-        :param r_key: Key of the producer of the right tuple to join on
         :param r_field: Field of the right tuple to join on
         """
 
@@ -68,7 +66,8 @@ class Join(Operator):
                             .format(self.__l_producer_name))
 
         if producer.name is self.__r_producer_name:
-            raise Exception("Producer cannot be added as both left and right producer. Producer '{}' already added as right producer"
+            raise Exception("Producer cannot be added as both left and right producer. "
+                            "Producer '{}' already added as right producer"
                             .format(self.__l_producer_name))
 
         self.__l_producer_name = producer.name
@@ -81,7 +80,8 @@ class Join(Operator):
                             .format(self.__r_producer_name))
 
         if producer.name is self.__l_producer_name:
-            raise Exception("Producer cannot be added as both right and left producer. Producer '{}' already added as left producer"
+            raise Exception("Producer cannot be added as both right and left producer. "
+                            "Producer '{}' already added as left producer"
                             .format(self.__l_producer_name))
 
         self.__r_producer_name = producer.name
@@ -123,7 +123,8 @@ class Join(Operator):
                 if self.join_expr.l_field in tuple_:
                     self.l_field_names = tuple_
                 else:
-                    raise Exception("Join Operator '{}' received invalid left field names tuple {}. Tuple must contain join left field name {}."
+                    raise Exception("Join Operator '{}' received invalid left field names tuple {}. "
+                                    "Tuple must contain join left field name {}."
                                     .format(self.name, tuple_, self.join_expr.l_field))
             else:
                 self.l_tuples.append(tuple_)
@@ -134,14 +135,16 @@ class Join(Operator):
                 if self.join_expr.r_field in tuple_:
                     self.r_field_names = tuple_
                 else:
-                    raise Exception("Join Operator '{}' received invalid right field names tuple {}. Tuple must contain join right field name {}."
+                    raise Exception("Join Operator '{}' received invalid right field names tuple {}. "
+                                    "Tuple must contain join right field name {}."
                                     .format(self.name, tuple_, self.join_expr.r_field))
             else:
                 self.r_tuples.append(tuple_)
 
         else:
             raise Exception(
-                "Join Operator '{}' received invalid tuple {} from producer '{}'. Tuple must be sent from connected left producer {} or right producer {}."
+                "Join Operator '{}' received invalid tuple {} from producer '{}'. "
+                "Tuple must be sent from connected left producer {} or right producer {}."
                 .format(self.name, tuple_, producer.name, self.__l_producer_name, self.__r_producer_name))
 
     def on_producer_completed(self, producer):
@@ -149,7 +152,7 @@ class Join(Operator):
         Join operator may have multiple producers. Once all producers are complete the operator can send the tuples
         it contains to downstream consumers.
 
-        :type _producer: The producer that has completed
+        :type producer: The producer that has completed
         :return: None
         """
 

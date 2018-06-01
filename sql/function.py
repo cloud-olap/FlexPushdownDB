@@ -25,7 +25,8 @@ def cast(ex, t):
 def sum_fn(ex, ctx):
 
     if not isinstance(ex, numbers.Number):
-        raise Exception("Illegal expression type {} for expression {}. Sum expression must be numeric".format(type(ex), ex))
+        raise Exception("Illegal expression type {} for expression {}. Sum expression must be numeric"
+                        .format(type(ex), ex))
 
     current_sum = ctx.result
 

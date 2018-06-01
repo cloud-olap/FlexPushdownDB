@@ -18,7 +18,7 @@ def test_scan_simple():
 
     num_rows = 0
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("Simple Scan Test")
 
     # Query plan
     ts = query_plan.add_operator(
@@ -53,10 +53,8 @@ def test_scan_simple():
            ['1', 'ARGENTINA', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
     assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
            ['2', 'BRAZIL', '1',
-            'y alongside of the pending deposits. carefully special packages are about the ironic forges. slyly special ']
+            'y alongside of the pending deposits. carefully special packages are about '
+            'the ironic forges. slyly special ']
 
     # Write the metrics
     query_plan.print_metrics()
-
-
-

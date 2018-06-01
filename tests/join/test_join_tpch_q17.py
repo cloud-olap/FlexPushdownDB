@@ -27,7 +27,6 @@ TPCH Query 17
 
 """
 
-import inspect
 from plan.query_plan import QueryPlan
 from op.aggregate import Aggregate
 from op.aggregate_expression import AggregateExpression
@@ -49,7 +48,9 @@ def collate_op():
 
 
 def extendedprice_sum_aggregate_project_op():
-    """with extendedprice_sum_aggregate_project as (select l_extendedprice / 7.0 as avg_yearly from extendedprice_sum_aggregate)
+    """with extendedprice_sum_aggregate_project as (
+    select l_extendedprice / 7.0 as avg_yearly from extendedprice_sum_aggregate
+    )
 
     :return:
     """
@@ -69,13 +70,23 @@ def lineitem_filter_op():
                   'lineitem_filter', False)
 
 
-# with part_lineitem_join_avg_group_join as (select * from part_lineitem_join, lineitem_part_avg_group_project where p_partkey = l_partkey)
 def part_lineitem_join_avg_group_op():
+    """with part_lineitem_join_avg_group_join as (
+    select * from part_lineitem_join, lineitem_part_avg_group_project where p_partkey = l_partkey
+    )
+
+    :return:
+    """
     return Join(JoinExpression('l_partkey', 'p_partkey'), 'part_lineitem_join_avg_group_join', False)
 
 
-# with lineitem_part_avg_group_project as (select l_partkey, 0.2 * avg(l_quantity) as l_quantity_computed00 from lineitem_part_avg_group)
 def lineitem_part_avg_group_project_op():
+    """with lineitem_part_avg_group_project as (
+    select l_partkey, 0.2 * avg(l_quantity) as l_quantity_computed00 from lineitem_part_avg_group
+    )
+
+    :return:
+    """
     return Project(
         [
             # l_partkey
@@ -172,9 +183,7 @@ def test_join_baseline():
     :return: None
     """
 
-    print("Baseline Join")
-
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("TPCH Q17 Baseline Join Test")
 
     # Define the operators
     # with part_scan as (select * from part)
@@ -286,9 +295,7 @@ def test_join_filtered():
     :return: None
     """
 
-    print("Filtered Join")
-
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("TPCH Q17 Filtered Join Test")
 
     # Define the operators
     part_scan = query_plan.add_operator(part_scan_op())
@@ -353,9 +360,7 @@ def test_join_bloom():
     :return: None
     """
 
-    print("Bloom Join")
-
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("TPCH Q17 Bloom Join")
 
     # Define the operators
     part_scan = query_plan.add_operator(part_scan_op())

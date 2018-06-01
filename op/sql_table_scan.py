@@ -34,8 +34,8 @@ class SQLTableScan(Operator):
     def __init__(self, s3key, s3sql, name, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 
-        :param key: The object key to select against
-        :param sql: The s3 select sql
+        :param s3key: The object key to select against
+        :param s3sql: The s3 select sql
         """
 
         super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), log_enabled)

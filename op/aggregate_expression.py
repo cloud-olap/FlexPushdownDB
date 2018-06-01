@@ -2,6 +2,7 @@
 """Aggregate expression support
 
 """
+import numbers
 
 from op.tuple import LabelledTuple
 
@@ -29,6 +30,10 @@ class AggregateExpression(object):
         """
 
         self.__expr(LabelledTuple(t, field_names), ctx)
+
+        if not isinstance(ctx.result, numbers.Number):
+            raise Exception("Illegal aggregate val '{}' of type '{}'. Aggregate expression must evaluate to number"
+                            .format(ctx.result, type(ctx.result)))
 
 
 class AggregateExpressionContext(object):

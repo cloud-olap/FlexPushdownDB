@@ -28,7 +28,8 @@ class Aggregate(Operator):
 
         for e in expressions:
             if type(e) is not AggregateExpression:
-                raise Exception("Illegal expression type {}. All expressions must be of type {}".format(type(e), AggregateExpression.__class__.__name__))
+                raise Exception("Illegal expression type {}. All expressions must be of type {}"
+                                .format(type(e), AggregateExpression.__class__.__name__))
 
         self.__expressions = expressions
 
@@ -75,7 +76,6 @@ class Aggregate(Operator):
         """
 
         :param tuple_:
-        :param _producer:
         :return:
         """
 

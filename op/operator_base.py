@@ -14,10 +14,14 @@ def switch_context(from_op, to_op):
     """
 
     if not from_op.op_metrics.timer_running():
-        raise Exception("Illegal context switch. Attempted to switch from operator '{}' with stopped timer".format(from_op.name))
+        raise Exception("Illegal context switch. "
+                        "Attempted to switch from operator '{}' with stopped timer"
+                        .format(from_op.name))
 
     if to_op.op_metrics.timer_running():
-        raise Exception("Illegal context switch. Attempted to switch to operator '{}' with running timer".format(from_op.name))
+        raise Exception("Illegal context switch. "
+                        "Attempted to switch to operator '{}' with running timer"
+                        .format(from_op.name))
 
     from_op.op_metrics.timer_stop()
     to_op.op_metrics.timer_start()
@@ -139,24 +143,24 @@ class Operator(object):
         else:
             raise Exception("Cannot complete an already completed operator")
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, _producer):
         """Handles a signal from producing operators that they have completed what they needed to do. This is useful in
         circumstances where a producer has no more tuples to supply (such as completion of a table scan). This is often
         overridden but this default implementation simply completes this operator.
 
-        :param producer: The producer that has completed
+        :param _producer: The producer that has completed
         :return: None
         """
 
         if not self.is_completed():
             self.complete()
 
-    def on_consumer_completed(self, consumer):
+    def on_consumer_completed(self, _consumer):
         """Handles a signal from consuming operators that they have completed what they needed to do. This is useful in
         circumstances where a consumer needs no more tuples (such as a top operator reaching the number of tuples it
         needs). This is often overridden but this default implementation simply simply completes this operator.
 
-        :param consumer: The consumer that has completed
+        :param _consumer: The consumer that has completed
         :return: None
         """
 

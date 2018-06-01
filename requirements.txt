@@ -1,3 +1,4 @@
+pygraphviz
 boto3>=1.7
 awscli>=1.15
 pytest>=3.6

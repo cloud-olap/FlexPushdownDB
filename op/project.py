@@ -16,11 +16,11 @@ class ProjectExpr(object):
     def __init__(self, expr, new_field_name):
         """Creates a new projection expression
 
-        :param field_name: The old field name.
+        :param expr: The projection expression
         :param new_field_name The new field name.
         """
         self.expr = expr
-        self.new_field_name = new_field_name
+        self.new_field_name = new_field_name.strip()
 
 
 class Project(Operator):

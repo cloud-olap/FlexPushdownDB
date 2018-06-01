@@ -19,12 +19,12 @@ def test_sort_asc():
 
     num_rows = 0
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("Sort Ascending Test")
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
-                   'select * from S3Object '
-                   'limit 3;', 'ts', False))
+                                              'select * from S3Object '
+                                              'limit 3;', 'ts', False))
     s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', False))
     c = query_plan.add_operator(Collate('c', False))
 
@@ -59,6 +59,7 @@ def test_sort_asc():
     # Write the metrics
     query_plan.print_metrics()
 
+
 def test_sort_desc():
     """Executes a sorted query. The results are collated.
 
@@ -67,12 +68,12 @@ def test_sort_desc():
 
     num_rows = 0
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("Sort Descending Test")
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
-                   'select * from S3Object '
-                   'limit 3;', 'ts', False))
+                                              'select * from S3Object '
+                                              'limit 3;', 'ts', False))
     s = query_plan.add_operator(Sort([SortExpression('_5', float, 'DESC')], 's', False))
     c = query_plan.add_operator(Collate('c', False))
 

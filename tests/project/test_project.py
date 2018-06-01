@@ -19,12 +19,12 @@ def test_project():
 
     num_rows = 0
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan("Projection Test")
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
-                   'select * from S3Object '
-                   'limit 3;', 'ts', False))
+                                              'select * from S3Object '
+                                              'limit 3;', 'ts', False))
     p = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_2'], 'n_regionkey'),  # identity lambda
@@ -59,7 +59,8 @@ def test_project():
            ['1', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
     assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
            ['1', '2',
-            'y alongside of the pending deposits. carefully special packages are about the ironic forges. slyly special ']
+            'y alongside of the pending deposits. carefully special packages '
+            'are about the ironic forges. slyly special ']
 
     # Write the metrics
     query_plan.print_metrics()

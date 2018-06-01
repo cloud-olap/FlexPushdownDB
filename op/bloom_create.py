@@ -9,7 +9,6 @@ from op.message import TupleMessage, BloomMessage
 from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from op.tuple import LabelledTuple
 from util.bloom_filter_util import Bloom
-from util.timer import Timer
 
 
 class BloomCreateMetrics(OpMetrics):
@@ -118,7 +117,8 @@ class BloomCreate(Operator):
             if self.__bloom_field_name not in lt:
                 raise Exception(
                     "Received invalid tuple {}. "
-                    "Tuple field names '{}' does not contain field with bloom field name '{}'".format(tuple_, lt.labels, self.__bloom_field_name))
+                    "Tuple field names '{}' does not contain field with bloom field name '{}'"
+                    .format(tuple_, lt.labels, self.__bloom_field_name))
             else:
 
                 self.op_metrics.tuple_count += 1
