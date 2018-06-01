@@ -5,9 +5,11 @@
 from op.aggregate_expression import AggregateExpression
 from op.collate import Collate
 from op.group import Group
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
 from sql.function import count_fn, sum_fn
+from util.test_util import gen_test_id
 
 
 def test_group_count():
@@ -18,16 +20,20 @@ def test_group_count():
 
     num_rows = 0
 
+    query_plan = QueryPlan()
+
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
-    ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
-    g = Group(['_3'],
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+    g = query_plan.add_operator(Group(['_3'],
               [
                   AggregateExpression(lambda t_, ctx: count_fn(t_['_0'], ctx))  # count(s_suppkey)
               ],
               'g',
-              False)
-    c = Collate('c', False)
+              False))
+    c = query_plan.add_operator(Collate('c', False))
+
+    query_plan.write_graph(gen_test_id())
 
     ts.connect(g)
     g.connect(c)
@@ -46,6 +52,9 @@ def test_group_count():
     assert nation_24[1] == 393
     assert num_rows == 25 + 1
 
+    # Write the metrics
+    query_plan.print_metrics()
+
 
 def test_group_sum():
     """Tests a group by query with a sum aggregate
@@ -55,16 +64,18 @@ def test_group_sum():
 
     num_rows = 0
 
+    query_plan = QueryPlan()
+
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
-    ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
-    g = Group(['_3'],
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+    g = query_plan.add_operator(Group(['_3'],
               [
                   AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']), ctx))
               ],
               'g',
-              False)
-    c = Collate('c', False)
+              False))
+    c = query_plan.add_operator(Collate('c', False))
 
     ts.connect(g)
     g.connect(c)
@@ -82,3 +93,6 @@ def test_group_sum():
     nation_24 = filter(lambda t: LabelledTuple(t, field_names)['_0'] == '24', c.tuples())[0]
     assert round(nation_24[1], 2) == 1833872.56
     assert num_rows == 25 + 1
+
+    # Write the metrics
+    query_plan.print_metrics()

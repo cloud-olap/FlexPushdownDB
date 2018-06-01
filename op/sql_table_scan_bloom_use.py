@@ -5,16 +5,16 @@
 
 from op.operator_base import Operator
 from op.message import TupleMessage, BloomMessage
-from op.table_scan import TableScanMetrics
+from op.sql_table_scan import SQLTableScanMetrics
 from op.tuple import Tuple, LabelledTuple
 from sql.cursor import Cursor
 
 
-class TableScanBloomUse(Operator):
+class SQLTableScanBloomUse(Operator):
 
     def __init__(self, s3key, s3sql, bloom_filter_field_name, name, log_enabled):
 
-        super(TableScanBloomUse, self).__init__(name, TableScanMetrics(), log_enabled)
+        super(SQLTableScanBloomUse, self).__init__(name, SQLTableScanMetrics(), log_enabled)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -27,7 +27,7 @@ class TableScanBloomUse(Operator):
         if type(bloom_filter_field_name) is str:
             self.__bloom_filter_field_name = bloom_filter_field_name
         else:
-            raise Exception("Bloom filter field name is of type {}. Field name must be of type string to be "
+            raise Exception("Bloom filter field name is of type {}. Field name must be of type str to be "
                             "used in SQL predicate".format(type(bloom_filter_field_name)))
 
     def on_receive(self, m, _producer):
@@ -53,9 +53,12 @@ class TableScanBloomUse(Operator):
 
         bloom_filter_sql_predicate = self.__bloom_filter.sql_predicate(self.__bloom_filter_field_name)
 
+        # Append the bloom filter predicate either using where... or and...
+        sql_suffix = self.build_sql_suffix(bloom_filter_sql_predicate)
+
         # print(bloom_filter_sql_predicate)
 
-        sql = self.s3sql + " and " + bloom_filter_sql_predicate
+        sql = self.s3sql + sql_suffix
         cur = Cursor().select(self.s3key, sql)
 
         tuples = cur.execute()
@@ -79,6 +82,19 @@ class TableScanBloomUse(Operator):
             self.send_data(t)
 
         Operator.on_producer_completed(self, producer)
+
+    def build_sql_suffix(self, bloom_filter_sql_predicate):
+
+        stripped_sql = self.s3sql.strip()
+        if stripped_sql.endswith(';'):
+            stripped_sql = stripped_sql[:-1].strip()
+
+        split_sql = stripped_sql.split()
+        is_predicate_present = split_sql[-1].lower() is not "s3object"
+        if is_predicate_present:
+            return " and {} ".format(bloom_filter_sql_predicate)
+        else:
+            return " where {} ".format(bloom_filter_sql_predicate)
 
     def send_data(self, t):
 

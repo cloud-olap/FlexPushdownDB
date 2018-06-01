@@ -2,13 +2,15 @@
 """Table scan tests
 
 """
-from metric.op_metrics import OpMetrics
+
 from op.collate import Collate
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
+from util.test_util import gen_test_id
 
 
-def test_scan():
+def test_scan_simple():
     """Executes a scan. The results are then collated.
 
     :return: None
@@ -16,13 +18,22 @@ def test_scan():
 
     num_rows = 0
 
+    query_plan = QueryPlan()
+
     # Query plan
-    ts = TableScan('nation.csv',
-                   'select * from S3Object '
-                   'limit 3;', 'ts', False)
-    c = Collate('c', False)
+    ts = query_plan.add_operator(
+        SQLTableScan('nation.csv',
+                     'select * from S3Object '
+                     'limit 3;',
+                     'ts',
+                     False))
+    c = query_plan.add_operator(
+        Collate('c', False))
 
     ts.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
@@ -41,6 +52,11 @@ def test_scan():
     assert LabelledTuple(c.tuples()[2], c.tuples()[0]) == \
            ['1', 'ARGENTINA', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
     assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
-           ['2', 'BRAZIL', '1', 'y alongside of the pending deposits. carefully special packages are about the ironic forges. slyly special ']
+           ['2', 'BRAZIL', '1',
+            'y alongside of the pending deposits. carefully special packages are about the ironic forges. slyly special ']
 
-    OpMetrics.print_metrics([ts, c])
+    # Write the metrics
+    query_plan.print_metrics()
+
+
+

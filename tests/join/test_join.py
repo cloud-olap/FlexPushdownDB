@@ -6,29 +6,36 @@
 from op.collate import Collate
 from op.join import Join, JoinExpression
 from op.project import Project, ProjectExpr
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
+from util.test_util import gen_test_id
 
 
-def test_join():
+def test_join_baseline():
     """Tests a join
 
     :return: None
     """
 
+    query_plan = QueryPlan()
+
     # Query plan
-    ts1 = TableScan('supplier.csv', 'select * from S3Object;', 'ts1', False)
-    ts1_project = Project([ProjectExpr(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False)
-    ts2 = TableScan('nation.csv', 'select * from S3Object;', 'ts2', False)
-    ts2_project = Project([ProjectExpr(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False)
-    j = Join(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False)
-    c = Collate('c', False)
+    ts1 = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts1', False))
+    ts1_project = query_plan.add_operator(Project([ProjectExpr(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False))
+    ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', False))
+    ts2_project = query_plan.add_operator(Project([ProjectExpr(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False))
+    j = query_plan.add_operator(Join(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
+    c = query_plan.add_operator(Collate('c', False))
 
     ts1.connect(ts1_project)
     ts2.connect(ts2_project)
     j.connect_left_producer(ts1_project)
     j.connect_right_producer(ts2_project)
     j.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts1.start()
@@ -53,3 +60,6 @@ def test_join():
         if num_rows > 1:
             lt = LabelledTuple(t, field_names)
             assert lt['s_nationkey'] == lt['n_nationkey']
+
+    # Write the metrics
+    query_plan.print_metrics()

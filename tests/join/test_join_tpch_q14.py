@@ -76,18 +76,20 @@ where
 import re
 from datetime import datetime, timedelta
 
-from metric.op_metrics import OpMetrics
+from plan.op_metrics import OpMetrics
 from op.aggregate import Aggregate
 from op.aggregate_expression import AggregateExpression
 from op.bloom_create import BloomCreate
 from op.project import Project, ProjectExpr
-from op.table_scan_bloom_use import TableScanBloomUse
+from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from op.collate import Collate
 from op.filter import Filter
 from op.predicate_expression import PredicateExpression
 from op.join import Join, JoinExpression
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
+from plan.query_plan import QueryPlan
 from sql.function import cast, timestamp, sum_fn
+from util.test_util import gen_test_id
 
 
 def test_join_baseline():
@@ -98,13 +100,15 @@ def test_join_baseline():
 
     print("Baseline Join")
 
+    query_plan = QueryPlan()
+
     # Query plan
     # This date is chosen because it triggers the filter to filter out 1 of the rows in the root data set.
     date = '1996-03-13'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    lineitem_scan = TableScan('lineitem.csv',
+    lineitem_scan = query_plan.add_operator(SQLTableScan('lineitem.csv',
                               "select * from S3Object "
                               "where "
                               "(l_orderkey = '18436' and l_partkey = '164584') or "
@@ -122,9 +126,9 @@ def test_join_baseline():
                               "(l_orderkey = '2945' and l_partkey = '126197') or "
                               "(l_orderkey = '15648' and l_partkey = '143904');",
                               'lineitem_scan',
-                              False)
+                                 False))
 
-    lineitem_scan_project = Project(
+    lineitem_scan_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_1'], 'l_partkey'),
             ProjectExpr(lambda t_: t_['_5'], 'l_extendedprice'),
@@ -132,38 +136,38 @@ def test_join_baseline():
             ProjectExpr(lambda t_: t_['_10'], 'l_shipdate')
         ],
         'lineitem_scan_project',
-        False)
+        False))
 
-    part_scan = TableScan('part.csv',
+    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
                           "select * from S3Object;",
                           'part_scan',
-                          False)
+                             False))
 
-    part_scan_project = Project(
+    part_scan_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpr(lambda t_: t_['_3'], 'p_brand'),
             ProjectExpr(lambda t_: t_['_4'], 'p_type')
         ],
         'part_scan_project',
-        False)
+        False))
 
-    lineitem_filter = Filter(
+    lineitem_filter = query_plan.add_operator(Filter(
         PredicateExpression(lambda t_:
                             (cast(t_['l_shipdate'], timestamp) >= cast(min_shipped_date, timestamp)) and
                             (cast(t_['l_shipdate'], timestamp) < cast(max_shipped_date, timestamp))),
         'lineitem_filter',
-        False)
+        False))
 
-    part_filter = Filter(
+    part_filter = query_plan.add_operator(Filter(
         PredicateExpression(lambda t: t['p_brand'] == 'Brand#12'),
         'part_filter',
-        False)  # p_brand
+        False))  # p_brand
 
-    join = Join(
+    join = query_plan.add_operator(Join(
         JoinExpression('l_partkey', 'p_partkey'),
         'join',
-        False)  # l_partkey and p_partkey
+        False))  # l_partkey and p_partkey
 
     def ex1(t, ctx):
 
@@ -184,16 +188,16 @@ def test_join_baseline():
 
         sum_fn(v1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
+    aggregate = query_plan.add_operator(Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
 
-    project = Project(
+    project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')
         ],
         'project',
-        False)
+        False))
 
-    collate = Collate('collate', False)
+    collate = query_plan.add_operator(Collate('collate', False))
 
     lineitem_scan.connect(lineitem_scan_project)
     lineitem_scan_project.connect(lineitem_filter)
@@ -204,6 +208,9 @@ def test_join_baseline():
     join.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     lineitem_scan.start()
@@ -224,16 +231,8 @@ def test_join_baseline():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
-    OpMetrics.print_metrics([
-        lineitem_scan,
-        part_scan,
-        lineitem_filter,
-        part_filter,
-        join,
-        aggregate,
-        project,
-        collate
-    ])
+    # Write the metrics
+    query_plan.print_metrics()
 
 
 def test_join_filtered():
@@ -244,13 +243,15 @@ def test_join_filtered():
 
     print("Filtered Join")
 
+    query_plan = QueryPlan()
+
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
     date = '1996-03-13'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    lineitem_scan = TableScan('lineitem.csv',
+    lineitem_scan = query_plan.add_operator(SQLTableScan('lineitem.csv',
                               "select l_partkey, l_extendedprice, l_discount from S3Object "
                               "where "
                               "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
@@ -273,35 +274,35 @@ def test_join_filtered():
                               ") "
                               ";".format(min_shipped_date.strftime('%Y-%m-%d'), max_shipped_date.strftime('%Y-%m-%d')),
                               'lineitem_scan',
-                              False)
+                                 False))
 
-    lineitem_scan_project = Project(
+    lineitem_scan_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
             ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
             ProjectExpr(lambda t_: t_['_2'], 'l_discount')
         ],
         'lineitem_scan_project',
-        False)
+        False))
 
-    part_scan = TableScan('part.csv',
+    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
                           "select "
                           "  p_partkey, p_type from S3Object "
                           "where "
                           "  p_brand = 'Brand#12' "
                           " ",
                           'part_scan',
-                          False)
+                             False))
 
-    part_scan_project = Project(
+    part_scan_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpr(lambda t_: t_['_1'], 'p_type')
         ],
         'part_scan_project',
-        False)
+        False))
 
-    join = Join(JoinExpression('l_partkey', 'p_partkey'), 'join', False)  # l_partkey and p_partkey
+    join = query_plan.add_operator(Join(JoinExpression('l_partkey', 'p_partkey'), 'join', False))  # l_partkey and p_partkey
 
     def ex1(t, ctx):
 
@@ -322,9 +323,9 @@ def test_join_filtered():
 
         sum_fn(v1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
-    project = Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False)
-    collate = Collate('collate', False)
+    aggregate = query_plan.add_operator(Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
+    project = query_plan.add_operator(Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False))
+    collate = query_plan.add_operator(Collate('collate', False))
 
     lineitem_scan.connect(lineitem_scan_project)
     part_scan.connect(part_scan_project)
@@ -333,6 +334,9 @@ def test_join_filtered():
     join.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     lineitem_scan.start()
@@ -353,8 +357,8 @@ def test_join_filtered():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
-    OpMetrics.print_metrics(
-        [lineitem_scan, part_scan, join, aggregate, project, collate])
+    # Write the metrics
+    query_plan.print_metrics()
 
 
 def test_join_bloom():
@@ -365,32 +369,34 @@ def test_join_bloom():
 
     print("Bloom Join")
 
+    query_plan = QueryPlan()
+
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
     date = '1996-03-13'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_scan = TableScan('part.csv',
+    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
                           "select "
                           "  p_partkey, p_type from S3Object "
                           "where "
                           "  p_brand = 'Brand#12' "
                           " ",
                           'part_scan',
-                          False)
+                             False))
 
-    part_scan_project = Project(
+    part_scan_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpr(lambda t_: t_['_1'], 'p_type')
         ],
         'part_scan_project',
-        False)
+        False))
 
-    part_bloom_create = BloomCreate('p_partkey', 'part_bloom_create', False)  # p_partkey
+    part_bloom_create = query_plan.add_operator(BloomCreate('p_partkey', 'part_bloom_create', False))  # p_partkey
 
-    lineitem_scan = TableScanBloomUse('lineitem.csv',
+    lineitem_scan = query_plan.add_operator(SQLTableScanBloomUse('lineitem.csv',
                                       "select "
                                       "  l_partkey, l_extendedprice, l_discount from S3Object "
                                       "where "
@@ -415,21 +421,21 @@ def test_join_bloom():
                                       " ".format(
                                           min_shipped_date.strftime('%Y-%m-%d'),
                                           max_shipped_date.strftime('%Y-%m-%d'))
-                                      ,
-                                      'l_partkey',
-                                      'lineitem_scan',
-                                      False)
+                                         ,
+                                         'l_partkey',
+                                         'lineitem_scan',
+                                         False))
 
-    lineitem_scan_project = Project(
+    lineitem_scan_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
             ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
             ProjectExpr(lambda t_: t_['_2'], 'l_discount')
         ],
         'lineitem_scan_project',
-        False)
+        False))
 
-    join = Join(JoinExpression('p_partkey', 'l_partkey'), 'join', False)  # p_partkey and l_partkey
+    join = query_plan.add_operator(Join(JoinExpression('p_partkey', 'l_partkey'), 'join', False))  # p_partkey and l_partkey
 
     def ex1(t, ctx):
 
@@ -450,13 +456,13 @@ def test_join_bloom():
 
         sum_fn(v1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
-    project = Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False)
-    collate = Collate('collate', False)
+    aggregate = query_plan.add_operator(Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
+    project = query_plan.add_operator(Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False))
+    collate = query_plan.add_operator(Collate('collate', False))
 
     part_scan.connect(part_scan_project)
     part_scan_project.connect(part_bloom_create)
-    part_bloom_create.connect_bloom_consumer(lineitem_scan)
+    part_bloom_create.connect(lineitem_scan)
     # part_scan.connect(join)
     join.connect_left_producer(part_scan_project)
     lineitem_scan.connect(lineitem_scan_project)
@@ -465,6 +471,9 @@ def test_join_bloom():
     join.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     part_scan.start()
@@ -484,8 +493,8 @@ def test_join_bloom():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
-    OpMetrics.print_metrics(
-        [part_scan, part_bloom_create, lineitem_scan, join, aggregate, project, collate])
+    # Write the metrics
+    query_plan.print_metrics()
 
 
 def test_join_semi():
@@ -496,30 +505,32 @@ def test_join_semi():
 
     print("Semi Join")
 
+    query_plan = QueryPlan()
+
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
     date = '1996-03-13'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_scan_1 = TableScan('part.csv',
+    part_scan_1 = query_plan.add_operator(SQLTableScan('part.csv',
                             "select "
                             "  p_partkey from S3Object "
                             "where "
                             "  p_brand = 'Brand#12' "
                             " ",
                             'part_table_scan_1',
-                            False)
+                               False))
 
-    part_scan_1_project = Project(
+    part_scan_1_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'p_partkey')
         ],
         'part_scan_1_project',
-        False)
+        False))
 
-    part_bloom_create = BloomCreate('p_partkey', 'part_bloom_create', False)  # p_partkey
-    lineitem_scan_1 = TableScanBloomUse('lineitem.csv',
+    part_bloom_create = query_plan.add_operator(BloomCreate('p_partkey', 'part_bloom_create', False))  # p_partkey
+    lineitem_scan_1 = query_plan.add_operator(SQLTableScanBloomUse('lineitem.csv',
                                         "select "
                                         "  l_partkey from S3Object "
                                         "where "
@@ -543,22 +554,22 @@ def test_join_semi():
                                         "  ) "
                                         " ".format(min_shipped_date.strftime('%Y-%m-%d'),
                                                    max_shipped_date.strftime('%Y-%m-%d'))
-                                        ,
-                                        'l_partkey',
-                                        'lineitem_table_scan_1',
-                                        False)
-    lineitem_scan_1_project = Project(
+                                           ,
+                                           'l_partkey',
+                                           'lineitem_table_scan_1',
+                                           False))
+    lineitem_scan_1_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'l_partkey')
         ],
         'lineitem_scan_1_project',
-        False)
+        False))
 
-    part_lineitem_join_1 = Join(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
-                                False)  # p_partkey and l_partkey
-    join_bloom_create = BloomCreate('l_partkey', 'join_bloom_create',
-                                    False)  # l_partkey (= p_partkey truth be told :) )
-    part_table_scan_2 = TableScanBloomUse('part.csv',
+    part_lineitem_join_1 = query_plan.add_operator(Join(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
+                                False))  # p_partkey and l_partkey
+    join_bloom_create = query_plan.add_operator(BloomCreate('l_partkey', 'join_bloom_create',
+                                    False))  # l_partkey (= p_partkey truth be told :) )
+    part_table_scan_2 = query_plan.add_operator(SQLTableScanBloomUse('part.csv',
                                           "select "
                                           "  p_partkey, p_type from S3Object "
                                           "where "
@@ -566,17 +577,17 @@ def test_join_semi():
                                           " ",
                                           'p_partkey',
                                           'part_table_scan_2',
-                                          False)
+                                             False))
 
-    part_scan_2_project = Project(
+    part_scan_2_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpr(lambda t_: t_['_1'], 'p_type')
         ],
         'part_scan_2_project',
-        False)
+        False))
 
-    lineitem_table_scan_2 = TableScanBloomUse('lineitem.csv',
+    lineitem_table_scan_2 = query_plan.add_operator(SQLTableScanBloomUse('lineitem.csv',
                                               "select "
                                               "  l_partkey, l_extendedprice, l_discount from S3Object "
                                               "where "
@@ -600,21 +611,21 @@ def test_join_semi():
                                               "  ) "
                                               " ".format(min_shipped_date.strftime('%Y-%m-%d'),
                                                          max_shipped_date.strftime('%Y-%m-%d')),
-                                              'l_partkey',
-                                              'lineitem_table_scan_2',
-                                              False)
-    lineitem_scan_2_project = Project(
+                                                 'l_partkey',
+                                                 'lineitem_table_scan_2',
+                                                 False))
+    lineitem_scan_2_project = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
             ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
             ProjectExpr(lambda t_: t_['_2'], 'l_discount')
         ],
         'lineitem_scan_2_project',
-        False)
+        False))
 
-    part_lineitem_join_2 = Join(JoinExpression('p_partkey', 'l_partkey'),
+    part_lineitem_join_2 = query_plan.add_operator(Join(JoinExpression('p_partkey', 'l_partkey'),
                                 'part_lineitem_join_2',
-                                False)  # p_partkey and l_partkey
+                                False))  # p_partkey and l_partkey
 
     def ex1(t, ctx):
 
@@ -635,19 +646,19 @@ def test_join_semi():
 
         sum_fn(v1, ctx)
 
-    aggregate = Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False)
-    project = Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False)
-    collate = Collate('collate', False)
+    aggregate = query_plan.add_operator(Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
+    project = query_plan.add_operator(Project([ProjectExpr(lambda t: 100 * t['_0'] / t['_1'], 'promo_revenue')], 'project', False))
+    collate = query_plan.add_operator(Collate('collate', False))
 
     part_scan_1.connect(part_scan_1_project)
     part_scan_1_project.connect(part_bloom_create)
-    part_bloom_create.connect_bloom_consumer(lineitem_scan_1)
+    part_bloom_create.connect(lineitem_scan_1)
     part_lineitem_join_1.connect_left_producer(part_scan_1_project)
     lineitem_scan_1.connect(lineitem_scan_1_project)
     part_lineitem_join_1.connect_right_producer(lineitem_scan_1_project)
     part_lineitem_join_1.connect(join_bloom_create)
-    join_bloom_create.connect_bloom_consumer(part_table_scan_2)
-    join_bloom_create.connect_bloom_consumer(lineitem_table_scan_2)
+    join_bloom_create.connect(part_table_scan_2)
+    join_bloom_create.connect(lineitem_table_scan_2)
     part_table_scan_2.connect(part_scan_2_project)
     part_lineitem_join_2.connect_left_producer(part_scan_2_project)
     lineitem_table_scan_2.connect(lineitem_scan_2_project)
@@ -655,6 +666,9 @@ def test_join_semi():
     part_lineitem_join_2.connect(aggregate)
     aggregate.connect(project)
     project.connect(collate)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     part_scan_1.start()
@@ -674,16 +688,5 @@ def test_join_semi():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
-    OpMetrics.print_metrics([
-        part_scan_1,
-        part_bloom_create,
-        lineitem_scan_1,
-        part_lineitem_join_1,
-        join_bloom_create,
-        part_table_scan_2,
-        lineitem_table_scan_2,
-        part_lineitem_join_2,
-        aggregate,
-        project,
-        collate
-    ])
+    # Write the metrics
+    query_plan.print_metrics()

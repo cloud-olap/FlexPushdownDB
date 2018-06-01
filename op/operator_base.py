@@ -98,9 +98,9 @@ class Operator(object):
         """
 
         for op in operators:
-            self.fire_on_received(message, op)
+            self.fire_on_receive(message, op)
 
-    def fire_on_received(self, message, consumer):
+    def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
         consumer.on_receive(message, self)
         switch_context(consumer, self)

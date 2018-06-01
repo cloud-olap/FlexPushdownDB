@@ -3,7 +3,7 @@
 
 """
 
-from metric.op_metrics import OpMetrics
+from plan.op_metrics import OpMetrics
 from op.aggregate_expression import AggregateExpression
 from op.group import AggregateExpressionContext
 from op.operator_base import Operator

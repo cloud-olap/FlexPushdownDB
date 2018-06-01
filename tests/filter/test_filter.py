@@ -6,20 +6,27 @@
 from op.collate import Collate
 from op.filter import Filter
 from op.predicate_expression import PredicateExpression
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
 from sql.function import timestamp, cast
+from util.test_util import gen_test_id
 
 
-def test_filter():
+def test_filter_baseline():
+
+    query_plan = QueryPlan()
 
     # Query plan
-    ts = TableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', False)
-    f = Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)), 'f', False)
-    c = Collate('c', False)
+    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', False))
+    f = query_plan.add_operator(Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)), 'f', False))
+    c = query_plan.add_operator(Collate('c', False))
 
     ts.connect(f)
     f.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
@@ -41,3 +48,6 @@ def test_filter():
     assert LabelledTuple(c.tuples()[2], c.tuples()[0]) == \
            ['1', '67310', '7311', '2', '36', '45983.16', '0.09', '0.06', 'N', 'O', '1996-04-12', '1996-02-28',
             '1996-04-20', 'TAKE BACK RETURN', 'MAIL', 'ly final dependencies: slyly bold ']
+
+    # Write the metrics
+    query_plan.print_metrics()

@@ -2,7 +2,7 @@
 """Logging support
 
 """
-from metric.op_metrics import OpMetrics
+from plan.op_metrics import OpMetrics
 from op.operator_base import Operator
 
 

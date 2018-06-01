@@ -5,8 +5,10 @@
 
 from op.collate import Collate
 from op.project import Project, ProjectExpr
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
+from util.test_util import gen_test_id
 
 
 def test_project():
@@ -17,22 +19,27 @@ def test_project():
 
     num_rows = 0
 
+    query_plan = QueryPlan()
+
     # Query plan
-    ts = TableScan('nation.csv',
+    ts = query_plan.add_operator(SQLTableScan('nation.csv',
                    'select * from S3Object '
-                   'limit 3;', 'ts', False)
-    p = Project(
+                   'limit 3;', 'ts', False))
+    p = query_plan.add_operator(Project(
         [
             ProjectExpr(lambda t_: t_['_2'], 'n_regionkey'),  # identity lambda
             ProjectExpr(lambda t_: t_['_0'], 'n_nationkey'),  # identity lambda
             ProjectExpr(lambda t_: t_['_3'], 'n_comment')  # identity lambda
         ],
         'p',
-        False)
-    c = Collate('c', False)
+        False))
+    c = query_plan.add_operator(Collate('c', False))
 
     ts.connect(p)
     p.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
@@ -53,3 +60,6 @@ def test_project():
     assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
            ['1', '2',
             'y alongside of the pending deposits. carefully special packages are about the ironic forges. slyly special ']
+
+    # Write the metrics
+    query_plan.print_metrics()

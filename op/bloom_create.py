@@ -3,9 +3,10 @@
 
 """
 
-from metric.op_metrics import OpMetrics
+from plan.op_metrics import OpMetrics
 from op.operator_base import Operator
 from op.message import TupleMessage, BloomMessage
+from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from op.tuple import LabelledTuple
 from util.bloom_filter_util import Bloom
 from util.timer import Timer
@@ -45,18 +46,19 @@ class BloomCreate(Operator):
 
         self.__field_names = None
 
-        self.__bloom_consumers = []
-
         self.__bloom_filter = Bloom()
 
-    def connect_bloom_consumer(self, consumer):
+    def connect(self, consumer):
         """
 
         :param consumer:
         :return:
         """
 
-        self.__bloom_consumers.append(consumer)
+        if type(consumer) is not SQLTableScanBloomUse:
+            raise Exception("Illegal consumer. {} operator may only be connected to {} operators"
+                            .format(self.__class__.__name__, SQLTableScanBloomUse.__class__.__name__))
+
         Operator.connect(self, consumer)
 
     def on_receive(self, m, _producer):
@@ -98,7 +100,7 @@ class BloomCreate(Operator):
 
         self.op_metrics.bloom_filter_bit_array_len = self.__bloom_filter.bit_array_len()
 
-        self.send(BloomMessage(self.__bloom_filter), self.__bloom_consumers)
+        self.send(BloomMessage(self.__bloom_filter), self.consumers)
 
     def __on_receive_tuple(self, tuple_):
         """

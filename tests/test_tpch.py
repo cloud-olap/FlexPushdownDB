@@ -8,9 +8,11 @@ from op.aggregate_expression import AggregateExpression
 from op.collate import Collate
 from op.group import Group
 from op.sort import Sort, SortExpression
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
 from sql.function import sum_fn, avg_fn, count_fn
+from util.test_util import gen_test_id
 
 
 def test_tpch_q1():
@@ -45,16 +47,18 @@ def test_tpch_q1():
     #   l_returnflag,
     #   l_linestatus;
 
+    query_plan = QueryPlan()
+
     delta_days = 60  # TODO: This is supposed to be randomized I think
     shipped_date = datetime.strptime('1992-04-01', '%Y-%m-%d') - timedelta(days=delta_days)
 
-    ts = TableScan("lineitem.csv",
+    ts = query_plan.add_operator(SQLTableScan("lineitem.csv",
                    "select * from S3Object "
                    "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp)"
-                   .format(shipped_date.strftime('%Y-%m-%d')),
+                      .format(shipped_date.strftime('%Y-%m-%d')),
                    'lineitem',
-                   False)
-    g = Group(
+                      False))
+    g = query_plan.add_operator(Group(
         [
             '_8',  # l_returnflag
             '_9'  # l_linestatus
@@ -79,19 +83,22 @@ def test_tpch_q1():
             AggregateExpression(lambda t_, ctx: count_fn(t_['_0'], ctx))
         ],
         'lineitem_grouped',
-        False)
-    s = Sort(
+        False))
+    s = query_plan.add_operator(Sort(
         [
             SortExpression('_0', str, 'ASC'),
             SortExpression('_1', str, 'ASC')
         ],
         'lineitem_group_sorted',
-        False)
-    c = Collate('collation', False)
+        False))
+    c = query_plan.add_operator(Collate('collation', False))
 
     ts.connect(g)
     g.connect(s)
     s.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
@@ -114,3 +121,6 @@ def test_tpch_q1():
     assert LabelledTuple(c.tuples()[2], field_names) == \
            ["R", "F", 129740, 193438367.33999985, 183701990.7670003, 191045646.36937532, 25.509241053873353,
             38033.49731419579, 0.05061541486433399, 5086]
+
+    # Write the metrics
+    query_plan.print_metrics()

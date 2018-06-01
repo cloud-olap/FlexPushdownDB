@@ -2,7 +2,7 @@
 """Join support
 
 """
-from metric.op_metrics import OpMetrics
+from plan.op_metrics import OpMetrics
 from op.operator_base import Operator
 from op.message import TupleMessage
 from op.tuple import Tuple, LabelledTuple

@@ -5,8 +5,10 @@
 
 from op.collate import Collate
 from op.sort import Sort, SortExpression
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
+from util.test_util import gen_test_id
 
 
 def test_sort_asc():
@@ -17,12 +19,17 @@ def test_sort_asc():
 
     num_rows = 0
 
+    query_plan = QueryPlan()
+
     # Query plan
-    ts = TableScan('supplier.csv',
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                    'select * from S3Object '
-                   'limit 3;', 'ts', False)
-    s = Sort([SortExpression('_5', float, 'ASC')], 's', False)
-    c = Collate('c', False)
+                   'limit 3;', 'ts', False))
+    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', False))
+    c = query_plan.add_operator(Collate('c', False))
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     ts.connect(s)
     s.connect(c)
@@ -49,6 +56,8 @@ def test_sort_asc():
            ['1', 'Supplier#000000001', ' N kD4on9OM Ipw3,gf0JBoQDd7tgrzrddZ', '17', '27-918-335-1736', '5755.94',
             'each slyly above the careful']
 
+    # Write the metrics
+    query_plan.print_metrics()
 
 def test_sort_desc():
     """Executes a sorted query. The results are collated.
@@ -58,12 +67,17 @@ def test_sort_desc():
 
     num_rows = 0
 
+    query_plan = QueryPlan()
+
     # Query plan
-    ts = TableScan('supplier.csv',
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                    'select * from S3Object '
-                   'limit 3;', 'ts', False)
-    s = Sort([SortExpression('_5', float, 'DESC')], 's', False)
-    c = Collate('c', False)
+                   'limit 3;', 'ts', False))
+    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'DESC')], 's', False))
+    c = query_plan.add_operator(Collate('c', False))
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     ts.connect(s)
     s.connect(c)
@@ -89,3 +103,6 @@ def test_sort_desc():
     assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
            ['2', 'Supplier#000000002', '89eJ5ksX3ImxJQBvxObC,', '5', '15-679-861-2259', '4032.68',
             ' slyly bold instructions. idle dependen']
+
+    # Write the metrics
+    query_plan.print_metrics()

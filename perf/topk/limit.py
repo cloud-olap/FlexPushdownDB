@@ -10,7 +10,7 @@ specified in the limit clause.
 
 import timeit
 from op.collate import Collate
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
     limit = 500
 
     # Query plan
-    ts = TableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit), 'ts', False)
+    ts = SQLTableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit), 'ts', False)
     c = Collate('c', False)
 
     ts.connect(c)

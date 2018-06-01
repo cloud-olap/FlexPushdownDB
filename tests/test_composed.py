@@ -2,14 +2,17 @@
 """Composed operator query tests
 
 """
+import inspect
 
 from op.collate import Collate
 from op.join import Join, JoinExpression
 from op.project import Project, ProjectExpr
 from op.sort import Sort, SortExpression
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 from op.top import Top
 from op.tuple import LabelledTuple
+from plan.query_plan import QueryPlan
+from util.test_util import gen_test_id
 
 
 def test_sort_topk():
@@ -21,17 +24,22 @@ def test_sort_topk():
 
     limit = 5
 
+    query_plan = QueryPlan()
+
     # Query plan
-    ts = TableScan('supplier.csv', 'select * from S3Object;', 'ts', False)
-    s = Sort([
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+    s = query_plan.add_operator(Sort([
         SortExpression('_5', float, 'ASC')
-    ], 's', False)
-    t = Top(limit, 't', False)
-    c = Collate('c', False)
+    ], 's', False))
+    t = query_plan.add_operator(Top(limit, 't', False))
+    c = query_plan.add_operator(Collate('c', False))
 
     ts.connect(s)
     s.connect(t)
     t.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
@@ -61,6 +69,8 @@ def test_sort_topk():
                 prev_lt = LabelledTuple(prev, field_names)
                 assert float(lt['_5']) > float(prev_lt['_5'])
 
+    # Write the metrics
+    query_plan.print_metrics()
 
 def test_join_topk():
     """Tests a top k with a join
@@ -70,14 +80,16 @@ def test_join_topk():
 
     limit = 5
 
+    query_plan = QueryPlan()
+
     # Query plan
-    ts1 = TableScan('supplier.csv', 'select * from S3Object;', 'ts1', False)
-    ts1_project = Project([ProjectExpr(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False)
-    ts2 = TableScan('nation.csv', 'select * from S3Object;', 'ts2', False)
-    ts2_project = Project([ProjectExpr(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False)
-    j = Join(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False)
-    t = Top(limit, 't', False)
-    c = Collate('c', False)
+    ts1 = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts1', False))
+    ts1_project = query_plan.add_operator(Project([ProjectExpr(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False))
+    ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', False))
+    ts2_project = query_plan.add_operator(Project([ProjectExpr(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False))
+    j = query_plan.add_operator(Join(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
+    t = query_plan.add_operator(Top(limit, 't', False))
+    c = query_plan.add_operator(Collate('c', False))
 
     ts1.connect(ts1_project)
     ts2.connect(ts2_project)
@@ -85,6 +97,9 @@ def test_join_topk():
     j.connect_right_producer(ts2_project)
     j.connect(t)
     t.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts1.start()
@@ -109,3 +124,6 @@ def test_join_topk():
         if num_rows > 1:
             lt = LabelledTuple(t, field_names)
             assert lt['s_nationkey'] == lt['n_nationkey']
+
+    # Write the metrics
+    query_plan.print_metrics()

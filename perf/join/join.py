@@ -6,7 +6,7 @@
 from datetime import datetime, timedelta
 from op.collate import Collate
 from op.join import Join, JoinExpression
-from op.table_scan import TableScan
+from op.sql_table_scan import SQLTableScan
 
 
 def main():
@@ -36,7 +36,7 @@ def main():
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    ts1 = TableScan('lineitem.csv',
+    ts1 = SQLTableScan('lineitem.csv',
                     "select * from S3Object "
                     "where "
                     "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
@@ -45,8 +45,8 @@ def main():
                         min_shipped_date.strftime('%Y-%m-%d'),
                         max_shipped_date.strftime('%Y-%m-%d')),
                     'ts1',
-                    False)
-    ts2 = TableScan('part.csv',
+                       False)
+    ts2 = SQLTableScan('part.csv',
                     "select * from S3Object "
                     ";", 'ts2', False)
     j = Join(JoinExpression('lineitem.csv', '_1', 'part.csv', '_0'), 'j', False)
