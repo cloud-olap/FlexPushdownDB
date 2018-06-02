@@ -54,6 +54,21 @@ class Bloom(object):
         (cast(p_partkey as int) * cast(p_partkey as int)) % 1000 in (12, 64)
         ((cast(p_partkey as int) + 1) * cast(p_partkey as int)) % 1000 in (12, 64)
 
+    TODO: Dynamic bloom filter
+
+    Some thoughts on how to make this dynamic (as in... support more values that the original bloom filter capacity
+    can cope with):
+
+    So the basic idea behind a dynamic bloom filter is to prevent the situation when the you get a bloom filter that
+    has filled up with so many bits, the number of false positives becomes a problem. The way to deal with this is to
+    create another bloom filter (of a size double the initial bloom filter bit array).
+
+    This is simple to implement on the python side. Once we are over the maximum number of bits in the n'th array, we
+    allocate a n+1'th array and add the hashes to that. The sql predicate that gets generated will be as before but
+    with an additional predicate or'd with the first.
+
+    TODO: The number of hash functions needs to be considered also.
+
     """
 
     def __init__(self):

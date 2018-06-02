@@ -12,6 +12,9 @@ from util.bloom_filter_util import Bloom
 
 
 class BloomCreateMetrics(OpMetrics):
+    """Extra metrics
+
+    """
 
     def __init__(self):
         super(BloomCreateMetrics, self).__init__()
@@ -27,7 +30,9 @@ class BloomCreateMetrics(OpMetrics):
 
 
 class BloomCreate(Operator):
-    """
+    """This operator creates a bloom filter from the tuples it receives. Given a field name to create the filter from
+    it will add the tuple value corresponding the field name to the internal bloom filter. Once the connected
+    producer is complete the bloom filter is sent to any connected consumers.
 
     """
 
@@ -35,8 +40,8 @@ class BloomCreate(Operator):
         """
 
         :param bloom_field_name: The tuple field name to extract values from to create the bloom filter
-        :param name:
-        :param log_enabled:
+        :param name: The operator name
+        :param log_enabled: Logging enabled
         """
 
         super(BloomCreate, self).__init__(name, BloomCreateMetrics(), log_enabled)
@@ -48,10 +53,11 @@ class BloomCreate(Operator):
         self.__bloom_filter = Bloom()
 
     def connect(self, consumer):
-        """
+        """Overrides the generic connect method to make sure that the connecting operator is an operator that consumes
+        bloom filters.
 
-        :param consumer:
-        :return:
+        :param consumer: The consumer to connect
+        :return: None
         """
 
         if type(consumer) is not SQLTableScanBloomUse:
@@ -61,11 +67,11 @@ class BloomCreate(Operator):
         Operator.connect(self, consumer)
 
     def on_receive(self, m, _producer):
-        """
+        """Event handler for receiving a message
 
-        :param m:
-        :param _producer:
-        :return:
+        :param m: The message
+        :param _producer: The producer that sent the message
+        :return: None
         """
 
         if type(m) is TupleMessage:
@@ -74,10 +80,10 @@ class BloomCreate(Operator):
             raise Exception("Unrecognized message {}".format(m))
 
     def on_producer_completed(self, producer):
-        """
+        """Event handler for a completed producer. When producers complete the bloom filter can be sent.
 
-        :param producer:
-        :return:
+        :param producer: The producer that completed.
+        :return: None
         """
 
         # Send the bloom filter
@@ -86,9 +92,9 @@ class BloomCreate(Operator):
         Operator.on_producer_completed(self, producer)
 
     def __send_bloom_filter(self):
-        """
+        """Sends the bloom filter to connected consumers.
 
-        :return:
+        :return: None
         """
 
         if self.log_enabled:
@@ -102,25 +108,26 @@ class BloomCreate(Operator):
         self.send(BloomMessage(self.__bloom_filter), self.consumers)
 
     def __on_receive_tuple(self, tuple_):
-        """
+        """Event handler for receiving a tuple
 
-        :param tuple_:
-        :return:
+        :param tuple_: The received tuple
+        :return: None
         """
 
         if not self.__field_names:
+
+            if self.__bloom_field_name not in tuple_:
+                raise Exception(
+                    "Received invalid tuple {}. "
+                    "Tuple field names '{}' do not contain field with bloom field name '{}'"
+                    .format(tuple_, tuple_, self.__bloom_field_name))
+
             # Don't send the field names, just collect them
             self.__field_names = tuple_
+
         else:
             lt = LabelledTuple(tuple_, self.__field_names)
 
-            if self.__bloom_field_name not in lt:
-                raise Exception(
-                    "Received invalid tuple {}. "
-                    "Tuple field names '{}' does not contain field with bloom field name '{}'"
-                    .format(tuple_, lt.labels, self.__bloom_field_name))
-            else:
+            self.op_metrics.tuple_count += 1
 
-                self.op_metrics.tuple_count += 1
-
-                self.__bloom_filter.add(lt[self.__bloom_field_name])
+            self.__bloom_filter.add(lt[self.__bloom_field_name])

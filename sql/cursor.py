@@ -12,30 +12,29 @@ import io
 class Cursor(object):
     """Represents a database cursor for managing the context of a fetch operation.
 
-    Intended to be modelled after the Python DB API. Though (at present anyway) you don't pass it arbitrary SQL strings
-    but rather call various methods to build up the cursor definition before execution.
+    Intended to be modelled after the Python DB API. All it supports at present is select, taking a s3 key and sql
+    string to execute. The rows returned from s3 are returned as an iterator.
 
     Importantly supports streaming of records which gives more control over simply passing Python data structures
     around.
 
-    WORK IN PROGRESS
-
     """
 
     def __init__(self):
-        self.key = None
-        self.sql = None
+        self.s3key = None
+        self.s3sql = None
         self.event_stream = None
 
-    def select(self, key, sql):
+    def select(self, s3key, s3sql):
         """Creates a select cursor
 
-        :param sql:  the sql to execute
-        :param key: the s3 key to select against
+        :param s3sql:  the sql to execute
+        :param s3key: the s3 key to select against
         :return: the cursor
         """
-        self.key = key
-        self.sql = sql
+
+        self.s3key = s3key
+        self.s3sql = s3sql
 
         return self
 
@@ -46,14 +45,6 @@ class Cursor(object):
         :return: An iterable of the records fetched
         """
 
-        return self.__do_execute(self.sql)
-
-    def __do_execute(self, sql):
-        """ Executes the defined cursor using the given SQL
-
-        :param sql: The sql statement to execute against S3
-        :return: An iterable of the records fetched
-        """
         s3 = boto3.client('s3')
 
         # print("Executing select_object_content")
@@ -68,9 +59,9 @@ class Cursor(object):
         #
         response = s3.select_object_content(
             Bucket=util.constants.S3_BUCKET_NAME,
-            Key=self.key,
+            Key=self.s3key,
             ExpressionType='SQL',
-            Expression=sql,
+            Expression=self.s3sql,
             InputSerialization={'CSV': {'FileHeaderInfo': 'Use', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
             OutputSerialization={'CSV': {}}
         )
@@ -82,6 +73,7 @@ class Cursor(object):
     def parse_event_stream(self):
         """Generator that hands out records from the event stream lazily
 
+        :return: Generator of the records returned from s3
         """
 
         prev_record_str = None
@@ -157,5 +149,9 @@ class Cursor(object):
                 # print("{} Cont Event".format(timeit.default_timer()))
 
     def close(self):
+        """Closes the s3 event stream
+
+        :return: None
+        """
         if self.event_stream:
             self.event_stream.close()

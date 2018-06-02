@@ -12,16 +12,16 @@ from op.tuple import LabelledTuple, Tuple
 
 
 class Aggregate(Operator):
-    """
+    """An operator that will generate aggregates (sums, avgs, etc) from the tuples it receives.
 
     """
 
     def __init__(self, expressions, name, log_enabled):
-        """
+        """Creates a new aggregate operator from the given list of expressions.
 
-        :param expressions:
-        :param name:
-        :param log_enabled:
+        :param expressions: List of aggregate expressions.
+        :param name: Operator name
+        :param log_enabled: Logging enabled.
         """
 
         super(Aggregate, self).__init__(name, OpMetrics(), log_enabled)
@@ -40,11 +40,11 @@ class Aggregate(Operator):
         self.__aggregate_contexts = {}
 
     def on_receive(self, m, _producer):
-        """
+        """Event handler for receiving a message.
 
-        :param m:
-        :param _producer:
-        :return:
+        :param m: The message
+        :param _producer: The producer that sent the message
+        :return: None
         """
 
         if type(m) is TupleMessage:
@@ -53,10 +53,10 @@ class Aggregate(Operator):
             raise Exception("Unrecognized message {}".format(m))
 
     def on_producer_completed(self, producer):
-        """
+        """Event handler for a producer completion event.
 
-        :param producer:
-        :return:
+        :param producer: The producer that completed.
+        :return: None
         """
 
         # Send the field names
@@ -73,10 +73,10 @@ class Aggregate(Operator):
         Operator.on_producer_completed(self, producer)
 
     def __on_receive_tuple(self, tuple_):
-        """
+        """Event handler for receiving a tuple.
 
-        :param tuple_:
-        :return:
+        :param tuple_: The tuple
+        :return: None
         """
 
         if not self.__field_names:
@@ -85,10 +85,10 @@ class Aggregate(Operator):
             self.__evaluate_aggregates(tuple_)
 
     def __evaluate_aggregates(self, tuple_):
-        """
+        """Performs evaluation of all the aggregate expressions for the given tuple.
 
-        :param tuple_:
-        :return:
+        :param tuple_: The tuple to pass to the expressions.
+        :return: None
         """
 
         i = 0
@@ -98,10 +98,10 @@ class Aggregate(Operator):
             i += 1
 
     def __get_aggregate_context(self, i):
-        """
+        """Returns the context for the given aggregate.
 
-        :param i:
-        :return:
+        :param i: The index of the expression
+        :return: The expressions aggregate context.
         """
 
         ctx = self.__aggregate_contexts.get(i, AggregateExpressionContext(0.0, {}))
@@ -109,9 +109,9 @@ class Aggregate(Operator):
         return ctx
 
     def __build_aggregate_field_values(self):
-        """
+        """Creates the list of field values from the evaluated aggregates.
 
-        :return:
+        :return: The field values
         """
 
         aggregate_field_values = []
@@ -126,9 +126,9 @@ class Aggregate(Operator):
         return aggregate_field_values
 
     def __build_aggregate_field_names(self):
-        """
+        """Creates the list of field names from the evaluated aggregates. Field names will just be _0, _1, etc.
 
-        :return:
+        :return: The list of field names.
         """
 
         return LabelledTuple(self.__expressions).labels

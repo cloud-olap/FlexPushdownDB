@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """SQL function support
 
+TODO: This can be tidied up, at least to remove the need to pass ctx around.
+
 """
+
 import numbers
 from datetime import datetime
 
@@ -23,7 +26,6 @@ def cast(ex, t):
 
 
 def sum_fn(ex, ctx):
-
     if not isinstance(ex, numbers.Number):
         raise Exception("Illegal expression type {} for expression {}. Sum expression must be numeric"
                         .format(type(ex), ex))
@@ -36,7 +38,6 @@ def sum_fn(ex, ctx):
 
 
 def avg_fn(ex, ctx):
-
     if not isinstance(ex, numbers.Number):
         raise Exception(
             "Illegal expression type {} for expression {}. Sum expression must be numeric".format(type(ex), ex))
@@ -60,10 +61,8 @@ def avg_fn(ex, ctx):
 
 
 def count_fn(_ex, ctx):
-
     current_count = ctx.result
 
     current_count += 1
 
     ctx.result = current_count
-

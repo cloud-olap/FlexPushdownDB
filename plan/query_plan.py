@@ -9,6 +9,10 @@ from plan.op_metrics import OpMetrics
 
 
 class QueryPlan(object):
+    """Container for the operators in a query. Really a convenience class that allows the plan graph to be
+    generated and the operator execution metrics.
+
+    """
 
     def __init__(self, name, operators=None):
         # type: (str, list) -> None

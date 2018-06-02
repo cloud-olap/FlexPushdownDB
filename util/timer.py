@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
-"""
+"""Timer support
 
 """
+
 import timeit
 
 
 class Timer(object):
+    """Provides a stopwatch like timer that can be started and stopped and return the total elapsed time. Useful for
+    profiling test runs.
+
+    It's not super accurate, but as accurate as Python 2 will support (Python 3 provides greater accuracy).
+
+    """
 
     def __init__(self):
         self.start_time = None

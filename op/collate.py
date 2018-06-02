@@ -46,10 +46,10 @@ class Collate(Operator):
             raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_tuple(self, tuple_):
-        """
+        """Event handler for a received tuple
 
-        :param tuple_:
-        :return:
+        :param tuple_: The received tuple
+        :return: None
         """
 
         self.__tuples.append(tuple_)
