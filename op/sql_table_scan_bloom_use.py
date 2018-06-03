@@ -11,8 +11,19 @@ from sql.cursor import Cursor
 
 
 class SQLTableScanBloomUse(Operator):
+    """Performs a table scan using a received bloom filter.
+
+    """
 
     def __init__(self, s3key, s3sql, bloom_filter_field_name, name, log_enabled):
+        """
+
+        :param s3key: The s3 key to select against
+        :param s3sql:  The s3 sql to use
+        :param bloom_filter_field_name: The field name to apply to the bloom filter predicate
+        :param name: The name of the operator
+        :param log_enabled: Whether logging is enabled
+        """
 
         super(SQLTableScanBloomUse, self).__init__(name, SQLTableScanMetrics(), log_enabled)
 
@@ -30,24 +41,37 @@ class SQLTableScanBloomUse(Operator):
             raise Exception("Bloom filter field name is of type {}. Field name must be of type str to be "
                             "used in SQL predicate".format(type(bloom_filter_field_name)))
 
-    def on_receive(self, m, _producer):
-        """Handles the event of receiving a new tuple from a producer. Will simply append the tuple to the internal
-        list.
+    def on_producer_completed(self, _producer):
+        """This event is overridden because we don't want the normal operator completion procedure to run. We want this
+        operator to complete when all the tuples have been retrieved or consumers indicate they need no more tuples.
 
-        :param m: The received tuples
-        :param _producer: The producer of the tuple
+        :param _producer: The completed producer
+        :return: None
+        """
+
+        pass
+
+    def on_receive(self, m, _producer):
+        """Handles the event of receiving a new message from a producer.
+
+        :param m: The received message
+        :param _producer: The producer of the message
         :return: None
         """
 
         # print("BloomScan | {}".format(t))
 
         if type(m) is BloomMessage:
-            # TODO: Can probably start the query here as all this operator waits for is the bloom filter
             self.__bloom_filter = m.bloom_filter
+            self.execute()
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_producer_completed(self, producer):
+    def execute(self):
+        """Executes the query and sends the tuples to consumers.
+
+        :return: None
+        """
 
         self.op_metrics.time_to_first_response_timer.start()
 
@@ -56,8 +80,6 @@ class SQLTableScanBloomUse(Operator):
         # Append the bloom filter predicate either using where... or and...
         sql_suffix = self.build_sql_suffix(bloom_filter_sql_predicate)
 
-        # print(bloom_filter_sql_predicate)
-
         sql = self.s3sql + sql_suffix
         cur = Cursor().select(self.s3key, sql)
 
@@ -65,8 +87,6 @@ class SQLTableScanBloomUse(Operator):
 
         first_tuple = True
         for t in tuples:
-
-            # print("Table Scan | {}".format(t))
 
             if self.is_completed():
                 break
@@ -79,11 +99,18 @@ class SQLTableScanBloomUse(Operator):
                 self.send_field_names(t)
                 first_tuple = False
 
-            self.send_data(t)
+            self.send_field_values(t)
 
-        Operator.on_producer_completed(self, producer)
+        if not self.is_completed():
+            self.complete()
 
     def build_sql_suffix(self, bloom_filter_sql_predicate):
+        """Creates the bloom filter sql predicate. Basically determines whether the sql suffix should start with 'and'
+        or 'where'.
+
+        :param bloom_filter_sql_predicate: The sql predicate from the bloom filter
+        :return: The sql suffix
+        """
 
         stripped_sql = self.s3sql.strip()
         if stripped_sql.endswith(';'):
@@ -91,22 +118,33 @@ class SQLTableScanBloomUse(Operator):
 
         split_sql = stripped_sql.split()
         is_predicate_present = split_sql[-1].lower() is not "s3object"
+
         if is_predicate_present:
             return " and {} ".format(bloom_filter_sql_predicate)
         else:
             return " where {} ".format(bloom_filter_sql_predicate)
 
-    def send_data(self, t):
+    def send_field_values(self, tuple_):
+        """Sends a field values tuple
+
+        :param tuple_: The tuple
+        :return: None
+        """
 
         if self.log_enabled:
-            print("{}('{}') | Sending data [{}]".format(self.__class__.__name__, self.name, {'data': t}))
+            print("{}('{}') | Sending field values [{}]".format(self.__class__.__name__, self.name, {'data': tuple_}))
 
-        self.send(TupleMessage(Tuple(t)), self.consumers)
+        self.send(TupleMessage(Tuple(tuple_)), self.consumers)
 
-    def send_field_names(self, t):
+    def send_field_names(self, tuple_):
+        """Sends the field names tuple
+
+        :param tuple_: The tuple
+        :return: None
+        """
 
         # Create and send the record field names
-        lt = LabelledTuple(t)
+        lt = LabelledTuple(tuple_)
         labels = Tuple(lt.labels)
 
         if self.log_enabled:

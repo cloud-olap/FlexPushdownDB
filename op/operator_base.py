@@ -47,6 +47,15 @@ class Operator(object):
         self.producers = []
         self.consumers = []
 
+        # TODO: Tidy up how completions are handled
+        self.producer_completions = {}
+        for p in self.producers:
+            self.producer_completions[p.name] = False
+
+        self.consumer_completions = {}
+        for p in self.producers:
+            self.consumer_completions[p.name] = False
+
         self.__completed = False
 
     def is_completed(self):
@@ -152,8 +161,12 @@ class Operator(object):
         :return: None
         """
 
-        if not self.is_completed():
-            self.complete()
+        self.producer_completions[_producer.name] = True
+
+        # Check if all consumers are completed
+        if all(self.producer_completions.values()):
+            if not self.is_completed():
+                self.complete()
 
     def on_consumer_completed(self, _consumer):
         """Handles a signal from consuming operators that they have completed what they needed to do. This is useful in
@@ -164,8 +177,12 @@ class Operator(object):
         :return: None
         """
 
-        if not self.is_completed():
-            self.complete()
+        self.consumer_completions[_consumer.name] = True
+
+        # Check if all consumers are completed
+        if all(self.consumer_completions.values()):
+            if not self.is_completed():
+                self.complete()
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, {'name': self.name})

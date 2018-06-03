@@ -78,7 +78,7 @@ from datetime import datetime, timedelta
 from op.aggregate import Aggregate
 from op.aggregate_expression import AggregateExpression
 from op.bloom_create import BloomCreate
-from op.project import Project, ProjectExpr
+from op.project import Project, ProjectExpression
 from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from op.collate import Collate
 from op.filter import Filter
@@ -126,10 +126,10 @@ def test_join_baseline():
 
     lineitem_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_1'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_5'], 'l_extendedprice'),
-            ProjectExpr(lambda t_: t_['_6'], 'l_discount'),
-            ProjectExpr(lambda t_: t_['_10'], 'l_shipdate')
+            ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_6'], 'l_discount'),
+            ProjectExpression(lambda t_: t_['_10'], 'l_shipdate')
         ],
         'lineitem_scan_project',
         False))
@@ -141,9 +141,9 @@ def test_join_baseline():
 
     part_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_3'], 'p_brand'),
-            ProjectExpr(lambda t_: t_['_4'], 'p_type')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
+            ProjectExpression(lambda t_: t_['_4'], 'p_type')
         ],
         'part_scan_project',
         False))
@@ -189,7 +189,7 @@ def test_join_baseline():
 
     project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
+            ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
         ],
         'project',
         False))
@@ -275,9 +275,9 @@ def test_join_filtered():
 
     lineitem_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
-            ProjectExpr(lambda t_: t_['_2'], 'l_discount')
+            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_discount')
         ],
         'lineitem_scan_project',
         False))
@@ -293,8 +293,8 @@ def test_join_filtered():
 
     part_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'p_type')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'p_type')
         ],
         'part_scan_project',
         False))
@@ -324,7 +324,7 @@ def test_join_filtered():
     aggregate = query_plan.add_operator(
         Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
     project = query_plan.add_operator(
-        Project([ProjectExpr(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
+        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
     collate = query_plan.add_operator(Collate('collate', False))
 
     lineitem_scan.connect(lineitem_scan_project)
@@ -386,8 +386,8 @@ def test_join_bloom():
 
     part_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'p_type')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'p_type')
         ],
         'part_scan_project',
         False))
@@ -427,9 +427,9 @@ def test_join_bloom():
 
     lineitem_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
-            ProjectExpr(lambda t_: t_['_2'], 'l_discount')
+            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_discount')
         ],
         'lineitem_scan_project',
         False))
@@ -459,7 +459,7 @@ def test_join_bloom():
     aggregate = query_plan.add_operator(
         Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
     project = query_plan.add_operator(
-        Project([ProjectExpr(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
+        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
     collate = query_plan.add_operator(Collate('collate', False))
 
     part_scan.connect(part_scan_project)
@@ -524,12 +524,14 @@ def test_join_semi():
 
     part_scan_1_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey')
         ],
         'part_scan_1_project',
         False))
 
-    part_bloom_create = query_plan.add_operator(BloomCreate('p_partkey', 'part_bloom_create', False))  # p_partkey
+    part_bloom_create = query_plan.add_operator(
+        BloomCreate('p_partkey', 'part_bloom_create', False))
+
     lineitem_scan_1 = query_plan.add_operator(
         SQLTableScanBloomUse('lineitem.csv',
                              "select "
@@ -559,18 +561,21 @@ def test_join_semi():
                              'l_partkey',
                              'lineitem_table_scan_1',
                              False))
+
     lineitem_scan_1_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_partkey')
+            ProjectExpression(lambda t_: t_['_0'], 'l_partkey')
         ],
         'lineitem_scan_1_project',
         False))
 
     part_lineitem_join_1 = query_plan.add_operator(
         Join(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
-             False))  # p_partkey and l_partkey
-    join_bloom_create = query_plan.add_operator(BloomCreate('l_partkey', 'join_bloom_create',
-                                                            False))  # l_partkey (= p_partkey truth be told :) )
+             False))
+
+    join_bloom_create = query_plan.add_operator(
+        BloomCreate('l_partkey', 'join_bloom_create', True))
+
     part_table_scan_2 = query_plan.add_operator(SQLTableScanBloomUse('part.csv',
                                                                      "select "
                                                                      "  p_partkey, p_type from S3Object "
@@ -579,15 +584,15 @@ def test_join_semi():
                                                                      " ",
                                                                      'p_partkey',
                                                                      'part_table_scan_2',
-                                                                     False))
+                                                                     True))
 
     part_scan_2_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'p_type')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'p_type')
         ],
         'part_scan_2_project',
-        False))
+        True))
 
     lineitem_table_scan_2 = query_plan.add_operator(
         SQLTableScanBloomUse('lineitem.csv',
@@ -617,12 +622,13 @@ def test_join_semi():
                                  max_shipped_date.strftime('%Y-%m-%d')),
                              'l_partkey',
                              'lineitem_table_scan_2',
-                             False))
+                             True))
+
     lineitem_scan_2_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'l_extendedprice'),
-            ProjectExpr(lambda t_: t_['_2'], 'l_discount')
+            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_discount')
         ],
         'lineitem_scan_2_project',
         False))
@@ -653,7 +659,7 @@ def test_join_semi():
     aggregate = query_plan.add_operator(
         Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
     project = query_plan.add_operator(
-        Project([ProjectExpr(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
+        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
     collate = query_plan.add_operator(Collate('collate', False))
 
     part_scan_1.connect(part_scan_1_project)
@@ -683,7 +689,7 @@ def test_join_semi():
     num_rows = 0
     for t in collate.tuples():
         num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+        print("{}:{}".format(num_rows, t))
 
     field_names = ['promo_revenue']
 

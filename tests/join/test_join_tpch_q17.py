@@ -36,7 +36,7 @@ from op.filter import Filter
 from op.group import Group
 from op.join import Join, JoinExpression
 from op.predicate_expression import PredicateExpression
-from op.project import Project, ProjectExpr
+from op.project import Project, ProjectExpression
 from op.sql_table_scan import SQLTableScan
 from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from sql.function import avg_fn, sum_fn
@@ -55,7 +55,7 @@ def extendedprice_sum_aggregate_project_op():
     :return:
     """
 
-    return Project([ProjectExpr(lambda t_: t_['_0'] / 7.0, 'avg_yearly')], 'extendedprice_sum_aggregate_project', False)
+    return Project([ProjectExpression(lambda t_: t_['_0'] / 7.0, 'avg_yearly')], 'extendedprice_sum_aggregate_project', False)
 
 
 # with extendedprice_sum_aggregate as (select sum(l_extendedprice) from filter_join_2)
@@ -90,9 +90,9 @@ def lineitem_part_avg_group_project_op():
     return Project(
         [
             # l_partkey
-            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
             # 0.2 * avg
-            ProjectExpr(lambda t_: 0.2 * t_['_1'], 'avg_l_quantity_computed00')
+            ProjectExpression(lambda t_: 0.2 * t_['_1'], 'avg_l_quantity_computed00')
         ],
         'lineitem_part_avg_group_project',
         False)
@@ -146,10 +146,10 @@ def part_scan_op():
 def lineitem_project_op():
     return Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_orderkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_2'], 'l_quantity'),
-            ProjectExpr(lambda t_: t_['_3'], 'l_extendedprice')
+            ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_quantity'),
+            ProjectExpression(lambda t_: t_['_3'], 'l_extendedprice')
         ],
         'lineitem_project',
         False)
@@ -159,7 +159,7 @@ def lineitem_project_op():
 def part_project_op():
     return Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey')
         ],
         'part_project',
         False)
@@ -212,9 +212,9 @@ def test_join_baseline():
     # with part_scan_project as (select _0 as p_partkey from part_scan)
     part_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_3'], 'p_brand'),
-            ProjectExpr(lambda t_: t_['_6'], 'p_container')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
+            ProjectExpression(lambda t_: t_['_6'], 'p_container')
         ],
         'part_scan_project',
         False))
@@ -227,10 +227,10 @@ def test_join_baseline():
     # with part_scan_project as (select _0 as p_partkey from part_scan)
     lineitem_scan_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_orderkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_4'], 'l_quantity'),
-            ProjectExpr(lambda t_: t_['_5'], 'l_extendedprice')
+            ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_4'], 'l_quantity'),
+            ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice')
         ],
         'lineitem_scan_project',
         False))

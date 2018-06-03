@@ -79,3 +79,13 @@ def test_abort_topk():
 
     # Write the metrics
     query_plan.print_metrics()
+
+
+def test_topk_empty():
+    """TODO:
+
+    :return:
+    """
+
+    pass
+

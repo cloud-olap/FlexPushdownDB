@@ -58,3 +58,12 @@ def test_scan_simple():
 
     # Write the metrics
     query_plan.print_metrics()
+
+
+def test_scan_empty():
+    """TODO:
+
+    :return:
+    """
+
+    pass

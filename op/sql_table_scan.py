@@ -11,6 +11,9 @@ from util.timer import Timer
 
 
 class SQLTableScanMetrics(OpMetrics):
+    """Extra metrics for a sql table scan
+
+    """
 
     def __init__(self):
         super(SQLTableScanMetrics, self).__init__()
@@ -60,11 +63,11 @@ class SQLTableScan(Operator):
         first_tuple = True
         for t in tuples:
 
-            if self.log_enabled:
-                print("Table Scan('{}') | {}".format(self.__class__.__name__, t))
-
             if self.is_completed():
                 break
+
+            if self.log_enabled:
+                print("{}('{}') | {}".format(self.__class__.__name__, self.name, t))
 
             self.op_metrics.time_to_first_response_timer.stop()
 
@@ -82,3 +85,12 @@ class SQLTableScan(Operator):
             self.complete()
 
         self.op_metrics.timer_stop()
+
+    def on_producer_completed(self, _producer):
+        """This event is overridden really just to indicate that it never fires.
+
+        :param _producer: The completed producer
+        :return: None
+        """
+
+        pass

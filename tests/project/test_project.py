@@ -4,7 +4,7 @@
 """
 
 from op.collate import Collate
-from op.project import Project, ProjectExpr
+from op.project import Project, ProjectExpression
 from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
 from plan.query_plan import QueryPlan
@@ -27,9 +27,9 @@ def test_project():
                                               'limit 3;', 'ts', False))
     p = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_2'], 'n_regionkey'),  # identity lambda
-            ProjectExpr(lambda t_: t_['_0'], 'n_nationkey'),  # identity lambda
-            ProjectExpr(lambda t_: t_['_3'], 'n_comment')  # identity lambda
+            ProjectExpression(lambda t_: t_['_2'], 'n_regionkey'),  # identity lambda
+            ProjectExpression(lambda t_: t_['_0'], 'n_nationkey'),  # identity lambda
+            ProjectExpression(lambda t_: t_['_3'], 'n_comment')  # identity lambda
         ],
         'p',
         False))
@@ -64,3 +64,12 @@ def test_project():
 
     # Write the metrics
     query_plan.print_metrics()
+
+
+def test_project_empty():
+    """TODO:
+
+    :return:
+    """
+
+    pass

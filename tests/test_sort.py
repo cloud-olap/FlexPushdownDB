@@ -107,3 +107,12 @@ def test_sort_desc():
 
     # Write the metrics
     query_plan.print_metrics()
+
+
+def test_sort_empty():
+    """TODO:
+
+    :return:
+    """
+
+    pass

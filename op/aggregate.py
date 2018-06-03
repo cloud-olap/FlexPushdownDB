@@ -115,13 +115,17 @@ class Aggregate(Operator):
         """
 
         aggregate_field_values = []
+        # for ctx in self.__aggregate_contexts.values():
         for i in range(0, len(self.__expressions)):
 
             if self.is_completed():
                 break
 
+            # Check if there is an aggregate result, there may not be if no tuples were received
+            # if i in self.__aggregate_contexts:
             aggregate_context = self.__aggregate_contexts[i]
             aggregate_field_values.append(aggregate_context.result)
+            # aggregate_field_values.append(ctx.result)
 
         return aggregate_field_values
 
@@ -131,4 +135,4 @@ class Aggregate(Operator):
         :return: The list of field names.
         """
 
-        return LabelledTuple(self.__expressions).labels
+        return LabelledTuple(self.__aggregate_contexts).labels

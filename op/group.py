@@ -19,7 +19,7 @@ class Group(Operator):
     def __init__(self, group_field_names, aggregate_expressions, name, log_enabled):
         """Creates a new group by operator.
 
-        :param group_field_names: The names of the columns to group by
+        :param group_field_names: The names of the fields to group by
         :param aggregate_expressions: The list of aggregate expressions
         """
 

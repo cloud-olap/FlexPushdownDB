@@ -97,3 +97,12 @@ def test_group_sum():
 
     # Write the metrics
     query_plan.print_metrics()
+
+
+def test_group_empty():
+    """TODO:
+
+    :return:
+    """
+
+    pass

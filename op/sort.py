@@ -23,6 +23,9 @@ class SortExpression(object):
         :param sort_order: sort order, can be 'ASC' or 'DESC'
         """
 
+        if sort_order is not 'ASC' and sort_order is not 'DESC':
+            raise Exception("Illegal sort order '{}'. Sort order must be '{}' or '{}'".format(sort_order, 'ASC', 'DESC'))
+
         self.col_index = col_index
         self.col_type = col_type
         self.sort_order = sort_order
@@ -40,7 +43,9 @@ class Sort(Operator):
     def __init__(self, sort_expressions, name, log_enabled):
         """Creates a new Sort operator.
 
-        :param sort_expressions: The sort expressions to apply to each tuple
+        :param sort_expressions: The sort expressions to apply to the tuples
+        :param name: The name of the operator
+        :param log_enabled: Whether logging is enabled
         """
 
         super(Sort, self).__init__(name, OpMetrics(), log_enabled)
@@ -52,12 +57,13 @@ class Sort(Operator):
         self.field_names = None
 
     def on_receive(self, m, _producer):
-        """ Collects tuples into a heap.
+        """ Handles a new message from a producer.
 
-        :param m: The received tuple.
-        :param _producer: The producer that emitted the tuple
+        :param m: The received message.
+        :param _producer: The producer that emitted the message
         :return: None
         """
+
         # print("Sort Emit | {}".format(t))
         if type(m) is TupleMessage:
             self.on_receive_tuple(m.tuple_)
@@ -65,32 +71,44 @@ class Sort(Operator):
             raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_):
+        """Handles receipt of a tuple. Field names are stored and sent. Field values are placed into a sorted heap
+        using the sort expressions to define the sort order.
+
+        :param tuple_: The received tuple
+        :return: None
+        """
+
         if not self.field_names:
             # Collect and send field names through
             self.field_names = tuple_
             self.send(TupleMessage(tuple_), self.consumers)
         else:
+            # Store the tuple in the sorted heap
             sortable_t = HeapSortableTuple(tuple_, self.field_names, self.sort_expressions)
             heappush(self.heap, sortable_t)
 
     def on_producer_completed(self, producer):
-        """When this operator receives a done it emits the sorted tuples.
+        """Handles the event when a producer completes. When this happens the sorted tuples are emitted.
 
+        :param producer: The producer that completed
+        :return: None
         """
+
         # print("Sort Done | ")
         while self.heap:
-            if not self.is_completed():
-                t = heappop(self.heap).tuple
-                self.send(TupleMessage(t), self.consumers)
-            else:
+
+            if self.is_completed():
                 break
+
+            t = heappop(self.heap).tuple
+            self.send(TupleMessage(t), self.consumers)
 
         Operator.on_producer_completed(self, producer)
 
 
 class HeapSortableTuple:
     """Pythons heap algorithm requires a tuple where the first element is comparable. This class represents that tuple
-    with comparing functions (lt) defined.
+    with comparing functions (lt) defined using the given sort expressions.
 
     """
 
@@ -100,6 +118,11 @@ class HeapSortableTuple:
         self.sort_expressions = sort_expressions
 
     def __lt__(self, o):
+        """Whether this tuple is "less than" and hence prior to the given other tuple in the sorted heap.
+
+        :param o: The other tuple
+        :return: True if the tuple is "less than" the other tuple
+        """
 
         # Iterate through the sorting expressions and apply them to matching values in each tuple
         for ex in self.sort_expressions:

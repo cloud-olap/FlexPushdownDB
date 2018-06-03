@@ -70,7 +70,7 @@ from op.collate import Collate
 from op.filter import Filter
 from op.join import Join, JoinExpression
 from op.predicate_expression import PredicateExpression
-from op.project import Project, ProjectExpr
+from op.project import Project, ProjectExpression
 from op.sql_table_scan import SQLTableScan
 from sql.function import sum_fn
 from util.test_util import gen_test_id
@@ -98,7 +98,7 @@ def join_op():
 def aggregate_project_def():
     return Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'revenue')
+            ProjectExpression(lambda t_: t_['_0'], 'revenue')
         ],
         'aggregate_project',
         False)
@@ -178,12 +178,12 @@ def test_join_baseline():
     # )
     lineitem_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_1'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_4'], 'l_quantity'),
-            ProjectExpr(lambda t_: t_['_5'], 'l_extendedprice'),
-            ProjectExpr(lambda t_: t_['_6'], 'l_discount'),
-            ProjectExpr(lambda t_: t_['_13'], 'l_shipinstruct'),
-            ProjectExpr(lambda t_: t_['_14'], 'l_shipmode')
+            ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_4'], 'l_quantity'),
+            ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_6'], 'l_discount'),
+            ProjectExpression(lambda t_: t_['_13'], 'l_shipinstruct'),
+            ProjectExpression(lambda t_: t_['_14'], 'l_shipmode')
         ],
         'lineitem_project',
         False))
@@ -195,10 +195,10 @@ def test_join_baseline():
     # )
     part_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_3'], 'p_brand'),
-            ProjectExpr(lambda t_: t_['_5'], 'p_size'),
-            ProjectExpr(lambda t_: t_['_6'], 'p_container')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
+            ProjectExpression(lambda t_: t_['_5'], 'p_size'),
+            ProjectExpression(lambda t_: t_['_6'], 'p_container')
         ],
         'part_project',
         False))
@@ -300,12 +300,12 @@ def test_join_filtered():
     # )
     lineitem_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'l_quantity'),
-            ProjectExpr(lambda t_: t_['_2'], 'l_extendedprice'),
-            ProjectExpr(lambda t_: t_['_3'], 'l_discount'),
-            ProjectExpr(lambda t_: t_['_4'], 'l_shipinstruct'),
-            ProjectExpr(lambda t_: t_['_5'], 'l_shipmode')
+            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_quantity'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_3'], 'l_discount'),
+            ProjectExpression(lambda t_: t_['_4'], 'l_shipinstruct'),
+            ProjectExpression(lambda t_: t_['_5'], 'l_shipmode')
         ],
         'lineitem_project',
         False))
@@ -317,10 +317,10 @@ def test_join_filtered():
     # )
     part_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'p_brand'),
-            ProjectExpr(lambda t_: t_['_2'], 'p_size'),
-            ProjectExpr(lambda t_: t_['_3'], 'p_container')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'p_brand'),
+            ProjectExpression(lambda t_: t_['_2'], 'p_size'),
+            ProjectExpression(lambda t_: t_['_3'], 'p_container')
         ],
         'part_project',
         False))
@@ -436,12 +436,12 @@ def test_join_bloom():
     # )
     lineitem_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'l_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'l_quantity'),
-            ProjectExpr(lambda t_: t_['_2'], 'l_extendedprice'),
-            ProjectExpr(lambda t_: t_['_3'], 'l_discount'),
-            ProjectExpr(lambda t_: t_['_4'], 'l_shipinstruct'),
-            ProjectExpr(lambda t_: t_['_5'], 'l_shipmode')
+            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_quantity'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_3'], 'l_discount'),
+            ProjectExpression(lambda t_: t_['_4'], 'l_shipinstruct'),
+            ProjectExpression(lambda t_: t_['_5'], 'l_shipmode')
         ],
         'lineitem_project',
         False))
@@ -453,10 +453,10 @@ def test_join_bloom():
     # )
     part_project = query_plan.add_operator(Project(
         [
-            ProjectExpr(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpr(lambda t_: t_['_1'], 'p_brand'),
-            ProjectExpr(lambda t_: t_['_2'], 'p_size'),
-            ProjectExpr(lambda t_: t_['_3'], 'p_container')
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'p_brand'),
+            ProjectExpression(lambda t_: t_['_2'], 'p_size'),
+            ProjectExpression(lambda t_: t_['_3'], 'p_container')
         ],
         'part_project',
         False))
