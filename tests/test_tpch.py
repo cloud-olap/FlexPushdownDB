@@ -65,22 +65,22 @@ def test_tpch_q1():
         ],
         [
             # sum(l_quantity)
-            AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_4']), ctx)),
+            AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_4'])),
             # sum(l_extendedprice) as sum_base_price
-            AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']), ctx)),
+            AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5'])),
             # sum(l_extendedprice * (1 - l_discount)) as sum_disc_price
-            AggregateExpression(lambda t_, ctx: sum_fn(float(t_['_5']) * (1 - float(t_['_6'])), ctx)),
+            AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5']) * (1 - float(t_['_6']))),
             # sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge
-            AggregateExpression(
-                lambda t_, ctx: sum_fn(float(t_['_5']) * (1 - float(t_['_6'])) * (1 + float(t_['_7'])), ctx)),
+            AggregateExpression(AggregateExpression.SUM,
+                lambda t_: float(t_['_5']) * (1 - float(t_['_6'])) * (1 + float(t_['_7']))),
             # avg(l_quantity)
-            AggregateExpression(lambda t_, ctx: avg_fn(float(t_['_4']), ctx)),
+            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['_4'])),
             # avg(l_extendedprice)
-            AggregateExpression(lambda t_, ctx: avg_fn(float(t_['_5']), ctx)),
+            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['_5'])),
             # avg(l_discount)
-            AggregateExpression(lambda t_, ctx: avg_fn(float(t_['_6']), ctx)),
+            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['_6'])),
             # count(*) as count_order
-            AggregateExpression(lambda t_, ctx: count_fn(t_['_0'], ctx))
+            AggregateExpression(AggregateExpression.COUNT, lambda t_: t_['_0'])
         ],
         'lineitem_grouped',
         False))

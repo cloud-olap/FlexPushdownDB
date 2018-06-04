@@ -6,6 +6,7 @@
 import numbers
 
 from op.tuple import LabelledTuple
+from sql.function import sum_fn, count_fn, avg_fn
 
 
 class AggregateExpression(object):
@@ -14,12 +15,26 @@ class AggregateExpression(object):
     TODO: This can be reworked... at least to remove the need to pass ctx around.
     """
 
-    def __init__(self, expr):
+    SUM = "SUM"
+    COUNT = "COUNT"
+    AVG = "AVG"
+
+    def __init__(self, expression_type, expr):
         """
 
         :param expr: The expression (as a function)
         """
 
+        if expression_type is not AggregateExpression.SUM and \
+                expression_type is not AggregateExpression.COUNT and \
+                expression_type is not AggregateExpression.AVG:
+            raise Exception("Illegal expression type '{}'. Expression type must be '{}', '{}', or '{}'"
+                            .format(expression_type,
+                                    AggregateExpression.SUM,
+                                    AggregateExpression.COUNT,
+                                    AggregateExpression.AVG))
+
+        self.__expression_type = expression_type
         self.__expr = expr
 
     def eval(self, t, field_names, ctx):
@@ -32,7 +47,21 @@ class AggregateExpression(object):
         :return: None
         """
 
-        self.__expr(LabelledTuple(t, field_names), ctx)
+        if self.__expression_type is AggregateExpression.SUM:
+            sum_fn(self.__expr(LabelledTuple(t, field_names)), ctx)
+        elif self.__expression_type is AggregateExpression.COUNT:
+            count_fn(self.__expr(LabelledTuple(t, field_names)), ctx)
+        elif self.__expression_type is AggregateExpression.AVG:
+            avg_fn(self.__expr(LabelledTuple(t, field_names)), ctx)
+        else:
+            # Should not happen as its already been checked
+            raise Exception("Illegal expression type '{}'. Expression type must be '{}', '{}', or '{}'"
+                            .format(self.__expression_type,
+                                    AggregateExpression.SUM,
+                                    AggregateExpression.COUNT,
+                                    AggregateExpression.AVG))
+
+        # self.__expr(LabelledTuple(t, field_names), ctx)
 
         if not isinstance(ctx.result, numbers.Number):
             raise Exception("Illegal aggregate val '{}' of type '{}'. Aggregate expression must evaluate to number"

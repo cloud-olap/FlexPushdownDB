@@ -158,16 +158,16 @@ def test_join_baseline():
     part_filter = query_plan.add_operator(Filter(
         PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#12'),
         'part_filter',
-        False))  # p_brand
+        False))
 
     join = query_plan.add_operator(Join(
         JoinExpression('l_partkey', 'p_partkey'),
         'join',
-        False))  # l_partkey and p_partkey
+        False))
 
-    def ex1(t_, ctx):
+    def ex1(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
         rx = re.compile('^PROMO.*$')
 
@@ -176,16 +176,16 @@ def test_join_baseline():
         else:
             v2 = 0.0
 
-        sum_fn(v2, ctx)
+        return v2
 
-    def ex2(t_, ctx):
+    def ex2(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
-        sum_fn(v1, ctx)
+        return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
+        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
 
     project = query_plan.add_operator(Project(
         [
@@ -302,9 +302,9 @@ def test_join_filtered():
     join = query_plan.add_operator(
         Join(JoinExpression('l_partkey', 'p_partkey'), 'join', False))  # l_partkey and p_partkey
 
-    def ex1(t_, ctx):
+    def ex1(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
         rx = re.compile('^PROMO.*$')
 
@@ -313,16 +313,17 @@ def test_join_filtered():
         else:
             v2 = 0.0
 
-        sum_fn(v2, ctx)
+        return v2
 
-    def ex2(t_, ctx):
+    def ex2(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
-        sum_fn(v1, ctx)
+        return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
+        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
+
     project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
     collate = query_plan.add_operator(Collate('collate', False))
@@ -437,9 +438,9 @@ def test_join_bloom():
     join = query_plan.add_operator(
         Join(JoinExpression('p_partkey', 'l_partkey'), 'join', False))  # p_partkey and l_partkey
 
-    def ex1(t_, ctx):
+    def ex1(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
         rx = re.compile('^PROMO.*$')
 
@@ -448,16 +449,17 @@ def test_join_bloom():
         else:
             v2 = 0.0
 
-        sum_fn(v2, ctx)
+        return v2
 
-    def ex2(t_, ctx):
+    def ex2(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
-        sum_fn(v1, ctx)
+        return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
+        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
+
     project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
     collate = query_plan.add_operator(Collate('collate', False))
@@ -637,9 +639,9 @@ def test_join_semi():
                                                         'part_lineitem_join_2',
                                                         False))  # p_partkey and l_partkey
 
-    def ex1(t_, ctx):
+    def ex1(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
         rx = re.compile('^PROMO.*$')
 
@@ -648,16 +650,17 @@ def test_join_semi():
         else:
             v2 = 0.0
 
-        sum_fn(v2, ctx)
+        return v2
 
-    def ex2(t_, ctx):
+    def ex2(t_):
 
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))  # l_extendedprice and l_discount
+        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
 
-        sum_fn(v1, ctx)
+        return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(ex1), AggregateExpression(ex2)], 'aggregate', False))
+        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
+
     project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
     collate = query_plan.add_operator(Collate('collate', False))

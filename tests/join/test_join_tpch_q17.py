@@ -60,7 +60,7 @@ def extendedprice_sum_aggregate_project_op():
 
 # with extendedprice_sum_aggregate as (select sum(l_extendedprice) from filter_join_2)
 def extendedprice_sum_aggregate_op():
-    return Aggregate([AggregateExpression(lambda t_, ctx: sum_fn(float(t_['l_extendedprice']), ctx))],
+    return Aggregate([AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['l_extendedprice']))],
                      'extendedprice_sum_aggregate', False)
 
 
@@ -104,7 +104,7 @@ def lineitem_avg_group_op():
         ['l_partkey'],  # l_partkey
         [
             # avg(l_quantity)
-            AggregateExpression(lambda t_, ctx: avg_fn(float(t_['l_quantity']), ctx))
+            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['l_quantity']))
         ],
         'lineitem_part_avg_group',
         False)

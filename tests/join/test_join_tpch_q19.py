@@ -83,9 +83,8 @@ def collate_op():
 def aggregate_def():
     return Aggregate(
         [
-            AggregateExpression(lambda t_, ctx: sum_fn(float(t_['l_extendedprice']) *
-                                                       float((1 - float(t_['l_discount']))),
-                                                       ctx))
+            AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['l_extendedprice']) *
+                                                                    float((1 - float(t_['l_discount']))))
         ],
         'aggregate',
         False)

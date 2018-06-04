@@ -2,6 +2,7 @@
 """Group by query tests
 
 """
+from op.aggregate import Aggregate
 from op.aggregate_expression import AggregateExpression
 from op.collate import Collate
 from op.group import Group
@@ -12,7 +13,7 @@ from sql.function import count_fn, sum_fn
 from util.test_util import gen_test_id
 
 
-def test_group_count():
+def test_aggregate_count():
     """Tests a group by query with a count aggregate
 
     :return: None
@@ -23,41 +24,40 @@ def test_group_count():
     query_plan = QueryPlan("Group Count Test")
 
     # Query plan
-    # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
+    # select count(*) from supplier.csv
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
-    g = query_plan.add_operator(Group(['_3'],
+    a = query_plan.add_operator(Aggregate(
                                       [
                                           AggregateExpression(AggregateExpression.COUNT, lambda t_: t_['_0'])
                                           # count(s_suppkey)
                                       ],
-                                      'g',
+                                      'a',
                                       False))
     c = query_plan.add_operator(Collate('c', False))
 
     query_plan.write_graph(gen_test_id())
 
-    ts.connect(g)
-    g.connect(c)
+    ts.connect(a)
+    a.connect(c)
 
     # Start the query
     ts.start()
 
     # Assert the results
-    for _ in c.tuples():
+    for t in c.tuples():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
     field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
-    nation_24 = filter(lambda t: LabelledTuple(t, field_names)['_0'] == '24', c.tuples())[0]
-    assert nation_24[1] == 393
-    assert num_rows == 25 + 1
+    assert LabelledTuple(c.tuples()[1], field_names)['_0'] == 10000
+    assert num_rows == 1 + 1
 
     # Write the metrics
     query_plan.print_metrics()
 
 
-def test_group_sum():
+def test_aggregate_sum():
     """Tests a group by query with a sum aggregate
 
     :return: None
@@ -68,18 +68,18 @@ def test_group_sum():
     query_plan = QueryPlan("Group Sum Test")
 
     # Query plan
-    # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
+    # select sum(float(s_acctbal)) from supplier.csv
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
-    g = query_plan.add_operator(Group(['_3'],
+    a = query_plan.add_operator(Aggregate(
                                       [
                                           AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5']))
                                       ],
-                                      'g',
+                                      'a',
                                       False))
     c = query_plan.add_operator(Collate('c', False))
 
-    ts.connect(g)
-    g.connect(c)
+    ts.connect(a)
+    a.connect(c)
 
     # Start the query
     ts.start()
@@ -87,19 +87,18 @@ def test_group_sum():
     # Assert the results
     for t in c.tuples():
         num_rows += 1
-        # print("{}:{}".format(num_rows, t_))
+        # print("{}:{}".format(num_rows, t))
 
     field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
-    nation_24 = filter(lambda t_: LabelledTuple(t_, field_names)['_0'] == '24', c.tuples())[0]
-    assert round(nation_24[1], 2) == 1833872.56
-    assert num_rows == 25 + 1
+    assert round(LabelledTuple(c.tuples()[1], field_names)['_0'], 2) == 45103548.65
+    assert num_rows == 1 + 1
 
     # Write the metrics
     query_plan.print_metrics()
 
 
-def test_group_empty():
+def test_aggregate_empty():
     """TODO:
 
     :return:
