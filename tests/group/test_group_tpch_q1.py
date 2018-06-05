@@ -15,7 +15,7 @@ from sql.function import sum_fn, avg_fn, count_fn
 from util.test_util import gen_test_id
 
 
-def test_tpch_q1():
+def test_group_baseline():
     """TPC-H Q1
 
     :return: None

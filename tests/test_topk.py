@@ -82,10 +82,38 @@ def test_abort_topk():
 
 
 def test_topk_empty():
-    """TODO:
+    """Executes a topk query with no results returned. We test this as it's somewhat peculiar with s3 select, in so much
+    as s3 does not return column names when selecting data, meaning, unlike a traditional DBMS, no field names tuple
+    should be present in the results.
 
-    :return:
+    :return: None
     """
 
-    pass
+    limit = 500
+    num_rows = 0
 
+    query_plan = QueryPlan("Abort TopK Test")
+
+    # Query plan
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object limit 0', 'ts', False))
+    t = query_plan.add_operator(Top(limit, 't', False))
+    c = query_plan.add_operator(Collate('c', False))
+
+    ts.connect(t)
+    t.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
+
+    # Start the query
+    ts.start()
+
+    # Assert the results
+    for _ in c.tuples():
+        num_rows += 1
+        # print("{}:{}".format(num_rows, t))
+
+    assert num_rows == 0
+
+    # Write the metrics
+    query_plan.print_metrics()

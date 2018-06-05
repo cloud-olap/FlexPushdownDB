@@ -19,13 +19,17 @@ def test_sort_asc():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Sort Ascending Test")
+    query_plan = QueryPlan("Ascending Sort Test")
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
-                                              'limit 3;', 'ts', False))
+                                              'limit 3;',
+                                              'ts',
+                                              False))
+
     s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', False))
+
     c = query_plan.add_operator(Collate('c', False))
 
     # Write the plan graph
@@ -68,13 +72,17 @@ def test_sort_desc():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Sort Descending Test")
+    query_plan = QueryPlan("Descending Sort Test")
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
-                                              'limit 3;', 'ts', False))
+                                              'limit 3;',
+                                              'ts',
+                                              False))
+
     s = query_plan.add_operator(Sort([SortExpression('_5', float, 'DESC')], 's', False))
+
     c = query_plan.add_operator(Collate('c', False))
 
     # Write the plan graph
@@ -110,9 +118,43 @@ def test_sort_desc():
 
 
 def test_sort_empty():
-    """TODO:
+    """Executes a sorted query with no results returned. We test this as it's somewhat peculiar with s3 select, in so much
+    as s3 does not return column names when selecting data, meaning, unlike a traditional DBMS, no field names tuple
+    should be present in the results.
 
-    :return:
+    :return: None
     """
 
-    pass
+    num_rows = 0
+
+    query_plan = QueryPlan("Empty Sort Test")
+
+    # Query plan
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
+                                              'select * from S3Object '
+                                              'limit 0;',
+                                              'ts',
+                                              False))
+
+    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', False))
+
+    c = query_plan.add_operator(Collate('c', False))
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
+
+    ts.connect(s)
+    s.connect(c)
+
+    # Start the query
+    ts.start()
+
+    # Assert the results
+    for t in c.tuples():
+        num_rows += 1
+        # print("{}:{}".format(num_rows, t))
+
+    assert len(c.tuples()) == 0
+
+    # Write the metrics
+    query_plan.print_metrics()

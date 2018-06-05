@@ -35,9 +35,8 @@ class Aggregate(Operator):
 
         self.__field_names = None
 
-        # Dict of aggregate contexts. Each item is indexed by the aggregate order and contains a dict of the
-        # evaluated aggregate results
-        self.__aggregate_contexts = {}
+        # List of expression contexts, each storing the accumulated aggregate result and local vars.
+        self.__expression_contexts = None
 
     def on_receive(self, m, _producer):
         """Event handler for receiving a message.
@@ -59,18 +58,28 @@ class Aggregate(Operator):
         :return: None
         """
 
-        # Send the field names
-        aggregate_field_names = self.__build_aggregate_field_names()
-        self.send(TupleMessage(Tuple(aggregate_field_names)), self.consumers)
+        # Build and send the field names
+        field_names = self.__build_field_names()
+        self.send(TupleMessage(Tuple(field_names)), self.consumers)
 
-        # Send the field values
-        aggregate_field_values = self.__build_aggregate_field_values()
-        self.send(TupleMessage(Tuple(aggregate_field_values)), self.consumers)
+        # Send the field values, if there are any
+        if self.__expression_contexts is not None:
+            field_values = self.__build_field_values()
+            self.send(TupleMessage(Tuple(field_values)), self.consumers)
 
-        del self.__field_names
-        del self.__aggregate_contexts
+        # Clean up
+        self.del_()
 
         Operator.on_producer_completed(self, producer)
+
+    def del_(self):
+        """Cleans up internal data structures, allowing them to be GC'd
+
+        :return: None
+        """
+
+        del self.__field_names
+        del self.__expression_contexts
 
     def __on_receive_tuple(self, tuple_):
         """Event handler for receiving a tuple.
@@ -82,57 +91,44 @@ class Aggregate(Operator):
         if not self.__field_names:
             self.__field_names = tuple_
         else:
-            self.__evaluate_aggregates(tuple_)
+            self.__evaluate_expressions(tuple_)
 
-    def __evaluate_aggregates(self, tuple_):
+    def __evaluate_expressions(self, tuple_):
         """Performs evaluation of all the aggregate expressions for the given tuple.
 
         :param tuple_: The tuple to pass to the expressions.
         :return: None
         """
 
+        # We have a tuple, initialise the expression contexts
+        if self.__expression_contexts is None:
+            self.__expression_contexts = list(AggregateExpressionContext(0.0, {}) for _ in self.__expressions)
+
+        # Evaluate the expressions
         i = 0
         for e in self.__expressions:
-            ctx = self.__get_aggregate_context(i)
+            ctx = self.__expression_contexts[i]
             e.eval(tuple_, self.__field_names, ctx)
             i += 1
 
-    def __get_aggregate_context(self, i):
-        """Returns the context for the given aggregate.
-
-        :param i: The index of the expression
-        :return: The expressions aggregate context.
-        """
-
-        ctx = self.__aggregate_contexts.get(i, AggregateExpressionContext(0.0, {}))
-        self.__aggregate_contexts[i] = ctx
-        return ctx
-
-    def __build_aggregate_field_values(self):
-        """Creates the list of field values from the evaluated aggregates.
-
-        :return: The field values
-        """
-
-        aggregate_field_values = []
-        # for ctx in self.__aggregate_contexts.values():
-        for i in range(0, len(self.__expressions)):
-
-            if self.is_completed():
-                break
-
-            # Check if there is an aggregate result, there may not be if no tuples were received
-            # if i in self.__aggregate_contexts:
-            aggregate_context = self.__aggregate_contexts[i]
-            aggregate_field_values.append(aggregate_context.result)
-            # aggregate_field_values.append(ctx.result)
-
-        return aggregate_field_values
-
-    def __build_aggregate_field_names(self):
+    def __build_field_names(self):
         """Creates the list of field names from the evaluated aggregates. Field names will just be _0, _1, etc.
 
         :return: The list of field names.
         """
 
-        return LabelledTuple(self.__aggregate_contexts).labels
+        return LabelledTuple(self.__expressions).labels
+
+    def __build_field_values(self):
+        """Creates the list of field values from the evaluated aggregates.
+
+        :return: The field values
+        """
+
+        field_values = []
+        for c in self.__expression_contexts:
+            field_values.append(c.result)
+
+        return field_values
+
+

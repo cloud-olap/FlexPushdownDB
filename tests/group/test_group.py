@@ -20,11 +20,12 @@ def test_group_count():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Group Count Test")
+    query_plan = QueryPlan("Count Group Test")
 
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+
     g = query_plan.add_operator(Group(['_3'],
                                       [
                                           AggregateExpression(AggregateExpression.COUNT, lambda t_: t_['_0'])
@@ -32,6 +33,7 @@ def test_group_count():
                                       ],
                                       'g',
                                       False))
+
     c = query_plan.add_operator(Collate('c', False))
 
     query_plan.write_graph(gen_test_id())
@@ -47,7 +49,11 @@ def test_group_count():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
+    field_names = ['_0', '_1']
+
+    assert c.tuples()[0] == field_names
+
+    assert len(c.tuples()) == 25 + 1
 
     nation_24 = filter(lambda t: LabelledTuple(t, field_names)['_0'] == '24', c.tuples())[0]
     assert nation_24[1] == 393
@@ -65,17 +71,19 @@ def test_group_sum():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Group Sum Test")
+    query_plan = QueryPlan("Sum Group Test")
 
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+
     g = query_plan.add_operator(Group(['_3'],
                                       [
                                           AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5']))
                                       ],
                                       'g',
                                       False))
+
     c = query_plan.add_operator(Collate('c', False))
 
     ts.connect(g)
@@ -89,20 +97,60 @@ def test_group_sum():
         num_rows += 1
         # print("{}:{}".format(num_rows, t_))
 
-    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
+    field_names = ['_0', '_1']
+
+    assert c.tuples()[0] == field_names
+
+    assert len(c.tuples()) == 25 + 1
 
     nation_24 = filter(lambda t_: LabelledTuple(t_, field_names)['_0'] == '24', c.tuples())[0]
     assert round(nation_24[1], 2) == 1833872.56
-    assert num_rows == 25 + 1
 
     # Write the metrics
     query_plan.print_metrics()
 
 
 def test_group_empty():
-    """TODO:
+    """Executes a group where no records are returned. We test this as it's somewhat peculiar with s3 select, in so much
+    as s3 does not return column names when selecting data, meaning, unlike a traditional DBMS, no field names tuple
+    should be present in the results.
 
-    :return:
+    :return: None
     """
 
-    pass
+    num_rows = 0
+
+    query_plan = QueryPlan("Empty Group Test")
+
+    # Query plan
+    # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'ts', False))
+
+    g = query_plan.add_operator(Group(['_3'],
+                                      [
+                                          AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5']))
+                                      ],
+                                      'g',
+                                      False))
+
+    c = query_plan.add_operator(Collate('c', False))
+
+    ts.connect(g)
+    g.connect(c)
+
+    # Start the query
+    ts.start()
+
+    # Assert the results
+    for t_ in c.tuples():
+        num_rows += 1
+        # print("{}:{}".format(num_rows, t_))
+
+    field_names = ['_0', '_1']
+
+    assert c.tuples()[0] == field_names
+
+    assert len(c.tuples()) == 0 + 1
+
+    # Write the metrics
+    query_plan.print_metrics()
