@@ -2,6 +2,7 @@
 """Cursor support
 
 """
+import timeit
 
 import boto3
 import csv
@@ -24,6 +25,10 @@ class Cursor(object):
         self.s3key = None
         self.s3sql = None
         self.event_stream = None
+
+        self.bytes_scanned = 0
+        self.bytes_processed = 0
+        self.bytes_returned = 0
 
     def select(self, s3key, s3sql):
         """Creates a select cursor
@@ -130,11 +135,11 @@ class Cursor(object):
                         prev_record_str = record_str
 
             elif 'Stats' in event:
-                pass
-                # bytes_scanned = event['Stats']['Details']['BytesScanned']
-                # bytes_processed = event['Stats']['Details']['BytesProcessed']
-                # print("{} Stats Event: bytes scanned: {}, bytes processed: {}"
-                #       .format(timeit.default_timer(), bytes_scanned, bytes_processed))
+                self.bytes_scanned += event['Stats']['Details']['BytesScanned']
+                self.bytes_processed += event['Stats']['Details']['BytesProcessed']
+                self.bytes_returned += event['Stats']['Details']['BytesReturned']
+                # print("{} Stats Event: bytes scanned: {}, bytes processed: {}, bytes returned: {}"
+                #       .format(timeit.default_timer(), self.bytes_scanned, self.bytes_processed, self.bytes_returned))
 
             elif 'Progress' in event:
                 pass

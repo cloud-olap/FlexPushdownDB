@@ -2,6 +2,7 @@
 """
 
 """
+
 from plan.op_metrics import OpMetrics
 from op.operator_base import Operator
 from op.message import TupleMessage
@@ -17,14 +18,24 @@ class SQLTableScanMetrics(OpMetrics):
 
     def __init__(self):
         super(SQLTableScanMetrics, self).__init__()
-        self.rows_scanned = 0
+
+        self.rows_returned = 0
+
         self.time_to_first_response_timer = Timer()
+
+        self.bytes_scanned = 0
+        self.bytes_processed = 0
+        self.bytes_returned = 0
 
     def __repr__(self):
         return {
             'elapsed_time': round(self.elapsed_time(), 5),
+            'rows_returned': self.rows_returned,
+            'bytes_scanned': self.bytes_scanned,
+            'bytes_processed': self.bytes_processed,
+            'bytes_returned': self.bytes_returned,
             'time_to_first_response': round(self.time_to_first_response_timer.elapsed(), 5),
-            'rows_scanned': self.rows_scanned
+
         }.__repr__()
 
 
@@ -71,7 +82,7 @@ class SQLTableScan(Operator):
 
             self.op_metrics.time_to_first_response_timer.stop()
 
-            self.op_metrics.rows_scanned += 1
+            self.op_metrics.rows_returned += 1
 
             if first_tuple:
                 # Create and send the record field names
@@ -83,6 +94,10 @@ class SQLTableScan(Operator):
 
         if not self.is_completed():
             self.complete()
+
+        self.op_metrics.bytes_scanned = cur.bytes_scanned
+        self.op_metrics.bytes_processed = cur.bytes_processed
+        self.op_metrics.bytes_returned = cur.bytes_returned
 
         self.op_metrics.timer_stop()
 

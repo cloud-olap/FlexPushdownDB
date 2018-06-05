@@ -13,6 +13,8 @@ from sql.cursor import Cursor
 class SQLTableScanBloomUse(Operator):
     """Performs a table scan using a received bloom filter.
 
+    TODO: May be able to reuse some of the normal SQLTableScan op here
+
     """
 
     def __init__(self, s3key, s3sql, bloom_filter_field_name, name, log_enabled):
@@ -93,7 +95,7 @@ class SQLTableScanBloomUse(Operator):
 
             self.op_metrics.time_to_first_response_timer.stop()
 
-            self.op_metrics.rows_scanned += 1
+            self.op_metrics.rows_returned += 1
 
             if first_tuple:
                 self.send_field_names(t)
@@ -103,6 +105,10 @@ class SQLTableScanBloomUse(Operator):
 
         if not self.is_completed():
             self.complete()
+
+        self.op_metrics.bytes_scanned = cur.bytes_scanned
+        self.op_metrics.bytes_processed = cur.bytes_processed
+        self.op_metrics.bytes_returned = cur.bytes_returned
 
     def build_sql_suffix(self, bloom_filter_sql_predicate):
         """Creates the bloom filter sql predicate. Basically determines whether the sql suffix should start with 'and'

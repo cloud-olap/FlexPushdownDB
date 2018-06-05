@@ -35,10 +35,11 @@ def test_aggregate_count():
 
     c = query_plan.add_operator(Collate('c', False))
 
-    query_plan.write_graph(gen_test_id())
-
     ts.connect(a)
     a.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
@@ -83,6 +84,9 @@ def test_aggregate_sum():
 
     ts.connect(a)
     a.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
@@ -132,6 +136,9 @@ def test_aggregate_empty():
 
     ts.connect(a)
     a.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(gen_test_id())
 
     # Start the query
     ts.start()
