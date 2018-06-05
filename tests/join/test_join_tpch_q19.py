@@ -72,7 +72,6 @@ from op.join import Join, JoinExpression
 from op.predicate_expression import PredicateExpression
 from op.project import Project, ProjectExpression
 from op.sql_table_scan import SQLTableScan
-from sql.function import sum_fn
 from util.test_util import gen_test_id
 
 
@@ -83,8 +82,9 @@ def collate_op():
 def aggregate_def():
     return Aggregate(
         [
-            AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['l_extendedprice']) *
-                                                                    float((1 - float(t_['l_discount']))))
+            AggregateExpression(
+                AggregateExpression.SUM,
+                lambda t_: float(t_['l_extendedprice']) * float((1 - float(t_['l_discount']))))
         ],
         'aggregate',
         False)

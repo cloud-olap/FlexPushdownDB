@@ -8,7 +8,6 @@ from op.group import Group
 from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
 from plan.query_plan import QueryPlan
-from sql.function import count_fn, sum_fn
 from util.test_util import gen_test_id
 
 
@@ -142,9 +141,9 @@ def test_group_empty():
     ts.start()
 
     # Assert the results
-    for t_ in c.tuples():
+    for t in c.tuples():
         num_rows += 1
-        # print("{}:{}".format(num_rows, t_))
+        # print("{}:{}".format(num_rows, t))
 
     field_names = ['_0', '_1']
 

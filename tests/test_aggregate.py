@@ -107,9 +107,9 @@ def test_aggregate_sum():
 
 
 def test_aggregate_empty():
-    """Executes an aggregate query with no results returned. We test this as it's somewhat peculiar with s3 select, in so much
-    as s3 does not return column names when selecting data, though being an aggregate query we can generate the tuple
-    field names based on the expressions supplied.
+    """Executes an aggregate query with no results returned. We test this as it's somewhat peculiar with s3 select,
+    in so much as s3 does not return column names when selecting data, though being an aggregate query we can generate
+    the tuple field names based on the expressions supplied.
 
     TODO: Unsure whether the aggregate operator should return field names. It makes sense in one way, but is different
     to how all the other operators behave.

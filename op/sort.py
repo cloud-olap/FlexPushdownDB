@@ -24,7 +24,8 @@ class SortExpression(object):
         """
 
         if sort_order is not 'ASC' and sort_order is not 'DESC':
-            raise Exception("Illegal sort order '{}'. Sort order must be '{}' or '{}'".format(sort_order, 'ASC', 'DESC'))
+            raise Exception("Illegal sort order '{}'. Sort order must be '{}' or '{}'"
+                            .format(sort_order, 'ASC', 'DESC'))
 
         self.col_index = col_index
         self.col_type = col_type

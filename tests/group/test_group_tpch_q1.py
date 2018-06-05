@@ -11,7 +11,6 @@ from op.sort import Sort, SortExpression
 from op.sql_table_scan import SQLTableScan
 from op.tuple import LabelledTuple
 from plan.query_plan import QueryPlan
-from sql.function import sum_fn, avg_fn, count_fn
 from util.test_util import gen_test_id
 
 
@@ -72,7 +71,7 @@ def test_group_baseline():
             AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5']) * (1 - float(t_['_6']))),
             # sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge
             AggregateExpression(AggregateExpression.SUM,
-                lambda t_: float(t_['_5']) * (1 - float(t_['_6'])) * (1 + float(t_['_7']))),
+                                lambda t_: float(t_['_5']) * (1 - float(t_['_6'])) * (1 + float(t_['_7']))),
             # avg(l_quantity)
             AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['_4'])),
             # avg(l_extendedprice)

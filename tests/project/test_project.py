@@ -73,9 +73,9 @@ def test_project_simple():
 
 
 def test_project_empty():
-    """Executes an projection query with no results returned. We test this as it's somewhat peculiar with s3 select, in so much
-    as s3 does not return column names when selecting data, meaning, unlike a traditional DBMS, no field names tuple
-    should be present in the results.
+    """Executes an projection query with no results returned. We test this as it's somewhat peculiar with s3 select,
+     in so much as s3 does not return column names when selecting data, meaning, unlike a traditional DBMS,
+     no field names tuple should be present in the results.
 
     :return: None
     """

@@ -14,7 +14,6 @@ from util.test_util import gen_test_id
 
 
 def test_filter_baseline():
-
     query_plan = QueryPlan("Baseline Filter Test")
 
     # Query plan

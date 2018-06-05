@@ -2,7 +2,6 @@
 """Cursor support
 
 """
-import timeit
 
 import boto3
 import csv

@@ -39,7 +39,6 @@ from op.predicate_expression import PredicateExpression
 from op.project import Project, ProjectExpression
 from op.sql_table_scan import SQLTableScan
 from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
-from sql.function import avg_fn, sum_fn
 from util.test_util import gen_test_id
 
 
@@ -55,7 +54,12 @@ def extendedprice_sum_aggregate_project_op():
     :return:
     """
 
-    return Project([ProjectExpression(lambda t_: t_['_0'] / 7.0, 'avg_yearly')], 'extendedprice_sum_aggregate_project', False)
+    return Project(
+        [
+            ProjectExpression(lambda t_: t_['_0'] / 7.0, 'avg_yearly')
+        ],
+        'extendedprice_sum_aggregate_project',
+        False)
 
 
 # with extendedprice_sum_aggregate as (select sum(l_extendedprice) from filter_join_2)
@@ -209,14 +213,14 @@ def test_join_baseline():
                                                          'lineitem_scan',
                                                          False))
 
-    # with part_scan_project as (select _0 as p_partkey from part_scan)
-    part_scan_project = query_plan.add_operator(Project(
+    # with part_project as (select _0 as p_partkey from part_scan)
+    part_project = query_plan.add_operator(Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
             ProjectExpression(lambda t_: t_['_6'], 'p_container')
         ],
-        'part_scan_project',
+        'part_project',
         False))
 
     part_filter = query_plan.add_operator(Filter(
@@ -224,15 +228,15 @@ def test_join_baseline():
         'part_filter',
         False))
 
-    # with part_scan_project as (select _0 as p_partkey from part_scan)
-    lineitem_scan_project = query_plan.add_operator(Project(
+    # with part_project as (select _0 as p_partkey from part_scan)
+    lineitem_project = query_plan.add_operator(Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
             ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
             ProjectExpression(lambda t_: t_['_4'], 'l_quantity'),
             ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice')
         ],
-        'lineitem_scan_project',
+        'lineitem_project',
         False))
 
     part_lineitem_join = query_plan.add_operator(part_line_item_join_op())
@@ -245,13 +249,13 @@ def test_join_baseline():
     collate = query_plan.add_operator(collate_op())
 
     # Connect the operators
-    part_scan.connect(part_scan_project)
-    lineitem_scan.connect(lineitem_scan_project)
+    part_scan.connect(part_project)
+    lineitem_scan.connect(lineitem_project)
 
-    part_scan_project.connect(part_filter)
+    part_project.connect(part_filter)
 
     part_lineitem_join.connect_left_producer(part_filter)
-    part_lineitem_join.connect_right_producer(lineitem_scan_project)
+    part_lineitem_join.connect_right_producer(lineitem_project)
 
     part_lineitem_join.connect(lineitem_part_avg_group)
     lineitem_part_avg_group.connect(lineitem_part_avg_group_project)
@@ -300,8 +304,8 @@ def test_join_filtered():
     # Define the operators
     part_scan = query_plan.add_operator(part_scan_op())
     lineitem_scan = query_plan.add_operator(lineitem_scan_op())
-    part_scan_project = query_plan.add_operator(part_project_op())
-    lineitem_scan_project = query_plan.add_operator(lineitem_project_op())
+    part_project = query_plan.add_operator(part_project_op())
+    lineitem_project = query_plan.add_operator(lineitem_project_op())
     part_lineitem_join = query_plan.add_operator(part_line_item_join_op())
     lineitem_part_avg_group = query_plan.add_operator(lineitem_avg_group_op())
     lineitem_part_avg_group_project = query_plan.add_operator(lineitem_part_avg_group_project_op())
@@ -312,11 +316,11 @@ def test_join_filtered():
     collate = query_plan.add_operator(collate_op())
 
     # Connect the operators
-    part_scan.connect(part_scan_project)
-    lineitem_scan.connect(lineitem_scan_project)
+    part_scan.connect(part_project)
+    lineitem_scan.connect(lineitem_project)
 
-    part_lineitem_join.connect_left_producer(part_scan_project)
-    part_lineitem_join.connect_right_producer(lineitem_scan_project)
+    part_lineitem_join.connect_left_producer(part_project)
+    part_lineitem_join.connect_right_producer(lineitem_project)
 
     part_lineitem_join.connect(lineitem_part_avg_group)
     lineitem_part_avg_group.connect(lineitem_part_avg_group_project)

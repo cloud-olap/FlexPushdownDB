@@ -86,7 +86,7 @@ from op.predicate_expression import PredicateExpression
 from op.join import Join, JoinExpression
 from op.sql_table_scan import SQLTableScan
 from plan.query_plan import QueryPlan
-from sql.function import cast, timestamp, sum_fn
+from sql.function import cast, timestamp
 from util.test_util import gen_test_id
 
 
@@ -124,14 +124,14 @@ def test_join_baseline():
                                                          'lineitem_scan',
                                                          False))
 
-    lineitem_scan_project = query_plan.add_operator(Project(
+    lineitem_project = query_plan.add_operator(Project(
         [
             ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
             ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice'),
             ProjectExpression(lambda t_: t_['_6'], 'l_discount'),
             ProjectExpression(lambda t_: t_['_10'], 'l_shipdate')
         ],
-        'lineitem_scan_project',
+        'lineitem_project',
         False))
 
     part_scan = query_plan.add_operator(SQLTableScan('part.csv',
@@ -139,13 +139,13 @@ def test_join_baseline():
                                                      'part_scan',
                                                      False))
 
-    part_scan_project = query_plan.add_operator(Project(
+    part_project = query_plan.add_operator(Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
             ProjectExpression(lambda t_: t_['_4'], 'p_type')
         ],
-        'part_scan_project',
+        'part_project',
         False))
 
     lineitem_filter = query_plan.add_operator(Filter(
@@ -185,26 +185,32 @@ def test_join_baseline():
         return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
+        Aggregate(
+            [
+                AggregateExpression(AggregateExpression.SUM, ex1),
+                AggregateExpression(AggregateExpression.SUM, ex2)
+            ],
+            'aggregate',
+            False))
 
-    project = query_plan.add_operator(Project(
+    aggregate_project = query_plan.add_operator(Project(
         [
             ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
         ],
-        'project',
+        'aggregate_project',
         False))
 
     collate = query_plan.add_operator(Collate('collate', False))
 
-    lineitem_scan.connect(lineitem_scan_project)
-    lineitem_scan_project.connect(lineitem_filter)
+    lineitem_scan.connect(lineitem_project)
+    lineitem_project.connect(lineitem_filter)
     join.connect_left_producer(lineitem_filter)
-    part_scan.connect(part_scan_project)
-    part_scan_project.connect(part_filter)
+    part_scan.connect(part_project)
+    part_project.connect(part_filter)
     join.connect_right_producer(part_filter)
     join.connect(aggregate)
-    aggregate.connect(project)
-    project.connect(collate)
+    aggregate.connect(aggregate_project)
+    aggregate_project.connect(collate)
 
     # Write the plan graph
     query_plan.write_graph(gen_test_id())
@@ -273,13 +279,13 @@ def test_join_filtered():
                      'lineitem_scan',
                      False))
 
-    lineitem_scan_project = query_plan.add_operator(Project(
+    lineitem_project = query_plan.add_operator(Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
             ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
             ProjectExpression(lambda t_: t_['_2'], 'l_discount')
         ],
-        'lineitem_scan_project',
+        'lineitem_project',
         False))
 
     part_scan = query_plan.add_operator(SQLTableScan('part.csv',
@@ -291,12 +297,12 @@ def test_join_filtered():
                                                      'part_scan',
                                                      False))
 
-    part_scan_project = query_plan.add_operator(Project(
+    part_project = query_plan.add_operator(Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpression(lambda t_: t_['_1'], 'p_type')
         ],
-        'part_scan_project',
+        'part_project',
         False))
 
     join = query_plan.add_operator(
@@ -322,19 +328,25 @@ def test_join_filtered():
         return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
+        Aggregate(
+            [
+                AggregateExpression(AggregateExpression.SUM, ex1),
+                AggregateExpression(AggregateExpression.SUM, ex2)
+            ],
+            'aggregate', False))
 
-    project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
+    aggregate_project = query_plan.add_operator(
+        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'aggregate_project', False))
+
     collate = query_plan.add_operator(Collate('collate', False))
 
-    lineitem_scan.connect(lineitem_scan_project)
-    part_scan.connect(part_scan_project)
-    join.connect_left_producer(lineitem_scan_project)
-    join.connect_right_producer(part_scan_project)
+    lineitem_scan.connect(lineitem_project)
+    part_scan.connect(part_project)
+    join.connect_left_producer(lineitem_project)
+    join.connect_right_producer(part_project)
     join.connect(aggregate)
-    aggregate.connect(project)
-    project.connect(collate)
+    aggregate.connect(aggregate_project)
+    aggregate_project.connect(collate)
 
     # Write the plan graph
     query_plan.write_graph(gen_test_id())
@@ -458,7 +470,9 @@ def test_join_bloom():
         return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
+        Aggregate(
+            [AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)],
+            'aggregate', False))
 
     project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
@@ -659,7 +673,9 @@ def test_join_semi():
         return v1
 
     aggregate = query_plan.add_operator(
-        Aggregate([AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)], 'aggregate', False))
+        Aggregate(
+            [AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)],
+            'aggregate', False))
 
     project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))

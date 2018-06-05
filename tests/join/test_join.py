@@ -21,17 +21,20 @@ def test_join_baseline():
     query_plan = QueryPlan("Baseline Join Test")
 
     # Query plan
-    supplier_scan = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'supplier_scan', False))
+    supplier_scan = query_plan.add_operator(
+        SQLTableScan('supplier.csv', 'select * from S3Object;', 'supplier_scan', False))
 
     supplier_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', False))
 
-    nation_scan = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', False))
+    nation_scan = query_plan.add_operator(
+        SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', False))
 
     nation_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', False))
 
-    supplier_nation_join = query_plan.add_operator(Join(JoinExpression('s_nationkey', 'n_nationkey'), 'supplier_nation_join', False))
+    supplier_nation_join = query_plan.add_operator(
+        Join(JoinExpression('s_nationkey', 'n_nationkey'), 'supplier_nation_join', False))
 
     collate = query_plan.add_operator(Collate('collate', False))
 
@@ -89,7 +92,8 @@ def test_join_empty():
     supplier_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', False))
 
-    nation_scan = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object limit 0;', 'nation_scan', False))
+    nation_scan = query_plan.add_operator(
+        SQLTableScan('nation.csv', 'select * from S3Object limit 0;', 'nation_scan', False))
 
     nation_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', False))

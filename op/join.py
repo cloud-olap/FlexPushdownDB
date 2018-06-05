@@ -157,7 +157,7 @@ class Join(Operator):
             raise Exception(
                 "Join Operator '{}' received invalid tuple {} from producer '{}'. "
                 "Tuple must be sent from connected left producer '{}' or right producer '{}'."
-                    .format(self.name, tuple_, producer.name, self.__l_producer_name, self.__r_producer_name))
+                .format(self.name, tuple_, producer.name, self.__l_producer_name, self.__r_producer_name))
 
     def on_producer_completed(self, producer):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
