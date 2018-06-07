@@ -106,3 +106,4 @@ venv.bak/
 
 # Generated query plan graphs
 *.svg
+/ATTIC/

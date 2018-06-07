@@ -54,7 +54,6 @@ def count_fn(_ex, ctx):
 class AggregateExpression(object):
     """Represents an aggregate expression (e.g. sum(2.5 * col_name) ).
 
-    TODO: This can be reworked... at least to remove the need to pass ctx around.
     """
 
     SUM = "SUM"

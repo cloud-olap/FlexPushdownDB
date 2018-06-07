@@ -62,12 +62,12 @@ class SQLTableScan(Operator):
 
         :return: None
         """
-        # print("Table Scan | Start {} {}".format(self.key, self.sql))
 
         self.op_metrics.timer_start()
-        self.op_metrics.time_to_first_response_timer.start()
 
         cur = Cursor().select(self.s3key, self.s3sql)
+
+        self.op_metrics.time_to_first_response_timer.start()
 
         tuples = cur.execute()
 

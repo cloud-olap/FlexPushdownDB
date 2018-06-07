@@ -13,8 +13,6 @@ from sql.cursor import Cursor
 class SQLTableScanBloomUse(Operator):
     """Performs a table scan using a received bloom filter.
 
-    TODO: May be able to reuse some of the normal SQLTableScan op here
-
     """
 
     def __init__(self, s3key, s3sql, bloom_filter_field_name, name, log_enabled):
@@ -61,29 +59,26 @@ class SQLTableScanBloomUse(Operator):
         :return: None
         """
 
-        # print("BloomScan | {}".format(t))
-
         if type(m) is BloomMessage:
             self.__bloom_filter = m.bloom_filter
-            self.execute()
+            self.start()
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def execute(self):
+    def start(self):
         """Executes the query and sends the tuples to consumers.
 
         :return: None
         """
 
-        self.op_metrics.time_to_first_response_timer.start()
-
-        bloom_filter_sql_predicate = self.__bloom_filter.sql_predicate(self.__bloom_filter_field_name)
-
         # Append the bloom filter predicate either using where... or and...
-        sql_suffix = self.build_sql_suffix(bloom_filter_sql_predicate)
-
+        bloom_filter_sql_predicate = self.__bloom_filter.sql_predicate(self.__bloom_filter_field_name)
+        sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicate)
         sql = self.s3sql + sql_suffix
+
         cur = Cursor().select(self.s3key, sql)
+
+        self.op_metrics.time_to_first_response_timer.start()
 
         tuples = cur.execute()
 
@@ -92,6 +87,9 @@ class SQLTableScanBloomUse(Operator):
 
             if self.is_completed():
                 break
+
+            if self.log_enabled:
+                print("{}('{}') | {}".format(self.__class__.__name__, self.name, t))
 
             self.op_metrics.time_to_first_response_timer.stop()
 
@@ -103,22 +101,24 @@ class SQLTableScanBloomUse(Operator):
 
             self.send_field_values(t)
 
-        if not self.is_completed():
-            self.complete()
-
         self.op_metrics.bytes_scanned = cur.bytes_scanned
         self.op_metrics.bytes_processed = cur.bytes_processed
         self.op_metrics.bytes_returned = cur.bytes_returned
 
-    def build_sql_suffix(self, bloom_filter_sql_predicate):
+        if not self.is_completed():
+            self.complete()
+
+    @staticmethod
+    def __build_sql_suffix(sql, bloom_filter_sql_predicate):
         """Creates the bloom filter sql predicate. Basically determines whether the sql suffix should start with 'and'
         or 'where'.
 
+        :param sql: The sql to create the suffix for
         :param bloom_filter_sql_predicate: The sql predicate from the bloom filter
         :return: The sql suffix
         """
 
-        stripped_sql = self.s3sql.strip()
+        stripped_sql = sql.strip()
         if stripped_sql.endswith(';'):
             stripped_sql = stripped_sql[:-1].strip()
 

@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """SQL function support
 
-TODO: This can be tidied up, at least to remove the need to pass ctx around.
-
 """
 
-import numbers
 from datetime import datetime
 
 from util.datetime_util import str_to_millis, dt_to_millis

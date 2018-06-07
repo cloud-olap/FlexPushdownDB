@@ -8,7 +8,7 @@ from op.operator_base import Operator
 from op.message import TupleMessage, BloomMessage
 from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from op.tuple import LabelledTuple
-from util.bloom_filter_util import Bloom
+from util.scalable_bloom_filter import ScalableBloomFilter
 
 
 class BloomCreateMetrics(OpMetrics):
@@ -50,7 +50,7 @@ class BloomCreate(Operator):
 
         self.__field_names = None
 
-        self.__bloom_filter = Bloom()
+        self.__bloom_filter = ScalableBloomFilter(1024, 0.01)
 
     def connect(self, consumer):
         """Overrides the generic connect method to make sure that the connecting operator is an operator that consumes
@@ -103,7 +103,7 @@ class BloomCreate(Operator):
                 self.name,
                 {'bloom_filter': self.__bloom_filter}))
 
-        self.op_metrics.bloom_filter_bit_array_len = self.__bloom_filter.bit_array_len()
+        self.op_metrics.bloom_filter_bit_array_len = len(self.__bloom_filter)
 
         self.send(BloomMessage(self.__bloom_filter), self.consumers)
 
@@ -130,4 +130,5 @@ class BloomCreate(Operator):
 
             self.op_metrics.tuple_count += 1
 
-            self.__bloom_filter.add(lt[self.__bloom_field_name])
+            # NOTE: Bloom filter only supports ints. Not clear how to make it support strings as yet
+            self.__bloom_filter.add(int(lt[self.__bloom_field_name]))
