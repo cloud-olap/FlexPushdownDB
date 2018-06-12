@@ -1,0 +1,24 @@
+---
+
+- name: S3 Filter - Prerequisites
+  hosts: all
+
+  tasks:
+
+  # Install Python
+  - name: Install prerequsities
+    apt:
+      name:
+        - python2.7
+        - python-pip
+        - virtualenv
+        - g++
+        - python-dev
+        - graphviz
+        - libgraphviz-dev
+        - pkg-config
+      state: present
+      install_recommends: no
+      update_cache: yes
+      cache_valid_time: 3600
+    become: true

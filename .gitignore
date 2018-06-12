@@ -105,5 +105,6 @@ venv.bak/
 .mypy_cache/
 
 # Generated query plan graphs
-*.svg
 /ATTIC/
+/private/
+/tests-output/

@@ -1,0 +1,24 @@
+---
+
+- name: S3 Filter - Security
+  hosts: all
+
+  tasks:
+
+  # Install AWS credentials
+  - name: Install AWS credentials
+    block:
+    - name: Ensure AWS config directory present
+      file:
+        path: "{{ remote_aws_config_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: 0700
+    - name: Copy AWS credentials file
+      copy:
+        src: "{{ local_aws_credentials_file }}"
+        dest: "{{ remote_aws_credentials_file }}"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0600

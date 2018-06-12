@@ -1,0 +1,12 @@
+---
+
+local_private_dir: "../../private"
+local_aws_credentials_file: "{{ local_private_dir }}/matt_youill_aws_credentials"
+local_package_dir: "{{ playbook_dir }}/../.."
+local_package_src_dir: "{{ local_package_dir }}/s3filter"
+remote_home_dir: "/home/ubuntu"
+remote_aws_config_dir: "{{ remote_home_dir }}/.aws"
+remote_aws_credentials_file: "{{ remote_aws_config_dir }}/credentials"
+remote_package_dir: "{{ remote_home_dir }}/s3filter"
+remote_package_src_dir: "{{ remote_package_dir }}/s3filter"
+remote_package_venv_dir: "{{ remote_package_dir }}/venv"
