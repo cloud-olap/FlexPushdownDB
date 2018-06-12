@@ -43,9 +43,9 @@ class BloomFilter(object):
         # n ~= (k * m) * ((ln(2) ** 2) / abs(ln(P)))
         # m ~= n * abs(ln(P)) / (k * (ln(2) ** 2))
 
-        self.num_slices = int(math.ceil(math.log(1.0 / error_rate, 2)))
+        self.num_slices = int(math.ceil(math.log(1.0 / self.error_rate, 2)))
         self.num_bits_per_slice = int(math.ceil(
-            (capacity * abs(math.log(error_rate))) /
+            (self.capacity * abs(math.log(self.error_rate))) /
             (self.num_slices * (math.log(2) ** 2))))
 
         self.num_bits = self.num_slices * self.num_bits_per_slice
@@ -101,6 +101,9 @@ class BloomFilter(object):
 
         hashes = [fn(key) for fn in self.hash_functions]
         found_all_bits = True
+        if self.count > self.capacity:
+            raise RuntimeError("BloomFilter overflow. Element count {} exceeds capacity {}"
+                               .format(self.count, self.capacity))
         slice_index = 0
         for h in hashes:
             if found_all_bits and not self.bit_arrays[slice_index][h]:

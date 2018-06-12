@@ -8,7 +8,9 @@ from op.operator_base import Operator
 from op.message import TupleMessage, BloomMessage
 from op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from op.tuple import LabelledTuple
+from util.bloom_filter import BloomFilter
 from util.scalable_bloom_filter import ScalableBloomFilter
+from util.simple_bloom_filter import SimpleBloomFilter
 
 
 class BloomCreateMetrics(OpMetrics):
@@ -50,7 +52,14 @@ class BloomCreate(Operator):
 
         self.__field_names = None
 
-        self.__bloom_filter = ScalableBloomFilter(1024, 0.01)
+        # These settings are similar to the simple version
+        # self.__bloom_filter = ScalableBloomFilter(64, 0.75, ScalableBloomFilter.LARGE_SET_GROWTH)
+
+        # These settings are similar to the simple version
+        self.__bloom_filter = BloomFilter(8192, 0.75)
+
+        # The simple filter
+        # self.__bloom_filter = SimpleBloomFilter()
 
     def connect(self, consumer):
         """Overrides the generic connect method to make sure that the connecting operator is an operator that consumes

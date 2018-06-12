@@ -76,6 +76,9 @@ class SQLTableScanBloomUse(Operator):
         sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicate)
         sql = self.s3sql + sql_suffix
 
+        if self.log_enabled:
+            print("{}('{}') | {}".format(self.__class__.__name__, self.name, sql))
+
         cur = Cursor().select(self.s3key, sql)
 
         self.op_metrics.time_to_first_response_timer.start()

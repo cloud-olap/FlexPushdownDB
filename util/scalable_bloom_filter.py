@@ -19,7 +19,7 @@ class ScalableBloomFilter(object):
     SMALL_SET_GROWTH = 2  # slower, but takes up less memory
     LARGE_SET_GROWTH = 4  # faster, but takes up more memory faster
 
-    def __init__(self, initial_capacity, error_rate, mode=SMALL_SET_GROWTH):
+    def __init__(self, initial_capacity, error_rate, mode):
 
         if not initial_capacity > 0:
             raise Exception("Capacity must be > 0")

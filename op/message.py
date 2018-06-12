@@ -6,6 +6,7 @@
 from op.tuple import Tuple
 from util.bloom_filter import BloomFilter
 from util.scalable_bloom_filter import ScalableBloomFilter
+from util.simple_bloom_filter import SimpleBloomFilter
 
 
 class Message(object):
@@ -50,9 +51,14 @@ class BloomMessage(Message):
         :param bloom_filter: The bloom filter content of the message
         """
 
-        if type(bloom_filter) is not ScalableBloomFilter:
-            raise Exception("Message content type is {}. Type must be '{}'"
-                            .format(type(bloom_filter), ScalableBloomFilter.__class__.name))
+        if type(bloom_filter) is not ScalableBloomFilter and \
+                type(bloom_filter) is not BloomFilter and \
+                type(bloom_filter) is not SimpleBloomFilter:
+            raise Exception("Message content type is {}. Type must be '{}', '{}', or '{}'"
+                            .format(type(bloom_filter),
+                                    SimpleBloomFilter.__class__.__name__,
+                                    BloomFilter.__class__.__name__,
+                                    ScalableBloomFilter.__class__.__name__))
 
         self.bloom_filter = bloom_filter
         super(BloomMessage, self).__init__(bloom_filter)
