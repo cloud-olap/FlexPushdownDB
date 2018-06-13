@@ -108,3 +108,4 @@ venv.bak/
 /ATTIC/
 /private/
 /tests-output/
+/benchmark-output/

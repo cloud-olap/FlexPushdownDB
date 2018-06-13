@@ -20,3 +20,7 @@
       synchronize:
         src: "{{ local_package_dir }}/requirements.txt"
         dest: "{{ remote_package_dir }}"
+    - name: Copy scripts
+      synchronize:
+        src: "{{ local_package_dir }}/scripts"
+        dest: "{{ remote_package_dir }}"
