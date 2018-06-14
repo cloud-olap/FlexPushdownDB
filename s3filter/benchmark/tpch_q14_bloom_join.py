@@ -12,7 +12,8 @@ from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.bloom_create import BloomCreate
 from s3filter.op.collate import Collate
-from s3filter.op.join import JoinExpression, Join
+from s3filter.op.hash_join import HashJoin
+from s3filter.op.nested_loop_join import JoinExpression
 from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
@@ -26,11 +27,14 @@ def main():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q14 Bloom Join Test")
+    print('')
+    print("TPCH Q14 Bloom Join")
+    print("-------------------")
+
+    query_plan = QueryPlan()
 
     # Query plan
-    # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
-    date = '1996-03-13'
+    date = '1993-01-01'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
@@ -38,8 +42,7 @@ def main():
                                                      "select "
                                                      "  p_partkey, p_type from S3Object "
                                                      "where "
-                                                     "  p_brand = 'Brand#12' "
-                                                     " ",
+                                                     "  p_brand = 'Brand#12' ",
                                                      'part_scan',
                                                      False))
 
@@ -59,23 +62,7 @@ def main():
                              "  l_partkey, l_extendedprice, l_discount from S3Object "
                              "where "
                              "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                             "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
-                             "  ( "
-                             "      (l_orderkey = '18436' and l_partkey = '164584') or "
-                             "      (l_orderkey = '18720' and l_partkey = '92764') or "
-                             "      (l_orderkey = '12482' and l_partkey = '117405') or "
-                             "      (l_orderkey = '27623' and l_partkey = '137010') or "
-
-                             "      (l_orderkey = '10407' and l_partkey = '43275') or "
-                             "      (l_orderkey = '17027' and l_partkey = '172729') or "
-                             "      (l_orderkey = '23302' and l_partkey = '18523') or "
-                             "      (l_orderkey = '27334' and l_partkey = '94308') or "
-
-                             "      (l_orderkey = '15427' and l_partkey = '125586') or "
-                             "      (l_orderkey = '11590' and l_partkey = '162359') or "
-                             "      (l_orderkey = '2945' and l_partkey = '126197') or "
-                             "      (l_orderkey = '15648' and l_partkey = '143904') "
-                             "  ) "
+                             "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
                              " ".format(
                                  min_shipped_date.strftime('%Y-%m-%d'),
                                  max_shipped_date.strftime('%Y-%m-%d'))
@@ -94,7 +81,7 @@ def main():
         False))
 
     join = query_plan.add_operator(
-        Join(JoinExpression('p_partkey', 'l_partkey'), 'join', False))  # p_partkey and l_partkey
+        HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'join', False))  # p_partkey and l_partkey
 
     def ex1(t_):
 
@@ -117,11 +104,21 @@ def main():
 
     aggregate = query_plan.add_operator(
         Aggregate(
-            [AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)],
-            'aggregate', False))
+            [
+                AggregateExpression(AggregateExpression.SUM, ex1),
+                AggregateExpression(AggregateExpression.SUM, ex2)
+            ],
+            'aggregate',
+            False))
 
     project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
+        Project(
+            [
+                ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
+            ],
+            'project',
+            False))
+
     collate = query_plan.add_operator(Collate('collate', False))
 
     part_scan.connect(part_scan_project)
@@ -148,6 +145,8 @@ def main():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    collate.print_tuples()
+
     field_names = ['promo_revenue']
 
     assert len(collate.tuples()) == 1 + 1
@@ -155,7 +154,7 @@ def main():
     assert collate.tuples()[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [33.42623264199327]
+    assert collate.tuples()[1] == [15.090116526324298]
 
     # Write the metrics
     query_plan.print_metrics()

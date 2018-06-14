@@ -7,7 +7,7 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.aggregate_expression import AggregateExpressionContext
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
-from s3filter.op.tuple import Tuple, LabelledTuple
+from s3filter.op.tuple import Tuple, IndexedTuple
 
 
 class Group(Operator):
@@ -79,7 +79,7 @@ class Group(Operator):
             self.group_contexts[group_field_values_tuple] = group_aggregate_expression_contexts
 
     def __build_group_field_values_tuple(self, tuple_):
-        lt = LabelledTuple(tuple_, self.field_names)
+        lt = IndexedTuple.build(tuple_, self.field_names)
         group_fields = []
         for f in self.group_field_names:
             group_fields.append(lt[f])
@@ -95,8 +95,9 @@ class Group(Operator):
         """
 
         # Send the field names
-        lt = LabelledTuple(self.group_field_names + self.aggregate_expressions)
-        self.send(TupleMessage(Tuple(lt.labels)), self.consumers)
+        lt = IndexedTuple.build_default(self.group_field_names + self.aggregate_expressions)
+
+        self.send(TupleMessage(Tuple(lt.field_names())), self.consumers)
 
         for group_tuple, group_aggregate_contexts in self.group_contexts.items():
 

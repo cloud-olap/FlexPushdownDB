@@ -8,7 +8,26 @@ from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.group import AggregateExpressionContext
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
-from s3filter.op.tuple import LabelledTuple, Tuple
+from s3filter.op.tuple import Tuple, IndexedTuple
+
+
+class AggregateMetrics(OpMetrics):
+    """Extra metrics for a project
+
+    """
+
+    def __init__(self):
+        super(AggregateMetrics, self).__init__()
+
+        self.rows_aggregated = 0
+        self.expressions_evaluated = 0
+
+    def __repr__(self):
+        return {
+            'elapsed_time': round(self.elapsed_time(), 5),
+            'rows_aggregated': self.rows_aggregated,
+            'expressions_evaluated': self.expressions_evaluated
+        }.__repr__()
 
 
 class Aggregate(Operator):
@@ -24,7 +43,7 @@ class Aggregate(Operator):
         :param log_enabled: Logging enabled.
         """
 
-        super(Aggregate, self).__init__(name, OpMetrics(), log_enabled)
+        super(Aggregate, self).__init__(name, AggregateMetrics(), log_enabled)
 
         for e in expressions:
             if type(e) is not AggregateExpression:
@@ -111,13 +130,17 @@ class Aggregate(Operator):
             e.eval(tuple_, self.__field_names, ctx)
             i += 1
 
+            self.op_metrics.expressions_evaluated += 1
+
+        self.op_metrics.rows_aggregated += 1
+
     def __build_field_names(self):
         """Creates the list of field names from the evaluated aggregates. Field names will just be _0, _1, etc.
 
         :return: The list of field names.
         """
 
-        return LabelledTuple(self.__expressions).labels
+        return IndexedTuple.build_default(self.__expressions).field_names()
 
     def __build_field_values(self):
         """Creates the list of field values from the evaluated aggregates.

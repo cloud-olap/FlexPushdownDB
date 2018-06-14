@@ -6,7 +6,7 @@
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
-from s3filter.op.tuple import Tuple, LabelledTuple
+from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.sql.cursor import Cursor
 from s3filter.util.timer import Timer
 
@@ -21,7 +21,9 @@ class SQLTableScanMetrics(OpMetrics):
 
         self.rows_returned = 0
 
-        self.time_to_first_response_timer = Timer()
+        self.time_to_first_response = 0
+        self.time_to_first_record_response = None
+        self.time_to_last_record_response = None
 
         self.bytes_scanned = 0
         self.bytes_processed = 0
@@ -34,7 +36,13 @@ class SQLTableScanMetrics(OpMetrics):
             'bytes_scanned': self.bytes_scanned,
             'bytes_processed': self.bytes_processed,
             'bytes_returned': self.bytes_returned,
-            'time_to_first_response': round(self.time_to_first_response_timer.elapsed(), 5),
+            'time_to_first_response': round(self.time_to_first_response, 5),
+            'time_to_first_record_response':
+                None if self.time_to_first_record_response is None
+                else round(self.time_to_first_record_response, 5),
+            'time_to_last_record_response':
+                None if self.time_to_last_record_response is None
+                else round(self.time_to_last_record_response, 5)
 
         }.__repr__()
 
@@ -67,9 +75,9 @@ class SQLTableScan(Operator):
 
         cur = Cursor().select(self.s3key, self.s3sql)
 
-        self.op_metrics.time_to_first_response_timer.start()
-
         tuples = cur.execute()
+
+        self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
 
         first_tuple = True
         for t in tuples:
@@ -77,18 +85,20 @@ class SQLTableScan(Operator):
             if self.is_completed():
                 break
 
-            if self.log_enabled:
-                print("{}('{}') | {}".format(self.__class__.__name__, self.name, t))
-
-            self.op_metrics.time_to_first_response_timer.stop()
-
             self.op_metrics.rows_returned += 1
 
             if first_tuple:
                 # Create and send the record field names
-                lt = LabelledTuple(t)
+                it = IndexedTuple.build_default(t)
                 first_tuple = False
-                self.send(TupleMessage(Tuple(lt.labels)), self.consumers)
+
+                if self.log_enabled:
+                    print("{}('{}') | Sending field names: {}".format(self.__class__.__name__, self.name, it.field_names()))
+
+                self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
+
+            if self.log_enabled:
+                print("{}('{}') | Sending field values: {}".format(self.__class__.__name__, self.name, t))
 
             self.send(TupleMessage(Tuple(t)), self.consumers)
 
@@ -98,6 +108,9 @@ class SQLTableScan(Operator):
         self.op_metrics.bytes_scanned = cur.bytes_scanned
         self.op_metrics.bytes_processed = cur.bytes_processed
         self.op_metrics.bytes_returned = cur.bytes_returned
+
+        self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
+        self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
 
         self.op_metrics.timer_stop()
 

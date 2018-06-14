@@ -9,7 +9,7 @@ from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.op.group import Group
 from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.tuple import LabelledTuple
+from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -22,7 +22,7 @@ def test_group_count():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Count Group Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
@@ -57,7 +57,7 @@ def test_group_count():
 
     assert len(c.tuples()) == 25 + 1
 
-    nation_24 = filter(lambda t: LabelledTuple(t, field_names)['_0'] == '24', c.tuples())[0]
+    nation_24 = filter(lambda t: IndexedTuple.build(t, field_names)['_0'] == '24', c.tuples())[0]
     assert nation_24[1] == 393
     assert num_rows == 25 + 1
 
@@ -73,7 +73,7 @@ def test_group_sum():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Sum Group Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
@@ -105,7 +105,7 @@ def test_group_sum():
 
     assert len(c.tuples()) == 25 + 1
 
-    nation_24 = filter(lambda t_: LabelledTuple(t_, field_names)['_0'] == '24', c.tuples())[0]
+    nation_24 = filter(lambda t_: IndexedTuple.build(t_, field_names)['_0'] == '24', c.tuples())[0]
     assert round(nation_24[1], 2) == 1833872.56
 
     # Write the metrics
@@ -122,7 +122,7 @@ def test_group_empty():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Empty Group Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey

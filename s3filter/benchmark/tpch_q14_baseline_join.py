@@ -12,7 +12,8 @@ from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
-from s3filter.op.join import JoinExpression, Join
+from s3filter.op.hash_join import HashJoin
+from s3filter.op.nested_loop_join import JoinExpression
 from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -22,36 +23,24 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
+    """The baseline tst uses hash joins with no projection and no filtering pushed down to s3.
 
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q14 Baseline Join Test")
+    print('')
+    print("TPCH Q14 Baseline Join")
+    print("----------------------")
+
+    query_plan = QueryPlan()
 
     # Query plan
-    # This date is chosen because it triggers the filter to filter out 1 of the rows in the root data set.
-    date = '1996-03-13'
+    date = '1993-01-01'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
     lineitem_scan = query_plan.add_operator(SQLTableScan('lineitem.csv',
-                                                         "select * from S3Object "
-                                                         "where "
-                                                         "(l_orderkey = '18436' and l_partkey = '164584') or "
-                                                         "(l_orderkey = '18720' and l_partkey = '92764') or "
-                                                         "(l_orderkey = '12482' and l_partkey = '117405') or "
-                                                         "(l_orderkey = '27623' and l_partkey = '137010') or "
-
-                                                         "(l_orderkey = '10407' and l_partkey = '43275') or "
-                                                         "(l_orderkey = '17027' and l_partkey = '172729') or "
-                                                         "(l_orderkey = '23302' and l_partkey = '18523') or "
-                                                         "(l_orderkey = '27334' and l_partkey = '94308') or "
-
-                                                         "(l_orderkey = '15427' and l_partkey = '125586') or "
-                                                         "(l_orderkey = '11590' and l_partkey = '162359') or "
-                                                         "(l_orderkey = '2945' and l_partkey = '126197') or "
-                                                         "(l_orderkey = '15648' and l_partkey = '143904');",
+                                                         "select * from S3Object;",
                                                          'lineitem_scan',
                                                          False))
 
@@ -91,7 +80,7 @@ def main():
         'part_filter',
         False))
 
-    join = query_plan.add_operator(Join(
+    join = query_plan.add_operator(HashJoin(
         JoinExpression('l_partkey', 'p_partkey'),
         'join',
         False))
@@ -156,6 +145,8 @@ def main():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    collate.print_tuples()
+
     field_names = ['promo_revenue']
 
     assert len(collate.tuples()) == 1 + 1
@@ -163,7 +154,7 @@ def main():
     assert collate.tuples()[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [33.42623264199327]
+    assert collate.tuples()[1] == [15.090116526324298]
 
     # Write the metrics
     query_plan.print_metrics()

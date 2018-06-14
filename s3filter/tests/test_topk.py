@@ -21,7 +21,7 @@ def test_limit_topk():
     limit = 500
     num_rows = 0
 
-    query_plan = QueryPlan("Limit TopK Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(
@@ -57,7 +57,7 @@ def test_abort_topk():
     limit = 500
     num_rows = 0
 
-    query_plan = QueryPlan("Abort TopK Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
@@ -95,7 +95,7 @@ def test_topk_empty():
     limit = 500
     num_rows = 0
 
-    query_plan = QueryPlan("Abort TopK Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object limit 0', 'ts', False))

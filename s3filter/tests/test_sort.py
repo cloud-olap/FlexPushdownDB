@@ -8,7 +8,6 @@ from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.sort import Sort, SortExpression
 from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.tuple import LabelledTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -21,7 +20,7 @@ def test_sort_asc():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Ascending Sort Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
@@ -52,13 +51,13 @@ def test_sort_asc():
 
     assert c.tuples()[0] == ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
-    assert LabelledTuple(c.tuples()[1], c.tuples()[0]) == \
+    assert c.tuples()[1] == \
            ['2', 'Supplier#000000002', '89eJ5ksX3ImxJQBvxObC,', '5', '15-679-861-2259', '4032.68',
             ' slyly bold instructions. idle dependen']
-    assert LabelledTuple(c.tuples()[2], c.tuples()[0]) == \
+    assert c.tuples()[2] == \
            ['3', 'Supplier#000000003', 'q1,G3Pj6OjIuUYfUoH18BFTKP5aU9bEV3', '1', '11-383-516-1199', '4192.40',
             'blithely silent requests after the express dependencies are sl']
-    assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
+    assert c.tuples()[3] == \
            ['1', 'Supplier#000000001', ' N kD4on9OM Ipw3,gf0JBoQDd7tgrzrddZ', '17', '27-918-335-1736', '5755.94',
             'each slyly above the careful']
 
@@ -74,7 +73,7 @@ def test_sort_desc():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Descending Sort Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
@@ -105,13 +104,13 @@ def test_sort_desc():
 
     assert c.tuples()[0] == ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
-    assert LabelledTuple(c.tuples()[1], c.tuples()[0]) == \
+    assert c.tuples()[1] == \
            ['1', 'Supplier#000000001', ' N kD4on9OM Ipw3,gf0JBoQDd7tgrzrddZ', '17', '27-918-335-1736', '5755.94',
             'each slyly above the careful']
-    assert LabelledTuple(c.tuples()[2], c.tuples()[0]) == \
+    assert c.tuples()[2] == \
            ['3', 'Supplier#000000003', 'q1,G3Pj6OjIuUYfUoH18BFTKP5aU9bEV3', '1', '11-383-516-1199', '4192.40',
             'blithely silent requests after the express dependencies are sl']
-    assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
+    assert c.tuples()[3] == \
            ['2', 'Supplier#000000002', '89eJ5ksX3ImxJQBvxObC,', '5', '15-679-861-2259', '4032.68',
             ' slyly bold instructions. idle dependen']
 
@@ -129,7 +128,7 @@ def test_sort_empty():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Empty Sort Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',

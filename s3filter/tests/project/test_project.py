@@ -8,7 +8,6 @@ from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.tuple import LabelledTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -21,7 +20,7 @@ def test_project_simple():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Simple Projection Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
@@ -61,11 +60,11 @@ def test_project_simple():
 
     assert c.tuples()[0] == field_names
 
-    assert LabelledTuple(c.tuples()[1], c.tuples()[0]) == \
+    assert c.tuples()[1] == \
            ['0', '0', ' haggle. carefully final deposits detect slyly agai']
-    assert LabelledTuple(c.tuples()[2], c.tuples()[0]) == \
+    assert c.tuples()[2] == \
            ['1', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
-    assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
+    assert c.tuples()[3] == \
            ['1', '2',
             'y alongside of the pending deposits. carefully special packages '
             'are about the ironic forges. slyly special ']
@@ -84,7 +83,7 @@ def test_project_empty():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Empty Projection Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('nation.csv',

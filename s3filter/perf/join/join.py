@@ -5,7 +5,7 @@
 
 from datetime import datetime, timedelta
 from s3filter.op.collate import Collate
-from s3filter.op.join import Join, JoinExpression
+from s3filter.op.nested_loop_join import NestedLoopJoin, JoinExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 
 
@@ -51,7 +51,7 @@ def main():
                        ";",
                        'ts2',
                        False)
-    j = Join(JoinExpression('_1', '_0'), 'j', False)
+    j = NestedLoopJoin(JoinExpression('_1', '_0'), 'j', False)
     c = Collate('c', False)
 
     ts1.connect(j)

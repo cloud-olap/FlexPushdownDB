@@ -2,6 +2,8 @@
 """Collation support
 
 """
+
+import sys
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
@@ -53,3 +55,50 @@ class Collate(Operator):
         """
 
         self.__tuples.append(tuple_)
+
+    def print_tuples(self):
+        """Prints the tuples in tab separated format
+
+        TODO: Needs some work to align properly
+
+        :return:
+        """
+
+        print('')
+
+        field_names = False
+        for t in self.__tuples:
+            if not field_names:
+                field_names_len = 0
+                t_iter = iter(t)
+                next_f = next(t_iter)
+                f = None
+                for f in t_iter:
+                    sys.stdout.write(str(f))
+                    sys.stdout.write(' | ')
+                    field_names_len += len(str(f))
+                    f = next_f
+
+                if f is None:
+                    f = next_f
+
+                sys.stdout.write(str(f))
+                field_names_len += len(str(f))
+                sys.stdout.write('\n')
+                print('-' * (field_names_len + (len(t) * 3) - 3))
+                field_names = True
+            else:
+                t_iter = iter(t)
+                next_f = next(t_iter)
+                f = None
+                for f in t_iter:
+                    sys.stdout.write(str(f))
+                    sys.stdout.write('\t | \t')
+                    f = next_f
+
+                if f is None:
+                    f = next_f
+
+                sys.stdout.write(str(f))
+
+                print('')

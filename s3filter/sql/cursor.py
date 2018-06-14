@@ -8,6 +8,8 @@ import csv
 import s3filter.util.constants
 import io
 
+from s3filter.util.timer import Timer
+
 
 class Cursor(object):
     """Represents a database cursor for managing the context of a fetch operation.
@@ -24,6 +26,11 @@ class Cursor(object):
         self.s3key = None
         self.s3sql = None
         self.event_stream = None
+
+        self.timer = Timer()
+
+        self.time_to_first_record_response = None
+        self.time_to_last_record_response = None
 
         self.bytes_scanned = 0
         self.bytes_processed = 0
@@ -52,6 +59,8 @@ class Cursor(object):
         s3 = boto3.client('s3')
 
         # print("Executing select_object_content")
+
+        self.timer.start()
 
         # Note:
         #
@@ -87,6 +96,12 @@ class Cursor(object):
         for event in self.event_stream:
 
             if 'Records' in event:
+
+                elapsed_time = self.timer.elapsed()
+                if self.time_to_first_record_response is None:
+                    self.time_to_first_record_response = elapsed_time
+
+                self.time_to_last_record_response = elapsed_time
 
                 records_str = event['Records']['Payload'].decode('utf-8')
 
@@ -126,7 +141,14 @@ class Cursor(object):
                         #     record_dict = dict(zip(header, record))
                         #     yield record_dict
 
+
+                        # TODO: Not sure how to handle timers exactly, while time will be taken yielding it may
+                        # genuinely be time that this method is waiting for data from s3. May be a case of measuring
+                        # both, something to think about.
+
+                        # self.timer.stop()
                         yield record
+                        # self.timer.start()
 
                     else:
                         # It's an incomplete record, save for next iteration

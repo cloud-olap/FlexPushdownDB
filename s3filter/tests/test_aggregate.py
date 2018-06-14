@@ -9,7 +9,8 @@ from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.tuple import LabelledTuple
+from s3filter.op.tuple import IndexedTuple
+
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -22,7 +23,7 @@ def test_aggregate_count():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Count Aggregate Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # select count(*) from supplier.csv
@@ -52,10 +53,12 @@ def test_aggregate_count():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    c.print_tuples()
+
     field_names = ['_0']
 
     assert c.tuples()[0] == field_names
-    assert LabelledTuple(c.tuples()[1], field_names)['_0'] == 10000
+    assert IndexedTuple.build(c.tuples()[1], field_names)['_0'] == 10000
     assert num_rows == 1 + 1
 
     # Write the metrics
@@ -70,7 +73,7 @@ def test_aggregate_sum():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Sum Aggregate Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # select sum(float(s_acctbal)) from supplier.csv
@@ -102,7 +105,7 @@ def test_aggregate_sum():
     field_names = ['_0']
 
     assert c.tuples()[0] == field_names
-    assert round(LabelledTuple(c.tuples()[1], field_names)['_0'], 2) == 45103548.65
+    assert round(IndexedTuple.build(c.tuples()[1], field_names)['_0'], 2) == 45103548.65
     assert num_rows == 1 + 1
 
     # Write the metrics
@@ -122,7 +125,7 @@ def test_aggregate_empty():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Empty Aggregate Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # select sum(float(s_acctbal)) from supplier.csv limit 0

@@ -6,7 +6,7 @@
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, BloomMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
-from s3filter.op.tuple import Tuple, LabelledTuple
+from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.sql.cursor import Cursor
 
 
@@ -81,7 +81,7 @@ class SQLTableScanBloomUse(Operator):
 
         cur = Cursor().select(self.s3key, sql)
 
-        self.op_metrics.time_to_first_response_timer.start()
+        self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
 
         tuples = cur.execute()
 
@@ -94,8 +94,6 @@ class SQLTableScanBloomUse(Operator):
             if self.log_enabled:
                 print("{}('{}') | {}".format(self.__class__.__name__, self.name, t))
 
-            self.op_metrics.time_to_first_response_timer.stop()
-
             self.op_metrics.rows_returned += 1
 
             if first_tuple:
@@ -107,6 +105,9 @@ class SQLTableScanBloomUse(Operator):
         self.op_metrics.bytes_scanned = cur.bytes_scanned
         self.op_metrics.bytes_processed = cur.bytes_processed
         self.op_metrics.bytes_returned = cur.bytes_returned
+
+        self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
+        self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
 
         if not self.is_completed():
             self.complete()
@@ -153,8 +154,8 @@ class SQLTableScanBloomUse(Operator):
         """
 
         # Create and send the record field names
-        lt = LabelledTuple(tuple_)
-        labels = Tuple(lt.labels)
+        lt = IndexedTuple.build_default(tuple_)
+        labels = Tuple(lt.field_names())
 
         if self.log_enabled:
             print("{}('{}') | Sending field names [{}]".format(

@@ -5,7 +5,7 @@
 
 import numbers
 
-from s3filter.op.tuple import LabelledTuple
+from s3filter.op.tuple import IndexedTuple
 
 
 def sum_fn(ex, ctx):
@@ -89,11 +89,11 @@ class AggregateExpression(object):
         """
 
         if self.__expression_type is AggregateExpression.SUM:
-            sum_fn(self.__expr(LabelledTuple(t, field_names)), ctx)
+            sum_fn(self.__expr(IndexedTuple.build(t, field_names)), ctx)
         elif self.__expression_type is AggregateExpression.COUNT:
-            count_fn(self.__expr(LabelledTuple(t, field_names)), ctx)
+            count_fn(self.__expr(IndexedTuple.build(t, field_names)), ctx)
         elif self.__expression_type is AggregateExpression.AVG:
-            avg_fn(self.__expr(LabelledTuple(t, field_names)), ctx)
+            avg_fn(self.__expr(IndexedTuple.build(t, field_names)), ctx)
         else:
             # Should not happen as its already been checked
             raise Exception("Illegal expression type '{}'. Expression type must be '{}', '{}', or '{}'"

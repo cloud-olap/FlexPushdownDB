@@ -3,8 +3,9 @@
 
 """
 import pytest
+
+from s3filter.op.tuple import IndexedTuple
 from s3filter.sql.cursor import Cursor
-from s3filter.op.tuple import LabelledTuple
 
 
 def test_non_existent_key():
@@ -83,7 +84,7 @@ def test_where_predicate():
         rows = cur.execute()
         for r in rows:
             num_rows += 1
-            lt = LabelledTuple(r)
+            lt = IndexedTuple.build_default(r)
             assert lt['_1'] == 'AMERICA'
             # print("{}:{}".format(num_rows, r))
 
@@ -107,7 +108,7 @@ def test_aggregate():
         rows = cur.execute()
         for r in rows:
             num_rows += 1
-            lt = LabelledTuple(r)
+            lt = IndexedTuple.build_default(r)
             assert lt['_0'] == '5'
             # print("{}:{}".format(num_rows, r))
 

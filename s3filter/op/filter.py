@@ -2,11 +2,30 @@
 """Filter support
 
 """
-
+from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
 from s3filter.op.predicate_expression import PredicateExpression
+
+
+class FilterMetrics(OpMetrics):
+    """Extra metrics for a Filter
+
+    """
+
+    def __init__(self):
+        super(FilterMetrics, self).__init__()
+
+        self.rows_processed = 0
+        self.rows_filtered = 0
+
+    def __repr__(self):
+        return {
+            'elapsed_time': round(self.elapsed_time(), 5),
+            'rows_processed': self.rows_processed,
+            'rows_filtered': self.rows_filtered
+        }.__repr__()
 
 
 class Filter(Operator):
@@ -22,7 +41,7 @@ class Filter(Operator):
         :param log_enabled:
         """
 
-        super(Filter, self).__init__(name, OpMetrics(), log_enabled)
+        super(Filter, self).__init__(name, FilterMetrics(), log_enabled)
 
         if type(expression) is not PredicateExpression:
             raise Exception("Illegal expression type {}. Expression must be of type PredicateExpression"
@@ -30,7 +49,7 @@ class Filter(Operator):
         else:
             self.expression = expression
 
-        self.field_names = None
+        self.field_names_index = None
 
     def on_receive(self, m, _producer):
         """Event handler for handling receipt of messages.
@@ -53,11 +72,14 @@ class Filter(Operator):
         :return: None
         """
 
-        if not self.field_names:
-            self.field_names = tuple_
+        if not self.field_names_index:
+            self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
             self.__send_field_names(tuple_)
         else:
             if self.__evaluate_filter(tuple_):
+
+                self.op_metrics.rows_filtered += 1
+
                 self.__send_field_values(tuple_)
 
     def __send_field_values(self, tuple_):
@@ -76,7 +98,9 @@ class Filter(Operator):
         :return: Whether the predicate evaluated true or false
         """
 
-        return self.expression.eval(tuple_, self.field_names)
+        self.op_metrics.rows_processed += 1
+
+        return self.expression.eval(tuple_, self.field_names_index)
 
     def __send_field_names(self, tuple_):
         """Sends the field names tuple to consumers

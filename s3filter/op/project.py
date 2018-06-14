@@ -5,7 +5,24 @@
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
-from s3filter.op.tuple import Tuple, LabelledTuple
+from s3filter.op.tuple import Tuple, IndexedTuple
+
+
+class ProjectMetrics(OpMetrics):
+    """Extra metrics for a project
+
+    """
+
+    def __init__(self):
+        super(ProjectMetrics, self).__init__()
+
+        self.rows_projected = 0
+
+    def __repr__(self):
+        return {
+            'elapsed_time': round(self.elapsed_time(), 5),
+            'rows_projected': self.rows_projected
+        }.__repr__()
 
 
 class ProjectExpression(object):
@@ -38,11 +55,11 @@ class Project(Operator):
         :param log_enabled: Whether logging is enabled
         """
 
-        super(Project, self).__init__(name, OpMetrics(), log_enabled)
+        super(Project, self).__init__(name, ProjectMetrics(), log_enabled)
 
         self.project_exprs = project_exprs
 
-        self.field_names = None
+        self.field_names_index = None
 
     def on_receive(self, m, _producer):
         """Handles the event of receiving a new message from a producer.
@@ -67,12 +84,19 @@ class Project(Operator):
         :return: None
         """
 
-        if self.log_enabled:
-            print("{}('{}') | {}".format(self.__class__.__name__, self.name, tuple_))
+        if not self.field_names_index:
 
-        if not self.field_names:
+            # self.field_names = tuple_
+            #
+            # # Map the old field names to the new
+            # projected_field_names = []
+            # for e in self.project_exprs:
+            #     fn = e.new_field_name
+            #     projected_field_names.append(fn)
+            #
+            # self.send(TupleMessage(Tuple(projected_field_names)), self.consumers)
 
-            self.field_names = tuple_
+            self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
 
             # Map the old field names to the new
             projected_field_names = []
@@ -80,16 +104,24 @@ class Project(Operator):
                 fn = e.new_field_name
                 projected_field_names.append(fn)
 
+            if self.log_enabled:
+                print("{}('{}') | Sending projected field names: from: {} to: {}".format(self.__class__.__name__, self.name, tuple_, projected_field_names))
+
             self.send(TupleMessage(Tuple(projected_field_names)), self.consumers)
 
         else:
 
             # Perform the projection using the given expressions
-            lt = LabelledTuple(tuple_, self.field_names)
+            it = IndexedTuple(tuple_, self.field_names_index)
 
             projected_field_values = []
             for e in self.project_exprs:
-                fv = e.expr(lt)
+                fv = e.expr(it)
                 projected_field_values.append(fv)
+
+            self.op_metrics.rows_projected += 1
+
+            if self.log_enabled:
+                print("{}('{}') | Sending projected field values: from: {} to: {}".format(self.__class__.__name__, self.name, tuple_, projected_field_values))
 
             self.send(TupleMessage(Tuple(projected_field_values)), self.consumers)

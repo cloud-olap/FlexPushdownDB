@@ -14,14 +14,12 @@ class QueryPlan(object):
 
     """
 
-    def __init__(self, name, operators=None):
-        # type: (str, list) -> None
+    def __init__(self, operators=None):
+        # type: (list) -> None
         """
 
         :param operators:
         """
-
-        self.name = name
 
         if operators is None:
             self.operators = OrderedDict()
@@ -37,9 +35,6 @@ class QueryPlan(object):
     def print_metrics(self):
 
         print('')
-        print('')
-        print(self.name)
-        print('-' * len(self.name))
 
         OpMetrics.print_metrics(list(self.operators.values()))
 

@@ -6,12 +6,12 @@ import os
 
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
-from s3filter.op.join import Join, JoinExpression
+from s3filter.op.nested_loop_join import NestedLoopJoin, JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sort import Sort, SortExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.top import Top
-from s3filter.op.tuple import LabelledTuple
+from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -25,7 +25,7 @@ def test_sort_topk():
 
     limit = 5
 
-    query_plan = QueryPlan("Sort TopK Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
@@ -66,8 +66,8 @@ def test_sort_topk():
             if prev is None:
                 prev = t
             else:
-                lt = LabelledTuple(t, field_names)
-                prev_lt = LabelledTuple(prev, field_names)
+                lt = IndexedTuple.build(t, field_names)
+                prev_lt = IndexedTuple.build(prev, field_names)
                 assert float(lt['_5']) > float(prev_lt['_5'])
 
     # Write the metrics
@@ -82,7 +82,7 @@ def test_join_topk():
 
     limit = 5
 
-    query_plan = QueryPlan("Join TopK Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts1 = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts1', False))
@@ -91,7 +91,7 @@ def test_join_topk():
     ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', False))
     ts2_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False))
-    j = query_plan.add_operator(Join(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
+    j = query_plan.add_operator(NestedLoopJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
     t = query_plan.add_operator(Top(limit, 't', False))
     c = query_plan.add_operator(Collate('c', False))
 
@@ -115,6 +115,8 @@ def test_join_topk():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    c.print_tuples()
+
     field_names = ['s_nationkey', 'n_nationkey']
 
     assert len(c.tuples()) == limit + 1
@@ -126,7 +128,7 @@ def test_join_topk():
         num_rows += 1
         # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
         if num_rows > 1:
-            lt = LabelledTuple(t, field_names)
+            lt = IndexedTuple.build(t, field_names)
             assert lt['s_nationkey'] == lt['n_nationkey']
 
     # Write the metrics

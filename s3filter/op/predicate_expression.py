@@ -2,8 +2,9 @@
 """Predicate support
 
 """
+import numpy
 
-from s3filter.op.tuple import LabelledTuple
+from s3filter.op.tuple import IndexedTuple
 
 
 class PredicateExpression(object):
@@ -19,17 +20,20 @@ class PredicateExpression(object):
 
         self.expr = expr
 
-    def eval(self, tuple_, field_names):
+    def eval(self, tuple_, field_names_index):
         """Evaluates the predicate using the given tuple
 
         :param tuple_: The tuple to evaluate the expression against
-        :param field_names: The names of the fields in the tuple
+        :param field_names_index: The names of the fields in the tuple
         :return: True or false
         """
 
-        v = self.expr(LabelledTuple(tuple_, field_names))
+        it = IndexedTuple(tuple_, field_names_index)
 
-        if type(v) is not bool:
-            raise Exception("Illegal return type '{}'. Predicate expression must evaluate to bool".format(type(v)))
+        v = self.expr(it)
+
+        if type(v) is not bool and type(v) is not numpy.bool_:
+            raise Exception("Illegal return type '{}'. "
+                            "Predicate expression must evaluate to {} or {}".format(type(v), bool, numpy.bool_))
 
         return v

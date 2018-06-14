@@ -11,7 +11,6 @@ from s3filter.op.collate import Collate
 from s3filter.op.group import Group
 from s3filter.op.sort import Sort, SortExpression
 from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.tuple import LabelledTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -48,7 +47,7 @@ def test_group_baseline():
     #   l_returnflag,
     #   l_linestatus;
 
-    query_plan = QueryPlan("TPCH Q1 Test")
+    query_plan = QueryPlan()
 
     delta_days = 60  # TODO: This is supposed to be randomized I think
     shipped_date = datetime.strptime('1992-04-01', '%Y-%m-%d') - timedelta(days=delta_days)
@@ -116,10 +115,10 @@ def test_group_baseline():
     assert len(c.tuples()) == 2 + 1
 
     # These have been verified in Postgres
-    assert LabelledTuple(c.tuples()[1], field_names) == \
+    assert c.tuples()[1] == \
            ["A", "F", 129850, 194216048.19000033, 184525343.78730044, 191943492.96455324, 25.445816186556925,
             38059.19031746035, 0.050005878894768374, 5103]
-    assert LabelledTuple(c.tuples()[2], field_names) == \
+    assert c.tuples()[2] == \
            ["R", "F", 129740, 193438367.33999985, 183701990.7670003, 191045646.36937532, 25.509241053873353,
             38033.49731419579, 0.05061541486433399, 5086]
 

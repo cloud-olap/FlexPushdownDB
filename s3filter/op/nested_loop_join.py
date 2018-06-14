@@ -8,6 +8,27 @@ from s3filter.op.message import TupleMessage
 from s3filter.op.tuple import Tuple
 
 
+class NestedLoopJoinMetrics(OpMetrics):
+    """Extra metrics for a project
+
+    """
+
+    def __init__(self):
+        super(NestedLoopJoinMetrics, self).__init__()
+
+        self.l_rows_processed = 0
+        self.r_rows_processed = 0
+        self.rows_joined = 0
+
+    def __repr__(self):
+        return {
+            'elapsed_time': round(self.elapsed_time(), 5),
+            'l_rows_processed': self.l_rows_processed,
+            'r_rows_processed': self.r_rows_processed,
+            'rows_joined': self.rows_joined
+        }.__repr__()
+
+
 class JoinExpression(object):
     """Represents a join expression, as in the column name (field) to join on.
 
@@ -31,7 +52,7 @@ class JoinExpression(object):
         }.__repr__()
 
 
-class Join(Operator):
+class NestedLoopJoin(Operator):
     """Implements a inner join using nested loops.
 
     """
@@ -43,7 +64,7 @@ class Join(Operator):
         :param join_expr: The join expression indicating which fields of which key to join on
         """
 
-        super(Join, self).__init__(name, OpMetrics(), log_enabled)
+        super(NestedLoopJoin, self).__init__(name, NestedLoopJoinMetrics(), log_enabled)
 
         self.join_expr = join_expr
 
@@ -139,6 +160,9 @@ class Join(Operator):
                                     "Tuple must contain join left field name '{}'."
                                     .format(self.name, tuple_, self.join_expr.l_field))
             else:
+
+                self.op_metrics.l_rows_processed += 1
+
                 self.__l_tuples.append(tuple_)
 
         elif producer.name == self.__r_producer_name:
@@ -151,6 +175,9 @@ class Join(Operator):
                                     "Tuple must contain join right field name '{}'."
                                     .format(self.name, tuple_, self.join_expr.r_field))
             else:
+
+                self.op_metrics.r_rows_processed += 1
+
                 self.__r_tuples.append(tuple_)
 
         else:
@@ -210,8 +237,6 @@ class Join(Operator):
                 if self.is_completed():
                     break
 
-                # TODO: Can probably use a dict to speed up lookups, though would be implemented separately as a
-                # hash join
                 l_field_name_index = self.__l_field_names.index(self.join_expr.l_field)
                 r_field_name_index = self.__r_field_names.index(self.join_expr.r_field)
 
@@ -223,6 +248,8 @@ class Join(Operator):
                             self.__class__.__name__,
                             self.name,
                             {'data': t}))
+
+                    self.op_metrics.rows_joined += 1
 
                     self.send(TupleMessage(Tuple(t)), self.consumers)
 

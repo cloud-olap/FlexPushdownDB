@@ -71,7 +71,7 @@ from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
-from s3filter.op.join import Join, JoinExpression
+from s3filter.op.nested_loop_join import NestedLoopJoin, JoinExpression
 from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -94,7 +94,7 @@ def aggregate_def():
 
 
 def join_op():
-    return Join(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', False)
+    return NestedLoopJoin(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', False)
 
 
 def aggregate_project_def():
@@ -143,7 +143,7 @@ def test_join_baseline():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q19 Baseline Join Test")
+    query_plan = QueryPlan()
 
     # Define the operators
 
@@ -257,7 +257,7 @@ def test_join_filtered():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q19 Filtered Join Test")
+    query_plan = QueryPlan()
 
     # Define the operators
 
@@ -377,7 +377,7 @@ def test_join_bloom():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q19 Bloom Join Test")
+    query_plan = QueryPlan()
 
     # Define the operators
 

@@ -9,14 +9,18 @@ from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
 from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.tuple import LabelledTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.function import timestamp, cast
 from s3filter.util.test_util import gen_test_id
 
 
 def test_filter_baseline():
-    query_plan = QueryPlan("Baseline Filter Test")
+    """
+
+    :return:
+    """
+
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', False))
@@ -49,11 +53,11 @@ def test_filter_baseline():
 
     assert c.tuples()[0] == field_names
 
-    assert LabelledTuple(c.tuples()[1], c.tuples()[0]) == \
+    assert c.tuples()[1] == \
            ['1', '155190', '7706', '1', '17', '21168.23', '0.04', '0.02', 'N', 'O', '1996-03-13', '1996-02-12',
             '1996-03-22', 'DELIVER IN PERSON', 'TRUCK', 'egular courts above the']
 
-    assert LabelledTuple(c.tuples()[2], c.tuples()[0]) == \
+    assert c.tuples()[2] == \
            ['1', '67310', '7311', '2', '36', '45983.16', '0.09', '0.06', 'N', 'O', '1996-04-12', '1996-02-28',
             '1996-04-20', 'TAKE BACK RETURN', 'MAIL', 'ly final dependencies: slyly bold ']
 
@@ -69,7 +73,7 @@ def test_filter_empty():
     :return: None
     """
 
-    query_plan = QueryPlan("Empty Filter Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 0;', 'ts', False))

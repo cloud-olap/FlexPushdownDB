@@ -8,7 +8,6 @@ from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.table_scan import TableScan
-from s3filter.op.tuple import LabelledTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -21,7 +20,7 @@ def test_scan_simple():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Simple Scan Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(
@@ -48,11 +47,11 @@ def test_scan_simple():
 
     assert c.tuples()[0] == ['_0', '_1', '_2', '_3']
 
-    assert LabelledTuple(c.tuples()[1], c.tuples()[0]) == \
+    assert c.tuples()[1] == \
            ['0', 'ALGERIA', '0', ' haggle. carefully final deposits detect slyly agai']
-    assert LabelledTuple(c.tuples()[2], c.tuples()[0]) == \
+    assert c.tuples()[2] == \
            ['1', 'ARGENTINA', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
-    assert LabelledTuple(c.tuples()[3], c.tuples()[0]) == \
+    assert c.tuples()[3] == \
            ['2', 'BRAZIL', '1',
             'y alongside of the pending deposits. carefully special packages are about '
             'the ironic forges. slyly special ']
@@ -71,7 +70,7 @@ def test_scan_empty():
 
     num_rows = 0
 
-    query_plan = QueryPlan("Empty Scan Test")
+    query_plan = QueryPlan()
 
     # Query plan
     ts = query_plan.add_operator(

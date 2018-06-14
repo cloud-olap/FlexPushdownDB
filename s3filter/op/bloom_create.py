@@ -2,12 +2,11 @@
 """Bloom filter creation support
 
 """
-
+from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, BloomMessage
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
-from s3filter.op.tuple import LabelledTuple
 from s3filter.util.bloom_filter import BloomFilter
 from s3filter.util.scalable_bloom_filter import ScalableBloomFilter
 from s3filter.util.simple_bloom_filter import SimpleBloomFilter
@@ -21,13 +20,19 @@ class BloomCreateMetrics(OpMetrics):
     def __init__(self):
         super(BloomCreateMetrics, self).__init__()
         self.tuple_count = 0
-        self.bloom_filter_bit_array_len = 0
+        self.bloom_filter_capacity = 0
+        self.bloom_filter_num_bits_set = 0
+        self.bloom_filter_num_slices = 0
+        self.bloom_filter_num_bits_per_slice = 0
 
     def __repr__(self):
         return {
             'elapsed_time': round(self.elapsed_time(), 5),
             'tuple_count': self.tuple_count,
-            'bloom_filter_bit_array_len': self.bloom_filter_bit_array_len
+            'bloom_filter_capacity': self.bloom_filter_capacity,
+            'bloom_filter_num_bits_set': self.bloom_filter_num_bits_set,
+            'bloom_filter_num_slices': self.bloom_filter_num_slices,
+            'bloom_filter_num_bits_per_slice': self.bloom_filter_num_bits_per_slice
         }.__repr__()
 
 
@@ -57,6 +62,11 @@ class BloomCreate(Operator):
 
         # These settings are similar to the simple version
         self.__bloom_filter = BloomFilter(8192, 0.75)
+
+        self.op_metrics.bloom_filter_capacity = self.__bloom_filter.capacity
+        self.op_metrics.bloom_filter_num_slices = self.__bloom_filter.num_slices
+        self.op_metrics.bloom_filter_num_bits_per_slice = self.__bloom_filter.num_bits_per_slice
+        self.op_metrics.bloom_filter_capacity = self.__bloom_filter.capacity
 
         # The simple filter
         # self.__bloom_filter = SimpleBloomFilter()
@@ -112,7 +122,7 @@ class BloomCreate(Operator):
                 self.name,
                 {'bloom_filter': self.__bloom_filter}))
 
-        self.op_metrics.bloom_filter_bit_array_len = len(self.__bloom_filter)
+        self.op_metrics.bloom_filter_num_bits_set = len(self.__bloom_filter)
 
         self.send(BloomMessage(self.__bloom_filter), self.consumers)
 
@@ -135,7 +145,7 @@ class BloomCreate(Operator):
             self.__field_names = tuple_
 
         else:
-            lt = LabelledTuple(tuple_, self.__field_names)
+            lt = IndexedTuple.build(tuple_, self.__field_names)
 
             self.op_metrics.tuple_count += 1
 

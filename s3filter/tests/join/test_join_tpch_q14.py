@@ -80,12 +80,13 @@ from s3filter import ROOT_DIR
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.bloom_create import BloomCreate
+from s3filter.op.hash_join import HashJoin
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
 from s3filter.op.predicate_expression import PredicateExpression
-from s3filter.op.join import Join, JoinExpression
+from s3filter.op.nested_loop_join import JoinExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.function import cast, timestamp
@@ -98,7 +99,7 @@ def test_join_baseline():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q14 Baseline Join Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # This date is chosen because it triggers the filter to filter out 1 of the rows in the root data set.
@@ -162,7 +163,7 @@ def test_join_baseline():
         'part_filter',
         False))
 
-    join = query_plan.add_operator(Join(
+    join = query_plan.add_operator(HashJoin(
         JoinExpression('l_partkey', 'p_partkey'),
         'join',
         False))
@@ -227,6 +228,9 @@ def test_join_baseline():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    print('')
+    collate.print_tuples()
+
     field_names = ['promo_revenue']
 
     assert len(collate.tuples()) == 1 + 1
@@ -246,7 +250,7 @@ def test_join_filtered():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q14 Filtered Join Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
@@ -308,7 +312,7 @@ def test_join_filtered():
         False))
 
     join = query_plan.add_operator(
-        Join(JoinExpression('l_partkey', 'p_partkey'), 'join', False))  # l_partkey and p_partkey
+        HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'join', False))  # l_partkey and p_partkey
 
     def ex1(t_):
 
@@ -363,6 +367,9 @@ def test_join_filtered():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    print('')
+    collate.print_tuples()
+
     field_names = ['promo_revenue']
 
     assert len(collate.tuples()) == 1 + 1
@@ -382,7 +389,7 @@ def test_join_bloom():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q14 Bloom Join Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
@@ -450,7 +457,7 @@ def test_join_bloom():
         False))
 
     join = query_plan.add_operator(
-        Join(JoinExpression('p_partkey', 'l_partkey'), 'join', False))  # p_partkey and l_partkey
+        HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'join', False))  # p_partkey and l_partkey
 
     def ex1(t_):
 
@@ -504,6 +511,9 @@ def test_join_bloom():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    print('')
+    collate.print_tuples()
+
     field_names = ['promo_revenue']
 
     assert len(collate.tuples()) == 1 + 1
@@ -523,7 +533,7 @@ def test_join_semi():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q14 Semi Join Test")
+    query_plan = QueryPlan()
 
     # Query plan
     # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
@@ -588,11 +598,11 @@ def test_join_semi():
         False))
 
     part_lineitem_join_1 = query_plan.add_operator(
-        Join(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
+        HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
              False))
 
     join_bloom_create = query_plan.add_operator(
-        BloomCreate('l_partkey', 'join_bloom_create', True))
+        BloomCreate('l_partkey', 'join_bloom_create', False))
 
     part_table_scan_2 = query_plan.add_operator(SQLTableScanBloomUse('part.csv',
                                                                      "select "
@@ -602,7 +612,7 @@ def test_join_semi():
                                                                      " ",
                                                                      'p_partkey',
                                                                      'part_table_scan_2',
-                                                                     True))
+                                                                     False))
 
     part_scan_2_project = query_plan.add_operator(Project(
         [
@@ -610,7 +620,7 @@ def test_join_semi():
             ProjectExpression(lambda t_: t_['_1'], 'p_type')
         ],
         'part_scan_2_project',
-        True))
+        False))
 
     lineitem_table_scan_2 = query_plan.add_operator(
         SQLTableScanBloomUse('lineitem.csv',
@@ -640,7 +650,7 @@ def test_join_semi():
                                  max_shipped_date.strftime('%Y-%m-%d')),
                              'l_partkey',
                              'lineitem_table_scan_2',
-                             True))
+                             False))
 
     lineitem_scan_2_project = query_plan.add_operator(Project(
         [
@@ -651,7 +661,7 @@ def test_join_semi():
         'lineitem_scan_2_project',
         False))
 
-    part_lineitem_join_2 = query_plan.add_operator(Join(JoinExpression('p_partkey', 'l_partkey'),
+    part_lineitem_join_2 = query_plan.add_operator(HashJoin(JoinExpression('p_partkey', 'l_partkey'),
                                                         'part_lineitem_join_2',
                                                         False))  # p_partkey and l_partkey
 
@@ -710,7 +720,10 @@ def test_join_semi():
     num_rows = 0
     for t in collate.tuples():
         num_rows += 1
-        print("{}:{}".format(num_rows, t))
+        # print("{}:{}".format(num_rows, t))
+
+    print('')
+    collate.print_tuples()
 
     field_names = ['promo_revenue']
 

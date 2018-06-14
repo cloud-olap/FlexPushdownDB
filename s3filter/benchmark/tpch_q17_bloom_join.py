@@ -12,7 +12,7 @@ from s3filter.op.bloom_create import BloomCreate
 from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
 from s3filter.op.group import Group
-from s3filter.op.join import JoinExpression, Join
+from s3filter.op.nested_loop_join import JoinExpression, NestedLoopJoin
 from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -60,7 +60,7 @@ def part_lineitem_join_avg_group_op():
 
     :return:
     """
-    return Join(JoinExpression('l_partkey', 'p_partkey'), 'part_lineitem_join_avg_group_join', False)
+    return NestedLoopJoin(JoinExpression('l_partkey', 'p_partkey'), 'part_lineitem_join_avg_group_join', False)
 
 
 def lineitem_part_avg_group_project_op():
@@ -95,7 +95,7 @@ def lineitem_avg_group_op():
 
 # with part_lineitem_join as (select * from part_scan, lineitem_scan where p_partkey = l_partkey)
 def part_line_item_join_op():
-    return Join(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join', False)
+    return NestedLoopJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join', False)
 
 
 # with lineitem_scan as (select * from lineitem)
@@ -153,7 +153,11 @@ def main():
     :return: None
     """
 
-    query_plan = QueryPlan("TPCH Q17 Bloom Join")
+    print('')
+    print("TPCH Q17 Bloom Join")
+    print("-------------------")
+
+    query_plan = QueryPlan()
 
     # Define the operators
     part_scan = query_plan.add_operator(part_scan_op())
