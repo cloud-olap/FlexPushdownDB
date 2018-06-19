@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-"""TPCH Q17 Baseline Benchmark
-
-"""
-
 import os
 
 from s3filter import ROOT_DIR
@@ -97,76 +92,72 @@ def part_line_item_join_op():
     return HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join', False)
 
 
-def main():
-    """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
+# with lineitem_scan as (select * from lineitem)
+def lineitem_scan_op():
+    return SQLTableScan('lineitem.csv',
+                        "select "
+                        "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  l_partkey = '182405' ",
+                        'lineitem_scan',
+                        False)
 
-    This works by:
 
-    1. Scanning part and filtering on brand and container
-    2. It then scans lineitem
-    3. It then joins the two tables (essentially filtering out lineitems that dont include parts that we filtered out in
-       step 1)
-    4. It then computes the average of l_quantity from the joined table and groups the results by partkey
-    5. It then joins these computed averages with the joined table in step 3
-    6. It then filters out any rows where l_quantity is less than the computed average
+# with part_scan as (select * from part)
+def part_scan_op():
+    return SQLTableScan('part.csv',
+                        "select "
+                        "  p_partkey "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  p_brand = 'Brand#41' and "
+                        "  p_container = 'SM PACK' ",
+                        'part_scan',
+                        False)
 
-    TODO: There are few ways this can be done, the above is just one.
 
+# with part_scan_project as (select _0 as p_partkey from part_scan)
+def lineitem_project_op():
+    return Project(
+        [
+            ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_quantity'),
+            ProjectExpression(lambda t_: t_['_3'], 'l_extendedprice')
+        ],
+        'lineitem_project',
+        False)
+
+
+# with part_scan_project as (select _0 as p_partkey from part_scan)
+def part_project_op():
+    return Project(
+        [
+            ProjectExpression(lambda t_: t_['_0'], 'p_partkey')
+        ],
+        'part_project',
+        False)
+
+
+def test():
+    """
     :return: None
     """
 
     print('')
-    print("TPCH Q17 Baseline Join")
+    print("TPCH Q17 Filtered Join")
     print("----------------------")
 
     query_plan = QueryPlan()
 
     # Define the operators
-    # with part_scan as (select * from part)
-    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
-                                                     "select "
-                                                     "  * "
-                                                     "from "
-                                                     "  S3Object ",
-                                                     'part_scan',
-                                                     False))
-
-    # with lineitem_scan as (select * from lineitem)
-    lineitem_scan = query_plan.add_operator(SQLTableScan('lineitem.csv',
-                                                         "select "
-                                                         "  * "
-                                                         "from "
-                                                         "  S3Object ",
-                                                         'lineitem_scan',
-                                                         False))
-
-    # with part_project as (select _0 as p_partkey from part_scan)
-    part_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
-            ProjectExpression(lambda t_: t_['_6'], 'p_container')
-        ],
-        'part_project',
-        False))
-
-    part_filter = query_plan.add_operator(Filter(
-        PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and
-                                       t_['p_container'] == 'SM PACK'),
-        'part_filter',
-        False))
-
-    # with part_project as (select _0 as p_partkey from part_scan)
-    lineitem_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
-            ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
-            ProjectExpression(lambda t_: t_['_4'], 'l_quantity'),
-            ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice')
-        ],
-        'lineitem_project',
-        False))
-
+    part_scan = query_plan.add_operator(part_scan_op())
+    lineitem_scan = query_plan.add_operator(lineitem_scan_op())
+    part_project = query_plan.add_operator(part_project_op())
+    lineitem_project = query_plan.add_operator(lineitem_project_op())
     part_lineitem_join = query_plan.add_operator(part_line_item_join_op())
     lineitem_part_avg_group = query_plan.add_operator(lineitem_avg_group_op())
     lineitem_part_avg_group_project = query_plan.add_operator(lineitem_part_avg_group_project_op())
@@ -180,9 +171,7 @@ def main():
     part_scan.connect(part_project)
     lineitem_scan.connect(lineitem_project)
 
-    part_project.connect(part_filter)
-
-    part_lineitem_join.connect_left_producer(part_filter)
+    part_lineitem_join.connect_left_producer(part_project)
     part_lineitem_join.connect_right_producer(lineitem_project)
 
     part_lineitem_join.connect(lineitem_part_avg_group)
@@ -211,6 +200,9 @@ def main():
 
     collate.print_tuples()
 
+    # Write the metrics and plan graph
+    query_plan.print_metrics()
+
     field_names = ['avg_yearly']
 
     assert len(collate.tuples()) == 1 + 1
@@ -218,7 +210,4 @@ def main():
     assert collate.tuples()[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [372414.28999999946]
-
-    # Write the metrics and plan graph
-    query_plan.print_metrics()
+    assert collate.tuples()[1] == [1274.9142857142856]

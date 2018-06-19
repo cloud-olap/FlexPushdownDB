@@ -7,9 +7,7 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, BloomMessage
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
-from s3filter.util.bloom_filter import BloomFilter
-from s3filter.util.scalable_bloom_filter import ScalableBloomFilter
-from s3filter.util.simple_bloom_filter import SimpleBloomFilter
+from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 
 
 class BloomCreateMetrics(OpMetrics):
@@ -21,6 +19,7 @@ class BloomCreateMetrics(OpMetrics):
         super(BloomCreateMetrics, self).__init__()
         self.tuple_count = 0
         self.bloom_filter_capacity = 0
+        self.bloom_filter_fp_rate = 0.0
         self.bloom_filter_num_bits_set = 0
         self.bloom_filter_num_slices = 0
         self.bloom_filter_num_bits_per_slice = 0
@@ -30,6 +29,7 @@ class BloomCreateMetrics(OpMetrics):
             'elapsed_time': round(self.elapsed_time(), 5),
             'tuple_count': self.tuple_count,
             'bloom_filter_capacity': self.bloom_filter_capacity,
+            'bloom_filter_fp_rate': self.bloom_filter_fp_rate,
             'bloom_filter_num_bits_set': self.bloom_filter_num_bits_set,
             'bloom_filter_num_slices': self.bloom_filter_num_slices,
             'bloom_filter_num_bits_per_slice': self.bloom_filter_num_bits_per_slice
@@ -42,6 +42,8 @@ class BloomCreate(Operator):
     producer is complete the bloom filter is sent to any connected consumers.
 
     """
+
+    BLOOM_FILTER_FP_RATE = 0.3
 
     def __init__(self, bloom_field_name, name, log_enabled):
         """
@@ -57,19 +59,27 @@ class BloomCreate(Operator):
 
         self.__field_names = None
 
+        self.__tuples = []
+
         # These settings are similar to the simple version
         # self.__bloom_filter = ScalableBloomFilter(64, 0.75, ScalableBloomFilter.LARGE_SET_GROWTH)
 
         # These settings are similar to the simple version
-        self.__bloom_filter = BloomFilter(8192, 0.75)
-
-        self.op_metrics.bloom_filter_capacity = self.__bloom_filter.capacity
-        self.op_metrics.bloom_filter_num_slices = self.__bloom_filter.num_slices
-        self.op_metrics.bloom_filter_num_bits_per_slice = self.__bloom_filter.num_bits_per_slice
-        self.op_metrics.bloom_filter_capacity = self.__bloom_filter.capacity
+        # self.build_bloom_filter(8192, 0.75)
 
         # The simple filter
         # self.__bloom_filter = SimpleBloomFilter()
+
+    def build_bloom_filter(self, capacity, fp_rate):
+        bloom_filter = SlicedBloomFilter(capacity, fp_rate)
+
+        self.op_metrics.bloom_filter_capacity = bloom_filter.capacity
+        self.op_metrics.bloom_filter_fp_rate = bloom_filter.error_rate
+        self.op_metrics.bloom_filter_num_slices = bloom_filter.num_slices
+        self.op_metrics.bloom_filter_num_bits_per_slice = bloom_filter.num_bits_per_slice
+        self.op_metrics.bloom_filter_capacity = bloom_filter.capacity
+
+        return bloom_filter
 
     def connect(self, consumer):
         """Overrides the generic connect method to make sure that the connecting operator is an operator that consumes
@@ -105,12 +115,19 @@ class BloomCreate(Operator):
         :return: None
         """
 
+        # Build bloom filter
+        bloom_filter = self.build_bloom_filter(len(self.__tuples), BloomCreate.BLOOM_FILTER_FP_RATE)
+
+        for t in self.__tuples:
+            lt = IndexedTuple.build(t, self.__field_names)
+            bloom_filter.add(int(lt[self.__bloom_field_name]))
+
         # Send the bloom filter
-        self.__send_bloom_filter()
+        self.__send_bloom_filter(bloom_filter)
 
         Operator.on_producer_completed(self, producer)
 
-    def __send_bloom_filter(self):
+    def __send_bloom_filter(self, bloom_filter):
         """Sends the bloom filter to connected consumers.
 
         :return: None
@@ -120,11 +137,11 @@ class BloomCreate(Operator):
             print("{}('{}') | Sending bloom filter [{}]".format(
                 self.__class__.__name__,
                 self.name,
-                {'bloom_filter': self.__bloom_filter}))
+                {'bloom_filter': bloom_filter}))
 
-        self.op_metrics.bloom_filter_num_bits_set = len(self.__bloom_filter)
+        self.op_metrics.bloom_filter_num_bits_set = len(bloom_filter)
 
-        self.send(BloomMessage(self.__bloom_filter), self.consumers)
+        self.send(BloomMessage(bloom_filter), self.consumers)
 
     def __on_receive_tuple(self, tuple_):
         """Event handler for receiving a tuple
@@ -145,9 +162,10 @@ class BloomCreate(Operator):
             self.__field_names = tuple_
 
         else:
-            lt = IndexedTuple.build(tuple_, self.__field_names)
-
+            self.__tuples.append(tuple_)
             self.op_metrics.tuple_count += 1
 
-            # NOTE: Bloom filter only supports ints. Not clear how to make it support strings as yet
-            self.__bloom_filter.add(int(lt[self.__bloom_field_name]))
+            # lt = IndexedTuple.build(tuple_, self.__field_names)
+            #
+            # # NOTE: Bloom filter only supports ints. Not clear how to make it support strings as yet
+            # self.__bloom_filter.add(int(lt[self.__bloom_field_name]))

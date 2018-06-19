@@ -5,10 +5,10 @@
 
 import math
 import numpy
-from s3filter.util.universal_sql_hash import UniversalSQLHashFunction
+from s3filter.hash.universal_sql_hash import UniversalSQLHashFunction
 
 
-class BloomFilter(object):
+class SlicedBloomFilter(object):
     """Bloom filter implementation based off the scalable bloom filter described by Baquero, Preguica, Hutchison.
 
     Intended to be created as needed by ScalableBloomFilter as new capcity is required.
@@ -116,37 +116,3 @@ class BloomFilter(object):
             return False
         else:
             return True
-
-    def sql_predicate(self, field):
-        """SQL expression representing a predicate that can be used to push down the bloom filter into an SQL statement.
-
-        :param field: The name of the field (column) containing the key data we want to tst against
-        :return: SQL string
-        """
-
-        sql = ""
-
-        bit_indexes_list = self.bit_arrays_as_index_arrays()
-
-        for slice_index in range(0, len(bit_indexes_list)):
-            hash_fn = self.hash_functions[slice_index]
-            slice_field_str = hash_fn.sql(field)
-            slice_set_str = ",".join(map(str, bit_indexes_list[slice_index]))
-            sql += slice_field_str + " in (" + slice_set_str + ")"
-            if slice_index < len(bit_indexes_list) - 1:
-                sql += " and "
-
-        return sql
-
-    def bit_arrays_as_index_arrays(self):
-        """Converts the bit arrays into an array of indexes, one array of indexes per slice
-
-        :return: Array of indexes
-        """
-
-        index_arrays = []
-        for slice_bit_array in self.bit_arrays:
-            slice_index_array = numpy.where(slice_bit_array)[0]
-            index_arrays.append(slice_index_array)
-
-        return index_arrays

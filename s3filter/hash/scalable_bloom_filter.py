@@ -3,7 +3,7 @@
 
 """
 
-from s3filter.util.bloom_filter import BloomFilter
+from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 
 
 class ScalableBloomFilter(object):
@@ -56,14 +56,14 @@ class ScalableBloomFilter(object):
             return True
 
         if not self.filters:
-            filter_ = BloomFilter(
+            filter_ = SlicedBloomFilter(
                 capacity=self.initial_capacity,
                 error_rate=self.error_rate * self.ratio)
             self.filters.append(filter_)
         else:
             filter_ = self.filters[-1]
             if filter_.count >= filter_.capacity:
-                filter_ = BloomFilter(
+                filter_ = SlicedBloomFilter(
                     capacity=filter_.capacity * self.scale,
                     error_rate=filter_.error_rate * self.ratio)
                 self.filters.append(filter_)
@@ -109,7 +109,7 @@ class ScalableBloomFilter(object):
 
         for i in range(0, len(self.filters)):
             f = self.filters[i]
-            sql += f.sql_predicate(field)
+            sql += f.build_bit_array_index_list_sql_predicate(field)
             if i < len(self.filters) - 1:
                 sql += " or "
 

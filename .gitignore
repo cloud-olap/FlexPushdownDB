@@ -106,6 +106,15 @@ venv.bak/
 
 # Generated query plan graphs
 /ATTIC/
+
+# Keys and certificates
 /private/
+
+# Test output
 /tests-output/
+
+# Benchmark output
 /benchmark-output/
+
+# Ansible retry scripts
+*.retry

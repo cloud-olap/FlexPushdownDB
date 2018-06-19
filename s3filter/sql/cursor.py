@@ -141,7 +141,6 @@ class Cursor(object):
                         #     record_dict = dict(zip(header, record))
                         #     yield record_dict
 
-
                         # TODO: Not sure how to handle timers exactly, while time will be taken yielding it may
                         # genuinely be time that this method is waiting for data from s3. May be a case of measuring
                         # both, something to think about.

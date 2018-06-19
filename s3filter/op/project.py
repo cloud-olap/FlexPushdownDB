@@ -105,7 +105,8 @@ class Project(Operator):
                 projected_field_names.append(fn)
 
             if self.log_enabled:
-                print("{}('{}') | Sending projected field names: from: {} to: {}".format(self.__class__.__name__, self.name, tuple_, projected_field_names))
+                print("{}('{}') | Sending projected field names: from: {} to: {}"
+                      .format(self.__class__.__name__, self.name, tuple_, projected_field_names))
 
             self.send(TupleMessage(Tuple(projected_field_names)), self.consumers)
 
@@ -122,6 +123,7 @@ class Project(Operator):
             self.op_metrics.rows_projected += 1
 
             if self.log_enabled:
-                print("{}('{}') | Sending projected field values: from: {} to: {}".format(self.__class__.__name__, self.name, tuple_, projected_field_values))
+                print("{}('{}') | Sending projected field values: from: {} to: {}"
+                      .format(self.__class__.__name__, self.name, tuple_, projected_field_values))
 
             self.send(TupleMessage(Tuple(projected_field_values)), self.consumers)

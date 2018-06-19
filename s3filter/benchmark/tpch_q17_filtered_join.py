@@ -11,7 +11,8 @@ from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
 from s3filter.op.group import Group
-from s3filter.op.nested_loop_join import JoinExpression, NestedLoopJoin
+from s3filter.op.hash_join import HashJoin
+from s3filter.op.nested_loop_join import JoinExpression
 from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -58,7 +59,7 @@ def part_lineitem_join_avg_group_op():
 
     :return:
     """
-    return NestedLoopJoin(JoinExpression('l_partkey', 'p_partkey'), 'part_lineitem_join_avg_group_join', False)
+    return HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'part_lineitem_join_avg_group_join', False)
 
 
 def lineitem_part_avg_group_project_op():
@@ -93,7 +94,7 @@ def lineitem_avg_group_op():
 
 # with part_lineitem_join as (select * from part_scan, lineitem_scan where p_partkey = l_partkey)
 def part_line_item_join_op():
-    return NestedLoopJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join', False)
+    return HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join', False)
 
 
 # with lineitem_scan as (select * from lineitem)
@@ -102,9 +103,7 @@ def lineitem_scan_op():
                         "select "
                         "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
                         "from "
-                        "  S3Object "
-                        "where "
-                        "  l_partkey = '182405' ",
+                        "  S3Object ",
                         'lineitem_scan',
                         False)
 
@@ -202,6 +201,8 @@ def main():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    collate.print_tuples()
+
     field_names = ['avg_yearly']
 
     assert len(collate.tuples()) == 1 + 1
@@ -209,8 +210,7 @@ def main():
     assert collate.tuples()[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [1274.9142857142856]
+    assert collate.tuples()[1] == [372414.28999999946]
 
     # Write the metrics and plan graph
     query_plan.print_metrics()
-

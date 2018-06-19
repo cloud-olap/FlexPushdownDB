@@ -230,8 +230,9 @@ class HashJoin(Operator):
         # Hash the tuples from the smaller set of tuples
         inner_tuples_dict = {}
         for t in inner_tuples_list:
-            lt = IndexedTuple.build(t, inner_tuple_field_names)
-            inner_tuples_dict[lt[inner_tuple_field_name]] = t
+            it = IndexedTuple.build(t, inner_tuple_field_names)
+            itd = inner_tuples_dict.setdefault(it[inner_tuple_field_name], [])
+            itd.append(t)
 
         for outer_tuple in outer_tuples_list:
 
@@ -239,24 +240,33 @@ class HashJoin(Operator):
                 break
 
             outer_tuple_field_value = outer_tuple[outer_tuple_field_index]
-            inner_tuple = inner_tuples_dict.get(outer_tuple_field_value, None)
+            inner_tuples = inner_tuples_dict.get(outer_tuple_field_value, None)
 
-            if inner_tuple is not None:
+            if self.log_enabled:
+                print("{}('{}') | Joining Outer: {} Inner: {}".format(
+                    self.__class__.__name__,
+                    self.name,
+                    outer_tuple,
+                    inner_tuples))
 
-                if l_to_r:
-                    t = outer_tuple + inner_tuple
-                else:
-                    t = inner_tuple + outer_tuple
+            if inner_tuples is not None:
 
-                if self.log_enabled:
-                    print("{}('{}') | Sending field values [{}]".format(
-                        self.__class__.__name__,
-                        self.name,
-                        {'data': t}))
+                for inner_tuple in inner_tuples:
 
-                self.op_metrics.rows_joined += 1
+                    if l_to_r:
+                        t = outer_tuple + inner_tuple
+                    else:
+                        t = inner_tuple + outer_tuple
 
-                self.send(TupleMessage(Tuple(t)), self.consumers)
+                    if self.log_enabled:
+                        print("{}('{}') | Sending field values [{}]".format(
+                            self.__class__.__name__,
+                            self.name,
+                            {'data': t}))
+
+                    self.op_metrics.rows_joined += 1
+
+                    self.send(TupleMessage(Tuple(t)), self.consumers)
 
     def join_field_names(self):
         """Examines the collected field names and joins them into a single list, left field names followed by right

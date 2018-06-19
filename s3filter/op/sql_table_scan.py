@@ -3,12 +3,11 @@
 
 """
 
-from s3filter.plan.op_metrics import OpMetrics
-from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
+from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
+from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
-from s3filter.util.timer import Timer
 
 
 class SQLTableScanMetrics(OpMetrics):
@@ -93,7 +92,8 @@ class SQLTableScan(Operator):
                 first_tuple = False
 
                 if self.log_enabled:
-                    print("{}('{}') | Sending field names: {}".format(self.__class__.__name__, self.name, it.field_names()))
+                    print("{}('{}') | Sending field names: {}"
+                          .format(self.__class__.__name__, self.name, it.field_names()))
 
                 self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
 

@@ -4,9 +4,9 @@
 """
 
 from s3filter.op.tuple import Tuple
-from s3filter.util.bloom_filter import BloomFilter
-from s3filter.util.scalable_bloom_filter import ScalableBloomFilter
-from s3filter.util.simple_bloom_filter import SimpleBloomFilter
+from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
+from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
+from s3filter.hash.simple_bloom_filter import SimpleBloomFilter
 
 
 class Message(object):
@@ -52,12 +52,12 @@ class BloomMessage(Message):
         """
 
         if type(bloom_filter) is not ScalableBloomFilter and \
-                type(bloom_filter) is not BloomFilter and \
+                type(bloom_filter) is not SlicedBloomFilter and \
                 type(bloom_filter) is not SimpleBloomFilter:
             raise Exception("Message content type is {}. Type must be '{}', '{}', or '{}'"
                             .format(type(bloom_filter),
                                     SimpleBloomFilter.__class__.__name__,
-                                    BloomFilter.__class__.__name__,
+                                    SlicedBloomFilter.__class__.__name__,
                                     ScalableBloomFilter.__class__.__name__))
 
         self.bloom_filter = bloom_filter

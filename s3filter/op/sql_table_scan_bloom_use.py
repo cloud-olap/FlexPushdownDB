@@ -2,7 +2,7 @@
 """
 
 """
-
+from s3filter.hash.sliced_sql_bloom_filter import SlicedSQLBloomFilter
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, BloomMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
@@ -60,7 +60,7 @@ class SQLTableScanBloomUse(Operator):
         """
 
         if type(m) is BloomMessage:
-            self.__bloom_filter = m.bloom_filter
+            self.__bloom_filter = SlicedSQLBloomFilter(m.bloom_filter)
             self.start()
         else:
             raise Exception("Unrecognized message {}".format(m))
@@ -72,7 +72,8 @@ class SQLTableScanBloomUse(Operator):
         """
 
         # Append the bloom filter predicate either using where... or and...
-        bloom_filter_sql_predicate = self.__bloom_filter.sql_predicate(self.__bloom_filter_field_name)
+        bloom_filter_sql_predicate = self.__bloom_filter\
+            .build_bit_array_string_sql_predicate(self.__bloom_filter_field_name)
         sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicate)
         sql = self.s3sql + sql_suffix
 
@@ -127,7 +128,7 @@ class SQLTableScanBloomUse(Operator):
             stripped_sql = stripped_sql[:-1].strip()
 
         split_sql = stripped_sql.split()
-        is_predicate_present = split_sql[-1].lower() is not "s3object"
+        is_predicate_present = split_sql[-1].lower() != "s3object"
 
         if is_predicate_present:
             return " and {} ".format(bloom_filter_sql_predicate)

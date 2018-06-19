@@ -6,12 +6,12 @@
 import os
 
 from s3filter import ROOT_DIR
+from s3filter.benchmark.tpch_q19_ops import filter_def
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
-from s3filter.op.filter import Filter
-from s3filter.op.nested_loop_join import NestedLoopJoin, JoinExpression
-from s3filter.op.predicate_expression import PredicateExpression
+from s3filter.op.hash_join import HashJoin
+from s3filter.op.nested_loop_join import JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
@@ -34,7 +34,7 @@ def aggregate_def():
 
 
 def join_op():
-    return NestedLoopJoin(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', False)
+    return HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', False)
 
 
 def aggregate_project_def():
@@ -44,37 +44,6 @@ def aggregate_project_def():
         ],
         'aggregate_project',
         False)
-
-
-def filter_def():
-    return Filter(PredicateExpression(lambda t_:
-                                      (
-                                              t_['p_brand'] == 'Brand#11' and
-                                              t_['p_container'] in ['SM CASE', 'SM BOX', 'SM PACK',
-                                                                    'SM PKG'] and
-                                              3 <= int(t_['l_quantity']) <= 3 + 10 and
-                                              1 < int(t_['p_size']) < 5 and
-                                              t_['l_shipmode'] in ['AIR', 'AIR REG'] and
-                                              t_['l_shipinstruct'] == 'DELIVER IN PERSON'
-                                      ) or (
-                                              t_['p_brand'] == 'Brand#44' and
-                                              t_['p_container'] in ['MED BAG', 'MED BOX', 'MED PACK',
-                                                                    'MED PKG'] and
-                                              16 <= int(t_['l_quantity']) <= 16 + 10 and
-                                              1 < int(t_['p_size']) < 10 and
-                                              t_['l_shipmode'] in ['AIR', 'AIR REG'] and
-                                              t_['l_shipinstruct'] == 'DELIVER IN PERSON'
-                                      ) or (
-                                              t_['p_brand'] == 'Brand#53' and
-                                              t_['p_container'] in ['LG BAG', 'LG BOX', 'LG PACK',
-                                                                    'LG PKG'] and
-                                              24 <= int(t_['l_quantity']) <= 24 + 10 and
-                                              1 < int(t_['p_size']) < 15 and
-                                              t_['l_shipmode'] in ['AIR', 'AIR REG'] and
-                                              t_['l_shipinstruct'] == 'DELIVER IN PERSON'
-                                      )),
-                  'filter',
-                  False)
 
 
 def main():
@@ -92,38 +61,87 @@ def main():
     # Define the operators
 
     # with lineitem_scan as (select * from lineitem)
-    lineitem_scan = query_plan.add_operator(SQLTableScan('lineitem.csv',
-                                                         "select "
-                                                         "  l_partkey, "
-                                                         "  l_quantity, "
-                                                         "  l_extendedprice, "
-                                                         "  l_discount, "
-                                                         "  l_shipinstruct, "
-                                                         "  l_shipmode "
-                                                         "from "
-                                                         "  S3Object "
-                                                         "where "
-                                                         "  l_partkey = '103853' or "
-                                                         "  l_partkey = '104277' or "
-                                                         "  l_partkey = '104744' ",
-                                                         'lineitem_scan',
-                                                         False))
+    lineitem_scan = query_plan.add_operator(
+        SQLTableScan('lineitem.csv',
+                     "select "
+                     "  l_partkey, "
+                     "  l_quantity, "
+                     "  l_extendedprice, "
+                     "  l_discount, "
+                     "  l_shipinstruct, "
+                     "  l_shipmode "
+                     "from "
+                     "  S3Object "
+                     "where "
+                     "  ( "
+                     "      ( "
+                     "          cast(l_quantity as integer) >= 3 and cast(l_quantity as integer) <= 3 + 10 "
+                     "          and l_shipmode in ('AIR', 'AIR REG') "
+                     "          and l_shipinstruct = 'DELIVER IN PERSON' "
+                     "      ) "
+                     "      or "
+                     "      ( "
+                     "          cast(l_quantity as integer) >= 16 and cast(l_quantity as integer) <= 16 + 10 "
+                     "          and l_shipmode in ('AIR', 'AIR REG') "
+                     "          and l_shipinstruct = 'DELIVER IN PERSON' "
+                     "      ) "
+                     "      or "
+                     "      ( "
+                     "          cast(l_quantity as integer) >= 24 and cast(l_quantity as integer) <= 24 + 10 "
+                     "          and l_shipmode in ('AIR', 'AIR REG') "
+                     "          and l_shipinstruct = 'DELIVER IN PERSON' "
+                     "      ) "
+                     "  ) ",
+                     'lineitem_scan',
+                     False))
 
     # with part_scan as (select * from part)
-    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
-                                                     "select "
-                                                     "  p_partkey, "
-                                                     "  p_brand, "
-                                                     "  p_size, "
-                                                     "  p_container "
-                                                     "from "
-                                                     "  S3Object "
-                                                     "where "
-                                                     "  p_partkey = '103853' or "
-                                                     "  p_partkey = '104277' or "
-                                                     "  p_partkey = '104744' ",
-                                                     'part_scan',
-                                                     False))
+    part_scan = query_plan.add_operator(
+        SQLTableScan('part.csv',
+                     "select "
+                     "  p_partkey, "
+                     "  p_brand, "
+                     "  p_size, "
+                     "  p_container "
+                     "from "
+                     "  S3Object "
+                     "where "
+                     "  ( "
+                     "      ( "
+                     "          p_brand = 'Brand#11' "
+                     "          and p_container in ("
+                     "              'SM CASE', "
+                     "              'SM BOX', "
+                     "              'SM PACK', "
+                     "              'SM PKG'"
+                     "          ) "
+                     "          and cast(p_size as integer) between 1 and 5 "
+                     "      ) "
+                     "      or "
+                     "      ( "
+                     "          p_brand = 'Brand#44' "
+                     "          and p_container in ("
+                     "              'MED BAG', "
+                     "              'MED BOX', "
+                     "              'MED PKG', "
+                     "              'MED PACK'"
+                     "          ) "
+                     "          and cast(p_size as integer) between 1 and 10 "
+                     "      ) "
+                     "      or "
+                     "      ( "
+                     "          p_brand = 'Brand#53' "
+                     "          and p_container in ("
+                     "              'LG CASE', "
+                     "              'LG BOX', "
+                     "              'LG PACK', "
+                     "              'LG PKG'"
+                     "          ) "
+                     "          and cast(p_size as integer) between 1 and 15 "
+                     "      ) "
+                     "  ) ",
+                     'part_scan',
+                     False))
 
     # with lineitem_project as (
     # select
@@ -188,6 +206,11 @@ def main():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
+    collate.print_tuples()
+
+    # Write the metrics
+    query_plan.print_metrics()
+
     field_names = ['revenue']
 
     assert len(collate.tuples()) == 1 + 1
@@ -195,8 +218,4 @@ def main():
     assert collate.tuples()[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [92403.0667]
-
-    # Write the metrics
-    query_plan.print_metrics()
-
+    assert collate.tuples()[1] == [3468861.097000001]

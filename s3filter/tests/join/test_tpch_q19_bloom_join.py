@@ -1,114 +1,74 @@
-# -*- coding: utf-8 -*-
-"""TPCH Q19 Bloom Join Benchmark
-
-"""
-
 import os
 
 from s3filter import ROOT_DIR
-from s3filter.benchmark.tpch_q19_ops import filter_def
-from s3filter.op.aggregate import Aggregate
-from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.bloom_create import BloomCreate
-from s3filter.op.collate import Collate
-from s3filter.op.hash_join import HashJoin
-from s3filter.op.nested_loop_join import JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
+from s3filter.tests.join.test_tpch_q19_baseline_join import join_op, filter_def, aggregate_def, aggregate_project_def, collate_op
 from s3filter.util.test_util import gen_test_id
 
 
-def collate_op():
-    return Collate('collate', False)
-
-
-def aggregate_def():
-    return Aggregate(
-        [
-            AggregateExpression(
-                AggregateExpression.SUM,
-                lambda t_: float(t_['l_extendedprice']) * float((1 - float(t_['l_discount']))))
-        ],
-        'aggregate',
-        False)
-
-
-def join_op():
-    return HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', False)
-
-
-def aggregate_project_def():
-    return Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'revenue')
-        ],
-        'aggregate_project',
-        False)
-
-
-def main():
+def test_join_bloom():
     """
 
     :return: None
     """
-
-    print('')
-    print("TPCH Q19 Bloom Join")
-    print("-------------------")
 
     query_plan = QueryPlan()
 
     # Define the operators
 
     # with part_scan as (select * from part)
-    part_scan = query_plan.add_operator(
-        SQLTableScan('part.csv',
-                     "select "
-                     "  p_partkey, "
-                     "  p_brand, "
-                     "  p_size, "
-                     "  p_container "
-                     "from "
-                     "  S3Object "
-                     "where "
-                     "  ( "
-                     "      ( "
-                     "          p_brand = 'Brand#11' "
-                     "          and p_container in ("
-                     "              'SM CASE', "
-                     "              'SM BOX', "
-                     "              'SM PACK', "
-                     "              'SM PKG'"
-                     "          ) "
-                     "          and cast(p_size as integer) between 1 and 5 "
-                     "      ) "
-                     "      or "
-                     "      ( "
-                     "          p_brand = 'Brand#44' "
-                     "          and p_container in ("
-                     "              'MED BAG', "
-                     "              'MED BOX', "
-                     "              'MED PKG', "
-                     "              'MED PACK'"
-                     "          ) "
-                     "          and cast(p_size as integer) between 1 and 10 "
-                     "      ) "
-                     "      or "
-                     "      ( "
-                     "          p_brand = 'Brand#53' "
-                     "          and p_container in ("
-                     "              'LG CASE', "
-                     "              'LG BOX', "
-                     "              'LG PACK', "
-                     "              'LG PKG'"
-                     "          ) "
-                     "          and cast(p_size as integer) between 1 and 15 "
-                     "      ) "
-                     "  ) ",
-                     'part_scan',
-                     False))
+    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
+                                                     "select "
+                                                     "  p_partkey, "
+                                                     "  p_brand, "
+                                                     "  p_size, "
+                                                     "  p_container "
+                                                     "from "
+                                                     "  S3Object "
+                                                     "where "
+                                                     "  p_partkey = '103853' or "
+                                                     "  p_partkey = '104277' or "
+                                                     "  p_partkey = '104744' and "
+                                                     "  ( "
+                                                     "      ( "
+                                                     "          p_brand = 'Brand#11' "
+                                                     "          and p_container in ("
+                                                     "              'SM CASE', "
+                                                     "              'SM BOX', "
+                                                     "              'SM PACK', "
+                                                     "              'SM PKG'"
+                                                     "          ) "
+                                                     "          and cast(p_size as integer) between 1 and 5 "
+                                                     "      ) "
+                                                     "      or "
+                                                     "      ( "
+                                                     "          p_brand = 'Brand#44' "
+                                                     "          and p_container in ("
+                                                     "              'MED BAG', "
+                                                     "              'MED BOX', "
+                                                     "              'MED PKG', "
+                                                     "              'MED PACK'"
+                                                     "          ) "
+                                                     "          and cast(p_size as integer) between 1 and 10 "
+                                                     "      ) "
+                                                     "      or "
+                                                     "      ( "
+                                                     "          p_brand = 'Brand#53' "
+                                                     "          and p_container in ("
+                                                     "              'LG CASE', "
+                                                     "              'LG BOX', "
+                                                     "              'LG PACK', "
+                                                     "              'LG PKG'"
+                                                     "          ) "
+                                                     "          and cast(p_size as integer) between 1 and 15 "
+                                                     "      ) "
+                                                     "  ) ",
+                                                     'part_scan',
+                                                     False))
 
     # with lineitem_project as (
     # select
@@ -157,6 +117,9 @@ def main():
                              "from "
                              "  S3Object "
                              "where "
+                             "  l_partkey = '103853' or "
+                             "  l_partkey = '104277' or "
+                             "  l_partkey = '104744' and "
                              "  ( "
                              "      ( "
                              "          cast(l_quantity as integer) >= 3 and cast(l_quantity as integer) <= 3 + 10 "
@@ -213,11 +176,6 @@ def main():
         num_rows += 1
         # print("{}:{}".format(num_rows, t))
 
-    collate.print_tuples()
-
-    # Write the metrics
-    query_plan.print_metrics()
-
     field_names = ['revenue']
 
     assert len(collate.tuples()) == 1 + 1
@@ -225,4 +183,7 @@ def main():
     assert collate.tuples()[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [3468861.097000001]
+    assert collate.tuples()[1] == [92403.0667]
+
+    # Write the metrics
+    query_plan.print_metrics()
