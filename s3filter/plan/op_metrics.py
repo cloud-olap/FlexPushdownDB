@@ -29,10 +29,10 @@ class OpMetrics(object):
         print("-------")
         print("")
         for op in op_list:
-            OpMetrics.print_metric(op)
+            OpMetrics.pretty_print(op)
 
     @staticmethod
-    def print_metric(op):
+    def pretty_print(op):
         print("{}: {}".format(op, op.op_metrics))
 
     def __repr__(self):

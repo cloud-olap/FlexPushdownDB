@@ -62,6 +62,9 @@ def test_join_baseline():
 
     collate.print_tuples()
 
+    # Write the metrics
+    query_plan.print_metrics()
+
     field_names = ['s_nationkey', 'n_nationkey']
 
     assert len(collate.tuples()) == 10000 + 1
@@ -75,9 +78,6 @@ def test_join_baseline():
         if num_rows > 1:
             lt = IndexedTuple.build(t, field_names)
             assert lt['s_nationkey'] == lt['n_nationkey']
-
-    # Write the metrics
-    query_plan.print_metrics()
 
 
 def test_r_to_l_join():
