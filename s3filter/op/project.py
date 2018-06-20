@@ -86,16 +86,6 @@ class Project(Operator):
 
         if not self.field_names_index:
 
-            # self.field_names = tuple_
-            #
-            # # Map the old field names to the new
-            # projected_field_names = []
-            # for e in self.project_exprs:
-            #     fn = e.new_field_name
-            #     projected_field_names.append(fn)
-            #
-            # self.send(TupleMessage(Tuple(projected_field_names)), self.consumers)
-
             self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
 
             # Map the old field names to the new

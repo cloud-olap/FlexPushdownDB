@@ -2,11 +2,16 @@
 """Project operator query tests
 
 """
+import cProfile
 import os
+import pstats
+from datetime import datetime
 
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.project import Project, ProjectExpression
+from s3filter.op.random_table_scan import RandomIntColumnDef, RandomDateColumnDef, RandomStringColumnDef, \
+    RandomTableScan
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
@@ -121,3 +126,61 @@ def test_project_empty():
 
     # Write the metrics
     query_plan.print_metrics()
+
+
+def test_project_perf():
+    """Executes a projection over many source rows to examine performance.
+
+    :return: None
+    """
+
+    num_rows = 100000
+
+    query_plan = QueryPlan()
+
+    # Query plan
+    random_col_defs = [
+        RandomIntColumnDef(0, 9),
+        RandomStringColumnDef(10, 20),
+        RandomDateColumnDef(datetime.strptime('2017-01-01', '%Y-%m-%d'),
+                            datetime.strptime('2018-01-01', '%Y-%m-%d'))
+    ]
+
+    random_table_scan = query_plan.add_operator(
+        RandomTableScan(num_rows,
+                        random_col_defs,
+                        'random_table_scan',
+                        False))
+
+    project = query_plan.add_operator(Project(
+        [
+            ProjectExpression(lambda t_: t_['_0'], 'r_0'),
+            ProjectExpression(lambda t_: t_['_1'], 'r_1'),
+            ProjectExpression(lambda t_: t_['_2'], 'r_2')
+        ],
+        'project',
+        False))
+
+    collate = query_plan.add_operator(Collate('collate', False))
+
+    random_table_scan.connect(project)
+    project.connect(collate)
+
+    # Write the plan graph
+    query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+
+    # Start the query
+    profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
+    cProfile.runctx('random_table_scan.start()', globals(), locals(), profile_file_name)
+
+    # collate.print_tuples()
+
+    # Write the metrics
+    s = pstats.Stats(profile_file_name)
+    s.strip_dirs().sort_stats("time").print_stats()
+
+    query_plan.print_metrics()
+
+    # Assert the results
+    assert len(collate.tuples()) == num_rows + 1
+

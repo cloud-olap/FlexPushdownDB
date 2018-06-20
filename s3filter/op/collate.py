@@ -69,36 +69,33 @@ class Collate(Operator):
         field_names = False
         for t in self.__tuples:
             if not field_names:
+
+                # Write field name tuple
+
                 field_names_len = 0
                 t_iter = iter(t)
-                next_f = next(t_iter)
-                f = None
+                first_field_name = True
                 for f in t_iter:
+                    if not first_field_name:
+                        sys.stdout.write(' | ')
+                    else:
+                        first_field_name = False
+
                     sys.stdout.write(str(f))
-                    sys.stdout.write(' | ')
                     field_names_len += len(str(f))
-                    f = next_f
 
-                if f is None:
-                    f = next_f
-
-                sys.stdout.write(str(f))
-                field_names_len += len(str(f))
                 sys.stdout.write('\n')
-                print('-' * (field_names_len + (len(t) * 3) - 3))
+                print('-' * (field_names_len + ((len(t) - 1) * len(' | '))))
                 field_names = True
             else:
                 t_iter = iter(t)
-                next_f = next(t_iter)
-                f = None
+                first_field_val = True
                 for f in t_iter:
+                    if not first_field_val:
+                        sys.stdout.write(' | ')
+                    else:
+                        first_field_val = False
+
                     sys.stdout.write(str(f))
-                    sys.stdout.write('\t | \t')
-                    f = next_f
-
-                if f is None:
-                    f = next_f
-
-                sys.stdout.write(str(f))
 
                 print('')

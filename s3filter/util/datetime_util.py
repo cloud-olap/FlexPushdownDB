@@ -27,3 +27,9 @@ def str_to_millis(dt_str):
 def dt_to_millis(dt):
     ndt = numpy.datetime64(dt, 'ms')
     return ndt.astype('int')
+
+
+def millis_to_str(millis):
+    dt = numpy.datetime64(millis, 'ms')
+    py_dt = dt.astype(datetime)
+    return py_dt.strftime('%Y-%m-%d')
