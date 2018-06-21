@@ -24,10 +24,6 @@ class OpMetrics(object):
 
     @staticmethod
     def print_metrics(op_list):
-        print("")
-        print("Metrics")
-        print("-------")
-        print("")
         for op in op_list:
             OpMetrics.pretty_print(op)
 

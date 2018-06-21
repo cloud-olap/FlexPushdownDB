@@ -12,7 +12,7 @@ from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
 from s3filter.op.group import Group
 from s3filter.op.hash_join import HashJoin
-from s3filter.op.nested_loop_join import JoinExpression
+from s3filter.op.join_expression import JoinExpression
 from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -151,8 +151,7 @@ def main():
         False))
 
     part_filter = query_plan.add_operator(Filter(
-        PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and
-                                       t_['p_container'] == 'SM PACK'),
+        PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and t_['p_container'] == 'SM PACK'),
         'part_filter',
         False))
 
@@ -200,16 +199,18 @@ def main():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    part_scan.start()
-    lineitem_scan.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in collate.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in collate.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     collate.print_tuples()
+
+    # Write the metrics and plan graph
+    query_plan.print_metrics()
 
     field_names = ['avg_yearly']
 
@@ -219,6 +220,3 @@ def main():
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [372414.28999999946]
-
-    # Write the metrics and plan graph
-    query_plan.print_metrics()

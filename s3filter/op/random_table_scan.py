@@ -2,12 +2,10 @@
 """
 
 """
-from datetime import datetime
-import string
-from random import random, randint, choice, randrange
-from time import strftime
 
-import numpy
+import string
+from datetime import datetime
+from random import randint, choice, randrange
 
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
@@ -77,8 +75,6 @@ class RandomDateColumnDef(RandomColumnDef):
         max_date_millis = dt_to_millis(self.max_date)
         dt_millis = randrange(min_date_millis, max_date_millis)
         return millis_to_str(dt_millis)
-
-
 
 
 class RandomTableScan(Operator):

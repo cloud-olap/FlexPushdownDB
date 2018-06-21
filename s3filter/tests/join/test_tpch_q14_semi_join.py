@@ -8,7 +8,7 @@ from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.bloom_create import BloomCreate
 from s3filter.op.collate import Collate
 from s3filter.op.hash_join import HashJoin
-from s3filter.op.nested_loop_join import JoinExpression
+from s3filter.op.join_expression import JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
@@ -22,6 +22,10 @@ def test_join_semi():
     :return: None
     """
 
+    print('')
+    print("TPCH Q14 Semi Join")
+    print("------------------")
+
     query_plan = QueryPlan()
 
     # Query plan
@@ -34,8 +38,7 @@ def test_join_semi():
                                                        "select "
                                                        "  p_partkey from S3Object "
                                                        "where "
-                                                       "  p_brand = 'Brand#12' "
-                                                       " ",
+                                                       "  p_brand = 'Brand#12' ",
                                                        'part_table_scan_1',
                                                        False))
 
@@ -87,7 +90,8 @@ def test_join_semi():
         False))
 
     part_lineitem_join_1 = query_plan.add_operator(
-        HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1', False))
+        HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
+                 False))
 
     join_bloom_create = query_plan.add_operator(
         BloomCreate('l_partkey', 'join_bloom_create', False))
@@ -96,8 +100,7 @@ def test_join_semi():
                                                                      "select "
                                                                      "  p_partkey, p_type from S3Object "
                                                                      "where "
-                                                                     "  p_brand = 'Brand#12' "
-                                                                     " ",
+                                                                     "  p_brand = 'Brand#12' ",
                                                                      'p_partkey',
                                                                      'part_table_scan_2',
                                                                      False))
@@ -152,7 +155,7 @@ def test_join_semi():
     part_lineitem_join_2 = query_plan.add_operator(
         HashJoin(JoinExpression('p_partkey', 'l_partkey'),
                  'part_lineitem_join_2',
-                 False))  # p_partkey and l_partkey
+                 False))
 
     def ex1(t_):
 
@@ -175,11 +178,20 @@ def test_join_semi():
 
     aggregate = query_plan.add_operator(
         Aggregate(
-            [AggregateExpression(AggregateExpression.SUM, ex1), AggregateExpression(AggregateExpression.SUM, ex2)],
+            [
+                AggregateExpression(AggregateExpression.SUM, ex1),
+                AggregateExpression(AggregateExpression.SUM, ex2)
+            ],
             'aggregate', False))
 
     project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'project', False))
+        Project(
+            [
+                ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
+            ],
+            'project',
+            False))
+
     collate = query_plan.add_operator(Collate('collate', False))
 
     part_scan_1.connect(part_scan_1_project)
@@ -203,16 +215,18 @@ def test_join_semi():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    part_scan_1.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in collate.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in collate.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
-    print('')
     collate.print_tuples()
+
+    # Write the metrics
+    query_plan.print_metrics()
 
     field_names = ['promo_revenue']
 
@@ -222,6 +236,3 @@ def test_join_semi():
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
-
-    # Write the metrics
-    query_plan.print_metrics()

@@ -24,6 +24,7 @@ class SQLTableScanMetrics(OpMetrics):
         self.time_to_first_record_response = None
         self.time_to_last_record_response = None
 
+        self.query_bytes = 0
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
@@ -32,6 +33,7 @@ class SQLTableScanMetrics(OpMetrics):
         return {
             'elapsed_time': round(self.elapsed_time(), 5),
             'rows_returned': self.rows_returned,
+            'query_bytes': self.query_bytes,
             'bytes_scanned': self.bytes_scanned,
             'bytes_processed': self.bytes_processed,
             'bytes_returned': self.bytes_returned,
@@ -76,6 +78,7 @@ class SQLTableScan(Operator):
 
         tuples = cur.execute()
 
+        self.op_metrics.query_bytes = cur.query_bytes
         self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
 
         first_tuple = True

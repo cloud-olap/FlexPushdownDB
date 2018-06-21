@@ -2,6 +2,8 @@
 """Operator support
 
 """
+import heapq
+import timeit
 
 
 def switch_context(from_op, to_op):
@@ -90,6 +92,7 @@ class Operator(object):
             raise Exception("Consumer with name '{}' already added".format(consumer.name))
 
         self.consumers.append(consumer)
+        self.consumers = sorted(self.consumers, key=lambda c: c.name)
 
     def add_producer(self, producer):
         """Appends the given producing operator to this operators list of producers.
@@ -101,6 +104,7 @@ class Operator(object):
             raise Exception("Producer with name '{}' already added".format(producer.name))
 
         self.producers.append(producer)
+        self.producers = sorted(self.producers, key=lambda p: p.name)
 
     def send(self, message, operators):
         """Emits the given tuple to each of the connected consumers.
@@ -143,11 +147,11 @@ class Operator(object):
 
             self.__completed = True
 
-            for c in self.consumers:
-                self.fire_on_producer_completed(c)
-
             for p in self.producers:
                 self.fire_on_consumer_completed(p)
+
+            for c in self.consumers:
+                self.fire_on_producer_completed(c)
 
         else:
             raise Exception("Cannot complete an already completed operator")

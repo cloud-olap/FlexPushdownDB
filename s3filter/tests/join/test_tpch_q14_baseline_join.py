@@ -84,7 +84,7 @@ from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
 from s3filter.op.predicate_expression import PredicateExpression
-from s3filter.op.nested_loop_join import JoinExpression
+from s3filter.op.join_expression import JoinExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.function import cast, timestamp
@@ -96,6 +96,10 @@ def test_join_baseline():
 
     :return: None
     """
+
+    print('')
+    print("TPCH Q14 Baseline Join")
+    print("----------------------")
 
     query_plan = QueryPlan()
 
@@ -217,17 +221,18 @@ def test_join_baseline():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    lineitem_scan.start()
-    part_scan.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in collate.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in collate.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
-    print('')
     collate.print_tuples()
+
+    # Write the metrics
+    query_plan.print_metrics()
 
     field_names = ['promo_revenue']
 
@@ -238,7 +243,5 @@ def test_join_baseline():
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
 
-    # Write the metrics
-    query_plan.print_metrics()
 
 

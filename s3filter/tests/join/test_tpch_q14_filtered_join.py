@@ -7,7 +7,7 @@ from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.op.hash_join import HashJoin
-from s3filter.op.nested_loop_join import JoinExpression
+from s3filter.op.join_expression import JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
@@ -19,6 +19,10 @@ def test_join_filtered():
 
     :return: None
     """
+
+    print('')
+    print("TPCH Q14 Filtered Join")
+    print("----------------------")
 
     query_plan = QueryPlan()
 
@@ -112,7 +116,9 @@ def test_join_filtered():
             'aggregate', False))
 
     aggregate_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'aggregate_project', False))
+        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')],
+                'aggregate_project',
+                False))
 
     collate = query_plan.add_operator(Collate('collate', False))
 
@@ -128,17 +134,18 @@ def test_join_filtered():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    lineitem_scan.start()
-    part_scan.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in collate.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in collate.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
-    print('')
     collate.print_tuples()
+
+    # Write the metrics
+    query_plan.print_metrics()
 
     field_names = ['promo_revenue']
 
@@ -148,6 +155,3 @@ def test_join_filtered():
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [33.42623264199327]
-
-    # Write the metrics
-    query_plan.print_metrics()

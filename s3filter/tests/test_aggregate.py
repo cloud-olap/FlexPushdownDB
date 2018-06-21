@@ -21,8 +21,6 @@ def test_aggregate_count():
     :return: None
     """
 
-    num_rows = 0
-
     query_plan = QueryPlan()
 
     # Query plan
@@ -46,12 +44,13 @@ def test_aggregate_count():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     c.print_tuples()
 
@@ -59,7 +58,7 @@ def test_aggregate_count():
 
     assert c.tuples()[0] == field_names
     assert IndexedTuple.build(c.tuples()[1], field_names)['_0'] == 10000
-    assert num_rows == 1 + 1
+    assert len(c.tuples()) == 1 + 1
 
     # Write the metrics
     query_plan.print_metrics()
@@ -70,8 +69,6 @@ def test_aggregate_sum():
 
     :return: None
     """
-
-    num_rows = 0
 
     query_plan = QueryPlan()
 
@@ -95,18 +92,19 @@ def test_aggregate_sum():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     field_names = ['_0']
 
     assert c.tuples()[0] == field_names
     assert round(IndexedTuple.build(c.tuples()[1], field_names)['_0'], 2) == 45103548.65
-    assert num_rows == 1 + 1
+    assert len(c.tuples()) == 1 + 1
 
     # Write the metrics
     query_plan.print_metrics()
@@ -122,8 +120,6 @@ def test_aggregate_empty():
 
     :return: None
     """
-
-    num_rows = 0
 
     query_plan = QueryPlan()
 
@@ -147,17 +143,18 @@ def test_aggregate_empty():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     field_names = ['_0']
 
     assert c.tuples()[0] == field_names
-    assert num_rows == 0 + 1
+    assert len(c.tuples()) == 0 + 1
 
     # Write the metrics
     query_plan.print_metrics()

@@ -39,13 +39,13 @@ def test_filter_baseline():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 2 + 1
 
@@ -53,13 +53,12 @@ def test_filter_baseline():
 
     assert c.tuples()[0] == field_names
 
-    assert c.tuples()[1] == \
-           ['1', '155190', '7706', '1', '17', '21168.23', '0.04', '0.02', 'N', 'O', '1996-03-13', '1996-02-12',
-            '1996-03-22', 'DELIVER IN PERSON', 'TRUCK', 'egular courts above the']
+    assert c.tuples()[1] == ['1', '155190', '7706', '1', '17', '21168.23', '0.04', '0.02', 'N', 'O', '1996-03-13',
+                             '1996-02-12', '1996-03-22', 'DELIVER IN PERSON', 'TRUCK', 'egular courts above the']
 
-    assert c.tuples()[2] == \
-           ['1', '67310', '7311', '2', '36', '45983.16', '0.09', '0.06', 'N', 'O', '1996-04-12', '1996-02-28',
-            '1996-04-20', 'TAKE BACK RETURN', 'MAIL', 'ly final dependencies: slyly bold ']
+    assert c.tuples()[2] == ['1', '67310', '7311', '2', '36', '45983.16', '0.09', '0.06', 'N', 'O', '1996-04-12',
+                             '1996-02-28', '1996-04-20', 'TAKE BACK RETURN', 'MAIL',
+                             'ly final dependencies: slyly bold ']
 
     # Write the metrics
     query_plan.print_metrics()
@@ -92,13 +91,13 @@ def test_filter_empty():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 0
 

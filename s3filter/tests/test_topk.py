@@ -34,7 +34,7 @@ def test_limit_topk():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
     for _ in c.tuples():
@@ -71,7 +71,7 @@ def test_abort_topk():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
     for _ in c.tuples():
@@ -109,7 +109,7 @@ def test_topk_empty():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
     for _ in c.tuples():

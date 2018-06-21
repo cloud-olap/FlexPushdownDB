@@ -18,4 +18,4 @@ BENCHMARK_FILE=${PACKAGE_PATH}/s3filter/benchmark/main.py
 
 echo "Running benchmark at '${BENCHMARK_FILE}'. Python path is '${PACKAGE_PATH}'"
 
-PYTHONPATH=${PACKAGE_PATH} python ${BENCHMARK_FILE}
+PYTHONPATH=${PACKAGE_PATH} python -O ${BENCHMARK_FILE}

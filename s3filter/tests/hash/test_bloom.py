@@ -3,13 +3,11 @@
 
 """
 
-import random
-
 from s3filter.hash.bloom_filter import BloomFilter
+from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
+from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 from s3filter.hash.sliced_sql_bloom_filter import SlicedSQLBloomFilter
 from s3filter.sql.cursor import Cursor
-from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
-from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
 
 
 def test_bloom_filter():

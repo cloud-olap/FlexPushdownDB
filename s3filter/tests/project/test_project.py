@@ -23,8 +23,6 @@ def test_project_simple():
     :return: None
     """
 
-    num_rows = 0
-
     query_plan = QueryPlan()
 
     # Query plan
@@ -52,12 +50,13 @@ def test_project_simple():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     field_names = ['n_regionkey', 'n_nationkey', 'n_comment']
 
@@ -65,14 +64,11 @@ def test_project_simple():
 
     assert c.tuples()[0] == field_names
 
-    assert c.tuples()[1] == \
-           ['0', '0', ' haggle. carefully final deposits detect slyly agai']
-    assert c.tuples()[2] == \
-           ['1', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
-    assert c.tuples()[3] == \
-           ['1', '2',
-            'y alongside of the pending deposits. carefully special packages '
-            'are about the ironic forges. slyly special ']
+    assert c.tuples()[1] == ['0', '0', ' haggle. carefully final deposits detect slyly agai']
+    assert c.tuples()[2] == ['1', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
+    assert c.tuples()[3] == ['1', '2',
+                             'y alongside of the pending deposits. carefully special packages '
+                             'are about the ironic forges. slyly special ']
 
     # Write the metrics
     query_plan.print_metrics()
@@ -85,8 +81,6 @@ def test_project_empty():
 
     :return: None
     """
-
-    num_rows = 0
 
     query_plan = QueryPlan()
 
@@ -115,12 +109,13 @@ def test_project_empty():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 0
 
@@ -171,7 +166,7 @@ def test_project_perf():
 
     # Start the query
     profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
-    cProfile.runctx('random_table_scan.start()', globals(), locals(), profile_file_name)
+    cProfile.runctx('query_plan.execute()', globals(), locals(), profile_file_name)
 
     # collate.print_tuples()
 
@@ -183,4 +178,3 @@ def test_project_perf():
 
     # Assert the results
     assert len(collate.tuples()) == num_rows + 1
-

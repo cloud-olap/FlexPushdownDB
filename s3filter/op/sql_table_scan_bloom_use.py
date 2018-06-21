@@ -82,9 +82,10 @@ class SQLTableScanBloomUse(Operator):
 
         cur = Cursor().select(self.s3key, sql)
 
-        self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
-
         tuples = cur.execute()
+
+        self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
+        self.op_metrics.query_bytes = cur.query_bytes
 
         first_tuple = True
         for t in tuples:

@@ -18,8 +18,6 @@ def test_sort_asc():
     :return: None
     """
 
-    num_rows = 0
-
     query_plan = QueryPlan()
 
     # Query plan
@@ -40,26 +38,26 @@ def test_sort_asc():
     s.connect(c)
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 3 + 1
 
     assert c.tuples()[0] == ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
-    assert c.tuples()[1] == \
-           ['2', 'Supplier#000000002', '89eJ5ksX3ImxJQBvxObC,', '5', '15-679-861-2259', '4032.68',
-            ' slyly bold instructions. idle dependen']
-    assert c.tuples()[2] == \
-           ['3', 'Supplier#000000003', 'q1,G3Pj6OjIuUYfUoH18BFTKP5aU9bEV3', '1', '11-383-516-1199', '4192.40',
-            'blithely silent requests after the express dependencies are sl']
-    assert c.tuples()[3] == \
-           ['1', 'Supplier#000000001', ' N kD4on9OM Ipw3,gf0JBoQDd7tgrzrddZ', '17', '27-918-335-1736', '5755.94',
-            'each slyly above the careful']
+    assert c.tuples()[1] == ['2', 'Supplier#000000002', '89eJ5ksX3ImxJQBvxObC,', '5', '15-679-861-2259', '4032.68',
+                             ' slyly bold instructions. idle dependen']
+    assert c.tuples()[2] == ['3', 'Supplier#000000003', 'q1,G3Pj6OjIuUYfUoH18BFTKP5aU9bEV3', '1', '11-383-516-1199',
+                             '4192.40',
+                             'blithely silent requests after the express dependencies are sl']
+    assert c.tuples()[3] == ['1', 'Supplier#000000001', ' N kD4on9OM Ipw3,gf0JBoQDd7tgrzrddZ', '17', '27-918-335-1736',
+                             '5755.94',
+                             'each slyly above the careful']
 
     # Write the metrics
     query_plan.print_metrics()
@@ -70,8 +68,6 @@ def test_sort_desc():
 
     :return: None
     """
-
-    num_rows = 0
 
     query_plan = QueryPlan()
 
@@ -93,26 +89,24 @@ def test_sort_desc():
     s.connect(c)
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 3 + 1
 
     assert c.tuples()[0] == ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
-    assert c.tuples()[1] == \
-           ['1', 'Supplier#000000001', ' N kD4on9OM Ipw3,gf0JBoQDd7tgrzrddZ', '17', '27-918-335-1736', '5755.94',
-            'each slyly above the careful']
-    assert c.tuples()[2] == \
-           ['3', 'Supplier#000000003', 'q1,G3Pj6OjIuUYfUoH18BFTKP5aU9bEV3', '1', '11-383-516-1199', '4192.40',
-            'blithely silent requests after the express dependencies are sl']
-    assert c.tuples()[3] == \
-           ['2', 'Supplier#000000002', '89eJ5ksX3ImxJQBvxObC,', '5', '15-679-861-2259', '4032.68',
-            ' slyly bold instructions. idle dependen']
+    assert c.tuples()[1] == ['1', 'Supplier#000000001', ' N kD4on9OM Ipw3,gf0JBoQDd7tgrzrddZ', '17', '27-918-335-1736',
+                             '5755.94', 'each slyly above the careful']
+    assert c.tuples()[2] == ['3', 'Supplier#000000003', 'q1,G3Pj6OjIuUYfUoH18BFTKP5aU9bEV3', '1', '11-383-516-1199',
+                             '4192.40', 'blithely silent requests after the express dependencies are sl']
+    assert c.tuples()[3] == ['2', 'Supplier#000000002', '89eJ5ksX3ImxJQBvxObC,', '5', '15-679-861-2259', '4032.68',
+                             ' slyly bold instructions. idle dependen']
 
     # Write the metrics
     query_plan.print_metrics()
@@ -125,8 +119,6 @@ def test_sort_empty():
 
     :return: None
     """
-
-    num_rows = 0
 
     query_plan = QueryPlan()
 
@@ -148,12 +140,13 @@ def test_sort_empty():
     s.connect(c)
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 0
 

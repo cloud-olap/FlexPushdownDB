@@ -18,8 +18,6 @@ def test_scan_simple():
     :return: None
     """
 
-    num_rows = 0
-
     query_plan = QueryPlan()
 
     # Query plan
@@ -36,25 +34,24 @@ def test_scan_simple():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 25 + 1
 
     assert c.tuples()[0] == ['_0', '_1', '_2', '_3']
 
-    assert c.tuples()[1] == \
-           ['0', 'ALGERIA', '0', ' haggle. carefully final deposits detect slyly agai']
-    assert c.tuples()[2] == \
-           ['1', 'ARGENTINA', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
-    assert c.tuples()[3] == \
-           ['2', 'BRAZIL', '1',
-            'y alongside of the pending deposits. carefully special packages are about '
-            'the ironic forges. slyly special ']
+    assert c.tuples()[1] == ['0', 'ALGERIA', '0', ' haggle. carefully final deposits detect slyly agai']
+    assert c.tuples()[2] == ['1', 'ARGENTINA', '1',
+                             'al foxes promise slyly according to the regular accounts. bold requests alon']
+    assert c.tuples()[3] == ['2', 'BRAZIL', '1',
+                             'y alongside of the pending deposits. carefully special packages are about '
+                             'the ironic forges. slyly special ']
 
     # Write the metrics
     query_plan.print_metrics()
@@ -67,8 +64,6 @@ def test_scan_empty():
 
     :return: None
     """
-
-    num_rows = 0
 
     query_plan = QueryPlan()
 
@@ -87,12 +82,13 @@ def test_scan_empty():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     assert len(c.tuples()) == 0
 

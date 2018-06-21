@@ -19,8 +19,6 @@ def test_random_scan_simple():
     :return: None
     """
 
-    num_rows = 0
-
     query_plan = QueryPlan()
 
     # Query plan
@@ -46,7 +44,7 @@ def test_random_scan_simple():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    random_table_scan.start()
+    query_plan.execute()
 
     collate.print_tuples()
 

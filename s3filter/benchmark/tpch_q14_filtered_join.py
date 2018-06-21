@@ -12,7 +12,7 @@ from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.op.hash_join import HashJoin
-from s3filter.op.nested_loop_join import JoinExpression
+from s3filter.op.join_expression import JoinExpression
 from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
@@ -104,7 +104,8 @@ def main():
             'aggregate', False))
 
     aggregate_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')], 'aggregate_project',
+        Project([ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')],
+                'aggregate_project',
                 False))
 
     collate = query_plan.add_operator(Collate('collate', False))
@@ -121,16 +122,18 @@ def main():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())
 
     # Start the query
-    lineitem_scan.start()
-    part_scan.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in collate.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in collate.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     collate.print_tuples()
+
+    # Write the metrics
+    query_plan.print_metrics()
 
     field_names = ['promo_revenue']
 
@@ -140,9 +143,6 @@ def main():
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [15.090116526324298]
-
-    # Write the metrics
-    query_plan.print_metrics()
 
 
 if __name__ == "__main__":

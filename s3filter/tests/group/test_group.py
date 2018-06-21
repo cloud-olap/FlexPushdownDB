@@ -44,7 +44,7 @@ def test_group_count():
     g.connect(c)
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
     for _ in c.tuples():
@@ -71,8 +71,6 @@ def test_group_sum():
     :return: None
     """
 
-    num_rows = 0
-
     query_plan = QueryPlan()
 
     # Query plan
@@ -92,12 +90,13 @@ def test_group_sum():
     g.connect(c)
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t_))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t_))
 
     field_names = ['_0', '_1']
 
@@ -120,8 +119,6 @@ def test_group_empty():
     :return: None
     """
 
-    num_rows = 0
-
     query_plan = QueryPlan()
 
     # Query plan
@@ -141,12 +138,13 @@ def test_group_empty():
     g.connect(c)
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     field_names = ['_0', '_1']
 

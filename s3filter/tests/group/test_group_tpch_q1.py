@@ -21,8 +21,6 @@ def test_group_baseline():
     :return: None
     """
 
-    num_rows = 0
-
     # Query plan
 
     # select
@@ -101,12 +99,13 @@ def test_group_baseline():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8', '_9']
 
@@ -115,12 +114,12 @@ def test_group_baseline():
     assert len(c.tuples()) == 2 + 1
 
     # These have been verified in Postgres
-    assert c.tuples()[1] == \
-           ["A", "F", 129850, 194216048.19000033, 184525343.78730044, 191943492.96455324, 25.445816186556925,
-            38059.19031746035, 0.050005878894768374, 5103]
-    assert c.tuples()[2] == \
-           ["R", "F", 129740, 193438367.33999985, 183701990.7670003, 191045646.36937532, 25.509241053873353,
-            38033.49731419579, 0.05061541486433399, 5086]
+    assert c.tuples()[1] == ["A", "F", 129850, 194216048.19000033, 184525343.78730044, 191943492.96455324,
+                             25.445816186556925,
+                             38059.19031746035, 0.050005878894768374, 5103]
+    assert c.tuples()[2] == ["R", "F", 129740, 193438367.33999985, 183701990.7670003, 191045646.36937532,
+                             25.509241053873353,
+                             38033.49731419579, 0.05061541486433399, 5086]
 
     # Write the metrics
     query_plan.print_metrics()

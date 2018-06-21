@@ -44,12 +44,13 @@ class Top(Operator):
         """
 
         self.send(TupleMessage(tuple_), self.consumers)
+
         if not self.first_tuple:
             self.current += 1
         else:
             self.first_tuple = False
-        if self.current == self.max_tuples:
 
+        if self.current == self.max_tuples:
             # Set this operator to complete
             if not self.is_completed():
                 self.complete()

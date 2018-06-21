@@ -205,14 +205,16 @@ class HashJoin(Operator):
         """
 
         # Determine which direction the hash join should run
-        # The larger relation should remain as a list and the smaller relation should be hashed. The larger relation
-        # should be iterated as a list
-        if len(self.__l_tuples) > len(self.__r_tuples):
+        # The larger relation should remain as a list and the smaller relation should be hashed. If either of the
+        # relations are empty then just return
+        if len(self.__l_tuples) == 0 or len(self.__r_tuples) == 0:
+            return
+        elif len(self.__l_tuples) > len(self.__r_tuples):
             l_to_r = True
-            r_to_l = not l_to_r
+            # r_to_l = not l_to_r
         else:
             l_to_r = False
-            r_to_l = not l_to_r
+            # r_to_l = not l_to_r
 
         if l_to_r:
             outer_tuples_list = self.__l_tuples

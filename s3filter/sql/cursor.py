@@ -32,6 +32,7 @@ class Cursor(object):
         self.time_to_first_record_response = None
         self.time_to_last_record_response = None
 
+        self.query_bytes = 0
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
@@ -46,6 +47,9 @@ class Cursor(object):
 
         self.s3key = s3key
         self.s3sql = s3sql
+
+        # There doesn't seem to be a way to capture the bytes sent to s3, but we can use this for comparison purposes
+        self.query_bytes = len(self.s3key.encode('utf-8')) + len(self.s3sql.encode('utf-8'))
 
         return self
 

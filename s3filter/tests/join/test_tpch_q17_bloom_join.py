@@ -5,8 +5,9 @@ from s3filter.op.bloom_create import BloomCreate
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.tests.join.test_tpch_q17_baseline_join import part_scan_op, part_project_op, lineitem_project_op, \
-    part_line_item_join_op, lineitem_avg_group_op, lineitem_part_avg_group_project_op, part_lineitem_join_avg_group_op, \
-    lineitem_filter_op, extendedprice_sum_aggregate_op, extendedprice_sum_aggregate_project_op, collate_op
+    part_line_item_join_op, lineitem_avg_group_op, lineitem_part_avg_group_project_op, \
+    part_lineitem_join_avg_group_op, lineitem_filter_op, extendedprice_sum_aggregate_op, \
+    extendedprice_sum_aggregate_project_op, collate_op
 from s3filter.util.test_util import gen_test_id
 
 
@@ -68,14 +69,13 @@ def test():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    part_scan.start()
-    # lineitem_scan.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in collate.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in collate.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     collate.print_tuples()
 

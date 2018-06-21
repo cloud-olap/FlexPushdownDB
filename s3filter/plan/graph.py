@@ -5,6 +5,7 @@
 
 import pygraphviz
 
+from s3filter.op.hash_join import HashJoin
 from s3filter.op.nested_loop_join import NestedLoopJoin
 
 
@@ -28,7 +29,7 @@ class Graph(object):
         self.graph.add_node(operator.name, label="{}({})"
                             .format(operator.__class__.__name__, operator.name), shape="box")
 
-        if type(operator) is NestedLoopJoin:
+        if type(operator) is NestedLoopJoin or type(operator) is HashJoin:
             self.graph.add_edge(operator.producers[0].name, operator.name, "left", label="left")
             self.graph.add_edge(operator.producers[1].name, operator.name, "right", label="right")
         else:

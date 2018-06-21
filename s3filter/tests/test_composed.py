@@ -6,7 +6,8 @@ import os
 
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
-from s3filter.op.nested_loop_join import NestedLoopJoin, JoinExpression
+from s3filter.op.hash_join import HashJoin
+from s3filter.op.join_expression import JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sort import Sort, SortExpression
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -43,13 +44,13 @@ def test_sort_topk():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6']
 
@@ -91,7 +92,7 @@ def test_join_topk():
     ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', False))
     ts2_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False))
-    j = query_plan.add_operator(NestedLoopJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
+    j = query_plan.add_operator(HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
     t = query_plan.add_operator(Top(limit, 't', False))
     c = query_plan.add_operator(Collate('c', False))
 
@@ -106,14 +107,13 @@ def test_join_topk():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    ts1.start()
-    ts2.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
 
     c.print_tuples()
 

@@ -6,7 +6,8 @@ from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
-from s3filter.tests.join.test_tpch_q19_baseline_join import join_op, filter_def, aggregate_def, aggregate_project_def, collate_op
+from s3filter.tests.join.test_tpch_q19_baseline_join import join_op, filter_def, aggregate_def, aggregate_project_def, \
+    collate_op
 from s3filter.util.test_util import gen_test_id
 
 
@@ -167,14 +168,18 @@ def test_join_bloom():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    part_scan.start()
-    # lineitem_scan.start()
+    query_plan.execute()
 
     # Assert the results
-    num_rows = 0
-    for t in collate.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
+    # num_rows = 0
+    # for t in collate.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
+
+    collate.print_tuples()
+
+    # Write the metrics
+    query_plan.print_metrics()
 
     field_names = ['revenue']
 
@@ -184,6 +189,3 @@ def test_join_bloom():
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [92403.0667]
-
-    # Write the metrics
-    query_plan.print_metrics()
