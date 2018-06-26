@@ -4,20 +4,11 @@
 """
 
 import os
-import re
 from datetime import datetime, timedelta
 
 from s3filter import ROOT_DIR
-from s3filter.op.aggregate import Aggregate
-from s3filter.op.aggregate_expression import AggregateExpression
-from s3filter.op.bloom_create import BloomCreate
-from s3filter.op.collate import Collate
-from s3filter.op.hash_join import HashJoin
-from s3filter.op.join_expression import JoinExpression
-from s3filter.op.project import ProjectExpression, Project
-from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
+from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
 
 
@@ -39,100 +30,28 @@ def main():
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
-                                                     "select "
-                                                     "  p_partkey, p_type from S3Object "
-                                                     "where "
-                                                     "  p_brand = 'Brand#12' ",
-                                                     'part_scan',
-                                                     False))
-
-    part_scan_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpression(lambda t_: t_['_1'], 'p_type')
-        ],
-        'part_scan_project',
-        False))
-
-    part_bloom_create = query_plan.add_operator(BloomCreate('p_partkey', 'part_bloom_create', False))  # p_partkey
-
+    part_scan = query_plan.add_operator(
+        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def('part_scan'))
+    part_scan_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_scan_project'))
+    part_bloom_create = query_plan.add_operator(tpch_q14.bloom_create_p_partkey_operator_def('part_bloom_create'))
     lineitem_scan = query_plan.add_operator(
-        SQLTableScanBloomUse('lineitem.csv',
-                             "select "
-                             "  l_partkey, l_extendedprice, l_discount from S3Object "
-                             "where "
-                             "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                             "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
-                             " ".format(
-                                 min_shipped_date.strftime('%Y-%m-%d'),
-                                 max_shipped_date.strftime('%Y-%m-%d'))
-                             ,
-                             'l_partkey',
-                             'lineitem_scan',
-                             False))
-
-    lineitem_scan_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
-            ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
-            ProjectExpression(lambda t_: t_['_2'], 'l_discount')
-        ],
-        'lineitem_scan_project',
-        False))
-
-    join = query_plan.add_operator(
-        HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'join', False))  # p_partkey and l_partkey
-
-    def ex1(t_):
-
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
-
-        rx = re.compile('^PROMO.*$')
-
-        if rx.search(t_['p_type']):  # p_type
-            v2 = v1
-        else:
-            v2 = 0.0
-
-        return v2
-
-    def ex2(t_):
-
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
-
-        return v1
-
-    aggregate = query_plan.add_operator(
-        Aggregate(
-            [
-                AggregateExpression(AggregateExpression.SUM, ex1),
-                AggregateExpression(AggregateExpression.SUM, ex2)
-            ],
-            'aggregate',
-            False))
-
-    project = query_plan.add_operator(
-        Project(
-            [
-                ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
-            ],
-            'project',
-            False))
-
-    collate = query_plan.add_operator(Collate('collate', False))
+        tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, 'lineitem_scan'))
+    lineitem_scan_project = query_plan.add_operator(
+        tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_scan_project'))
+    join = query_plan.add_operator(tpch_q14.join_part_lineitem_operator_def('join'))
+    aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate'))
+    aggregate_project = query_plan.add_operator(tpch_q14.project_promo_revenue_operator_def('aggregate_project'))
+    collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate'))
 
     part_scan.connect(part_scan_project)
     part_scan_project.connect(part_bloom_create)
     part_bloom_create.connect(lineitem_scan)
-    # part_scan.connect(join)
     join.connect_left_producer(part_scan_project)
     lineitem_scan.connect(lineitem_scan_project)
-    # lineitem_scan.connect(join)
     join.connect_right_producer(lineitem_scan_project)
     join.connect(aggregate)
-    aggregate.connect(project)
-    project.connect(collate)
+    aggregate.connect(aggregate_project)
+    aggregate_project.connect(collate)
 
     # Write the plan graph
     query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())

@@ -2,8 +2,6 @@
 """Operator support
 
 """
-import heapq
-import timeit
 
 
 def switch_context(from_op, to_op):

@@ -2,7 +2,6 @@
 """Query plan support
 
 """
-import heapq
 from collections import OrderedDict, deque
 
 import networkx

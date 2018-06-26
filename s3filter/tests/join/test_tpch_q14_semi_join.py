@@ -1,18 +1,14 @@
+# -*- coding: utf-8 -*-
+"""TPCH Q14 Semi Join
+
+"""
+
 import os
-import re
 from datetime import datetime, timedelta
 
 from s3filter import ROOT_DIR
-from s3filter.op.aggregate import Aggregate
-from s3filter.op.aggregate_expression import AggregateExpression
-from s3filter.op.bloom_create import BloomCreate
-from s3filter.op.collate import Collate
-from s3filter.op.hash_join import HashJoin
-from s3filter.op.join_expression import JoinExpression
-from s3filter.op.project import Project, ProjectExpression
-from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
+from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
 
 
@@ -29,170 +25,33 @@ def test_join_semi():
     query_plan = QueryPlan()
 
     # Query plan
-    # TODO: DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].
-    date = '1996-03-13'
+    date = '1993-01-01'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_scan_1 = query_plan.add_operator(SQLTableScan('part.csv',
-                                                       "select "
-                                                       "  p_partkey from S3Object "
-                                                       "where "
-                                                       "  p_brand = 'Brand#12' ",
-                                                       'part_table_scan_1',
-                                                       False))
-
-    part_scan_1_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'p_partkey')
-        ],
-        'part_scan_1_project',
-        False))
-
+    part_scan_1 = query_plan.add_operator(tpch_q14.sql_scan_part_partkey_where_brand12_operator_def('part_table_scan_1'))
+    part_scan_1_project = query_plan.add_operator(tpch_q14.project_p_partkey_operator_def('part_scan_1_project'))
     part_bloom_create = query_plan.add_operator(
-        BloomCreate('p_partkey', 'part_bloom_create', False))
-
+        tpch_q14.bloom_create_p_partkey_operator_def('part_bloom_create'))
     lineitem_scan_1 = query_plan.add_operator(
-        SQLTableScanBloomUse('lineitem.csv',
-                             "select "
-                             "  l_partkey from S3Object "
-                             "where "
-                             "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                             "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
-                             "  ( "
-                             "      (l_orderkey = '18436' and l_partkey = '164584') or "
-                             "      (l_orderkey = '18720' and l_partkey = '92764') or "
-                             "      (l_orderkey = '12482' and l_partkey = '117405') or "
-                             "      (l_orderkey = '27623' and l_partkey = '137010') or "
-
-                             "      (l_orderkey = '10407' and l_partkey = '43275') or "
-                             "      (l_orderkey = '17027' and l_partkey = '172729') or "
-                             "      (l_orderkey = '23302' and l_partkey = '18523') or "
-                             "      (l_orderkey = '27334' and l_partkey = '94308') or "
-
-                             "      (l_orderkey = '15427' and l_partkey = '125586') or "
-                             "      (l_orderkey = '11590' and l_partkey = '162359') or "
-                             "      (l_orderkey = '2945' and l_partkey = '126197') or "
-                             "      (l_orderkey = '15648' and l_partkey = '143904') "
-                             "  ) "
-                             " ".format(min_shipped_date.strftime('%Y-%m-%d'),
-                                        max_shipped_date.strftime('%Y-%m-%d'))
-                             ,
-                             'l_partkey',
-                             'lineitem_table_scan_1',
-                             False))
-
-    lineitem_scan_1_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'l_partkey')
-        ],
-        'lineitem_scan_1_project',
-        False))
-
-    part_lineitem_join_1 = query_plan.add_operator(
-        HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join_1',
-                 False))
-
+        tpch_q14.bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date,
+                                                                         'lineitem_scan_1'))
+    lineitem_scan_1_project = query_plan.add_operator(
+        tpch_q14.project_l_partkey_operator_def('lineitem_scan_1_project'))
+    part_lineitem_join_1 = query_plan.add_operator(tpch_q14.join_part_lineitem_operator_def('part_lineitem_join_1'))
     join_bloom_create = query_plan.add_operator(
-        BloomCreate('l_partkey', 'join_bloom_create', False))
-
-    part_table_scan_2 = query_plan.add_operator(SQLTableScanBloomUse('part.csv',
-                                                                     "select "
-                                                                     "  p_partkey, p_type from S3Object "
-                                                                     "where "
-                                                                     "  p_brand = 'Brand#12' ",
-                                                                     'p_partkey',
-                                                                     'part_table_scan_2',
-                                                                     False))
-
-    part_scan_2_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpression(lambda t_: t_['_1'], 'p_type')
-        ],
-        'part_scan_2_project',
-        False))
-
-    lineitem_table_scan_2 = query_plan.add_operator(
-        SQLTableScanBloomUse('lineitem.csv',
-                             "select "
-                             "  l_partkey, l_extendedprice, l_discount from S3Object "
-                             "where "
-                             "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                             "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
-                             "  ( "
-                             "      (l_orderkey = '18436' and l_partkey = '164584') or "
-                             "      (l_orderkey = '18720' and l_partkey = '92764') or "
-                             "      (l_orderkey = '12482' and l_partkey = '117405') or "
-                             "      (l_orderkey = '27623' and l_partkey = '137010') or "
-
-                             "      (l_orderkey = '10407' and l_partkey = '43275') or "
-                             "      (l_orderkey = '17027' and l_partkey = '172729') or "
-                             "      (l_orderkey = '23302' and l_partkey = '18523') or "
-                             "      (l_orderkey = '27334' and l_partkey = '94308') or "
-
-                             "      (l_orderkey = '15427' and l_partkey = '125586') or "
-                             "      (l_orderkey = '11590' and l_partkey = '162359') or "
-                             "      (l_orderkey = '2945' and l_partkey = '126197') or "
-                             "      (l_orderkey = '15648' and l_partkey = '143904') "
-                             "  ) "
-                             " ".format(
-                                 min_shipped_date.strftime('%Y-%m-%d'),
-                                 max_shipped_date.strftime('%Y-%m-%d')),
-                             'l_partkey',
-                             'lineitem_table_scan_2',
-                             False))
-
-    lineitem_scan_2_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
-            ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
-            ProjectExpression(lambda t_: t_['_2'], 'l_discount')
-        ],
-        'lineitem_scan_2_project',
-        False))
-
-    part_lineitem_join_2 = query_plan.add_operator(
-        HashJoin(JoinExpression('p_partkey', 'l_partkey'),
-                 'part_lineitem_join_2',
-                 False))
-
-    def ex1(t_):
-
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
-
-        rx = re.compile('^PROMO.*$')
-
-        if rx.search(t_['p_type']):  # p_type
-            v2 = v1
-        else:
-            v2 = 0.0
-
-        return v2
-
-    def ex2(t_):
-
-        v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
-
-        return v1
-
-    aggregate = query_plan.add_operator(
-        Aggregate(
-            [
-                AggregateExpression(AggregateExpression.SUM, ex1),
-                AggregateExpression(AggregateExpression.SUM, ex2)
-            ],
-            'aggregate', False))
-
-    project = query_plan.add_operator(
-        Project(
-            [
-                ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
-            ],
-            'project',
-            False))
-
-    collate = query_plan.add_operator(Collate('collate', False))
+        tpch_q14.bloom_create_l_partkey_operator_def('join_bloom_create'))
+    part_scan_2 = query_plan.add_operator(
+        tpch_q14.bloom_scan_part_partkey_type_brand12_operator_def('part_table_scan_2'))
+    part_scan_2_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_scan_2_project'))
+    lineitem_scan_2 = query_plan.add_operator(
+        tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, 'lineitem_scan_2'))
+    lineitem_scan_2_project = query_plan.add_operator(
+        tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_scan_2_project'))
+    part_lineitem_join_2 = query_plan.add_operator(tpch_q14.join_part_lineitem_operator_def('part_lineitem_join_2'))
+    aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate'))
+    aggregate_project = query_plan.add_operator(tpch_q14.project_promo_revenue_operator_def('aggregate_project'))
+    collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate'))
 
     part_scan_1.connect(part_scan_1_project)
     part_scan_1_project.connect(part_bloom_create)
@@ -201,15 +60,15 @@ def test_join_semi():
     lineitem_scan_1.connect(lineitem_scan_1_project)
     part_lineitem_join_1.connect_right_producer(lineitem_scan_1_project)
     part_lineitem_join_1.connect(join_bloom_create)
-    join_bloom_create.connect(part_table_scan_2)
-    join_bloom_create.connect(lineitem_table_scan_2)
-    part_table_scan_2.connect(part_scan_2_project)
+    join_bloom_create.connect(part_scan_2)
+    join_bloom_create.connect(lineitem_scan_2)
+    part_scan_2.connect(part_scan_2_project)
     part_lineitem_join_2.connect_left_producer(part_scan_2_project)
-    lineitem_table_scan_2.connect(lineitem_scan_2_project)
+    lineitem_scan_2.connect(lineitem_scan_2_project)
     part_lineitem_join_2.connect_right_producer(lineitem_scan_2_project)
     part_lineitem_join_2.connect(aggregate)
-    aggregate.connect(project)
-    project.connect(collate)
+    aggregate.connect(aggregate_project)
+    aggregate_project.connect(collate)
 
     # Write the plan graph
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
@@ -235,4 +94,4 @@ def test_join_semi():
     assert collate.tuples()[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [33.42623264199327]
+    assert collate.tuples()[1] == [15.090116526324298]
