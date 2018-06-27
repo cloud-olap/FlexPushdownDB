@@ -1,13 +1,13 @@
+# -*- coding: utf-8 -*-
+"""TPCH Q17 Bloom Join
+
+"""
+
 import os
 
 from s3filter import ROOT_DIR
-from s3filter.op.bloom_create import BloomCreate
-from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
-from s3filter.tests.join.test_tpch_q17_baseline_join import part_scan_op, part_project_op, lineitem_project_op, \
-    part_line_item_join_op, lineitem_avg_group_op, lineitem_part_avg_group_project_op, \
-    part_lineitem_join_avg_group_op, lineitem_filter_op, extendedprice_sum_aggregate_op, \
-    extendedprice_sum_aggregate_project_op, collate_op
+from s3filter.query import tpch_q17
 from s3filter.util.test_util import gen_test_id
 
 
@@ -16,50 +16,45 @@ def test():
     :return: None
     """
 
+    print('')
+    print("TPCH Q17 Bloom Join")
+    print("-------------------")
+
     query_plan = QueryPlan()
 
     # Define the operators
-    part_scan = query_plan.add_operator(part_scan_op())
-    part_project = query_plan.add_operator(part_project_op())
-    lineitem_project = query_plan.add_operator(lineitem_project_op())
-    part_bloom_create = query_plan.add_operator(
-        BloomCreate('p_partkey', 'part_bloom_create', False))
+    part_scan = query_plan.add_operator(tpch_q17.sql_scan_select_partkey_where_brand_container_op('part_scan'))
+    part_project = query_plan.add_operator(tpch_q17.project_partkey_op('part_project'))
+    lineitem_project = query_plan.add_operator(
+        tpch_q17.project_orderkey_partkey_quantity_extendedprice_op('lineitem_project'))
+    part_bloom_create = query_plan.add_operator(tpch_q17.bloom_create_partkey_op('part_bloom_create'))
     lineitem_bloom_use = query_plan.add_operator(
-        SQLTableScanBloomUse('lineitem.csv',
-                             "select "
-                             "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
-                             "from "
-                             "  S3Object "
-                             "where "
-                             "  l_partkey = '182405' ",
-                             'l_partkey',
-                             'lineitem_bloom_use',
-                             False))
-    part_lineitem_join = query_plan.add_operator(part_line_item_join_op())
-    lineitem_part_avg_group = query_plan.add_operator(lineitem_avg_group_op())
-    lineitem_part_avg_group_project = query_plan.add_operator(lineitem_part_avg_group_project_op())
-    part_lineitem_join_avg_group_join = query_plan.add_operator(part_lineitem_join_avg_group_op())
-    lineitem_filter = query_plan.add_operator(lineitem_filter_op())
-    extendedprice_sum_aggregate = query_plan.add_operator(extendedprice_sum_aggregate_op())
-    extendedprice_sum_aggregate_project = query_plan.add_operator(extendedprice_sum_aggregate_project_op())
-    collate = query_plan.add_operator(collate_op())
+        tpch_q17.bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(
+            'lineitem_bloom_use'))
+    part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join'))
+    lineitem_part_avg_group = query_plan.add_operator(tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group'))
+    lineitem_part_avg_group_project = query_plan.add_operator(
+        tpch_q17.project_partkey_avg_quantity_op('lineitem_part_avg_group_project'))
+    part_lineitem_join_avg_group_join = query_plan.add_operator(
+        tpch_q17.join_l_partkey_p_partkey_op('part_lineitem_join_avg_group_join'))
+    lineitem_filter = query_plan.add_operator(tpch_q17.filter_lineitem_quantity_op('lineitem_filter'))
+    extendedprice_sum_aggregate = query_plan.add_operator(
+        tpch_q17.aggregate_sum_extendedprice_op('extendedprice_sum_aggregate'))
+    extendedprice_sum_aggregate_project = query_plan.add_operator(
+        tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project'))
+    collate = query_plan.add_operator(tpch_q17.collate_op('collate'))
 
     # Connect the operators
     part_scan.connect(part_project)
     part_project.connect(part_bloom_create)
     part_bloom_create.connect(lineitem_bloom_use)
-
     lineitem_bloom_use.connect(lineitem_project)
-
     part_lineitem_join.connect_left_producer(part_project)
     part_lineitem_join.connect_right_producer(lineitem_project)
-
     part_lineitem_join.connect(lineitem_part_avg_group)
     lineitem_part_avg_group.connect(lineitem_part_avg_group_project)
-
     part_lineitem_join_avg_group_join.connect_left_producer(lineitem_part_avg_group_project)
     part_lineitem_join_avg_group_join.connect_right_producer(part_lineitem_join)
-
     part_lineitem_join_avg_group_join.connect(lineitem_filter)
     lineitem_filter.connect(extendedprice_sum_aggregate)
     extendedprice_sum_aggregate.connect(extendedprice_sum_aggregate_project)

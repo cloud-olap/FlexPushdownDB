@@ -12,6 +12,8 @@ class UniversalSQLHashFunction(object):
     number of hash functions with good hashing properties are required and can be expressed as a SQL expression using
     only the operators *, +, / and % (which are the subset of arithmetical operators supported by s3 select)
 
+    TODO: Implement this for strings
+
     """
 
     def __init__(self, m):

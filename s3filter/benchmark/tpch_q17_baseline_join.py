@@ -6,95 +6,9 @@
 import os
 
 from s3filter import ROOT_DIR
-from s3filter.op.aggregate import Aggregate
-from s3filter.op.aggregate_expression import AggregateExpression
-from s3filter.op.collate import Collate
-from s3filter.op.filter import Filter
-from s3filter.op.group import Group
-from s3filter.op.hash_join import HashJoin
-from s3filter.op.join_expression import JoinExpression
-from s3filter.op.predicate_expression import PredicateExpression
-from s3filter.op.project import ProjectExpression, Project
-from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
+from s3filter.query import tpch_q17
 from s3filter.util.test_util import gen_test_id
-
-
-def collate_op():
-    return Collate('collate', False)
-
-
-def extendedprice_sum_aggregate_project_op():
-    """with extendedprice_sum_aggregate_project as (
-    select l_extendedprice / 7.0 as avg_yearly from extendedprice_sum_aggregate
-    )
-
-    :return:
-    """
-
-    return Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'] / 7.0, 'avg_yearly')
-        ],
-        'extendedprice_sum_aggregate_project',
-        False)
-
-
-# with extendedprice_sum_aggregate as (select sum(l_extendedprice) from filter_join_2)
-def extendedprice_sum_aggregate_op():
-    return Aggregate([AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['l_extendedprice']))],
-                     'extendedprice_sum_aggregate', False)
-
-
-# with filter_join_2 as (select * from part_lineitem_join_avg_group_join where l_quantity < avg_l_quantity_computed00)
-def lineitem_filter_op():
-    return Filter(PredicateExpression(lambda t_: float(t_['l_quantity']) < t_['avg_l_quantity_computed00']),
-                  'lineitem_filter', False)
-
-
-def part_lineitem_join_avg_group_op():
-    """with part_lineitem_join_avg_group_join as (
-    select * from part_lineitem_join, lineitem_part_avg_group_project where p_partkey = l_partkey
-    )
-
-    :return:
-    """
-    return HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'part_lineitem_join_avg_group_join', False)
-
-
-def lineitem_part_avg_group_project_op():
-    """with lineitem_part_avg_group_project as (
-    select l_partkey, 0.2 * avg(l_quantity) as l_quantity_computed00 from lineitem_part_avg_group
-    )
-
-    :return:
-    """
-    return Project(
-        [
-            # l_partkey
-            ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
-            # 0.2 * avg
-            ProjectExpression(lambda t_: 0.2 * t_['_1'], 'avg_l_quantity_computed00')
-        ],
-        'lineitem_part_avg_group_project',
-        False)
-
-
-# with lineitem_part_avg_group as (select avg(l_quantity) from part_lineitem_join group by l_partkey)
-def lineitem_avg_group_op():
-    return Group(
-        ['l_partkey'],  # l_partkey
-        [
-            # avg(l_quantity)
-            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['l_quantity']))
-        ],
-        'lineitem_part_avg_group',
-        False)
-
-
-# with part_lineitem_join as (select * from part_scan, lineitem_scan where p_partkey = l_partkey)
-def part_line_item_join_op():
-    return HashJoin(JoinExpression('p_partkey', 'l_partkey'), 'part_lineitem_join', False)
 
 
 def main():
@@ -122,81 +36,42 @@ def main():
     query_plan = QueryPlan()
 
     # Define the operators
-    # with part_scan as (select * from part)
-    part_scan = query_plan.add_operator(SQLTableScan('part.csv',
-                                                     "select "
-                                                     "  * "
-                                                     "from "
-                                                     "  S3Object ",
-                                                     'part_scan',
-                                                     False))
-
-    # with lineitem_scan as (select * from lineitem)
-    lineitem_scan = query_plan.add_operator(SQLTableScan('lineitem.csv',
-                                                         "select "
-                                                         "  * "
-                                                         "from "
-                                                         "  S3Object ",
-                                                         'lineitem_scan',
-                                                         False))
-
-    # with part_project as (select _0 as p_partkey from part_scan)
-    part_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
-            ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
-            ProjectExpression(lambda t_: t_['_6'], 'p_container')
-        ],
-        'part_project',
-        False))
-
-    part_filter = query_plan.add_operator(Filter(
-        PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and t_['p_container'] == 'SM PACK'),
-        'part_filter',
-        False))
-
-    # with part_project as (select _0 as p_partkey from part_scan)
-    lineitem_project = query_plan.add_operator(Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
-            ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
-            ProjectExpression(lambda t_: t_['_4'], 'l_quantity'),
-            ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice')
-        ],
-        'lineitem_project',
-        False))
-
-    part_lineitem_join = query_plan.add_operator(part_line_item_join_op())
-    lineitem_part_avg_group = query_plan.add_operator(lineitem_avg_group_op())
-    lineitem_part_avg_group_project = query_plan.add_operator(lineitem_part_avg_group_project_op())
-    part_lineitem_join_avg_group_join = query_plan.add_operator(part_lineitem_join_avg_group_op())
-    lineitem_filter = query_plan.add_operator(lineitem_filter_op())
-    extendedprice_sum_aggregate = query_plan.add_operator(extendedprice_sum_aggregate_op())
-    extendedprice_sum_aggregate_project = query_plan.add_operator(extendedprice_sum_aggregate_project_op())
-    collate = query_plan.add_operator(collate_op())
+    part_scan = query_plan.add_operator(tpch_q17.sql_scan_part_select_all_op('part_scan'))
+    lineitem_scan = query_plan.add_operator(tpch_q17.sql_scan_lineitem_select_all_op('lineitem_scan'))
+    part_project = query_plan.add_operator(tpch_q17.project_partkey_brand_container_op('part_project'))
+    part_filter = query_plan.add_operator(tpch_q17.filter_brand_container_op('part_filter'))
+    lineitem_project = query_plan.add_operator(
+        tpch_q17.project_lineitem_orderkey_partkey_quantity_extendedprice_op('lineitem_project'))
+    part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join'))
+    lineitem_part_avg_group = query_plan.add_operator(tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group'))
+    lineitem_part_avg_group_project = query_plan.add_operator(
+        tpch_q17.project_partkey_avg_quantity_op('lineitem_part_avg_group_project'))
+    part_lineitem_join_avg_group_join = query_plan.add_operator(
+        tpch_q17.join_l_partkey_p_partkey_op('part_lineitem_join_avg_group_join'))
+    lineitem_filter = query_plan.add_operator(tpch_q17.filter_lineitem_quantity_op('lineitem_filter'))
+    extendedprice_sum_aggregate = query_plan.add_operator(
+        tpch_q17.aggregate_sum_extendedprice_op('extendedprice_sum_aggregate'))
+    extendedprice_sum_aggregate_project = query_plan.add_operator(
+        tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project'))
+    collate = query_plan.add_operator(tpch_q17.collate_op('collate'))
 
     # Connect the operators
     part_scan.connect(part_project)
     lineitem_scan.connect(lineitem_project)
-
     part_project.connect(part_filter)
-
     part_lineitem_join.connect_left_producer(part_filter)
     part_lineitem_join.connect_right_producer(lineitem_project)
-
     part_lineitem_join.connect(lineitem_part_avg_group)
     lineitem_part_avg_group.connect(lineitem_part_avg_group_project)
-
     part_lineitem_join_avg_group_join.connect_left_producer(lineitem_part_avg_group_project)
     part_lineitem_join_avg_group_join.connect_right_producer(part_lineitem_join)
-
     part_lineitem_join_avg_group_join.connect(lineitem_filter)
     lineitem_filter.connect(extendedprice_sum_aggregate)
     extendedprice_sum_aggregate.connect(extendedprice_sum_aggregate_project)
     extendedprice_sum_aggregate_project.connect(collate)
 
     # Write the plan graph
-    query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+    query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())
 
     # Start the query
     query_plan.execute()
@@ -220,3 +95,7 @@ def main():
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     assert collate.tuples()[1] == [372414.28999999946]
+
+
+if __name__ == "__main__":
+    main()

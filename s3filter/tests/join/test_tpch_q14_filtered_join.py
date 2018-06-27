@@ -27,7 +27,7 @@ def test_join_filtered():
     lineitem_scan = query_plan.add_operator(
         tpch_q14.sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def(min_shipped_date,
                                                                                               max_shipped_date,
-                                                                                        'lineitem_scan'))
+                                                                                              'lineitem_scan'))
     lineitem_project = query_plan.add_operator(
         tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_project'))
     part_scan = query_plan.add_operator(

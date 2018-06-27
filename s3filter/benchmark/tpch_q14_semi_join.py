@@ -29,7 +29,8 @@ def main():
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_scan_1 = query_plan.add_operator(tpch_q14.sql_scan_part_partkey_where_brand12_operator_def('part_table_scan_1'))
+    part_scan_1 = query_plan.add_operator(
+        tpch_q14.sql_scan_part_partkey_where_brand12_operator_def('part_table_scan_1'))
     part_scan_1_project = query_plan.add_operator(tpch_q14.project_p_partkey_operator_def('part_scan_1_project'))
     part_bloom_create = query_plan.add_operator(
         tpch_q14.bloom_create_p_partkey_operator_def('part_bloom_create'))

@@ -43,6 +43,10 @@ class QueryPlan(object):
         :return:
         """
 
+        if operator.name in self.operators:
+            raise Exception("Cannot add multiple operators with same name. "
+                            "Operator '{}' already added".format(operator.name))
+
         self.operators[operator.name] = operator
         sorted_operators = sorted(self.operators.values(), key=lambda o: o.name)
         self.operators = OrderedDict((o.name, o) for o in sorted_operators)

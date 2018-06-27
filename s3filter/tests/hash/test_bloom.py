@@ -138,6 +138,7 @@ def test_sliced_bloom_sql():
     finally:
         cur.close()
 
+# TODO: Reimplement these
 
 # def test_random_bloom_sql():
 #     sample_size = 100
