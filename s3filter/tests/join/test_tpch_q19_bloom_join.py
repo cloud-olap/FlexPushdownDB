@@ -6,7 +6,15 @@ from s3filter.query import tpch_q19
 from s3filter.util.test_util import gen_test_id
 
 
-def test_join_bloom():
+def test_streamed():
+    run(True)
+
+
+def test_batched():
+    run(False)
+
+
+def run(is_streamed):
     """
 
     :return: None
@@ -16,7 +24,7 @@ def test_join_bloom():
     print("TPCH Q19 Bloom Join")
     print("-------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Define the operators
     part_scan = query_plan.add_operator(tpch_q19.sql_scan_part_partkey_brand_size_container_where_extra_filtered_op())

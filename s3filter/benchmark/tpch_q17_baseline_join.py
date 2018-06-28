@@ -12,6 +12,11 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
+    run(True)
+    run(False)
+
+
+def run(is_streamed):
     """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
 
     This works by:
@@ -33,7 +38,7 @@ def main():
     print("TPCH Q17 Baseline Join")
     print("----------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Define the operators
     part_scan = query_plan.add_operator(tpch_q17.sql_scan_part_select_all_op('part_scan'))

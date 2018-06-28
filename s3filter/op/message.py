@@ -8,20 +8,7 @@ from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
 
 
-class Message(object):
-    """Base Message class
-
-    """
-
-    def __init__(self, content):
-        """Creates a new Message
-
-        :param content: The content of the message
-        """
-        self.content = content
-
-
-class TupleMessage(Message):
+class TupleMessage(object):
     """Message containing a tuple.
 
     """
@@ -36,10 +23,9 @@ class TupleMessage(Message):
             raise Exception("Message content type is {}. Type must be Tuple".format(type(tuple_)))
 
         self.tuple_ = tuple_
-        super(TupleMessage, self).__init__(tuple_)
 
 
-class BloomMessage(Message):
+class BloomMessage(object):
     """Message containing a bloom filter.
 
     """
@@ -58,4 +44,3 @@ class BloomMessage(Message):
                                     ScalableBloomFilter.__class__.__name__))
 
         self.bloom_filter = bloom_filter
-        super(BloomMessage, self).__init__(bloom_filter)

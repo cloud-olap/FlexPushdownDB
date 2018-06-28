@@ -5,18 +5,20 @@
 from collections import OrderedDict
 
 
-class Tuple(list):
-    """Wrapper class for a tuple (which is in fact a list - at present anyway). Just a place for utility methods.
+# class Tuple(list):
+#     """Wrapper class for a tuple (which is in fact a list - at present anyway). Just a place for utility methods.
+#
+#     """
+#
+#     def __init__(self, seq=()):
+#         """Creates a new tuple.
+#
+#         :param seq: The sequence to create the tuple from
+#         """
+#         super(Tuple, self).__init__(seq)
 
-    """
-
-    def __init__(self, seq=()):
-        """Creates a new tuple.
-
-        :param seq: The sequence to create the tuple from
-        """
-        super(Tuple, self).__init__(seq)
-
+# Tuple is just a type alias for list
+Tuple = list
 
 # class LabelledTuple(Tuple):
 #     """Wrapper class for a tuple which overlays labels. Simply means a tuple field can be accessed via a

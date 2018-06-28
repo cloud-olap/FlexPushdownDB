@@ -104,6 +104,8 @@ class Sort(Operator):
             t = heappop(self.heap).tuple
             self.send(TupleMessage(t), self.consumers)
 
+        del self.heap
+
         Operator.on_producer_completed(self, producer)
 
 

@@ -195,6 +195,9 @@ class HashJoin(Operator):
             # Join and send the joined data tuples
             self.join_field_values()
 
+            del self.__l_tuples
+            del self.__r_tuples
+
             Operator.on_producer_completed(self, producer)
 
     def join_field_values(self):

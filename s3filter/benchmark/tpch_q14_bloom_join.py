@@ -13,6 +13,11 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
+    run(True)
+    run(False)
+
+
+def run(is_streamed):
     """
 
     :return: None
@@ -22,7 +27,7 @@ def main():
     print("TPCH Q14 Bloom Join")
     print("-------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Query plan
     # DATE is the first day of a month randomly selected from a random year within [1993 .. 1997].

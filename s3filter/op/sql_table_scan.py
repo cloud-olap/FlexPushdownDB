@@ -105,8 +105,7 @@ class SQLTableScan(Operator):
 
             self.send(TupleMessage(Tuple(t)), self.consumers)
 
-        if not self.is_completed():
-            self.complete()
+        del tuples
 
         self.op_metrics.bytes_scanned = cur.bytes_scanned
         self.op_metrics.bytes_processed = cur.bytes_processed
@@ -114,6 +113,9 @@ class SQLTableScan(Operator):
 
         self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
         self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
+
+        if not self.is_completed():
+            self.complete()
 
         self.op_metrics.timer_stop()
 

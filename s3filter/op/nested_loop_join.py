@@ -195,6 +195,9 @@ class NestedLoopJoin(Operator):
             # Join and send the joined data tuples
             self.nested_loop()
 
+            del self.__l_tuples
+            del self.__r_tuples
+
             Operator.on_producer_completed(self, producer)
 
     def nested_loop(self):

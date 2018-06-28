@@ -12,6 +12,11 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
+    run(True)
+    run(False)
+
+
+def run(is_streamed):
     """
 
     :return: None
@@ -21,7 +26,7 @@ def main():
     print("TPCH Q19 Filtered Join")
     print("----------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Define the operators
     lineitem_scan = query_plan.add_operator(

@@ -8,6 +8,7 @@ import csv
 import s3filter.util.constants
 import io
 
+from s3filter.util.py_util import PYTHON_3
 from s3filter.util.timer import Timer
 
 
@@ -133,7 +134,10 @@ class Cursor(object):
 
                         # Parse CSV
                         record_rdr = csv.reader([record_str])
-                        record = record_rdr.next()
+                        if PYTHON_3:
+                            record = next(record_rdr)
+                        else:
+                            record = record_rdr.next()
 
                         # print("Parsed: {}".format(record))
 

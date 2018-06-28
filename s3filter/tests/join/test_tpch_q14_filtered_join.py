@@ -7,7 +7,15 @@ from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
 
 
-def test_join_filtered():
+def test_streamed():
+    run(True)
+
+
+def test_batched():
+    run(False)
+
+
+def run(is_streamed):
     """The filtered tst uses hash joins but first projections and filtering is pushed down to s3.
 
     :return: None
@@ -17,7 +25,7 @@ def test_join_filtered():
     print("TPCH Q14 Filtered Join")
     print("----------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Query plan
     date = '1993-01-01'

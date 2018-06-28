@@ -2,7 +2,7 @@
 """Project operator query tests
 
 """
-import cProfile
+
 import os
 import pstats
 from datetime import datetime
@@ -129,9 +129,10 @@ def test_project_perf():
     :return: None
     """
 
-    num_rows = 100000
+    num_rows = 1000000
+    profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, False)
 
     # Query plan
     random_col_defs = [
@@ -156,6 +157,8 @@ def test_project_perf():
         'project',
         False))
 
+    project.set_profiled(True, profile_file_name)
+
     collate = query_plan.add_operator(Collate('collate', False))
 
     random_table_scan.connect(project)
@@ -165,8 +168,7 @@ def test_project_perf():
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
     # Start the query
-    profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
-    cProfile.runctx('query_plan.execute()', globals(), locals(), profile_file_name)
+    query_plan.execute()
 
     # collate.print_tuples()
 

@@ -82,7 +82,15 @@ from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
 
 
-def test_join_baseline():
+def test_streamed():
+    run(True)
+
+
+def test_batched():
+    run(False)
+
+
+def run(is_streamed):
     """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
 
     :return: None
@@ -92,7 +100,7 @@ def test_join_baseline():
     print("TPCH Q14 Baseline Join")
     print("----------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Query plan
     # This date is chosen because it triggers the filter to filter out 1 of the rows in the root data set.

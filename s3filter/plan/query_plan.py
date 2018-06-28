@@ -17,8 +17,8 @@ class QueryPlan(object):
 
     """
 
-    def __init__(self, operators=None):
-        # type: (list) -> None
+    def __init__(self, operators=None, is_streamed=True):
+        # type: (list, bool) -> None
         """
 
         :param operators:
@@ -35,6 +35,8 @@ class QueryPlan(object):
             for o in operators:
                 self.operators[o.name] = o
 
+        self.is_streamed = is_streamed
+
     def add_operator(self, operator):
         """Adds the operator to the list of operators in the plan. This method ensures the operators are sorted by
         operator name - which is important only for retrieving the root operators.
@@ -46,6 +48,8 @@ class QueryPlan(object):
         if operator.name in self.operators:
             raise Exception("Cannot add multiple operators with same name. "
                             "Operator '{}' already added".format(operator.name))
+
+        operator.set_streamed(self.is_streamed)
 
         self.operators[operator.name] = operator
         sorted_operators = sorted(self.operators.values(), key=lambda o: o.name)
@@ -166,6 +170,7 @@ class QueryPlan(object):
         print("Plan")
         print("----")
 
+        print("is_streamed: {}".format(self.is_streamed))
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
 
         print("")

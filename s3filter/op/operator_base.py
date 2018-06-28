@@ -2,7 +2,7 @@
 """Operator support
 
 """
-
+import cProfile
 
 def switch_context(from_op, to_op):
     """Handles a context switch from one operator to another. This is used to stop the sending operators
@@ -58,6 +58,13 @@ class Operator(object):
 
         self.__completed = False
 
+        self.__buffer = []
+
+        self.is_streamed = True
+
+        self.is_profiled = False
+        self.profile_file_name = None
+
     def is_completed(self):
         """Accessor for completed status.
 
@@ -112,13 +119,30 @@ class Operator(object):
         :return: None
         """
 
-        for op in operators:
-            self.fire_on_receive(message, op)
+        if self.is_streamed:
+            for op in operators:
+                self.fire_on_receive(message, op)
+        else:
+            self.__buffer.append(message)
 
     def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
         consumer.on_receive(message, self)
         switch_context(consumer, self)
+
+    def batch_fire_on_receive(self, messages, consumer):
+
+        def iterate_messages():
+
+            switch_context(self, consumer)
+            for m_ in messages:
+                consumer.on_receive(m_, self)
+            switch_context(consumer, self)
+
+        if not consumer.is_profiled:
+            iterate_messages()
+        else:
+            cProfile.runctx('iterate_messages()', globals(), locals(), consumer.profile_file_name)
 
     def fire_on_producer_completed(self, consumer):
         switch_context(self, consumer)
@@ -145,6 +169,12 @@ class Operator(object):
 
             self.__completed = True
 
+            if not self.is_streamed:
+                for c in self.consumers:
+                    self.batch_fire_on_receive(self.__buffer, c)
+
+                del self.__buffer
+
             for p in self.producers:
                 self.fire_on_consumer_completed(p)
 
@@ -153,6 +183,13 @@ class Operator(object):
 
         else:
             raise Exception("Cannot complete an already completed operator")
+
+    def set_streamed(self, is_streamed):
+        self.is_streamed = is_streamed
+
+    def set_profiled(self, is_profiled, profile_file_name=None):
+        self.is_profiled = is_profiled
+        self.profile_file_name = profile_file_name
 
     def on_producer_completed(self, _producer):
         """Handles a signal from producing operators that they have completed what they needed to do. This is useful in

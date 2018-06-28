@@ -12,7 +12,15 @@ from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
 
 
-def test_join_semi():
+def test_streamed():
+    run(True)
+
+
+def test_batched():
+    run(False)
+
+
+def run(is_streamed):
     """
 
     :return: None
@@ -22,7 +30,7 @@ def test_join_semi():
     print("TPCH Q14 Semi Join")
     print("------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Query plan
     date = '1993-01-01'

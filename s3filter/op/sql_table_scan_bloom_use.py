@@ -104,6 +104,8 @@ class SQLTableScanBloomUse(Operator):
 
             self.send_field_values(t)
 
+        del tuples
+
         self.op_metrics.bytes_scanned = cur.bytes_scanned
         self.op_metrics.bytes_processed = cur.bytes_processed
         self.op_metrics.bytes_returned = cur.bytes_returned

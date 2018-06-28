@@ -122,6 +122,8 @@ class BloomCreate(Operator):
             lt = IndexedTuple.build(t, self.__field_names)
             bloom_filter.add(int(lt[self.__bloom_field_name]))
 
+        del self.__tuples
+
         # Send the bloom filter
         self.__send_bloom_filter(bloom_filter)
 

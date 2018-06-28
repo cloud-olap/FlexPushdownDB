@@ -13,6 +13,11 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
+    run(True)
+    run(False)
+
+
+def run(is_streamed):
     """The baseline tst uses hash joins with no projection and no filtering pushed down to s3.
 
     :return: None
@@ -22,7 +27,7 @@ def main():
     print("TPCH Q14 Baseline Join")
     print("----------------------")
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(None, is_streamed)
 
     # Query plan
     date = '1993-01-01'
