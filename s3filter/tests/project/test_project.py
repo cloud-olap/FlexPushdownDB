@@ -175,7 +175,6 @@ def test_project_perf():
     # Write the metrics
     s = pstats.Stats(profile_file_name)
     s.strip_dirs().sort_stats("time").print_stats()
-
     query_plan.print_metrics()
 
     # Assert the results

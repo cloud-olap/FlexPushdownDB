@@ -3,7 +3,7 @@
 
 """
 
-from s3filter.benchmark import tpch_q17_baseline_join, tpch_q17_filtered_join, tpch_q17_bloom_join
+from s3filter.benchmark.tpch import tpch_q17_baseline_join, tpch_q17_filtered_join, tpch_q17_bloom_join
 
 
 def main():

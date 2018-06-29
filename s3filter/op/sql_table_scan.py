@@ -2,6 +2,7 @@
 """
 
 """
+import cProfile
 
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
@@ -72,6 +73,13 @@ class SQLTableScan(Operator):
         :return: None
         """
 
+        if not self.is_profiled:
+            self.do_start()
+        else:
+            cProfile.runctx('self.do_start()', globals(), locals(), self.profile_file_name)
+
+    def do_start(self):
+
         self.op_metrics.timer_start()
 
         cur = Cursor().select(self.s3key, self.s3sql)
@@ -110,7 +118,6 @@ class SQLTableScan(Operator):
         self.op_metrics.bytes_scanned = cur.bytes_scanned
         self.op_metrics.bytes_processed = cur.bytes_processed
         self.op_metrics.bytes_returned = cur.bytes_returned
-
         self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
         self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
 

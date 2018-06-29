@@ -2,14 +2,14 @@
 """Join Benchmarks
 
 """
-
-from s3filter.benchmark import tpch_q14, tpch_q17, tpch_q19
+from s3filter.benchmark.sql_table_scan import sql_table_scan
+from s3filter.benchmark.tpch import tpch
 
 
 def main():
-    tpch_q14.main()
-    tpch_q17.main()
-    tpch_q19.main()
+
+    # tpch.main()
+    sql_table_scan.main()
 
 
 if __name__ == "__main__":

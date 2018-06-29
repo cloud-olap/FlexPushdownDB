@@ -1,5 +1,5 @@
 ---
 
 ansible_user: ubuntu
-ansible_ssh_host: ec2-54-152-8-169.compute-1.amazonaws.com
+ansible_ssh_host: ec2-54-91-128-248.compute-1.amazonaws.com
 ansible_ssh_private_key_file: /home/matt/Work/s3filter/private/matt_youill_aws.pem
