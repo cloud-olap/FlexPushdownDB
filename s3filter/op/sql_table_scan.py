@@ -55,6 +55,9 @@ class SQLTableScan(Operator):
 
     """
 
+    def on_receive(self, message, producer_name):
+        raise NotImplementedError
+
     def __init__(self, s3key, s3sql, name, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 

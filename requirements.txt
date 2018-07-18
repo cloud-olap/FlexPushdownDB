@@ -1,4 +1,6 @@
-dill>=0.2.8
+ray>=0.5
+dask>=0.18
+dill>=0.2
 networkx>=2.1
 numpy>=1.14
 primesieve>=1.3

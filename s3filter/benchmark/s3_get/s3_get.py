@@ -4,11 +4,7 @@
 """
 
 import boto3
-import csv
-import s3filter.util.constants
-import io
 
-from s3filter.util.py_util import PYTHON_3
 from s3filter.util.timer import Timer
 
 
@@ -46,7 +42,7 @@ class S3Get(object):
 
         bytes_ = streaming_body.read(1024)
         self.time_to_first_record_response = self.timer.elapsed()
-        while(bytes_):
+        while bytes_:
             self.records_events += 1
             self.bytes_returned += len(bytes_)
             bytes_ = streaming_body.read(1024)

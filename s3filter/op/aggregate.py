@@ -57,11 +57,11 @@ class Aggregate(Operator):
         # List of expression contexts, each storing the accumulated aggregate result and local vars.
         self.__expression_contexts = None
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, m, producer_name):
         """Event handler for receiving a message.
 
         :param m: The message
-        :param _producer: The producer that sent the message
+        :param producer_name: The producer that sent the message
         :return: None
         """
 
@@ -73,7 +73,7 @@ class Aggregate(Operator):
     def on_producer_completed(self, producer_name):
         """Event handler for a producer completion event.
 
-        :param producer: The producer that completed.
+        :param producer_name: The producer that completed.
         :return: None
         """
 

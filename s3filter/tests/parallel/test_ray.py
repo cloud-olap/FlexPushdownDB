@@ -15,6 +15,7 @@ get_message_type = 2
 
 pytest.ray_initialised = False
 
+
 class Envelope(object):
 
     @staticmethod

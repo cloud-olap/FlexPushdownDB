@@ -2,7 +2,6 @@
 """Query plan support
 
 """
-import time
 from collections import OrderedDict, deque
 from multiprocessing import Queue
 

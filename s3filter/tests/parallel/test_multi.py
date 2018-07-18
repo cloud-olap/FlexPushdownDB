@@ -64,7 +64,7 @@ def receiver(num_messages, q):
         done = False
         while not done:
             buffer_ = q.get(True)
-            for m in buffer_:
+            for _ in buffer_:
                 # print("receive {}".format(m))
                 c += 1
                 if c >= num_messages:

@@ -10,6 +10,12 @@ class TableScan(SQLTableScan):
 
     """
 
+    def on_producer_completed(self, producer_name):
+        raise NotImplementedError
+
+    def on_receive(self, message, producer_name):
+        raise NotImplementedError
+
     def __init__(self, s3key, name, log_enabled):
         """Creates a new TableScan operator using the given s3 object key
 

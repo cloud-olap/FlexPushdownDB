@@ -5,11 +5,9 @@
 
 import sys
 
-import dill
-
-from s3filter.plan.op_metrics import OpMetrics
-from s3filter.op.operator_base import Operator, EvalMessage
 from s3filter.op.message import TupleMessage
+from s3filter.op.operator_base import Operator
+from s3filter.plan.op_metrics import OpMetrics
 
 
 class Collate(Operator):
@@ -69,7 +67,7 @@ class Collate(Operator):
 
         print('')
 
-        if tuples== None:
+        if tuples is None:
             tuples = self.__tuples
 
         field_names = False

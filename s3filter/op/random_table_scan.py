@@ -79,6 +79,9 @@ class RandomDateColumnDef(RandomColumnDef):
 
 class RandomTableScan(Operator):
 
+    def on_receive(self, message, producer_name):
+        raise NotImplementedError
+
     def __init__(self, num_rows, col_defs, name, log_enabled):
 
         super(RandomTableScan, self).__init__(name, RandomTableScanMetrics(), log_enabled)
