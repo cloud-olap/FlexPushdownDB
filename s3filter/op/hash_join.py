@@ -96,26 +96,26 @@ class HashJoin(Operator):
         self.__r_producer_name = producer.name
         Operator.connect(producer, self)
 
-    def on_receive(self, m, producer):
+    def on_receive(self, m, producer_name):
         """Handles the event of receiving a new message from a producer.
 
         :param m: The received message
-        :param producer: The producer of the tuple
+        :param producer_name: The producer of the tuple
         :return: None
         """
 
         if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_, producer)
+            self.on_receive_tuple(m.tuple_, producer_name)
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_, producer):
+    def on_receive_tuple(self, tuple_, producer_name):
         """Check that the tuple has been produced by a connected producer, and contains a field in the
         join expression. If it is from a producer we haven't seen before store its data as field names, otherwise add
         it as a values tuple.
 
         :param tuple_: The received tuple
-        :param producer: The producer of the tuple
+        :param producer_name: The producer of the tuple
         :return: None
         """
 
@@ -127,7 +127,7 @@ class HashJoin(Operator):
             raise Exception("Right producer is not connected")
 
         # Check which producer sent the tuple
-        if producer.name == self.__l_producer_name:
+        if producer_name == self.__l_producer_name:
 
             if self.__l_field_names is None:
                 if self.join_expr.l_field in tuple_:
@@ -142,7 +142,7 @@ class HashJoin(Operator):
 
                 self.__l_tuples.append(tuple_)
 
-        elif producer.name == self.__r_producer_name:
+        elif producer_name == self.__r_producer_name:
 
             if self.__r_field_names is None:
                 if self.join_expr.r_field in tuple_:
@@ -161,22 +161,23 @@ class HashJoin(Operator):
             raise Exception(
                 "Join Operator '{}' received invalid tuple {} from producer '{}'. "
                 "Tuple must be sent from connected left producer '{}' or right producer '{}'."
-                .format(self.name, tuple_, producer.name, self.__l_producer_name, self.__r_producer_name))
+                .format(self.name, tuple_, producer_name, self.__l_producer_name, self.__r_producer_name))
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, producer_name):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
         Join operator may have multiple producers. Once all producers are complete the operator can send the tuples
         it contains to downstream consumers.
 
-        :type producer: The producer that has completed
+        :type producer_name: The producer that has completed
         :return: None
         """
 
-        if producer.name is self.__l_producer_name:
+        if producer_name is self.__l_producer_name:
             self.__l_producer_completed = True
-
-        if producer.name is self.__r_producer_name:
+        elif producer_name is self.__r_producer_name:
             self.__r_producer_completed = True
+        else:
+            raise Exception("Unrecognized producer {} has completed".format(producer_name))
 
         # Check that we have received a completed event from all the producers
         is_all_producers_done = self.__l_producer_completed & self.__r_producer_completed
@@ -185,7 +186,7 @@ class HashJoin(Operator):
             print("{}('{}') | Producer completed [{}]".format(
                 self.__class__.__name__,
                 self.name,
-                {'completed_producer': producer.name, 'all_producers_completed': is_all_producers_done}))
+                {'completed_producer': producer_name, 'all_producers_completed': is_all_producers_done}))
 
         if is_all_producers_done and not self.is_completed():
 
@@ -198,7 +199,7 @@ class HashJoin(Operator):
             del self.__l_tuples
             del self.__r_tuples
 
-            Operator.on_producer_completed(self, producer)
+            Operator.on_producer_completed(self, producer_name)
 
     def join_field_values(self):
         """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.

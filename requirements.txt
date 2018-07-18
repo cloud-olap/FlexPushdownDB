@@ -1,3 +1,4 @@
+dill>=0.2.8
 networkx>=2.1
 numpy>=1.14
 primesieve>=1.3

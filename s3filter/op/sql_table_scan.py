@@ -67,18 +67,18 @@ class SQLTableScan(Operator):
         self.s3key = s3key
         self.s3sql = s3sql
 
-    def start(self):
+    def run(self):
         """Executes the query and begins emitting tuples.
 
         :return: None
         """
 
         if not self.is_profiled:
-            self.do_start()
+            self.do_run()
         else:
             cProfile.runctx('self.do_start()', globals(), locals(), self.profile_file_name)
 
-    def do_start(self):
+    def do_run(self):
 
         self.op_metrics.timer_start()
 
@@ -126,11 +126,11 @@ class SQLTableScan(Operator):
 
         self.op_metrics.timer_stop()
 
-    def on_producer_completed(self, _producer):
+    def on_producer_completed(self, producer_name):
         """This event is overridden really just to indicate that it never fires.
 
-        :param _producer: The completed producer
+        :param producer_name: The completed producer
         :return: None
         """
 
-        pass
+        raise NotImplementedError

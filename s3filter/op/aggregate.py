@@ -70,7 +70,7 @@ class Aggregate(Operator):
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, producer_name):
         """Event handler for a producer completion event.
 
         :param producer: The producer that completed.
@@ -89,7 +89,7 @@ class Aggregate(Operator):
         # Clean up
         self.del_()
 
-        Operator.on_producer_completed(self, producer)
+        Operator.on_producer_completed(self, producer_name)
 
     def del_(self):
         """Cleans up internal data structures, allowing them to be GC'd

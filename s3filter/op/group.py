@@ -86,11 +86,11 @@ class Group(Operator):
         group_fields_tuple = tuple(group_fields)
         return group_fields_tuple
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, producer_name):
         """Handles the event where the producer has completed producing all the tuples it will produce. Once this
         occurs the tuples can be sent to consumers downstream.
 
-        :param producer: The producer that has completed
+        :param producer_name: The producer that has completed
         :return: None
         """
 
@@ -111,4 +111,4 @@ class Group(Operator):
             t_ = group_fields + group_aggregate_values
             self.send(TupleMessage(Tuple(t_)), self.consumers)
 
-        Operator.on_producer_completed(self, producer)
+        Operator.on_producer_completed(self, producer_name)

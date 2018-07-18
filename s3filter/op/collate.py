@@ -4,8 +4,11 @@
 """
 
 import sys
+
+import dill
+
 from s3filter.plan.op_metrics import OpMetrics
-from s3filter.op.operator_base import Operator
+from s3filter.op.operator_base import Operator, EvalMessage
 from s3filter.op.message import TupleMessage
 
 
@@ -56,7 +59,7 @@ class Collate(Operator):
 
         self.__tuples.append(tuple_)
 
-    def print_tuples(self):
+    def print_tuples(self, tuples=None):
         """Prints the tuples in tab separated format
 
         TODO: Needs some work to align properly
@@ -66,8 +69,11 @@ class Collate(Operator):
 
         print('')
 
+        if tuples== None:
+            tuples = self.__tuples
+
         field_names = False
-        for t in self.__tuples:
+        for t in tuples:
             if not field_names:
 
                 # Write field name tuple

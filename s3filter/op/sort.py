@@ -88,10 +88,10 @@ class Sort(Operator):
             sortable_t = HeapSortableTuple(tuple_, self.field_names, self.sort_expressions)
             heappush(self.heap, sortable_t)
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, producer_name):
         """Handles the event when a producer completes. When this happens the sorted tuples are emitted.
 
-        :param producer: The producer that completed
+        :param producer_name: The producer that completed
         :return: None
         """
 
@@ -106,7 +106,7 @@ class Sort(Operator):
 
         del self.heap
 
-        Operator.on_producer_completed(self, producer)
+        Operator.on_producer_completed(self, producer_name)
 
 
 class HeapSortableTuple:

@@ -27,7 +27,7 @@ def main():
     scan = query_plan.add_operator(
         SQLTableScan('part.csv',
                      "select "
-                     "  p_partkey, p_type "
+                     "  * "
                      "from "
                      "  S3Object",
                      'scan',
@@ -53,7 +53,7 @@ def main():
     s.strip_dirs().sort_stats("time").print_stats()
     query_plan.print_metrics()
 
-    field_names = ['_0', '_1']
+    field_names = ['_0', '_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8']
 
     assert len(collate.tuples()) == 200000 + 1
 

@@ -41,11 +41,11 @@ class SQLTableScanBloomUse(Operator):
             raise Exception("Bloom filter field name is of type {}. Field name must be of type str to be "
                             "used in SQL predicate".format(type(bloom_filter_field_name)))
 
-    def on_producer_completed(self, _producer):
+    def on_producer_completed(self, producer_name):
         """This event is overridden because we don't want the normal operator completion procedure to run. We want this
         operator to complete when all the tuples have been retrieved or consumers indicate they need no more tuples.
 
-        :param _producer: The completed producer
+        :param producer_name: The completed producer
         :return: None
         """
 

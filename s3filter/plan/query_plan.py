@@ -2,10 +2,14 @@
 """Query plan support
 
 """
+import time
 from collections import OrderedDict, deque
+from multiprocessing import Queue
 
+import dill
 import networkx
 
+from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
 from s3filter.plan.graph import Graph
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.util.timer import Timer
@@ -17,8 +21,8 @@ class QueryPlan(object):
 
     """
 
-    def __init__(self, operators=None, is_streamed=True):
-        # type: (list, bool) -> None
+    def __init__(self, operators=None, is_streamed=True, is_async=False):
+        # type: (list, bool, bool) -> None
         """
 
         :param operators:
@@ -36,6 +40,9 @@ class QueryPlan(object):
                 self.operators[o.name] = o
 
         self.is_streamed = is_streamed
+
+        self.is_async = is_async
+        self.queue = Queue()
 
     def add_operator(self, operator):
         """Adds the operator to the list of operators in the plan. This method ensures the operators are sorted by
@@ -171,6 +178,7 @@ class QueryPlan(object):
         print("----")
 
         print("is_streamed: {}".format(self.is_streamed))
+        print("is_async: {}".format(self.is_async))
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
 
         print("")
@@ -178,6 +186,11 @@ class QueryPlan(object):
         print("---------")
 
         operators = self.traverse_topological_from_root()
+
+        if self.is_async:
+            for o in operators:
+                o.queue.put(dill.dumps(EvalMessage("self.op_metrics")))
+                o.op_metrics = self.listen(EvaluatedMessage).val
 
         OpMetrics.print_metrics(operators)
 
@@ -220,6 +233,11 @@ class QueryPlan(object):
 
     def execute(self):
 
+        # Set async
+        if self.is_async:
+            for o in self.operators.values():
+                o.init_async(self.queue)
+
         # Find the root operators
         root_operators = self.find_root_operators()
 
@@ -229,6 +247,34 @@ class QueryPlan(object):
         for o in root_operators:
             o.start()
 
+        # Things become event driven from here, because we may be running async, so we essentially go
+        # into an event loop with a state machine to keep track of where we are
+
+        if self.is_async:
+            operator_completions = {k: False for k, v in self.operators.items()}
+            while not all(operator_completions.values()):
+                completed_message = self.listen(OperatorCompletedMessage)
+                operator_completions[completed_message.name] = True
+
         self.__timer.stop()
 
         self.total_elapsed_time = self.__timer.elapsed()
+
+    def listen(self, message_type):
+
+        while True:
+            pickled_item = self.queue.get()
+            item = dill.loads(pickled_item)
+            # print(item)
+
+            if type(item) == message_type:
+                return item
+            else:
+                raise Exception("Unrecognized message {}".format(item))
+
+    def stop(self):
+        map(lambda o: o.queue.put(dill.dumps(StopMessage())), self.operators.values())
+        self.join()
+
+    def join(self):
+        return map(lambda o: o.join(), self.operators.values())

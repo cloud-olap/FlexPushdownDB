@@ -163,19 +163,19 @@ class NestedLoopJoin(Operator):
                 "Tuple must be sent from connected left producer '{}' or right producer '{}'."
                 .format(self.name, tuple_, producer.name, self.__l_producer_name, self.__r_producer_name))
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, producer_name):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
         Join operator may have multiple producers. Once all producers are complete the operator can send the tuples
         it contains to downstream consumers.
 
-        :type producer: The producer that has completed
+        :type producer_name: The producer that has completed
         :return: None
         """
 
-        if producer.name is self.__l_producer_name:
+        if producer_name is self.__l_producer_name:
             self.__l_producer_completed = True
 
-        if producer.name is self.__r_producer_name:
+        if producer_name is self.__r_producer_name:
             self.__r_producer_completed = True
 
         # Check that we have received a completed event from all the producers
@@ -185,7 +185,7 @@ class NestedLoopJoin(Operator):
             print("{}('{}') | Producer completed [{}]".format(
                 self.__class__.__name__,
                 self.name,
-                {'completed_producer': producer.name, 'all_producers_completed': is_all_producers_done}))
+                {'completed_producer': producer_name, 'all_producers_completed': is_all_producers_done}))
 
         if is_all_producers_done and not self.is_completed():
 
@@ -198,7 +198,7 @@ class NestedLoopJoin(Operator):
             del self.__l_tuples
             del self.__r_tuples
 
-            Operator.on_producer_completed(self, producer)
+            Operator.on_producer_completed(self, producer_name)
 
     def nested_loop(self):
         """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.

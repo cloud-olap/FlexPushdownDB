@@ -108,10 +108,10 @@ class BloomCreate(Operator):
         else:
             raise Exception("Unrecognized message {}".format(m))
 
-    def on_producer_completed(self, producer):
+    def on_producer_completed(self, producer_name):
         """Event handler for a completed producer. When producers complete the bloom filter can be sent.
 
-        :param producer: The producer that completed.
+        :param producer_name: The producer that completed.
         :return: None
         """
 
@@ -127,7 +127,7 @@ class BloomCreate(Operator):
         # Send the bloom filter
         self.__send_bloom_filter(bloom_filter)
 
-        Operator.on_producer_completed(self, producer)
+        Operator.on_producer_completed(self, producer_name)
 
     def __send_bloom_filter(self, bloom_filter):
         """Sends the bloom filter to connected consumers.

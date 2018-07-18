@@ -5,6 +5,24 @@
 
   tasks:
 
+#  # Install AWS credentials
+#  - name: Install AWS credentials
+#    block:
+#    - name: Ensure AWS config directory present
+#      file:
+#        path: "{{ remote_aws_config_dir }}"
+#        state: directory
+#        owner: ubuntu
+#        group: ubuntu
+#        mode: 0700
+#    - name: Copy AWS credentials file
+#      copy:
+#        src: "{{ local_aws_credentials_file }}"
+#        dest: "{{ remote_aws_credentials_file }}"
+#        owner: ubuntu
+#        group: ubuntu
+#        mode: 0600
+
   # Install AWS credentials
   - name: Install AWS credentials
     block:
@@ -12,13 +30,13 @@
       file:
         path: "{{ remote_aws_config_dir }}"
         state: directory
-        owner: ubuntu
-        group: ubuntu
+        owner: ec2-user
+        group: ec2-user
         mode: 0700
     - name: Copy AWS credentials file
       copy:
         src: "{{ local_aws_credentials_file }}"
         dest: "{{ remote_aws_credentials_file }}"
-        owner: ubuntu
-        group: ubuntu
+        owner: ec2-user
+        group: ec2-user
         mode: 0600

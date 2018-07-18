@@ -120,11 +120,11 @@ class RandomTableScan(Operator):
 
         self.op_metrics.timer_stop()
 
-    def on_producer_completed(self, _producer):
+    def on_producer_completed(self, producer_name):
         """This event is overridden really just to indicate that it never fires.
 
-        :param _producer: The completed producer
+        :param producer_name: The completed producer
         :return: None
         """
 
-        pass
+        raise NotImplementedError
