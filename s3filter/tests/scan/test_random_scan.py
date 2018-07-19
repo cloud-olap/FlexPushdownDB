@@ -32,11 +32,11 @@ def test_random_scan_simple():
     random_table_scan = query_plan.add_operator(
         RandomTableScan(10,
                         random_col_defs,
-                        'random_table_scan',
+                        'random_table_scan', query_plan,
                         False))
 
     collate = query_plan.add_operator(
-        Collate('collate', False))
+        Collate('collate', query_plan, False))
 
     random_table_scan.connect(collate)
 

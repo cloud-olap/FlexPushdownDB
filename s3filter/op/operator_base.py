@@ -3,11 +3,12 @@
 
 """
 # import cProfile
+import math
+import cPickle
 import multiprocessing
-# import threading
+import threading
+import time
 import traceback
-
-import dill
 
 
 def switch_context(from_op, to_op):
@@ -86,7 +87,7 @@ class Operator(object):
                 pickled_item = queue.get()
                 self.op_metrics.timer_start()
 
-                item = dill.loads(pickled_item)
+                item = cPickle.loads(pickled_item)
 
                 # print(item)
 
@@ -100,7 +101,7 @@ class Operator(object):
                     self.on_consumer_completed(item.consumer_name)
                 elif type(item) == EvalMessage:
                     evaluated = eval(item.expr)
-                    self.completion_queue.put(dill.dumps(EvaluatedMessage(evaluated)))
+                    self.completion_queue.put(cPickle.dumps(EvaluatedMessage(evaluated)))
                 else:
                     message = item[0]
                     sender = item[1]
@@ -130,12 +131,13 @@ class Operator(object):
         """
 
         if self.async_:
-            m = dill.dumps(StartMessage())
-            self.queue.put(m)
+            # m = cPickle.dumps(StartMessage())
+            # self.queue.put(m)
+            self.query_plan.send(StartMessage(), self.name)
         else:
             self.run()
 
-    def __init__(self, name, op_metrics, log_enabled=False):
+    def __init__(self, name, op_metrics, query_plan, log_enabled=False):
         """Constructs a new operator
 
         """
@@ -164,15 +166,17 @@ class Operator(object):
 
         self.__buffer = []
 
-        self.is_streamed = True
-
-        self.async_ = False
-        self.runner = None
-        self.queue = None
-        self.completion_queue = None
+        # self.is_streamed = True
 
         self.is_profiled = False
         self.profile_file_name = None
+
+        # Default to 1024 element buffer, use 0 to send immediately, and float('inf') for unlimited buffer
+        self.buffer_size = 1024
+
+        self.query_plan = query_plan
+
+        self.async_ = query_plan.is_async
 
     def init_async(self, completion_queue):
 
@@ -186,6 +190,7 @@ class Operator(object):
 
         self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
 
+    def boot(self):
         self.runner.start()
 
     def is_completed(self):
@@ -216,6 +221,9 @@ class Operator(object):
         :return: None
         """
 
+        if self.log_enabled:
+            print("{} | {}('{}') | Adding consumer '{}'".format(time.time(), self.__class__.__name__, self.name, consumer))
+
         if any(consumer.name == name for name in self.consumers):
             raise Exception("Consumer with name '{}' already added".format(consumer.name))
 
@@ -228,6 +236,10 @@ class Operator(object):
         :param producer: An operator that will produce the tuples for this operator.
         :return: None
         """
+
+        if self.log_enabled:
+            print("{} | {}('{}') | Adding producer '{}'".format(time.time(), self.__class__.__name__, self.name, producer))
+
         if any(producer.name == name for name in self.producers):
             raise Exception("Producer with name '{}' already added".format(producer.name))
 
@@ -240,6 +252,9 @@ class Operator(object):
         else:
             pass
 
+    def set_query_plan(self, query_plan):
+        self.query_plan = query_plan
+
     def send(self, message, operators):
         """Emits the given tuple to each of the connected consumers.
 
@@ -248,19 +263,28 @@ class Operator(object):
         :return: None
         """
 
-        if self.is_streamed:
+        if len(operators) == 0:
+            raise Exception("Producer {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
 
-            if len(operators) == 0:
-                raise Exception("Producer {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
-
+        if self.buffer_size == 0:
             for op in operators:
-                if op.async_:
-                    pickled_item = dill.dumps([message, self.name])
-                    op.queue.put(pickled_item)
+                # Should really be if the operator is async not this
+                if self.async_:
+                    self.query_plan.send([[message], self.name], op.name)
                 else:
-                    self.fire_on_receive(message, op)
+                    self.fire_on_receive([message], op)
+
         else:
             self.__buffer.append(message)
+            if len(self.__buffer) == self.buffer_size:
+
+                for op in operators:
+                    if op.async_:
+                        self.query_plan.send([self.__buffer, self.name], op.name)
+                    else:
+                        self.fire_on_receive(self.__buffer, op)
+
+                self.__buffer = []
 
     def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
@@ -269,21 +293,6 @@ class Operator(object):
 
     def on_receive(self, message, producer_name):
         raise NotImplementedError
-
-    def batch_fire_on_receive(self, messages, consumer):
-
-        def iterate_messages():
-
-            switch_context(self, consumer)
-            for m_ in messages:
-                consumer.on_receive(m_, self.name)
-            switch_context(consumer, self)
-
-        if not consumer.is_profiled:
-            iterate_messages()
-        else:
-            pass
-            # cProfile.runctx('iterate_messages()', globals(), locals(), consumer.profile_file_name)
 
     def fire_on_producer_completed(self, consumer):
         switch_context(self, consumer)
@@ -306,36 +315,45 @@ class Operator(object):
         if not self.is_completed():
 
             if self.log_enabled:
-                print("{}('{}') | Completed".format(self.__class__.__name__, self.name))
+                print("{} | {}('{}') | Completed".format(time.time(), self.__class__.__name__, self.name))
 
             if self.async_:
-                self.completion_queue.put(dill.dumps(OperatorCompletedMessage(self.name)))
+                self.completion_queue.put(cPickle.dumps(OperatorCompletedMessage(self.name)))
 
             self.__completed = True
 
-            if not self.is_streamed:
-                for c in self.consumers:
-                    self.batch_fire_on_receive(self.__buffer, c)
+            for c in self.consumers:
+                if c.async_:
+                    self.query_plan.send([self.__buffer, self.name], c.name)
+                else:
+                    self.fire_on_receive(self.__buffer, c)
 
-                del self.__buffer
+            self.__buffer = []
 
             for p in self.producers:
                 if p.async_:
-                    p.queue.put(dill.dumps(ConsumerCompletedMessage(self.name)))
+                    # p.queue.put(cPickle.dumps(ConsumerCompletedMessage(self.name)))
+                    self.query_plan.send(ConsumerCompletedMessage(self.name), p.name)
                 else:
                     self.fire_on_consumer_completed(p)
 
             for c in self.consumers:
                 if c.async_:
-                    c.queue.put(dill.dumps(ProducerCompletedMessage(self.name)))
+                    # c.queue.put(cPickle.dumps(ProducerCompletedMessage(self.name)))
+                    self.query_plan.send(ProducerCompletedMessage(self.name), c.name)
                 else:
                     self.fire_on_producer_completed(c)
+
+            pass
 
         else:
             raise Exception("Cannot complete an already completed operator")
 
-    def set_streamed(self, is_streamed):
-        self.is_streamed = is_streamed
+    # def set_streamed(self, is_streamed):
+    #     self.is_streamed = is_streamed
+
+    def set_buffer_size(self, buffer_size):
+        self.buffer_size = buffer_size
 
     def set_profiled(self, is_profiled, profile_file_name=None):
         self.is_profiled = is_profiled
@@ -374,4 +392,4 @@ class Operator(object):
                 self.complete()
 
     def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, {'name': self.name})
+        return "{}({})".format(self.__class__.__name__, {'name': self.name, 'parallel': self.async_})

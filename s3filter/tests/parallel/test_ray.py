@@ -50,16 +50,32 @@ class Sender(object):
 
         # print("{}:receive:{}".format(self._name, message))
 
-        if Envelope.get_type(message) == start_message_type:
+        # if Envelope.get_type(message) == start_message_type:
+        #
+        #     for i in xrange(0, self._num_messages_to_send / self._batch_size):
+        #         buffer_ = [Envelope.build_data(test_message_type)] * self._batch_size
+        #         # for m in buffer_:
+        #         #     print ("{}:send:{}".format(self._name, m))
+        #         self._receiver.handle_batch.remote(buffer_)
+        #
+        # else:
+        #     raise Exception("Unrecognized message {} ".format(message))
 
-            for i in xrange(0, self._num_messages_to_send / self._batch_size):
-                buffer_ = [Envelope.build_data(test_message_type)] * self._batch_size
-                # for m in buffer_:
-                #     print ("{}:send:{}".format(self._name, m))
-                self._receiver.handle_batch.remote(buffer_)
+        try:
+            if Envelope.get_type(message) == start_message_type:
+                num_messages_remaining = self._num_messages_to_send
 
-        else:
-            raise Exception("Unrecognized message {} ".format(message))
+                while num_messages_remaining > 0:
+                    num_messages_in_batch = min(num_messages_remaining, self._batch_size)
+                    buffer_ = [Envelope.build_data(test_message_type)] * num_messages_in_batch
+                    # print("send {}".format(num_messages_in_batch))
+                    self._receiver.handle_batch.remote(buffer_)
+                    num_messages_remaining -= num_messages_in_batch
+            else:
+                raise Exception("Unrecognized message {} ".format(message))
+
+        except BaseException as e:
+            print(e)
 
 
 @ray.remote
@@ -130,12 +146,12 @@ def test_ray_message_throughput_batched():
     :return:
     """
 
-    num_messages = 10000000
-    batch_size = 1000
+    num_messages = 1000000
+    batch_size = 64000
 
     if not pytest.ray_initialised:
         print("Starting...")
-        ray.init(driver_mode=ray.SCRIPT_MODE)
+        ray.init(driver_mode=ray.PYTHON_MODE)
         print("Started")
         pytest.ray_initialised = True
 

@@ -34,28 +34,28 @@ class HashJoin(Operator):
 
     """
 
-    def __init__(self, join_expr, name, log_enabled):
+    def __init__(self, join_expr, name,  query_plan, log_enabled):
         """
         Creates a new join operator.
 
         :param join_expr: The join expression indicating which fields of which key to join on
         """
 
-        super(HashJoin, self).__init__(name, HashJoinMetrics(), log_enabled)
+        super(HashJoin, self).__init__(name, HashJoinMetrics(),  query_plan, log_enabled)
 
         self.join_expr = join_expr
 
-        self.__l_tuples = []
-        self.__r_tuples = []
+        self.l_tuples = []
+        self.r_tuples = []
 
-        self.__l_field_names = None
-        self.__r_field_names = None
+        self.l_field_names = None
+        self.r_field_names = None
 
-        self.__l_producer_name = None
-        self.__r_producer_name = None
+        self.l_producer_name = None
+        self.r_producer_name = None
 
-        self.__l_producer_completed = False
-        self.__r_producer_completed = False
+        self.l_producer_completed = False
+        self.r_producer_completed = False
 
     def connect_left_producer(self, producer):
         """Connects a producer as the producer of left tuples in the join expression
@@ -64,18 +64,17 @@ class HashJoin(Operator):
         :return: None
         """
 
-        if self.__l_producer_name is not None:
+        if self.l_producer_name is not None:
             raise Exception("Only 1 left producer can be added. Left producer '{}' already added"
-                            .format(self.__l_producer_name))
+                            .format(self.l_producer_name))
 
-        if producer.name is self.__r_producer_name:
+        if producer.name is self.r_producer_name:
             raise Exception("Producer cannot be added as both left and right producer. "
                             "Producer '{}' already added as right producer"
-                            .format(self.__l_producer_name))
+                            .format(self.l_producer_name))
 
-        self.__l_producer_name = producer.name
-
-        Operator.connect(producer, self)
+        self.l_producer_name = producer.name
+        producer.connect(self)
 
     def connect_right_producer(self, producer):
         """Connects a producer as the producer of right tuples in the join expression
@@ -84,30 +83,30 @@ class HashJoin(Operator):
         :return: None
         """
 
-        if self.__r_producer_name is not None:
+        if self.r_producer_name is not None:
             raise Exception("Only 1 right Producer can be added. Right producer '{}' already added"
-                            .format(self.__r_producer_name))
+                            .format(self.r_producer_name))
 
-        if producer.name is self.__l_producer_name:
+        if producer.name is self.l_producer_name:
             raise Exception("Producer cannot be added as both right and left producer. "
                             "Producer '{}' already added as left producer"
-                            .format(self.__l_producer_name))
+                            .format(self.l_producer_name))
 
-        self.__r_producer_name = producer.name
-        Operator.connect(producer, self)
+        self.r_producer_name = producer.name
+        producer.connect(self)
 
-    def on_receive(self, m, producer_name):
+    def on_receive(self, ms, producer_name):
         """Handles the event of receiving a new message from a producer.
 
         :param m: The received message
         :param producer_name: The producer of the tuple
         :return: None
         """
-
-        if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_, producer_name)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.on_receive_tuple(m.tuple_, producer_name)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_, producer_name):
         """Check that the tuple has been produced by a connected producer, and contains a field in the
@@ -119,19 +118,26 @@ class HashJoin(Operator):
         :return: None
         """
 
+        # if "l_producer_name" not in self.__dict__:
+        #     pass
+        #
+        # print(self.__dict__)
+        # print(self.__class__)
+        # print(self.l_producer_name)
+
         # Check the producer is connected
-        if self.__l_producer_name is None:
+        if self.l_producer_name is None:
             raise Exception("Left producer is not connected")
 
-        if self.__r_producer_name is None:
+        if self.r_producer_name is None:
             raise Exception("Right producer is not connected")
 
         # Check which producer sent the tuple
-        if producer_name == self.__l_producer_name:
+        if producer_name == self.l_producer_name:
 
-            if self.__l_field_names is None:
+            if self.l_field_names is None:
                 if self.join_expr.l_field in tuple_:
-                    self.__l_field_names = tuple_
+                    self.l_field_names = tuple_
                 else:
                     raise Exception("Join Operator '{}' received invalid left field names tuple {}. "
                                     "Tuple must contain join left field name '{}'."
@@ -140,13 +146,13 @@ class HashJoin(Operator):
 
                 self.op_metrics.l_rows_processed += 1
 
-                self.__l_tuples.append(tuple_)
+                self.l_tuples.append(tuple_)
 
-        elif producer_name == self.__r_producer_name:
+        elif producer_name == self.r_producer_name:
 
-            if self.__r_field_names is None:
+            if self.r_field_names is None:
                 if self.join_expr.r_field in tuple_:
-                    self.__r_field_names = tuple_
+                    self.r_field_names = tuple_
                 else:
                     raise Exception("Join Operator '{}' received invalid right field names tuple {}. "
                                     "Tuple must contain join right field name '{}'."
@@ -155,13 +161,13 @@ class HashJoin(Operator):
 
                 self.op_metrics.r_rows_processed += 1
 
-                self.__r_tuples.append(tuple_)
+                self.r_tuples.append(tuple_)
 
         else:
             raise Exception(
                 "Join Operator '{}' received invalid tuple {} from producer '{}'. "
                 "Tuple must be sent from connected left producer '{}' or right producer '{}'."
-                .format(self.name, tuple_, producer_name, self.__l_producer_name, self.__r_producer_name))
+                .format(self.name, tuple_, producer_name, self.l_producer_name, self.r_producer_name))
 
     def on_producer_completed(self, producer_name):
         """Handles the event where a producer has completed producing all the tuples it will produce. Note that the
@@ -172,15 +178,17 @@ class HashJoin(Operator):
         :return: None
         """
 
-        if producer_name is self.__l_producer_name:
-            self.__l_producer_completed = True
-        elif producer_name is self.__r_producer_name:
-            self.__r_producer_completed = True
+        if producer_name == self.l_producer_name:
+            self.l_producer_completed = True
+            # print("YAH!!!!!!!! {} {} {} {}".format(self.__l_producer_completed, self.__r_producer_completed, self.runner.name, producer_name))
+        elif producer_name == self.r_producer_name:
+            self.r_producer_completed = True
+            # print("YAH2!!!!!!! {} {} {} {}".format(self.__l_producer_completed, self.__r_producer_completed, self.runner.name, producer_name))
         else:
             raise Exception("Unrecognized producer {} has completed".format(producer_name))
 
         # Check that we have received a completed event from all the producers
-        is_all_producers_done = self.__l_producer_completed & self.__r_producer_completed
+        is_all_producers_done = self.l_producer_completed & self.r_producer_completed
 
         if self.log_enabled:
             print("{}('{}') | Producer completed [{}]".format(
@@ -196,8 +204,8 @@ class HashJoin(Operator):
             # Join and send the joined data tuples
             self.join_field_values()
 
-            del self.__l_tuples
-            del self.__r_tuples
+            # del self.__l_tuples
+            # del self.__r_tuples
 
             Operator.on_producer_completed(self, producer_name)
 
@@ -211,9 +219,9 @@ class HashJoin(Operator):
         # Determine which direction the hash join should run
         # The larger relation should remain as a list and the smaller relation should be hashed. If either of the
         # relations are empty then just return
-        if len(self.__l_tuples) == 0 or len(self.__r_tuples) == 0:
+        if len(self.l_tuples) == 0 or len(self.r_tuples) == 0:
             return
-        elif len(self.__l_tuples) > len(self.__r_tuples):
+        elif len(self.l_tuples) > len(self.r_tuples):
             l_to_r = True
             # r_to_l = not l_to_r
         else:
@@ -221,17 +229,17 @@ class HashJoin(Operator):
             # r_to_l = not l_to_r
 
         if l_to_r:
-            outer_tuples_list = self.__l_tuples
-            inner_tuples_list = self.__r_tuples
+            outer_tuples_list = self.l_tuples
+            inner_tuples_list = self.r_tuples
             inner_tuple_field_name = self.join_expr.r_field
-            inner_tuple_field_names = self.__r_field_names
-            outer_tuple_field_index = self.__l_field_names.index(self.join_expr.l_field)
+            inner_tuple_field_names = self.r_field_names
+            outer_tuple_field_index = self.l_field_names.index(self.join_expr.l_field)
         else:
-            outer_tuples_list = self.__r_tuples
-            inner_tuples_list = self.__l_tuples
+            outer_tuples_list = self.r_tuples
+            inner_tuples_list = self.l_tuples
             inner_tuple_field_name = self.join_expr.l_field
-            inner_tuple_field_names = self.__l_field_names
-            outer_tuple_field_index = self.__r_field_names.index(self.join_expr.r_field)
+            inner_tuple_field_names = self.l_field_names
+            outer_tuple_field_index = self.r_field_names.index(self.join_expr.r_field)
 
         # Hash the tuples from the smaller set of tuples
         inner_tuples_dict = {}
@@ -284,12 +292,12 @@ class HashJoin(Operator):
         joined_field_names = []
 
         # We can only emit field name tuples if we received tuples for both sides of the join
-        if self.__l_field_names is not None and self.__r_field_names is not None:
+        if self.l_field_names is not None and self.r_field_names is not None:
 
-            for field_name in self.__l_field_names:
+            for field_name in self.l_field_names:
                 joined_field_names.append(field_name)
 
-            for field_name in self.__r_field_names:
+            for field_name in self.r_field_names:
                 joined_field_names.append(field_name)
 
             if self.log_enabled:

@@ -7,15 +7,19 @@ from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
 
 
-def test_streamed():
-    run(True)
+def test_unbuffered():
+    run(False, 0)
 
 
-def test_batched():
-    run(False)
+def test_buffered():
+    run(False, 8192)
 
 
-def run(is_streamed):
+def test_parallel_buffered():
+    run(True, 8192)
+
+
+def run(parallel, buffer_size):
     """The filtered tst uses hash joins but first projections and filtering is pushed down to s3.
 
     :return: None
@@ -25,7 +29,7 @@ def run(is_streamed):
     print("TPCH Q14 Filtered Join")
     print("----------------------")
 
-    query_plan = QueryPlan(None, is_streamed)
+    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Query plan
     date = '1993-01-01'
@@ -35,16 +39,17 @@ def run(is_streamed):
     lineitem_scan = query_plan.add_operator(
         tpch_q14.sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def(min_shipped_date,
                                                                                               max_shipped_date,
-                                                                                              'lineitem_scan'))
+                                                                                              'lineitem_scan',
+                                                                                              query_plan))
     lineitem_project = query_plan.add_operator(
-        tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_project'))
+        tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_project', query_plan))
     part_scan = query_plan.add_operator(
-        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def('part_scan'))
-    part_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_project'))
-    join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join'))
-    aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate'))
-    aggregate_project = query_plan.add_operator(tpch_q14.project_promo_revenue_operator_def('aggregate_project'))
-    collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate'))
+        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def('part_scan', query_plan))
+    part_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_project', query_plan))
+    join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join', query_plan))
+    aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))
+    aggregate_project = query_plan.add_operator(tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
+    collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
     lineitem_scan.connect(lineitem_project)
     part_scan.connect(part_project)
@@ -60,22 +65,21 @@ def run(is_streamed):
     # Start the query
     query_plan.execute()
 
-    # Assert the results
-    # num_rows = 0
-    # for t in collate.tuples():
-    #     num_rows += 1
-    #     print("{}:{}".format(num_rows, t))
+    tuples = collate.tuples()
 
-    collate.print_tuples()
+    collate.print_tuples(tuples)
 
     # Write the metrics
     query_plan.print_metrics()
 
+    # Shut everything down
+    query_plan.stop()
+
     field_names = ['promo_revenue']
 
-    assert len(collate.tuples()) == 1 + 1
+    assert len(tuples) == 1 + 1
 
-    assert collate.tuples()[0] == field_names
+    assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [15.090116526324298]
+    assert tuples[1] == [15.090116526324298]

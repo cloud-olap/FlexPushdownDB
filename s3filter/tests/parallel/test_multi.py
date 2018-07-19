@@ -2,6 +2,7 @@
 """Ray tests
 
 """
+import cPickle
 import os
 import timeit
 from multiprocessing import Process, Queue
@@ -139,13 +140,13 @@ def test_multi_message_throughput():
 
 def test_operators():
 
-    query_plan = QueryPlan(is_async=True)
+    query_plan = QueryPlan(is_async=True, buffer_size=64)
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'scan',
+                                              'scan', query_plan,
                                               False))
 
     p = query_plan.add_operator(Project(
@@ -155,10 +156,10 @@ def test_operators():
             ProjectExpression(lambda t_: t_['_2'], 'n_regionkey'),
             ProjectExpression(lambda t_: t_['_3'], 'n_comment')
         ],
-        'project',
+        'project', query_plan,
         False))
 
-    c = query_plan.add_operator(Collate('collate', False))
+    c = query_plan.add_operator(Collate('collate', query_plan, False))
 
     ts.connect(p)
     p.connect(c)
@@ -169,8 +170,7 @@ def test_operators():
     # Start the query
     query_plan.execute()
 
-    c.queue.put(dill.dumps(EvalMessage("self.tuples()")))
-    tuples = query_plan.listen(EvaluatedMessage).val
+    tuples = c.tuples()
 
     c.print_tuples(tuples)
 

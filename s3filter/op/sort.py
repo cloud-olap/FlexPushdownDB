@@ -41,7 +41,7 @@ class Sort(Operator):
 
     """
 
-    def __init__(self, sort_expressions, name, log_enabled):
+    def __init__(self, sort_expressions, name, query_plan, log_enabled):
         """Creates a new Sort operator.
 
         :param sort_expressions: The sort expressions to apply to the tuples
@@ -49,7 +49,7 @@ class Sort(Operator):
         :param log_enabled: Whether logging is enabled
         """
 
-        super(Sort, self).__init__(name, OpMetrics(), log_enabled)
+        super(Sort, self).__init__(name, OpMetrics(), query_plan, log_enabled)
 
         self.sort_expressions = sort_expressions
 
@@ -57,19 +57,19 @@ class Sort(Operator):
 
         self.field_names = None
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, ms, _producer):
         """ Handles a new message from a producer.
 
         :param m: The received message.
         :param _producer: The producer that emitted the message
         :return: None
         """
-
-        # print("Sort Emit | {}".format(t))
-        if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            # print("Sort Emit | {}".format(t))
+            if type(m) is TupleMessage:
+                self.on_receive_tuple(m.tuple_)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_):
         """Handles receipt of a tuple. Field names are stored and sent. Field values are placed into a sorted heap

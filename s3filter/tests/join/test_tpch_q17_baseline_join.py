@@ -34,15 +34,19 @@ from s3filter.query import tpch_q17
 from s3filter.util.test_util import gen_test_id
 
 
-def test_streamed():
-    run(True)
+def test_unbuffered():
+    run(False, 0)
 
 
-def test_batched():
-    run(False)
+def test_buffered():
+    run(False, 1024)
 
 
-def run(is_streamed):
+def test_parallel_buffered():
+    run(True, 1024)
+
+
+def run(parallel, buffer_size):
     """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
 
     This works by:
@@ -64,27 +68,27 @@ def run(is_streamed):
     print("TPCH Q17 Baseline Join")
     print("----------------------")
 
-    query_plan = QueryPlan(None, is_streamed)
+    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Define the operators
-    part_scan = query_plan.add_operator(tpch_q17.sql_scan_part_select_all_where_brand_and_container_op('part_scan'))
-    lineitem_scan = query_plan.add_operator(tpch_q17.sql_scan_lineitem_select_all_where_partkey_op('lineitem_scan'))
-    part_project = query_plan.add_operator(tpch_q17.project_partkey_brand_container_op('part_project'))
-    part_filter = query_plan.add_operator(tpch_q17.filter_brand_container_op('part_filter'))
+    part_scan = query_plan.add_operator(tpch_q17.sql_scan_part_select_all_where_brand_and_container_op('part_scan', query_plan))
+    lineitem_scan = query_plan.add_operator(tpch_q17.sql_scan_lineitem_select_all_where_partkey_op('lineitem_scan', query_plan))
+    part_project = query_plan.add_operator(tpch_q17.project_partkey_brand_container_op('part_project', query_plan))
+    part_filter = query_plan.add_operator(tpch_q17.filter_brand_container_op('part_filter', query_plan))
     lineitem_project = query_plan.add_operator(
-        tpch_q17.project_lineitem_orderkey_partkey_quantity_extendedprice_op('lineitem_project'))
-    part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join'))
-    lineitem_part_avg_group = query_plan.add_operator(tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group'))
+        tpch_q17.project_lineitem_orderkey_partkey_quantity_extendedprice_op('lineitem_project', query_plan))
+    part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join', query_plan))
+    lineitem_part_avg_group = query_plan.add_operator(tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group', query_plan))
     lineitem_part_avg_group_project = query_plan.add_operator(
-        tpch_q17.project_partkey_avg_quantity_op('lineitem_part_avg_group_project'))
+        tpch_q17.project_partkey_avg_quantity_op('lineitem_part_avg_group_project', query_plan))
     part_lineitem_join_avg_group_join = query_plan.add_operator(
-        tpch_q17.join_l_partkey_p_partkey_op('part_lineitem_join_avg_group_join'))
-    lineitem_filter = query_plan.add_operator(tpch_q17.filter_lineitem_quantity_op('lineitem_filter'))
+        tpch_q17.join_l_partkey_p_partkey_op('part_lineitem_join_avg_group_join', query_plan))
+    lineitem_filter = query_plan.add_operator(tpch_q17.filter_lineitem_quantity_op('lineitem_filter', query_plan))
     extendedprice_sum_aggregate = query_plan.add_operator(
-        tpch_q17.aggregate_sum_extendedprice_op('extendedprice_sum_aggregate'))
+        tpch_q17.aggregate_sum_extendedprice_op('extendedprice_sum_aggregate', query_plan))
     extendedprice_sum_aggregate_project = query_plan.add_operator(
-        tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project'))
-    collate = query_plan.add_operator(tpch_q17.collate_op('collate'))
+        tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project', query_plan))
+    collate = query_plan.add_operator(tpch_q17.collate_op('collate', query_plan))
 
     # Connect the operators
     part_scan.connect(part_project)
@@ -107,22 +111,21 @@ def run(is_streamed):
     # Start the query
     query_plan.execute()
 
-    # Assert the results
-    # num_rows = 0
-    # for t in collate.tuples():
-    #     num_rows += 1
-    #     print("{}:{}".format(num_rows, t))
+    tuples = collate.tuples()
 
-    collate.print_tuples()
+    collate.print_tuples(tuples)
 
-    # Write the metrics and plan graph
+    # Write the metrics
     query_plan.print_metrics()
+
+    # Shut everything down
+    query_plan.stop()
 
     field_names = ['avg_yearly']
 
-    assert len(collate.tuples()) == 1 + 1
+    assert len(tuples) == 1 + 1
 
-    assert collate.tuples()[0] == field_names
+    assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert collate.tuples()[1] == [1274.9142857142856]
+    assert tuples[1] == [1274.9142857142856]

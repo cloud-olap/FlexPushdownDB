@@ -35,7 +35,7 @@ class Aggregate(Operator):
 
     """
 
-    def __init__(self, expressions, name, log_enabled):
+    def __init__(self, expressions, name, query_plan, log_enabled):
         """Creates a new aggregate operator from the given list of expressions.
 
         :param expressions: List of aggregate expressions.
@@ -43,7 +43,7 @@ class Aggregate(Operator):
         :param log_enabled: Logging enabled.
         """
 
-        super(Aggregate, self).__init__(name, AggregateMetrics(), log_enabled)
+        super(Aggregate, self).__init__(name, AggregateMetrics(), query_plan, log_enabled)
 
         for e in expressions:
             if type(e) is not AggregateExpression:
@@ -57,18 +57,18 @@ class Aggregate(Operator):
         # List of expression contexts, each storing the accumulated aggregate result and local vars.
         self.__expression_contexts = None
 
-    def on_receive(self, m, producer_name):
+    def on_receive(self, ms, producer_name):
         """Event handler for receiving a message.
 
-        :param m: The message
+        :param ms: The messages
         :param producer_name: The producer that sent the message
         :return: None
         """
-
-        if type(m) is TupleMessage:
-            self.__on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.__on_receive_tuple(m.tuple_)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def on_producer_completed(self, producer_name):
         """Event handler for a producer completion event.
@@ -86,19 +86,19 @@ class Aggregate(Operator):
             field_values = self.__build_field_values()
             self.send(TupleMessage(Tuple(field_values)), self.consumers)
 
-        # Clean up
-        self.del_()
+        # # Clean up
+        # self.del_()
 
         Operator.on_producer_completed(self, producer_name)
 
-    def del_(self):
-        """Cleans up internal data structures, allowing them to be GC'd
-
-        :return: None
-        """
-
-        del self.__field_names
-        del self.__expression_contexts
+    # def del_(self):
+    #     """Cleans up internal data structures, allowing them to be GC'd
+    #
+    #     :return: None
+    #     """
+    #
+    #     del self.__field_names
+    #     del self.__expression_contexts
 
     def __on_receive_tuple(self, tuple_):
         """Event handler for receiving a tuple.

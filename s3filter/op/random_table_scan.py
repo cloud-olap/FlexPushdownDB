@@ -82,9 +82,9 @@ class RandomTableScan(Operator):
     def on_receive(self, message, producer_name):
         raise NotImplementedError
 
-    def __init__(self, num_rows, col_defs, name, log_enabled):
+    def __init__(self, num_rows, col_defs, name, query_plan, log_enabled):
 
-        super(RandomTableScan, self).__init__(name, RandomTableScanMetrics(), log_enabled)
+        super(RandomTableScan, self).__init__(name, RandomTableScanMetrics(), query_plan, log_enabled)
 
         self.num_rows = num_rows
         self.col_defs = col_defs

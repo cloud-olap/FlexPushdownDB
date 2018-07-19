@@ -54,7 +54,7 @@ def test_group_baseline():
                                               "select * from S3Object "
                                               "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp)"
                                               .format(shipped_date.strftime('%Y-%m-%d')),
-                                              'lineitem',
+                                              'lineitem', query_plan,
                                               False))
     g = query_plan.add_operator(Group(
         [
@@ -80,16 +80,16 @@ def test_group_baseline():
             # count(*) as count_order
             AggregateExpression(AggregateExpression.COUNT, lambda t_: t_['_0'])
         ],
-        'lineitem_grouped',
+        'lineitem_grouped', query_plan,
         False))
     s = query_plan.add_operator(Sort(
         [
             SortExpression('_0', str, 'ASC'),
             SortExpression('_1', str, 'ASC')
         ],
-        'lineitem_group_sorted',
+        'lineitem_group_sorted', query_plan,
         False))
-    c = query_plan.add_operator(Collate('collation', False))
+    c = query_plan.add_operator(Collate('collation', query_plan, False))
 
     ts.connect(g)
     g.connect(s)

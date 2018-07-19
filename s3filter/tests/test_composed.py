@@ -29,12 +29,12 @@ def test_sort_topk():
     query_plan = QueryPlan()
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
     s = query_plan.add_operator(Sort([
         SortExpression('_5', float, 'ASC')
-    ], 's', False))
-    t = query_plan.add_operator(Top(limit, 't', False))
-    c = query_plan.add_operator(Collate('c', False))
+    ], 's', query_plan, False))
+    t = query_plan.add_operator(Top(limit, 't', query_plan, False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(s)
     s.connect(t)
@@ -86,15 +86,15 @@ def test_join_topk():
     query_plan = QueryPlan()
 
     # Query plan
-    ts1 = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts1', False))
+    ts1 = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts1', query_plan, False))
     ts1_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', False))
-    ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', False))
+        Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', query_plan, False))
+    ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', query_plan, False))
     ts2_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', False))
-    j = query_plan.add_operator(HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'j', False))
-    t = query_plan.add_operator(Top(limit, 't', False))
-    c = query_plan.add_operator(Collate('c', False))
+        Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', query_plan, False))
+    j = query_plan.add_operator(HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'j', query_plan, False))
+    t = query_plan.add_operator(Top(limit, 't', query_plan, False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts1.connect(ts1_project)
     ts2.connect(ts2_project)

@@ -33,7 +33,7 @@ class Filter(Operator):
 
     """
 
-    def __init__(self, expression, name, log_enabled):
+    def __init__(self, expression, name, query_plan, log_enabled):
         """
 
         :param expression:
@@ -41,7 +41,7 @@ class Filter(Operator):
         :param log_enabled:
         """
 
-        super(Filter, self).__init__(name, FilterMetrics(), log_enabled)
+        super(Filter, self).__init__(name, FilterMetrics(), query_plan, log_enabled)
 
         if type(expression) is not PredicateExpression:
             raise Exception("Illegal expression type {}. Expression must be of type PredicateExpression"
@@ -51,19 +51,20 @@ class Filter(Operator):
 
         self.field_names_index = None
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, ms, _producer):
         """Event handler for handling receipt of messages.
 
-        :param m: The message
+        :param ms: The messages
         :param _producer: The producer of the message
         :return: None
         """
 
         # print("Filter | {}".format(t))
-        if type(m) is TupleMessage:
-            self.__on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.__on_receive_tuple(m.tuple_)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_tuple(self, tuple_):
         """Event handler to handle receipt of a tuple

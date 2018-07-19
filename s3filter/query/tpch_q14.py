@@ -18,31 +18,31 @@ from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.sql.function import cast, timestamp
 
 
-def filter_brand12_operator_def(name):
+def filter_brand12_operator_def(name, query_plan):
     # type: (str) -> Filter
     return Filter(
         PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#12'),
-        name,
+        name, query_plan,
         False)
 
 
-def join_lineitem_part_operator_def(name):
+def join_lineitem_part_operator_def(name, query_plan):
     # type: (str) -> HashJoin
     return HashJoin(
         JoinExpression('l_partkey', 'p_partkey'),
-        name,
+        name, query_plan,
         False)
 
 
-def join_part_lineitem_operator_def(name):
+def join_part_lineitem_operator_def(name, query_plan):
     # type: (str) -> HashJoin
     return HashJoin(
         JoinExpression('p_partkey', 'l_partkey'),
-        name,
+        name, query_plan,
         False)
 
 
-def aggregate_promo_revenue_operator_def(name):
+def aggregate_promo_revenue_operator_def(name, query_plan):
     # type: (str) -> Aggregate
     def ex1(t_):
 
@@ -68,22 +68,22 @@ def aggregate_promo_revenue_operator_def(name):
             AggregateExpression(AggregateExpression.SUM, ex1),
             AggregateExpression(AggregateExpression.SUM, ex2)
         ],
-        name,
+        name, query_plan,
         False)
 
 
-def project_partkey_type_operator_def(name):
+def project_partkey_type_operator_def(name, query_plan):
     # type: (str) -> Project
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpression(lambda t_: t_['_1'], 'p_type')
         ],
-        name,
+        name, query_plan,
         False)
 
 
-def project_partkey_extendedprice_discount_operator_def(name):
+def project_partkey_extendedprice_discount_operator_def(name, query_plan):
     # type: (str) -> Project
     return Project(
         [
@@ -91,21 +91,21 @@ def project_partkey_extendedprice_discount_operator_def(name):
             ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
             ProjectExpression(lambda t_: t_['_2'], 'l_discount')
         ],
-        name,
+        name, query_plan,
         False)
 
 
-def project_promo_revenue_operator_def(name):
+def project_promo_revenue_operator_def(name, query_plan):
     # type: (str) -> Project
     return Project(
         [
             ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
         ],
-        name,
+        name, query_plan,
         False)
 
 
-def sql_scan_part_partkey_type_part_where_brand12_operator_def(name):
+def sql_scan_part_partkey_type_part_where_brand12_operator_def(name, query_plan):
     # type: (str) -> SQLTableScan
     return SQLTableScan('part.csv',
                         "select "
@@ -115,11 +115,11 @@ def sql_scan_part_partkey_type_part_where_brand12_operator_def(name):
                         "where "
                         "  p_brand = 'Brand#12' "
                         " ",
-                        name,
+                        name, query_plan,
                         False)
 
 
-def sql_scan_part_partkey_where_brand12_operator_def(name):
+def sql_scan_part_partkey_where_brand12_operator_def(name, query_plan):
     # type: (str) -> SQLTableScan
     return SQLTableScan('part.csv',
                         "select "
@@ -129,25 +129,25 @@ def sql_scan_part_partkey_where_brand12_operator_def(name):
                         "where "
                         "  p_brand = 'Brand#12' "
                         " ",
-                        name,
+                        name, query_plan,
                         False)
 
 
-def sql_scan_part_operator_def(name):
+def sql_scan_part_operator_def(name, query_plan):
     return SQLTableScan('part.csv',
                         "select * from S3Object;",
-                        name,
+                        name, query_plan,
                         False)
 
 
-def sql_scan_lineitem_operator_def(name):
+def sql_scan_lineitem_operator_def(name, query_plan):
     return SQLTableScan('lineitem.csv',
                         "select * from S3Object;",
-                        name,
+                        name, query_plan,
                         False)
 
 
-def sql_scan_lineitem_extra_filtered_operator_def(name):
+def sql_scan_lineitem_extra_filtered_operator_def(name, query_plan):
     return SQLTableScan('lineitem.csv',
                         "select "
                         "  * "
@@ -166,13 +166,13 @@ def sql_scan_lineitem_extra_filtered_operator_def(name):
                         "  (l_orderkey = '11590' and l_partkey = '162359') or "
                         "  (l_orderkey = '2945' and l_partkey = '126197') or "
                         "  (l_orderkey = '15648' and l_partkey = '143904');",
-                        name,
+                        name, query_plan,
                         False)
 
 
 def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def(min_shipped_date,
                                                                                  max_shipped_date,
-                                                                                 name):
+                                                                                 name, query_plan):
     return SQLTableScan('lineitem.csv',
                         "select l_partkey, l_extendedprice, l_discount from S3Object "
                         "where "
@@ -180,57 +180,57 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def
                         "cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
                         ";".format(min_shipped_date.strftime('%Y-%m-%d'),
                                    max_shipped_date.strftime('%Y-%m-%d')),
-                        name,
+                        name, query_plan,
                         False)
 
 
-def project_partkey_brand_type_operator_def(name):
+def project_partkey_brand_type_operator_def(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
             ProjectExpression(lambda t_: t_['_3'], 'p_brand'),
             ProjectExpression(lambda t_: t_['_4'], 'p_type')
         ],
-        name,
+        name, query_plan,
         False)
 
 
-def filter_shipdate_operator_def(min_shipped_date, max_shipped_date, name):
+def filter_shipdate_operator_def(min_shipped_date, max_shipped_date, name, query_plan):
     return Filter(
         PredicateExpression(lambda t_:
                             (cast(t_['l_shipdate'], timestamp) >= cast(min_shipped_date, timestamp)) and
                             (cast(t_['l_shipdate'], timestamp) < cast(max_shipped_date, timestamp))),
-        name,
+        name, query_plan,
         False)
 
 
-def bloom_create_l_partkey_operator_def(name):
-    return BloomCreate('l_partkey', name, False)
+def bloom_create_l_partkey_operator_def(name, query_plan):
+    return BloomCreate('l_partkey', name, query_plan, False)
 
 
-def bloom_create_p_partkey_operator_def(name):
-    return BloomCreate('p_partkey', name, False)
+def bloom_create_p_partkey_operator_def(name, query_plan):
+    return BloomCreate('p_partkey', name, query_plan, False)
 
 
-def project_l_partkey_operator_def(name):
+def project_l_partkey_operator_def(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'l_partkey')
         ],
-        name,
+        name, query_plan,
         False)
 
 
-def project_p_partkey_operator_def(name):
+def project_p_partkey_operator_def(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey')
         ],
-        name,
+        name, query_plan,
         False)
 
 
-def bloom_scan_part_partkey_type_brand12_operator_def(name):
+def bloom_scan_part_partkey_type_brand12_operator_def(name, query_plan):
     return SQLTableScanBloomUse('part.csv',
                                 "select "
                                 "  p_partkey, p_type "
@@ -240,11 +240,11 @@ def bloom_scan_part_partkey_type_brand12_operator_def(name):
                                 "  p_brand = 'Brand#12' "
                                 " ",
                                 'p_partkey',
-                                name,
+                                name, query_plan,
                                 False)
 
 
-def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, name):
+def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, name, query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_partkey, l_extendedprice, l_discount "
@@ -258,11 +258,11 @@ def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shippe
                                     max_shipped_date.strftime('%Y-%m-%d'))
                                 ,
                                 'l_partkey',
-                                name,
+                                name, query_plan,
                                 False)
 
 
-def bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date, name):
+def bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date, name, query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_partkey "
@@ -276,15 +276,15 @@ def bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, ma
                                     max_shipped_date.strftime('%Y-%m-%d'))
                                 ,
                                 'l_partkey',
-                                name,
+                                name, query_plan,
                                 False)
 
 
-def collate_operator_def(name):
-    return Collate(name, False)
+def collate_operator_def(name, query_plan):
+    return Collate(name, query_plan, False)
 
 
-def project_partkey_extendedprice_discount_shipdate_operator_def(name):
+def project_partkey_extendedprice_discount_shipdate_operator_def(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
@@ -292,5 +292,5 @@ def project_partkey_extendedprice_discount_shipdate_operator_def(name):
             ProjectExpression(lambda t_: t_['_6'], 'l_discount'),
             ProjectExpression(lambda t_: t_['_10'], 'l_shipdate')
         ],
-        name,
+        name,query_plan,
         False)

@@ -24,12 +24,12 @@ def test_sort_asc():
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'ts',
+                                              'ts', query_plan,
                                               False))
 
-    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', False))
+    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', query_plan, False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     # Write the plan graph
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
@@ -75,12 +75,12 @@ def test_sort_desc():
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'ts',
+                                              'ts', query_plan,
                                               False))
 
-    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'DESC')], 's', False))
+    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'DESC')], 's', query_plan, False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     # Write the plan graph
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
@@ -126,12 +126,12 @@ def test_sort_empty():
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
                                               'limit 0;',
-                                              'ts',
+                                              'ts', query_plan,
                                               False))
 
-    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', False))
+    s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', query_plan, False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     # Write the plan graph
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())

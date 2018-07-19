@@ -3,6 +3,7 @@
 
 """
 import cProfile
+import time
 
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
@@ -58,14 +59,14 @@ class SQLTableScan(Operator):
     def on_receive(self, message, producer_name):
         raise NotImplementedError
 
-    def __init__(self, s3key, s3sql, name, log_enabled):
+    def __init__(self, s3key, s3sql, name, query_plan, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 
         :param s3key: The object key to select against
         :param s3sql: The s3 select sql
         """
 
-        super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), log_enabled)
+        super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -84,6 +85,10 @@ class SQLTableScan(Operator):
     def do_run(self):
 
         self.op_metrics.timer_start()
+
+        if self.log_enabled:
+            print("{} | {}('{}') | Started"
+                  .format(time.time(), self.__class__.__name__, self.name))
 
         cur = Cursor().select(self.s3key, self.s3sql)
 
@@ -111,8 +116,8 @@ class SQLTableScan(Operator):
 
                 self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
 
-            if self.log_enabled:
-                print("{}('{}') | Sending field values: {}".format(self.__class__.__name__, self.name, t))
+            # if self.log_enabled:
+            #     print("{}('{}') | Sending field values: {}".format(self.__class__.__name__, self.name, t))
 
             self.send(TupleMessage(Tuple(t)), self.consumers)
 

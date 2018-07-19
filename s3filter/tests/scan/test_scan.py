@@ -23,10 +23,10 @@ def test_scan_simple():
     # Query plan
     ts = query_plan.add_operator(
         TableScan('nation.csv',
-                  'ts',
+                  'ts', query_plan,
                   False))
     c = query_plan.add_operator(
-        Collate('c', False))
+        Collate('c', query_plan, False))
 
     ts.connect(c)
 
@@ -71,10 +71,10 @@ def test_scan_empty():
     ts = query_plan.add_operator(
         SQLTableScan('nation.csv',
                      "select * from s3object limit 0",
-                     'ts',
+                     'ts', query_plan,
                      False))
     c = query_plan.add_operator(
-        Collate('c', False))
+        Collate('c', query_plan, False))
 
     ts.connect(c)
 

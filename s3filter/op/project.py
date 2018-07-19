@@ -47,7 +47,7 @@ class Project(Operator):
 
     """
 
-    def __init__(self, project_exprs, name, log_enabled):
+    def __init__(self, project_exprs, name,  query_plan, log_enabled):
         """Constructs a new Project operator.
 
         :param project_exprs: The expressions defining the projection.
@@ -55,26 +55,28 @@ class Project(Operator):
         :param log_enabled: Whether logging is enabled
         """
 
-        super(Project, self).__init__(name, ProjectMetrics(), log_enabled)
+        super(Project, self).__init__(name, ProjectMetrics(),  query_plan, log_enabled)
 
         self.project_exprs = project_exprs
 
         self.field_names_index = None
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, ms, _producer):
         """Handles the event of receiving a new message from a producer.
 
-        :param m: The received tuple
+        :param ms: The received tuples
         :param _producer: The producer of the tuple
         :return: None
         """
 
         # print("Project | {}".format(t))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.on_receive_tuple(m.tuple_)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
-        if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        pass
 
     def on_receive_tuple(self, tuple_):
         """Handles the receipt of a tuple. The tuple is mapped to a new tuple using the given projection expressions.
@@ -112,8 +114,8 @@ class Project(Operator):
 
             self.op_metrics.rows_projected += 1
 
-            if self.log_enabled:
-                print("{}('{}') | Sending projected field values: from: {} to: {}"
-                      .format(self.__class__.__name__, self.name, tuple_, projected_field_values))
+            # if self.log_enabled:
+            #     print("{}('{}') | Sending projected field values: from: {} to: {}"
+            #           .format(self.__class__.__name__, self.name, tuple_, projected_field_values))
 
             self.send(TupleMessage(Tuple(projected_field_values)), self.consumers)

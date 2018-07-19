@@ -15,7 +15,7 @@ class SQLTableScanBloomUse(Operator):
 
     """
 
-    def __init__(self, s3key, s3sql, bloom_filter_field_name, name, log_enabled):
+    def __init__(self, s3key, s3sql, bloom_filter_field_name, name, query_plan, log_enabled):
         """
 
         :param s3key: The s3 key to select against
@@ -25,7 +25,7 @@ class SQLTableScanBloomUse(Operator):
         :param log_enabled: Whether logging is enabled
         """
 
-        super(SQLTableScanBloomUse, self).__init__(name, SQLTableScanMetrics(), log_enabled)
+        super(SQLTableScanBloomUse, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -51,7 +51,7 @@ class SQLTableScanBloomUse(Operator):
 
         pass
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, ms, _producer):
         """Handles the event of receiving a new message from a producer.
 
         :param m: The received message
@@ -59,11 +59,12 @@ class SQLTableScanBloomUse(Operator):
         :return: None
         """
 
-        if type(m) is BloomMessage:
-            self.__bloom_filter = SlicedSQLBloomFilter(m.bloom_filter)
-            self.start()
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is BloomMessage:
+                self.__bloom_filter = SlicedSQLBloomFilter(m.bloom_filter)
+                self.start()
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def start(self):
         """Executes the query and sends the tuples to consumers.

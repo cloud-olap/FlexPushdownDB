@@ -2,11 +2,13 @@
 """Collation support
 
 """
-
+import cPickle
 import sys
 
+import dill
+
 from s3filter.op.message import TupleMessage
-from s3filter.op.operator_base import Operator
+from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.plan.op_metrics import OpMetrics
 
 
@@ -16,12 +18,12 @@ class Collate(Operator):
 
     """
 
-    def __init__(self, name, log_enabled):
+    def __init__(self, name, query_plan, log_enabled):
         """Constructs a new Collate operator.
 
         """
 
-        super(Collate, self).__init__(name, OpMetrics(), log_enabled)
+        super(Collate, self).__init__(name, OpMetrics(), query_plan, log_enabled)
 
         self.__tuples = []
 
@@ -31,22 +33,36 @@ class Collate(Operator):
         :return: The collated tuples
         """
 
+        if self.async_:
+            self.queue.put(cPickle.dumps(EvalMessage("self.local_tuples()")))
+            tuples = self.query_plan.listen(EvaluatedMessage).val
+            return tuples
+        else:
+            return self.__tuples
+
+    def local_tuples(self):
+        """Accessor for the collated tuples
+
+        :return: The collated tuples
+        """
+
         return self.__tuples
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, ms, _producer):
         """Handles the event of receiving a message from a producer. Will simply append the tuple to the internal
         list.
 
-        :param m: The received message
+        :param ms: The received messages
         :param _producer: The producer of the tuple
         :return: None
         """
 
         # print("Collate | {}".format(t))
-        if type(m) is TupleMessage:
-            self.__on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.__on_receive_tuple(m.tuple_)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_tuple(self, tuple_):
         """Event handler for a received tuple

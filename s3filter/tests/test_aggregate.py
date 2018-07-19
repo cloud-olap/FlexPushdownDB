@@ -25,17 +25,17 @@ def test_aggregate_count():
 
     # Query plan
     # select count(*) from supplier.csv
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
 
     a = query_plan.add_operator(Aggregate(
         [
             AggregateExpression(AggregateExpression.COUNT, lambda t_: t_['_0'])
             # count(s_suppkey)
         ],
-        'a',
+        'a', query_plan,
         False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(a)
     a.connect(c)
@@ -74,16 +74,16 @@ def test_aggregate_sum():
 
     # Query plan
     # select sum(float(s_acctbal)) from supplier.csv
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
 
     a = query_plan.add_operator(Aggregate(
         [
             AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5']))
         ],
-        'a',
+        'a', query_plan,
         False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(a)
     a.connect(c)
@@ -125,16 +125,16 @@ def test_aggregate_empty():
 
     # Query plan
     # select sum(float(s_acctbal)) from supplier.csv limit 0
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'ts', False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
 
     a = query_plan.add_operator(Aggregate(
         [
             AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['_5']))
         ],
-        'a',
+        'a', query_plan,
         False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(a)
     a.connect(c)

@@ -4,10 +4,13 @@
 """
 import os
 
+import dill
+
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.hash_join import HashJoin
 from s3filter.op.join_expression import JoinExpression
+from s3filter.op.operator_base import EvalMessage, EvaluatedMessage
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.tuple import IndexedTuple
@@ -21,25 +24,25 @@ def test_join_baseline():
     :return: None
     """
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(is_async=True, buffer_size=1024)
 
     # Query plan
     supplier_scan = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object;', 'supplier_scan', False))
+        SQLTableScan('region.csv', 'select * from S3Object;', 'supplier_scan', query_plan, True))
 
     supplier_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', False))
+        Project([ProjectExpression(lambda t_: t_['_0'], 'r_regionkey')], 'supplier_project', query_plan, True))
 
     nation_scan = query_plan.add_operator(
-        SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', False))
+        SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', query_plan, True))
 
     nation_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', False))
+        Project([ProjectExpression(lambda t_: t_['_2'], 'n_regionkey')], 'nation_project', query_plan, True))
 
     supplier_nation_join = query_plan.add_operator(
-        HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'supplier_nation_join', False))
+        HashJoin(JoinExpression('r_regionkey', 'n_regionkey'), 'supplier_nation_join', query_plan, True))
 
-    collate = query_plan.add_operator(Collate('collate', False))
+    collate = query_plan.add_operator(Collate('collate', query_plan, True))
 
     supplier_scan.connect(supplier_project)
     nation_scan.connect(nation_project)
@@ -53,30 +56,29 @@ def test_join_baseline():
     # Start the query
     query_plan.execute()
 
-    # Assert the results
-    # num_rows = 0
-    # for t in collate.tuples():
-    #     num_rows += 1
-    #     print("{}:{}".format(num_rows, t))
+    tuples = collate.tuples()
 
-    # collate.print_tuples()
+    collate.print_tuples(tuples)
 
     # Write the metrics
     query_plan.print_metrics()
 
-    field_names = ['s_nationkey', 'n_nationkey']
+    # Shut everything down
+    query_plan.stop()
 
-    # assert len(collate.tuples()) == 10000 + 1
+    field_names = ['r_regionkey', 'n_regionkey']
 
-    assert collate.tuples()[0] == field_names
+    assert len(tuples) == 25 + 1
+
+    assert tuples[0] == field_names
 
     num_rows = 0
-    for t in collate.tuples():
+    for t in tuples:
         num_rows += 1
         # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
         if num_rows > 1:
             lt = IndexedTuple.build(t, field_names)
-            assert lt['s_nationkey'] == lt['n_nationkey']
+            assert lt['r_regionkey'] == lt['n_regionkey']
 
 
 def test_r_to_l_join():
@@ -89,21 +91,21 @@ def test_r_to_l_join():
 
     # Query plan
     supplier_scan = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object;', 'supplier_scan', False))
+        SQLTableScan('supplier.csv', 'select * from S3Object;', 'supplier_scan', query_plan, False))
 
     supplier_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', False))
+        Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', query_plan, False))
 
     nation_scan = query_plan.add_operator(
-        SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', False))
+        SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', query_plan, False))
 
     nation_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', False))
+        Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', query_plan, False))
 
     supplier_nation_join = query_plan.add_operator(
-        HashJoin(JoinExpression('n_nationkey', 's_nationkey'), 'supplier_nation_join', False))
+        HashJoin(JoinExpression('n_nationkey', 's_nationkey'), 'supplier_nation_join', query_plan, False))
 
-    collate = query_plan.add_operator(Collate('collate', False))
+    collate = query_plan.add_operator(Collate('collate', query_plan, False))
 
     supplier_scan.connect(supplier_project)
     nation_scan.connect(nation_project)
@@ -155,21 +157,21 @@ def test_join_empty():
 
     # Query plan
     supplier_scan = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'supplier_scan', False))
+        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'supplier_scan', query_plan, False))
 
     supplier_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', False))
+        Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', query_plan, False))
 
     nation_scan = query_plan.add_operator(
-        SQLTableScan('nation.csv', 'select * from S3Object limit 0;', 'nation_scan', False))
+        SQLTableScan('nation.csv', 'select * from S3Object limit 0;', 'nation_scan', query_plan, False))
 
     nation_project = query_plan.add_operator(
-        Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', False))
+        Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', query_plan, False))
 
     supplier_nation_join = query_plan.add_operator(
-        HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'supplier_nation_join', False))
+        HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'supplier_nation_join', query_plan, False))
 
-    collate = query_plan.add_operator(Collate('collate', False))
+    collate = query_plan.add_operator(Collate('collate', query_plan, False))
 
     supplier_scan.connect(supplier_project)
     nation_scan.connect(nation_project)

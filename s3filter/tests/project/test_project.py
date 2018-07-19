@@ -29,7 +29,7 @@ def test_project_simple():
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'ts',
+                                              'ts', query_plan,
                                               False))
 
     p = query_plan.add_operator(Project(
@@ -38,10 +38,10 @@ def test_project_simple():
             ProjectExpression(lambda t_: t_['_0'], 'n_nationkey'),
             ProjectExpression(lambda t_: t_['_3'], 'n_comment')
         ],
-        'p',
+        'p', query_plan,
         False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(p)
     p.connect(c)
@@ -88,7 +88,7 @@ def test_project_empty():
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               "select * from S3Object "
                                               "limit 0;",
-                                              'ts',
+                                              'ts', query_plan,
                                               False))
 
     p = query_plan.add_operator(Project(
@@ -97,10 +97,10 @@ def test_project_empty():
             ProjectExpression(lambda t_: t_['_0'], 'n_nationkey'),
             ProjectExpression(lambda t_: t_['_3'], 'n_comment')
         ],
-        'p',
+        'p', query_plan,
         False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(p)
     p.connect(c)
@@ -145,7 +145,7 @@ def test_project_perf():
     random_table_scan = query_plan.add_operator(
         RandomTableScan(num_rows,
                         random_col_defs,
-                        'random_table_scan',
+                        'random_table_scan', query_plan,
                         False))
 
     project = query_plan.add_operator(Project(
@@ -154,12 +154,12 @@ def test_project_perf():
             ProjectExpression(lambda t_: t_['_1'], 'r_1'),
             ProjectExpression(lambda t_: t_['_2'], 'r_2')
         ],
-        'project',
+        'project', query_plan,
         False))
 
     project.set_profiled(True, profile_file_name)
 
-    collate = query_plan.add_operator(Collate('collate', False))
+    collate = query_plan.add_operator(Collate('collate', query_plan, False))
 
     random_table_scan.connect(project)
     project.connect(collate)

@@ -20,17 +20,17 @@ def test_filter_baseline():
     :return:
     """
 
-    query_plan = QueryPlan()
+    query_plan = QueryPlan(buffer_size=64)
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', False))
+    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', query_plan, False))
 
     f = query_plan.add_operator(
         Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)),
-               'f',
+               'f', query_plan,
                False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(f)
     f.connect(c)
@@ -75,14 +75,14 @@ def test_filter_empty():
     query_plan = QueryPlan()
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 0;', 'ts', False))
+    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
 
     f = query_plan.add_operator(
         Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)),
-               'f',
+               'f', query_plan,
                False))
 
-    c = query_plan.add_operator(Collate('c', False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(f)
     f.connect(c)

@@ -2,6 +2,8 @@
 """Query plan support
 
 """
+import cPickle
+import traceback
 from collections import OrderedDict, deque
 from multiprocessing import Queue
 
@@ -20,8 +22,8 @@ class QueryPlan(object):
 
     """
 
-    def __init__(self, operators=None, is_streamed=True, is_async=False):
-        # type: (list, bool, bool) -> None
+    def __init__(self, operators=None, is_async=False, buffer_size=1024):
+        # type: (list, bool, int) -> None
         """
 
         :param operators:
@@ -38,10 +40,10 @@ class QueryPlan(object):
             for o in operators:
                 self.operators[o.name] = o
 
-        self.is_streamed = is_streamed
-
         self.is_async = is_async
         self.queue = Queue()
+
+        self.buffer_size = buffer_size
 
     def add_operator(self, operator):
         """Adds the operator to the list of operators in the plan. This method ensures the operators are sorted by
@@ -55,7 +57,8 @@ class QueryPlan(object):
             raise Exception("Cannot add multiple operators with same name. "
                             "Operator '{}' already added".format(operator.name))
 
-        operator.set_streamed(self.is_streamed)
+        operator.set_query_plan(self)
+        operator.set_buffer_size(self.buffer_size)
 
         self.operators[operator.name] = operator
         sorted_operators = sorted(self.operators.values(), key=lambda o: o.name)
@@ -166,6 +169,10 @@ class QueryPlan(object):
                 root_operators.append(o)
         return root_operators
 
+    def send(self, message, operator_name):
+        o = self.operators[operator_name]
+        o.queue.put(cPickle.dumps(message))
+
     def print_metrics(self):
 
         print("")
@@ -176,8 +183,8 @@ class QueryPlan(object):
         print("Plan")
         print("----")
 
-        print("is_streamed: {}".format(self.is_streamed))
-        print("is_async: {}".format(self.is_async))
+        print("buffer_size: {}".format(self.buffer_size))
+        print("is_parallel: {}".format(self.is_async))
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
 
         print("")
@@ -188,12 +195,12 @@ class QueryPlan(object):
 
         if self.is_async:
             for o in operators:
-                o.queue.put(dill.dumps(EvalMessage("self.op_metrics")))
+                o.queue.put(cPickle.dumps(EvalMessage("self.op_metrics")))
                 o.op_metrics = self.listen(EvaluatedMessage).val
 
         OpMetrics.print_metrics(operators)
 
-        self.assert_operator_time_equals_plan_time()
+        # self.assert_operator_time_equals_plan_time()
 
         print("")
 
@@ -232,10 +239,9 @@ class QueryPlan(object):
 
     def execute(self):
 
-        # Set async
         if self.is_async:
-            for o in self.operators.values():
-                o.init_async(self.queue)
+            map(lambda o: o.init_async(self.queue), self.operators.values())
+            map(lambda o: o.boot(), self.operators.values())
 
         # Find the root operators
         root_operators = self.find_root_operators()
@@ -260,20 +266,27 @@ class QueryPlan(object):
         self.total_elapsed_time = self.__timer.elapsed()
 
     def listen(self, message_type):
+        try:
+            while True:
+                pickled_item = self.queue.get()
+                item = cPickle.loads(pickled_item)
+                # print(item)
 
-        while True:
-            pickled_item = self.queue.get()
-            item = dill.loads(pickled_item)
-            # print(item)
+                if type(item) == message_type:
+                    return item
+                else:
+                    raise Exception("Unrecognized message {}".format(item))
 
-            if type(item) == message_type:
-                return item
-            else:
-                raise Exception("Unrecognized message {}".format(item))
+        except BaseException as e:
+            tb = traceback.format_exc(e)
+            print(tb)
 
     def stop(self):
-        map(lambda o: o.queue.put(dill.dumps(StopMessage())), self.operators.values())
-        self.join()
+        if self.is_async:
+            map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
+            self.join()
+        else:
+            pass
 
     def join(self):
         return map(lambda o: o.join(), self.operators.values())

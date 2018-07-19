@@ -30,11 +30,11 @@ class Graph(object):
                             .format(operator.__class__.__name__, operator.name), shape="box")
 
         if type(operator) is NestedLoopJoin or type(operator) is HashJoin:
-            self.graph.add_edge(operator.producers[0].name, operator.name, "left", label="left")
-            self.graph.add_edge(operator.producers[1].name, operator.name, "right", label="right")
+            self.graph.add_edge(operator.producers[0], operator.name, "left", label="left")
+            self.graph.add_edge(operator.producers[1], operator.name, "right", label="right")
         else:
             for p in operator.producers:
-                self.graph.add_edge(p.name, operator.name)
+                self.graph.add_edge(p, operator.name)
 
     def write(self, test_output_dir):
         """Writes the graph to an SVG file with the name of the graph.

@@ -15,11 +15,11 @@ from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 
 
-def collate_op():
-    return Collate('collate', False)
+def collate_op(query_plan):
+    return Collate('collate', query_plan, False)
 
 
-def aggregate_def():
+def aggregate_def(query_plan):
     return Aggregate(
         [
             AggregateExpression(
@@ -27,23 +27,23 @@ def aggregate_def():
                 lambda t_: float(t_['l_extendedprice']) * float((1 - float(t_['l_discount']))))
         ],
         'aggregate',
-        False)
+        query_plan, False)
 
 
-def join_op():
-    return HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', False)
+def join_op(query_plan):
+    return HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', query_plan, False)
 
 
-def aggregate_project_def():
+def aggregate_project_def(query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'revenue')
         ],
         'aggregate_project',
-        False)
+        query_plan, False)
 
 
-def filter_def():
+def filter_def(query_plan):
     return Filter(
         PredicateExpression(lambda t_:
                             (
@@ -69,10 +69,10 @@ def filter_def():
                                     t_['l_shipinstruct'] == 'DELIVER IN PERSON'
                             )),
         'filter',
-        False)
+        query_plan, False)
 
 
-def project_partkey_brand_size_container_op():
+def project_partkey_brand_size_container_op(query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
@@ -81,10 +81,10 @@ def project_partkey_brand_size_container_op():
             ProjectExpression(lambda t_: t_['_6'], 'p_container')
         ],
         'part_project',
-        False)
+        query_plan, False)
 
 
-def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op():
+def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op(query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
@@ -95,10 +95,10 @@ def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op():
             ProjectExpression(lambda t_: t_['_14'], 'l_shipmode')
         ],
         'lineitem_project',
-        False)
+        query_plan, False)
 
 
-def sql_scan_part_select_all_where_partkey_op():
+def sql_scan_part_select_all_where_partkey_op(query_plan):
     return SQLTableScan('part.csv',
                         "select "
                         "  * "
@@ -109,10 +109,10 @@ def sql_scan_part_select_all_where_partkey_op():
                         "  p_partkey = '104277' or "
                         "  p_partkey = '104744' ",
                         'part_scan',
-                        False)
+                        query_plan, False)
 
 
-def sql_scan_lineitem_select_all_where_partkey_op():
+def sql_scan_lineitem_select_all_where_partkey_op(query_plan):
     return SQLTableScan('lineitem.csv',
                         "select "
                         "  * "
@@ -123,30 +123,30 @@ def sql_scan_lineitem_select_all_where_partkey_op():
                         "  l_partkey = '104277' or "
                         "  l_partkey = '104744' ",
                         'lineitem_scan',
-                        False)
+                        query_plan, False)
 
 
-def sql_scan_part_select_all_op():
+def sql_scan_part_select_all_op(query_plan):
     return SQLTableScan('part.csv',
                         "select "
                         "  * "
                         "from "
                         "  S3Object ",
                         'part_scan',
-                        False)
+                        query_plan, False)
 
 
-def sql_scan_lineitem_select_all_op():
+def sql_scan_lineitem_select_all_op(query_plan):
     return SQLTableScan('lineitem.csv',
                         "select "
                         "  * "
                         "from "
                         "  S3Object ",
                         'lineitem_scan',
-                        False)
+                        query_plan, False)
 
 
-def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op():
+def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_partkey, "
@@ -185,10 +185,10 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "  ) ",
                                 'l_partkey',
                                 'lineitem_bloom_use',
-                                False)
+                                query_plan, False)
 
 
-def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op():
+def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_partkey, "
@@ -224,10 +224,10 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "  ) ",
                                 'l_partkey',
                                 'lineitem_bloom_use',
-                                False)
+                                query_plan, False)
 
 
-def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op():
+def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(query_plan):
     return SQLTableScan('lineitem.csv',
                         "select "
                         "  l_partkey, "
@@ -262,10 +262,10 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "      ) "
                         "  ) ",
                         'lineitem_scan',
-                        False)
+                        query_plan, False)
 
 
-def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op():
+def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(query_plan):
     return SQLTableScan('lineitem.csv',
                         "select "
                         "  l_partkey, "
@@ -297,14 +297,14 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "      ) "
                         "  ) ",
                         'lineitem_scan',
-                        False)
+                        query_plan, False)
 
 
-def bloom_create_partkey_op():
-    return BloomCreate('p_partkey', 'part_bloom_create', False)
+def bloom_create_partkey_op(query_plan):
+    return BloomCreate('p_partkey', 'part_bloom_create', query_plan, False)
 
 
-def project_partkey_brand_size_container_filtered_op():
+def project_partkey_brand_size_container_filtered_op(query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
@@ -313,10 +313,10 @@ def project_partkey_brand_size_container_filtered_op():
             ProjectExpression(lambda t_: t_['_3'], 'p_container')
         ],
         'part_project',
-        False)
+        query_plan, False)
 
 
-def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op():
+def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
@@ -327,10 +327,10 @@ def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filter
             ProjectExpression(lambda t_: t_['_5'], 'l_shipmode')
         ],
         'lineitem_project',
-        False)
+        query_plan, False)
 
 
-def sql_scan_part_partkey_brand_size_container_where_filtered_op():
+def sql_scan_part_partkey_brand_size_container_where_filtered_op(query_plan):
     return SQLTableScan('part.csv',
                         "select "
                         "  p_partkey, "
@@ -375,10 +375,10 @@ def sql_scan_part_partkey_brand_size_container_where_filtered_op():
                         "      ) "
                         "  ) ",
                         'part_scan',
-                        False)
+                        query_plan, False)
 
 
-def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op():
+def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(query_plan):
     return SQLTableScan('part.csv',
                         "select "
                         "  p_partkey, "
@@ -426,4 +426,4 @@ def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op():
                         "      ) "
                         "  ) ",
                         'part_scan',
-                        False)
+                        query_plan, False)

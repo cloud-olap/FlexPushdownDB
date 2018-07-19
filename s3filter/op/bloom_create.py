@@ -45,7 +45,7 @@ class BloomCreate(Operator):
 
     BLOOM_FILTER_FP_RATE = 0.3
 
-    def __init__(self, bloom_field_name, name, log_enabled):
+    def __init__(self, bloom_field_name, name, query_plan, log_enabled):
         """
 
         :param bloom_field_name: The tuple field name to extract values from to create the bloom filter
@@ -53,7 +53,7 @@ class BloomCreate(Operator):
         :param log_enabled: Logging enabled
         """
 
-        super(BloomCreate, self).__init__(name, BloomCreateMetrics(), log_enabled)
+        super(BloomCreate, self).__init__(name, BloomCreateMetrics(), query_plan, log_enabled)
 
         self.__bloom_field_name = bloom_field_name
 
@@ -95,18 +95,18 @@ class BloomCreate(Operator):
 
         Operator.connect(self, consumer)
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, ms, _producer):
         """Event handler for receiving a message
 
-        :param m: The message
+        :param ms: The messages
         :param _producer: The producer that sent the message
         :return: None
         """
-
-        if type(m) is TupleMessage:
-            self.__on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.__on_receive_tuple(m.tuple_)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def on_producer_completed(self, producer_name):
         """Event handler for a completed producer. When producers complete the bloom filter can be sent.

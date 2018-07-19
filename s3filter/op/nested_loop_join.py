@@ -96,18 +96,18 @@ class NestedLoopJoin(Operator):
         self.__r_producer_name = producer.name
         Operator.connect(producer, self)
 
-    def on_receive(self, m, producer):
+    def on_receive(self, ms, producer):
         """Handles the event of receiving a new message from a producer.
 
-        :param m: The received message
+        :param ms: The received messages
         :param producer: The producer of the tuple
         :return: None
         """
-
-        if type(m) is TupleMessage:
-            self.on_receive_tuple(m.tuple_, producer)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.on_receive_tuple(m.tuple_, producer)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_, producer):
         """Check that the tuple has been produced by a connected producer, and contains a field in the

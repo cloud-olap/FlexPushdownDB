@@ -16,14 +16,14 @@ class Group(Operator):
 
     """
 
-    def __init__(self, group_field_names, aggregate_expressions, name, log_enabled):
+    def __init__(self, group_field_names, aggregate_expressions, name, query_plan, log_enabled):
         """Creates a new group by operator.
 
         :param group_field_names: The names of the fields to group by
         :param aggregate_expressions: The list of aggregate expressions
         """
 
-        super(Group, self).__init__(name, OpMetrics(), log_enabled)
+        super(Group, self).__init__(name, OpMetrics(), query_plan, log_enabled)
 
         self.group_field_names = group_field_names
         self.aggregate_expressions = aggregate_expressions
@@ -34,21 +34,21 @@ class Group(Operator):
         # evaluated aggregate results
         self.group_contexts = {}
 
-    def on_receive(self, m, _producer):
+    def on_receive(self, ms, _producer):
         """ Handles the event of receiving a new tuple from a producer. Applies each aggregate function to the tuple and
         then inserts those aggregates into the tuples dict indexed by the grouping columns values.
 
         Once downstream producers are completed the tuples will be send to downstream consumers.
 
-        :param m: The received tuples
+        :param ms: The received tuples
         :param _producer: The producer of the tuple
         :return: None
         """
-
-        if type(m) is TupleMessage:
-            self.__on_receive_tuple(m.tuple_)
-        else:
-            raise Exception("Unrecognized message {}".format(m))
+        for m in ms:
+            if type(m) is TupleMessage:
+                self.__on_receive_tuple(m.tuple_)
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_tuple(self, tuple_):
 
