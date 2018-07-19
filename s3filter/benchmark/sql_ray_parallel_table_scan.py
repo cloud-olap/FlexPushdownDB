@@ -12,7 +12,8 @@ def main(parts):
 
     parallel_scanner.start()
     print('records count {}'.format(len(collate.tuples())))
-    print(collate.tuples()[-10:-1])
+    collate.print_tuples()
+    collate.write_to_file('tuples.txt')
 
 
 if __name__ == "__main__":

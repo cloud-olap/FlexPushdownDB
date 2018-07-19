@@ -67,6 +67,10 @@ class SQLRayParallelShardedTableScan(Operator):
         self.records = np.vstack(self.records)
         print("All parts finished")
         print('got {} records'.format(len(self.records)))
+
+        for rec in self.records[0:10]:
+            self.send(TupleMessage(Tuple(rec)), self.consumers)
+
         self.complete()
         self.op_metrics.timer_stop()
         self.print_stats(to_file=self.s3key + '.' + str(self.parts) +'.stats.txt')
