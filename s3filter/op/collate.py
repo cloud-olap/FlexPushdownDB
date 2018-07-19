@@ -56,6 +56,15 @@ class Collate(Operator):
 
         self.__tuples.append(tuple_)
 
+    def write_to_file(self, out_file_name):
+        """
+        write tuples to out_file in tab separated format
+        :param out_file_name: the file name to write tuples to
+        :return:
+        """
+        with open(out_file_name, 'w') as out_file:
+            self.write_to(out_file)
+
     def print_tuples(self):
         """Prints the tuples in tab separated format
 
@@ -66,6 +75,9 @@ class Collate(Operator):
 
         print('')
 
+        self.write_to(sys.stdout)
+
+    def write_to(self, out_stream):
         field_names = False
         for t in self.__tuples:
             if not field_names:
@@ -77,25 +89,25 @@ class Collate(Operator):
                 first_field_name = True
                 for f in t_iter:
                     if not first_field_name:
-                        sys.stdout.write(' | ')
+                        out_stream.write(' | ')
                     else:
                         first_field_name = False
 
-                    sys.stdout.write(str(f))
+                    out_stream.write(str(f))
                     field_names_len += len(str(f))
 
-                sys.stdout.write('\n')
-                print('-' * (field_names_len + ((len(t) - 1) * len(' | '))))
+                out_stream.write('\n')
+                out_stream.write('-' * (field_names_len + ((len(t) - 1) * len(' | '))))
+                out_stream.write('\n')
                 field_names = True
             else:
                 t_iter = iter(t)
                 first_field_val = True
                 for f in t_iter:
                     if not first_field_val:
-                        sys.stdout.write(' | ')
+                        out_stream.write(' | ')
                     else:
                         first_field_val = False
 
-                    sys.stdout.write(str(f))
-
-                print('')
+                    out_stream.write(str(f))
+                out_stream.write('\n')
