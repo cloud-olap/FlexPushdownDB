@@ -180,10 +180,8 @@ class HashJoin(Operator):
 
         if producer_name == self.l_producer_name:
             self.l_producer_completed = True
-            # print("YAH!!!!!!!! {} {} {} {}".format(self.__l_producer_completed, self.__r_producer_completed, self.runner.name, producer_name))
         elif producer_name == self.r_producer_name:
             self.r_producer_completed = True
-            # print("YAH2!!!!!!! {} {} {} {}".format(self.__l_producer_completed, self.__r_producer_completed, self.runner.name, producer_name))
         else:
             raise Exception("Unrecognized producer {} has completed".format(producer_name))
 
@@ -207,7 +205,7 @@ class HashJoin(Operator):
             # del self.__l_tuples
             # del self.__r_tuples
 
-            Operator.on_producer_completed(self, producer_name)
+        Operator.on_producer_completed(self, producer_name)
 
     def join_field_values(self):
         """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.
@@ -256,12 +254,12 @@ class HashJoin(Operator):
             outer_tuple_field_value = outer_tuple[outer_tuple_field_index]
             inner_tuples = inner_tuples_dict.get(outer_tuple_field_value, None)
 
-            if self.log_enabled:
-                print("{}('{}') | Joining Outer: {} Inner: {}".format(
-                    self.__class__.__name__,
-                    self.name,
-                    outer_tuple,
-                    inner_tuples))
+            # if self.log_enabled:
+            #     print("{}('{}') | Joining Outer: {} Inner: {}".format(
+            #         self.__class__.__name__,
+            #         self.name,
+            #         outer_tuple,
+            #         inner_tuples))
 
             if inner_tuples is not None:
 
@@ -272,11 +270,11 @@ class HashJoin(Operator):
                     else:
                         t = inner_tuple + outer_tuple
 
-                    if self.log_enabled:
-                        print("{}('{}') | Sending field values [{}]".format(
-                            self.__class__.__name__,
-                            self.name,
-                            {'data': t}))
+                    # if self.log_enabled:
+                    #     print("{}('{}') | Sending field values [{}]".format(
+                    #         self.__class__.__name__,
+                    #         self.name,
+                    #         {'data': t}))
 
                     self.op_metrics.rows_joined += 1
 

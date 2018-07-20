@@ -116,8 +116,8 @@ class SQLTableScan(Operator):
 
                 self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
 
-            # if self.log_enabled:
-            #     print("{}('{}') | Sending field values: {}".format(self.__class__.__name__, self.name, t))
+            if self.log_enabled:
+                print("{}('{}') | Sending field values: {}".format(self.__class__.__name__, self.name, t))
 
             self.send(TupleMessage(Tuple(t)), self.consumers)
 

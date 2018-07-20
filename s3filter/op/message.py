@@ -44,3 +44,9 @@ class BloomMessage(object):
                                     ScalableBloomFilter.__class__.__name__))
 
         self.bloom_filter = bloom_filter
+
+
+class HashTableMessage(object):
+
+    def __init__(self, hashtable):
+        self.hashtable = hashtable

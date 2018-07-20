@@ -228,6 +228,7 @@ class Operator(object):
             raise Exception("Consumer with name '{}' already added".format(consumer.name))
 
         self.consumers.append(consumer)
+        self.consumer_completions[consumer.name] = False
         self.consumers = sorted(self.consumers, key=lambda c: c.name)
 
     def add_producer(self, producer):
@@ -244,6 +245,7 @@ class Operator(object):
             raise Exception("Producer with name '{}' already added".format(producer.name))
 
         self.producers.append(producer)
+        self.producer_completions[producer.name] = False
         self.producers = sorted(self.producers, key=lambda p: p.name)
 
     def join(self):
