@@ -2,12 +2,13 @@
 """Query plan support
 
 """
-import cPickle
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 import traceback
 from collections import OrderedDict, deque
 from multiprocessing import Queue
 
-import dill
+import boto3
 import networkx
 
 from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
@@ -28,6 +29,8 @@ class QueryPlan(object):
 
         :param operators:
         """
+
+        self.s3 = boto3.client('s3')
 
         self.__timer = Timer()
         self.total_elapsed_time = 0.0
@@ -171,7 +174,7 @@ class QueryPlan(object):
 
     def send(self, message, operator_name):
         o = self.operators[operator_name]
-        o.queue.put(cPickle.dumps(message))
+        o.queue.put(message)
 
     def print_metrics(self):
 
@@ -195,7 +198,7 @@ class QueryPlan(object):
 
         if self.is_async:
             for o in operators:
-                o.queue.put(cPickle.dumps(EvalMessage("self.op_metrics")))
+                o.queue.put(EvalMessage("self.op_metrics"))
                 o.op_metrics = self.listen(EvaluatedMessage).val
 
         OpMetrics.print_metrics(operators)
@@ -249,8 +252,8 @@ class QueryPlan(object):
         self.__timer.start()
 
         # Start the root operators
-        for o in root_operators:
-            o.start()
+        for ro in root_operators:
+            ro.start()
 
         # Things become event driven from here, because we may be running async, so we essentially go
         # into an event loop with a state machine to keep track of where we are
@@ -268,8 +271,8 @@ class QueryPlan(object):
     def listen(self, message_type):
         try:
             while True:
-                pickled_item = self.queue.get()
-                item = cPickle.loads(pickled_item)
+                item = self.queue.get()
+                # item = cPickle.loads(pickled_item)
                 # print(item)
 
                 if type(item) == message_type:
@@ -283,7 +286,7 @@ class QueryPlan(object):
 
     def stop(self):
         if self.is_async:
-            map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
+            map(lambda o: o.queue.put(StopMessage()), self.operators.values())
             self.join()
         else:
             pass

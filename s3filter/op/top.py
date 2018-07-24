@@ -5,6 +5,8 @@
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class Top(Operator):
@@ -22,7 +24,7 @@ class Top(Operator):
     def on_receive(self, ms, _producer):
         """Handles the receipt of a message from a producer.
 
-        :param m: The received message
+        :param ms: The received messages
         :param _producer: The producer that emitted the message
         :return: None
         """

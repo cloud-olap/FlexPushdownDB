@@ -2,6 +2,7 @@
 """Tests for some select edge cases
 
 """
+import boto3
 import pytest
 
 from s3filter.op.tuple import IndexedTuple
@@ -14,7 +15,7 @@ def test_non_existent_key():
     :return: None
     """
 
-    cur = Cursor()\
+    cur = Cursor(boto3.client('s3'))\
         .select('does-not-exist.csv', 'select * from S3Object')
 
     try:
@@ -32,7 +33,7 @@ def test_empty_results():
 
     num_rows = 0
 
-    cur = Cursor()\
+    cur = Cursor(boto3.client('s3'))\
         .select('region.csv', 'select * from S3Object limit 0')
 
     try:
@@ -54,7 +55,7 @@ def test_non_empty_results():
 
     num_rows = 0
 
-    cur = Cursor()\
+    cur = Cursor(boto3.client('s3'))\
         .select('region.csv', 'select * from S3Object')
 
     try:
@@ -77,7 +78,7 @@ def test_where_predicate():
 
     num_rows = 0
 
-    cur = Cursor()\
+    cur = Cursor(boto3.client('s3'))\
         .select('region.csv', 'select * from S3Object where r_name = \'AMERICA\';')
 
     try:
@@ -101,7 +102,7 @@ def test_aggregate():
 
     num_rows = 0
 
-    cur = Cursor() \
+    cur = Cursor(boto3.client('s3')) \
         .select('region.csv', 'select count(*) from S3Object')
 
     try:
@@ -125,7 +126,7 @@ def test_large_results():
 
     num_rows = 0
 
-    cur = Cursor() \
+    cur = Cursor(boto3.client('s3')) \
         .select('lineitem.csv', 'select * from S3Object limit 150000')
 
     try:

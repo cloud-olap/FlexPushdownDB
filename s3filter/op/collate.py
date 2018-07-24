@@ -2,10 +2,9 @@
 """Collation support
 
 """
-import cPickle
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 import sys
-
-import dill
 
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
@@ -34,7 +33,7 @@ class Collate(Operator):
         """
 
         if self.async_:
-            self.queue.put(cPickle.dumps(EvalMessage("self.local_tuples()")))
+            self.queue.put(EvalMessage("self.local_tuples()"))
             tuples = self.query_plan.listen(EvaluatedMessage).val
             return tuples
         else:

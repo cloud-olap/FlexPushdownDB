@@ -8,6 +8,8 @@ from s3filter.op.aggregate_expression import AggregateExpressionContext
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class Group(Operator):

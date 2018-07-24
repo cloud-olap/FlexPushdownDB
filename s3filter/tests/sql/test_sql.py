@@ -2,6 +2,7 @@
 """Tests for some select edge cases
 
 """
+import boto3
 
 from s3filter.sql.cursor import Cursor
 
@@ -15,13 +16,13 @@ def test_substring():
     num_rows = 0
     str_ = "0123456789"
 
-    cur = Cursor().select('region.csv',
-                          "select "
-                          "   '{}', "
-                          "   substring('{}',5,1) "
-                          "from "
-                          "   S3Object s"
-                          .format(str_, str_))
+    cur = Cursor(boto3.client('s3')).select('region.csv',
+                                            "select "
+                                            "   '{}', "
+                                            "   substring('{}',5,1) "
+                                            "from "
+                                            "   S3Object s"
+                                            .format(str_, str_))
 
     try:
         rows = cur.execute()

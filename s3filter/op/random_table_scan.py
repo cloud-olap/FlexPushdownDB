@@ -12,6 +12,8 @@ from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.util.datetime_util import dt_to_millis, millis_to_str
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class RandomTableScanMetrics(OpMetrics):

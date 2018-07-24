@@ -2,6 +2,7 @@
 """Bloom tests
 
 """
+import boto3
 
 from s3filter.hash.bloom_filter import BloomFilter
 from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
@@ -98,19 +99,19 @@ def test_sliced_bloom_sql():
     bf.add(int(v1))
     bf.add(int(v2))
 
-    cur = Cursor().select('part.csv',
-                          "select "
-                          "   p_partkey, "
-                          "   {},"
-                          "   {} "
-                          "from "
-                          "   S3Object "
-                          "where "
-                          "   {}"
-                          .format(
-                              bf.build_hash_functions_sql_projection('p_partkey'),
-                              bf.build_bit_array_strings_sql_projection(),
-                              bf.build_bit_array_string_sql_predicate('p_partkey')))
+    cur = Cursor(boto3.client('s3')).select('part.csv',
+                                            "select "
+                                            "   p_partkey, "
+                                            "   {},"
+                                            "   {} "
+                                            "from "
+                                            "   S3Object "
+                                            "where "
+                                            "   {}"
+                                            .format(
+                                                bf.build_hash_functions_sql_projection('p_partkey'),
+                                                bf.build_bit_array_strings_sql_projection(),
+                                                bf.build_bit_array_string_sql_predicate('p_partkey')))
 
     print("{}".format(cur.s3sql))
 

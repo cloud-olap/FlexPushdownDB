@@ -48,7 +48,8 @@ def run(parallel, buffer_size):
     part_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_project', query_plan))
     join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join', query_plan))
     aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))
-    aggregate_project = query_plan.add_operator(tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
+    aggregate_project = query_plan.add_operator(
+        tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
     lineitem_scan.connect(lineitem_project)

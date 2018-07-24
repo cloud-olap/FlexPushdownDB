@@ -4,13 +4,10 @@
 """
 import os
 
-import dill
-
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.hash_join import HashJoin
 from s3filter.op.join_expression import JoinExpression
-from s3filter.op.operator_base import EvalMessage, EvaluatedMessage
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.tuple import IndexedTuple

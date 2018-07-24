@@ -43,11 +43,13 @@ def run(parallel, buffer_size):
     hash_join_probe_ops = []
     for p in range(1, parts + 1):
         r_region_key_lower = math.ceil((5.0 / float(parts)) * (p - 1))
-        r_region_key_upper = math.ceil((5.0 / float(parts)) * (p))
+        r_region_key_upper = math.ceil((5.0 / float(parts)) * p)
 
         region_scan = query_plan.add_operator(
             SQLTableScan('region.csv',
-                         'select * from S3Object where cast(r_regionkey as int) >= {} and cast(r_regionkey as int) < {};'
+                         'select * '
+                         'from S3Object '
+                         'where cast(r_regionkey as int) >= {} and cast(r_regionkey as int) < {};'
                          .format(r_region_key_lower, r_region_key_upper),
                          'region_scan' + '_' + str(p),
                          query_plan,
@@ -60,11 +62,12 @@ def run(parallel, buffer_size):
             ], 'region_project' + '_' + str(p), query_plan, False))
 
         n_nation_key_lower = math.ceil((25.0 / float(parts)) * (p - 1))
-        n_nation_key_upper = math.ceil((25.0 / float(parts)) * (p))
+        n_nation_key_upper = math.ceil((25.0 / float(parts)) * p)
 
         nation_scan = query_plan.add_operator(
             SQLTableScan('nation.csv',
-                         'select * from S3Object where cast(n_nationkey as int) >= {} and cast(n_nationkey as int) < {};'
+                         'select * from S3Object '
+                         'where cast(n_nationkey as int) >= {} and cast(n_nationkey as int) < {};'
                          .format(n_nation_key_lower, n_nation_key_upper),
                          'nation_scan' + '_' + str(p),
                          query_plan,
@@ -86,15 +89,9 @@ def run(parallel, buffer_size):
                           query_plan, False))
         hash_join_probe_ops.append(region_nation_join_probe)
 
-        # region_nation_join = query_plan.add_operator(
-        #     HashJoin(JoinExpression('r_regionkey', 'n_regionkey'), 'region_nation_join' + '_' + str(p), query_plan, True))
-
         region_scan.connect(region_project)
         nation_scan.connect(nation_project)
         region_project.connect(region_hash_join_build)
-        # region_nation_join.connect_left_producer(region_project)
-        # region_nation_join.connect_right_producer(nation_project)
-        # region_nation_join_probe.connect_build_producer(region_hash_join_build)
         region_nation_join_probe.connect_tuple_producer(nation_project)
         region_nation_join_probe.connect(merge)
 

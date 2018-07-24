@@ -3,6 +3,8 @@
 
 """
 from s3filter.op.sql_table_scan import SQLTableScan
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class TableScan(SQLTableScan):
@@ -25,5 +27,5 @@ class TableScan(SQLTableScan):
         super(TableScan, self).__init__(
             s3key,
             "select * from S3Object ",
-            name,query_plan,
+            name, query_plan,
             log_enabled)

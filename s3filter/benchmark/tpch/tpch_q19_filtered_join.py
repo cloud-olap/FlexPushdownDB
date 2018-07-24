@@ -12,11 +12,11 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    run(True)
-    run(False)
+    run(0)
+    run(1024)
 
 
-def run(is_streamed):
+def run(buffer_size):
     """
 
     :return: None
@@ -26,20 +26,22 @@ def run(is_streamed):
     print("TPCH Q19 Filtered Join")
     print("----------------------")
 
-    query_plan = QueryPlan(None, is_streamed)
+    query_plan = QueryPlan(is_async=False, buffer_size=buffer_size)
 
     # Define the operators
     lineitem_scan = query_plan.add_operator(
-        tpch_q19.sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op())
-    part_scan = query_plan.add_operator(tpch_q19.sql_scan_part_partkey_brand_size_container_where_filtered_op())
+        tpch_q19.sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(
+            query_plan))
+    part_scan = query_plan.add_operator(
+        tpch_q19.sql_scan_part_partkey_brand_size_container_where_filtered_op(query_plan))
     lineitem_project = query_plan.add_operator(
-        tpch_q19.project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op())
-    part_project = query_plan.add_operator(tpch_q19.project_partkey_brand_size_container_filtered_op())
-    lineitem_part_join = query_plan.add_operator(tpch_q19.join_op())
-    filter_op = query_plan.add_operator(tpch_q19.filter_def())
-    aggregate = query_plan.add_operator(tpch_q19.aggregate_def())
-    aggregate_project = query_plan.add_operator(tpch_q19.aggregate_project_def())
-    collate = query_plan.add_operator(tpch_q19.collate_op())
+        tpch_q19.project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(query_plan))
+    part_project = query_plan.add_operator(tpch_q19.project_partkey_brand_size_container_filtered_op(query_plan))
+    lineitem_part_join = query_plan.add_operator(tpch_q19.join_op(query_plan))
+    filter_op = query_plan.add_operator(tpch_q19.filter_def(query_plan))
+    aggregate = query_plan.add_operator(tpch_q19.aggregate_def(query_plan))
+    aggregate_project = query_plan.add_operator(tpch_q19.aggregate_project_def(query_plan))
+    collate = query_plan.add_operator(tpch_q19.collate_op(query_plan))
 
     # Connect the operators
     lineitem_scan.connect(lineitem_project)

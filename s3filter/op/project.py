@@ -6,6 +6,8 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class ProjectMetrics(OpMetrics):
@@ -114,8 +116,8 @@ class Project(Operator):
 
             self.op_metrics.rows_projected += 1
 
-            # if self.log_enabled:
-            #     print("{}('{}') | Sending projected field values: from: {} to: {}"
-            #           .format(self.__class__.__name__, self.name, tuple_, projected_field_values))
+            if self.log_enabled:
+                print("{}('{}') | Sending projected field values: from: {} to: {}"
+                      .format(self.__class__.__name__, self.name, tuple_, projected_field_values))
 
             self.send(TupleMessage(Tuple(projected_field_values)), self.consumers)

@@ -10,6 +10,8 @@ from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class SQLTableScanMetrics(OpMetrics):
@@ -68,6 +70,8 @@ class SQLTableScan(Operator):
 
         super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
+        self.s3 = query_plan.s3
+
         self.s3key = s3key
         self.s3sql = s3sql
 
@@ -80,7 +84,7 @@ class SQLTableScan(Operator):
         if not self.is_profiled:
             self.do_run()
         else:
-            cProfile.runctx('self.do_start()', globals(), locals(), self.profile_file_name)
+            cProfile.runctx('self.do_run()', globals(), locals(), self.profile_file_name)
 
     def do_run(self):
 
@@ -90,7 +94,7 @@ class SQLTableScan(Operator):
             print("{} | {}('{}') | Started"
                   .format(time.time(), self.__class__.__name__, self.name))
 
-        cur = Cursor().select(self.s3key, self.s3sql)
+        cur = Cursor(self.s3).select(self.s3key, self.s3sql)
 
         tuples = cur.execute()
 

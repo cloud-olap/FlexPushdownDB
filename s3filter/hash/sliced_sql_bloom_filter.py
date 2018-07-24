@@ -7,8 +7,9 @@ class SlicedSQLBloomFilter(object):
 
     """
 
-    def __init__(self, sliced_bloom_filter):
-        self._bloom_filter = sliced_bloom_filter
+    def __init__(self, sliced_bloom_filter=None):
+        if sliced_bloom_filter is not None:
+            self._bloom_filter = sliced_bloom_filter
 
     @staticmethod
     def build(sliced_bloom_filter):

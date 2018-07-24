@@ -2,13 +2,11 @@
 """Merge support
 
 """
-import cPickle
-import sys
-
-import dill
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 from s3filter.op.message import TupleMessage
-from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
+from s3filter.op.operator_base import Operator
 from s3filter.plan.op_metrics import OpMetrics
 
 
@@ -32,7 +30,7 @@ class Merge(Operator):
         list.
 
         :param ms: The received messages
-        :param _producer: The producer of the tuple
+        :param producer_name: The producer of the tuple
         :return: None
         """
 

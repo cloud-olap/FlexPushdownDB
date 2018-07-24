@@ -7,6 +7,8 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
 from s3filter.op.predicate_expression import PredicateExpression
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class FilterMetrics(OpMetrics):

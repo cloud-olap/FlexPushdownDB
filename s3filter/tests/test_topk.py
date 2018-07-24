@@ -98,7 +98,8 @@ def test_topk_empty():
     query_plan = QueryPlan()
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object limit 0', 'ts', query_plan, False))
+    ts = query_plan.add_operator(
+        SQLTableScan('supplier.csv', 'select * from S3Object limit 0', 'ts', query_plan, False))
     t = query_plan.add_operator(Top(limit, 't', query_plan, False))
     c = query_plan.add_operator(Collate('c', query_plan, False))
 

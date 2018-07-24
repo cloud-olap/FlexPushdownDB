@@ -9,6 +9,8 @@ from s3filter.op.group import AggregateExpressionContext
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class AggregateMetrics(OpMetrics):
@@ -52,7 +54,7 @@ class Aggregate(Operator):
 
         self.__expressions = expressions
 
-        self.__field_names = None
+        self.producer_field_names = {}
 
         # List of expression contexts, each storing the accumulated aggregate result and local vars.
         self.__expression_contexts = None
@@ -66,7 +68,7 @@ class Aggregate(Operator):
         """
         for m in ms:
             if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_)
+                self.__on_receive_tuple(m.tuple_, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -77,14 +79,18 @@ class Aggregate(Operator):
         :return: None
         """
 
-        # Build and send the field names
-        field_names = self.__build_field_names()
-        self.send(TupleMessage(Tuple(field_names)), self.consumers)
+        if producer_name in self.producer_completions.keys():
+            self.producer_completions[producer_name] = True
 
-        # Send the field values, if there are any
-        if self.__expression_contexts is not None:
-            field_values = self.__build_field_values()
-            self.send(TupleMessage(Tuple(field_values)), self.consumers)
+        if all(self.producer_completions.values()):
+            # Build and send the field names
+            field_names = self.__build_field_names()
+            self.send(TupleMessage(Tuple(field_names)), self.consumers)
+
+            # Send the field values, if there are any
+            if self.__expression_contexts is not None:
+                field_values = self.__build_field_values()
+                self.send(TupleMessage(Tuple(field_values)), self.consumers)
 
         # # Clean up
         # self.del_()
@@ -100,19 +106,24 @@ class Aggregate(Operator):
     #     del self.__field_names
     #     del self.__expression_contexts
 
-    def __on_receive_tuple(self, tuple_):
+    def __on_receive_tuple(self, tuple_, producer_name):
         """Event handler for receiving a tuple.
 
         :param tuple_: The tuple
         :return: None
         """
 
-        if not self.__field_names:
-            self.__field_names = tuple_
-        else:
-            self.__evaluate_expressions(tuple_)
+        if self.log_enabled:
+            print("{}('{}') | Received tuple: {}"
+                  .format(self.__class__.__name__, self.name, tuple_))
 
-    def __evaluate_expressions(self, tuple_):
+        if producer_name not in self.producer_field_names.keys():
+            self.producer_field_names[producer_name] = tuple_
+            # TODO: Should check field names from all producers match
+        else:
+            self.__evaluate_expressions(tuple_, producer_name)
+
+    def __evaluate_expressions(self, tuple_, producer_name):
         """Performs evaluation of all the aggregate expressions for the given tuple.
 
         :param tuple_: The tuple to pass to the expressions.
@@ -127,7 +138,7 @@ class Aggregate(Operator):
         i = 0
         for e in self.__expressions:
             ctx = self.__expression_contexts[i]
-            e.eval(tuple_, self.__field_names, ctx)
+            e.eval(tuple_, self.producer_field_names[producer_name], ctx)
             i += 1
 
             self.op_metrics.expressions_evaluated += 1

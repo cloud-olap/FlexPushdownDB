@@ -21,7 +21,7 @@ def main():
     print("SQL Table Scan")
     print("--------------")
 
-    query_plan = QueryPlan(None, False)
+    query_plan = QueryPlan(is_async=False, buffer_size=0)
 
     # Query plan
     scan = query_plan.add_operator(
@@ -30,13 +30,13 @@ def main():
                      "  * "
                      "from "
                      "  S3Object",
-                     'scan',
+                     'scan', query_plan,
                      False))
 
     scan.set_profiled(True, profile_file_name)
 
     collate = query_plan.add_operator(
-        Collate('collate', False))
+        Collate('collate', query_plan, False))
 
     scan.connect(collate)
 

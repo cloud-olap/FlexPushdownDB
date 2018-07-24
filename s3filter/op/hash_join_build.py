@@ -6,6 +6,8 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, HashTableMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class HashJoinBuildMetrics(OpMetrics):
@@ -23,6 +25,7 @@ class HashJoinBuildMetrics(OpMetrics):
             'elapsed_time': round(self.elapsed_time(), 5),
             'rows_processed': self.rows_processed
         }.__repr__()
+
 
 class HashJoinBuild(Operator):
     """Builds a hash table
@@ -46,7 +49,7 @@ class HashJoinBuild(Operator):
     def on_receive(self, ms, producer_name):
         """Handles the event of receiving a new message from a producer.
 
-        :param m: The received message
+        :param ms: The received messages
         :param producer_name: The producer of the tuple
         :return: None
         """
@@ -56,7 +59,7 @@ class HashJoinBuild(Operator):
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_, producer_name):
+    def on_receive_tuple(self, tuple_, _producer_name):
         if not self.field_names_index:
             self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
             self.send(TupleMessage(tuple_), self.consumers)

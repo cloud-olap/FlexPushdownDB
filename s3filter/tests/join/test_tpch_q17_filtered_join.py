@@ -35,14 +35,17 @@ def run(parallel, buffer_size):
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Define the operators
-    part_scan = query_plan.add_operator(tpch_q17.sql_scan_select_partkey_where_brand_container_op('part_scan', query_plan))
+    part_scan = query_plan.add_operator(
+        tpch_q17.sql_scan_select_partkey_where_brand_container_op('part_scan', query_plan))
     lineitem_scan = query_plan.add_operator(
-        tpch_q17.sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op('lineitem_scan', query_plan))
+        tpch_q17.sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op('lineitem_scan',
+                                                                                                   query_plan))
     part_project = query_plan.add_operator(tpch_q17.project_partkey_op('part_project', query_plan))
     lineitem_project = query_plan.add_operator(
         tpch_q17.project_orderkey_partkey_quantity_extendedprice_op('lineitem_project', query_plan))
     part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join', query_plan))
-    lineitem_part_avg_group = query_plan.add_operator(tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group', query_plan))
+    lineitem_part_avg_group = query_plan.add_operator(
+        tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group', query_plan))
     lineitem_part_avg_group_project = query_plan.add_operator(
         tpch_q17.project_partkey_avg_quantity_op('lineitem_part_avg_group_project', query_plan))
     part_lineitem_join_avg_group_join = query_plan.add_operator(

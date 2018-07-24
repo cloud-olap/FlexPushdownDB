@@ -1,7 +1,7 @@
 """Reusable query elements for tpch q14
 
 """
-
+import math
 import re
 
 from s3filter.op.aggregate import Aggregate
@@ -15,6 +15,7 @@ from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
+from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.function import cast, timestamp
 
 
@@ -119,6 +120,25 @@ def sql_scan_part_partkey_type_part_where_brand12_operator_def(name, query_plan)
                         False)
 
 
+def sql_scan_part_partkey_type_part_where_brand12_sharded_operator_def(part, parts, name, query_plan):
+    # type: (int, int, str, QueryPlan) -> SQLTableScan
+
+    key_lower = math.ceil((200000.0 / float(parts)) * part)
+    key_upper = math.ceil((200000.0 / float(parts)) * (part + 1))
+
+    return SQLTableScan('part.csv',
+                        "select "
+                        "  p_partkey, p_type "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  p_brand = 'Brand#12' and "
+                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        " ".format(key_lower, key_upper),
+                        name, query_plan,
+                        False)
+
+
 def sql_scan_part_partkey_where_brand12_operator_def(name, query_plan):
     # type: (str) -> SQLTableScan
     return SQLTableScan('part.csv',
@@ -174,12 +194,39 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def
                                                                                  max_shipped_date,
                                                                                  name, query_plan):
     return SQLTableScan('lineitem.csv',
-                        "select l_partkey, l_extendedprice, l_discount from S3Object "
+                        "select "
+                        "  l_partkey, l_extendedprice, l_discount "
+                        "from "
+                        "  S3Object "
                         "where "
-                        "cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                        "cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
+                        "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                        "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
                         ";".format(min_shipped_date.strftime('%Y-%m-%d'),
                                    max_shipped_date.strftime('%Y-%m-%d')),
+                        name, query_plan,
+                        False)
+
+
+def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_partitioned_operator_def(min_shipped_date,
+                                                                                             max_shipped_date, part,
+                                                                                             parts,
+                                                                                             name, query_plan):
+    key_lower = math.ceil((6000000.0 / float(parts)) * part)
+    key_upper = math.ceil((6000000.0 / float(parts)) * (part + 1))
+
+    return SQLTableScan('lineitem.csv',
+                        "select "
+                        "  l_partkey, l_extendedprice, l_discount "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                        "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                        "  cast(l_orderkey as int) >= {} and cast(l_orderkey as int) < {} "
+                        ";".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                   max_shipped_date.strftime('%Y-%m-%d'),
+                                   key_lower,
+                                   key_upper),
                         name, query_plan,
                         False)
 
@@ -262,6 +309,31 @@ def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shippe
                                 False)
 
 
+def bloom_scan_lineitem_where_shipdate_sharded_operator_def(min_shipped_date, max_shipped_date, part, parts, name,
+                                                            query_plan):
+    key_lower = math.ceil((6000000.0 / float(parts)) * part)
+    key_upper = math.ceil((6000000.0 / float(parts)) * (part + 1))
+
+    return SQLTableScanBloomUse('lineitem.csv',
+                                "select "
+                                "  l_partkey, l_extendedprice, l_discount "
+                                "from "
+                                "  S3Object "
+                                "where "
+                                "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                                "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                                "  cast(l_orderkey as int) >= {} and cast(l_orderkey as int) < {} "
+                                " ".format(
+                                    min_shipped_date.strftime('%Y-%m-%d'),
+                                    max_shipped_date.strftime('%Y-%m-%d'),
+                                    key_lower,
+                                    key_upper)
+                                ,
+                                'l_partkey',
+                                name, query_plan,
+                                False)
+
+
 def bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date, name, query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
@@ -292,5 +364,5 @@ def project_partkey_extendedprice_discount_shipdate_operator_def(name, query_pla
             ProjectExpression(lambda t_: t_['_6'], 'l_discount'),
             ProjectExpression(lambda t_: t_['_10'], 'l_shipdate')
         ],
-        name,query_plan,
+        name, query_plan,
         False)

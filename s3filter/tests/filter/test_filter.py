@@ -23,7 +23,8 @@ def test_filter_baseline():
     query_plan = QueryPlan(buffer_size=64)
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(
+        SQLTableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', query_plan, False))
 
     f = query_plan.add_operator(
         Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)),
@@ -75,7 +76,8 @@ def test_filter_empty():
     query_plan = QueryPlan()
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(
+        SQLTableScan('lineitem.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
 
     f = query_plan.add_operator(
         Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)),

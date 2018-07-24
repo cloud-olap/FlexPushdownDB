@@ -6,6 +6,8 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class HashJoinMetrics(OpMetrics):
@@ -98,7 +100,7 @@ class HashJoin(Operator):
     def on_receive(self, ms, producer_name):
         """Handles the event of receiving a new message from a producer.
 
-        :param m: The received message
+        :param ms: The received messages
         :param producer_name: The producer of the tuple
         :return: None
         """
