@@ -37,8 +37,8 @@ def run(parallel, buffer_size, lineitem_parts, parts):
     """
 
     print('')
-    print("TPCH Q14 Partitioned Filtered Join")
-    print("----------------------------------")
+    print("TPCH Q14 Sharded Filtered Join")
+    print("------------------------------")
 
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
