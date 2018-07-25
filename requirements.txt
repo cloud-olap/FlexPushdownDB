@@ -1,5 +1,6 @@
 ray>=0.5
 dask>=0.18
+distributed>=1.22
 networkx>=2.1
 numpy>=1.15
 primesieve>=1.4
