@@ -17,7 +17,7 @@ class SQLTableParallelScan(Operator):
     Scan S3 CSV table in parallel
     """
 
-    def __init__(self, s3key, s3sql, name, parts, processes, log_enabled):
+    def __init__(self, s3key, s3sql, name, parts, processes, query_plan, log_enabled):
         """Creates a new Table Scan operator that executes the given query on the table given in s3key in parallel.
         The parallelism factor is passed in the parts parameter. The table partitioning will be based on the key
         passed in split_on_key parameter
@@ -27,7 +27,7 @@ class SQLTableParallelScan(Operator):
         :param parts: The parallelism factor (number of downloading threads)
         """
 
-        super(SQLTableParallelScan, self).__init__(name, SQLTableScanMetrics(), log_enabled)
+        super(SQLTableParallelScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -66,7 +66,7 @@ class SQLTableParallelScan(Operator):
             part_key = self.get_part_key('sf1000-lineitem', part) 
             print('Started do wnloading part {} key {}'.format(part, part_key))
 
-            cur = Cursor().select(part_key, self.s3sql)
+            cur = Cursor(self.query_plan.s3).select(part_key, self.s3sql)
 
             tuples = cur.execute()
 

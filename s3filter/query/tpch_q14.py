@@ -120,7 +120,7 @@ def sql_scan_part_partkey_type_part_where_brand12_operator_def(name, query_plan)
                         False)
 
 
-def sql_scan_part_partkey_type_part_where_brand12_sharded_operator_def(part, parts, name, query_plan):
+def sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(part, parts, name, query_plan):
     # type: (int, int, str, QueryPlan) -> SQLTableScan
 
     key_lower = math.ceil((200000.0 / float(parts)) * part)
@@ -194,6 +194,25 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def
                                                                                  max_shipped_date,
                                                                                  name, query_plan):
     return SQLTableScan('lineitem.csv',
+                        "select "
+                        "  l_partkey, l_extendedprice, l_discount "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                        "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
+                        ";".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                   max_shipped_date.strftime('%Y-%m-%d')),
+                        name, query_plan,
+                        True)
+
+
+def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_sharded_operator_def(min_shipped_date,
+                                                                                         max_shipped_date,
+                                                                                         shard,
+                                                                                         name,
+                                                                                         query_plan):
+    return SQLTableScan('sf1000-lineitem/lineitem_{}.csv'.format(shard),
                         "select "
                         "  l_partkey, l_extendedprice, l_discount "
                         "from "

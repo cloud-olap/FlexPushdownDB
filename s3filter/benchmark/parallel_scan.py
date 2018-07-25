@@ -20,6 +20,7 @@ def main():
                              'parallel_scan',
                              parts,
                              processes,
+                             query_plan,
                              False))
 
     query_plan.execute()

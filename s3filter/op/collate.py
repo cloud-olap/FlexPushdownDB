@@ -82,7 +82,7 @@ class Collate(Operator):
 
         print('')
 
-        self.write_to(sys.stdout)
+        self.write_to(sys.stdout, tuples)
 
     def write_to(self, out_stream, tuples=None):
 

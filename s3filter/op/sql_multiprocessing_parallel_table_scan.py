@@ -19,7 +19,7 @@ class SQLMultiprocessingParallelTableScan(Operator):
     Scan S3 CSV table in parallel
     """
 
-    def __init__(self, s3key, s3sql, name, parts, partitioning_key, log_enabled):
+    def __init__(self, s3key, s3sql, name, parts, partitioning_key, query_plan, log_enabled):
         """Creates a new Table Scan operator that executes the given query on the table given in s3key in parallel.
         The parallelism factor is passed in the parts parameter. The table partitioning will be based on the key
         passed in split_on_key parameter
@@ -30,7 +30,7 @@ class SQLMultiprocessingParallelTableScan(Operator):
         :param partitioning_key: The key used to partition the table records in order to distributed over workers
         """
 
-        super(SQLMultiprocessingParallelTableScan, self).__init__(name, SQLTableScanMetrics(), log_enabled)
+        super(SQLMultiprocessingParallelTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -80,8 +80,21 @@ class SQLMultiprocessingParallelTableScan(Operator):
 
         print("All parts finished with {} records".format(len(self.records)))
 
-        # for msg in self.records:
-        #     self.send(msg, self.consumers)
+        first_tuple = True
+        for msg in self.records:
+
+            if first_tuple:
+                # Create and send the record field names
+                it = IndexedTuple.build_default(msg.tuple_)
+                first_tuple = False
+
+                if self.log_enabled:
+                    print("{}('{}') | Sending field names: {}"
+                          .format(self.__class__.__name__, self.name, it.field_names()))
+
+                self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
+
+            self.send(msg, self.consumers)
 
         self.complete()
         self.op_metrics.timer_stop()
@@ -92,7 +105,7 @@ class SQLMultiprocessingParallelTableScan(Operator):
     def download_part(self, part, records_queue, stats):
         print('Started downloading part {}'.format(part))
         part_range = self.ranges[part]
-        part_sql = self.s3sql + ' WHERE CAST({} AS int) >= {} AND CAST({} AS int) <= {}'.format(self.partitioning_key,
+        part_sql = self.s3sql + ' and CAST({} AS int) >= {} AND CAST({} AS int) <= {}'.format(self.partitioning_key,
                                                                                                 part_range[0],
                                                                                                 self.partitioning_key,
                                                                                                 part_range[1])
@@ -100,7 +113,7 @@ class SQLMultiprocessingParallelTableScan(Operator):
         op_metrics = SQLTableScanMetrics()
         op_metrics.timer_start()
 
-        cur = Cursor().select(self.s3key, part_sql)
+        cur = Cursor(self.query_plan.s3).select(self.s3key, part_sql)
 
         tuples = cur.execute()
 
@@ -183,18 +196,18 @@ class SQLMultiprocessingParallelTableScan(Operator):
 
     def __repr__(self):
         return {
-            'elapsed_time': round(self.elapsed_time(), 5),
-            'rows_returned': self.rows_returned,
-            'query_bytes': self.query_bytes,
-            'bytes_scanned': self.bytes_scanned,
-            'bytes_processed': self.bytes_processed,
-            'bytes_returned': self.bytes_returned,
-            'time_to_first_response': round(self.time_to_first_response, 5),
+            'elapsed_time': round(self.op_metrics.elapsed_time(), 5),
+            'rows_returned': self.op_metrics.rows_returned,
+            'query_bytes': self.op_metrics.query_bytes,
+            'bytes_scanned': self.op_metrics.bytes_scanned,
+            'bytes_processed': self.op_metrics.bytes_processed,
+            'bytes_returned': self.op_metrics.bytes_returned,
+            'time_to_first_response': round(self.op_metrics.time_to_first_response, 5),
             'time_to_first_record_response':
-                None if self.time_to_first_record_response is None
-                else round(self.time_to_first_record_response, 5),
+                None if self.op_metrics.time_to_first_record_response is None
+                else round(self.op_metrics.time_to_first_record_response, 5),
             'time_to_last_record_response':
-                None if self.time_to_last_record_response is None
-                else round(self.time_to_last_record_response, 5)
+                None if self.op_metrics.time_to_last_record_response is None
+                else round(self.op_metrics.time_to_last_record_response, 5)
 
         }.__repr__()

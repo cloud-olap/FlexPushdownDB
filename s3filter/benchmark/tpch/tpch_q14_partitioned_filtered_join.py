@@ -76,7 +76,7 @@ def run(parallel, buffer_size, parts):
             tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_project' + '_' + str(p), query_plan))
 
         part_scan = query_plan.add_operator(
-            tpch_q14.sql_scan_part_partkey_type_part_where_brand12_sharded_operator_def(p, parts,
+            tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(p, parts,
                                                                                         'part_scan' + '_' + str(p),
                                                                                         query_plan))
         part_scan_project = query_plan.add_operator(
