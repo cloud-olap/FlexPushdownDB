@@ -2,11 +2,11 @@
 """Operator support
 
 """
-# import cProfile
-import math
-import cPickle
+import cProfile
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 import multiprocessing
-import threading
+# import threading
 import time
 import traceback
 
@@ -84,10 +84,10 @@ class Operator(object):
             while True:
 
                 self.op_metrics.timer_stop()
-                pickled_item = queue.get()
+                item = queue.get()
                 self.op_metrics.timer_start()
 
-                item = cPickle.loads(pickled_item)
+                # item = cPickle.loads(pickled_item)
 
                 # print(item)
 
@@ -101,7 +101,7 @@ class Operator(object):
                     self.on_consumer_completed(item.consumer_name)
                 elif type(item) == EvalMessage:
                     evaluated = eval(item.expr)
-                    self.completion_queue.put(cPickle.dumps(EvaluatedMessage(evaluated)))
+                    self.completion_queue.put(EvaluatedMessage(evaluated))
                 else:
                     message = item[0]
                     sender = item[1]
@@ -178,6 +178,12 @@ class Operator(object):
 
         self.async_ = query_plan.is_async
 
+        self.queue = None
+
+        self.completion_queue = None
+
+        self.runner = None
+
     def init_async(self, completion_queue):
 
         self.async_ = True
@@ -222,7 +228,8 @@ class Operator(object):
         """
 
         if self.log_enabled:
-            print("{} | {}('{}') | Adding consumer '{}'".format(time.time(), self.__class__.__name__, self.name, consumer))
+            print("{} | {}('{}') | Adding consumer '{}'"
+                  .format(time.time(), self.__class__.__name__, self.name, consumer))
 
         if any(consumer.name == name for name in self.consumers):
             raise Exception("Consumer with name '{}' already added".format(consumer.name))
@@ -239,7 +246,8 @@ class Operator(object):
         """
 
         if self.log_enabled:
-            print("{} | {}('{}') | Adding producer '{}'".format(time.time(), self.__class__.__name__, self.name, producer))
+            print("{} | {}('{}') | Adding producer '{}'"
+                  .format(time.time(), self.__class__.__name__, self.name, producer))
 
         if any(producer.name == name for name in self.producers):
             raise Exception("Producer with name '{}' already added".format(producer.name))
@@ -274,7 +282,11 @@ class Operator(object):
                 if self.async_:
                     self.query_plan.send([[message], self.name], op.name)
                 else:
-                    self.fire_on_receive([message], op)
+                    if op.is_profiled:
+                        cProfile.runctx('self.fire_on_receive([message], op)',
+                                        globals(), locals(), op.profile_file_name)
+                    else:
+                        self.fire_on_receive([message], op)
 
         else:
             self.__buffer.append(message)
@@ -320,7 +332,7 @@ class Operator(object):
                 print("{} | {}('{}') | Completed".format(time.time(), self.__class__.__name__, self.name))
 
             if self.async_:
-                self.completion_queue.put(cPickle.dumps(OperatorCompletedMessage(self.name)))
+                self.completion_queue.put(OperatorCompletedMessage(self.name))
 
             self.__completed = True
 

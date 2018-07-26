@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+group 'edu.mit'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'org.python', name: 'jython-standalone', version: '2.7.1'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

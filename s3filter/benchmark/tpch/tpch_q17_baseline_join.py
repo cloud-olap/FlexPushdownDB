@@ -12,11 +12,11 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    run(True)
-    run(False)
+    run(0)
+    run(1024)
 
 
-def run(is_streamed):
+def run(buffer_size):
     """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
 
     This works by:
@@ -38,27 +38,28 @@ def run(is_streamed):
     print("TPCH Q17 Baseline Join")
     print("----------------------")
 
-    query_plan = QueryPlan(None, is_streamed)
+    query_plan = QueryPlan(is_async=False, buffer_size=buffer_size)
 
     # Define the operators
-    part_scan = query_plan.add_operator(tpch_q17.sql_scan_part_select_all_op('part_scan'))
-    lineitem_scan = query_plan.add_operator(tpch_q17.sql_scan_lineitem_select_all_op('lineitem_scan'))
-    part_project = query_plan.add_operator(tpch_q17.project_partkey_brand_container_op('part_project'))
-    part_filter = query_plan.add_operator(tpch_q17.filter_brand_container_op('part_filter'))
+    part_scan = query_plan.add_operator(tpch_q17.sql_scan_part_select_all_op('part_scan', query_plan))
+    lineitem_scan = query_plan.add_operator(tpch_q17.sql_scan_lineitem_select_all_op('lineitem_scan', query_plan))
+    part_project = query_plan.add_operator(tpch_q17.project_partkey_brand_container_op('part_project', query_plan))
+    part_filter = query_plan.add_operator(tpch_q17.filter_brand_container_op('part_filter', query_plan))
     lineitem_project = query_plan.add_operator(
-        tpch_q17.project_lineitem_orderkey_partkey_quantity_extendedprice_op('lineitem_project'))
-    part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join'))
-    lineitem_part_avg_group = query_plan.add_operator(tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group'))
+        tpch_q17.project_lineitem_orderkey_partkey_quantity_extendedprice_op('lineitem_project', query_plan))
+    part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join', query_plan))
+    lineitem_part_avg_group = query_plan.add_operator(
+        tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group', query_plan))
     lineitem_part_avg_group_project = query_plan.add_operator(
-        tpch_q17.project_partkey_avg_quantity_op('lineitem_part_avg_group_project'))
+        tpch_q17.project_partkey_avg_quantity_op('lineitem_part_avg_group_project', query_plan))
     part_lineitem_join_avg_group_join = query_plan.add_operator(
-        tpch_q17.join_l_partkey_p_partkey_op('part_lineitem_join_avg_group_join'))
-    lineitem_filter = query_plan.add_operator(tpch_q17.filter_lineitem_quantity_op('lineitem_filter'))
+        tpch_q17.join_l_partkey_p_partkey_op('part_lineitem_join_avg_group_join', query_plan))
+    lineitem_filter = query_plan.add_operator(tpch_q17.filter_lineitem_quantity_op('lineitem_filter', query_plan))
     extendedprice_sum_aggregate = query_plan.add_operator(
-        tpch_q17.aggregate_sum_extendedprice_op('extendedprice_sum_aggregate'))
+        tpch_q17.aggregate_sum_extendedprice_op('extendedprice_sum_aggregate', query_plan))
     extendedprice_sum_aggregate_project = query_plan.add_operator(
-        tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project'))
-    collate = query_plan.add_operator(tpch_q17.collate_op('collate'))
+        tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project', query_plan))
+    collate = query_plan.add_operator(tpch_q17.collate_op('collate', query_plan))
 
     # Connect the operators
     part_scan.connect(part_project)

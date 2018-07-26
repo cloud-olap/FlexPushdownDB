@@ -31,13 +31,15 @@ def run(parallel, buffer_size):
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Define the operators
-    part_scan = query_plan.add_operator(tpch_q19.sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(query_plan))
+    part_scan = query_plan.add_operator(
+        tpch_q19.sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(query_plan))
     lineitem_project = query_plan.add_operator(
         tpch_q19.project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(query_plan))
     part_project = query_plan.add_operator(tpch_q19.project_partkey_brand_size_container_filtered_op(query_plan))
     part_bloom_create = query_plan.add_operator(tpch_q19.bloom_create_partkey_op(query_plan))
     lineitem_bloom_use = query_plan.add_operator(
-        tpch_q19.bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(query_plan))
+        tpch_q19.bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(
+            query_plan))
     lineitem_part_join = query_plan.add_operator(tpch_q19.join_op(query_plan))
     filter_op = query_plan.add_operator(tpch_q19.filter_def(query_plan))
     aggregate = query_plan.add_operator(tpch_q19.aggregate_def(query_plan))

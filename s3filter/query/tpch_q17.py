@@ -51,6 +51,7 @@ def project_orderkey_partkey_quantity_extendedprice_op(name, query_plan):
 def project_partkey_op(name, query_plan):
     """with part_scan_project as (select _0 as p_partkey from part_scan)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -65,6 +66,7 @@ def project_partkey_op(name, query_plan):
 def project_lineitem_orderkey_partkey_quantity_extendedprice_op(name, query_plan):
     """with part_project as (select _0 as p_partkey from part_scan)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -82,6 +84,7 @@ def project_lineitem_orderkey_partkey_quantity_extendedprice_op(name, query_plan
 def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, query_plan):
     """with part_project as (select _0 as p_partkey from part_scan)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -99,6 +102,7 @@ def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, q
 def project_partkey_brand_container_op(name, query_plan):
     """with part_project as (select _0 as p_partkey from part_scan)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -135,6 +139,7 @@ def aggregate_sum_extendedprice_op(name, query_plan):
         select sum(l_extendedprice) from filter_join_2
     )
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -145,6 +150,7 @@ def aggregate_sum_extendedprice_op(name, query_plan):
 def filter_lineitem_quantity_op(name, query_plan):
     """with filter_join_2 as (select * from part_lineitem_join_avg_group_join where l_quantity < avg_l_quantity_computed00)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -172,6 +178,7 @@ def join_l_partkey_p_partkey_op(name, query_plan):
 def join_p_partkey_l_partkey_op(name, query_plan):
     """with part_lineitem_join as (select * from part_scan, lineitem_scan where p_partkey = l_partkey)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -181,6 +188,7 @@ def join_p_partkey_l_partkey_op(name, query_plan):
 def group_partkey_avg_quantity_op(name, query_plan):
     """with lineitem_part_avg_group as (select avg(l_quantity) from part_lineitem_join group by l_partkey)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -217,6 +225,7 @@ def sql_scan_part_select_all_op(name, query_plan):
 def sql_scan_lineitem_select_all_where_partkey_op(name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -234,6 +243,7 @@ def sql_scan_lineitem_select_all_where_partkey_op(name, query_plan):
 def sql_scan_part_select_all_where_brand_and_container_op(name, query_plan):
     """with part_scan as (select * from part)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -252,6 +262,7 @@ def sql_scan_part_select_all_where_brand_and_container_op(name, query_plan):
 def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op(name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -269,6 +280,7 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partk
 def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
+    :param query_plan:
     :param name:
     :return:
     """
@@ -284,6 +296,7 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(name, query
 def sql_scan_select_partkey_where_brand_container_op(name, query_plan):
     """with part_scan as (select * from part)
 
+    :param query_plan:
     :param name:
     :return:
     """

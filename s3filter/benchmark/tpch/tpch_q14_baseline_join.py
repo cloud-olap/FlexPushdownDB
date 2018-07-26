@@ -13,11 +13,11 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    run(True)
-    run(False)
+    run(0)
+    run(1024)
 
 
-def run(is_streamed):
+def run(buffer_size):
     """The baseline tst uses hash joins with no projection and no filtering pushed down to s3.
 
     :return: None
@@ -27,25 +27,26 @@ def run(is_streamed):
     print("TPCH Q14 Baseline Join")
     print("----------------------")
 
-    query_plan = QueryPlan(None, is_streamed)
+    query_plan = QueryPlan(is_async=False, buffer_size=buffer_size)
 
     # Query plan
     date = '1993-01-01'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    lineitem_scan = query_plan.add_operator(tpch_q14.sql_scan_lineitem_operator_def('lineitem_scan'))
+    lineitem_scan = query_plan.add_operator(tpch_q14.sql_scan_lineitem_operator_def('lineitem_scan', query_plan))
     lineitem_project = query_plan.add_operator(
-        tpch_q14.project_partkey_extendedprice_discount_shipdate_operator_def('lineitem_project'))
-    part_scan = query_plan.add_operator(tpch_q14.sql_scan_part_operator_def('part_scan'))
-    part_project = query_plan.add_operator(tpch_q14.project_partkey_brand_type_operator_def('part_project'))
+        tpch_q14.project_partkey_extendedprice_discount_shipdate_operator_def('lineitem_project', query_plan))
+    part_scan = query_plan.add_operator(tpch_q14.sql_scan_part_operator_def('part_scan', query_plan))
+    part_project = query_plan.add_operator(tpch_q14.project_partkey_brand_type_operator_def('part_project', query_plan))
     lineitem_filter = query_plan.add_operator(
-        tpch_q14.filter_shipdate_operator_def(min_shipped_date, max_shipped_date, 'lineitem_filter'))
-    part_filter = query_plan.add_operator(tpch_q14.filter_brand12_operator_def('part_filter'))
-    join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join'))
-    aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate'))
-    aggregate_project = query_plan.add_operator(tpch_q14.project_promo_revenue_operator_def('aggregate_project'))
-    collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate'))
+        tpch_q14.filter_shipdate_operator_def(min_shipped_date, max_shipped_date, 'lineitem_filter', query_plan))
+    part_filter = query_plan.add_operator(tpch_q14.filter_brand12_operator_def('part_filter', query_plan))
+    join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join', query_plan))
+    aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))
+    aggregate_project = query_plan.add_operator(
+        tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
+    collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
     lineitem_scan.connect(lineitem_project)
     lineitem_project.connect(lineitem_filter)

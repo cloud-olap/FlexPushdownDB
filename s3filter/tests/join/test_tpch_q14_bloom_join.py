@@ -114,15 +114,19 @@ def run(parallel, buffer_size):
 
     part_scan = query_plan.add_operator(
         tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def('part_scan', query_plan))
-    part_scan_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_scan_project', query_plan))
-    part_bloom_create = query_plan.add_operator(tpch_q14.bloom_create_p_partkey_operator_def('part_bloom_create', query_plan))
+    part_scan_project = query_plan.add_operator(
+        tpch_q14.project_partkey_type_operator_def('part_scan_project', query_plan))
+    part_bloom_create = query_plan.add_operator(
+        tpch_q14.bloom_create_p_partkey_operator_def('part_bloom_create', query_plan))
     lineitem_scan = query_plan.add_operator(
-        tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, 'lineitem_scan', query_plan))
+        tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, 'lineitem_scan',
+                                                                 query_plan))
     lineitem_scan_project = query_plan.add_operator(
         tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_scan_project', query_plan))
     join = query_plan.add_operator(tpch_q14.join_part_lineitem_operator_def('join', query_plan))
     aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))
-    aggregate_project = query_plan.add_operator(tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
+    aggregate_project = query_plan.add_operator(
+        tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
     part_scan.connect(part_scan_project)

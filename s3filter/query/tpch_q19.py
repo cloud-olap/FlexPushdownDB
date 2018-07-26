@@ -227,7 +227,8 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 query_plan, False)
 
 
-def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(query_plan):
+def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(
+        query_plan):
     return SQLTableScan('lineitem.csv',
                         "select "
                         "  l_partkey, "
@@ -265,7 +266,8 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         query_plan, False)
 
 
-def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(query_plan):
+def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(
+        query_plan):
     return SQLTableScan('lineitem.csv',
                         "select "
                         "  l_partkey, "

@@ -23,7 +23,10 @@ class Cursor(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, s3):
+
+        self.s3 = s3
+
         self.s3key = None
         self.s3sql = None
         self.event_stream = None
@@ -61,8 +64,6 @@ class Cursor(object):
         :return: An iterable of the records fetched
         """
 
-        s3 = boto3.client('s3')
-
         # print("Executing select_object_content")
 
         self.timer.start()
@@ -75,7 +76,7 @@ class Cursor(object):
         # just because its simpler. It does mean the records are returned as a list instead of a dict though (can change
         # in future).
         #
-        response = s3.select_object_content(
+        response = self.s3.select_object_content(
             Bucket=s3filter.util.constants.S3_BUCKET_NAME,
             Key=self.s3key,
             ExpressionType='SQL',

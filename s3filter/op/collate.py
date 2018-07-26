@@ -2,10 +2,9 @@
 """Collation support
 
 """
-import cPickle
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 import sys
-
-import dill
 
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
@@ -34,7 +33,7 @@ class Collate(Operator):
         """
 
         if self.async_:
-            self.queue.put(cPickle.dumps(EvalMessage("self.local_tuples()")))
+            self.queue.put(EvalMessage("self.local_tuples()"))
             tuples = self.query_plan.listen(EvaluatedMessage).val
             return tuples
         else:
@@ -83,6 +82,10 @@ class Collate(Operator):
 
         print('')
 
+        self.write_to(sys.stdout, tuples)
+
+    def write_to(self, out_stream, tuples=None):
+
         if tuples is None:
             tuples = self.__tuples
 
@@ -97,25 +100,25 @@ class Collate(Operator):
                 first_field_name = True
                 for f in t_iter:
                     if not first_field_name:
-                        sys.stdout.write(' | ')
+                        out_stream.write(' | ')
                     else:
                         first_field_name = False
 
-                    sys.stdout.write(str(f))
+                    out_stream.write(str(f))
                     field_names_len += len(str(f))
 
-                sys.stdout.write('\n')
-                print('-' * (field_names_len + ((len(t) - 1) * len(' | '))))
+                out_stream.write('\n')
+                out_stream.write('-' * (field_names_len + ((len(t) - 1) * len(' | '))))
+                out_stream.write('\n')
                 field_names = True
             else:
                 t_iter = iter(t)
                 first_field_val = True
                 for f in t_iter:
                     if not first_field_val:
-                        sys.stdout.write(' | ')
+                        out_stream.write(' | ')
                     else:
                         first_field_val = False
 
-                    sys.stdout.write(str(f))
-
-                print('')
+                    out_stream.write(str(f))
+                out_stream.write('\n')

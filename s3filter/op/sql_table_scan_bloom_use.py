@@ -8,6 +8,8 @@ from s3filter.op.message import TupleMessage, BloomMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.sql.cursor import Cursor
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class SQLTableScanBloomUse(Operator):
@@ -33,7 +35,7 @@ class SQLTableScanBloomUse(Operator):
         self.__field_names = None
         self.__tuples = []
 
-        self.__bloom_filter = None
+        self.__bloom_filters = []
 
         if type(bloom_filter_field_name) is str:
             self.__bloom_filter_field_name = bloom_filter_field_name
@@ -49,22 +51,30 @@ class SQLTableScanBloomUse(Operator):
         :return: None
         """
 
-        pass
+        if producer_name in self.producer_completions.keys():
+            self.producer_completions[producer_name] = True
 
-    def on_receive(self, ms, _producer):
+        if all(self.producer_completions.values()):
+            self.start()
+
+        Operator.on_producer_completed(self, producer_name)
+
+    def on_receive(self, ms, producer_name):
         """Handles the event of receiving a new message from a producer.
 
-        :param m: The received message
-        :param _producer: The producer of the message
+        :param ms: The received messages
+        :param producer_name: The producer of the message
         :return: None
         """
 
         for m in ms:
             if type(m) is BloomMessage:
-                self.__bloom_filter = SlicedSQLBloomFilter(m.bloom_filter)
-                self.start()
+                self.on_receive_bloom_filter(m, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_bloom_filter(self, m, _producer_name):
+        self.__bloom_filters.append(SlicedSQLBloomFilter(m.bloom_filter))
 
     def start(self):
         """Executes the query and sends the tuples to consumers.
@@ -73,15 +83,18 @@ class SQLTableScanBloomUse(Operator):
         """
 
         # Append the bloom filter predicate either using where... or and...
-        bloom_filter_sql_predicate = self.__bloom_filter\
-            .build_bit_array_string_sql_predicate(self.__bloom_filter_field_name)
-        sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicate)
+        bloom_filter_sql_predicates = []
+        for bf in self.__bloom_filters:
+            bloom_filter_sql_predicate = bf.build_bit_array_string_sql_predicate(self.__bloom_filter_field_name)
+            bloom_filter_sql_predicates.append(bloom_filter_sql_predicate)
+
+        sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicates)
         sql = self.s3sql + sql_suffix
 
         if self.log_enabled:
             print("{}('{}') | {}".format(self.__class__.__name__, self.name, sql))
 
-        cur = Cursor().select(self.s3key, sql)
+        cur = Cursor(self.query_plan.s3).select(self.s3key, sql)
 
         tuples = cur.execute()
 
@@ -118,12 +131,12 @@ class SQLTableScanBloomUse(Operator):
             self.complete()
 
     @staticmethod
-    def __build_sql_suffix(sql, bloom_filter_sql_predicate):
+    def __build_sql_suffix(sql, bloom_filter_sql_predicates):
         """Creates the bloom filter sql predicate. Basically determines whether the sql suffix should start with 'and'
         or 'where'.
 
         :param sql: The sql to create the suffix for
-        :param bloom_filter_sql_predicate: The sql predicate from the bloom filter
+        :param bloom_filter_sql_predicates: The sql predicates from the bloom filters
         :return: The sql suffix
         """
 
@@ -134,10 +147,17 @@ class SQLTableScanBloomUse(Operator):
         split_sql = stripped_sql.split()
         is_predicate_present = split_sql[-1].lower() != "s3object"
 
+        p_iter = iter(bloom_filter_sql_predicates)
+        next_p = p_iter.next()
+
+        bloom_filter_sql_predicate = " (" + next_p + ") "
+        for next_p in p_iter:
+            bloom_filter_sql_predicate += " or (" + next_p + ")"
+
         if is_predicate_present:
-            return " and {} ".format(bloom_filter_sql_predicate)
+            return " and ({}) ".format(bloom_filter_sql_predicate)
         else:
-            return " where {} ".format(bloom_filter_sql_predicate)
+            return " where ({}) ".format(bloom_filter_sql_predicate)
 
     def send_field_values(self, tuple_):
         """Sends a field values tuple

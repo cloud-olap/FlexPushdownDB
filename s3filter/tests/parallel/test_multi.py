@@ -2,16 +2,14 @@
 """Ray tests
 
 """
-import cPickle
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 import os
 import timeit
 from multiprocessing import Process, Queue
 
-import dill
-
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
-from s3filter.op.operator_base import EvaluatedMessage, EvalMessage
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan

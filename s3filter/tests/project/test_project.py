@@ -129,10 +129,10 @@ def test_project_perf():
     :return: None
     """
 
-    num_rows = 1000000
+    num_rows = 10000
     profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
 
-    query_plan = QueryPlan(None, False)
+    query_plan = QueryPlan(is_async=False, buffer_size=0)
 
     # Query plan
     random_col_defs = [

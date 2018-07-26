@@ -26,7 +26,7 @@ def test_group_count():
 
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts',  query_plan,False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
 
     g = query_plan.add_operator(Group(['_3'],
                                       [
@@ -36,7 +36,7 @@ def test_group_count():
                                       'g', query_plan,
                                       False))
 
-    c = query_plan.add_operator(Collate('c',  query_plan,False))
+    c = query_plan.add_operator(Collate('c', query_plan, False))
 
     query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
 
@@ -123,7 +123,8 @@ def test_group_empty():
 
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(
+        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
 
     g = query_plan.add_operator(Group(['_3'],
                                       [

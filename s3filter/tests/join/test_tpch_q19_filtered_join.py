@@ -37,8 +37,10 @@ def run(parallel, buffer_size):
 
     # Define the operators
     lineitem_scan = query_plan.add_operator(
-        tpch_q19.sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(query_plan))
-    part_scan = query_plan.add_operator(tpch_q19.sql_scan_part_partkey_brand_size_container_where_filtered_op(query_plan))
+        tpch_q19.sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(
+            query_plan))
+    part_scan = query_plan.add_operator(
+        tpch_q19.sql_scan_part_partkey_brand_size_container_where_filtered_op(query_plan))
     lineitem_project = query_plan.add_operator(
         tpch_q19.project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(query_plan))
     part_project = query_plan.add_operator(tpch_q19.project_partkey_brand_size_container_filtered_op(query_plan))

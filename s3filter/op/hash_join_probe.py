@@ -6,6 +6,8 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, HashTableMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
+# noinspection PyCompatibility,PyPep8Naming
+import cPickle as pickle
 
 
 class HashJoinProbeMetrics(OpMetrics):
@@ -37,8 +39,6 @@ class HashJoinProbe(Operator):
     def __init__(self, join_expr, name, query_plan, log_enabled):
         """
         Creates a new join operator.
-
-        :param key: The key to hash on
         """
 
         super(HashJoinProbe, self).__init__(name, HashJoinProbeMetrics(), query_plan, log_enabled)
@@ -101,7 +101,7 @@ class HashJoinProbe(Operator):
     def on_receive(self, ms, producer_name):
         """Handles the event of receiving a new message from a producer.
 
-        :param m: The received message
+        :param ms: The received messages
         :param producer_name: The producer of the tuple
         :return: None
         """
@@ -153,9 +153,9 @@ class HashJoinProbe(Operator):
             raise Exception(
                 "Join Operator '{}' received invalid tuple {} from producer '{}'. "
                 "Tuple must be sent from connected left producer '{}' or right producer '{}'."
-                    .format(self.name, tuple_, producer_name, self.build_producers, self.tuple_producer_name))
+                .format(self.name, tuple_, producer_name, self.build_producers, self.tuple_producer_name))
 
-    def on_receive_hashtable(self, hashtable, producer_name):
+    def on_receive_hashtable(self, hashtable, _producer_name):
 
         self.hashtable.update(hashtable)
         self.op_metrics.l_rows_processed = len(hashtable)
@@ -275,4 +275,3 @@ class HashJoinProbe(Operator):
                     {'field_names': joined_field_names}))
 
             self.send(TupleMessage(Tuple(joined_field_names)), self.consumers)
-
