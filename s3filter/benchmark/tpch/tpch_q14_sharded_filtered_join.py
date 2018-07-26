@@ -15,7 +15,7 @@ from s3filter.op.join_expression import JoinExpression
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
-
+import s3filter.util.constants
 
 def main():
     # run(False, 0, 1)
@@ -23,8 +23,10 @@ def main():
     #
     # run(False, 8192, 1)
     # run(False, 8192, 2)
-
-    run(True, 8192, 32, 4)
+    if s3filter.util.constants.TPCH_SF == 10:
+        run(True, 8192, 96, 4)
+    elif s3filter.util.constants.TPCH_SF == 1:
+        run(True, 8192, 32, 4)
     # run(True, 8192, 32)
     # run(True, 8192, 4)
     # run(True, 8192, 8)
@@ -155,7 +157,10 @@ def run(parallel, buffer_size, lineitem_parts, parts):
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     # assert tuples[1] == [15.090116526324298]
-    assert round(float(tuples[1][0]), 10) == 15.0901165263
+    if s3filter.util.constants.TPCH_SF == 10:
+        assert round(float(tuples[1][0]), 10) == 15.4488836202
+    elif s3filter.util.constants.TPCH_SF == 1:
+        assert round(float(tuples[1][0]), 10) == 15.0901165263
 
 
 if __name__ == "__main__":
