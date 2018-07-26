@@ -301,7 +301,7 @@ class QueryPlan(object):
         calculates the estimated query cost when runs on S3 by combining the cost of all scan operators in the query
         :return: the estimated cost of the whole query
         """
-        scan_operators = [op for op in self.operators if hasattr(op.op_metrics, "cost")]
+        scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
 
         total_cost = 0
 

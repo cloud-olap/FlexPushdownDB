@@ -10,6 +10,7 @@ from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
+from s3filter.util.constants import *
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 
@@ -37,16 +38,14 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_processed = 0
         self.bytes_returned = 0
 
-        self.cost = 0.0
-
     def cost(self):
         """
         Estimates the cost of the scan operation based on S3 pricing in the following page:
         <https://aws.amazon.com/s3/pricing/>
         :return: The estimated cost of the table scan operation
         """
-        return self.bytes_returned * SQLTableScanMetrics.COST_S3_DATA_RETURNED_PER_GB + \
-                self.bytes_scanned * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
+        return self.bytes_returned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_RETURNED_PER_GB + \
+                self.bytes_scanned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
 
     def __repr__(self):
         return {
