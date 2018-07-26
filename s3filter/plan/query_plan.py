@@ -11,6 +11,7 @@ import dill
 import networkx
 
 from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
+from s3filter.op.sql_table_scan import SQLTableScanMetrics
 from s3filter.plan.graph import Graph
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.util.timer import Timer
@@ -186,6 +187,7 @@ class QueryPlan(object):
         print("buffer_size: {}".format(self.buffer_size))
         print("is_parallel: {}".format(self.is_async))
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
+        print("cost: ${}".format(round(self.cost(), 7)))
 
         print("")
         print("Operators")
@@ -290,3 +292,21 @@ class QueryPlan(object):
 
     def join(self):
         return map(lambda o: o.join(), self.operators.values())
+
+    def cost(self):
+        """
+        calculates the estimated query cost when runs on S3 by combining the cost of all scan operators in the query
+        :return: the estimated cost of the whole query
+        """
+        scan_operators = [op for op in self.operators if hasattr(op.op_metrics, "cost")]
+
+        total_cost = 0
+
+        for op in scan_operators:
+            if op.is_completed():
+                total_cost += op.op_metrics.cost()
+            else:
+                raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
+                                .format(op.name))
+
+        return total_cost

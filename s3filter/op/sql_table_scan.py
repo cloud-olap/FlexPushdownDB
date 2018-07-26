@@ -17,6 +17,10 @@ class SQLTableScanMetrics(OpMetrics):
 
     """
 
+    # These amounts vary by region, but let's assume it's a flat rate for simplicity
+    COST_S3_DATA_RETURNED_PER_GB = 0.0007
+    COST_S3_DATA_SCANNED_PER_GB = 0.002
+
     def __init__(self):
         super(SQLTableScanMetrics, self).__init__()
 
@@ -30,6 +34,17 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
+
+        self.cost = 0.0
+
+    def cost(self):
+        """
+        Estimates the cost of the scan operation based on S3 pricing in the following page:
+        <https://aws.amazon.com/s3/pricing/>
+        :return: The estimated cost of the table scan operation
+        """
+        return self.bytes_returned * SQLTableScanMetrics.COST_S3_DATA_RETURNED_PER_GB + \
+                self.bytes_scanned * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
 
     def __repr__(self):
         return {
@@ -45,7 +60,8 @@ class SQLTableScanMetrics(OpMetrics):
                 else round(self.time_to_first_record_response, 5),
             'time_to_last_record_response':
                 None if self.time_to_last_record_response is None
-                else round(self.time_to_last_record_response, 5)
+                else round(self.time_to_last_record_response, 5),
+            'cost': self.cost()
 
         }.__repr__()
 
