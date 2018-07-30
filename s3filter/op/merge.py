@@ -5,10 +5,12 @@
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 
+import objgraph as objgraph
+
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
 from s3filter.plan.op_metrics import OpMetrics
-
+import pandas as pd
 
 class Merge(Operator):
     """
@@ -38,6 +40,10 @@ class Merge(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, producer_name)
+            elif type(m) is pd.DataFrame:
+                tuples = m.values.tolist()
+                for t in tuples:
+                    self.__on_receive_tuple(t, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -47,6 +53,8 @@ class Merge(Operator):
         :param tuple_: The received tuple
         :return: None
         """
+
+        assert (len(tuple_) > 0)
 
         if self.field_names is None:
             self.field_names = tuple_
@@ -58,3 +66,6 @@ class Merge(Operator):
                 self.producers_received[producer_name] = True
             else:
                 self.send(TupleMessage(tuple_), self.consumers)
+
+    def on_producer_completed(self, producer_name):
+        Operator.on_producer_completed(self, producer_name)

@@ -8,6 +8,7 @@ from s3filter.op.message import TupleMessage, HashTableMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
+import pandas as pd
 
 
 class HashJoinProbeMetrics(OpMetrics):
@@ -105,11 +106,15 @@ class HashJoinProbe(Operator):
         :param producer_name: The producer of the tuple
         :return: None
         """
+
         for m in ms:
             if type(m) is TupleMessage:
                 self.on_receive_tuple(m.tuple_, producer_name)
             elif type(m) is HashTableMessage:
                 self.on_receive_hashtable(m.hashtable, producer_name)
+            elif type(m) is pd.DataFrame:
+                for t in m.values.tolist():
+                    self.on_receive_tuple(t, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -184,71 +189,46 @@ class HashJoinProbe(Operator):
 
         :return: None
         """
-        # # Determine which direction the hash join should run
-        # # The larger relation should remain as a list and the smaller relation should be hashed. If either of the
-        # # relations are empty then just return
-        # if len(self.l_tuples) == 0 or len(self.r_tuples) == 0:
-        #     return
-        # elif len(self.l_tuples) > len(self.r_tuples):
-        #     l_to_r = True
-        #     # r_to_l = not l_to_r
-        # else:
-        #     l_to_r = False
-        #     # r_to_l = not l_to_r
 
-        # if l_to_r:
-        #     outer_tuples_list = self.l_tuples
-        #     inner_tuples_list = self.r_tuples
-        #     inner_tuple_field_name = self.join_expr.r_field
-        #     inner_tuple_field_names = self.r_field_names
-        #     outer_tuple_field_index = self.l_field_names.index(self.join_expr.l_field)
-        # else:
-        #     outer_tuples_list = self.r_tuples
-        #     inner_tuples_list = self.l_tuples
-        #     inner_tuple_field_name = self.join_expr.l_field
-        #     inner_tuple_field_names = self.l_field_names
-        outer_tuple_field_index = self.tuple_field_names.index(self.join_expr.r_field)
-        #
-        # # Hash the tuples from the smaller set of tuples
-        # inner_tuples_dict = {}
-        # for t in inner_tuples_list:
-        #     it = IndexedTuple.build(t, inner_tuple_field_names)
-        #     itd = inner_tuples_dict.setdefault(it[inner_tuple_field_name], [])
-        #     itd.append(t)
+        # Check that we actually got tuple field names to join on, we may not have as producers may not have produced
+        # any
+        if self.tuple_field_names is not None:
 
-        for outer_tuple in self.tuples:
+            outer_tuple_field_index = self.tuple_field_names.index(self.join_expr.r_field)
 
-            if self.is_completed():
-                break
+            for outer_tuple in self.tuples:
 
-            outer_tuple_field_value = outer_tuple[outer_tuple_field_index]
-            inner_tuples = self.hashtable.get(outer_tuple_field_value, None)
+                if self.is_completed():
+                    break
 
-            # if self.log_enabled:
-            #     print("{}('{}') | Joining Outer: {} Inner: {}".format(
-            #         self.__class__.__name__,
-            #         self.name,
-            #         outer_tuple,
-            #         inner_tuples))
+                outer_tuple_field_value = outer_tuple[outer_tuple_field_index]
+                inner_tuples = self.hashtable.get(outer_tuple_field_value, None)
 
-            if inner_tuples is not None:
+                # if self.log_enabled:
+                #     print("{}('{}') | Joining Outer: {} Inner: {}".format(
+                #         self.__class__.__name__,
+                #         self.name,
+                #         outer_tuple,
+                #         inner_tuples))
 
-                for inner_tuple in inner_tuples:
+                if inner_tuples is not None:
 
-                    # if l_to_r:
-                    #     t = outer_tuple + inner_tuple
-                    # else:
-                    t = inner_tuple + outer_tuple
+                    for inner_tuple in inner_tuples:
 
-                    if self.log_enabled:
-                        print("{}('{}') | Sending field values [{}]".format(
-                            self.__class__.__name__,
-                            self.name,
-                            {'data': t}))
+                        # if l_to_r:
+                        #     t = outer_tuple + inner_tuple
+                        # else:
+                        t = inner_tuple + outer_tuple
 
-                    self.op_metrics.rows_joined += 1
+                        if self.log_enabled:
+                            print("{}('{}') | Sending field values [{}]".format(
+                                self.__class__.__name__,
+                                self.name,
+                                {'data': t}))
 
-                    self.send(TupleMessage(Tuple(t)), self.consumers)
+                        self.op_metrics.rows_joined += 1
+
+                        self.send(TupleMessage(Tuple(t)), self.consumers)
 
     def join_field_names(self):
         """Examines the collected field names and joins them into a single list, left field names followed by right
@@ -259,7 +239,8 @@ class HashJoinProbe(Operator):
 
         joined_field_names = []
 
-        # We can only emit field name tuples if we received tuples for both sides of the join
+        # We can only emit field name tuples if we received tuples for both sides of the join, we may not always get them
+        # as some reads may return an empty record set
         if self.build_field_names is not None and self.tuple_field_names is not None:
 
             for field_name in self.build_field_names:

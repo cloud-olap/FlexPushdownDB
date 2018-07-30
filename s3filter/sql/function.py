@@ -17,7 +17,7 @@ def cast(ex, t):
         elif type(ex) == datetime:
             return dt_to_millis(ex)
         else:
-            raise Exception("Unrecognized type {}".format(t))
+            raise Exception("Unrecognized value type {}".format(ex))
     else:
-        raise Exception('Unrecognized type {}'.format(t))
+        raise Exception('Unrecognized data type {}'.format(t))
 

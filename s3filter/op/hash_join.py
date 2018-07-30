@@ -8,7 +8,7 @@ from s3filter.op.message import TupleMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
-
+import pandas as pd
 
 class HashJoinMetrics(OpMetrics):
     """Extra metrics for a project
@@ -107,6 +107,10 @@ class HashJoin(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.on_receive_tuple(m.tuple_, producer_name)
+            elif type(m) is pd.DataFrame:
+                tuples = m.values.tolist()
+                for t in tuples:
+                    self.on_receive_tuple(t, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 

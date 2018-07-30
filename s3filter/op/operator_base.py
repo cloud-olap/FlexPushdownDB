@@ -9,7 +9,7 @@ import multiprocessing
 # import threading
 import time
 import traceback
-
+import pandas as pd
 
 def switch_context(from_op, to_op):
     """Handles a context switch from one operator to another. This is used to stop the sending operators
@@ -80,8 +80,10 @@ class Operator(object):
 
     def work(self, queue):
 
+        running = True
+
         try:
-            while True:
+            while running:
 
                 self.op_metrics.timer_stop()
                 item = queue.get()
@@ -111,6 +113,8 @@ class Operator(object):
             tb = traceback.format_exc(e)
             print(tb)
             self.exception = e
+            running = False
+
 
     def run(self):
         """Abstract method for running the execution of this operator. This is different from the start method which
@@ -278,8 +282,7 @@ class Operator(object):
 
         if self.buffer_size == 0:
             for op in operators:
-                # Should really be if the operator is async not this
-                if self.async_:
+                if op.async_:
                     self.query_plan.send([[message], self.name], op.name)
                 else:
                     if op.is_profiled:
@@ -290,15 +293,22 @@ class Operator(object):
 
         else:
             self.__buffer.append(message)
-            if len(self.__buffer) == self.buffer_size:
+            if len(self.__buffer) >= self.buffer_size:
+                self.do_send(operators)
 
-                for op in operators:
-                    if op.async_:
-                        self.query_plan.send([self.__buffer, self.name], op.name)
-                    else:
-                        self.fire_on_receive(self.__buffer, op)
+    def do_send(self, operators):
+        for op in operators:
+            # Should really be if the operator is async not this
+            if self.async_:
+                self.query_plan.send([self.__buffer, self.name], op.name)
+            else:
+                if op.is_profiled:
+                    cProfile.runctx('self.fire_on_receive([message], op)',
+                                    globals(), locals(), op.profile_file_name)
+                else:
+                    self.fire_on_receive(self.__buffer, op)
 
-                self.__buffer = []
+        self.__buffer = []
 
     def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
@@ -336,6 +346,7 @@ class Operator(object):
 
             self.__completed = True
 
+            # Flush the buffer
             for c in self.consumers:
                 if c.async_:
                     self.query_plan.send([self.__buffer, self.name], c.name)
@@ -357,8 +368,6 @@ class Operator(object):
                     self.query_plan.send(ProducerCompletedMessage(self.name), c.name)
                 else:
                     self.fire_on_producer_completed(c)
-
-            pass
 
         else:
             raise Exception("Cannot complete an already completed operator")
@@ -384,7 +393,7 @@ class Operator(object):
 
         self.producer_completions[producer_name] = True
 
-        # Check if all consumers are completed
+        # Check if all producers are completed
         if all(self.producer_completions.values()):
             if not self.is_completed():
                 self.complete()

@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-"""TPCH Q14 Bloom Join Benchmark
+"""TPCH Q14 Filtered Benchmark
 
 """
 
 import os
 from datetime import datetime, timedelta
 
-import s3filter.util.constants
 from s3filter import ROOT_DIR
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
@@ -14,22 +13,20 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96, part_parts=4)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        # run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=32, parts=4)
+    run(False, 0)
+    run(False, 8192)
+    run(True, 8192)
 
 
-def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
+def run(parallel, buffer_size):
     """
 
     :return: None
     """
 
     print('')
-    print("TPCH Q14 Bloom Join")
-    print("-------------------")
+    print("TPCH Q14 Filtered Join")
+    print("----------------------")
 
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
@@ -39,29 +36,26 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_scan = query_plan.add_operator(
-        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def(use_pandas, 'part_scan', query_plan))
-    part_scan_project = query_plan.add_operator(
-        tpch_q14.project_partkey_type_operator_def('part_scan_project', query_plan))
-    part_bloom_create = query_plan.add_operator(
-        tpch_q14.bloom_create_p_partkey_operator_def('part_bloom_create', query_plan))
     lineitem_scan = query_plan.add_operator(
-        tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, use_pandas, 'lineitem_scan',
-                                                                 query_plan))
-    lineitem_scan_project = query_plan.add_operator(
-        tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_scan_project', query_plan))
-    join = query_plan.add_operator(tpch_q14.join_part_lineitem_operator_def('join', query_plan))
+        tpch_q14.sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def(min_shipped_date,
+                                                                                              max_shipped_date,
+                                                                                              'lineitem_scan',
+                                                                                              query_plan))
+    lineitem_project = query_plan.add_operator(
+        tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_project', query_plan))
+    part_scan = query_plan.add_operator(
+        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def('part_scan', query_plan))
+    part_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_project', query_plan))
+    join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join', query_plan))
     aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))
     aggregate_project = query_plan.add_operator(
         tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
-    part_scan.connect(part_scan_project)
-    part_scan_project.connect(part_bloom_create)
-    part_bloom_create.connect(lineitem_scan)
-    join.connect_left_producer(part_scan_project)
-    lineitem_scan.connect(lineitem_scan_project)
-    join.connect_right_producer(lineitem_scan_project)
+    lineitem_scan.connect(lineitem_project)
+    part_scan.connect(part_project)
+    join.connect_left_producer(lineitem_project)
+    join.connect_right_producer(part_project)
     join.connect(aggregate)
     aggregate.connect(aggregate_project)
     aggregate_project.connect(collate)

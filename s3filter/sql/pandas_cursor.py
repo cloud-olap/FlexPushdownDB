@@ -2,17 +2,17 @@
 """Cursor support
 
 """
-
-import boto3
+import cStringIO
 import csv
-import s3filter.util.constants
-import io
 
-from s3filter.util.py_util import PYTHON_3
+import numpy
+import pandas as pd
+
+import s3filter.util.constants
 from s3filter.util.timer import Timer
 
 
-class Cursor(object):
+class PandasCursor(object):
     """Represents a database cursor for managing the context of a fetch operation.
 
     Intended to be modelled after the Python DB API. All it supports at present is select, taking a s3 key and sql
@@ -109,59 +109,33 @@ class Cursor(object):
 
                 self.time_to_last_record_response = elapsed_time
 
-                records_str = event['Records']['Payload'].decode('utf-8')
+                # records_str = event['Records']['Payload'].decode('utf-8')
+                records_str = event['Records']['Payload']
 
-                # print("{} Records Event {}".format(timeit.default_timer(), records_str))
-                # print("{} Records Event".format(timeit.default_timer()))
+                records_str_rdr = cStringIO.StringIO()
+                if prev_record_str is not None:
+                    records_str_rdr.write(prev_record_str)
+                    prev_record_str = None
 
-                # Note that the select_object_content service may return partial chunks so we cant simply pass the
-                # str to the csv reader. We need to examine the string itself to see if it's an incomplete record
-                # (it won't end with a newline if its incomplete)
+                if records_str.endswith('\n') and not records_str.endswith('\\n'):
+                    records_str_rdr.write(records_str)
+                else:
+                    last_newline_pos = records_str.rfind('\n', 0, len(records_str))
+                    prev_record_str = records_str[last_newline_pos + 1:]
+                    records_str_rdr.write(records_str[:last_newline_pos + 1])
 
-                records_str_rdr = io.StringIO(records_str)
+                records_str_rdr.seek(0)
 
-                for record_str in records_str_rdr:
+                # df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
+                #                  quotechar='"', na_filter=False, compression=None, low_memory=False)
 
-                    # Check record ends with newline (excluding an escaped newline)
-                    if record_str.endswith('\n') and not record_str.endswith('\\n'):  # It's a complete record
+                # Strangely the reading with the python csv reader and then loading into a dataframe is faster than
+                # reading csvs with pandas
+                record_rdr = csv.reader(records_str_rdr)
+                df = pd.DataFrame(list(record_rdr), dtype=str)
+                df = df.add_prefix('_')
 
-                        if prev_record_str is not None:  # There was an incomplete record present in the last payload
-                            # Append the current record to the previous incomplete record
-                            # print("Appending: {} {}".format(prev_record_str, record_str))
-                            record_str = prev_record_str + record_str
-                            prev_record_str = None
-
-                        # print("Complete: {}".format(record_str))
-
-                        # Parse CSV
-                        record_rdr = csv.reader([record_str])
-                        if PYTHON_3:
-                            record = next(record_rdr)
-                        else:
-                            record = record_rdr.next()
-
-                        # print("Parsed: {}".format(record))
-
-                        # if first_record:
-                        #     # This will be the headers, keep them around
-                        #     header = record
-                        #     first_record = False
-                        # else:
-                        #     record_dict = dict(zip(header, record))
-                        #     yield record_dict
-
-                        # TODO: Not sure how to handle timers exactly, while time will be taken yielding it may
-                        # genuinely be time that this method is waiting for data from s3. May be a case of measuring
-                        # both, something to think about.
-
-                        # self.timer.stop()
-                        yield record
-                        # self.timer.start()
-
-                    else:
-                        # It's an incomplete record, save for next iteration
-                        # print("Incomplete: {}".format(record_str))
-                        prev_record_str = record_str
+                yield df
 
             elif 'Stats' in event:
                 self.bytes_scanned += event['Stats']['Details']['BytesScanned']

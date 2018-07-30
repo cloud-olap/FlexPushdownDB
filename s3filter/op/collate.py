@@ -6,6 +6,8 @@
 import cPickle as pickle
 import sys
 
+from pandas import DataFrame
+
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.plan.op_metrics import OpMetrics
@@ -25,6 +27,8 @@ class Collate(Operator):
         super(Collate, self).__init__(name, OpMetrics(), query_plan, log_enabled)
 
         self.__tuples = []
+
+        self.df = DataFrame()
 
     def tuples(self):
         """Accessor for the collated tuples
@@ -60,8 +64,21 @@ class Collate(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_)
+            elif type(m) is DataFrame:
+                self.__on_receive_dataframe(m)
             else:
                 raise Exception("Unrecognized message {}".format(m))
+
+    def __on_receive_dataframe(self, df):
+        """Event handler for a received tuple
+
+        :param tuple_: The received tuple
+        :return: None
+        """
+
+        # TODO: Also adding to tuples for now just so the existing tests work, eventually they should inspect the dataframe
+        self.__tuples.extend(df.values.tolist())
+        self.df = self.df.append(df)
 
     def __on_receive_tuple(self, tuple_):
         """Event handler for a received tuple

@@ -2,6 +2,8 @@
 """Filter support
 
 """
+import pandas as pd
+
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
@@ -9,6 +11,8 @@ from s3filter.op.message import TupleMessage
 from s3filter.op.predicate_expression import PredicateExpression
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
+
+from s3filter.sql.function import cast, timestamp
 
 
 class FilterMetrics(OpMetrics):
@@ -53,37 +57,70 @@ class Filter(Operator):
 
         self.field_names_index = None
 
-    def on_receive(self, ms, _producer):
+        self.producers_received = {}
+
+    def on_receive(self, ms, producer_name):
         """Event handler for handling receipt of messages.
 
         :param ms: The messages
-        :param _producer: The producer of the message
+        :param producer_name: The producer of the message
         :return: None
         """
 
         # print("Filter | {}".format(t))
         for m in ms:
             if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_)
+                self.__on_receive_tuple(m.tuple_, producer_name)
+            elif type(m) is pd.DataFrame:
+                self.__on_receive_dataframe(m)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __on_receive_tuple(self, tuple_):
+    def __on_receive_dataframe(self, df):
+        """Event handler for a received tuple
+
+        :param tuple_: The received tuple
+        :return: None
+        """
+
+        # def ass(t_):
+        #     return cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)
+        # criterion = df.apply(ass, axis=1)
+
+        # df['_10'] = pd.to_datetime(df['_10'])
+        # criterion = df['_10'] >= '1996-03-01'
+
+        self.op_metrics.rows_processed += len(df)
+
+        criterion = self.expression.pd_expr(df)
+
+        filtered_df = df[criterion]
+
+        self.op_metrics.rows_filtered += len(filtered_df)
+
+        self.send(filtered_df, self.consumers)
+
+    def __on_receive_tuple(self, tuple_, producer_name):
         """Event handler to handle receipt of a tuple
 
         :param tuple_: The tuple
         :return: None
         """
 
+        assert (len(tuple_) > 0)
+
         if not self.field_names_index:
             self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
+            self.producers_received[producer_name] = True
             self.__send_field_names(tuple_)
         else:
-            if self.__evaluate_filter(tuple_):
-
-                self.op_metrics.rows_filtered += 1
-
-                self.__send_field_values(tuple_)
+            if producer_name not in self.producers_received.keys():
+                # This will be the field names tuple, skip it
+                self.producers_received[producer_name] = True
+            else:
+                if self.__evaluate_filter(tuple_):
+                    self.op_metrics.rows_filtered += 1
+                    self.__send_field_values(tuple_)
 
     def __send_field_values(self, tuple_):
         """Sends the field values tuple to consumers
@@ -113,3 +150,6 @@ class Filter(Operator):
         """
 
         self.send(TupleMessage(tuple_), self.consumers)
+
+    def on_producer_completed(self, producer_name):
+        Operator.on_producer_completed(self, producer_name)

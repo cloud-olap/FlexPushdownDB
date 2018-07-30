@@ -12,6 +12,7 @@ from s3filter.op.collate import Collate
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.random_table_scan import RandomIntColumnDef, RandomDateColumnDef, RandomStringColumnDef, \
     RandomTableScan
+from s3filter.op.sql_pandas_table_scan import SQLPandasTableScan
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
@@ -27,6 +28,63 @@ def test_project_simple():
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
+                                              'select * from S3Object '
+                                              'limit 3;',
+                                              'ts', query_plan,
+                                              False))
+
+    p = query_plan.add_operator(Project(
+        [
+            ProjectExpression(lambda t_: t_['_2'], 'n_regionkey'),
+            ProjectExpression(lambda t_: t_['_0'], 'n_nationkey'),
+            ProjectExpression(lambda t_: t_['_3'], 'n_comment')
+        ],
+        'p', query_plan,
+        False))
+
+    c = query_plan.add_operator(Collate('c', query_plan, False))
+
+    ts.connect(p)
+    p.connect(c)
+
+    # Write the plan graph
+    query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+
+    # Start the query
+    query_plan.execute()
+
+    # Assert the results
+    # num_rows = 0
+    # for t in c.tuples():
+    #     num_rows += 1
+    #     print("{}:{}".format(num_rows, t))
+
+    field_names = ['n_regionkey', 'n_nationkey', 'n_comment']
+
+    assert len(c.tuples()) == 3 + 1
+
+    assert c.tuples()[0] == field_names
+
+    assert c.tuples()[1] == ['0', '0', ' haggle. carefully final deposits detect slyly agai']
+    assert c.tuples()[2] == ['1', '1', 'al foxes promise slyly according to the regular accounts. bold requests alon']
+    assert c.tuples()[3] == ['1', '2',
+                             'y alongside of the pending deposits. carefully special packages '
+                             'are about the ironic forges. slyly special ']
+
+    # Write the metrics
+    query_plan.print_metrics()
+
+
+def test_pandas_project_simple():
+    """Tests a projection
+
+    :return: None
+    """
+
+    query_plan = QueryPlan()
+
+    # Query plan
+    ts = query_plan.add_operator(SQLPandasTableScan('nation.csv',
                                               'select * from S3Object '
                                               'limit 3;',
                                               'ts', query_plan,

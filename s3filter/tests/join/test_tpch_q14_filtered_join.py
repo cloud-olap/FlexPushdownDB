@@ -8,18 +8,18 @@ from s3filter.util.test_util import gen_test_id
 
 
 def test_unbuffered():
-    run(False, 0)
+    run(parallel=False, use_pandas=False, buffer_size=0, lineitem_parts=1, part_parts=1)
 
 
 def test_buffered():
-    run(False, 8192)
+    run(parallel=False, use_pandas=False, buffer_size=1024, lineitem_parts=1, part_parts=1)
 
 
 def test_parallel_buffered():
-    run(True, 8192)
+    run(parallel=True, use_pandas=False, buffer_size=1024, lineitem_parts=1, part_parts=1)
 
 
-def run(parallel, buffer_size):
+def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     """The filtered tst uses hash joins but first projections and filtering is pushed down to s3.
 
     :return: None
@@ -39,12 +39,13 @@ def run(parallel, buffer_size):
     lineitem_scan = query_plan.add_operator(
         tpch_q14.sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def(min_shipped_date,
                                                                                               max_shipped_date,
+                                                                                              use_pandas,
                                                                                               'lineitem_scan',
                                                                                               query_plan))
     lineitem_project = query_plan.add_operator(
         tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_project', query_plan))
     part_scan = query_plan.add_operator(
-        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def('part_scan', query_plan))
+        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def(use_pandas, 'part_scan', query_plan))
     part_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_project', query_plan))
     join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join', query_plan))
     aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))

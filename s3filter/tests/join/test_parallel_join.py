@@ -13,6 +13,7 @@ from s3filter.op.join_expression import JoinExpression
 from s3filter.op.merge import Merge
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
+from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
 
@@ -117,16 +118,16 @@ def run(parallel, buffer_size):
     # Shut everything down
     query_plan.stop()
 
-    # field_names = ['r_regionkey', 'n_regionkey']
-    #
-    # assert len(tuples) == 25 + 1
-    #
-    # assert tuples[0] == field_names
-    #
-    # num_rows = 0
-    # for t in tuples:
-    #     num_rows += 1
-    #     # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
-    #     if num_rows > 1:
-    #         lt = IndexedTuple.build(t, field_names)
-    #         assert lt['r_regionkey'] == lt['n_regionkey']
+    field_names = ['r_regionkey', 'r_name', 'n_nationkey', 'n_name', 'n_regionkey']
+
+    assert len(tuples) == 25 + 1
+
+    assert tuples[0] == field_names
+
+    num_rows = 0
+    for t in tuples:
+        num_rows += 1
+        # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
+        if num_rows > 1:
+            lt = IndexedTuple.build(t, field_names)
+            assert lt['r_regionkey'] == lt['n_regionkey']

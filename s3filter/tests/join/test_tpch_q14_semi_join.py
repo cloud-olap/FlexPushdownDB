@@ -13,18 +13,18 @@ from s3filter.util.test_util import gen_test_id
 
 
 def test_unbuffered():
-    run(False, 0)
+    run(parallel=False, use_pandas=False, buffer_size=0, lineitem_parts=1, part_parts=1)
 
 
 def test_buffered():
-    run(False, 1024)
+    run(parallel=False, use_pandas=False, buffer_size=1024, lineitem_parts=1, part_parts=1)
 
 
 def test_parallel_buffered():
-    run(True, 1024)
+    run(parallel=True, use_pandas=False, buffer_size=1024, lineitem_parts=1, part_parts=1)
 
 
-def run(parallel, buffer_size):
+def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     """
 
     :return: None
@@ -42,14 +42,14 @@ def run(parallel, buffer_size):
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
     part_scan_1 = query_plan.add_operator(
-        tpch_q14.sql_scan_part_partkey_where_brand12_operator_def('part_table_scan_1', query_plan))
+        tpch_q14.sql_scan_part_partkey_where_brand12_operator_def(use_pandas, 'part_table_scan_1', query_plan))
     part_scan_1_project = query_plan.add_operator(
         tpch_q14.project_p_partkey_operator_def('part_scan_1_project', query_plan))
     part_bloom_create = query_plan.add_operator(
         tpch_q14.bloom_create_p_partkey_operator_def('part_bloom_create', query_plan))
     lineitem_scan_1 = query_plan.add_operator(
         tpch_q14.bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date,
-                                                                         'lineitem_scan_1', query_plan))
+                                                                         use_pandas, 'lineitem_scan_1', query_plan))
     lineitem_scan_1_project = query_plan.add_operator(
         tpch_q14.project_l_partkey_operator_def('lineitem_scan_1_project', query_plan))
     part_lineitem_join_1 = query_plan.add_operator(
@@ -57,11 +57,11 @@ def run(parallel, buffer_size):
     join_bloom_create = query_plan.add_operator(
         tpch_q14.bloom_create_l_partkey_operator_def('join_bloom_create', query_plan))
     part_scan_2 = query_plan.add_operator(
-        tpch_q14.bloom_scan_part_partkey_type_brand12_operator_def('part_table_scan_2', query_plan))
+        tpch_q14.bloom_scan_part_partkey_type_brand12_operator_def(use_pandas, 'part_table_scan_2', query_plan))
     part_scan_2_project = query_plan.add_operator(
         tpch_q14.project_partkey_type_operator_def('part_scan_2_project', query_plan))
     lineitem_scan_2 = query_plan.add_operator(
-        tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, 'lineitem_scan_2',
+        tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, use_pandas, 'lineitem_scan_2',
                                                                  query_plan))
     lineitem_scan_2_project = query_plan.add_operator(
         tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_scan_2_project', query_plan))

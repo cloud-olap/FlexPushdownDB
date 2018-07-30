@@ -5,10 +5,12 @@
 import timeit
 
 import boto3
+import objgraph
 import pytest
 
 from s3filter.op.tuple import IndexedTuple
 from s3filter.sql.cursor import Cursor
+from s3filter.sql.pandas_cursor import PandasCursor
 
 
 def test_non_existent_key():
@@ -17,7 +19,7 @@ def test_non_existent_key():
     :return: None
     """
 
-    cur = Cursor(boto3.client('s3'))\
+    cur = PandasCursor(boto3.client('s3'))\
         .select('does-not-exist.csv', 'select * from S3Object')
 
     try:
@@ -35,14 +37,15 @@ def test_empty_results():
 
     num_rows = 0
 
-    cur = Cursor(boto3.client('s3'))\
+    cur = PandasCursor(boto3.client('s3'))\
         .select('region.csv', 'select * from S3Object limit 0')
 
     try:
-        rows = cur.execute()
-        for _ in rows:
-            num_rows += 1
-            # print("{}:{}".format(num_rows, r))
+        dfs = cur.execute()
+        for df in dfs:
+            for i, r in df.iterrows():
+                num_rows += 1
+                # print("{}:{}".format(num_rows, r))
     finally:
         cur.close()
 
@@ -57,15 +60,15 @@ def test_non_empty_results():
 
     num_rows = 0
 
-    cur = Cursor(boto3.client('s3'))\
+    cur = PandasCursor(boto3.client('s3'))\
         .select('region.csv', 'select * from S3Object')
 
     try:
-        rows = cur.execute()
-        # print("{}:{}".format(num_rows, r))
-        for _ in rows:
-            num_rows += 1
-            # print("{}:{}".format(num_rows, r))
+        dfs = cur.execute()
+        for df in dfs:
+            for i, r in df.iterrows():
+                num_rows += 1
+                # print("{}:{}".format(num_rows, r))
 
         assert num_rows == 5
     finally:
@@ -80,16 +83,16 @@ def test_where_predicate():
 
     num_rows = 0
 
-    cur = Cursor(boto3.client('s3'))\
+    cur = PandasCursor(boto3.client('s3'))\
         .select('region.csv', 'select * from S3Object where r_name = \'AMERICA\';')
 
     try:
-        rows = cur.execute()
-        for r in rows:
-            num_rows += 1
-            lt = IndexedTuple.build_default(r)
-            assert lt['_1'] == 'AMERICA'
-            # print("{}:{}".format(num_rows, r))
+        dfs = cur.execute()
+        for df in dfs:
+            for i, r in df.iterrows():
+                num_rows += 1
+                assert r._1 == 'AMERICA'
+                # print("{}:{}".format(num_rows, r))
 
         assert num_rows == 1
     finally:
@@ -104,16 +107,16 @@ def test_aggregate():
 
     num_rows = 0
 
-    cur = Cursor(boto3.client('s3')) \
+    cur = PandasCursor(boto3.client('s3')) \
         .select('region.csv', 'select count(*) from S3Object')
 
     try:
-        rows = cur.execute()
-        for r in rows:
-            num_rows += 1
-            lt = IndexedTuple.build_default(r)
-            assert lt['_0'] == '5'
-            # print("{}:{}".format(num_rows, r))
+        dfs = cur.execute()
+        for df in dfs:
+            for i, r in df.iterrows():
+                num_rows += 1
+                assert r._0 == '5'
+                # print("{}:{}".format(num_rows, r))
 
         assert num_rows == 1
     finally:
@@ -128,20 +131,23 @@ def test_large_results():
 
     num_rows = 0
 
-    cur = Cursor(boto3.client('s3')) \
+    cur = PandasCursor(boto3.client('s3')) \
         .select('lineitem.csv', 'select * from S3Object limit 150000')
 
     try:
         start = timeit.default_timer()
-        rows = cur.execute()
-        for _ in rows:
-            num_rows += 1
-            # print("{}:{}".format(num_rows, r))
-
+        dfs = cur.execute()
+        for df in dfs:
+            for i, r in df.iterrows():
+                num_rows += 1
+                # print("{}:{}".format(num_rows, r))
         end = timeit.default_timer()
 
         elapsed = end - start
         print('Elapsed {}'.format(elapsed))
+
         assert num_rows == 150000
     finally:
         cur.close()
+
+
