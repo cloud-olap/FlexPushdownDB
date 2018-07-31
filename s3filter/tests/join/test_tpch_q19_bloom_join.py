@@ -38,7 +38,7 @@ def run(parallel, buffer_size):
     part_project = query_plan.add_operator(tpch_q19.project_partkey_brand_size_container_filtered_op(query_plan))
     part_bloom_create = query_plan.add_operator(tpch_q19.bloom_create_partkey_op(query_plan))
     lineitem_bloom_use = query_plan.add_operator(
-        tpch_q19.bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(
+        tpch_q19.bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(False,
             query_plan))
     lineitem_part_join = query_plan.add_operator(tpch_q19.join_op(query_plan))
     filter_op = query_plan.add_operator(tpch_q19.filter_def(query_plan))

@@ -6,7 +6,6 @@ import os
 
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
-from s3filter.op.sql_pandas_table_scan import SQLPandasTableScan
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.table_scan import TableScan
 from s3filter.plan.query_plan import QueryPlan
@@ -107,8 +106,8 @@ def test_pandas_scan_simple():
 
     # Query plan
     ts = query_plan.add_operator(
-        SQLPandasTableScan('nation.csv',
-                           "select * from s3object",
+        SQLTableScan('nation.csv',
+                           "select * from s3object", True,
                            'ts', query_plan,
                            False))
     c = query_plan.add_operator(

@@ -312,7 +312,7 @@ def sql_scan_select_partkey_where_brand_container_op(name, query_plan):
                         False)
 
 
-def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(name, query_plan):
+def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(use_pandas, name, query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
@@ -320,7 +320,7 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_par
                                 "  S3Object "
                                 "where "
                                 "  l_partkey = '182405' ",
-                                'l_partkey',
+                                'l_partkey', use_pandas,
                                 name, query_plan,
                                 False)
 

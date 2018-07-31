@@ -12,7 +12,6 @@ from s3filter.op.collate import Collate
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.random_table_scan import RandomIntColumnDef, RandomDateColumnDef, RandomStringColumnDef, \
     RandomTableScan
-from s3filter.op.sql_pandas_table_scan import SQLPandasTableScan
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
@@ -84,9 +83,9 @@ def test_pandas_project_simple():
     query_plan = QueryPlan()
 
     # Query plan
-    ts = query_plan.add_operator(SQLPandasTableScan('nation.csv',
+    ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               'select * from S3Object '
-                                              'limit 3;',
+                                              'limit 3;', True,
                                               'ts', query_plan,
                                               False))
 

@@ -5,9 +5,8 @@
 from s3filter.hash.sliced_sql_bloom_filter import SlicedSQLBloomFilter
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, BloomMessage
-from s3filter.op.sql_table_scan import SQLTableScanMetrics
+from s3filter.op.sql_table_scan import SQLTableScanMetrics, SQLTableScan
 from s3filter.op.tuple import Tuple, IndexedTuple
-from s3filter.sql.cursor import Cursor
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 
@@ -17,7 +16,7 @@ class SQLTableScanBloomUse(Operator):
 
     """
 
-    def __init__(self, s3key, s3sql, bloom_filter_field_name, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, name, query_plan, log_enabled):
         """
 
         :param s3key: The s3 key to select against
@@ -31,6 +30,10 @@ class SQLTableScanBloomUse(Operator):
 
         self.s3key = s3key
         self.s3sql = s3sql
+
+        self.s3 = query_plan.s3
+
+        self.use_pandas = use_pandas
 
         self.__field_names = None
         self.__tuples = []
@@ -89,36 +92,15 @@ class SQLTableScanBloomUse(Operator):
             bloom_filter_sql_predicates.append(bloom_filter_sql_predicate)
 
         sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicates)
-        sql = self.s3sql + sql_suffix
+        self.s3sql = self.s3sql + sql_suffix
 
         if self.log_enabled:
-            print("{}('{}') | {}".format(self.__class__.__name__, self.name, sql))
+            print("{}('{}') | {}".format(self.__class__.__name__, self.name, self.s3sql))
 
-        cur = Cursor(self.query_plan.s3).select(self.s3key, sql)
-
-        tuples = cur.execute()
-
-        self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
-        self.op_metrics.query_bytes = cur.query_bytes
-
-        first_tuple = True
-        for t in tuples:
-
-            if self.is_completed():
-                break
-
-            if self.log_enabled:
-                print("{}('{}') | {}".format(self.__class__.__name__, self.name, t))
-
-            self.op_metrics.rows_returned += 1
-
-            if first_tuple:
-                self.send_field_names(t)
-                first_tuple = False
-
-            self.send_field_values(t)
-
-        del tuples
+        if self.use_pandas:
+            cur = SQLTableScan.execute_pandas_query(self)
+        else:
+            cur = SQLTableScan.execute_py_query(self)
 
         self.op_metrics.bytes_scanned = cur.bytes_scanned
         self.op_metrics.bytes_processed = cur.bytes_processed

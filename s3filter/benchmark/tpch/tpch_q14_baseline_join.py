@@ -34,8 +34,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     """
 
     print('')
-    print("TPCH Q14 Sharded Baseline Join")
-    print("------------------------------")
+    print("TPCH Q14 Baseline Join")
+    print("----------------------")
 
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
@@ -94,13 +94,6 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                           tpch_q14.filter_brand12_operator_def('part_filter' + '_' + str(p), query_plan)),
                       range(0, part_parts))
 
-    merge = map(lambda p:
-                query_plan.add_operator(Merge(
-                    'merge' + '_' + str(p),
-                    query_plan,
-                    True)),
-                range(0, part_parts))
-
     join_build = map(lambda p:
                      query_plan.add_operator(
                          HashJoinBuild('p_partkey', 'join_build' + '_' + str(p), query_plan, False)),
@@ -118,16 +111,16 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                                                            query_plan)),
                          range(0, part_parts))
 
-    # aggregate = query_plan.add_operator(
-    #     tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))
+    # aggregate_reduce = query_plan.add_operator(
+    #     tpch_q14.aggregate_promo_revenue_operator_def('aggregate_reduce', query_plan))
 
-    aggregate = query_plan.add_operator(
+    aggregate_reduce = query_plan.add_operator(
         Aggregate(
             [
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0'])),
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_1']))
             ],
-            'aggregate',
+            'aggregate_reduce',
             query_plan,
             False))
 
@@ -141,15 +134,14 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     # Connect the operators
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
     map(lambda (p, o): o.connect(lineitem_filter[p]), enumerate(lineitem_project))
-    map(lambda (p, o): o.connect(merge[p % part_parts]), enumerate(lineitem_filter))
     map(lambda (p, o): o.connect(part_project[p]), enumerate(part_scan))
     map(lambda (p, o): o.connect(part_filter[p]), enumerate(part_project))
     map(lambda (p, o): o.connect(join_build[p]), enumerate(part_filter))
     map(lambda (p, o): map(lambda (bp, bo): o.connect_build_producer(bo), enumerate(join_build)), enumerate(join_probe))
-    map(lambda (p, o): o.connect_tuple_producer(merge[p]), enumerate(join_probe))
+    map(lambda (p, o): join_probe[p % part_parts].connect_tuple_producer(o), enumerate(lineitem_filter))
     map(lambda (p, o): o.connect(part_aggregate[p]), enumerate(join_probe))
-    map(lambda (p, o): o.connect(aggregate), enumerate(part_aggregate))
-    aggregate.connect(aggregate_project)
+    map(lambda (p, o): o.connect(aggregate_reduce), enumerate(part_aggregate))
+    aggregate_reduce.connect(aggregate_project)
     aggregate_project.connect(collate)
 
     # Plan settings

@@ -37,15 +37,16 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
     lineitem_scan = query_plan.add_operator(
-        tpch_q14.sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def(min_shipped_date,
+        tpch_q14.sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_sharded_operator_def(min_shipped_date,
                                                                                               max_shipped_date,
+                                                                                                      False, 0,
                                                                                               use_pandas,
                                                                                               'lineitem_scan',
                                                                                               query_plan))
     lineitem_project = query_plan.add_operator(
         tpch_q14.project_partkey_extendedprice_discount_operator_def('lineitem_project', query_plan))
     part_scan = query_plan.add_operator(
-        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_operator_def(use_pandas, 'part_scan', query_plan))
+        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(0, 1, use_pandas, 'part_scan', query_plan))
     part_project = query_plan.add_operator(tpch_q14.project_partkey_type_operator_def('part_project', query_plan))
     join = query_plan.add_operator(tpch_q14.join_lineitem_part_operator_def('join', query_plan))
     aggregate = query_plan.add_operator(tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))

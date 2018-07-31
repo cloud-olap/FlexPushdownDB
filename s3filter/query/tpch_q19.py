@@ -146,7 +146,7 @@ def sql_scan_lineitem_select_all_op(query_plan):
                         query_plan, False)
 
 
-def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(query_plan):
+def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(use_pandas, query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_partkey, "
@@ -183,7 +183,7 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "          and l_shipinstruct = 'DELIVER IN PERSON' "
                                 "      ) "
                                 "  ) ",
-                                'l_partkey',
+                                'l_partkey', use_pandas,
                                 'lineitem_bloom_use',
                                 query_plan, False)
 

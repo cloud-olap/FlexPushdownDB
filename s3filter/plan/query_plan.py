@@ -5,6 +5,7 @@
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 import traceback
+import warnings
 from collections import OrderedDict, deque
 from multiprocessing import Queue
 
@@ -305,11 +306,15 @@ class QueryPlan(object):
 
         total_cost = 0
 
-        for op in scan_operators:
-            if op.is_completed():
-                total_cost += op.op_metrics.cost()
-            else:
-                raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
-                                .format(op.name))
+        if not self.is_async:
+            for op in scan_operators:
+                if op.is_completed():
+                    total_cost += op.op_metrics.cost()
+                else:
+                    raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
+                                    .format(op.name))
+        else:
+            # TODO: This won't work in parallel mode as the data will be in other processes
+            warnings.warn("Can't get cost in parallel mode... yet :)")
 
         return total_cost

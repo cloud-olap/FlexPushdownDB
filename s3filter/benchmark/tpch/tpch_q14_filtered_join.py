@@ -22,8 +22,11 @@ def main():
     if s3filter.util.constants.TPCH_SF == 10:
         run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96, part_parts=4)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        # run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=32, parts=4)
+        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
+        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
+        run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=32, part_parts=4)
+
+
 
 
 def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
@@ -33,8 +36,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     """
 
     print('')
-    print("TPCH Q14 Sharded Filtered Join")
-    print("------------------------------")
+    print("TPCH Q14 Filtered Join")
+    print("----------------------")
 
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
@@ -49,6 +52,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                             tpch_q14.sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_sharded_operator_def(
                                 min_shipped_date,
                                 max_shipped_date,
+                                lineitem_parts != 1,
                                 p,
                                 use_pandas,
                                 'lineitem_scan' + '_' + str(p),
@@ -59,7 +63,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                            query_plan.add_operator(
                                tpch_q14.project_partkey_extendedprice_discount_operator_def(
                                    'lineitem_project' + '_' + str(p), query_plan)),
-                           range(0, part_parts))
+                           range(0, lineitem_parts))
 
     part_scan = map(lambda p:
                     query_plan.add_operator(
@@ -71,9 +75,9 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                             query_plan)),
                     range(0, part_parts))
 
-    part_scan_project = map(lambda p:
+    part_project = map(lambda p:
                             query_plan.add_operator(
-                                tpch_q14.project_partkey_type_operator_def('part_scan_project' + '_' + str(p),
+                                tpch_q14.project_partkey_type_operator_def('part_project' + '_' + str(p),
                                                                            query_plan)),
                             range(0, part_parts))
 
@@ -88,18 +92,18 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                        query_plan, False)),
                      range(0, part_parts))
 
-    aggregate = map(lambda p:
+    part_aggregate = map(lambda p:
                     query_plan.add_operator(
-                        tpch_q14.aggregate_promo_revenue_operator_def('aggregate' + '_' + str(p), query_plan)),
+                        tpch_q14.aggregate_promo_revenue_operator_def('part_aggregate' + '_' + str(p), query_plan)),
                     range(0, part_parts))
 
-    sum_aggregate = query_plan.add_operator(
+    aggregate_reduce = query_plan.add_operator(
         Aggregate(
             [
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0'])),
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_1']))
             ],
-            'sum_aggregate',
+            'aggregate_reduce',
             query_plan,
             False))
 
@@ -110,16 +114,14 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
     # Connect the operators
-    map(lambda (p, o):
-        o.connect(lineitem_project[p % part_parts]),
-        enumerate(lineitem_scan))
-    map(lambda (p, o): o.connect(part_scan_project[p]), enumerate(part_scan))
-    map(lambda (p, o): o.connect(join_build[p]), enumerate(part_scan_project))
+    map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
+    map(lambda (p, o): o.connect(part_project[p]), enumerate(part_scan))
+    map(lambda (p, o): o.connect(join_build[p]), enumerate(part_project))
     map(lambda (p, o): map(lambda (bp, bo): o.connect_build_producer(bo), enumerate(join_build)), enumerate(join_probe))
-    map(lambda (p, o): o.connect_tuple_producer(lineitem_project[p]), enumerate(join_probe))
-    map(lambda (p, o): o.connect(aggregate[p]), enumerate(join_probe))
-    map(lambda (p, o): o.connect(sum_aggregate), enumerate(aggregate))
-    sum_aggregate.connect(aggregate_project)
+    map(lambda (p, o): join_probe[p % part_parts].connect_tuple_producer(o), enumerate(lineitem_project))
+    map(lambda (p, o): o.connect(part_aggregate[p]), enumerate(join_probe))
+    map(lambda (p, o): o.connect(aggregate_reduce), enumerate(part_aggregate))
+    aggregate_reduce.connect(aggregate_project)
     aggregate_project.connect(collate)
 
     # Plan settings
@@ -127,7 +129,9 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     print("Settings")
     print("--------")
     print('')
-    print("parts: {}".format(lineitem_parts))
+    print('use_pandas: {}'.format(use_pandas))
+    print("lineitem parts: {}".format(lineitem_parts))
+    print("part_parts: {}".format(part_parts))
     print('')
 
     query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id() + "-" + str(lineitem_parts))

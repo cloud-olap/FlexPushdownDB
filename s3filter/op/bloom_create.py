@@ -10,7 +10,7 @@ from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
-
+import pandas as pd
 
 class BloomCreateMetrics(OpMetrics):
     """Extra metrics
@@ -63,6 +63,10 @@ class BloomCreate(Operator):
 
         self.__tuples = []
 
+        self.producer_completions = {}
+
+        self.producers_received = {}
+
         # These settings are similar to the simple version
         # self.__bloom_filter = ScalableBloomFilter(64, 0.75, ScalableBloomFilter.LARGE_SET_GROWTH)
 
@@ -93,20 +97,23 @@ class BloomCreate(Operator):
 
         if type(consumer) is not SQLTableScanBloomUse:
             raise Exception("Illegal consumer. {} operator may only be connected to {} operators"
-                            .format(self.__class__.__name__, SQLTableScanBloomUse.__class__.__name__))
+                            .format(self.__class__.__name__, SQLTableScanBloomUse.__name__))
 
         Operator.connect(self, consumer)
 
-    def on_receive(self, ms, _producer):
+    def on_receive(self, ms, producer_name):
         """Event handler for receiving a message
 
         :param ms: The messages
-        :param _producer: The producer that sent the message
+        :param producer_name: The producer that sent the message
         :return: None
         """
         for m in ms:
             if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_)
+                self.__on_receive_tuple(m.tuple_, producer_name)
+            elif type(m) is pd.DataFrame:
+                for t in m.values.tolist():
+                    self.__on_receive_tuple(t, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -117,17 +124,21 @@ class BloomCreate(Operator):
         :return: None
         """
 
-        # Build bloom filter
-        bloom_filter = self.build_bloom_filter(len(self.__tuples), BloomCreate.BLOOM_FILTER_FP_RATE)
+        self.producer_completions[producer_name] = True
 
-        for t in self.__tuples:
-            lt = IndexedTuple.build(t, self.__field_names)
-            bloom_filter.add(int(lt[self.__bloom_field_name]))
+        if all(self.producer_completions.values()):
 
-        del self.__tuples
+            # Build bloom filter
+            bloom_filter = self.build_bloom_filter(len(self.__tuples), BloomCreate.BLOOM_FILTER_FP_RATE)
 
-        # Send the bloom filter
-        self.__send_bloom_filter(bloom_filter)
+            for t in self.__tuples:
+                lt = IndexedTuple.build(t, self.__field_names)
+                bloom_filter.add(int(lt[self.__bloom_field_name]))
+
+            del self.__tuples
+
+            # Send the bloom filter
+            self.__send_bloom_filter(bloom_filter)
 
         Operator.on_producer_completed(self, producer_name)
 
@@ -147,7 +158,7 @@ class BloomCreate(Operator):
 
         self.send(BloomMessage(bloom_filter), self.consumers)
 
-    def __on_receive_tuple(self, tuple_):
+    def __on_receive_tuple(self, tuple_, producer_name):
         """Event handler for receiving a tuple
 
         :param tuple_: The received tuple
@@ -165,11 +176,18 @@ class BloomCreate(Operator):
             # Don't send the field names, just collect them
             self.__field_names = tuple_
 
-        else:
-            self.__tuples.append(tuple_)
-            self.op_metrics.tuple_count += 1
+            self.producers_received[producer_name] = True
 
-            # lt = IndexedTuple.build(tuple_, self.__field_names)
-            #
-            # # NOTE: Bloom filter only supports ints. Not clear how to make it support strings as yet
-            # self.__bloom_filter.add(int(lt[self.__bloom_field_name]))
+        else:
+
+            if producer_name not in self.producers_received.keys():
+                # This will be the field names tuple, skip it
+                self.producers_received[producer_name] = True
+            else:
+                self.__tuples.append(tuple_)
+                self.op_metrics.tuple_count += 1
+
+                # lt = IndexedTuple.build(tuple_, self.__field_names)
+                #
+                # # NOTE: Bloom filter only supports ints. Not clear how to make it support strings as yet
+                # self.__bloom_filter.add(int(lt[self.__bloom_field_name]))

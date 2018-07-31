@@ -7,69 +7,17 @@ import time
 
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
+from s3filter.op.sql_table_scan import SQLTableScanMetrics
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
-from s3filter.util.constants import *
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 
 from s3filter.sql.pandas_cursor import PandasCursor
 
 
-class SQLTableScanMetrics(OpMetrics):
-    """Extra metrics for a sql table scan
-
-    """
-
-    # These amounts vary by region, but let's assume it's a flat rate for simplicity
-    COST_S3_DATA_RETURNED_PER_GB = 0.0007
-    COST_S3_DATA_SCANNED_PER_GB = 0.002
-
-    def __init__(self):
-        super(SQLTableScanMetrics, self).__init__()
-
-        self.rows_returned = 0
-
-        self.time_to_first_response = 0
-        self.time_to_first_record_response = None
-        self.time_to_last_record_response = None
-
-        self.query_bytes = 0
-        self.bytes_scanned = 0
-        self.bytes_processed = 0
-        self.bytes_returned = 0
-
-    def cost(self):
-        """
-        Estimates the cost of the scan operation based on S3 pricing in the following page:
-        <https://aws.amazon.com/s3/pricing/>
-        :return: The estimated cost of the table scan operation
-        """
-        return self.bytes_returned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_RETURNED_PER_GB + \
-                self.bytes_scanned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
-
-    def __repr__(self):
-        return {
-            'elapsed_time': round(self.elapsed_time(), 5),
-            'rows_returned': self.rows_returned,
-            'query_bytes': self.query_bytes,
-            'bytes_scanned': self.bytes_scanned,
-            'bytes_processed': self.bytes_processed,
-            'bytes_returned': self.bytes_returned,
-            'time_to_first_response': round(self.time_to_first_response, 5),
-            'time_to_first_record_response':
-                None if self.time_to_first_record_response is None
-                else round(self.time_to_first_record_response, 5),
-            'time_to_last_record_response':
-                None if self.time_to_last_record_response is None
-                else round(self.time_to_last_record_response, 5),
-            'cost': self.cost()
-
-        }.__repr__()
-
-
-class SQLTableScan(Operator):
+class SQLPandasTableScan(Operator):
     """Represents a table scan operator which reads from an s3 table and emits tuples to consuming operators
     as they are received. Generally starting this operator is what begins a query.
 
@@ -85,7 +33,7 @@ class SQLTableScan(Operator):
         :param s3sql: The s3 select sql
         """
 
-        super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
+        super(SQLPandasTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
         self.s3 = query_plan.s3
 

@@ -73,3 +73,8 @@ def test_dask():
     res = total.compute()
 
     print(res)
+
+    _client.close()
+    _cluster.close()
+
+

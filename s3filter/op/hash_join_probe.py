@@ -49,13 +49,14 @@ class HashJoinProbe(Operator):
         self.field_names_index = None
 
         self.build_producers = {}
-        self.tuple_producer_name = None
+        self.tuple_producers = {}
 
         self.build_field_names = None
         self.tuple_field_names = None
 
         self.build_producer_completions = {}
-        self.tuple_producer_completed = False
+        self.tuple_producer_completions = {}
+        # self.tuple_producer_completed = False
 
         self.hashtable = {}
         self.tuples = []
@@ -71,7 +72,7 @@ class HashJoinProbe(Operator):
         #     raise Exception("Only 1 left producer can be added. Left producer '{}' already added"
         #                     .format(self.l_producer_name))
 
-        if producer.name is self.tuple_producer_name:
+        if producer.name is self.tuple_producers:
             raise Exception("Producer cannot be added as both left and right producer. "
                             "Producer '{}' already added as right producer"
                             .format(producer.name))
@@ -87,16 +88,17 @@ class HashJoinProbe(Operator):
         :return: None
         """
 
-        if self.tuple_producer_name is not None:
-            raise Exception("Only 1 right Producer can be added. Right producer '{}' already added"
-                            .format(self.tuple_producer_name))
+        # if self.tuple_producer_name is not None:
+        #     raise Exception("Only 1 right Producer can be added. Right producer '{}' already added"
+        #                     .format(self.tuple_producer_name))
 
         if producer.name in self.build_producers:
             raise Exception("Producer cannot be added as both right and left producer. "
                             "Producer '{}' already added as left producer"
                             .format(producer.name))
 
-        self.tuple_producer_name = producer.name
+        self.tuple_producers[producer.name] = producer.name
+        self.tuple_producer_completions[producer.name] = False
         producer.connect(self)
 
     def on_receive(self, ms, producer_name):
@@ -124,7 +126,7 @@ class HashJoinProbe(Operator):
         if self.build_producers is []:
             raise Exception("Left producers are not connected")
 
-        if self.tuple_producer_name is None:
+        if self.tuple_producers is []:
             raise Exception("Right producer is not connected")
 
         # Check which producer sent the tuple
@@ -139,7 +141,7 @@ class HashJoinProbe(Operator):
                                     "Tuple must contain join left field name '{}'."
                                     .format(self.name, tuple_, self.join_expr.l_field))
 
-        elif producer_name == self.tuple_producer_name:
+        elif producer_name in self.tuple_producers:
 
             if self.tuple_field_names is None:
                 if self.join_expr.r_field in tuple_:
@@ -158,7 +160,7 @@ class HashJoinProbe(Operator):
             raise Exception(
                 "Join Operator '{}' received invalid tuple {} from producer '{}'. "
                 "Tuple must be sent from connected left producer '{}' or right producer '{}'."
-                .format(self.name, tuple_, producer_name, self.build_producers, self.tuple_producer_name))
+                .format(self.name, tuple_, producer_name, self.build_producers, self.tuple_producers))
 
     def on_receive_hashtable(self, hashtable, _producer_name):
 
@@ -169,13 +171,13 @@ class HashJoinProbe(Operator):
 
         if producer_name in self.build_producers.keys():
             self.build_producer_completions[producer_name] = True
-        elif producer_name == self.tuple_producer_name:
-            self.tuple_producer_completed = True
+        elif producer_name in self.tuple_producers.keys():
+            self.tuple_producer_completions[producer_name] = True
         else:
             raise Exception("Unrecognized producer {} has completed".format(producer_name))
 
         # Check that we have received a completed event from all the producers
-        is_all_producers_done = all(self.build_producer_completions.values()) & self.tuple_producer_completed
+        is_all_producers_done = all(self.build_producer_completions.values()) & all(self.tuple_producer_completions.values())
 
         if is_all_producers_done and not self.is_completed():
             self.join_field_names()

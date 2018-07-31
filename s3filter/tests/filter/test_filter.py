@@ -8,7 +8,6 @@ from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.filter import Filter
 from s3filter.op.predicate_expression import PredicateExpression
-from s3filter.op.sql_pandas_table_scan import SQLPandasTableScan
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.function import timestamp, cast
@@ -119,7 +118,7 @@ def test_pandas_filter_baseline():
 
     # Query plan
     ts = query_plan.add_operator(
-        SQLPandasTableScan('lineitem.csv', 'select * from S3Object limit 3;', 'ts', query_plan, False))
+        SQLTableScan('lineitem.csv', 'select * from S3Object limit 3;', True, 'ts', query_plan, False))
 
     # f = query_plan.add_operator(
     #     Filter(PredicateExpression(lambda t_: cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)),
