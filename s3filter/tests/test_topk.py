@@ -25,7 +25,7 @@ def test_limit_topk():
 
     # Query plan
     ts = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit), 'ts', query_plan, False))
+        SQLTableScan('supplier.csv', 'select * from S3Object limit {};'.format(limit), False, 'ts', query_plan, False))
     c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(c)
@@ -60,7 +60,8 @@ def test_abort_topk():
     query_plan = QueryPlan()
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
+                                              'select * from S3Object;', False, 'ts', query_plan, False))
     t = query_plan.add_operator(Top(limit, 't', query_plan, False))
     c = query_plan.add_operator(Collate('c', query_plan, False))
 
@@ -99,7 +100,7 @@ def test_topk_empty():
 
     # Query plan
     ts = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object limit 0', 'ts', query_plan, False))
+        SQLTableScan('supplier.csv', 'select * from S3Object limit 0', False, 'ts', query_plan, False))
     t = query_plan.add_operator(Top(limit, 't', query_plan, False))
     c = query_plan.add_operator(Collate('c', query_plan, False))
 

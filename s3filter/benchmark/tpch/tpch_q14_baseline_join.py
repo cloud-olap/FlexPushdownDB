@@ -2,7 +2,7 @@
 """TPCH Q14 Bloom Join Benchmark
 
 """
-import math
+
 import os
 from datetime import datetime, timedelta
 
@@ -12,7 +12,6 @@ from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
-from s3filter.op.merge import Merge
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
@@ -107,12 +106,10 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     part_aggregate = map(lambda p:
                          query_plan.add_operator(
-                             tpch_q14.aggregate_promo_revenue_operator_def('part_aggregate' + '_' + str(p),
-                                                                           query_plan)),
+                             tpch_q14.aggregate_promo_revenue_operator_def(
+                                 'part_aggregate' + '_' + str(p),
+                                 query_plan)),
                          range(0, part_parts))
-
-    # aggregate_reduce = query_plan.add_operator(
-    #     tpch_q14.aggregate_promo_revenue_operator_def('aggregate_reduce', query_plan))
 
     aggregate_reduce = query_plan.add_operator(
         Aggregate(
@@ -125,9 +122,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
             False))
 
     aggregate_project = query_plan.add_operator(
-        tpch_q14.project_promo_revenue_operator_def(
-            'aggregate_project',
-            query_plan))
+        tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
 
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
@@ -177,7 +172,6 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    # assert tuples[1] == [15.090116526324298]
     if s3filter.util.constants.TPCH_SF == 10:
         assert round(float(tuples[1][0]), 10) == 15.4488836202
     elif s3filter.util.constants.TPCH_SF == 1:

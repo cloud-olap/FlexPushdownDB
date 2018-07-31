@@ -144,7 +144,7 @@ def test_operators():
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'scan', query_plan,
+                                              False, 'scan', query_plan,
                                               False))
 
     p = query_plan.add_operator(Project(

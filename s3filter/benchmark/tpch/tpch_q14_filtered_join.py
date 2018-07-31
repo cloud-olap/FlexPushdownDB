@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""TPCH Q14 Bloom Join Benchmark
+"""TPCH Q14 Filtered Join Benchmark
 
 """
-import math
+
 import os
 from datetime import datetime, timedelta
 
@@ -25,8 +25,6 @@ def main():
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
         run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=32, part_parts=4)
-
-
 
 
 def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
@@ -76,10 +74,10 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                     range(0, part_parts))
 
     part_project = map(lambda p:
-                            query_plan.add_operator(
-                                tpch_q14.project_partkey_type_operator_def('part_project' + '_' + str(p),
-                                                                           query_plan)),
-                            range(0, part_parts))
+                       query_plan.add_operator(
+                           tpch_q14.project_partkey_type_operator_def('part_project' + '_' + str(p),
+                                                                      query_plan)),
+                       range(0, part_parts))
 
     join_build = map(lambda p:
                      query_plan.add_operator(
@@ -93,9 +91,11 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                      range(0, part_parts))
 
     part_aggregate = map(lambda p:
-                    query_plan.add_operator(
-                        tpch_q14.aggregate_promo_revenue_operator_def('part_aggregate' + '_' + str(p), query_plan)),
-                    range(0, part_parts))
+                         query_plan.add_operator(
+                             tpch_q14.aggregate_promo_revenue_operator_def(
+                                 'part_aggregate' + '_' + str(p),
+                                 query_plan)),
+                         range(0, part_parts))
 
     aggregate_reduce = query_plan.add_operator(
         Aggregate(
@@ -108,8 +108,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
             False))
 
     aggregate_project = query_plan.add_operator(
-        tpch_q14.project_promo_revenue_operator_def('aggregate_project',
-                                                    query_plan))
+        tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
 
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
@@ -156,7 +155,6 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    # assert tuples[1] == [15.090116526324298]
     if s3filter.util.constants.TPCH_SF == 10:
         assert round(float(tuples[1][0]), 10) == 15.4488836202
     elif s3filter.util.constants.TPCH_SF == 1:

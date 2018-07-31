@@ -160,7 +160,7 @@ class HashJoinProbe(Operator):
             raise Exception(
                 "Join Operator '{}' received invalid tuple {} from producer '{}'. "
                 "Tuple must be sent from connected left producer '{}' or right producer '{}'."
-                .format(self.name, tuple_, producer_name, self.build_producers, self.tuple_producers))
+                    .format(self.name, tuple_, producer_name, self.build_producers, self.tuple_producers))
 
     def on_receive_hashtable(self, hashtable, _producer_name):
 
@@ -177,7 +177,8 @@ class HashJoinProbe(Operator):
             raise Exception("Unrecognized producer {} has completed".format(producer_name))
 
         # Check that we have received a completed event from all the producers
-        is_all_producers_done = all(self.build_producer_completions.values()) & all(self.tuple_producer_completions.values())
+        is_all_producers_done = all(self.build_producer_completions.values()) & \
+                                all(self.tuple_producer_completions.values())
 
         if is_all_producers_done and not self.is_completed():
             self.join_field_names()
@@ -241,7 +242,9 @@ class HashJoinProbe(Operator):
 
         joined_field_names = []
 
-        # We can only emit field name tuples if we received tuples for both sides of the join, we may not always get them
+        # We can only emit field name tuples if we
+        # received tuples for both sides of the join,
+        #  we may not always get them
         # as some reads may return an empty record set
         if self.build_field_names is not None and self.tuple_field_names is not None:
 

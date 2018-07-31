@@ -43,6 +43,7 @@ def run(parallel, buffer_size):
     part_bloom_create = query_plan.add_operator(tpch_q17.bloom_create_partkey_op('part_bloom_create', query_plan))
     lineitem_bloom_use = query_plan.add_operator(
         tpch_q17.bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(
+            False,
             'lineitem_bloom_use', query_plan))
     part_lineitem_join = query_plan.add_operator(tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join', query_plan))
     lineitem_part_avg_group = query_plan.add_operator(

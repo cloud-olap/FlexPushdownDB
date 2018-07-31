@@ -5,11 +5,8 @@
 import timeit
 
 import boto3
-import objgraph
 import pytest
 
-from s3filter.op.tuple import IndexedTuple
-from s3filter.sql.cursor import Cursor
 from s3filter.sql.pandas_cursor import PandasCursor
 
 

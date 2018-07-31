@@ -77,8 +77,8 @@ def run(parallel, buffer_size, parts):
 
         part_scan = query_plan.add_operator(
             tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(p, parts,
-                                                                                        'part_scan' + '_' + str(p),
-                                                                                        query_plan))
+                                                                                            'part_scan' + '_' + str(p),
+                                                                                            query_plan))
         part_scan_project = query_plan.add_operator(
             tpch_q14.project_partkey_type_operator_def('part_scan_project' + '_' + str(p), query_plan))
 

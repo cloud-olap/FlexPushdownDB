@@ -11,6 +11,7 @@ import time
 import traceback
 import pandas as pd
 
+
 def switch_context(from_op, to_op):
     """Handles a context switch from one operator to another. This is used to stop the sending operators
     timer and start the receiving operators timer.
@@ -114,7 +115,6 @@ class Operator(object):
             print(tb)
             self.exception = e
             running = False
-
 
     def run(self):
         """Abstract method for running the execution of this operator. This is different from the start method which

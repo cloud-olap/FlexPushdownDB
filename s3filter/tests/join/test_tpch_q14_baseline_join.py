@@ -196,12 +196,10 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     part_aggregate = map(lambda p:
                          query_plan.add_operator(
-                             tpch_q14.aggregate_promo_revenue_operator_def('part_aggregate' + '_' + str(p),
-                                                                           query_plan)),
+                             tpch_q14.aggregate_promo_revenue_operator_def(
+                                 'part_aggregate' + '_' + str(p),
+                                 query_plan)),
                          range(0, part_parts))
-
-    # aggregate_reduce = query_plan.add_operator(
-    #     tpch_q14.aggregate_promo_revenue_operator_def('aggregate_reduce', query_plan))
 
     aggregate_reduce = query_plan.add_operator(
         Aggregate(
@@ -214,9 +212,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
             False))
 
     aggregate_project = query_plan.add_operator(
-        tpch_q14.project_promo_revenue_operator_def(
-            'aggregate_project',
-            query_plan))
+        tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
 
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 

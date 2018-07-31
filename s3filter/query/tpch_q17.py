@@ -207,7 +207,7 @@ def sql_scan_lineitem_select_all_op(name, query_plan):
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ",
+                        "  S3Object ", False,
                         name, query_plan,
                         False)
 
@@ -217,7 +217,7 @@ def sql_scan_part_select_all_op(name, query_plan):
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ",
+                        "  S3Object ", False,
                         name, query_plan,
                         False)
 
@@ -235,7 +235,7 @@ def sql_scan_lineitem_select_all_where_partkey_op(name, query_plan):
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '182405' ",
+                        "  l_partkey = '182405' ", False,
                         name, query_plan,
                         False)
 
@@ -254,7 +254,7 @@ def sql_scan_part_select_all_where_brand_and_container_op(name, query_plan):
                         "  S3Object "
                         "where "
                         "  p_brand = 'Brand#41' and "
-                        "  p_container = 'SM PACK' ",
+                        "  p_container = 'SM PACK' ", False,
                         name, query_plan,
                         False)
 
@@ -272,7 +272,7 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partk
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '182405' ",
+                        "  l_partkey = '182405' ", False,
                         name, query_plan,
                         False)
 
@@ -288,7 +288,7 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(name, query
                         "select "
                         "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
                         "from "
-                        "  S3Object ",
+                        "  S3Object ", False,
                         name, query_plan,
                         False)
 
@@ -307,12 +307,13 @@ def sql_scan_select_partkey_where_brand_container_op(name, query_plan):
                         "  S3Object "
                         "where "
                         "  p_brand = 'Brand#41' and "
-                        "  p_container = 'SM PACK' ",
+                        "  p_container = 'SM PACK' ", False,
                         name, query_plan,
                         False)
 
 
-def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(use_pandas, name, query_plan):
+def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(use_pandas, name,
+                                                                                                      query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
@@ -331,7 +332,7 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_par
                                 "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
                                 "from "
                                 "  S3Object ",
-                                'l_partkey',
+                                'l_partkey', False,
                                 name, query_plan,
                                 False)
 

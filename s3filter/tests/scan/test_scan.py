@@ -71,7 +71,7 @@ def test_scan_empty():
     ts = query_plan.add_operator(
         SQLTableScan('nation.csv',
                      "select * from s3object limit 0",
-                     'ts', query_plan,
+                     False, 'ts', query_plan,
                      False))
     c = query_plan.add_operator(
         Collate('c', query_plan, False))
@@ -107,9 +107,9 @@ def test_pandas_scan_simple():
     # Query plan
     ts = query_plan.add_operator(
         SQLTableScan('nation.csv',
-                           "select * from s3object", True,
-                           'ts', query_plan,
-                           False))
+                     "select * from s3object", True,
+                     'ts', query_plan,
+                     False))
     c = query_plan.add_operator(
         Collate('c', query_plan, False))
 

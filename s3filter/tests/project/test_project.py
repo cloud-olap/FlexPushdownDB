@@ -29,7 +29,7 @@ def test_project_simple():
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'ts', query_plan,
+                                              False, 'ts', query_plan,
                                               False))
 
     p = query_plan.add_operator(Project(
@@ -144,7 +144,7 @@ def test_project_empty():
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               "select * from S3Object "
-                                              "limit 0;",
+                                              "limit 0;",False,
                                               'ts', query_plan,
                                               False))
 

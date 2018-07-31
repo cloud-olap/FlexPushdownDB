@@ -107,7 +107,7 @@ def sql_scan_part_select_all_where_partkey_op(query_plan):
                         "where "
                         "  p_partkey = '103853' or "
                         "  p_partkey = '104277' or "
-                        "  p_partkey = '104744' ",
+                        "  p_partkey = '104744' ", False,
                         'part_scan',
                         query_plan, False)
 
@@ -121,7 +121,7 @@ def sql_scan_lineitem_select_all_where_partkey_op(query_plan):
                         "where "
                         "  l_partkey = '103853' or "
                         "  l_partkey = '104277' or "
-                        "  l_partkey = '104744' ",
+                        "  l_partkey = '104744' ", False,
                         'lineitem_scan',
                         query_plan, False)
 
@@ -131,7 +131,7 @@ def sql_scan_part_select_all_op(query_plan):
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ",
+                        "  S3Object ", False,
                         'part_scan',
                         query_plan, False)
 
@@ -141,12 +141,13 @@ def sql_scan_lineitem_select_all_op(query_plan):
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ",
+                        "  S3Object ", False,
                         'lineitem_scan',
                         query_plan, False)
 
 
-def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(use_pandas, query_plan):
+def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(use_pandas,
+                                                                                                     query_plan):
     return SQLTableScanBloomUse('lineitem.csv',
                                 "select "
                                 "  l_partkey, "
@@ -222,7 +223,7 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "          and l_shipinstruct = 'DELIVER IN PERSON' "
                                 "      ) "
                                 "  ) ",
-                                'l_partkey',
+                                'l_partkey', False,
                                 'lineitem_bloom_use',
                                 query_plan, False)
 
@@ -261,7 +262,7 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "          and l_shipmode in ('AIR', 'AIR REG') "
                         "          and l_shipinstruct = 'DELIVER IN PERSON' "
                         "      ) "
-                        "  ) ",
+                        "  ) ", False,
                         'lineitem_scan',
                         query_plan, False)
 
@@ -297,7 +298,7 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "          and l_shipmode in ('AIR', 'AIR REG') "
                         "          and l_shipinstruct = 'DELIVER IN PERSON' "
                         "      ) "
-                        "  ) ",
+                        "  ) ", False,
                         'lineitem_scan',
                         query_plan, False)
 
@@ -375,7 +376,7 @@ def sql_scan_part_partkey_brand_size_container_where_filtered_op(query_plan):
                         "          ) "
                         "          and cast(p_size as integer) between 1 and 15 "
                         "      ) "
-                        "  ) ",
+                        "  ) ", False,
                         'part_scan',
                         query_plan, False)
 
@@ -426,6 +427,6 @@ def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(query_pla
                         "          ) "
                         "          and cast(p_size as integer) between 1 and 15 "
                         "      ) "
-                        "  ) ",
+                        "  ) ", False,
                         'part_scan',
                         query_plan, False)

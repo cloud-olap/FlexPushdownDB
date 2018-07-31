@@ -47,7 +47,7 @@ class SQLTableScanMetrics(OpMetrics):
         :return: The estimated cost of the table scan operation
         """
         return self.bytes_returned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_RETURNED_PER_GB + \
-                self.bytes_scanned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
+               self.bytes_scanned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
 
     def __repr__(self):
         return {
@@ -132,6 +132,7 @@ class SQLTableScan(Operator):
     @staticmethod
     def execute_py_query(op):
         cur = Cursor(op.s3).select(op.s3key, op.s3sql)
+        op.op_metrics.query_bytes = cur.query_bytes
         tuples = cur.execute()
         first_tuple = True
         for t in tuples:

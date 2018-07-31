@@ -13,16 +13,16 @@ from s3filter.op.hash_join import HashJoin
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import Project, ProjectExpression
-from s3filter.op.ATTIC.sql_pandas_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
+from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.function import cast, timestamp
 from s3filter.query.tpch import get_file_key
 import pandas as pd
 
 
 def filter_brand12_operator_def(name, query_plan):
-    # type: (str) -> Filter
+    # type: (str, QueryPlan) -> Filter
 
     def pd_expr(df):
         return df['p_brand'] == 'Brand#12'
@@ -34,7 +34,7 @@ def filter_brand12_operator_def(name, query_plan):
 
 
 def join_lineitem_part_operator_def(name, query_plan):
-    # type: (str) -> HashJoin
+    # type: (str, QueryPlan) -> HashJoin
     return HashJoin(
         JoinExpression('l_partkey', 'p_partkey'),
         name, query_plan,
@@ -42,7 +42,7 @@ def join_lineitem_part_operator_def(name, query_plan):
 
 
 def join_part_lineitem_operator_def(name, query_plan):
-    # type: (str) -> HashJoin
+    # type: (str, QueryPlan) -> HashJoin
     return HashJoin(
         JoinExpression('p_partkey', 'l_partkey'),
         name, query_plan,
@@ -50,7 +50,7 @@ def join_part_lineitem_operator_def(name, query_plan):
 
 
 def aggregate_promo_revenue_operator_def(name, query_plan):
-    # type: (str) -> Aggregate
+    # type: (str, QueryPlan) -> Aggregate
     def ex1(t_):
 
         v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
@@ -80,7 +80,7 @@ def aggregate_promo_revenue_operator_def(name, query_plan):
 
 
 def project_partkey_type_operator_def(name, query_plan):
-    # type: (str) -> Project
+    # type: (str, QueryPlan) -> Project
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
@@ -91,7 +91,7 @@ def project_partkey_type_operator_def(name, query_plan):
 
 
 def project_partkey_extendedprice_discount_operator_def(name, query_plan):
-    # type: (str) -> Project
+    # type: (str, QueryPlan) -> Project
 
     def fn(df):
         # return df[['_0', '_1', '_2']]
@@ -113,7 +113,7 @@ def project_partkey_extendedprice_discount_operator_def(name, query_plan):
 
 
 def project_promo_revenue_operator_def(name, query_plan):
-    # type: (str) -> Project
+    # type: (str, QueryPlan) -> Project
     return Project(
         [
             ProjectExpression(lambda t_: 100 * t_['_0'] / t_['_1'], 'promo_revenue')
@@ -141,34 +141,33 @@ def sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(part,
     key_upper = math.ceil((200000.0 / float(parts)) * (part + 1))
 
     return SQLTableScan(get_file_key('part', False),
-                              "select "
-                              "  p_partkey, p_type "
-                              "from "
-                              "  S3Object "
-                              "where "
-                              "  p_brand = 'Brand#12' and "
-                              "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
-                              " ".format(key_lower, key_upper), use_pandas,
-                              name, query_plan,
-                              False)
+                        "select "
+                        "  p_partkey, p_type "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  p_brand = 'Brand#12' and "
+                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        " ".format(key_lower, key_upper), use_pandas,
+                        name, query_plan,
+                        False)
 
 
 def sql_scan_part_partkey_where_brand12_operator_def(sharded, shard, num_shards, use_pandas, name, query_plan):
-
     key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
     key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
 
     return SQLTableScan(get_file_key('part', sharded),
-                              "select "
-                              "  p_partkey "
-                              "from "
-                              "  S3Object "
-                              "where "
-                              "  p_brand = 'Brand#12' and "
-                              "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
-                              " ".format(key_lower, key_upper), use_pandas,
-                              name, query_plan,
-                              False)
+                        "select "
+                        "  p_partkey "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  p_brand = 'Brand#12' and "
+                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        " ".format(key_lower, key_upper), use_pandas,
+                        name, query_plan,
+                        False)
 
 
 def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, name, query_plan):
@@ -176,12 +175,12 @@ def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, name, que
     key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
 
     return SQLTableScan(get_file_key('part', sharded, shard),
-                              "select * from S3Object "
-                              "where "
-                              "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
-                              .format(key_lower, key_upper), use_pandas,
-                              name, query_plan,
-                              True)
+                        "select * from S3Object "
+                        "where "
+                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        .format(key_lower, key_upper), use_pandas,
+                        name, query_plan,
+                        True)
 
 
 # def sql_scan_part_partitioned_operator_def(part, parts, use_pandas, name, query_plan):
@@ -216,32 +215,32 @@ def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, name, que
 
 def sql_scan_lineitem_operator_def(sharded, shard, use_pandas, name, query_plan):
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
-                              "select * from S3Object;", use_pandas,
-                              name, query_plan,
-                              True)
+                        "select * from S3Object;", use_pandas,
+                        name, query_plan,
+                        True)
 
 
 def sql_scan_lineitem_extra_filtered_operator_def(sharded, shard, use_pandas, name, query_plan):
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
-                              "select "
-                              "  * "
-                              "from "
-                              "  S3Object "
-                              "where "
-                              "  (l_orderkey = '18436' and l_partkey = '164584') or "
-                              "  (l_orderkey = '18720' and l_partkey = '92764') or "
-                              "  (l_orderkey = '12482' and l_partkey = '117405') or "
-                              "  (l_orderkey = '27623' and l_partkey = '137010') or "
-                              "  (l_orderkey = '10407' and l_partkey = '43275') or "
-                              "  (l_orderkey = '17027' and l_partkey = '172729') or "
-                              "  (l_orderkey = '23302' and l_partkey = '18523') or "
-                              "  (l_orderkey = '27334' and l_partkey = '94308') or "
-                              "  (l_orderkey = '15427' and l_partkey = '125586') or "
-                              "  (l_orderkey = '11590' and l_partkey = '162359') or "
-                              "  (l_orderkey = '2945' and l_partkey = '126197') or "
-                              "  (l_orderkey = '15648' and l_partkey = '143904');", use_pandas,
-                              name, query_plan,
-                              True)
+                        "select "
+                        "  * "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  (l_orderkey = '18436' and l_partkey = '164584') or "
+                        "  (l_orderkey = '18720' and l_partkey = '92764') or "
+                        "  (l_orderkey = '12482' and l_partkey = '117405') or "
+                        "  (l_orderkey = '27623' and l_partkey = '137010') or "
+                        "  (l_orderkey = '10407' and l_partkey = '43275') or "
+                        "  (l_orderkey = '17027' and l_partkey = '172729') or "
+                        "  (l_orderkey = '23302' and l_partkey = '18523') or "
+                        "  (l_orderkey = '27334' and l_partkey = '94308') or "
+                        "  (l_orderkey = '15427' and l_partkey = '125586') or "
+                        "  (l_orderkey = '11590' and l_partkey = '162359') or "
+                        "  (l_orderkey = '2945' and l_partkey = '126197') or "
+                        "  (l_orderkey = '15648' and l_partkey = '143904');", use_pandas,
+                        name, query_plan,
+                        True)
 
 
 # def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_operator_def(min_shipped_date,
@@ -271,17 +270,17 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_sharded_oper
                                                                                          name,
                                                                                          query_plan):
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
-                              "select "
-                              "  l_partkey, l_extendedprice, l_discount "
-                              "from "
-                              "  S3Object "
-                              "where "
-                              "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                              "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
-                              ";".format(min_shipped_date.strftime('%Y-%m-%d'),
-                                         max_shipped_date.strftime('%Y-%m-%d')), use_pandas,
-                              name, query_plan,
-                              False)
+                        "select "
+                        "  l_partkey, l_extendedprice, l_discount "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                        "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
+                        ";".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                   max_shipped_date.strftime('%Y-%m-%d')), use_pandas,
+                        name, query_plan,
+                        False)
 
 
 def sql_scan_lineitem_where_shipdate_sharded_operator_def(min_shipped_date,
@@ -290,14 +289,14 @@ def sql_scan_lineitem_where_shipdate_sharded_operator_def(min_shipped_date,
                                                           name,
                                                           query_plan):
     return SQLTableScan(get_file_key('lineitem', True, shard),
-                              "select * from S3Object "
-                              "where "
-                              "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                              "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
-                              ";".format(min_shipped_date.strftime('%Y-%m-%d'),
-                                         max_shipped_date.strftime('%Y-%m-%d')), use_pandas,
-                              name, query_plan,
-                              False)
+                        "select * from S3Object "
+                        "where "
+                        "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                        "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
+                        ";".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                   max_shipped_date.strftime('%Y-%m-%d')), use_pandas,
+                        name, query_plan,
+                        False)
 
 
 def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_partitioned_operator_def(min_shipped_date,
@@ -308,20 +307,20 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_partitioned_
     key_upper = math.ceil((6000000.0 / float(parts)) * (part + 1))
 
     return SQLTableScan(get_file_key('lineitem', False),
-                              "select "
-                              "  l_partkey, l_extendedprice, l_discount "
-                              "from "
-                              "  S3Object "
-                              "where "
-                              "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
-                              "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
-                              "  cast(l_orderkey as int) >= {} and cast(l_orderkey as int) < {} "
-                              ";".format(min_shipped_date.strftime('%Y-%m-%d'),
-                                         max_shipped_date.strftime('%Y-%m-%d'),
-                                         key_lower,
-                                         key_upper), use_pandas,
-                              name, query_plan,
-                              False)
+                        "select "
+                        "  l_partkey, l_extendedprice, l_discount "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
+                        "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) and "
+                        "  cast(l_orderkey as int) >= {} and cast(l_orderkey as int) < {} "
+                        ";".format(min_shipped_date.strftime('%Y-%m-%d'),
+                                   max_shipped_date.strftime('%Y-%m-%d'),
+                                   key_lower,
+                                   key_upper), use_pandas,
+                        name, query_plan,
+                        False)
 
 
 def project_partkey_brand_type_operator_def(name, query_plan):
@@ -449,7 +448,8 @@ def bloom_scan_lineitem_where_shipdate_sharded_operator_def(min_shipped_date, ma
                                 False)
 
 
-def bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date, sharded, shard, use_pandas, name,
+def bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date, sharded, shard,
+                                                            use_pandas, name,
                                                             query_plan):
     return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
                                 "select "

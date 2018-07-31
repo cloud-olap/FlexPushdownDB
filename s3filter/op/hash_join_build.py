@@ -10,6 +10,7 @@ from s3filter.op.tuple import Tuple, IndexedTuple
 import cPickle as pickle
 import pandas as pd
 
+
 class HashJoinBuildMetrics(OpMetrics):
     """Extra metrics for a HashBuild
 

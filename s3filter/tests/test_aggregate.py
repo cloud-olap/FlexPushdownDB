@@ -25,7 +25,12 @@ def test_aggregate_count():
 
     # Query plan
     # select count(*) from supplier.csv
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
+                                              'select * from S3Object;',
+                                              False,
+                                              'ts',
+                                              query_plan,
+                                              False))
 
     a = query_plan.add_operator(Aggregate(
         [
@@ -74,7 +79,7 @@ def test_aggregate_sum():
 
     # Query plan
     # select sum(float(s_acctbal)) from supplier.csv
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', False, 'ts', query_plan, False))
 
     a = query_plan.add_operator(Aggregate(
         [
@@ -126,7 +131,7 @@ def test_aggregate_empty():
     # Query plan
     # select sum(float(s_acctbal)) from supplier.csv limit 0
     ts = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
+        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', False, 'ts', query_plan, False))
 
     a = query_plan.add_operator(Aggregate(
         [

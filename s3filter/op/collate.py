@@ -76,7 +76,8 @@ class Collate(Operator):
         :return: None
         """
 
-        # TODO: Also adding to tuples for now just so the existing tests work, eventually they should inspect the dataframe
+        # TODO: Also adding to tuples for now just so the existing tests work,
+        # eventually they should inspect the dataframe
         self.__tuples.extend(df.values.tolist())
         self.df = self.df.append(df)
 

@@ -29,7 +29,7 @@ def main():
                      "select "
                      "  * "
                      "from "
-                     "  S3Object",
+                     "  S3Object", False,
                      'scan', query_plan,
                      False))
 

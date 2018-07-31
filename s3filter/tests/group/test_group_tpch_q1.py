@@ -54,7 +54,7 @@ def test_group_baseline():
                                               "select * from S3Object "
                                               "where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp)"
                                               .format(shipped_date.strftime('%Y-%m-%d')),
-                                              'lineitem', query_plan,
+                                              False, 'lineitem', query_plan,
                                               False))
     g = query_plan.add_operator(Group(
         [

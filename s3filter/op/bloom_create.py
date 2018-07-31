@@ -12,6 +12,7 @@ from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 import cPickle as pickle
 import pandas as pd
 
+
 class BloomCreateMetrics(OpMetrics):
     """Extra metrics
 
