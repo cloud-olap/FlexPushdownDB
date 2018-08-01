@@ -60,7 +60,7 @@ class AggregateExpression(object):
     COUNT = "COUNT"
     AVG = "AVG"
 
-    def __init__(self, expression_type, expr):
+    def __init__(self, expression_type, expr, name='AGG'):
         """
 
         :param expr: The expression (as a function)
@@ -74,10 +74,53 @@ class AggregateExpression(object):
                                     AggregateExpression.SUM,
                                     AggregateExpression.COUNT,
                                     AggregateExpression.AVG))
-
+        self.__name = name
         self.__expression_type = expression_type
         self.__expr = expr
+        self.__field_name_index = None
 
+    def set_field_names(self, field_names):
+        self.__field_name_index = IndexedTuple.build_field_names_index(field_names) 
+    
+    def get_aggregate_name(self):
+        return self.__name
+   
+    def eval_df(self, df):
+        return self.__expr(df).sum()
+
+    def eval_lite(self, t, ctx):
+        """Evaluates the expression using the given tuple, and the aggregate
+        functions context (which holds any variables and the running result).
+
+        :param t: Tuple to evaluate
+        :param ctx: The aggregate context
+        :return: None
+        """
+        if not self.__field_name_index:
+            raise Exception("__field_name_index is not set")    
+
+        if self.__expression_type is AggregateExpression.SUM:
+            ctx.result += self.__expr(t)
+        elif self.__expression_type is AggregateExpression.COUNT:
+            ctx.result += 1 
+        elif self.__expression_type is AggregateExpression.AVG:
+            ctx.count += 1 
+            ctx.sum += self.__expr(t)
+            ctx.result = ctx.sum / ctx.count
+        else:
+            # Should not happen as its already been checked
+            raise Exception("Illegal expression type '{}'. Expression type must be '{}', '{}', or '{}'"
+                            .format(self.__expression_type,
+                                    AggregateExpression.SUM,
+                                    AggregateExpression.COUNT,
+                                    AggregateExpression.AVG))
+
+        # self.__expr(LabelledTuple(t, field_names), ctx)
+
+        if not isinstance(ctx.result, numbers.Number):
+            raise Exception("Illegal aggregate val '{}' of type '{}'. Aggregate expression must evaluate to number"
+                            .format(ctx.result, type(ctx.result)))
+    
     def eval(self, t, field_names, ctx):
         """Evaluates the expression using the given tuple, the names of the fields in the tuple and the aggregate
         functions context (which holds any variables and the running result).
@@ -125,6 +168,9 @@ class AggregateExpressionContext(object):
 
         self.result = result
         self.vars_ = vars_
+        self.count = 0
+        self.sum = 0
 
     def __repr__(self):
         return {'result': self.result, 'vars': self.vars_}.__repr__()
+    
