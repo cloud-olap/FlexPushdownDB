@@ -171,4 +171,7 @@ class Group(Operator):
             # for average, devide by __count.
             self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
             self.send(self.aggregate_df, self.consumers)
+
+            del self.aggregate_df
+
         Operator.on_producer_completed(self, producer_name)

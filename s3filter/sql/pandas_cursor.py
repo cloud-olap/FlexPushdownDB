@@ -4,6 +4,7 @@
 """
 import cStringIO
 import csv
+import timeit
 
 import agate
 import numpy
@@ -99,7 +100,6 @@ class PandasCursor(object):
         prev_record_str = None
 
         # first_record = True
-
         for event in self.event_stream:
 
             if 'Records' in event:
@@ -122,8 +122,11 @@ class PandasCursor(object):
                     records_str_rdr.write(records_str)
                 else:
                     last_newline_pos = records_str.rfind('\n', 0, len(records_str))
-                    prev_record_str = records_str[last_newline_pos + 1:]
-                    records_str_rdr.write(records_str[:last_newline_pos + 1])
+                    if last_newline_pos == -1:
+                        prev_record_str = records_str
+                    else:
+                        prev_record_str = records_str[last_newline_pos + 1:]
+                        records_str_rdr.write(records_str[:last_newline_pos + 1])
 
                 records_str_rdr.seek(0)
 

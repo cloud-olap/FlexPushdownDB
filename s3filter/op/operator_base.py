@@ -183,7 +183,7 @@ class Operator(object):
         # Default to 1024 element buffer, use 0 to send immediately, and float('inf') for unlimited buffer
         self.buffer_size = 1024
 
-        self.query_plan = query_plan
+        # self.query_plan = query_plan
 
         self.async_ = query_plan.is_async
 

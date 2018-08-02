@@ -34,10 +34,6 @@ class QueryPlan(object):
         :param operators:
         """
 
-        cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=128)
-        session = Session()
-        self.s3 = session.client('s3', config=cfg)
-
         self.__timer = Timer()
         self.total_elapsed_time = 0.0
         self.completion_counter = 0

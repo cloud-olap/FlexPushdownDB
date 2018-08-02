@@ -19,7 +19,8 @@ def main():
     if s3filter.util.constants.TPCH_SF == 10:
         run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=1)
+        # run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=1)
+        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32)
 
 def run(parallel, use_pandas, buffer_size, lineitem_parts):
     """
@@ -37,7 +38,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
                             tpch_q1.sql_scan_lineitem_operator_def(
-                                parallel,
+                                lineitem_parts != 1,
                                 p,
                                 use_pandas,
                                 'lineitem_scan' + '_' + str(p),

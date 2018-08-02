@@ -5,6 +5,9 @@
 import cProfile
 import time
 
+from boto3 import Session
+from botocore.config import Config
+
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
@@ -87,7 +90,10 @@ class SQLTableScan(Operator):
 
         super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
-        self.s3 = query_plan.s3
+        # Boto is not thread safe so need one of these per scan op
+        cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
+        session = Session()
+        self.s3 = session.client('s3', config=cfg)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -184,10 +190,14 @@ class SQLTableScan(Operator):
 
             op.op_metrics.rows_returned += len(df)
 
-            buffer_ = pd.concat([buffer_, df])
-            if len(buffer_) >= 65536:
+            buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
+            if len(buffer_) >= 8192: #65536: #8192
                 op.send(buffer_, op.consumers)
                 buffer_ = pd.DataFrame()
+
+        if len(buffer_) > 0:
+            op.send(buffer_, op.consumers)
+            del buffer_
 
         return cur
 
