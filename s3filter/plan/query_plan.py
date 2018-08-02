@@ -179,6 +179,12 @@ class QueryPlan(object):
 
     def print_metrics(self):
 
+        operators = self.traverse_topological_from_root()
+        if self.is_async:
+            for o in operators:
+                o.queue.put(EvalMessage("self.op_metrics"))
+                o.op_metrics = self.listen(EvaluatedMessage).val
+
         print("")
         print("Metrics")
         print("-------")
@@ -195,13 +201,6 @@ class QueryPlan(object):
         print("")
         print("Operators")
         print("---------")
-
-        operators = self.traverse_topological_from_root()
-
-        if self.is_async:
-            for o in operators:
-                o.queue.put(EvalMessage("self.op_metrics"))
-                o.op_metrics = self.listen(EvaluatedMessage).val
 
         OpMetrics.print_metrics(operators)
 
@@ -265,6 +264,7 @@ class QueryPlan(object):
             while not all(operator_completions.values()):
                 completed_message = self.listen(OperatorCompletedMessage)
                 operator_completions[completed_message.name] = True
+            map(lambda o: o.set_completed(True), self.operators.values())
 
         self.__timer.stop()
 

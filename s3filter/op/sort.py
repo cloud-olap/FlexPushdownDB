@@ -17,7 +17,7 @@ class SortExpression(object):
 
     """
 
-    def __init__(self, col_index, col_type, sort_order):
+    def __init__(self, col_index, col_type, sort_order, col_name=None):
         """Create a new sorting expression
 
         :param col_index: column to sort on
@@ -31,6 +31,7 @@ class SortExpression(object):
 
         self.col_index = col_index
         self.col_type = col_type
+        self.col_name = col_name
         self.sort_order = sort_order
 
         self._first_tuple = True

@@ -12,7 +12,7 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
 from s3filter.util.constants import *
 # noinspection PyCompatibility,PyPep8Naming
-import cPickle as pickle
+import os
 
 
 class SQLTableScanMetrics(OpMetrics):
@@ -20,7 +20,7 @@ class SQLTableScanMetrics(OpMetrics):
 
     """
 
-    # These amounts vary by region, but let's assume it's a flat rate for simplicity
+    # These amounts vary by region, but for simplicity, let's assume it's a flat rate
     COST_S3_DATA_RETURNED_PER_GB = 0.0007
     COST_S3_DATA_SCANNED_PER_GB = 0.002
 
@@ -161,3 +161,99 @@ class SQLTableScan(Operator):
         """
 
         raise NotImplementedError
+
+
+class SQLShardedTableScan(Operator):
+    """Represents a table scan operator which reads from a shard of an s3 table and emits tuples to consuming operators
+    as they are received. Generally starting this operator is what begins a query.
+
+    """
+
+    def __init__(self, s3key, s3sql, name, shards, query_plan, log_enabled):
+        """Creates a new Table Scan operator using the given s3 object key and s3 select sql
+
+        :param s3key: The object key to select against
+        :param s3sql: The s3 select sql
+        """
+
+        super(SQLShardedTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
+
+        self.s3 = query_plan.s3
+
+        self.s3key = s3key
+        self.s3sql = s3sql
+        self.shards = shards
+
+    def run(self):
+        """Executes the query and begins emitting tuples.
+
+        :return: None
+        """
+
+        if not self.is_profiled:
+            self.do_run()
+        else:
+            cProfile.runctx('self.do_run()', globals(), locals(), self.profile_file_name)
+
+    def do_run(self):
+
+        self.op_metrics.timer_start()
+
+        if self.log_enabled:
+            print("{} | {}('{}') | Started"
+                  .format(time.time(), self.__class__.__name__, self.name))
+
+        first_tuple = True
+
+        for part in self.shards:
+            part_key = self.get_part_key(part)
+            cur = Cursor(self.s3).select(part_key, self.s3sql)
+
+            tuples = cur.execute()
+
+            self.op_metrics.query_bytes += cur.query_bytes
+            if self.op_metrics.time_to_first_response == 0:
+                self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
+
+            for t in tuples:
+
+                if self.is_completed():
+                    break
+
+                self.op_metrics.rows_returned += 1
+
+                if first_tuple:
+                    # Create and send the record field names
+                    it = IndexedTuple.build_default(t)
+                    first_tuple = False
+
+                    if self.log_enabled:
+                        print("{}('{}') | Sending field names: {}"
+                              .format(self.__class__.__name__, self.name, it.field_names()))
+
+                    self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
+
+                # if self.log_enabled:
+                #     print("{}('{}') | Sending field values: {}".format(self.__class__.__name__, self.name, t))
+
+                self.send(TupleMessage(Tuple(t)), self.consumers)
+
+            del tuples
+
+            self.op_metrics.bytes_scanned += cur.bytes_scanned
+            self.op_metrics.bytes_processed += cur.bytes_processed
+            self.op_metrics.bytes_returned += cur.bytes_returned
+            if self.op_metrics.time_to_first_record_response is None:
+                self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
+            if self.op_metrics.time_to_last_record_response is None:
+                self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
+
+        if not self.is_completed():
+            self.complete()
+
+        self.op_metrics.timer_stop()
+
+    def get_part_key(self, part):
+        fname = os.path.basename(self.s3key)
+        filename, ext = os.path.splitext(fname)
+        return 'sf1000-lineitem/{}_{}{}'.format(filename, part, ext)

@@ -28,6 +28,15 @@ class OpMetrics(object):
             OpMetrics.pretty_print(op)
 
     @staticmethod
+    def print_overall_metrics(op_list, name=None):
+        total_elapsed = 0
+        for op in op_list:
+            total_elapsed += op.op_metrics.elapsed_time()
+        if name is None:
+            name = " + ".join([o.name for o in op_list])
+        print('{}: {}'.format(total_elapsed, name))
+
+    @staticmethod
     def pretty_print(op):
         print("{}: {}".format(op, op.op_metrics))
 

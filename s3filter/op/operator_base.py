@@ -210,6 +210,13 @@ class Operator(object):
         """
         return self.__completed
 
+    def set_completed(self, completed):
+        """
+        Completed status setter
+        :return:
+        """
+        self.__completed = completed
+
     def connect(self, consumer):
         """Utility method that appends the given consuming operators to this operators list of consumers and appends the
         given consumers producer to this operator. Shorthand for two add consumer, add producer calls.
