@@ -15,7 +15,7 @@ from s3filter.util.constants import *
 import cPickle as pickle
 
 from s3filter.sql.pandas_cursor import PandasCursor
-
+import pandas as pd
 
 class SQLTableScanMetrics(OpMetrics):
     """Extra metrics for a sql table scan
@@ -166,6 +166,9 @@ class SQLTableScan(Operator):
         op.op_metrics.query_bytes = cur.query_bytes
         op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
         first_tuple = True
+
+
+        buffer_ = pd.DataFrame()
         for df in dfs:
 
             assert (len(df) > 0)
@@ -181,7 +184,11 @@ class SQLTableScan(Operator):
 
             op.op_metrics.rows_returned += len(df)
 
-            op.send(df, op.consumers)
+            buffer_ = pd.concat([buffer_, df])
+            if len(buffer_) >= 65536:
+                op.send(buffer_, op.consumers)
+                buffer_ = pd.DataFrame()
+
         return cur
 
     def on_producer_completed(self, producer_name):
