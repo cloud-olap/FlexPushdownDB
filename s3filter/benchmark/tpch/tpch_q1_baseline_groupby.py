@@ -19,7 +19,7 @@ def main():
     if s3filter.util.constants.TPCH_SF == 10:
         run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, buffer_size=8192, lineitem_parts=1)
+        run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=1)
 
 def run(parallel, use_pandas, buffer_size, lineitem_parts):
     """
@@ -61,13 +61,17 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
                                   'lineitem_filter' + '_' + str(p),
                                   query_plan)),
                           range(0, lineitem_parts))
-   
+
+    profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
+
     groupby = map(lambda p: 
                   query_plan.add_operator(
                         tpch_q1.groupby_returnflag_linestatus_operator_def(
                             'groupby' + '_' + str(p),
                             query_plan)),
                         range(0, lineitem_parts))
+
+    # groupby[0].set_profiled(True, profile_file_name)
     
     groupby_reduce = query_plan.add_operator(
                         tpch_q1.groupby_reduce_returnflag_linestatus_operator_def(

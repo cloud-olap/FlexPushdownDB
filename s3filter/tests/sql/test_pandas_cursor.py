@@ -2,11 +2,15 @@
 """Tests for some select edge cases
 
 """
+import StringIO
+import cProfile
+import pstats
 import timeit
 
 import boto3
 import pytest
 
+from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.pandas_cursor import PandasCursor
 
 
@@ -16,7 +20,7 @@ def test_non_existent_key():
     :return: None
     """
 
-    cur = PandasCursor(boto3.client('s3'))\
+    cur = PandasCursor(QueryPlan().s3)\
         .select('does-not-exist.csv', 'select * from S3Object')
 
     try:
@@ -57,7 +61,7 @@ def test_non_empty_results():
 
     num_rows = 0
 
-    cur = PandasCursor(boto3.client('s3'))\
+    cur = PandasCursor(QueryPlan().s3)\
         .select('region.csv', 'select * from S3Object')
 
     try:
@@ -66,6 +70,7 @@ def test_non_empty_results():
             for i, r in df.iterrows():
                 num_rows += 1
                 # print("{}:{}".format(num_rows, r))
+
 
         assert num_rows == 5
     finally:
@@ -132,7 +137,15 @@ def test_large_results():
         .select('lineitem.csv', 'select * from S3Object limit 150000')
 
     try:
+
+        # pr = cProfile.Profile()
+        # pr.enable()
+
         start = timeit.default_timer()
+
+
+
+
         dfs = cur.execute()
         for df in dfs:
             for i, r in df.iterrows():
@@ -142,6 +155,14 @@ def test_large_results():
 
         elapsed = end - start
         print('Elapsed {}'.format(elapsed))
+
+
+        # pr.disable()
+        # s = StringIO.StringIO()
+        # sortby = 'cumulative'
+        # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        # ps.print_stats()
+        # print (s.getvalue())
 
         assert num_rows == 150000
     finally:

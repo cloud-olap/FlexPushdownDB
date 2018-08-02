@@ -2,7 +2,6 @@
 """Group by with aggregate support
 
 """
-
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.aggregate_expression import AggregateExpressionContext
 from s3filter.op.operator_base import Operator
@@ -14,13 +13,14 @@ import cPickle as pickle
 import pandas as pd
 import numpy as np
 
+
 class Group(Operator):
     """A crude group by operator. Allows multiple grouping columns to be specified along with multiple aggregate
     expressions.
 
     """
 
-    def __init__(self, group_field_names, aggregate_expressions, name, query_plan, log_enabled, pd_expr = None):
+    def __init__(self, group_field_names, aggregate_expressions, name, query_plan, log_enabled, pd_expr=None):
         """Creates a new group by operator.
 
         :param group_field_names: The names of the fields to group by
@@ -43,7 +43,7 @@ class Group(Operator):
         self.use_pandas = True
         self.pd_expr = pd_expr
         self.producers_received = {}
-    
+
     def on_receive(self, ms, _producer):
         """ Handles the event of receiving a new tuple from a producer. Applies each aggregate function to the tuple and
         then inserts those aggregates into the tuples dict indexed by the grouping columns values.
@@ -94,25 +94,36 @@ class Group(Operator):
 
             # Store the group context indexed by the group
             self.group_contexts[group_field_values_tuple] = group_aggregate_expression_contexts
-   
-    def __df_aggregate_fun(self, df):        
+
+    def __df_aggregate_fun(self, df):
         names = [x.get_aggregate_name() for x in self.aggregate_expressions] + ['__count']
         d = [x.eval_df(df) for x in self.aggregate_expressions] + [df['__count'].sum()]
         return pd.Series(d, index=names)
-    
+
     def __on_receive_dataframe(self, df):
 
-        df['__count'] = np.ones( len(df) ) 
-        if not self.pd_expr:
-            agg_df = df.groupby(self.group_field_names).apply(self.__df_aggregate_fun).reset_index()
-        else:
-            agg_df = df.groupby(self.group_field_names).apply(self.pd_expr).reset_index()
-        
+        agg_df = self.pd_expr(df)
+
         if not type(self.aggregate_df) is pd.DataFrame:
             self.aggregate_df = agg_df
         else:
-            self.aggregate_df = pd.concat([self.aggregate_df, agg_df], ignore_index=True).groupby(self.group_field_names).sum().reset_index()
-    
+            self.aggregate_df = pd.concat([self.aggregate_df, agg_df])
+
+
+
+
+
+        # df['__count'] = np.ones( len(df) )
+        # if not self.pd_expr:
+        #     agg_df = df.groupby(self.group_field_names).apply(self.__df_aggregate_fun).reset_index()
+        # else:
+        #     agg_df = df.groupby(self.group_field_names).apply(self.pd_expr).reset_index()
+        #
+        # if not type(self.aggregate_df) is pd.DataFrame:
+        #     self.aggregate_df = agg_df
+        # else:
+        #     self.aggregate_df = pd.concat([self.aggregate_df, agg_df], ignore_index=True).groupby(self.group_field_names).sum().reset_index()
+
     def __build_group_field_values_tuple(self, tuple_):
         group_fields = [0] * len(self.group_fields_id)
         n = 0
@@ -132,7 +143,7 @@ class Group(Operator):
             self.producer_completions[producer_name] = True
         else:
             raise Exception("Unrecognized producer {} has completed".format(producer_name))
-        
+
         is_all_producers_done = all(self.producer_completions.values())
         if not is_all_producers_done:
             return
@@ -144,15 +155,15 @@ class Group(Operator):
             self.send(TupleMessage(Tuple(lt.field_names())), self.consumers)
 
             for group_tuple, group_aggregate_contexts in self.group_contexts.items():
-    
+
                 if self.is_completed():
                     break
 
                 # Convert the aggregate contexts to their results
                 group_fields = list(group_tuple)
-                
+
                 group_aggregate_values = list(v.result for v in group_aggregate_contexts.values())
-        
+
                 t_ = group_fields + group_aggregate_values
                 self.send(TupleMessage(Tuple(t_)), self.consumers)
         else:

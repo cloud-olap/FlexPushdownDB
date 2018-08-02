@@ -108,7 +108,12 @@ class Operator(object):
                 else:
                     message = item[0]
                     sender = item[1]
-                    self.on_receive(message, sender)
+
+                    if self.is_profiled:
+                        cProfile.runctx('self.on_receive(message, sender)',
+                                        globals(), locals(), self.profile_file_name)
+                    else:
+                        self.on_receive(message, sender)
 
         except BaseException as e:
             tb = traceback.format_exc(e)
@@ -303,7 +308,7 @@ class Operator(object):
                 self.query_plan.send([self.__buffer, self.name], op.name)
             else:
                 if op.is_profiled:
-                    cProfile.runctx('self.fire_on_receive([message], op)',
+                    cProfile.runctx('self.fire_on_receive(self.__buffer, op)',
                                     globals(), locals(), op.profile_file_name)
                 else:
                     self.fire_on_receive(self.__buffer, op)

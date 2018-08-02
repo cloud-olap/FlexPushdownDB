@@ -5,6 +5,7 @@
 import cStringIO
 import csv
 
+import agate
 import numpy
 import pandas as pd
 
@@ -126,14 +127,19 @@ class PandasCursor(object):
 
                 records_str_rdr.seek(0)
 
-                # df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
-                #                  quotechar='"', na_filter=False, compression=None, low_memory=False)
+                df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
+                                 quotechar='"', na_filter=False, compression=None, low_memory=False)
 
-                # Strangely the reading with the python csv reader and then loading into a dataframe is faster than
-                # reading csvs with pandas
-                record_rdr = csv.reader(records_str_rdr)
-                df = pd.DataFrame(list(record_rdr), dtype=str)
-                df = df.add_prefix('_')
+                # Strangely the reading with the python csv reader and then loading into a dataframe "seems" faster than
+                # reading csvs with pandas, agate is another option. need to test properly
+
+                # record_rdr = agate.csv_py2.reader(records_str_rdr)
+                # df = pd.DataFrame(list(record_rdr), dtype=str)
+                # df = df.add_prefix('_')
+
+                # record_rdr = csv.reader(records_str_rdr)
+                # df = pd.DataFrame(list(record_rdr), dtype=str)
+                # df = df.add_prefix('_')
 
                 yield df
 

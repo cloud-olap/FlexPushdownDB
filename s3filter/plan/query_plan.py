@@ -11,6 +11,8 @@ from multiprocessing import Queue
 
 import boto3
 import networkx
+from boto3.session import Session
+from botocore.config import Config
 
 from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
@@ -32,7 +34,9 @@ class QueryPlan(object):
         :param operators:
         """
 
-        self.s3 = boto3.client('s3')
+        cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=128)
+        session = Session()
+        self.s3 = session.client('s3', config=cfg)
 
         self.__timer = Timer()
         self.total_elapsed_time = 0.0
