@@ -99,7 +99,7 @@ class PandasCursor(object):
 
         prev_record_str = None
 
-        # first_record = True
+        records_str_rdr = cStringIO.StringIO()
         for event in self.event_stream:
 
             if 'Records' in event:
@@ -113,7 +113,6 @@ class PandasCursor(object):
                 # records_str = event['Records']['Payload'].decode('utf-8')
                 records_str = event['Records']['Payload']
 
-                records_str_rdr = cStringIO.StringIO()
                 if prev_record_str is not None:
                     records_str_rdr.write(prev_record_str)
                     prev_record_str = None
@@ -128,10 +127,12 @@ class PandasCursor(object):
                         prev_record_str = records_str[last_newline_pos + 1:]
                         records_str_rdr.write(records_str[:last_newline_pos + 1])
 
-                records_str_rdr.seek(0)
-
-                df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
-                                 quotechar='"', na_filter=False, compression=None, low_memory=False)
+                if records_str_rdr.tell() > 1024 * 1024:
+                    records_str_rdr.seek(0)
+                    df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
+                                     quotechar='"', na_filter=False, compression=None, low_memory=False)
+                    records_str_rdr = cStringIO.StringIO()
+                    yield df
 
                 # Strangely the reading with the python csv reader and then loading into a dataframe "seems" faster than
                 # reading csvs with pandas, agate is another option. need to test properly
@@ -143,8 +144,7 @@ class PandasCursor(object):
                 # record_rdr = csv.reader(records_str_rdr)
                 # df = pd.DataFrame(list(record_rdr), dtype=str)
                 # df = df.add_prefix('_')
-
-                yield df
+                
 
             elif 'Stats' in event:
                 self.bytes_scanned += event['Stats']['Details']['BytesScanned']
@@ -171,6 +171,11 @@ class PandasCursor(object):
 
             else:
                 raise Exception("Unrecognized event {}".format(event))
+        records_str_rdr.seek(0)
+        df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
+                         quotechar='"', na_filter=False, compression=None, low_memory=False)
+        records_str_rdr.flush()
+        yield df
 
     def close(self):
         """Closes the s3 event stream
