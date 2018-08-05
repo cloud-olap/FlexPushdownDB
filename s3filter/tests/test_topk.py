@@ -16,6 +16,98 @@ import multiprocessing
 from s3filter.util.test_util import gen_test_id
 
 
+def test_topk_baseline():
+    """
+    Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
+    :return:
+    """
+
+    limit = 500
+    num_rows = 0
+    shards = 32
+    processes = multiprocessing.cpu_count()
+
+    query_plan = QueryPlan(is_async=True)
+
+    # Query plan
+    # ts = query_plan.add_operator(
+    #     SQLTableScan('lineitem.csv', 'select * from S3Object limit {};'.format(limit), 'table_scan', query_plan, False))
+    sort_exp = SortExpression('_5', float, 'ASC')
+    top_op = query_plan.add_operator(Top(limit, sort_exp, 'topk', query_plan, False))
+    for process in range(processes):
+        proc_parts = [x for x in range(shards) if x % processes == process]
+        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object',
+                                                              "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
+                                                              query_plan, True))
+        pc_top = query_plan.add_operator(Top(limit, sort_exp, 'topk_parts_{}'.format(proc_parts), query_plan, False))
+        pc.connect(pc_top)
+        pc_top.connect(top_op)
+
+    c = query_plan.add_operator(Collate('collate', query_plan, False))
+
+    top_op.connect(c)
+
+    # Write the plan graph
+    # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+
+    # Start the query
+    query_plan.execute()
+
+    # Assert the results
+    for t in c.tuples():
+        num_rows += 1
+        print("{}:{}".format(num_rows, t))
+
+    assert num_rows == limit + 1
+
+    # Write the metrics
+    query_plan.print_metrics()
+
+
+def test_topk_with_sampling():
+    """
+    Executes the optimized topk query by firstly retrieving the first k tuples.
+    Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
+    tuple in the sample
+    :return:
+    """
+
+    limit = 500
+    num_rows = 0
+    shards = 32
+    processes = multiprocessing.cpu_count()
+
+    query_plan = QueryPlan(is_async=True)
+
+    # Query plan
+    ts = query_plan.add_operator(
+        TopKTableScan('lineitem.csv', 'select * from S3Object', limit, SortExpression('_5', float, 'ASC', 'l_quantity'),
+                      shards, processes, 'topk_table_scan', query_plan, True))
+    c = query_plan.add_operator(Collate('collate', query_plan, True))
+
+    ts.connect(c)
+
+    # Write the plan graph
+    # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+
+    # Start the query
+    query_plan.execute()
+
+    # Assert the results
+    for t in c.tuples():
+        num_rows += 1
+        print("{}:{}".format(num_rows, t))
+
+    assert num_rows == limit
+
+    # Write the metrics
+    query_plan.print_metrics()
+    topk_op = query_plan.operators["topk_table_scan"]
+    max_table_scan, _ = max([(op, op.op_metrics.elapsed_time()) for op in query_plan.operators.values()],
+                         key=lambda tup: tup[1])
+    OpMetrics.print_overall_metrics([max_table_scan, topk_op, topk_op.sample_op], "TopKTableScan total time")
+
+
 def test_limit_topk():
     """Executes a top k query by using S3 select's limit clause. The results are then collated.
 
@@ -127,96 +219,9 @@ def test_topk_empty():
     query_plan.print_metrics()
 
 
-def test_topk_baseline():
-    """
-    Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
-    :return:
-    """
-
-    limit = 500
-    num_rows = 0
-    shards = 32
-    processes = multiprocessing.cpu_count()
-
-    query_plan = QueryPlan(is_async=True)
-
-    # Query plan
-    # ts = query_plan.add_operator(
-    #     SQLTableScan('lineitem.csv', 'select * from S3Object limit {};'.format(limit), 'table_scan', query_plan, False))
-    top_op = query_plan.add_operator(Top(limit, SortExpression('_5', float, 'ASC'), 'topk', query_plan, False))
-    for process in range(processes):
-        proc_parts = [x for x in range(shards) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object',
-                                                              "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
-                                                              query_plan, True))
-        pc.connect(top_op)
-
-    c = query_plan.add_operator(Collate('collate', query_plan, False))
-
-    top_op.connect(c)
-
-    # Write the plan graph
-    # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
-
-    # Start the query
-    query_plan.execute()
-
-    # Assert the results
-    for _ in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
-
-    assert num_rows == limit + 1
-
-    # Write the metrics
-    query_plan.print_metrics()
-
-
-def test_topk_with_sampling():
-    """
-    Executes the optimized topk query by firstly retrieving the first k tuples.
-    Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
-    tuple in the sample
-    :return:
-    """
-
-    limit = 500
-    num_rows = 0
-    shards = 32
-    processes = multiprocessing.cpu_count()
-
-    query_plan = QueryPlan(is_async=True)
-
-    # Query plan
-    ts = query_plan.add_operator(
-        TopKTableScan('lineitem.csv', 'select * from S3Object', limit, SortExpression('_5', float, 'ASC', 'l_quantity'),
-                      shards, processes, 'topk_table_scan', query_plan, True))
-    c = query_plan.add_operator(Collate('collate', query_plan, True))
-
-    ts.connect(c)
-
-    # Write the plan graph
-    # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
-
-    # Start the query
-    query_plan.execute()
-
-    # Assert the results
-    for t in c.tuples():
-        num_rows += 1
-        print("{}:{}".format(num_rows, t))
-
-    assert num_rows == limit
-
-    # Write the metrics
-    query_plan.print_metrics()
-    topk_op = query_plan.operators["topk_table_scan"]
-    OpMetrics.print_overall_metrics([topk_op, topk_op.sample_op], "TopKTableScan total time")
-
-
 if __name__ == "__main__":
     test_topk_baseline()
     test_topk_with_sampling()
-    # test_limit_topk()
-    # test_abort_topk()
-    # test_topk_empty()
+    test_limit_topk()
+    test_abort_topk()
+    test_topk_empty()

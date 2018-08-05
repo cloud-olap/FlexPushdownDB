@@ -25,7 +25,7 @@ class Top(Operator):
     def __init__(self, max_tuples, sort_expression, name, query_plan, log_enabled):
         """Creates a new Sort operator.
 
-                :param sort_expressions: The sort expressions to apply to the tuples
+                :param sort_expression: The sort expression to apply to the tuples
                 :param name: The name of the operator
                 :param log_enabled: Whether logging is enabled
                 """
@@ -124,7 +124,7 @@ class TopKTableScan(Operator):
         self.sort_expression = sort_expression
         self.heap = []
 
-        self.table_scanners = []
+        self.local_operators = []
 
         self.sample_tuples, self.sample_op = TopKTableScan.sample_table(self.s3key, self.max_tuples)
         self.field_names = self.sample_tuples[0]
@@ -136,19 +136,25 @@ class TopKTableScan(Operator):
         if self.processes == 1:
             ts = SQLTableScan(self.s3key, filtered_sql, 'baseline_topk_table_scan', self.query_plan, self.log_enabled)
             ts.connect(self)
-            self.table_scanners.append(ts)
+            self.local_operators.append(ts)
         for process in range(self.processes):
             proc_parts = [x for x in range(self.shards) if x % self.processes == process]
             pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql,
                                                                   "topk_table_scan_parts_{}".format(proc_parts),
                                                                   proc_parts,
                                                                   self.query_plan, self.log_enabled))
-            pc.connect(self)
+            proc_top = self.query_plan.add_operator(Top(self.max_tuples, self.sort_expression,
+                                                        "top_parts_{}".format(proc_parts), self.query_plan,
+                                                        self.log_enabled))
+            pc.connect(proc_top)
+            proc_top.connect(self)
 
             if self.query_plan.is_async:
                 pc.init_async(self.query_plan.queue)
+                proc_top.init_async(self.query_plan.queue)
 
-            self.table_scanners.append(pc)
+            self.local_operators.append(pc)
+            self.local_operators.append(proc_top)
 
     def run(self):
         """
@@ -164,10 +170,10 @@ class TopKTableScan(Operator):
             print("{} | {}('{}') | Started"
                   .format(time.time(), self.__class__.__name__, self.name))
 
-        for sc in self.table_scanners:
+        for op in self.local_operators:
             if self.query_plan.is_async:
-                sc.boot()
-            sc.start()
+                op.boot()
+            op.start()
 
     def on_receive(self, messages, producer_name):
         """Handles the receipt of a message from a producer.
