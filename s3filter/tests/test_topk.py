@@ -64,7 +64,7 @@ def test_topk_baseline():
     query_plan.print_metrics()
 
 
-def test_topk_with_sampling():
+def test_topk_with_sampling(k_scale):
     """
     Executes the optimized topk query by firstly retrieving the first k tuples.
     Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
@@ -81,7 +81,8 @@ def test_topk_with_sampling():
 
     # Query plan
     ts = query_plan.add_operator(
-        TopKTableScan('lineitem.csv', 'select * from S3Object', limit, SortExpression('_5', float, 'ASC', 'l_quantity'),
+        TopKTableScan('lineitem.csv', 'select * from S3Object', limit, k_scale,
+                      SortExpression('_5', float, 'ASC', 'l_quantity'),
                       shards, processes, 'topk_table_scan', query_plan, True))
     c = query_plan.add_operator(Collate('collate', query_plan, True))
 
@@ -221,7 +222,10 @@ def test_topk_empty():
 
 if __name__ == "__main__":
     test_topk_baseline()
-    test_topk_with_sampling()
-    test_limit_topk()
-    test_abort_topk()
-    test_topk_empty()
+    test_topk_with_sampling(1)
+    test_topk_with_sampling(2)
+    test_topk_with_sampling(4)
+    test_topk_with_sampling(8)
+    # test_limit_topk()
+    # test_abort_topk()
+    # test_topk_empty()

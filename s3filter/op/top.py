@@ -97,12 +97,13 @@ class TopKTableScan(Operator):
     This operator scans a table and emits the k topmost tuples based on a user-defined ranking criteria
     """
 
-    def __init__(self, s3key, s3sql, max_tuples, sort_expression, shards, processes, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, max_tuples, k_scale, sort_expression, shards, processes, name, query_plan, log_enabled):
         """
         Creates a table scan operator that emits only the k topmost tuples from the table
         :param s3key: the table's s3 object key
         :param s3sql: the select statement to apply on the table
         :param max_tuples: the maximum number of tuples to return (K)
+        :param k_scale: sampling scale factor to retrieve more sampling tuples (s * K)
         :param sort_expression: the expression on which the table tuples are sorted in order to get the top k
         :param name: the operator name
         :param query_plan: the query plan in which this operator is part of
@@ -126,7 +127,7 @@ class TopKTableScan(Operator):
 
         self.local_operators = []
 
-        self.sample_tuples, self.sample_op = TopKTableScan.sample_table(self.s3key, self.max_tuples)
+        self.sample_tuples, self.sample_op = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples)
         self.field_names = self.sample_tuples[0]
         msv, comp_op = self.get_most_significant_value(self.sample_tuples)
 
@@ -247,9 +248,7 @@ class TopKTableScan(Operator):
         if keys is None:
             keys = "*"
 
-        k_scale = 1
-
-        sql = "SELECT {} FROM S3Object LIMIT {}".format(", ".join(keys), k_scale * k)
+        sql = "SELECT {} FROM S3Object LIMIT {}".format(", ".join(keys), k)
         q_plan = QueryPlan(is_async=False)
         select = q_plan.add_operator(SQLTableScan(s3key, sql, "sample_{}_scan".format(s3key), q_plan, True))
         collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, True))
