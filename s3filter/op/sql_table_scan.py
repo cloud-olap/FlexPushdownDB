@@ -105,11 +105,7 @@ class SQLTableScan(Operator):
 
         :return: None
         """
-
-        if not self.is_profiled:
-            self.do_run()
-        else:
-            cProfile.runctx('self.do_run()', globals(), locals(), self.profile_file_name)
+        self.do_run()
 
     def do_run(self):
 

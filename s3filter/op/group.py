@@ -169,6 +169,10 @@ class Group(Operator):
         else:
             # TODO 
             # for average, devide by __count.
+            # for groupby_reducer, aggregate one more time.  
+            if len(self.producers) > 1:
+                self.aggregate_df = self.pd_expr(self.aggregate_df)
+
             self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
             self.send(self.aggregate_df, self.consumers)
 

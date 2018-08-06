@@ -26,8 +26,34 @@ def sql_scan_lineitem_operator_def(sharded, shard, use_pandas, name, query_plan)
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select * from S3Object;", use_pandas,
                         name, query_plan,
-                        True)
+                        False)
 
+def sql_filtered_scan_lineitem_operator_def(max_shipped_date, sharded, shard, use_pandas, name, query_plan):
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
+                        " select l_quantity, l_extendedprice, l_discount, l_tax, l_returnflag, l_linestatus, l_shipdate "
+                        " from S3Object "
+                        " where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp) "
+                        ";".format(max_shipped_date.strftime('%Y-%m-%d')),
+                        use_pandas, name, query_plan,
+                        False)
+
+def project_lineitem_from_filtered_scan_operator_def(name, query_plan):
+    def fn(df):
+        df.rename(columns={'_0': 'l_quantity', '_1': 'l_extendedprice', '_2': 'l_discount', '_3': 'l_tax',
+                           '_4': 'l_returnflag', '_5': 'l_linestatus', '_6': 'l_shipdate'}, inplace=True)
+        return df
+
+    return Project(
+        [
+            ProjectExpression(lambda t_: t_['_0'], 'l_quantity'),
+            ProjectExpression(lambda t_: t_['_1'], 'l_extendedprice'),
+            ProjectExpression(lambda t_: t_['_2'], 'l_discount'),
+            ProjectExpression(lambda t_: t_['_3'], 'l_tax'),
+            ProjectExpression(lambda t_: t_['_4'], 'l_returnflag'),
+            ProjectExpression(lambda t_: t_['_5'], 'l_linestatus'),
+            ProjectExpression(lambda t_: t_['_6'], 'l_shipdate'),
+        ],
+        name, query_plan, False, fn)
 
 def project_lineitem_operator_def(name, query_plan):
     # type: (str, QueryPlan) -> Project
@@ -64,28 +90,6 @@ def filter_shipdate_operator_def(max_shipped_date, name, query_plan):
 
 def groupby_returnflag_linestatus_operator_def(name, query_plan):
     def fn(df):
-        # d = [
-        #     pd.to_numeric(df['l_quantity']).sum(),
-        #     pd.to_numeric(df['l_extendedprice']).sum(),
-        #     (pd.to_numeric(df['l_extendedprice']) * (1 - pd.to_numeric(df['l_discount']))).sum(),
-        #     (pd.to_numeric(df['l_extendedprice']) * (1-pd.to_numeric(df['l_quantity'])) * (1+pd.to_numeric(df['l_tax']))).sum(),
-        #     pd.to_numeric(df['l_quantity']).sum(),
-        #     pd.to_numeric(df['l_extendedprice']).sum(),
-        #     pd.to_numeric(df['l_discount']).sum(),
-        #     pd.to_numeric(df['__count']).sum(),
-        # ]
-        # names = [
-        #     'sum_qty',
-        #     'sum_base_price',
-        #     'sum_disc_price',
-        #     'sum_charge',
-        #     'avg_qty',
-        #     'avg_price',
-        #     'avg_disc',
-        #     'count_order'
-        # ]
-        # return pd.Series(d, index=names)
-
         convert_types(df)
 
         compute_expressions(df)
@@ -165,28 +169,6 @@ def groupby_reduce_returnflag_linestatus_operator_def(name, query_plan, use_pand
     ])
 
     def fn(df):
-        # d = [
-        #     pd.to_numeric(df['sum_qty']).sum(),
-        #     pd.to_numeric(df['sum_base_price']).sum(),
-        #     pd.to_numeric(df['sum_disc_price']).sum(),
-        #     pd.to_numeric(df['sum_charge']).sum(),
-        #     pd.to_numeric(df['avg_qty']).sum(),
-        #     pd.to_numeric(df['avg_price']).sum(),
-        #     pd.to_numeric(df['avg_disc']).sum(),
-        #     pd.to_numeric(df['count_order']).sum(),
-        # ]
-        # names = [
-        #     'sum_qty',
-        #     'sum_base_price',
-        #     'sum_disc_price',
-        #     'sum_charge',
-        #     'avg_qty',
-        #     'avg_price',
-        #     'avg_disc',
-        #     'count_order'
-        # ]
-        # return pd.Series(d, index=names)
-
         grouped = df.groupby(['l_returnflag', 'l_linestatus'], as_index=False)  # type: DataFrameGroupBy
 
         agg_df = grouped.agg(agger)
@@ -207,22 +189,3 @@ def groupby_reduce_returnflag_linestatus_operator_def(name, query_plan, use_pand
 
         ],
         name, query_plan, False, fn)
-
-
-"""
-def project_output_operator_def(name, query_plan):
-    # type: (str, QueryPlan) -> Project
-    return Project(
-        [
-            ProjectExpression(lambda t_: t_['_0'], 'sum_qty'),
-            ProjectExpression(lambda t_: t_['_1'], 'sum_base_price'),
-            ProjectExpression(lambda t_: t_['_2'], 'sum_disc_price'),
-            ProjectExpression(lambda t_: t_['_3'], 'sum_charge'),
-            ProjectExpression(lambda t_: t_['_4'], 'avg_qty'),
-            ProjectExpression(lambda t_: t_['_5'], 'avg_price'),
-            ProjectExpression(lambda t_: t_['_6'], 'avg_disc'),
-            ProjectExpression(lambda t_: t_['_7'], 'count_order'),
-        ],
-        name, query_plan,
-        False)
-"""

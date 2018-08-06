@@ -17,9 +17,9 @@ import s3filter.util.constants
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=96)
+        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=1)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32)
+        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=2)
 
 def run(parallel, use_pandas, buffer_size, lineitem_parts):
     """
@@ -34,10 +34,13 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Query plan
+    date = '1998-12-01'
+    max_shipped_date = datetime.strptime(date, '%Y-%m-%d') - timedelta(days=117)
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
-                            tpch_q1.sql_scan_lineitem_operator_def(
-                                lineitem_parts != 1,
+                            tpch_q1.sql_filtered_scan_lineitem_operator_def(
+                                max_shipped_date,
+                                parallel,
                                 p,
                                 use_pandas,
                                 'lineitem_scan' + '_' + str(p),
@@ -46,23 +49,10 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
 
     lineitem_project = map(lambda p:
                            query_plan.add_operator(
-                               tpch_q1.project_lineitem_operator_def(
+                               tpch_q1.project_lineitem_from_filtered_scan_operator_def(
                                    'lineitem_project' + '_' + str(p),
                                    query_plan)),
                            range(0, lineitem_parts))
-
-    date = '1998-12-01'
-    max_shipped_date = datetime.strptime(date, '%Y-%m-%d') - timedelta(days=117)
-
-    lineitem_filter = map(lambda p:
-                          query_plan.add_operator(
-                              tpch_q1.filter_shipdate_operator_def(
-                                  max_shipped_date,
-                                  'lineitem_filter' + '_' + str(p),
-                                  query_plan)),
-                          range(0, lineitem_parts))
-
-    profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
 
     groupby = map(lambda p: 
                   query_plan.add_operator(
@@ -71,23 +61,21 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
                             query_plan)),
                         range(0, lineitem_parts))
 
-    # groupby[0].set_profiled(True, profile_file_name)
-    
     groupby_reduce = query_plan.add_operator(
                         tpch_q1.groupby_reduce_returnflag_linestatus_operator_def(
                             'groupby_reduce',
                             query_plan, use_pandas))
-    lineitem_scan[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_scan_0" + ".prof"))
-    lineitem_project[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_project_0" + ".prof"))
-    groupby[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_groupby_0" + ".prof"))
-    groupby_reduce.set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_groupby_reduce" + ".prof"))
-    
+
+    lineitem_scan[0].set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_scan_0" + ".prof"))
+    lineitem_project[0].set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_project_0" + ".prof"))
+    groupby[0].set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_groupby_0" + ".prof"))
+    groupby_reduce.set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_groupby_reduce" + ".prof"))
+
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
     
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
-    map(lambda (p, o): o.connect(lineitem_filter[p]), enumerate(lineitem_project))
-    map(lambda (p, o): o.connect(groupby[p]), enumerate(lineitem_filter))
+    map(lambda (p, o): o.connect(groupby[p]), enumerate(lineitem_project))
     map(lambda (p, o): o.connect(groupby_reduce), enumerate(groupby))
     groupby_reduce.connect(collate)
     

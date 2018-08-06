@@ -11,7 +11,6 @@ import time
 import traceback
 import pandas as pd
 
-
 def switch_context(from_op, to_op):
     """Handles a context switch from one operator to another. This is used to stop the sending operators
     timer and start the receiving operators timer.
@@ -80,7 +79,12 @@ class Operator(object):
     """
 
     def work(self, queue):
+        if self.is_profiled:
+            cProfile.runctx('self.do_work(queue)', globals(), locals(), self.profile_file_name)
+        else:
+            self.do_work(queue)
 
+    def do_work(self, queue):
         running = True
 
         try:
@@ -109,11 +113,7 @@ class Operator(object):
                     message = item[0]
                     sender = item[1]
 
-                    if self.is_profiled:
-                        cProfile.runctx('self.on_receive(message, sender)',
-                                        globals(), locals(), self.profile_file_name)
-                    else:
-                        self.on_receive(message, sender)
+                    self.on_receive(message, sender)
 
         except BaseException as e:
             tb = traceback.format_exc(e)
@@ -150,7 +150,6 @@ class Operator(object):
         """Constructs a new operator
 
         """
-
         self.name = name
 
         self.op_metrics = op_metrics
@@ -290,11 +289,7 @@ class Operator(object):
                 if op.async_:
                     self.query_plan.send([[message], self.name], op.name)
                 else:
-                    if op.is_profiled:
-                        cProfile.runctx('self.fire_on_receive([message], op)',
-                                        globals(), locals(), op.profile_file_name)
-                    else:
-                        self.fire_on_receive([message], op)
+                    self.fire_on_receive([message], op)
 
         else:
             self.__buffer.append(message)
@@ -307,11 +302,7 @@ class Operator(object):
             if self.async_:
                 self.query_plan.send([self.__buffer, self.name], op.name)
             else:
-                if op.is_profiled:
-                    cProfile.runctx('self.fire_on_receive(self.__buffer, op)',
-                                    globals(), locals(), op.profile_file_name)
-                else:
-                    self.fire_on_receive(self.__buffer, op)
+                self.fire_on_receive(self.__buffer, op)
 
         self.__buffer = []
 
