@@ -19,15 +19,15 @@ class HashJoinProbeMetrics(OpMetrics):
     def __init__(self):
         super(HashJoinProbeMetrics, self).__init__()
 
-        self.l_rows_processed = 0
-        self.r_rows_processed = 0
+        self.build_rows_processed = 0
+        self.tuple_rows_processed = 0
         self.rows_joined = 0
 
     def __repr__(self):
         return {
             'elapsed_time': round(self.elapsed_time(), 5),
-            'l_rows_processed': self.l_rows_processed,
-            'r_rows_processed': self.r_rows_processed,
+            'build_rows_processed': self.build_rows_processed,
+            'tuple_rows_processed': self.tuple_rows_processed,
             'rows_joined': self.rows_joined
         }.__repr__()
 
@@ -152,7 +152,7 @@ class HashJoinProbe(Operator):
                                     .format(self.name, tuple_, self.join_expr.r_field))
             else:
 
-                self.op_metrics.r_rows_processed += 1
+                self.op_metrics.tuple_rows_processed += 1
 
                 self.tuples.append(tuple_)
 
@@ -165,7 +165,7 @@ class HashJoinProbe(Operator):
     def on_receive_hashtable(self, hashtable, _producer_name):
 
         self.hashtable.update(hashtable)
-        self.op_metrics.l_rows_processed = len(hashtable)
+        self.op_metrics.build_rows_processed = len(hashtable)
 
     def on_producer_completed(self, producer_name):
 

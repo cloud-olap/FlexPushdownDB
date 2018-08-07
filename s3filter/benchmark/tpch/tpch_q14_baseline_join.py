@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""TPCH Q14 Bloom Join Benchmark
+"""TPCH Q14 Baseline Join Benchmark
 
 """
 

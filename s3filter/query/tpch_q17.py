@@ -1,6 +1,7 @@
 """Reusable query elements for tpch q17
 
 """
+import math
 
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -14,6 +15,7 @@ from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
+from s3filter.query.tpch import get_file_key
 
 
 def collate_op(name, query_plan):
@@ -55,12 +57,22 @@ def project_partkey_op(name, query_plan):
     :param name:
     :return:
     """
+
+    def fn(df):
+        # return df[['_0', '_1', '_2']]
+
+        df = df.filter(items=['_0'], axis=1)
+
+        df.rename(columns={'_0': 'p_partkey'}, inplace=True)
+
+        return df
+
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey')
         ],
         name, query_plan,
-        False)
+        True, fn)
 
 
 def project_lineitem_orderkey_partkey_quantity_extendedprice_op(name, query_plan):
@@ -88,6 +100,16 @@ def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, q
     :param name:
     :return:
     """
+
+    def fn(df):
+        # return df[['_0', '_1', '_2']]
+
+        df = df.filter(items=['_0', '_1', '_2', '_3'], axis=1)
+
+        df.rename(columns={'_0': 'l_orderkey', '_1': 'l_partkey', '_2': 'l_quantity', '_3': 'l_extendedprice'}, inplace=True)
+
+        return df
+
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
@@ -96,7 +118,7 @@ def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, q
             ProjectExpression(lambda t_: t_['_3'], 'l_extendedprice')
         ],
         name, query_plan,
-        False)
+        True, fn)
 
 
 def project_partkey_brand_container_op(name, query_plan):
@@ -131,7 +153,7 @@ def project_partkey_avg_quantity_op(name, query_plan):
             ProjectExpression(lambda t_: 0.2 * t_['_1'], 'avg_l_quantity_computed00')
         ],
         name, query_plan,
-        False)
+        True)
 
 
 def aggregate_sum_extendedprice_op(name, query_plan):
@@ -144,7 +166,7 @@ def aggregate_sum_extendedprice_op(name, query_plan):
     :return:
     """
     return Aggregate([AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['l_extendedprice']))],
-                     name, query_plan, False)
+                     name, query_plan, True)
 
 
 def filter_lineitem_quantity_op(name, query_plan):
@@ -196,10 +218,11 @@ def group_partkey_avg_quantity_op(name, query_plan):
         ['l_partkey'],  # l_partkey
         [
             # avg(l_quantity)
-            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['l_quantity']))
+            # AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['l_quantity']))
+            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_[3]))
         ],
         name, query_plan,
-        False)
+        True)
 
 
 def sql_scan_lineitem_select_all_op(name, query_plan):
@@ -259,57 +282,72 @@ def sql_scan_part_select_all_where_brand_and_container_op(name, query_plan):
                         False)
 
 
-def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op(name, query_plan):
+def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
     :param query_plan:
     :param name:
     :return:
     """
-    return SQLTableScan('lineitem.csv',
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '182405' ", False,
-                        name, query_plan,
-                        False)
+                        "  l_partkey = '182405' ",
+                        use_pandas,
+                        name,
+                        query_plan,
+                        True)
 
 
-def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(name, query_plan):
+def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(sharded, shard, num_shards, use_pandas, name,
+                                                                     query_plan):
     """with lineitem_scan as (select * from lineitem)
 
     :param query_plan:
     :param name:
     :return:
     """
-    return SQLTableScan('lineitem.csv',
+
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
                         "from "
-                        "  S3Object ", False,
-                        name, query_plan,
-                        False)
+                        "  S3Object ",
+                        # "where "
+                        # "  l_partkey = '182405' or l_partkey = '198'",
+                        use_pandas,
+                        name,
+                        query_plan,
+                        True)
 
 
-def sql_scan_select_partkey_where_brand_container_op(name, query_plan):
+def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards, use_pandas, name, query_plan):
     """with part_scan as (select * from part)
 
     :param query_plan:
     :param name:
     :return:
     """
-    return SQLTableScan('part.csv',
+
+    key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
+    key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
+
+    return SQLTableScan(get_file_key('part', sharded, shard),
                         "select "
                         "  p_partkey "
                         "from "
                         "  S3Object "
                         "where "
                         "  p_brand = 'Brand#41' and "
-                        "  p_container = 'SM PACK' ", False,
+                        "  p_container = 'SM PACK' and "
+                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        .format(key_lower, key_upper),
+                        use_pandas,
                         name, query_plan,
-                        False)
+                        True)
 
 
 def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(use_pandas, name,

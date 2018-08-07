@@ -20,4 +20,4 @@ LOG_FILE=${PACKAGE_PATH}/benchmark.log
 
 echo "Running benchmark at '${BENCHMARK_FILE}'. Python path is '${PACKAGE_PATH}'. Logging to '${LOG_FILE}'"
 
-PYTHONPATH=${PACKAGE_PATH} nohup python -uO ${BENCHMARK_FILE} > ${LOG_FILE} 2>&1 &
+PYTHONPATH=${PACKAGE_PATH} nohup python -u ${BENCHMARK_FILE} > ${LOG_FILE} 2>&1 &
