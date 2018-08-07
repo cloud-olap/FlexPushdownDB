@@ -192,6 +192,9 @@ class Operator(object):
 
         self.runner = None
 
+        self.__buffers = {}
+        self.buffered_size = 0
+
     def init_async(self, completion_queue):
 
         self.async_ = True
@@ -246,6 +249,8 @@ class Operator(object):
         self.consumer_completions[consumer.name] = False
         self.consumers = sorted(self.consumers, key=lambda c: c.name)
 
+        self.__buffers[consumer] = []
+
     def add_producer(self, producer):
         """Appends the given producing operator to this operators list of producers.
 
@@ -282,7 +287,7 @@ class Operator(object):
         """
 
         if len(operators) == 0:
-            raise Exception("Producer {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
+            raise Exception("Message {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
 
         if self.buffer_size == 0:
             for op in operators:
@@ -292,19 +297,24 @@ class Operator(object):
                     self.fire_on_receive([message], op)
 
         else:
-            self.__buffer.append(message)
-            if len(self.__buffer) >= self.buffer_size:
-                self.do_send(operators)
+            for o in operators:
+                self.__buffers[o].append(message)
+                self.buffered_size += 1
 
-    def do_send(self, operators):
+            if self.buffered_size >= self.buffer_size:
+                for (o, messages) in self.__buffers.items():
+                    self.do_send(messages, o)
+                    self.__buffers[o.name] = []
+
+            self.buffered_size = 0
+
+    def do_send(self, messages, operators):
         for op in operators:
             # Should really be if the operator is async not this
             if self.async_:
-                self.query_plan.send([self.__buffer, self.name], op.name)
+                self.query_plan.send([messages, self.name], op.name)
             else:
-                self.fire_on_receive(self.__buffer, op)
-
-        self.__buffer = []
+                self.fire_on_receive(messages, op)
 
     def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
@@ -323,6 +333,13 @@ class Operator(object):
         switch_context(self, producer)
         producer.on_consumer_completed(self.name)
         switch_context(producer, self)
+
+    def flush(self):
+        for (o, messages) in self.__buffers.items():
+            self.do_send(messages, o)
+            self.__buffers[o.name] = []
+
+        self.buffered_size = 0
 
     def complete(self):
         """Sets the operator to complete, meaning it has completed what it needed to do. This includes marking the

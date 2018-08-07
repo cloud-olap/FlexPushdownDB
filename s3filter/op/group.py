@@ -173,9 +173,10 @@ class Group(Operator):
             if len(self.producers) > 1:
                 self.aggregate_df = self.pd_expr(self.aggregate_df)
 
-            self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
-            self.send(self.aggregate_df, self.consumers)
+            if self.aggregate_df is not None:
+                self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
+                self.send(self.aggregate_df, self.consumers)
 
-            del self.aggregate_df
+                del self.aggregate_df
 
         Operator.on_producer_completed(self, producer_name)

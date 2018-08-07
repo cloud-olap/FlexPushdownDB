@@ -131,6 +131,7 @@ class PandasCursor(object):
                     records_str_rdr.seek(0)
                     df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
                                      quotechar='"', na_filter=False, compression=None, low_memory=False)
+                    records_str_rdr.close()
                     records_str_rdr = cStringIO.StringIO()
                     yield df
 
@@ -159,6 +160,15 @@ class PandasCursor(object):
 
             elif 'End' in event:
                 # print("{} End Event".format(timeit.default_timer()))
+
+                if records_str_rdr.tell() > 0:
+                    records_str_rdr.seek(0)
+                    df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
+                                     quotechar='"', na_filter=False, compression=None, low_memory=False)
+                    records_str_rdr.flush()
+                    records_str_rdr.close()
+                    yield df
+
                 return
 
             elif 'Cont' in event:
@@ -171,11 +181,8 @@ class PandasCursor(object):
 
             else:
                 raise Exception("Unrecognized event {}".format(event))
-        records_str_rdr.seek(0)
-        df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
-                         quotechar='"', na_filter=False, compression=None, low_memory=False)
-        records_str_rdr.flush()
-        yield df
+
+
 
     def close(self):
         """Closes the s3 event stream
