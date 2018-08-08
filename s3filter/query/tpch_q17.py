@@ -106,7 +106,8 @@ def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, q
 
         df = df.filter(items=['_0', '_1', '_2', '_3'], axis=1)
 
-        df.rename(columns={'_0': 'l_orderkey', '_1': 'l_partkey', '_2': 'l_quantity', '_3': 'l_extendedprice'}, inplace=True)
+        df.rename(columns={'_0': 'l_orderkey', '_1': 'l_partkey', '_2': 'l_quantity', '_3': 'l_extendedprice'},
+                  inplace=True)
 
         return df
 
@@ -282,7 +283,8 @@ def sql_scan_part_select_all_where_brand_and_container_op(name, query_plan):
                         False)
 
 
-def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op(sharded, shard, num_shards,
+                                                                                      use_pandas, name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
     :param query_plan:
@@ -350,17 +352,23 @@ def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards,
                         True)
 
 
-def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(use_pandas, name,
+def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(sharded,
+                                                                                                      shard,
+                                                                                                      num_shards,
+                                                                                                      use_pandas,
+                                                                                                      name,
                                                                                                       query_plan):
-    return SQLTableScanBloomUse('lineitem.csv',
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
                                 "select "
                                 "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
                                 "from "
                                 "  S3Object "
                                 "where "
                                 "  l_partkey = '182405' ",
-                                'l_partkey', use_pandas,
-                                name, query_plan,
+                                'l_partkey',
+                                use_pandas,
+                                name,
+                                query_plan,
                                 False)
 
 

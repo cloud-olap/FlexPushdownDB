@@ -304,17 +304,17 @@ class Operator(object):
             if self.buffered_size >= self.buffer_size:
                 for (o, messages) in self.__buffers.items():
                     self.do_send(messages, o)
-                    self.__buffers[o.name] = []
+                    self.__buffers[o] = []
 
-            self.buffered_size = 0
+                self.buffered_size = 0
 
-    def do_send(self, messages, operators):
-        for op in operators:
-            # Should really be if the operator is async not this
-            if self.async_:
-                self.query_plan.send([messages, self.name], op.name)
-            else:
-                self.fire_on_receive(messages, op)
+    def do_send(self, messages, op):
+
+        # Should really be if the operator is async not this
+        if self.async_:
+            self.query_plan.send([messages, self.name], op.name)
+        else:
+            self.fire_on_receive(messages, op)
 
     def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
@@ -360,13 +360,14 @@ class Operator(object):
             self.__completed = True
 
             # Flush the buffer
-            for c in self.consumers:
-                if c.async_:
-                    self.query_plan.send([self.__buffer, self.name], c.name)
-                else:
-                    self.fire_on_receive(self.__buffer, c)
-
-            self.__buffer = []
+            self.flush()
+            # for c in self.consumers:
+            #     if c.async_:
+            #         self.query_plan.send([self.__buffer, self.name], c.name)
+            #     else:
+            #         self.fire_on_receive(self.__buffer, c)
+            #
+            # self.__buffer = []
 
             for p in self.producers:
                 if p.async_:
