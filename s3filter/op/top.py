@@ -3,14 +3,12 @@
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
-from s3filter.op.sort import HeapSortableTuple, SortExpression
+from s3filter.op.sort import SortExpression
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
-from s3filter.sql.cursor import Cursor
-from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.op.sql_table_scan import SQLTableScan, SQLShardedTableScan
 from s3filter.op.collate import Collate
-from heapq import heappush, heappop
+from s3filter.util.heap import MaxHeap, MinHeap, HeapTuple
 import time
 
 __author__ = "Abdurrahman Ghanem <abghanem@qf.org.qa>"
@@ -33,8 +31,13 @@ class Top(Operator):
         super(Top, self).__init__(name, OpMetrics(), query_plan, log_enabled)
 
         self.sort_expression = sort_expression
+
+        if sort_expression.sort_order == 'ASC':
+            self.heap = MaxHeap(max_tuples)
+        else:
+            self.heap = MinHeap(max_tuples)
+
         self.max_tuples = max_tuples
-        self.heap = []
 
         self.field_names = None
 
@@ -65,31 +68,25 @@ class Top(Operator):
             self.send(TupleMessage(tuple_), self.consumers)
         elif not is_header(tuple_):
             # Store the tuple in the sorted heap
-            sortable_t = HeapSortableTuple(tuple_, self.field_names, [self.sort_expression])
-
-            if len(self.heap) < self.max_tuples:
-                heappush(self.heap, sortable_t)
-            else:
-                if sortable_t < self.heap[0]:
-                    heappop(self.heap)
-                    heappush(self.heap, sortable_t)
+            ht = HeapTuple(tuple_, self.field_names, self.sort_expression)
+            self.heap.push(ht)
 
     def complete(self):
         """
         When all producers complete, the topk tuples are passed to the next operators.
         :return:
         """
-        while self.heap:
+        for t in self.heap.get_topk(self.max_tuples, sort=True):
 
             if self.is_completed():
                 break
 
-            t = heappop(self.heap).tuple
-            self.send(TupleMessage(t), self.consumers)
+            self.send(TupleMessage(t.tuple), self.consumers)
 
-        del self.heap
+        self.heap.clear()
 
         super(Top, self).complete()
+        self.op_metrics.timer_stop()
 
 
 class TopKTableScan(Operator):
@@ -123,13 +120,21 @@ class TopKTableScan(Operator):
 
         self.max_tuples = max_tuples
         self.sort_expression = sort_expression
-        self.heap = []
+
+        if sort_expression.sort_order == 'ASC':
+            self.heap = MaxHeap(max_tuples)
+        else:
+            self.heap = MinHeap(max_tuples)
 
         self.local_operators = []
 
+        # TODO: The current sampling method has a flaw. If the maximum value happened to be among the sample without
+        # duplicates, scanning table shards won't return any tuples and the sample will be considered the topk while
+        # this is not necessarily the correct topk. A suggestion is to take a random step back on the cutting threshold
+        # to make sure the max value is not used as the threshold
         self.sample_tuples, self.sample_op = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples)
         self.field_names = self.sample_tuples[0]
-        msv, comp_op = self.get_most_significant_value(self.sample_tuples)
+        msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
 
         filtered_sql = "{} WHERE CAST({} AS {}) {} {};".format(self.s3sql.rstrip(';'), self.sort_expression.col_name,
                                                                self.sort_expression.col_type.__name__, comp_op, msv)
@@ -203,14 +208,8 @@ class TopKTableScan(Operator):
             self.send(TupleMessage(tuple_), self.consumers)
         elif not is_header(tuple_):
             # Store the tuple in the sorted heap
-            sortable_t = HeapSortableTuple(tuple_, self.field_names, [self.sort_expression])
-
-            if len(self.heap) < self.max_tuples:
-                heappush(self.heap, sortable_t)
-            else:
-                if sortable_t < self.heap[0]:
-                    heappop(self.heap)
-                    heappush(self.heap, sortable_t)
+            ht = HeapTuple(tuple_, self.field_names, self.sort_expression)
+            self.heap.push(ht)
 
     def complete(self):
         """
@@ -222,15 +221,14 @@ class TopKTableScan(Operator):
         if len(self.heap) < self.max_tuples:
             self.on_receive([TupleMessage(t) for t in self.sample_tuples], self.name)
 
-        while self.heap:
+        for t in self.heap.get_topk(self.max_tuples, sort=True):
 
             if self.is_completed():
                 break
 
-            t = heappop(self.heap).tuple
-            self.send(TupleMessage(t), self.consumers)
+            self.send(TupleMessage(t.tuple), self.consumers)
 
-        del self.heap
+        self.heap.clear()
 
         super(TopKTableScan, self).complete()
 
@@ -250,8 +248,8 @@ class TopKTableScan(Operator):
 
         sql = "SELECT {} FROM S3Object LIMIT {}".format(", ".join(keys), k)
         q_plan = QueryPlan(is_async=False)
-        select = q_plan.add_operator(SQLTableScan(s3key, sql, "sample_{}_scan".format(s3key), q_plan, True))
-        collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, True))
+        select = q_plan.add_operator(SQLTableScan(s3key, sql, "sample_{}_scan".format(s3key), q_plan, False))
+        collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, False))
         select.connect(collate)
 
         q_plan.execute()
@@ -270,9 +268,9 @@ class TopKTableScan(Operator):
         idx = self.field_names.index(sort_exp.col_index)
 
         if sort_exp.sort_order == "ASC":
-            return min([t[idx] for t in tuples]), '<'
+            return min([sort_exp.col_type(t[idx]) for t in tuples]), '<='
         elif sort_exp.sort_order == "DESC":
-            return max([t[idx] for t in tuples]), '>'
+            return max([sort_exp.col_type(t[idx]) for t in tuples]), '>='
 
 
 def is_header(tuple_):

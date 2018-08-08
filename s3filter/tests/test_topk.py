@@ -16,29 +16,31 @@ import multiprocessing
 from s3filter.util.test_util import gen_test_id
 
 
-def test_topk_baseline():
+def __test_topk_baseline(sort_index='_5', sort_order='DESC'):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
     """
 
-    limit = 500
+    limit = 50
     num_rows = 0
     shards = 32
     processes = multiprocessing.cpu_count()
+
+    print("Baseline TopK with order {} on field {}\n".format(sort_order, sort_index))
 
     query_plan = QueryPlan(is_async=True)
 
     # Query plan
     # ts = query_plan.add_operator(
     #     SQLTableScan('lineitem.csv', 'select * from S3Object limit {};'.format(limit), 'table_scan', query_plan, False))
-    sort_exp = SortExpression('_5', float, 'ASC')
+    sort_exp = SortExpression(sort_index, float, sort_order)
     top_op = query_plan.add_operator(Top(limit, sort_exp, 'topk', query_plan, False))
     for process in range(processes):
         proc_parts = [x for x in range(shards) if x % processes == process]
         pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object',
                                                               "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
-                                                              query_plan, True))
+                                                              query_plan, False))
         pc_top = query_plan.add_operator(Top(limit, sort_exp, 'topk_parts_{}'.format(proc_parts), query_plan, False))
         pc.connect(pc_top)
         pc_top.connect(top_op)
@@ -62,9 +64,10 @@ def test_topk_baseline():
 
     # Write the metrics
     query_plan.print_metrics()
+    query_plan.stop()
 
 
-def test_topk_with_sampling(k_scale):
+def __test_topk_with_sampling(k_scale=1, sort_index='_5', sort_field='l_extendedprice', sort_order='DESC'):
     """
     Executes the optimized topk query by firstly retrieving the first k tuples.
     Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
@@ -72,19 +75,22 @@ def test_topk_with_sampling(k_scale):
     :return:
     """
 
-    limit = 500
+    limit = 50
     num_rows = 0
     shards = 32
     processes = multiprocessing.cpu_count()
+
+    print("Sampling params:")
+    print("Scale: {}, Sort Field: {}, Sort Order: {}\n".format(k_scale, sort_field, sort_order))
 
     query_plan = QueryPlan(is_async=True)
 
     # Query plan
     ts = query_plan.add_operator(
         TopKTableScan('lineitem.csv', 'select * from S3Object', limit, k_scale,
-                      SortExpression('_5', float, 'ASC', 'l_quantity'),
-                      shards, processes, 'topk_table_scan', query_plan, True))
-    c = query_plan.add_operator(Collate('collate', query_plan, True))
+                      SortExpression(sort_index, float, sort_order, sort_field),
+                      shards, processes, 'topk_table_scan', query_plan, False))
+    c = query_plan.add_operator(Collate('collate', query_plan, False))
 
     ts.connect(c)
 
@@ -103,129 +109,140 @@ def test_topk_with_sampling(k_scale):
 
     # Write the metrics
     query_plan.print_metrics()
+    query_plan.stop()
     topk_op = query_plan.operators["topk_table_scan"]
     max_table_scan, _ = max([(op, op.op_metrics.elapsed_time()) for op in query_plan.operators.values()],
                          key=lambda tup: tup[1])
     OpMetrics.print_overall_metrics([max_table_scan, topk_op, topk_op.sample_op], "TopKTableScan total time")
 
 
-def test_limit_topk():
-    """Executes a top k query by using S3 select's limit clause. The results are then collated.
+# def test_limit_topk():
+#     """Executes a top k query by using S3 select's limit clause. The results are then collated.
+#
+#     :return: None
+#     """
+#
+#     limit = 500
+#     num_rows = 0
+#
+#     query_plan = QueryPlan()
+#
+#     # Query plan
+#     ts = query_plan.add_operator(
+#         SQLTableScan('lineitem.csv', 'select * from S3Object limit {};'.format(limit), 'ts', query_plan, False))
+#     c = query_plan.add_operator(Collate('c', query_plan, False))
+#
+#     ts.connect(c)
+#
+#     # Write the plan graph
+#     # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+#
+#     # Start the query
+#     query_plan.execute()
+#
+#     # Assert the results
+#     for _ in c.tuples():
+#         num_rows += 1
+#         # print("{}:{}".format(num_rows, t))
+#
+#     assert num_rows == limit + 1
+#
+#     # Write the metrics
+#     query_plan.print_metrics()
+#
+#
+# def test_abort_topk():
+#     """Executes a top k query using the top operator (which stops the scan once it has reached the target
+#     number of tuples). The results are then collated.
+#
+#     :return: None
+#     """
+#
+#     limit = 5
+#     num_rows = 0
+#
+#     query_plan = QueryPlan()
+#
+#     # Query plan
+#     ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object;', 'ts', query_plan, False))
+#     t = query_plan.add_operator(Limit(limit, 't', query_plan, False))
+#     c = query_plan.add_operator(Collate('c', query_plan, False))
+#
+#     ts.connect(t)
+#     t.connect(c)
+#
+#     # Write the plan graph
+#     # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+#
+#     # Start the query
+#     query_plan.execute()
+#
+#     # Assert the results
+#     for _ in c.tuples():
+#         num_rows += 1
+#         # print("{}:{}".format(num_rows, t))
+#
+#     assert num_rows == limit + 1
+#
+#     # Write the metrics
+#     query_plan.print_metrics()
+#
+#
+# def test_topk_empty():
+#     """Executes a topk query with no results returned. We tst this as it's somewhat peculiar with s3 select, in so much
+#     as s3 does not return column names when selecting data, meaning, unlike a traditional DBMS, no field names tuple
+#     should be present in the results.
+#
+#     :return: None
+#     """
+#
+#     limit = 500
+#     num_rows = 0
+#
+#     query_plan = QueryPlan()
+#
+#     # Query plan
+#     ts = query_plan.add_operator(
+#         SQLTableScan('lineitem.csv', 'select * from S3Object limit 0', 'ts', query_plan, False))
+#     t = query_plan.add_operator(Limit(limit, 't', query_plan, False))
+#     c = query_plan.add_operator(Collate('c', query_plan, False))
+#
+#     ts.connect(t)
+#     t.connect(c)
+#
+#     # Write the plan graph
+#     # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+#
+#     # Start the query
+#     query_plan.execute()
+#
+#     # Assert the results
+#     for _ in c.tuples():
+#         num_rows += 1
+#         # print("{}:{}".format(num_rows, t))
+#
+#     assert num_rows == 0
+#
+#     # Write the metrics
+#     query_plan.print_metrics()
 
-    :return: None
-    """
-
-    limit = 500
-    num_rows = 0
-
-    query_plan = QueryPlan()
-
-    # Query plan
-    ts = query_plan.add_operator(
-        SQLTableScan('lineitem.csv', 'select * from S3Object limit {};'.format(limit), 'ts', query_plan, False))
-    c = query_plan.add_operator(Collate('c', query_plan, False))
-
-    ts.connect(c)
-
-    # Write the plan graph
-    # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
-
-    # Start the query
-    query_plan.execute()
-
-    # Assert the results
-    for _ in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
-
-    assert num_rows == limit + 1
-
-    # Write the metrics
-    query_plan.print_metrics()
-
-
-def test_abort_topk():
-    """Executes a top k query using the top operator (which stops the scan once it has reached the target
-    number of tuples). The results are then collated.
-
-    :return: None
-    """
-
-    limit = 5
-    num_rows = 0
-
-    query_plan = QueryPlan()
-
-    # Query plan
-    ts = query_plan.add_operator(SQLTableScan('lineitem.csv', 'select * from S3Object;', 'ts', query_plan, False))
-    t = query_plan.add_operator(Limit(limit, 't', query_plan, False))
-    c = query_plan.add_operator(Collate('c', query_plan, False))
-
-    ts.connect(t)
-    t.connect(c)
-
-    # Write the plan graph
-    # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
-
-    # Start the query
-    query_plan.execute()
-
-    # Assert the results
-    for _ in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
-
-    assert num_rows == limit + 1
-
-    # Write the metrics
-    query_plan.print_metrics()
-
-
-def test_topk_empty():
-    """Executes a topk query with no results returned. We tst this as it's somewhat peculiar with s3 select, in so much
-    as s3 does not return column names when selecting data, meaning, unlike a traditional DBMS, no field names tuple
-    should be present in the results.
-
-    :return: None
-    """
-
-    limit = 500
-    num_rows = 0
-
-    query_plan = QueryPlan()
-
-    # Query plan
-    ts = query_plan.add_operator(
-        SQLTableScan('lineitem.csv', 'select * from S3Object limit 0', 'ts', query_plan, False))
-    t = query_plan.add_operator(Limit(limit, 't', query_plan, False))
-    c = query_plan.add_operator(Collate('c', query_plan, False))
-
-    ts.connect(t)
-    t.connect(c)
-
-    # Write the plan graph
-    # query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
-
-    # Start the query
-    query_plan.execute()
-
-    # Assert the results
-    for _ in c.tuples():
-        num_rows += 1
-        # print("{}:{}".format(num_rows, t))
-
-    assert num_rows == 0
-
-    # Write the metrics
-    query_plan.print_metrics()
+def test_all():
+    __test_topk_baseline('_4', 'ASC')
+    __test_topk_baseline('_4', 'DESC')
+    __test_topk_baseline('_5', 'ASC')
+    __test_topk_baseline('_5', 'DESC')
+    scale = 1
+    for i in range(4):
+        scale = pow(2, i)
+        __test_topk_with_sampling(scale, '_4', 'l_quantity', 'ASC')
+        __test_topk_with_sampling(scale, '_4', 'l_quantity', 'DESC')
+        __test_topk_with_sampling(scale, '_5', 'l_extendedprice', 'ASC')
+        __test_topk_with_sampling(scale, '_5', 'l_extendedprice', 'DESC')
 
 
 if __name__ == "__main__":
-    test_topk_baseline()
-    test_topk_with_sampling(1)
-    test_topk_with_sampling(2)
-    test_topk_with_sampling(4)
-    test_topk_with_sampling(8)
+    test_all()
+
     # test_limit_topk()
     # test_abort_topk()
     # test_topk_empty()

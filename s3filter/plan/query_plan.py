@@ -10,6 +10,7 @@ from multiprocessing import Queue
 
 import boto3
 import networkx
+from s3filter.util.constants import *
 
 from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
@@ -185,6 +186,8 @@ class QueryPlan(object):
                 o.queue.put(EvalMessage("self.op_metrics"))
                 o.op_metrics = self.listen(EvaluatedMessage).val
 
+        cost, bytes_scanned, bytes_returned, rows = self.cost()
+
         print("")
         print("Metrics")
         print("-------")
@@ -196,7 +199,10 @@ class QueryPlan(object):
         print("buffer_size: {}".format(self.buffer_size))
         print("is_parallel: {}".format(self.is_async))
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
-        print("cost: ${}".format(round(self.cost(), 7)))
+        print("total_scanned_bytes: {} MB".format(bytes_scanned * BYTE_TO_MB))
+        print("total_returned_bytes: {} MB".format(bytes_returned * BYTE_TO_MB))
+        print("total_returned_rows: {}".format(rows))
+        print("cost: ${}".format(round(cost, 7)))
 
         print("")
         print("Operators")
@@ -290,6 +296,7 @@ class QueryPlan(object):
         if self.is_async:
             map(lambda o: o.queue.put(StopMessage()), self.operators.values())
             self.join()
+            map(lambda o: o.queue.close(), self.operators.values())
         else:
             pass
 
@@ -304,12 +311,18 @@ class QueryPlan(object):
         scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
 
         total_cost = 0
+        total_scanned_bytes = 0
+        total_returned_bytes = 0
+        total_rows = 0
 
         for op in scan_operators:
             if op.is_completed():
                 total_cost += op.op_metrics.cost()
+                total_returned_bytes += op.op_metrics.bytes_returned
+                total_scanned_bytes += op.op_metrics.bytes_scanned
+                total_rows += op.op_metrics.rows_returned
             else:
                 raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
                                 .format(op.name))
 
-        return total_cost
+        return total_cost, total_scanned_bytes, total_returned_bytes, total_rows
