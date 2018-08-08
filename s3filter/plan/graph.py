@@ -10,6 +10,7 @@ from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.map import Map
 from s3filter.op.nested_loop_join import NestedLoopJoin
+from s3filter.op.sql_table_scan import SQLTableScan
 
 
 class Graph(object):
@@ -29,8 +30,15 @@ class Graph(object):
         :return: None
         """
         if type(operator) is Map:
-            self.graph.add_node(operator.name, label="{}\n({}, '{}')"
-                                .format(operator.__class__.__name__, operator.name, operator.map_field_name), shape="box")
+            self.graph.add_node(operator.name,
+                                label="{}\n({}, '{}')".format(operator.__class__.__name__, operator.name,
+                                                              operator.map_field_name),
+                                shape="box")
+        elif type(operator) is SQLTableScan:
+            self.graph.add_node(operator.name,
+                                label="{}\n({})".format(operator.__class__.__name__, operator.name),
+                                tooltip="key: '{}'&#10;sql: '{}'".format(operator.s3key, operator.s3sql),
+                                shape="box")
         else:
             self.graph.add_node(operator.name, label="{}\n({})"
                                 .format(operator.__class__.__name__, operator.name), shape="box")

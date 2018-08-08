@@ -16,7 +16,7 @@ from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.query.tpch import get_file_key
-
+import pandas as pd
 
 def collate_op(name, query_plan):
     return Collate(name, query_plan, False)
@@ -182,8 +182,14 @@ def filter_lineitem_quantity_op(name, query_plan):
 
 
 def filter_brand_container_op(name, query_plan):
+
+    def pd_expr(df):
+        # df['_10'] = pd.to_datetime(df['_10'])
+        return (df['p_brand'] == 'Brand#41') & (
+                df['p_container'] == 'SM PACK')
+
     return Filter(
-        PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and t_['p_container'] == 'SM PACK'),
+        PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and t_['p_container'] == 'SM PACK', pd_expr),
         name, query_plan,
         False)
 
@@ -225,6 +231,23 @@ def group_partkey_avg_quantity_op(name, query_plan):
         name, query_plan,
         True)
 
+def group_partkey_avg_quantity_5_op(name, query_plan):
+    """with lineitem_part_avg_group as (select avg(l_quantity) from part_lineitem_join group by l_partkey)
+
+    :param query_plan:
+    :param name:
+    :return:
+    """
+    return Group(
+        ['l_partkey'],  # l_partkey
+        [
+            # avg(l_quantity)
+            # AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_['l_quantity']))
+            AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_[5]))
+        ],
+        name, query_plan,
+        True)
+
 
 def sql_scan_lineitem_select_all_op(name, query_plan):
     return SQLTableScan('lineitem.csv',
@@ -246,41 +269,51 @@ def sql_scan_part_select_all_op(name, query_plan):
                         False)
 
 
-def sql_scan_lineitem_select_all_where_partkey_op(name, query_plan):
+def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
     :param query_plan:
     :param name:
     :return:
     """
-    return SQLTableScan('lineitem.csv',
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  * "
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '182405' ", False,
-                        name, query_plan,
-                        False)
+                        "  l_partkey = '182405' ",
+                        use_pandas,
+                        name,
+                        query_plan,
+                        True)
 
 
-def sql_scan_part_select_all_where_brand_and_container_op(name, query_plan):
+def sql_scan_part_select_all_where_brand_and_container_op(sharded, shard, num_shards, use_pandas, name, query_plan):
     """with part_scan as (select * from part)
 
     :param query_plan:
     :param name:
     :return:
     """
-    return SQLTableScan('part.csv',
+
+    key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
+    key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
+
+    return SQLTableScan(get_file_key('part', sharded, shard),
                         "select "
                         "  * "
                         "from "
                         "  S3Object "
                         "where "
                         "  p_brand = 'Brand#41' and "
-                        "  p_container = 'SM PACK' ", False,
-                        name, query_plan,
-                        False)
+                        "  p_container = 'SM PACK' and "
+                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        .format(key_lower, key_upper),
+                        use_pandas,
+                        name,
+                        query_plan,
+                        True)
 
 
 def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op(sharded, shard, num_shards,
