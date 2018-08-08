@@ -18,6 +18,7 @@ from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.query.tpch import get_file_key
 import pandas as pd
 
+
 def collate_op(name, query_plan):
     return Collate(name, query_plan, False)
 
@@ -182,7 +183,6 @@ def filter_lineitem_quantity_op(name, query_plan):
 
 
 def filter_brand_container_op(name, query_plan):
-
     def pd_expr(df):
         # df['_10'] = pd.to_datetime(df['_10'])
         return (df['p_brand'] == 'Brand#41') & (
@@ -230,6 +230,7 @@ def group_partkey_avg_quantity_op(name, query_plan):
         ],
         name, query_plan,
         True)
+
 
 def group_partkey_avg_quantity_5_op(name, query_plan):
     """with lineitem_part_avg_group as (select avg(l_quantity) from part_lineitem_join group by l_partkey)
@@ -405,13 +406,18 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_par
                                 False)
 
 
-def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_partkey_op(name, query_plan):
-    return SQLTableScanBloomUse('lineitem.csv',
+def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_partkey_op(sharded,
+                                                                                        shard,
+                                                                                        num_shards,
+                                                                                        use_pandas,
+                                                                                        name, query_plan):
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
                                 "select "
                                 "  l_orderkey, l_partkey, l_quantity, l_extendedprice "
                                 "from "
                                 "  S3Object ",
-                                'l_partkey', False,
+                                'l_partkey',
+                                use_pandas,
                                 name, query_plan,
                                 False)
 
