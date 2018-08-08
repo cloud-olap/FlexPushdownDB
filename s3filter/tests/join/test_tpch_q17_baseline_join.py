@@ -118,13 +118,11 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                       query_plan.add_operator(tpch_q17.filter_brand_container_op(
                           'part_filter' + '_' + str(p),
                           query_plan)),
-                       range(0, part_parts))
+                      range(0, part_parts))
 
     part_map = map(lambda p:
                    query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, True)),
                    range(0, part_parts))
-
-
 
     lineitem_map = map(lambda p:
                        query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, True)),
@@ -158,7 +156,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     lineitem_part_avg_group = map(lambda p:
                                   query_plan.add_operator(
                                       tpch_q17.group_partkey_avg_quantity_5_op('lineitem_part_avg_group' + '_' + str(p),
-                                                                             query_plan)),
+                                                                               query_plan)),
                                   range(0, part_parts))
 
     lineitem_part_avg_group_project = map(lambda p:

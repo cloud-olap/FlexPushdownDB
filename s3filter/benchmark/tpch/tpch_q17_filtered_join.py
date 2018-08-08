@@ -24,7 +24,7 @@ def main():
     elif s3filter.util.constants.TPCH_SF == 1:
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32, part_parts=4)
+        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=1, part_parts=1)
 
 
 def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
@@ -91,7 +91,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                    query_plan.add_operator(
                                        HashJoinBuild('p_partkey',
                                                      'part_lineitem_join_build' + '_' + str(p), query_plan,
-                                                     False)),
+                                                     True)),
                                    range(0, part_parts))
 
     part_lineitem_join_probe = map(lambda p:
@@ -244,7 +244,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
         assert round(float(tuples[1][0]),
                      10) == 372414.2899999995  # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
     elif s3filter.util.constants.TPCH_SF == 1:
-        assert round(float(tuples[1][0]), 10) == 372414.29
+        assert round(float(tuples[1][0]), 10) == 372414.2900000001
 
 
 if __name__ == "__main__":

@@ -83,6 +83,16 @@ def project_lineitem_orderkey_partkey_quantity_extendedprice_op(name, query_plan
     :param name:
     :return:
     """
+
+    def fn(df):
+        # return df[['_0', '_1', '_2']]
+
+        df = df.filter(items=['_0', '_1', '_4', '_5'], axis=1)
+
+        df.rename(columns={'_0': 'l_orderkey', '_1': 'l_partkey', '_4': 'l_quantity', '_5': 'l_extendedprice'}, inplace=True)
+
+        return df
+
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'l_orderkey'),
@@ -91,7 +101,7 @@ def project_lineitem_orderkey_partkey_quantity_extendedprice_op(name, query_plan
             ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice')
         ],
         name, query_plan,
-        False)
+        True, fn)
 
 
 def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, query_plan):
@@ -130,6 +140,17 @@ def project_partkey_brand_container_op(name, query_plan):
     :param name:
     :return:
     """
+
+    def fn(df):
+        # return df[['_0', '_1', '_2']]
+
+        df = df.filter(items=['_0', '_3', '_6'], axis=1)
+
+        df.rename(columns={'_0': 'p_partkey', '_3': 'p_brand', '_6': 'p_container'},
+                  inplace=True)
+
+        return df
+
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
@@ -137,7 +158,7 @@ def project_partkey_brand_container_op(name, query_plan):
             ProjectExpression(lambda t_: t_['_6'], 'p_container')
         ],
         name, query_plan,
-        False)
+        False, fn)
 
 
 def project_partkey_avg_quantity_op(name, query_plan):
@@ -191,7 +212,7 @@ def filter_brand_container_op(name, query_plan):
     return Filter(
         PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and t_['p_container'] == 'SM PACK', pd_expr),
         name, query_plan,
-        False)
+        True)
 
 
 def join_l_partkey_p_partkey_op(name, query_plan):
@@ -250,24 +271,35 @@ def group_partkey_avg_quantity_5_op(name, query_plan):
         True)
 
 
-def sql_scan_lineitem_select_all_op(name, query_plan):
-    return SQLTableScan('lineitem.csv',
+def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ", False,
-                        name, query_plan,
-                        False)
+                        "  S3Object ",
+                        use_pandas,
+                        name,
+                        query_plan,
+                        True)
 
 
-def sql_scan_part_select_all_op(name, query_plan):
-    return SQLTableScan('part.csv',
+def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+
+    key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
+    key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
+
+    return SQLTableScan(get_file_key('part', sharded, shard),
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ", False,
-                        name, query_plan,
-                        False)
+                        "  S3Object "
+                        "where "
+                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        .format(key_lower, key_upper),
+                        use_pandas,
+                        name,
+                        query_plan,
+                        True)
 
 
 def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
