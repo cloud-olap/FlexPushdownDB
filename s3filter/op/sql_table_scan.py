@@ -186,6 +186,9 @@ class SQLTableScan(Operator):
 
             op.op_metrics.rows_returned += len(df)
 
+            # if op.log_enabled:
+            #     print("{}('{}') | Sending field values: {}".format(op.__class__.__name__, op.name, df))
+
             buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
             if len(buffer_) >= 8192: #65536: #8192
                 op.send(buffer_, op.consumers)
