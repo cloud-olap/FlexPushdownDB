@@ -20,7 +20,7 @@ import pandas as pd
 import numpy as np
 
 def main():
-    run(['G1'], ['F0'], parallel=True, use_pandas=True, buffer_size=0, table_parts=2)
+    run(['G0', 'G1'], ['F0', 'F1'], parallel=True, use_pandas=True, buffer_size=0, table_parts=2)
 
 def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts):
     """
@@ -74,7 +74,7 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
-    
+
     map(lambda (p, o): o.connect(project[p]), enumerate(scan))
     map(lambda (p, o): o.connect(groupby[p]), enumerate(project))
     map(lambda (p, o): o.connect(groupby_reduce), enumerate(groupby))

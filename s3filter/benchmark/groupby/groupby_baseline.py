@@ -20,7 +20,8 @@ import pandas as pd
 import numpy as np
 
 def main():
-    run(['G2', 'G1'], ['F0', 'F1', 'F2'], parallel=True, use_pandas=True, buffer_size=0, table_parts=2)
+    table_parts = 100
+    run(['G0', 'G1'], ['F0', 'F1'], parallel=True, use_pandas=True, buffer_size=0, table_parts=2)
 
 def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts):
     """
@@ -48,6 +49,7 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
     def project_fn(df):
         df.columns = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9',
                       'F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9',]
+        df = df.filter(items=group_fields + agg_fields, axis=1)
         return df
    
     project_exprs = [ProjectExpression(lambda t_: t_['_{}'.format(x)], 'G{}'.format(x)) for x in range(10)] \
@@ -60,6 +62,7 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
 
     # Groupby
     def groupby_fn(df):
+        
         df[agg_fields] = df[agg_fields].astype(np.float)
         grouped = df.groupby(group_fields)
         agg_df = pd.DataFrame({f: grouped[f].sum() for n, f in enumerate(agg_fields)})
@@ -75,7 +78,14 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
-    
+
+    #profile_path = '../benchmark-output/groupby/'
+    #scan[0].set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_scan_0" + ".prof"))
+    #project[0].set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_project_0" + ".prof"))
+    #groupby[0].set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_groupby_0" + ".prof"))
+    #groupby_reduce.set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_groupby_reduce" + ".prof"))
+    #collate.set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_collate" + ".prof"))
+
     map(lambda (p, o): o.connect(project[p]), enumerate(scan))
     map(lambda (p, o): o.connect(groupby[p]), enumerate(project))
     map(lambda (p, o): o.connect(groupby_reduce), enumerate(groupby))

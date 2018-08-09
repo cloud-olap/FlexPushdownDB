@@ -1,14 +1,14 @@
 - create an EC2 instance on AWS  
 
-sudo yum -y update
-sudo yum install wget
+sudo apt -y update
+sudo apt -y install python-minimal graphviz libgraphviz-dev graphviz-dev pkg-config python-pip awscli
+pip install numpy pandas agate pygraphviz cython pytest boto3 networkx --user
 
-# enable EPEL repository
-wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-sudo rpm -ivh epel-release-latest-7.noarch.rpm
 
-sudo yum install -y awscli
-sudo yum install -y python-pip
-sudo pip install --upgrade pip
-sudo pip install boto3
-pip install --user --upgrade awscli
+# install primesieve
+git clone --recursive https://github.com/hickford/primesieve-python
+cd primesieve-python
+pip install . --upgrade
+
+export PYTHONPATH=/home/ubuntu/s3filter
+

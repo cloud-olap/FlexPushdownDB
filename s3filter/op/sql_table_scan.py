@@ -8,8 +8,8 @@ import time
 from boto3 import Session
 from botocore.config import Config
 
-from s3filter.op.message import TupleMessage
-from s3filter.op.operator_base import Operator
+from s3filter.op.message import TupleMessage, StringMessage
+from s3filter.op.operator_base import Operator, StartMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
@@ -78,8 +78,16 @@ class SQLTableScan(Operator):
 
     """
 
-    def on_receive(self, message, producer_name):
-        raise NotImplementedError
+    def on_receive(self, ms, producer_name):
+        for m in ms:
+            if type(m) is StringMessage:
+                self.s3sql = m.string_
+                if self.async_:
+                    self.query_plan.send(StartMessage(), self.name)
+                else:
+                    self.run()
+            else:
+                raise Exception("Unrecognized message {}".format(m))
 
     def __init__(self, s3key, s3sql, use_pandas, name, query_plan, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
@@ -186,22 +194,15 @@ class SQLTableScan(Operator):
 
             op.op_metrics.rows_returned += len(df)
 
-            buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
-            if len(buffer_) >= 8192: #65536: #8192
-                op.send(buffer_, op.consumers)
-                buffer_ = pd.DataFrame()
+            op.send(df, op.consumers)
+            #buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
+            #print len(buffer_)
+            #if len(buffer_) >= op.buffer_size: 
+            #   op.send(buffer_, op.consumers)
+            #   buffer_ = pd.DataFrame()
 
         if len(buffer_) > 0:
             op.send(buffer_, op.consumers)
             del buffer_
 
         return cur
-
-    def on_producer_completed(self, producer_name):
-        """This event is overridden really just to indicate that it never fires.
-
-        :param producer_name: The completed producer
-        :return: None
-        """
-
-        raise NotImplementedError

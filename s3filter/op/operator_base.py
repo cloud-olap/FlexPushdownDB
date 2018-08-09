@@ -303,7 +303,7 @@ class Operator(object):
 
             if self.buffered_size >= self.buffer_size:
                 for (o, messages) in self.__buffers.items():
-                    self.do_send(messages, o)
+                    self.do_send(messages, [o])
                     self.__buffers[o.name] = []
 
             self.buffered_size = 0
@@ -359,12 +359,17 @@ class Operator(object):
 
             self.__completed = True
 
+            for (o, messages) in self.__buffers.items():
+                self.do_send( messages, [o] )
+                self.__buffers[o.name] = []
+
             # Flush the buffer
-            for c in self.consumers:
-                if c.async_:
-                    self.query_plan.send([self.__buffer, self.name], c.name)
-                else:
-                    self.fire_on_receive(self.__buffer, c)
+            #for c in self.consumers:
+            #    print("[operator_base] {} sends to {}".format(self.name, c.name))
+            #    if c.async_:
+            #        self.query_plan.send([self.__buffer, self.name], c.name)
+            #    else:
+            #        self.fire_on_receive(self.__buffer, c)
 
             self.__buffer = []
 
