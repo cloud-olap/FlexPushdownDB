@@ -311,7 +311,7 @@ class Operator(object):
     def do_send(self, messages, op):
 
         # Should really be if the operator is async not this
-        if self.async_:
+        if op.async_:
             self.query_plan.send([messages, self.name], op.name)
         else:
             self.fire_on_receive(messages, op)

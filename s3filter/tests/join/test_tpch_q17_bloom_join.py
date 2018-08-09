@@ -274,4 +274,4 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    assert round(float(tuples[1][0]), 10) == 1274.9142857143
+    assert round(float(tuples[1][0]), 10) == 4632.1085714286

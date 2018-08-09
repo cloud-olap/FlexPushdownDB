@@ -73,7 +73,7 @@ def project_partkey_op(name, query_plan):
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey')
         ],
         name, query_plan,
-        True, fn)
+        False, fn)
 
 
 def project_lineitem_orderkey_partkey_quantity_extendedprice_op(name, query_plan):
@@ -101,7 +101,7 @@ def project_lineitem_orderkey_partkey_quantity_extendedprice_op(name, query_plan
             ProjectExpression(lambda t_: t_['_5'], 'l_extendedprice')
         ],
         name, query_plan,
-        True, fn)
+        False, fn)
 
 
 def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, query_plan):
@@ -130,7 +130,7 @@ def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, q
             ProjectExpression(lambda t_: t_['_3'], 'l_extendedprice')
         ],
         name, query_plan,
-        True, fn)
+        False, fn)
 
 
 def project_partkey_brand_container_op(name, query_plan):
@@ -176,7 +176,7 @@ def project_partkey_avg_quantity_op(name, query_plan):
             ProjectExpression(lambda t_: 0.2 * t_['_1'], 'avg_l_quantity_computed00')
         ],
         name, query_plan,
-        True)
+        False)
 
 
 def aggregate_sum_extendedprice_op(name, query_plan):
@@ -189,7 +189,7 @@ def aggregate_sum_extendedprice_op(name, query_plan):
     :return:
     """
     return Aggregate([AggregateExpression(AggregateExpression.SUM, lambda t_: float(t_['l_extendedprice']))],
-                     name, query_plan, True)
+                     name, query_plan, False)
 
 
 def filter_lineitem_quantity_op(name, query_plan):
@@ -205,14 +205,14 @@ def filter_lineitem_quantity_op(name, query_plan):
 
 def filter_brand_container_op(name, query_plan):
     def pd_expr(df):
-        # df['_10'] = pd.to_datetime(df['_10'])
+
         return (df['p_brand'] == 'Brand#41') & (
                 df['p_container'] == 'SM PACK')
 
     return Filter(
         PredicateExpression(lambda t_: t_['p_brand'] == 'Brand#41' and t_['p_container'] == 'SM PACK', pd_expr),
         name, query_plan,
-        True)
+        False)
 
 
 def join_l_partkey_p_partkey_op(name, query_plan):
@@ -250,7 +250,7 @@ def group_partkey_avg_quantity_op(name, query_plan):
             AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_[3]))
         ],
         name, query_plan,
-        True)
+        False)
 
 
 def group_partkey_avg_quantity_5_op(name, query_plan):
@@ -268,7 +268,7 @@ def group_partkey_avg_quantity_5_op(name, query_plan):
             AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_[5]))
         ],
         name, query_plan,
-        True)
+        False)
 
 
 def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
@@ -280,7 +280,7 @@ def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, name
                         use_pandas,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
 def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
@@ -294,12 +294,12 @@ def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, name, qu
                         "from "
                         "  S3Object "
                         "where "
-                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        "  cast(p_partkey as int) > {} and cast(p_partkey as int) <= {} "
                         .format(key_lower, key_upper),
                         use_pandas,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
 def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
@@ -315,7 +315,7 @@ def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, us
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '182405' ",
+                        "  l_partkey in ('181726', '182405') ",
                         use_pandas,
                         name,
                         query_plan,
@@ -363,7 +363,7 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partk
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '182405' ",
+                        "  l_partkey in ('181726', '182405') ",
                         use_pandas,
                         name,
                         query_plan,
@@ -385,11 +385,11 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(sharded, sh
                         "from "
                         "  S3Object ",
                         # "where "
-                        # "  l_partkey = '182405' or l_partkey = '198'",
+                        # "  l_partkey in ('181726', '182405')",
                         use_pandas,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
 def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards, use_pandas, name, query_plan):
@@ -411,11 +411,11 @@ def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards,
                         "where "
                         "  p_brand = 'Brand#41' and "
                         "  p_container = 'SM PACK' and "
-                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
+                        "  cast(p_partkey as int) > {} and cast(p_partkey as int) <= {} "
                         .format(key_lower, key_upper),
                         use_pandas,
                         name, query_plan,
-                        True)
+                        False)
 
 
 def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(sharded,
@@ -430,7 +430,7 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_par
                                 "from "
                                 "  S3Object "
                                 "where "
-                                "  l_partkey = '182405' ",
+                                "  l_partkey in ('181726', '182405') ",
                                 'l_partkey',
                                 use_pandas,
                                 name,

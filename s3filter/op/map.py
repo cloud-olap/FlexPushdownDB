@@ -54,8 +54,6 @@ class Map(Operator):
         :return: None
         """
 
-        operators = []
-
         consumer_indexes = pd.to_numeric(df[self.map_field_name]) % len(self.consumers)
         grouped = df.groupby(consumer_indexes)
         for idx, df in grouped:
@@ -64,7 +62,7 @@ class Map(Operator):
 
             # if self.log_enabled:
             #     print("{}('{}') | Mapped dataframe {} to operator {}"
-            #           .format(self.__class__.__name__, self.name, df, [o.name for o in operators]))
+            #           .format(self.__class__.__name__, self.name, df, operator))
 
     def __on_receive_tuple(self, tuple_):
         """Event handler for a received tuple

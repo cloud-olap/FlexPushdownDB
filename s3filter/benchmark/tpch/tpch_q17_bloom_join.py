@@ -5,6 +5,8 @@
 
 import os
 
+import numpy
+
 from s3filter import ROOT_DIR
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -267,7 +269,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     if s3filter.util.constants.TPCH_SF == 10:
         assert round(float(tuples[1][0]), 10) == 372414.2899999995  # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
     elif s3filter.util.constants.TPCH_SF == 1:
-        assert round(float(tuples[1][0]), 10) == 372414.2900000001
+        numpy.testing.assert_almost_equal(float(tuples[1][0]), 372414.29)
 
 
 if __name__ == "__main__":
