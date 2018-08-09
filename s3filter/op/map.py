@@ -30,31 +30,31 @@ class Map(Operator):
 
         self.map_field_name = map_field_name
 
-    def on_receive(self, ms, _producer):
+        self.producers_received = {}
+
+    def on_receive(self, ms, producer_name):
         """Handles the event of receiving a message from a producer.
 
         :param ms: The received messages
-        :param _producer: The producer of the tuple
+        :param producer_name: The producer of the tuple
         :return: None
         """
 
         # print("Collate | {}".format(t))
         for m in ms:
             if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_)
+                self.__on_receive_tuple(m.tuple_, producer_name)
             elif type(m) is DataFrame:
-                self.__on_receive_dataframe(m)
+                self.__on_receive_dataframe(m, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __on_receive_dataframe(self, df):
+    def __on_receive_dataframe(self, df,producer_name):
         """Event handler for a received tuple
 
         :param tuple_: The received tuple
         :return: None
         """
-
-        operators = []
 
         consumer_indexes = pd.to_numeric(df[self.map_field_name]) % len(self.consumers)
         grouped = df.groupby(consumer_indexes)
@@ -64,9 +64,9 @@ class Map(Operator):
 
             # if self.log_enabled:
             #     print("{}('{}') | Mapped dataframe {} to operator {}"
-            #           .format(self.__class__.__name__, self.name, df, [o.name for o in operators]))
+            #           .format(self.__class__.__name__, self.name, df, operator))
 
-    def __on_receive_tuple(self, tuple_):
+    def __on_receive_tuple(self, tuple_, producer_name):
         """Event handler for a received tuple
 
         :param tuple_: The received tuple
@@ -76,8 +76,14 @@ class Map(Operator):
         if self.field_names is None:
             self.field_names = tuple_
             self.send(TupleMessage(tuple_), self.consumers)
+            self.producers_received[producer_name] = True
         else:
-            it = IndexedTuple.build(tuple_, self.field_names)
 
-            idx = int(it[self.map_field_name]) % len(self.consumers)
-            self.send(TupleMessage(tuple_), [self.consumers[idx]])
+            if producer_name not in self.producers_received.keys():
+                # Will be field names, skip
+                self.producers_received[producer_name] = True
+            else:
+                it = IndexedTuple.build(tuple_, self.field_names)
+
+                idx = int(it[self.map_field_name]) % len(self.consumers)
+                self.send(TupleMessage(tuple_), [self.consumers[idx]])

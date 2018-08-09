@@ -38,7 +38,8 @@ class Collate(Operator):
 
         if self.async_:
             self.queue.put(EvalMessage("self.local_tuples()"))
-            tuples = self.query_plan.listen(EvaluatedMessage).val
+            item = self.query_plan.listen(EvaluatedMessage)
+            tuples = item.val
             return tuples
         else:
             return self.__tuples

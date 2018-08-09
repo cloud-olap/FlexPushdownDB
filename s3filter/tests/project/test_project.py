@@ -189,7 +189,7 @@ def test_project_perf():
     num_rows = 10000
     profile_file_name = os.path.join(ROOT_DIR, "../tests-output/" + gen_test_id() + ".prof")
 
-    query_plan = QueryPlan(is_async=False, buffer_size=0)
+    query_plan = QueryPlan(is_async=True, buffer_size=0)
 
     # Query plan
     random_col_defs = [
@@ -227,12 +227,18 @@ def test_project_perf():
     # Start the query
     query_plan.execute()
 
-    # collate.print_tuples()
+    tuples = collate.tuples()
+
+    collate.print_tuples(tuples)
+
+    # Write the metrics
+    query_plan.print_metrics()
+
+    query_plan.stop()
 
     # Write the metrics
     s = pstats.Stats(profile_file_name)
     s.strip_dirs().sort_stats("time").print_stats()
-    query_plan.print_metrics()
 
-    # Assert the results
-    assert len(collate.tuples()) == num_rows + 1
+    assert len(tuples) == num_rows + 1
+

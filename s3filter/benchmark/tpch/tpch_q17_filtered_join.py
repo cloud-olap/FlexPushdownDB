@@ -5,6 +5,8 @@
 
 import os
 
+import numpy
+
 from s3filter import ROOT_DIR
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -50,17 +52,6 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                             query_plan)),
                     range(0, part_parts))
 
-    part_project = map(lambda p:
-                       query_plan.add_operator(
-                           tpch_q17.project_partkey_op(
-                               'part_project' + '_' + str(p),
-                               query_plan)),
-                       range(0, part_parts))
-
-    part_map = map(lambda p:
-                   query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, True)),
-                   range(0, part_parts))
-
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
                             tpch_q17.sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(
@@ -72,9 +63,20 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                 query_plan)),
                         range(0, lineitem_parts))
 
+    part_project = map(lambda p:
+                       query_plan.add_operator(
+                           tpch_q17.project_partkey_op(
+                               'part_project' + '_' + str(p),
+                               query_plan)),
+                       range(0, part_parts))
+
+    part_map = map(lambda p:
+                   query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
+                   range(0, part_parts))
+
     lineitem_map = map(lambda p:
-                       query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, True)),
-                   range(0, lineitem_parts))
+                       query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
+                       range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:
                            query_plan.add_operator(
@@ -98,7 +100,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                    query_plan.add_operator(
                                        HashJoinProbe(JoinExpression('p_partkey', 'l_partkey'),
                                                      'part_lineitem_join_probe' + '_' + str(p),
-                                                     query_plan, True)),
+                                                     query_plan, False)),
                                    range(0, part_parts))
 
     lineitem_part_avg_group = map(lambda p:
@@ -131,7 +133,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                                       HashJoinProbe(JoinExpression('l_partkey', 'p_partkey'),
                                                                     'part_lineitem_join_avg_group_join_probe' + '_' + str(
                                                                         p),
-                                                                    query_plan, True)),
+                                                                    query_plan, False)),
                                                   range(0, part_parts))
 
     lineitem_filter = map(lambda p:
@@ -156,9 +158,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
             False))
 
     extendedprice_sum_aggregate_project = query_plan.add_operator(
-        tpch_q17.project_avg_yearly_op(
-            'extendedprice_sum_aggregate_project',
-            query_plan))
+        tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project', query_plan))
 
     collate = query_plan.add_operator(tpch_q17.collate_op('collate', query_plan))
 
@@ -176,7 +176,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     # part_lineitem_join.connect(lineitem_part_avg_group)
     map(lambda (p1, o1): map(lambda (p2, o2): o1.connect(o2), enumerate(part_lineitem_join_build)), enumerate(part_map))
     map(lambda (p, o): part_lineitem_join_probe[p].connect_build_producer(o), enumerate(part_lineitem_join_build))
-    map(lambda (p1, o1): map(lambda (p2, o2): o2.connect_tuple_producer(o1), enumerate(part_lineitem_join_probe)), enumerate(lineitem_map))
+    map(lambda (p1, o1): map(lambda (p2, o2): o2.connect_tuple_producer(o1), enumerate(part_lineitem_join_probe)),
+        enumerate(lineitem_map))
     map(lambda (p, o): o.connect(lineitem_part_avg_group[p]), enumerate(part_lineitem_join_probe))
 
     # map(lambda (p, o): o.map(Mapper('_1', 1, part_lineitem_join_probe)), enumerate(lineitem_scan))
@@ -242,9 +243,10 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     if s3filter.util.constants.TPCH_SF == 10:
-        assert round(float(tuples[1][0]), 10) == 372414.2899999995 # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
+        assert round(float(tuples[1][0]),
+                     10) == 372414.2899999995  # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
     elif s3filter.util.constants.TPCH_SF == 1:
-        assert round(float(tuples[1][0]), 10) == 372414.29
+        numpy.testing.assert_almost_equal(float(tuples[1][0]), 372414.29)
 
 
 if __name__ == "__main__":

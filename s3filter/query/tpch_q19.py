@@ -1,6 +1,7 @@
 """Reusable query elements for tpch q19
 
 """
+import math
 
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -13,20 +14,21 @@ from s3filter.op.predicate_expression import PredicateExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
+from s3filter.query.tpch import get_file_key
 
 
-def collate_op(query_plan):
-    return Collate('collate', query_plan, False)
+def collate_op(name, query_plan):
+    return Collate(name, query_plan, False)
 
 
-def aggregate_def(query_plan):
+def aggregate_def(name, query_plan):
     return Aggregate(
         [
             AggregateExpression(
                 AggregateExpression.SUM,
                 lambda t_: float(t_['l_extendedprice']) * float((1 - float(t_['l_discount']))))
         ],
-        'aggregate',
+        name,
         query_plan, False)
 
 
@@ -34,16 +36,16 @@ def join_op(query_plan):
     return HashJoin(JoinExpression('l_partkey', 'p_partkey'), 'lineitem_part_join', query_plan, False)
 
 
-def aggregate_project_def(query_plan):
+def aggregate_project_def(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'revenue')
         ],
-        'aggregate_project',
+        name,
         query_plan, False)
 
 
-def filter_def(query_plan):
+def filter_def(name, query_plan):
     return Filter(
         PredicateExpression(lambda t_:
                             (
@@ -68,11 +70,12 @@ def filter_def(query_plan):
                                     t_['l_shipmode'] in ['AIR', 'AIR REG'] and
                                     t_['l_shipinstruct'] == 'DELIVER IN PERSON'
                             )),
-        'filter',
-        query_plan, False)
+        name,
+        query_plan,
+        False)
 
 
-def project_partkey_brand_size_container_op(query_plan):
+def project_partkey_brand_size_container_op(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
@@ -80,11 +83,12 @@ def project_partkey_brand_size_container_op(query_plan):
             ProjectExpression(lambda t_: t_['_5'], 'p_size'),
             ProjectExpression(lambda t_: t_['_6'], 'p_container')
         ],
-        'part_project',
-        query_plan, False)
+        name,
+        query_plan,
+        False)
 
 
-def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op(query_plan):
+def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_1'], 'l_partkey'),
@@ -94,61 +98,81 @@ def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op(que
             ProjectExpression(lambda t_: t_['_13'], 'l_shipinstruct'),
             ProjectExpression(lambda t_: t_['_14'], 'l_shipmode')
         ],
-        'lineitem_project',
-        query_plan, False)
+        name,
+        query_plan,
+        False)
 
 
-def sql_scan_part_select_all_where_partkey_op(query_plan):
-    return SQLTableScan('part.csv',
+def sql_scan_part_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+    return SQLTableScan(get_file_key('part', sharded, shard),
                         "select "
                         "  * "
                         "from "
                         "  S3Object "
                         "where "
-                        "  p_partkey = '103853' or "
-                        "  p_partkey = '104277' or "
-                        "  p_partkey = '104744' ", False,
-                        'part_scan',
+                        "  ("
+                        "    p_partkey = '103853' or "
+                        "    p_partkey = '104277' or "
+                        "    p_partkey = '104744'"
+                        "  ) {}"
+                        .format(get_sql_suffix('part', num_shards, shard, sharded)),
+                        use_pandas,
+                        name,
                         query_plan, False)
 
 
-def sql_scan_lineitem_select_all_where_partkey_op(query_plan):
-    return SQLTableScan('lineitem.csv',
+def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  * "
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '103853' or "
-                        "  l_partkey = '104277' or "
-                        "  l_partkey = '104744' ", False,
-                        'lineitem_scan',
+                        "  ("
+                        "    l_partkey = '103853' or "
+                        "    l_partkey = '104277' or "
+                        "    l_partkey = '104744' "
+                        "  ) {}"
+                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
+                        use_pandas,
+                        name,
                         query_plan, False)
 
 
-def sql_scan_part_select_all_op(query_plan):
-    return SQLTableScan('part.csv',
+def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+    return SQLTableScan(get_file_key('part', sharded, shard),
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ", False,
-                        'part_scan',
+                        "  S3Object "
+                        "{} "
+                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded, add_where=True)),
+                        use_pandas,
+                        name,
                         query_plan, False)
 
 
-def sql_scan_lineitem_select_all_op(query_plan):
-    return SQLTableScan('lineitem.csv',
+def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  * "
                         "from "
-                        "  S3Object ", False,
-                        'lineitem_scan',
+                        "  S3Object "
+                        "{} "
+                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded, add_where=True)),
+                        use_pandas,
+                        name,
                         query_plan, False)
 
 
-def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(use_pandas,
-                                                                                                     query_plan):
-    return SQLTableScanBloomUse('lineitem.csv',
+def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(
+        sharded,
+        shard,
+        num_shards,
+        use_pandas,
+        name,
+        query_plan):
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
                                 "select "
                                 "  l_partkey, "
                                 "  l_quantity, "
@@ -159,9 +183,11 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "from "
                                 "  S3Object "
                                 "where "
-                                "  l_partkey = '103853' or "
-                                "  l_partkey = '104277' or "
-                                "  l_partkey = '104744' and "
+                                "  ("
+                                "    l_partkey = '103853' or "
+                                "    l_partkey = '104277' or "
+                                "    l_partkey = '104744' "
+                                "  ) and "
                                 "  ( "
                                 "      ( "
                                 "          cast(l_quantity as integer) >= 3 "
@@ -183,14 +209,23 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "          and l_shipmode in ('AIR', 'AIR REG') "
                                 "          and l_shipinstruct = 'DELIVER IN PERSON' "
                                 "      ) "
-                                "  ) ",
-                                'l_partkey', use_pandas,
-                                'lineitem_bloom_use',
-                                query_plan, False)
+                                "  ) {}"
+                                .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
+                                'l_partkey',
+                                use_pandas,
+                                name,
+                                query_plan,
+                                False)
 
 
-def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(query_plan):
-    return SQLTableScanBloomUse('lineitem.csv',
+def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(
+        sharded,
+        shard,
+        num_shards,
+        use_pandas,
+        name,
+        query_plan):
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
                                 "select "
                                 "  l_partkey, "
                                 "  l_quantity, "
@@ -222,15 +257,23 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "          and l_shipmode in ('AIR', 'AIR REG') "
                                 "          and l_shipinstruct = 'DELIVER IN PERSON' "
                                 "      ) "
-                                "  ) ",
-                                'l_partkey', False,
-                                'lineitem_bloom_use',
-                                query_plan, False)
+                                "  ) {}"
+                                .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
+                                'l_partkey',
+                                use_pandas,
+                                name,
+                                query_plan,
+                                False)
 
 
 def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(
+        sharded,
+        shard,
+        num_shards,
+        use_pandas,
+        name,
         query_plan):
-    return SQLTableScan('lineitem.csv',
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  l_partkey, "
                         "  l_quantity, "
@@ -241,9 +284,11 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "from "
                         "  S3Object "
                         "where "
-                        "  l_partkey = '103853' or "
-                        "  l_partkey = '104277' or "
-                        "  l_partkey = '104744' and "
+                        "  ("
+                        "    l_partkey = '103853' or "
+                        "    l_partkey = '104277' or "
+                        "    l_partkey = '104744' "
+                        "  ) and "
                         "  ( "
                         "      ( "
                         "          cast(l_quantity as integer) >= 3 and cast(l_quantity as integer) <= 3 + 10 "
@@ -262,14 +307,22 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "          and l_shipmode in ('AIR', 'AIR REG') "
                         "          and l_shipinstruct = 'DELIVER IN PERSON' "
                         "      ) "
-                        "  ) ", False,
-                        'lineitem_scan',
-                        query_plan, False)
+                        "  ) {}"
+                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
+                        use_pandas,
+                        name,
+                        query_plan,
+                        True)
 
 
 def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(
+        sharded,
+        shard,
+        num_shards,
+        use_pandas,
+        name,
         query_plan):
-    return SQLTableScan('lineitem.csv',
+    return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  l_partkey, "
                         "  l_quantity, "
@@ -298,16 +351,19 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "          and l_shipmode in ('AIR', 'AIR REG') "
                         "          and l_shipinstruct = 'DELIVER IN PERSON' "
                         "      ) "
-                        "  ) ", False,
-                        'lineitem_scan',
-                        query_plan, False)
+                        "  ) {}"
+                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
+                        use_pandas,
+                        name,
+                        query_plan,
+                        False)
 
 
-def bloom_create_partkey_op(query_plan):
-    return BloomCreate('p_partkey', 'part_bloom_create', query_plan, False)
+def bloom_create_partkey_op(name, query_plan):
+    return BloomCreate('p_partkey', name, query_plan, False)
 
 
-def project_partkey_brand_size_container_filtered_op(query_plan):
+def project_partkey_brand_size_container_filtered_op(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'p_partkey'),
@@ -315,11 +371,11 @@ def project_partkey_brand_size_container_filtered_op(query_plan):
             ProjectExpression(lambda t_: t_['_2'], 'p_size'),
             ProjectExpression(lambda t_: t_['_3'], 'p_container')
         ],
-        'part_project',
+        name,
         query_plan, False)
 
 
-def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(query_plan):
+def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(name, query_plan):
     return Project(
         [
             ProjectExpression(lambda t_: t_['_0'], 'l_partkey'),
@@ -329,12 +385,17 @@ def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filter
             ProjectExpression(lambda t_: t_['_4'], 'l_shipinstruct'),
             ProjectExpression(lambda t_: t_['_5'], 'l_shipmode')
         ],
-        'lineitem_project',
+        name,
         query_plan, False)
 
 
-def sql_scan_part_partkey_brand_size_container_where_filtered_op(query_plan):
-    return SQLTableScan('part.csv',
+def sql_scan_part_partkey_brand_size_container_where_filtered_op(sharded,
+                                                                 shard,
+                                                                 num_shards,
+                                                                 use_pandas,
+                                                                 name,
+                                                                 query_plan):
+    return SQLTableScan(get_file_key('part', sharded, shard),
                         "select "
                         "  p_partkey, "
                         "  p_brand, "
@@ -376,13 +437,21 @@ def sql_scan_part_partkey_brand_size_container_where_filtered_op(query_plan):
                         "          ) "
                         "          and cast(p_size as integer) between 1 and 15 "
                         "      ) "
-                        "  ) ", False,
-                        'part_scan',
-                        query_plan, False)
+                        "  )  {}"
+                        .format(get_sql_suffix('part', num_shards, shard, sharded)),
+                        use_pandas,
+                        name,
+                        query_plan,
+                        False)
 
 
-def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(query_plan):
-    return SQLTableScan('part.csv',
+def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(sharded,
+                                                                       shard,
+                                                                       num_shards,
+                                                                       use_pandas,
+                                                                       name,
+                                                                       query_plan):
+    return SQLTableScan(get_file_key('part', sharded, shard),
                         "select "
                         "  p_partkey, "
                         "  p_brand, "
@@ -391,9 +460,11 @@ def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(query_pla
                         "from "
                         "  S3Object "
                         "where "
-                        "  p_partkey = '103853' or "
-                        "  p_partkey = '104277' or "
-                        "  p_partkey = '104744' and "
+                        "  ("
+                        "    p_partkey = '103853' or "
+                        "    p_partkey = '104277' or "
+                        "    p_partkey = '104744' "
+                        "  ) and "
                         "  ( "
                         "      ( "
                         "          p_brand = 'Brand#11' "
@@ -427,6 +498,29 @@ def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(query_pla
                         "          ) "
                         "          and cast(p_size as integer) between 1 and 15 "
                         "      ) "
-                        "  ) ", False,
-                        'part_scan',
-                        query_plan, False)
+                        "  ) {}"
+                        .format(get_sql_suffix('part', num_shards, shard, sharded)),
+                        use_pandas,
+                        name,
+                        query_plan,
+                        False)
+
+
+def get_sql_suffix(key, num_shards, shard, sharded, add_where=False):
+    sql_suffix = ""
+
+    if not sharded:
+        if key == "lineitem":
+            key_lower = math.ceil((6000000.0 / float(num_shards)) * shard)
+            key_upper = math.ceil((6000000.0 / float(num_shards)) * (shard + 1))
+            sql_suffix = " cast(l_orderkey as int) > {} and cast(l_orderkey as int) <= {}" \
+                .format(key_lower, key_upper)
+            sql_suffix = sql_suffix + " where " if add_where else " and "
+        elif key == "part":
+            key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
+            key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
+            sql_suffix = " cast(p_partkey as int) > {} and cast(p_partkey as int) <= {}" \
+                .format(key_lower, key_upper)
+            sql_suffix = sql_suffix + " where " if add_where else " and "
+
+    return sql_suffix

@@ -20,7 +20,7 @@ def test_non_existent_key():
     :return: None
     """
 
-    cur = PandasCursor(QueryPlan().s3)\
+    cur = PandasCursor(boto3.client('s3'))\
         .select('does-not-exist.csv', 'select * from S3Object')
 
     try:
@@ -61,7 +61,7 @@ def test_non_empty_results():
 
     num_rows = 0
 
-    cur = PandasCursor(QueryPlan().s3)\
+    cur = PandasCursor(boto3.client('s3'))\
         .select('region.csv', 'select * from S3Object')
 
     try:

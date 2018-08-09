@@ -2,6 +2,9 @@
 """
 
 """
+from boto3 import Session
+from botocore.config import Config
+
 from s3filter.hash.sliced_sql_bloom_filter import SlicedSQLBloomFilter
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, BloomMessage
@@ -31,7 +34,10 @@ class SQLTableScanBloomUse(Operator):
         self.s3key = s3key
         self.s3sql = s3sql
 
-        self.s3 = query_plan.s3
+        # Boto is not thread safe so need one of these per scan op
+        cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
+        session = Session()
+        self.s3 = session.client('s3', config=cfg)
 
         self.use_pandas = use_pandas
 

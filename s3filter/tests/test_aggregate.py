@@ -61,9 +61,11 @@ def test_aggregate_count():
 
     field_names = ['_0']
 
-    assert c.tuples()[0] == field_names
-    assert IndexedTuple.build(c.tuples()[1], field_names)['_0'] == 10000
-    assert len(c.tuples()) == 1 + 1
+    tuples = c.tuples()
+
+    assert tuples[0] == field_names
+    assert IndexedTuple.build(tuples[1], field_names)['_0'] == 10000
+    assert len(tuples) == 1 + 1
 
     # Write the metrics
     query_plan.print_metrics()

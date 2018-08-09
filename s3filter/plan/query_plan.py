@@ -7,6 +7,7 @@ import cPickle as pickle
 import traceback
 import warnings
 from collections import OrderedDict, deque
+from logging import warning
 from multiprocessing import Queue
 
 import boto3
@@ -281,7 +282,10 @@ class QueryPlan(object):
                 if type(item) == message_type:
                     return item
                 else:
-                    raise Exception("Unrecognized message {}".format(item))
+                    # Not the message being listened for, warn and skip
+                    # This isn't exceptional, but the listener should be made aware that there are messages arriving that
+                    # are being ignored
+                    warning("While listening for message type {} received message type {} with contents {}".format(message_type, type(item), item))
 
         except BaseException as e:
             tb = traceback.format_exc(e)
