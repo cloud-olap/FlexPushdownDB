@@ -3,6 +3,7 @@
 
 """
 import cProfile
+import sys
 import time
 
 from boto3 import Session
@@ -19,6 +20,7 @@ import cPickle as pickle
 
 from s3filter.sql.pandas_cursor import PandasCursor
 import pandas as pd
+
 
 class SQLTableScanMetrics(OpMetrics):
     """Extra metrics for a sql table scan
@@ -59,7 +61,14 @@ class SQLTableScanMetrics(OpMetrics):
             'query_bytes': self.query_bytes,
             'bytes_scanned': self.bytes_scanned,
             'bytes_processed': self.bytes_processed,
-            'bytes_returned': self.bytes_returned,
+            'bytes_returned': "{} ({} MB / {} GB)".format(
+                self.bytes_returned,
+                round(float(self.bytes_returned) / 1000000.0, 5),
+                round(float(self.bytes_returned) / 1000000000.0, 5)),
+            'bytes_returned_per_sec': "{} ({} MB / {} GB)".format(
+                round(float(self.bytes_returned) / self.elapsed_time(), 5),
+                round(float(self.bytes_returned) / self.elapsed_time() / 1000000, 5),
+                round(float(self.bytes_returned) / self.elapsed_time() / 1000000000, 5)),
             'time_to_first_response': round(self.time_to_first_response, 5),
             'time_to_first_record_response':
                 None if self.time_to_first_record_response is None
@@ -89,7 +98,7 @@ class SQLTableScan(Operator):
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __init__(self, s3key, s3sql, use_pandas, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, name, query_plan, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 
         :param s3key: The object key to select against
@@ -99,9 +108,15 @@ class SQLTableScan(Operator):
         super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
         # Boto is not thread safe so need one of these per scan op
-        cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
-        session = Session()
-        self.s3 = session.client('s3', config=cfg)
+        if secure:
+            cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
+            session = Session()
+            self.s3 = session.client('s3', config=cfg)
+        else:
+            cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10,
+                         s3={'payload_signing_enabled': False})
+            session = Session()
+            self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -144,6 +159,8 @@ class SQLTableScan(Operator):
         cur = Cursor(op.s3).select(op.s3key, op.s3sql)
         op.op_metrics.query_bytes = cur.query_bytes
         tuples = cur.execute()
+
+        counter = 0
         first_tuple = True
         for t in tuples:
 
@@ -157,14 +174,22 @@ class SQLTableScan(Operator):
                 it = IndexedTuple.build_default(t)
                 first_tuple = False
 
-                if op.log_enabled:
-                    print("{}('{}') | Sending field names: {}"
-                          .format(op.__class__.__name__, op.name, it.field_names()))
+                # if op.log_enabled:
+                #     print("{}('{}') | Sending field names: {}"
+                #           .format(op.__class__.__name__, op.name, it.field_names()))
 
                 op.send(TupleMessage(Tuple(it.field_names())), op.consumers)
 
             # if op.log_enabled:
             #     print("{}('{}') | Sending field values: {}".format(op.__class__.__name__, op.name, t))
+
+            counter += 1
+            if op.log_enabled:
+                if counter % 1000 == 0:
+                    sys.stdout.write('.')
+                if counter % 100000 == 0:
+                    sys.stdout.write('.')
+                    print(" Rows {}".format(op.op_metrics.rows_returned))
 
             op.send(TupleMessage(Tuple(t)), op.consumers)
         return cur
@@ -177,29 +202,34 @@ class SQLTableScan(Operator):
         op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
         first_tuple = True
 
+        counter = 0
 
         buffer_ = pd.DataFrame()
         for df in dfs:
-
-            assert (len(df) > 0)
 
             if first_tuple:
                 assert (len(df.columns.values) > 0)
                 op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
                 first_tuple = False
 
-                if op.log_enabled:
-                    print("{}('{}') | Sending field names: {}"
-                          .format(op.__class__.__name__, op.name, df.columns.values))
+                # if op.log_enabled:
+                #     print("{}('{}') | Sending field names: {}"
+                #           .format(op.__class__.__name__, op.name, df.columns.values))
 
             op.op_metrics.rows_returned += len(df)
 
             # if op.log_enabled:
             #     print("{}('{}') | Sending field values: {}".format(op.__class__.__name__, op.name, df))
 
+            counter += 1
+            if op.log_enabled:
+                sys.stdout.write('.')
+                if counter % 100 == 0:
+                    print("Rows {}".format(op.op_metrics.rows_returned))
+
             op.send(df, op.consumers)
-            #buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
-            #if len(buffer_) >= 8192:
+            # buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
+            # if len(buffer_) >= 8192:
             #    op.send(buffer_, op.consumers)
             #    buffer_ = pd.DataFrame()
 

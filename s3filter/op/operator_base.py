@@ -337,7 +337,7 @@ class Operator(object):
     def flush(self):
         for (o, messages) in self.__buffers.items():
             self.do_send(messages, o)
-            self.__buffers[o.name] = []
+            self.__buffers[o] = []
 
         self.buffered_size = 0
 
@@ -359,9 +359,9 @@ class Operator(object):
 
             self.__completed = True
 
-            for (o, messages) in self.__buffers.items():
-                self.do_send( messages, [o] )
-                self.__buffers[o.name] = []
+            # for (o, messages) in self.__buffers.items():
+            #     self.do_send( messages, o)
+            #     self.__buffers[o.name] = []
 
             # Flush the buffer
             self.flush()
