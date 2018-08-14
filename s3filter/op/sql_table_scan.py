@@ -9,6 +9,7 @@ from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
+from s3filter.plan.cost_estimator import CostEstimator
 from s3filter.sql.cursor import Cursor
 from s3filter.util.constants import *
 # noinspection PyCompatibility,PyPep8Naming
@@ -19,10 +20,6 @@ class SQLTableScanMetrics(OpMetrics):
     """Extra metrics for a sql table scan
 
     """
-
-    # These amounts vary by region, but for simplicity, let's assume it's a flat rate
-    COST_S3_DATA_RETURNED_PER_GB = 0.0007
-    COST_S3_DATA_SCANNED_PER_GB = 0.002
 
     def __init__(self):
         super(SQLTableScanMetrics, self).__init__()
@@ -38,14 +35,15 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_processed = 0
         self.bytes_returned = 0
 
+        self.cost_estimator = CostEstimator(self)
+
     def cost(self):
         """
         Estimates the cost of the scan operation based on S3 pricing in the following page:
         <https://aws.amazon.com/s3/pricing/>
         :return: The estimated cost of the table scan operation
         """
-        return self.bytes_returned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_RETURNED_PER_GB + \
-                self.bytes_scanned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
+        return self.cost_estimator.estimate_cost()
 
     def __repr__(self):
         return {
@@ -89,6 +87,8 @@ class SQLTableScan(Operator):
 
         self.s3key = s3key
         self.s3sql = s3sql
+        # TODO:only simple SQL queries are considered. Nested and complex queries will need a lot of work to handle
+        self.need_s3select = not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -97,11 +97,68 @@ class SQLTableScan(Operator):
         """
 
         if not self.is_profiled:
-            self.do_run()
+            if self.need_s3select:
+                self.do_run_with_s3select()
+            else:
+                self.do_run_without_s3select()
         else:
-            cProfile.runctx('self.do_run()', globals(), locals(), self.profile_file_name)
+            if self.need_s3select:
+                cProfile.runctx('self.do_run_with_s3select()', globals(), locals(), self.profile_file_name)
+            else:
+                cProfile.runctx('self.do_run_without_s3select()', globals(), locals(), self.profile_file_name)
 
-    def do_run(self):
+    def do_run_without_s3select(self):
+
+        if not os.path.exists(TABLE_STORAGE_LOC):
+            os.makedirs(TABLE_STORAGE_LOC)
+
+        self.op_metrics.timer_start()
+
+        if self.log_enabled:
+            print("{} | {}('{}') | Started"
+                  .format(time.time(), self.__class__.__name__, self.name))
+
+        table_local_file_path = "{}{}".format(TABLE_STORAGE_LOC, self.s3key)
+
+        if not os.path.exists(table_local_file_path):
+            self.s3.download_file(
+                Bucket=S3_BUCKET_NAME,
+                Key=self.s3key,
+                Filename=table_local_file_path
+            )
+
+        self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
+
+        first_tuple = True
+
+        with open(table_local_file_path, 'r') as table_file:
+            for t in table_file:
+                if self.is_completed():
+                    break
+
+                self.op_metrics.rows_returned += 1
+
+                tup = t.split('|')[:-1]
+
+                if first_tuple:
+                    # Create and send the record field names
+                    it = IndexedTuple.build_default(tup)
+                    first_tuple = False
+
+                    if self.log_enabled:
+                        print("{}('{}') | Sending field names: {}"
+                              .format(self.__class__.__name__, self.name, it.field_names()))
+
+                    self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
+                else:
+                    self.send(TupleMessage(Tuple(tup)), self.consumers)
+
+        if not self.is_completed():
+            self.complete()
+
+        self.op_metrics.timer_stop()
+
+    def do_run_with_s3select(self):
 
         self.op_metrics.timer_start()
 
@@ -169,7 +226,7 @@ class SQLShardedTableScan(Operator):
 
     """
 
-    def __init__(self, s3key, s3sql, name, shards, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, name, shards, shard_prefix, query_plan, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 
         :param s3key: The object key to select against
@@ -183,6 +240,9 @@ class SQLShardedTableScan(Operator):
         self.s3key = s3key
         self.s3sql = s3sql
         self.shards = shards
+        self.shard_prefix = shard_prefix
+        # TODO:only simple SQL queries are considered. Nested and complex queries will need a lot of work to handle
+        self.need_s3select = not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -191,11 +251,80 @@ class SQLShardedTableScan(Operator):
         """
 
         if not self.is_profiled:
-            self.do_run()
+            if self.need_s3select:
+                self.do_run_with_s3select()
+            else:
+                self.do_run_without_s3select()
         else:
-            cProfile.runctx('self.do_run()', globals(), locals(), self.profile_file_name)
+            if self.need_s3select:
+                cProfile.runctx('self.do_run_with_s3select()', globals(), locals(), self.profile_file_name)
+            else:
+                cProfile.runctx('self.do_run_without_s3select()', globals(), locals(), self.profile_file_name)
 
-    def do_run(self):
+    def do_run_without_s3select(self):
+
+        self.op_metrics.timer_start()
+
+        if not os.path.exists(TABLE_STORAGE_LOC):
+            os.makedirs(TABLE_STORAGE_LOC)
+
+        first_tuple = True
+
+        for part in self.shards:
+            part_key = self.get_part_key(part)
+
+            if self.log_enabled:
+                print("{} | {}('{}') | Started"
+                      .format(time.time(), self.__class__.__name__, self.name))
+
+            table_local_file_path = "{}{}".format(TABLE_STORAGE_LOC, part_key)
+
+            if not os.path.exists(os.path.dirname(table_local_file_path)):
+                os.makedirs(os.path.dirname(table_local_file_path))
+
+            if not os.path.exists(table_local_file_path):
+                self.s3.download_file(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=part_key,
+                    Filename=table_local_file_path
+                )
+
+            self.op_metrics.time_to_first_response = self.op_metrics.elapsed_time()
+
+            is_header = True
+
+            with open(table_local_file_path, 'r') as table_file:
+                for t in table_file:
+                    if self.is_completed():
+                        break
+
+                    if is_header:
+                        is_header = False
+                        continue
+
+                    self.op_metrics.rows_returned += 1
+
+                    tup = t.split('|')[:-1]
+
+                    if first_tuple:
+                        # Create and send the record field names
+                        it = IndexedTuple.build_default(tup)
+                        first_tuple = False
+
+                        if self.log_enabled:
+                            print("{}('{}') | Sending field names: {}"
+                                  .format(self.__class__.__name__, self.name, it.field_names()))
+
+                        self.send(TupleMessage(Tuple(it.field_names())), self.consumers)
+                    else:
+                        self.send(TupleMessage(Tuple(tup)), self.consumers)
+
+        if not self.is_completed():
+            self.complete()
+
+        self.op_metrics.timer_stop()
+
+    def do_run_with_s3select(self):
 
         self.op_metrics.timer_start()
 
@@ -256,4 +385,13 @@ class SQLShardedTableScan(Operator):
     def get_part_key(self, part):
         fname = os.path.basename(self.s3key)
         filename, ext = os.path.splitext(fname)
-        return 'sf1000-lineitem/{}_{}{}'.format(filename, part, ext)
+        return '{}/{}_{}{}'.format(self.shard_prefix, filename, part, ext)
+
+    def on_producer_completed(self, producer_name):
+        """This event is overridden really just to indicate that it never fires.
+
+        :param producer_name: The completed producer
+        :return: None
+        """
+
+        raise NotImplementedError

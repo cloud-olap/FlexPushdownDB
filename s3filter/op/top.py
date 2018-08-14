@@ -147,7 +147,7 @@ class TopKTableScan(Operator):
             proc_parts = [x for x in range(self.shards) if x % self.processes == process]
             pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql,
                                                                   "topk_table_scan_parts_{}".format(proc_parts),
-                                                                  proc_parts,
+                                                                  proc_parts, "sf1000-lineitem",
                                                                   self.query_plan, self.log_enabled))
             proc_top = self.query_plan.add_operator(Top(self.max_tuples, self.sort_expression,
                                                         "top_parts_{}".format(proc_parts), self.query_plan,

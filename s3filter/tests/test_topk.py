@@ -38,9 +38,10 @@ def __test_topk_baseline(sort_index='_5', sort_order='DESC'):
     top_op = query_plan.add_operator(Top(limit, sort_exp, 'topk', query_plan, False))
     for process in range(processes):
         proc_parts = [x for x in range(shards) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object',
-                                                              "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
-                                                              query_plan, False))
+        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object;',
+                                                         "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
+                                                         "sf1000-lineitem", query_plan, False))
+        pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
         pc_top = query_plan.add_operator(Top(limit, sort_exp, 'topk_parts_{}'.format(proc_parts), query_plan, False))
         pc.connect(pc_top)
         pc_top.connect(top_op)
@@ -231,7 +232,6 @@ def test_all():
     __test_topk_baseline('_4', 'DESC')
     __test_topk_baseline('_5', 'ASC')
     __test_topk_baseline('_5', 'DESC')
-    scale = 1
     for i in range(4):
         scale = pow(2, i)
         __test_topk_with_sampling(scale, '_4', 'l_quantity', 'ASC')

@@ -22,10 +22,12 @@ class HeapTuple(object):
         :param o: The other tuple
         :return: True if the tuple is "less than" the other tuple
         """
-
-        field_index = self.field_names.index(self.sort_expression.col_index)
-        v1 = self.sort_expression.col_type(self.tuple[field_index])
-        v2 = self.sort_expression.col_type(o.tuple[field_index])
+        try:
+            field_index = self.field_names.index(self.sort_expression.col_index)
+            v1 = self.sort_expression.col_type(self.tuple[field_index])
+            v2 = self.sort_expression.col_type(o.tuple[field_index])
+        except Exception as e:
+            print("Problem comparing tuple {} with error {}".format(o.tuple, e))
 
         return v1 < v2
 
@@ -35,12 +37,14 @@ class HeapTuple(object):
         :param o: The other tuple
         :return: True if the tuple is "greater than" the other tuple
         """
+        try:
+            field_index = self.field_names.index(self.sort_expression.col_index)
+            v1 = self.sort_expression.col_type(self.tuple[field_index])
+            v2 = self.sort_expression.col_type(o.tuple[field_index])
 
-        field_index = self.field_names.index(self.sort_expression.col_index)
-        v1 = self.sort_expression.col_type(self.tuple[field_index])
-        v2 = self.sort_expression.col_type(o.tuple[field_index])
-
-        return v1 > v2
+            return v1 > v2
+        except Exception as e:
+            print("Problem comparing tuple {} with error {}".format(o.tuple, e))
 
 
 class MaxHeapSortableTuple(HeapTuple):
