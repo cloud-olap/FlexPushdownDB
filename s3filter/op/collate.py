@@ -38,7 +38,8 @@ class Collate(Operator):
 
         if self.async_:
             self.queue.put(EvalMessage("self.local_tuples()"))
-            tuples = self.query_plan.listen(EvaluatedMessage).val
+            item = self.query_plan.listen(EvaluatedMessage)
+            tuples = item.val
             return tuples
         else:
             return self.__tuples
@@ -76,7 +77,8 @@ class Collate(Operator):
         :return: None
         """
 
-        # TODO: Also adding to tuples for now just so the existing tests work, eventually they should inspect the dataframe
+        # TODO: Also adding to tuples for now just so the existing tests work,
+        # eventually they should inspect the dataframe
         self.__tuples.extend(df.values.tolist())
         self.df = self.df.append(df)
 

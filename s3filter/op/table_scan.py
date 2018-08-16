@@ -26,6 +26,6 @@ class TableScan(SQLTableScan):
 
         super(TableScan, self).__init__(
             s3key,
-            "select * from S3Object ",
+            "select * from S3Object ", False,
             name, query_plan,
             log_enabled)

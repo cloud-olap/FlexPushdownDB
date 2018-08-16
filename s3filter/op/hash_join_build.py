@@ -10,6 +10,7 @@ from s3filter.op.tuple import Tuple, IndexedTuple
 import cPickle as pickle
 import pandas as pd
 
+
 class HashJoinBuildMetrics(OpMetrics):
     """Extra metrics for a HashBuild
 
@@ -44,6 +45,9 @@ class HashJoinBuild(Operator):
         self.key = key
 
         self.field_names_index = None
+
+        self.producers_received = {}
+
         self.hashtable = {}
 
     def on_receive(self, ms, producer_name):
@@ -63,17 +67,32 @@ class HashJoinBuild(Operator):
                 raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_tuple(self, tuple_, _producer_name):
+
         if not self.field_names_index:
             self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
             self.send(TupleMessage(tuple_), self.consumers)
+            self.producers_received[_producer_name] = True
         else:
-            self.op_metrics.rows_processed += 1
-            it = IndexedTuple(tuple_, self.field_names_index)
-            itd = self.hashtable.setdefault(it[self.key], [])
-            itd.append(tuple_)
+
+            if _producer_name not in self.producers_received.keys():
+                # Will be field names, skip
+                self.producers_received[_producer_name] = True
+            else:
+                self.op_metrics.rows_processed += 1
+                it = IndexedTuple(tuple_, self.field_names_index)
+                itd = self.hashtable.setdefault(it[self.key], [])
+                itd.append(tuple_)
 
             # self.hashtable[it[self.key]] = tuple_
 
     def on_producer_completed(self, producer_name):
-        self.send(HashTableMessage(self.hashtable), self.consumers)
-        Operator.on_producer_completed(self, producer_name)
+
+        self.producer_completions[producer_name] = True
+
+        if all(self.producer_completions.values()):
+
+            if self.log_enabled:
+             print("{}{}".format(self, self.hashtable))
+
+            self.send(HashTableMessage(self.hashtable), self.consumers)
+            Operator.on_producer_completed(self, producer_name)

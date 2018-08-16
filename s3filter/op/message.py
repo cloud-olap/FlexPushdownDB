@@ -50,3 +50,19 @@ class HashTableMessage(object):
 
     def __init__(self, hashtable):
         self.hashtable = hashtable
+
+class StringMessage(object):
+    """Message containing a string.
+
+    """
+
+    def __init__(self, string_):
+        """Creates a new TupleMessage
+
+        :param string_: The string content of the message
+        """
+
+        if type(string_) is not str:
+            raise Exception("Message content type is {}. Type must be str".format(type(string_)))
+
+        self.string_ = string_

@@ -26,7 +26,8 @@ def test_group_count():
 
     # Query plan
     # select s_nationkey, count(s_suppkey) from supplier.csv group by s_nationkey
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
+                                              'select * from S3Object;', False, 'ts', query_plan, False))
 
     g = query_plan.add_operator(Group(['_3'],
                                       [
@@ -75,7 +76,8 @@ def test_group_sum():
 
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
+                                              'select * from S3Object;', False, 'ts', query_plan, False))
 
     g = query_plan.add_operator(Group(['_3'],
                                       [
@@ -124,7 +126,7 @@ def test_group_empty():
     # Query plan
     # select s_nationkey, sum(float(s_acctbal)) from supplier.csv group by s_nationkey
     ts = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'ts', query_plan, False))
+        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', False, 'ts', query_plan, False))
 
     g = query_plan.add_operator(Group(['_3'],
                                       [

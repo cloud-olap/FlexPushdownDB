@@ -1,0 +1,540 @@
+
+Groupby Benchmark, Baseline. Group Fields: ['G2'] Aggregate Fields: ['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9']
+----------------------
+
+Settings
+--------
+
+use_pandas: True
+table parts: 100
+
+Done
+
+G2 | F0 | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9
+----------------------------------------------------
+0 | 439838314.982 | 439759667.139 | 439931258.185 | 439889554.321 | 439864986.686 | 439945673.98 | 439847508.895 | 439902189.623 | 439876761.883 | 439637637.591
+1 | 439941809.461 | 439884836.781 | 439834103.246 | 440023637.945 | 439954117.367 | 440030091.087 | 439850442.203 | 439924441.106 | 440041011.387 | 439935058.219
+2 | 440088538.005 | 439975361.682 | 440147492.083 | 440103777.857 | 440097482.638 | 440146896.825 | 440144368.181 | 440157069.57 | 440177472.234 | 440027370.398
+3 | 439828570.159 | 439934022.933 | 439855390.06 | 439808621.038 | 439803558.225 | 439819155.004 | 439986911.136 | 439883665.635 | 439813069.309 | 439972104.738
+4 | 440030992.036 | 440071003.596 | 440298555.759 | 440177653.502 | 440132185.808 | 440231716.596 | 440108539.299 | 440124705.63 | 440241357.259 | 440106657.437
+5 | 440223356.606 | 440187688.165 | 440230984.01 | 440164881.42 | 440250326.206 | 440364470.854 | 440156172.231 | 440284679.843 | 440243861.45 | 440184734.803
+6 | 439978930.88 | 439762091.772 | 439733085.665 | 439750022.309 | 439701683.082 | 439638021.991 | 439855363.329 | 439791644.031 | 439846805.351 | 439709349.945
+7 | 440026288.369 | 439894339.994 | 440080824.474 | 439941063.426 | 440156910.166 | 440174402.26 | 439881037.908 | 440000411.342 | 439951563.11 | 440052297.344
+
+Metrics
+-------
+
+Plan
+----
+buffer_size: 0
+is_parallel: True
+total_elapsed_time: 70.17353
+cost: $0.0
+
+Operators
+---------
+SQLTableScan({'name': 'scan_phase1_7', 'parallel': True}): {'elapsed_time': 1.38111, 'query_bytes': 72, 'cost': 0.00020135381631553173, 'time_to_first_response': 0.13778, 'bytes_processed': 107653007, 'time_to_first_record_response': 0.1408, 'time_to_last_record_response': 1.26021, 'bytes_scanned': 107653007, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_7', 'parallel': True}): {'elapsed_time': 0.02358, 'rows_projected': 640000}
+Group({'name': 'groupby_7', 'parallel': True}): {'elapsed_time': 0.20447}
+SQLTableScan({'name': 'scan_phase1_6', 'parallel': True}): {'elapsed_time': 0.9082, 'query_bytes': 72, 'cost': 0.00020134948752820493, 'time_to_first_response': 0.16572, 'bytes_processed': 107650683, 'time_to_first_record_response': 0.17151, 'time_to_last_record_response': 0.65548, 'bytes_scanned': 107650683, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_6', 'parallel': True}): {'elapsed_time': 0.04371, 'rows_projected': 640000}
+Group({'name': 'groupby_6', 'parallel': True}): {'elapsed_time': 0.46445}
+SQLTableScan({'name': 'scan_phase1_5', 'parallel': True}): {'elapsed_time': 1.32663, 'query_bytes': 72, 'cost': 0.0002013540379703045, 'time_to_first_response': 0.19664, 'bytes_processed': 107653126, 'time_to_first_record_response': 0.20058, 'time_to_last_record_response': 1.16005, 'bytes_scanned': 107653126, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_5', 'parallel': True}): {'elapsed_time': 0.02666, 'rows_projected': 640000}
+Group({'name': 'groupby_5', 'parallel': True}): {'elapsed_time': 0.46489}
+SQLTableScan({'name': 'scan_phase1_4', 'parallel': True}): {'elapsed_time': 1.04444, 'query_bytes': 72, 'cost': 0.00020135341584682465, 'time_to_first_response': 0.15682, 'bytes_processed': 107652792, 'time_to_first_record_response': 0.16097, 'time_to_last_record_response': 0.69381, 'bytes_scanned': 107652792, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_4', 'parallel': True}): {'elapsed_time': 0.03099, 'rows_projected': 640000}
+Group({'name': 'groupby_4', 'parallel': True}): {'elapsed_time': 0.37822}
+SQLTableScan({'name': 'scan_phase1_3', 'parallel': True}): {'elapsed_time': 1.09727, 'query_bytes': 72, 'cost': 0.00020135562866926192, 'time_to_first_response': 0.1651, 'bytes_processed': 107653980, 'time_to_first_record_response': 0.16902, 'time_to_last_record_response': 0.76793, 'bytes_scanned': 107653980, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_3', 'parallel': True}): {'elapsed_time': 0.02913, 'rows_projected': 640000}
+Group({'name': 'groupby_3', 'parallel': True}): {'elapsed_time': 0.47002}
+SQLTableScan({'name': 'scan_phase1_2', 'parallel': True}): {'elapsed_time': 1.15441, 'query_bytes': 72, 'cost': 0.00020134969986975194, 'time_to_first_response': 0.18316, 'bytes_processed': 107650797, 'time_to_first_record_response': 0.18824, 'time_to_last_record_response': 0.80828, 'bytes_scanned': 107650797, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_2', 'parallel': True}): {'elapsed_time': 0.05337, 'rows_projected': 640000}
+Group({'name': 'groupby_2', 'parallel': True}): {'elapsed_time': 0.57613}
+SQLTableScan({'name': 'scan_phase1_1', 'parallel': True}): {'elapsed_time': 1.34214, 'query_bytes': 72, 'cost': 0.00020135128870606424, 'time_to_first_response': 0.16516, 'bytes_processed': 107651650, 'time_to_first_record_response': 0.16859, 'time_to_last_record_response': 0.93578, 'bytes_scanned': 107651650, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_1', 'parallel': True}): {'elapsed_time': 0.06667, 'rows_projected': 640000}
+Group({'name': 'groupby_1', 'parallel': True}): {'elapsed_time': 0.60309}
+SQLTableScan({'name': 'scan_phase1_0', 'parallel': True}): {'elapsed_time': 0.98796, 'query_bytes': 72, 'cost': 0.00020135474018752574, 'time_to_first_response': 0.15375, 'bytes_processed': 107653503, 'time_to_first_record_response': 0.15721, 'time_to_last_record_response': 0.75947, 'bytes_scanned': 107653503, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_0', 'parallel': True}): {'elapsed_time': 0.0882, 'rows_projected': 640000}
+Group({'name': 'groupby_0', 'parallel': True}): {'elapsed_time': 0.54742}
+SQLTableScan({'name': 'scan_phase1_9', 'parallel': True}): {'elapsed_time': 0.9917, 'query_bytes': 72, 'cost': 0.0002013526000082493, 'time_to_first_response': 0.15935, 'bytes_processed': 107652354, 'time_to_first_record_response': 0.16355, 'time_to_last_record_response': 0.92244, 'bytes_scanned': 107652354, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_9', 'parallel': True}): {'elapsed_time': 0.06994, 'rows_projected': 640000}
+Group({'name': 'groupby_9', 'parallel': True}): {'elapsed_time': 0.25544}
+SQLTableScan({'name': 'scan_phase1_8', 'parallel': True}): {'elapsed_time': 1.38231, 'query_bytes': 72, 'cost': 0.00020135222375392914, 'time_to_first_response': 0.14307, 'bytes_processed': 107652152, 'time_to_first_record_response': 0.1463, 'time_to_last_record_response': 1.14416, 'bytes_scanned': 107652152, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_8', 'parallel': True}): {'elapsed_time': 0.11946, 'rows_projected': 640000}
+Group({'name': 'groupby_8', 'parallel': True}): {'elapsed_time': 0.34979}
+SQLTableScan({'name': 'scan_phase1_77', 'parallel': True}): {'elapsed_time': 1.19643, 'query_bytes': 73, 'cost': 0.00020135004818439483, 'time_to_first_response': 0.14501, 'bytes_processed': 107650984, 'time_to_first_record_response': 0.14935, 'time_to_last_record_response': 1.10046, 'bytes_scanned': 107650984, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_77', 'parallel': True}): {'elapsed_time': 0.04633, 'rows_projected': 640000}
+Group({'name': 'groupby_77', 'parallel': True}): {'elapsed_time': 0.31261}
+SQLTableScan({'name': 'scan_phase1_76', 'parallel': True}): {'elapsed_time': 1.33919, 'query_bytes': 73, 'cost': 0.00020135956071317196, 'time_to_first_response': 0.13738, 'bytes_processed': 107656091, 'time_to_first_record_response': 0.14075, 'time_to_last_record_response': 1.18432, 'bytes_scanned': 107656091, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_76', 'parallel': True}): {'elapsed_time': 0.04471, 'rows_projected': 640000}
+Group({'name': 'groupby_76', 'parallel': True}): {'elapsed_time': 0.2953}
+SQLTableScan({'name': 'scan_phase1_75', 'parallel': True}): {'elapsed_time': 1.42534, 'query_bytes': 73, 'cost': 0.00020135189965367318, 'time_to_first_response': 0.23502, 'bytes_processed': 107651978, 'time_to_first_record_response': 0.23842, 'time_to_last_record_response': 1.31384, 'bytes_scanned': 107651978, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_75', 'parallel': True}): {'elapsed_time': 0.16116, 'rows_projected': 640000}
+Group({'name': 'groupby_75', 'parallel': True}): {'elapsed_time': 0.29555}
+SQLTableScan({'name': 'scan_phase1_74', 'parallel': True}): {'elapsed_time': 1.28585, 'query_bytes': 73, 'cost': 0.00020135076716542243, 'time_to_first_response': 0.17718, 'bytes_processed': 107651370, 'time_to_first_record_response': 0.17989, 'time_to_last_record_response': 1.24015, 'bytes_scanned': 107651370, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_74', 'parallel': True}): {'elapsed_time': 0.14257, 'rows_projected': 640000}
+Group({'name': 'groupby_74', 'parallel': True}): {'elapsed_time': 0.26123}
+SQLTableScan({'name': 'scan_phase1_73', 'parallel': True}): {'elapsed_time': 1.36686, 'query_bytes': 73, 'cost': 0.0002013498265296221, 'time_to_first_response': 0.19598, 'bytes_processed': 107650865, 'time_to_first_record_response': 0.19949, 'time_to_last_record_response': 1.19512, 'bytes_scanned': 107650865, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_73', 'parallel': True}): {'elapsed_time': 0.11987, 'rows_projected': 640000}
+Group({'name': 'groupby_73', 'parallel': True}): {'elapsed_time': 0.31168}
+SQLTableScan({'name': 'scan_phase1_72', 'parallel': True}): {'elapsed_time': 1.17846, 'query_bytes': 73, 'cost': 0.0002013557404279709, 'time_to_first_response': 0.19203, 'bytes_processed': 107654040, 'time_to_first_record_response': 0.19607, 'time_to_last_record_response': 0.96219, 'bytes_scanned': 107654040, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_72', 'parallel': True}): {'elapsed_time': 0.0785, 'rows_projected': 640000}
+Group({'name': 'groupby_72', 'parallel': True}): {'elapsed_time': 0.42025}
+SQLTableScan({'name': 'scan_phase1_71', 'parallel': True}): {'elapsed_time': 1.38438, 'query_bytes': 73, 'cost': 0.00020135324075818063, 'time_to_first_response': 0.18756, 'bytes_processed': 107652698, 'time_to_first_record_response': 0.19159, 'time_to_last_record_response': 1.25326, 'bytes_scanned': 107652698, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_71', 'parallel': True}): {'elapsed_time': 0.02746, 'rows_projected': 640000}
+Group({'name': 'groupby_71', 'parallel': True}): {'elapsed_time': 0.44739}
+SQLTableScan({'name': 'scan_phase1_70', 'parallel': True}): {'elapsed_time': 1.28253, 'query_bytes': 73, 'cost': 0.0002013521809130907, 'time_to_first_response': 0.18605, 'bytes_processed': 107652129, 'time_to_first_record_response': 0.18965, 'time_to_last_record_response': 1.14596, 'bytes_scanned': 107652129, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_70', 'parallel': True}): {'elapsed_time': 0.06185, 'rows_projected': 640000}
+Group({'name': 'groupby_70', 'parallel': True}): {'elapsed_time': 0.29549}
+SQLTableScan({'name': 'scan_phase1_79', 'parallel': True}): {'elapsed_time': 1.4092, 'query_bytes': 73, 'cost': 0.00020135276205837728, 'time_to_first_response': 0.19525, 'bytes_processed': 107652441, 'time_to_first_record_response': 0.19924, 'time_to_last_record_response': 1.24421, 'bytes_scanned': 107652441, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_79', 'parallel': True}): {'elapsed_time': 0.08401, 'rows_projected': 640000}
+Group({'name': 'groupby_79', 'parallel': True}): {'elapsed_time': 0.45448}
+SQLTableScan({'name': 'scan_phase1_78', 'parallel': True}): {'elapsed_time': 1.26516, 'query_bytes': 73, 'cost': 0.00020135884918272496, 'time_to_first_response': 0.14413, 'bytes_processed': 107655709, 'time_to_first_record_response': 0.14751, 'time_to_last_record_response': 1.1245, 'bytes_scanned': 107655709, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_78', 'parallel': True}): {'elapsed_time': 0.10108, 'rows_projected': 640000}
+Group({'name': 'groupby_78', 'parallel': True}): {'elapsed_time': 0.28722}
+SQLTableScan({'name': 'scan_phase1_95', 'parallel': True}): {'elapsed_time': 1.0042, 'query_bytes': 73, 'cost': 0.0002013568039983511, 'time_to_first_response': 0.14952, 'bytes_processed': 107654611, 'time_to_first_record_response': 0.15294, 'time_to_last_record_response': 0.75851, 'bytes_scanned': 107654611, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_95', 'parallel': True}): {'elapsed_time': 0.0732, 'rows_projected': 640000}
+Group({'name': 'groupby_95', 'parallel': True}): {'elapsed_time': 0.31451}
+SQLTableScan({'name': 'scan_phase1_94', 'parallel': True}): {'elapsed_time': 1.2725, 'query_bytes': 73, 'cost': 0.00020135491900146008, 'time_to_first_response': 0.15495, 'bytes_processed': 107653599, 'time_to_first_record_response': 0.15986, 'time_to_last_record_response': 1.02858, 'bytes_scanned': 107653599, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_94', 'parallel': True}): {'elapsed_time': 0.05414, 'rows_projected': 640000}
+Group({'name': 'groupby_94', 'parallel': True}): {'elapsed_time': 0.47518}
+SQLTableScan({'name': 'scan_phase1_97', 'parallel': True}): {'elapsed_time': 1.38839, 'query_bytes': 73, 'cost': 0.00020134813152253628, 'time_to_first_response': 0.18302, 'bytes_processed': 107649955, 'time_to_first_record_response': 0.18722, 'time_to_last_record_response': 1.23902, 'bytes_scanned': 107649955, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_97', 'parallel': True}): {'elapsed_time': 0.06585, 'rows_projected': 640000}
+Group({'name': 'groupby_97', 'parallel': True}): {'elapsed_time': 0.26123}
+SQLTableScan({'name': 'scan_phase1_96', 'parallel': True}): {'elapsed_time': 1.26077, 'query_bytes': 73, 'cost': 0.00020135264843702317, 'time_to_first_response': 0.13763, 'bytes_processed': 107652380, 'time_to_first_record_response': 0.14167, 'time_to_last_record_response': 1.03851, 'bytes_scanned': 107652380, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_96', 'parallel': True}): {'elapsed_time': 0.08152, 'rows_projected': 640000}
+Group({'name': 'groupby_96', 'parallel': True}): {'elapsed_time': 0.43111}
+SQLTableScan({'name': 'scan_phase1_91', 'parallel': True}): {'elapsed_time': 1.47814, 'query_bytes': 73, 'cost': 0.00020135300792753697, 'time_to_first_response': 0.24446, 'bytes_processed': 107652573, 'time_to_first_record_response': 0.25792, 'time_to_last_record_response': 1.42034, 'bytes_scanned': 107652573, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_91', 'parallel': True}): {'elapsed_time': 0.05849, 'rows_projected': 640000}
+Group({'name': 'groupby_91', 'parallel': True}): {'elapsed_time': 0.11402}
+SQLTableScan({'name': 'scan_phase1_90', 'parallel': True}): {'elapsed_time': 1.31067, 'query_bytes': 73, 'cost': 0.0002013537995517254, 'time_to_first_response': 0.162, 'bytes_processed': 107652998, 'time_to_first_record_response': 0.16526, 'time_to_last_record_response': 1.19212, 'bytes_scanned': 107652998, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_90', 'parallel': True}): {'elapsed_time': 0.06195, 'rows_projected': 640000}
+Group({'name': 'groupby_90', 'parallel': True}): {'elapsed_time': 0.32823}
+SQLTableScan({'name': 'scan_phase1_93', 'parallel': True}): {'elapsed_time': 1.02479, 'query_bytes': 73, 'cost': 0.00020135221630334854, 'time_to_first_response': 0.11746, 'bytes_processed': 107652148, 'time_to_first_record_response': 0.12369, 'time_to_last_record_response': 0.69285, 'bytes_scanned': 107652148, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_93', 'parallel': True}): {'elapsed_time': 0.04972, 'rows_projected': 640000}
+Group({'name': 'groupby_93', 'parallel': True}): {'elapsed_time': 0.45425}
+SQLTableScan({'name': 'scan_phase1_92', 'parallel': True}): {'elapsed_time': 1.31606, 'query_bytes': 73, 'cost': 0.0002013533338904381, 'time_to_first_response': 0.23968, 'bytes_processed': 107652748, 'time_to_first_record_response': 0.25033, 'time_to_last_record_response': 1.16489, 'bytes_scanned': 107652748, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_92', 'parallel': True}): {'elapsed_time': 0.07377, 'rows_projected': 640000}
+Group({'name': 'groupby_92', 'parallel': True}): {'elapsed_time': 0.2161}
+SQLTableScan({'name': 'scan_phase1_99', 'parallel': True}): {'elapsed_time': 0.98077, 'query_bytes': 73, 'cost': 0.0002013549618422985, 'time_to_first_response': 0.1305, 'bytes_processed': 107653622, 'time_to_first_record_response': 0.13549, 'time_to_last_record_response': 0.71735, 'bytes_scanned': 107653622, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_99', 'parallel': True}): {'elapsed_time': 0.02594, 'rows_projected': 640000}
+Group({'name': 'groupby_99', 'parallel': True}): {'elapsed_time': 0.4556}
+SQLTableScan({'name': 'scan_phase1_98', 'parallel': True}): {'elapsed_time': 1.37479, 'query_bytes': 73, 'cost': 0.00020135679095983506, 'time_to_first_response': 0.15346, 'bytes_processed': 107654604, 'time_to_first_record_response': 0.15747, 'time_to_last_record_response': 1.13103, 'bytes_scanned': 107654604, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_98', 'parallel': True}): {'elapsed_time': 0.06086, 'rows_projected': 640000}
+Group({'name': 'groupby_98', 'parallel': True}): {'elapsed_time': 0.31572}
+SQLTableScan({'name': 'scan_phase1_42', 'parallel': True}): {'elapsed_time': 1.46373, 'query_bytes': 73, 'cost': 0.00020135327242314815, 'time_to_first_response': 0.18316, 'bytes_processed': 107652715, 'time_to_first_record_response': 0.18664, 'time_to_last_record_response': 1.25147, 'bytes_scanned': 107652715, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_42', 'parallel': True}): {'elapsed_time': 0.02561, 'rows_projected': 640000}
+Group({'name': 'groupby_42', 'parallel': True}): {'elapsed_time': 0.24846}
+SQLTableScan({'name': 'scan_phase1_43', 'parallel': True}): {'elapsed_time': 1.30888, 'query_bytes': 73, 'cost': 0.0002013552002608776, 'time_to_first_response': 0.2195, 'bytes_processed': 107653750, 'time_to_first_record_response': 0.22601, 'time_to_last_record_response': 1.01672, 'bytes_scanned': 107653750, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_43', 'parallel': True}): {'elapsed_time': 0.08202, 'rows_projected': 640000}
+Group({'name': 'groupby_43', 'parallel': True}): {'elapsed_time': 0.47387}
+SQLTableScan({'name': 'scan_phase1_40', 'parallel': True}): {'elapsed_time': 1.17436, 'query_bytes': 73, 'cost': 0.0002013579346239567, 'time_to_first_response': 0.18209, 'bytes_processed': 107655218, 'time_to_first_record_response': 0.18545, 'time_to_last_record_response': 0.90105, 'bytes_scanned': 107655218, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_40', 'parallel': True}): {'elapsed_time': 0.09415, 'rows_projected': 640000}
+Group({'name': 'groupby_40', 'parallel': True}): {'elapsed_time': 0.35851}
+SQLTableScan({'name': 'scan_phase1_41', 'parallel': True}): {'elapsed_time': 1.43209, 'query_bytes': 73, 'cost': 0.00020135349035263063, 'time_to_first_response': 0.27125, 'bytes_processed': 107652832, 'time_to_first_record_response': 0.27564, 'time_to_last_record_response': 1.32908, 'bytes_scanned': 107652832, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_41', 'parallel': True}): {'elapsed_time': 0.01379, 'rows_projected': 640000}
+Group({'name': 'groupby_41', 'parallel': True}): {'elapsed_time': 0.42909}
+SQLTableScan({'name': 'scan_phase1_46', 'parallel': True}): {'elapsed_time': 1.20549, 'query_bytes': 73, 'cost': 0.00020135210826992988, 'time_to_first_response': 0.16528, 'bytes_processed': 107652090, 'time_to_first_record_response': 0.16992, 'time_to_last_record_response': 1.18797, 'bytes_scanned': 107652090, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_46', 'parallel': True}): {'elapsed_time': 0.08015, 'rows_projected': 640000}
+Group({'name': 'groupby_46', 'parallel': True}): {'elapsed_time': 0.29153}
+SQLTableScan({'name': 'scan_phase1_47', 'parallel': True}): {'elapsed_time': 1.10969, 'query_bytes': 73, 'cost': 0.00020135188661515714, 'time_to_first_response': 0.12594, 'bytes_processed': 107651971, 'time_to_first_record_response': 0.12938, 'time_to_last_record_response': 0.78429, 'bytes_scanned': 107651971, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_47', 'parallel': True}): {'elapsed_time': 0.02382, 'rows_projected': 640000}
+Group({'name': 'groupby_47', 'parallel': True}): {'elapsed_time': 0.4804}
+SQLTableScan({'name': 'scan_phase1_44', 'parallel': True}): {'elapsed_time': 1.11628, 'query_bytes': 73, 'cost': 0.00020135136507451535, 'time_to_first_response': 0.16149, 'bytes_processed': 107651691, 'time_to_first_record_response': 0.16638, 'time_to_last_record_response': 0.75378, 'bytes_scanned': 107651691, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_44', 'parallel': True}): {'elapsed_time': 0.11445, 'rows_projected': 640000}
+Group({'name': 'groupby_44', 'parallel': True}): {'elapsed_time': 0.62567}
+SQLTableScan({'name': 'scan_phase1_45', 'parallel': True}): {'elapsed_time': 0.96042, 'query_bytes': 73, 'cost': 0.0002013503946363926, 'time_to_first_response': 0.15141, 'bytes_processed': 107651170, 'time_to_first_record_response': 0.15499, 'time_to_last_record_response': 0.78405, 'bytes_scanned': 107651170, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_45', 'parallel': True}): {'elapsed_time': 0.06009, 'rows_projected': 640000}
+Group({'name': 'groupby_45', 'parallel': True}): {'elapsed_time': 0.56812}
+SQLTableScan({'name': 'scan_phase1_48', 'parallel': True}): {'elapsed_time': 1.26449, 'query_bytes': 73, 'cost': 0.00020135304145514965, 'time_to_first_response': 0.19424, 'bytes_processed': 107652591, 'time_to_first_record_response': 0.19778, 'time_to_last_record_response': 1.11111, 'bytes_scanned': 107652591, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_48', 'parallel': True}): {'elapsed_time': 0.23279, 'rows_projected': 640000}
+Group({'name': 'groupby_48', 'parallel': True}): {'elapsed_time': 0.52833}
+SQLTableScan({'name': 'scan_phase1_49', 'parallel': True}): {'elapsed_time': 0.92838, 'query_bytes': 73, 'cost': 0.00020135406404733658, 'time_to_first_response': 0.18074, 'bytes_processed': 107653140, 'time_to_first_record_response': 0.18558, 'time_to_last_record_response': 0.67325, 'bytes_scanned': 107653140, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_49', 'parallel': True}): {'elapsed_time': 0.07592, 'rows_projected': 640000}
+Group({'name': 'groupby_49', 'parallel': True}): {'elapsed_time': 0.52412}
+SQLTableScan({'name': 'scan_phase1_19', 'parallel': True}): {'elapsed_time': 1.11849, 'query_bytes': 73, 'cost': 0.0002013528775423765, 'time_to_first_response': 0.16603, 'bytes_processed': 107652503, 'time_to_first_record_response': 0.17183, 'time_to_last_record_response': 0.85242, 'bytes_scanned': 107652503, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_19', 'parallel': True}): {'elapsed_time': 0.0191, 'rows_projected': 640000}
+Group({'name': 'groupby_19', 'parallel': True}): {'elapsed_time': 0.49026}
+SQLTableScan({'name': 'scan_phase1_18', 'parallel': True}): {'elapsed_time': 1.43519, 'query_bytes': 73, 'cost': 0.00020135493576526643, 'time_to_first_response': 0.27349, 'bytes_processed': 107653608, 'time_to_first_record_response': 0.27691, 'time_to_last_record_response': 1.34146, 'bytes_scanned': 107653608, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_18', 'parallel': True}): {'elapsed_time': 0.04085, 'rows_projected': 640000}
+Group({'name': 'groupby_18', 'parallel': True}): {'elapsed_time': 0.20148}
+SQLTableScan({'name': 'scan_phase1_15', 'parallel': True}): {'elapsed_time': 1.07592, 'query_bytes': 73, 'cost': 0.00020135097764432432, 'time_to_first_response': 0.15567, 'bytes_processed': 107651483, 'time_to_first_record_response': 0.15854, 'time_to_last_record_response': 0.8217, 'bytes_scanned': 107651483, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_15', 'parallel': True}): {'elapsed_time': 0.05746, 'rows_projected': 640000}
+Group({'name': 'groupby_15', 'parallel': True}): {'elapsed_time': 0.49371}
+SQLTableScan({'name': 'scan_phase1_14', 'parallel': True}): {'elapsed_time': 0.97618, 'query_bytes': 73, 'cost': 0.00020135872438549997, 'time_to_first_response': 0.16791, 'bytes_processed': 107655642, 'time_to_first_record_response': 0.17066, 'time_to_last_record_response': 0.68752, 'bytes_scanned': 107655642, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_14', 'parallel': True}): {'elapsed_time': 0.02279, 'rows_projected': 640000}
+Group({'name': 'groupby_14', 'parallel': True}): {'elapsed_time': 0.53833}
+SQLTableScan({'name': 'scan_phase1_17', 'parallel': True}): {'elapsed_time': 1.1156, 'query_bytes': 73, 'cost': 0.00020135455206036568, 'time_to_first_response': 0.18066, 'bytes_processed': 107653402, 'time_to_first_record_response': 0.1839, 'time_to_last_record_response': 0.8483, 'bytes_scanned': 107653402, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_17', 'parallel': True}): {'elapsed_time': 0.04348, 'rows_projected': 640000}
+Group({'name': 'groupby_17', 'parallel': True}): {'elapsed_time': 0.42961}
+SQLTableScan({'name': 'scan_phase1_16', 'parallel': True}): {'elapsed_time': 1.40225, 'query_bytes': 73, 'cost': 0.00020135316997766495, 'time_to_first_response': 0.15163, 'bytes_processed': 107652660, 'time_to_first_record_response': 0.15487, 'time_to_last_record_response': 1.33871, 'bytes_scanned': 107652660, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_16', 'parallel': True}): {'elapsed_time': 0.08599, 'rows_projected': 640000}
+Group({'name': 'groupby_16', 'parallel': True}): {'elapsed_time': 0.22525}
+SQLTableScan({'name': 'scan_phase1_11', 'parallel': True}): {'elapsed_time': 1.2571, 'query_bytes': 73, 'cost': 0.0002013465240597725, 'time_to_first_response': 0.2668, 'bytes_processed': 107649092, 'time_to_first_record_response': 0.27146, 'time_to_last_record_response': 1.05902, 'bytes_scanned': 107649092, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_11', 'parallel': True}): {'elapsed_time': 0.04106, 'rows_projected': 640000}
+Group({'name': 'groupby_11', 'parallel': True}): {'elapsed_time': 0.53817}
+SQLTableScan({'name': 'scan_phase1_10', 'parallel': True}): {'elapsed_time': 1.16972, 'query_bytes': 73, 'cost': 0.00020135034061968327, 'time_to_first_response': 0.15269, 'bytes_processed': 107651141, 'time_to_first_record_response': 0.15603, 'time_to_last_record_response': 0.83912, 'bytes_scanned': 107651141, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_10', 'parallel': True}): {'elapsed_time': 0.08966, 'rows_projected': 640000}
+Group({'name': 'groupby_10', 'parallel': True}): {'elapsed_time': 0.39376}
+SQLTableScan({'name': 'scan_phase1_13', 'parallel': True}): {'elapsed_time': 0.83739, 'query_bytes': 73, 'cost': 0.00020135264284908773, 'time_to_first_response': 0.16667, 'bytes_processed': 107652377, 'time_to_first_record_response': 0.17282, 'time_to_last_record_response': 0.62686, 'bytes_scanned': 107652377, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_13', 'parallel': True}): {'elapsed_time': 0.12464, 'rows_projected': 640000}
+Group({'name': 'groupby_13', 'parallel': True}): {'elapsed_time': 0.34792}
+SQLTableScan({'name': 'scan_phase1_12', 'parallel': True}): {'elapsed_time': 0.98491, 'query_bytes': 73, 'cost': 0.00020135463774204255, 'time_to_first_response': 0.14592, 'bytes_processed': 107653448, 'time_to_first_record_response': 0.14925, 'time_to_last_record_response': 0.82441, 'bytes_scanned': 107653448, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_12', 'parallel': True}): {'elapsed_time': 0.09718, 'rows_projected': 640000}
+Group({'name': 'groupby_12', 'parallel': True}): {'elapsed_time': 0.57304}
+SQLTableScan({'name': 'scan_phase1_37', 'parallel': True}): {'elapsed_time': 1.09294, 'query_bytes': 73, 'cost': 0.00020135430805385114, 'time_to_first_response': 0.15273, 'bytes_processed': 107653271, 'time_to_first_record_response': 0.15726, 'time_to_last_record_response': 0.82318, 'bytes_scanned': 107653271, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_37', 'parallel': True}): {'elapsed_time': 0.10416, 'rows_projected': 640000}
+Group({'name': 'groupby_37', 'parallel': True}): {'elapsed_time': 0.44706}
+SQLTableScan({'name': 'scan_phase1_24', 'parallel': True}): {'elapsed_time': 1.19163, 'query_bytes': 73, 'cost': 0.00020135054737329484, 'time_to_first_response': 0.14148, 'bytes_processed': 107651252, 'time_to_first_record_response': 0.14495, 'time_to_last_record_response': 0.80609, 'bytes_scanned': 107651252, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_24', 'parallel': True}): {'elapsed_time': 0.02709, 'rows_projected': 640000}
+Group({'name': 'groupby_24', 'parallel': True}): {'elapsed_time': 0.45615}
+SQLTableScan({'name': 'scan_phase1_25', 'parallel': True}): {'elapsed_time': 1.0356, 'query_bytes': 73, 'cost': 0.00020135114528238774, 'time_to_first_response': 0.16938, 'bytes_processed': 107651573, 'time_to_first_record_response': 0.17287, 'time_to_last_record_response': 0.79801, 'bytes_scanned': 107651573, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_25', 'parallel': True}): {'elapsed_time': 0.08795, 'rows_projected': 640000}
+Group({'name': 'groupby_25', 'parallel': True}): {'elapsed_time': 0.62027}
+SQLTableScan({'name': 'scan_phase1_26', 'parallel': True}): {'elapsed_time': 1.0095, 'query_bytes': 73, 'cost': 0.00020135248824954035, 'time_to_first_response': 0.14474, 'bytes_processed': 107652294, 'time_to_first_record_response': 0.14827, 'time_to_last_record_response': 0.69261, 'bytes_scanned': 107652294, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_26', 'parallel': True}): {'elapsed_time': 0.11916, 'rows_projected': 640000}
+Group({'name': 'groupby_26', 'parallel': True}): {'elapsed_time': 0.43648}
+SQLTableScan({'name': 'scan_phase1_27', 'parallel': True}): {'elapsed_time': 1.44838, 'query_bytes': 73, 'cost': 0.0002013518437743187, 'time_to_first_response': 0.23742, 'bytes_processed': 107651948, 'time_to_first_record_response': 0.24168, 'time_to_last_record_response': 1.41083, 'bytes_scanned': 107651948, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_27', 'parallel': True}): {'elapsed_time': 0.03505, 'rows_projected': 640000}
+Group({'name': 'groupby_27', 'parallel': True}): {'elapsed_time': 0.34646}
+SQLTableScan({'name': 'scan_phase1_20', 'parallel': True}): {'elapsed_time': 1.30111, 'query_bytes': 73, 'cost': 0.00020135453715920448, 'time_to_first_response': 0.15293, 'bytes_processed': 107653394, 'time_to_first_record_response': 0.15572, 'time_to_last_record_response': 1.02216, 'bytes_scanned': 107653394, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_20', 'parallel': True}): {'elapsed_time': 0.06282, 'rows_projected': 640000}
+Group({'name': 'groupby_20', 'parallel': True}): {'elapsed_time': 0.3677}
+SQLTableScan({'name': 'scan_phase1_21', 'parallel': True}): {'elapsed_time': 1.3908, 'query_bytes': 73, 'cost': 0.00020135015808045865, 'time_to_first_response': 0.21793, 'bytes_processed': 107651043, 'time_to_first_record_response': 0.22146, 'time_to_last_record_response': 1.25331, 'bytes_scanned': 107651043, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_21', 'parallel': True}): {'elapsed_time': 0.02257, 'rows_projected': 640000}
+Group({'name': 'groupby_21', 'parallel': True}): {'elapsed_time': 0.36046}
+SQLTableScan({'name': 'scan_phase1_22', 'parallel': True}): {'elapsed_time': 1.10739, 'query_bytes': 73, 'cost': 0.00020135833695530893, 'time_to_first_response': 0.19512, 'bytes_processed': 107655434, 'time_to_first_record_response': 0.19958, 'time_to_last_record_response': 0.81579, 'bytes_scanned': 107655434, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_22', 'parallel': True}): {'elapsed_time': 0.02896, 'rows_projected': 640000}
+Group({'name': 'groupby_22', 'parallel': True}): {'elapsed_time': 0.55977}
+SQLTableScan({'name': 'scan_phase1_23', 'parallel': True}): {'elapsed_time': 0.96106, 'query_bytes': 73, 'cost': 0.00020134993828833104, 'time_to_first_response': 0.15558, 'bytes_processed': 107650925, 'time_to_first_record_response': 0.16138, 'time_to_last_record_response': 0.66031, 'bytes_scanned': 107650925, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_23', 'parallel': True}): {'elapsed_time': 0.02682, 'rows_projected': 640000}
+Group({'name': 'groupby_23', 'parallel': True}): {'elapsed_time': 0.28594}
+SQLTableScan({'name': 'scan_phase1_28', 'parallel': True}): {'elapsed_time': 1.0823, 'query_bytes': 73, 'cost': 0.00020135124772787094, 'time_to_first_response': 0.1724, 'bytes_processed': 107651628, 'time_to_first_record_response': 0.17554, 'time_to_last_record_response': 0.69572, 'bytes_scanned': 107651628, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_28', 'parallel': True}): {'elapsed_time': 0.02275, 'rows_projected': 640000}
+Group({'name': 'groupby_28', 'parallel': True}): {'elapsed_time': 0.63552}
+SQLTableScan({'name': 'scan_phase1_29', 'parallel': True}): {'elapsed_time': 1.29818, 'query_bytes': 73, 'cost': 0.00020135180279612542, 'time_to_first_response': 0.2055, 'bytes_processed': 107651926, 'time_to_first_record_response': 0.21031, 'time_to_last_record_response': 1.23802, 'bytes_scanned': 107651926, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_29', 'parallel': True}): {'elapsed_time': 0.03737, 'rows_projected': 640000}
+Group({'name': 'groupby_29', 'parallel': True}): {'elapsed_time': 0.42986}
+SQLTableScan({'name': 'scan_phase1_51', 'parallel': True}): {'elapsed_time': 1.41553, 'query_bytes': 73, 'cost': 0.00020135154761373998, 'time_to_first_response': 0.19204, 'bytes_processed': 107651789, 'time_to_first_record_response': 0.19571, 'time_to_last_record_response': 1.28363, 'bytes_scanned': 107651789, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_51', 'parallel': True}): {'elapsed_time': 0.0816, 'rows_projected': 640000}
+Group({'name': 'groupby_51', 'parallel': True}): {'elapsed_time': 0.39962}
+SQLTableScan({'name': 'scan_phase1_50', 'parallel': True}): {'elapsed_time': 1.41439, 'query_bytes': 73, 'cost': 0.00020135387592017651, 'time_to_first_response': 0.25698, 'bytes_processed': 107653039, 'time_to_first_record_response': 0.26114, 'time_to_last_record_response': 1.12069, 'bytes_scanned': 107653039, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_50', 'parallel': True}): {'elapsed_time': 0.04794, 'rows_projected': 640000}
+Group({'name': 'groupby_50', 'parallel': True}): {'elapsed_time': 0.39121}
+SQLTableScan({'name': 'scan_phase1_53', 'parallel': True}): {'elapsed_time': 1.10223, 'query_bytes': 73, 'cost': 0.0002013543751090765, 'time_to_first_response': 0.20165, 'bytes_processed': 107653307, 'time_to_first_record_response': 0.20477, 'time_to_last_record_response': 0.92854, 'bytes_scanned': 107653307, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_53', 'parallel': True}): {'elapsed_time': 0.06869, 'rows_projected': 640000}
+Group({'name': 'groupby_53', 'parallel': True}): {'elapsed_time': 0.50523}
+SQLTableScan({'name': 'scan_phase1_52', 'parallel': True}): {'elapsed_time': 1.32246, 'query_bytes': 73, 'cost': 0.00020135259442031383, 'time_to_first_response': 0.1736, 'bytes_processed': 107652351, 'time_to_first_record_response': 0.17765, 'time_to_last_record_response': 1.10189, 'bytes_scanned': 107652351, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_52', 'parallel': True}): {'elapsed_time': 0.0555, 'rows_projected': 640000}
+Group({'name': 'groupby_52', 'parallel': True}): {'elapsed_time': 0.47413}
+SQLTableScan({'name': 'scan_phase1_55', 'parallel': True}): {'elapsed_time': 1.14128, 'query_bytes': 73, 'cost': 0.0002013532966375351, 'time_to_first_response': 0.16947, 'bytes_processed': 107652728, 'time_to_first_record_response': 0.17402, 'time_to_last_record_response': 0.89219, 'bytes_scanned': 107652728, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_55', 'parallel': True}): {'elapsed_time': 0.07297, 'rows_projected': 640000}
+Group({'name': 'groupby_55', 'parallel': True}): {'elapsed_time': 0.61947}
+SQLTableScan({'name': 'scan_phase1_54', 'parallel': True}): {'elapsed_time': 0.93413, 'query_bytes': 73, 'cost': 0.00020135045982897282, 'time_to_first_response': 0.16534, 'bytes_processed': 107651205, 'time_to_first_record_response': 0.16881, 'time_to_last_record_response': 0.68318, 'bytes_scanned': 107651205, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_54', 'parallel': True}): {'elapsed_time': 0.04904, 'rows_projected': 640000}
+Group({'name': 'groupby_54', 'parallel': True}): {'elapsed_time': 0.31351}
+SQLTableScan({'name': 'scan_phase1_57', 'parallel': True}): {'elapsed_time': 1.18179, 'query_bytes': 73, 'cost': 0.00020135472901165486, 'time_to_first_response': 0.18407, 'bytes_processed': 107653497, 'time_to_first_record_response': 0.18738, 'time_to_last_record_response': 1.02675, 'bytes_scanned': 107653497, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_57', 'parallel': True}): {'elapsed_time': 0.08747, 'rows_projected': 640000}
+Group({'name': 'groupby_57', 'parallel': True}): {'elapsed_time': 0.24561}
+SQLTableScan({'name': 'scan_phase1_56', 'parallel': True}): {'elapsed_time': 1.06099, 'query_bytes': 73, 'cost': 0.00020135202631354332, 'time_to_first_response': 0.14985, 'bytes_processed': 107652046, 'time_to_first_record_response': 0.15399, 'time_to_last_record_response': 0.71943, 'bytes_scanned': 107652046, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_56', 'parallel': True}): {'elapsed_time': 0.05216, 'rows_projected': 640000}
+Group({'name': 'groupby_56', 'parallel': True}): {'elapsed_time': 0.42419}
+SQLTableScan({'name': 'scan_phase1_59', 'parallel': True}): {'elapsed_time': 1.3139, 'query_bytes': 73, 'cost': 0.00020135056413710117, 'time_to_first_response': 0.16292, 'bytes_processed': 107651261, 'time_to_first_record_response': 0.16853, 'time_to_last_record_response': 0.97723, 'bytes_scanned': 107651261, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_59', 'parallel': True}): {'elapsed_time': 0.12275, 'rows_projected': 640000}
+Group({'name': 'groupby_59', 'parallel': True}): {'elapsed_time': 0.47835}
+SQLTableScan({'name': 'scan_phase1_58', 'parallel': True}): {'elapsed_time': 1.21191, 'query_bytes': 73, 'cost': 0.00020135145634412766, 'time_to_first_response': 0.18875, 'bytes_processed': 107651740, 'time_to_first_record_response': 0.19372, 'time_to_last_record_response': 0.98785, 'bytes_scanned': 107651740, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_58', 'parallel': True}): {'elapsed_time': 0.08624, 'rows_projected': 640000}
+Group({'name': 'groupby_58', 'parallel': True}): {'elapsed_time': 0.42485}
+SQLTableScan({'name': 'scan_phase1_39', 'parallel': True}): {'elapsed_time': 1.1702, 'query_bytes': 73, 'cost': 0.00020135346427559852, 'time_to_first_response': 0.15588, 'bytes_processed': 107652818, 'time_to_first_record_response': 0.15911, 'time_to_last_record_response': 0.92181, 'bytes_scanned': 107652818, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_39', 'parallel': True}): {'elapsed_time': 0.06318, 'rows_projected': 640000}
+Group({'name': 'groupby_39', 'parallel': True}): {'elapsed_time': 0.37667}
+SQLTableScan({'name': 'scan_phase1_68', 'parallel': True}): {'elapsed_time': 1.28093, 'query_bytes': 73, 'cost': 0.00020135572738945483, 'time_to_first_response': 0.14144, 'bytes_processed': 107654033, 'time_to_first_record_response': 0.14661, 'time_to_last_record_response': 1.10127, 'bytes_scanned': 107654033, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_68', 'parallel': True}): {'elapsed_time': 0.03931, 'rows_projected': 640000}
+Group({'name': 'groupby_68', 'parallel': True}): {'elapsed_time': 0.18832}
+SQLTableScan({'name': 'scan_phase1_69', 'parallel': True}): {'elapsed_time': 1.06452, 'query_bytes': 73, 'cost': 0.00020135567337274552, 'time_to_first_response': 0.1733, 'bytes_processed': 107654004, 'time_to_first_record_response': 0.1768, 'time_to_last_record_response': 0.77456, 'bytes_scanned': 107654004, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_69', 'parallel': True}): {'elapsed_time': 0.12085, 'rows_projected': 640000}
+Group({'name': 'groupby_69', 'parallel': True}): {'elapsed_time': 0.33558}
+SQLTableScan({'name': 'scan_phase1_60', 'parallel': True}): {'elapsed_time': 1.21219, 'query_bytes': 73, 'cost': 0.0002013554610311985, 'time_to_first_response': 0.20897, 'bytes_processed': 107653890, 'time_to_first_record_response': 0.21501, 'time_to_last_record_response': 1.02526, 'bytes_scanned': 107653890, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_60', 'parallel': True}): {'elapsed_time': 0.09091, 'rows_projected': 640000}
+Group({'name': 'groupby_60', 'parallel': True}): {'elapsed_time': 0.45714}
+SQLTableScan({'name': 'scan_phase1_61', 'parallel': True}): {'elapsed_time': 1.43033, 'query_bytes': 73, 'cost': 0.00020134991966187955, 'time_to_first_response': 0.20164, 'bytes_processed': 107650915, 'time_to_first_record_response': 0.20549, 'time_to_last_record_response': 1.33656, 'bytes_scanned': 107650915, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_61', 'parallel': True}): {'elapsed_time': 0.03888, 'rows_projected': 640000}
+Group({'name': 'groupby_61', 'parallel': True}): {'elapsed_time': 0.28679}
+SQLTableScan({'name': 'scan_phase1_62', 'parallel': True}): {'elapsed_time': 1.2742, 'query_bytes': 73, 'cost': 0.00020134761370718478, 'time_to_first_response': 0.16761, 'bytes_processed': 107649677, 'time_to_first_record_response': 0.17205, 'time_to_last_record_response': 1.07966, 'bytes_scanned': 107649677, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_62', 'parallel': True}): {'elapsed_time': 0.11472, 'rows_projected': 640000}
+Group({'name': 'groupby_62', 'parallel': True}): {'elapsed_time': 0.34345}
+SQLTableScan({'name': 'scan_phase1_63', 'parallel': True}): {'elapsed_time': 1.4386, 'query_bytes': 73, 'cost': 0.00020135833323001862, 'time_to_first_response': 0.16447, 'bytes_processed': 107655432, 'time_to_first_record_response': 0.1684, 'time_to_last_record_response': 1.2684, 'bytes_scanned': 107655432, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_63', 'parallel': True}): {'elapsed_time': 0.10051, 'rows_projected': 640000}
+Group({'name': 'groupby_63', 'parallel': True}): {'elapsed_time': 0.24553}
+SQLTableScan({'name': 'scan_phase1_64', 'parallel': True}): {'elapsed_time': 1.13402, 'query_bytes': 73, 'cost': 0.00020135615393519402, 'time_to_first_response': 0.18061, 'bytes_processed': 107654262, 'time_to_first_record_response': 0.18379, 'time_to_last_record_response': 0.93359, 'bytes_scanned': 107654262, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_64', 'parallel': True}): {'elapsed_time': 0.07354, 'rows_projected': 640000}
+Group({'name': 'groupby_64', 'parallel': True}): {'elapsed_time': 0.41153}
+SQLTableScan({'name': 'scan_phase1_65', 'parallel': True}): {'elapsed_time': 1.19558, 'query_bytes': 73, 'cost': 0.00020135385170578956, 'time_to_first_response': 0.17912, 'bytes_processed': 107653026, 'time_to_first_record_response': 0.1824, 'time_to_last_record_response': 1.05474, 'bytes_scanned': 107653026, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_65', 'parallel': True}): {'elapsed_time': 0.07919, 'rows_projected': 640000}
+Group({'name': 'groupby_65', 'parallel': True}): {'elapsed_time': 0.24499}
+SQLTableScan({'name': 'scan_phase1_66', 'parallel': True}): {'elapsed_time': 1.31996, 'query_bytes': 73, 'cost': 0.0002013555448502302, 'time_to_first_response': 0.22968, 'bytes_processed': 107653935, 'time_to_first_record_response': 0.22482, 'time_to_last_record_response': 1.14746, 'bytes_scanned': 107653935, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_66', 'parallel': True}): {'elapsed_time': 0.06778, 'rows_projected': 640000}
+Group({'name': 'groupby_66', 'parallel': True}): {'elapsed_time': 0.32564}
+SQLTableScan({'name': 'scan_phase1_67', 'parallel': True}): {'elapsed_time': 1.25983, 'query_bytes': 73, 'cost': 0.000201348926872015, 'time_to_first_response': 0.14896, 'bytes_processed': 107650382, 'time_to_first_record_response': 0.1536, 'time_to_last_record_response': 1.10689, 'bytes_scanned': 107650382, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_67', 'parallel': True}): {'elapsed_time': 0.053, 'rows_projected': 640000}
+Group({'name': 'groupby_67', 'parallel': True}): {'elapsed_time': 0.31132}
+SQLTableScan({'name': 'scan_phase1_33', 'parallel': True}): {'elapsed_time': 1.46344, 'query_bytes': 73, 'cost': 0.00020135744847357275, 'time_to_first_response': 0.19551, 'bytes_processed': 107654957, 'time_to_first_record_response': 0.20006, 'time_to_last_record_response': 1.23719, 'bytes_scanned': 107654957, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_33', 'parallel': True}): {'elapsed_time': 0.03683, 'rows_projected': 640000}
+Group({'name': 'groupby_33', 'parallel': True}): {'elapsed_time': 0.55798}
+SQLTableScan({'name': 'scan_phase1_32', 'parallel': True}): {'elapsed_time': 1.45937, 'query_bytes': 73, 'cost': 0.00020135578326880934, 'time_to_first_response': 0.20648, 'bytes_processed': 107654063, 'time_to_first_record_response': 0.2117, 'time_to_last_record_response': 1.25122, 'bytes_scanned': 107654063, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_32', 'parallel': True}): {'elapsed_time': 0.16629, 'rows_projected': 640000}
+Group({'name': 'groupby_32', 'parallel': True}): {'elapsed_time': 0.42513}
+SQLTableScan({'name': 'scan_phase1_31', 'parallel': True}): {'elapsed_time': 1.06637, 'query_bytes': 73, 'cost': 0.00020135347358882428, 'time_to_first_response': 0.15648, 'bytes_processed': 107652823, 'time_to_first_record_response': 0.1592, 'time_to_last_record_response': 0.84451, 'bytes_scanned': 107652823, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_31', 'parallel': True}): {'elapsed_time': 0.11216, 'rows_projected': 640000}
+Group({'name': 'groupby_31', 'parallel': True}): {'elapsed_time': 0.47807}
+SQLTableScan({'name': 'scan_phase1_30', 'parallel': True}): {'elapsed_time': 1.47861, 'query_bytes': 73, 'cost': 0.0002013536635786295, 'time_to_first_response': 0.18135, 'bytes_processed': 107652925, 'time_to_first_record_response': 0.18437, 'time_to_last_record_response': 1.19896, 'bytes_scanned': 107652925, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_30', 'parallel': True}): {'elapsed_time': 0.05272, 'rows_projected': 640000}
+Group({'name': 'groupby_30', 'parallel': True}): {'elapsed_time': 0.22631}
+SQLTableScan({'name': 'scan_phase1_36', 'parallel': True}): {'elapsed_time': 1.36126, 'query_bytes': 73, 'cost': 0.00020135361514985562, 'time_to_first_response': 0.24375, 'bytes_processed': 107652899, 'time_to_first_record_response': 0.2483, 'time_to_last_record_response': 1.20388, 'bytes_scanned': 107652899, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_36', 'parallel': True}): {'elapsed_time': 0.0752, 'rows_projected': 640000}
+Group({'name': 'groupby_36', 'parallel': True}): {'elapsed_time': 0.25357}
+SQLTableScan({'name': 'scan_phase1_35', 'parallel': True}): {'elapsed_time': 1.11833, 'query_bytes': 73, 'cost': 0.00020135397277772427, 'time_to_first_response': 0.164, 'bytes_processed': 107653091, 'time_to_first_record_response': 0.16901, 'time_to_last_record_response': 0.79237, 'bytes_scanned': 107653091, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_35', 'parallel': True}): {'elapsed_time': 0.03836, 'rows_projected': 640000}
+Group({'name': 'groupby_35', 'parallel': True}): {'elapsed_time': 0.48117}
+SQLTableScan({'name': 'scan_phase1_34', 'parallel': True}): {'elapsed_time': 1.36189, 'query_bytes': 73, 'cost': 0.00020134998299181463, 'time_to_first_response': 0.22814, 'bytes_processed': 107650949, 'time_to_first_record_response': 0.23257, 'time_to_last_record_response': 1.10933, 'bytes_scanned': 107650949, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_34', 'parallel': True}): {'elapsed_time': 0.13537, 'rows_projected': 640000}
+Group({'name': 'groupby_34', 'parallel': True}): {'elapsed_time': 0.35405}
+SQLTableScan({'name': 'scan_phase1_38', 'parallel': True}): {'elapsed_time': 1.4881, 'query_bytes': 73, 'cost': 0.00020135411620140077, 'time_to_first_response': 0.21535, 'bytes_processed': 107653168, 'time_to_first_record_response': 0.22152, 'time_to_last_record_response': 1.25721, 'bytes_scanned': 107653168, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_38', 'parallel': True}): {'elapsed_time': 0.07264, 'rows_projected': 640000}
+Group({'name': 'groupby_38', 'parallel': True}): {'elapsed_time': 0.32498}
+SQLTableScan({'name': 'scan_phase1_86', 'parallel': True}): {'elapsed_time': 1.13694, 'query_bytes': 73, 'cost': 0.00020135540887713434, 'time_to_first_response': 0.12523, 'bytes_processed': 107653862, 'time_to_first_record_response': 0.12885, 'time_to_last_record_response': 0.85285, 'bytes_scanned': 107653862, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_86', 'parallel': True}): {'elapsed_time': 0.07047, 'rows_projected': 640000}
+Group({'name': 'groupby_86', 'parallel': True}): {'elapsed_time': 0.48959}
+SQLTableScan({'name': 'scan_phase1_87', 'parallel': True}): {'elapsed_time': 1.31679, 'query_bytes': 73, 'cost': 0.00020135188661515714, 'time_to_first_response': 0.12958, 'bytes_processed': 107651971, 'time_to_first_record_response': 0.13434, 'time_to_last_record_response': 1.15878, 'bytes_scanned': 107651971, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_87', 'parallel': True}): {'elapsed_time': 0.04948, 'rows_projected': 640000}
+Group({'name': 'groupby_87', 'parallel': True}): {'elapsed_time': 0.31485}
+SQLTableScan({'name': 'scan_phase1_84', 'parallel': True}): {'elapsed_time': 1.1266, 'query_bytes': 73, 'cost': 0.00020135296322405338, 'time_to_first_response': 0.18705, 'bytes_processed': 107652549, 'time_to_first_record_response': 0.19326, 'time_to_last_record_response': 0.90581, 'bytes_scanned': 107652549, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_84', 'parallel': True}): {'elapsed_time': 0.08715, 'rows_projected': 640000}
+Group({'name': 'groupby_84', 'parallel': True}): {'elapsed_time': 0.45433}
+SQLTableScan({'name': 'scan_phase1_85', 'parallel': True}): {'elapsed_time': 1.19296, 'query_bytes': 73, 'cost': 0.00020135678350925447, 'time_to_first_response': 0.15952, 'bytes_processed': 107654600, 'time_to_first_record_response': 0.16395, 'time_to_last_record_response': 1.06454, 'bytes_scanned': 107654600, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_85', 'parallel': True}): {'elapsed_time': 0.24066, 'rows_projected': 640000}
+Group({'name': 'groupby_85', 'parallel': True}): {'elapsed_time': 0.35422}
+SQLTableScan({'name': 'scan_phase1_82', 'parallel': True}): {'elapsed_time': 1.41125, 'query_bytes': 73, 'cost': 0.00020135367661714554, 'time_to_first_response': 0.28032, 'bytes_processed': 107652932, 'time_to_first_record_response': 0.28689, 'time_to_last_record_response': 1.20801, 'bytes_scanned': 107652932, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_82', 'parallel': True}): {'elapsed_time': 0.03815, 'rows_projected': 640000}
+Group({'name': 'groupby_82', 'parallel': True}): {'elapsed_time': 0.19773}
+SQLTableScan({'name': 'scan_phase1_83', 'parallel': True}): {'elapsed_time': 1.33387, 'query_bytes': 73, 'cost': 0.00020135301537811757, 'time_to_first_response': 0.28144, 'bytes_processed': 107652577, 'time_to_first_record_response': 0.28554, 'time_to_last_record_response': 1.12461, 'bytes_scanned': 107652577, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_83', 'parallel': True}): {'elapsed_time': 0.07191, 'rows_projected': 640000}
+Group({'name': 'groupby_83', 'parallel': True}): {'elapsed_time': 0.38619}
+SQLTableScan({'name': 'scan_phase1_80', 'parallel': True}): {'elapsed_time': 1.4358, 'query_bytes': 73, 'cost': 0.00020135622657835485, 'time_to_first_response': 0.31379, 'bytes_processed': 107654301, 'time_to_first_record_response': 0.31881, 'time_to_last_record_response': 1.28748, 'bytes_scanned': 107654301, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_80', 'parallel': True}): {'elapsed_time': 0.01788, 'rows_projected': 640000}
+Group({'name': 'groupby_80', 'parallel': True}): {'elapsed_time': 0.27739}
+SQLTableScan({'name': 'scan_phase1_81', 'parallel': True}): {'elapsed_time': 0.74843, 'query_bytes': 73, 'cost': 0.00020135335065424442, 'time_to_first_response': 0.11747, 'bytes_processed': 107652757, 'time_to_first_record_response': 0.12083, 'time_to_last_record_response': 0.61092, 'bytes_scanned': 107652757, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_81', 'parallel': True}): {'elapsed_time': 0.11814, 'rows_projected': 640000}
+Group({'name': 'groupby_81', 'parallel': True}): {'elapsed_time': 0.43938}
+SQLTableScan({'name': 'scan_phase1_88', 'parallel': True}): {'elapsed_time': 1.41768, 'query_bytes': 73, 'cost': 0.00020135261677205562, 'time_to_first_response': 0.23361, 'bytes_processed': 107652363, 'time_to_first_record_response': 0.24598, 'time_to_last_record_response': 1.23022, 'bytes_scanned': 107652363, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_88', 'parallel': True}): {'elapsed_time': 0.01813, 'rows_projected': 640000}
+Group({'name': 'groupby_88', 'parallel': True}): {'elapsed_time': 0.29159}
+SQLTableScan({'name': 'scan_phase1_89', 'parallel': True}): {'elapsed_time': 1.42039, 'query_bytes': 73, 'cost': 0.00020134973339736462, 'time_to_first_response': 0.16578, 'bytes_processed': 107650815, 'time_to_first_record_response': 0.16963, 'time_to_last_record_response': 1.32417, 'bytes_scanned': 107650815, 'rows_returned': 640000, 'bytes_returned': 1280000}
+Project({'name': 'project_89', 'parallel': True}): {'elapsed_time': 0.01798, 'rows_projected': 640000}
+Group({'name': 'groupby_89', 'parallel': True}): {'elapsed_time': 0.36748}
+Group({'name': 'groupby_reduce', 'parallel': True}): {'elapsed_time': 0.40237}
+GroupbyFilterBuild({'name': 'groupby_filter_build', 'parallel': True}): {'elapsed_time': 0.09908, 'rows_processed': 0}
+SQLTableScan({'name': 'scan_phase2_76', 'parallel': True}): {'elapsed_time': 56.4702, 'query_bytes': 5910, 'cost': 0.0002005260338075459, 'time_to_first_response': 1.16447, 'bytes_processed': 107656091, 'time_to_first_record_response': 56.44736, 'time_to_last_record_response': 56.44736, 'bytes_scanned': 107656091, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_76', 'parallel': True}): {'elapsed_time': 0.03522}
+SQLTableScan({'name': 'scan_phase2_77', 'parallel': True}): {'elapsed_time': 57.35132, 'query_bytes': 5910, 'cost': 0.0002005165232345462, 'time_to_first_response': 1.13676, 'bytes_processed': 107650984, 'time_to_first_record_response': 57.3268, 'time_to_last_record_response': 57.3268, 'bytes_scanned': 107650984, 'rows_returned': 1, 'bytes_returned': 1442}
+GroupbyDecoder({'name': 'groupby_decoder_77', 'parallel': True}): {'elapsed_time': 0.03881}
+SQLTableScan({'name': 'scan_phase2_74', 'parallel': True}): {'elapsed_time': 53.94728, 'query_bytes': 5910, 'cost': 0.00020051723504438995, 'time_to_first_response': 1.12968, 'bytes_processed': 107651370, 'time_to_first_record_response': 53.91893, 'time_to_last_record_response': 53.91893, 'bytes_scanned': 107651370, 'rows_returned': 1, 'bytes_returned': 1431}
+GroupbyDecoder({'name': 'groupby_decoder_74', 'parallel': True}): {'elapsed_time': 0.03762}
+SQLTableScan({'name': 'scan_phase2_75', 'parallel': True}): {'elapsed_time': 55.95167, 'query_bytes': 5910, 'cost': 0.0002005183688364923, 'time_to_first_response': 1.13797, 'bytes_processed': 107651978, 'time_to_first_record_response': 55.92651, 'time_to_last_record_response': 55.92651, 'bytes_scanned': 107651978, 'rows_returned': 1, 'bytes_returned': 1433}
+GroupbyDecoder({'name': 'groupby_decoder_75', 'parallel': True}): {'elapsed_time': 0.0379}
+SQLTableScan({'name': 'scan_phase2_72', 'parallel': True}): {'elapsed_time': 59.84507, 'query_bytes': 5910, 'cost': 0.0002005222037434578, 'time_to_first_response': 1.19187, 'bytes_processed': 107654040, 'time_to_first_record_response': 59.82188, 'time_to_last_record_response': 59.82188, 'bytes_scanned': 107654040, 'rows_returned': 1, 'bytes_returned': 1424}
+GroupbyDecoder({'name': 'groupby_decoder_72', 'parallel': True}): {'elapsed_time': 0.04071}
+SQLTableScan({'name': 'scan_phase2_73', 'parallel': True}): {'elapsed_time': 53.65869, 'query_bytes': 5910, 'cost': 0.00020051630157977345, 'time_to_first_response': 1.13991, 'bytes_processed': 107650865, 'time_to_first_record_response': 53.63458, 'time_to_last_record_response': 53.63458, 'bytes_scanned': 107650865, 'rows_returned': 1, 'bytes_returned': 1442}
+GroupbyDecoder({'name': 'groupby_decoder_73', 'parallel': True}): {'elapsed_time': 0.03846}
+SQLTableScan({'name': 'scan_phase2_70', 'parallel': True}): {'elapsed_time': 54.103, 'query_bytes': 5910, 'cost': 0.00020051865074783564, 'time_to_first_response': 1.19946, 'bytes_processed': 107652129, 'time_to_first_record_response': 54.07848, 'time_to_last_record_response': 54.07848, 'bytes_scanned': 107652129, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_70', 'parallel': True}): {'elapsed_time': 0.03568}
+SQLTableScan({'name': 'scan_phase2_71', 'parallel': True}): {'elapsed_time': 54.83228, 'query_bytes': 5910, 'cost': 0.00020051971515640618, 'time_to_first_response': 1.16535, 'bytes_processed': 107652698, 'time_to_first_record_response': 54.80804, 'time_to_last_record_response': 54.80804, 'bytes_scanned': 107652698, 'rows_returned': 1, 'bytes_returned': 1441}
+GroupbyDecoder({'name': 'groupby_decoder_71', 'parallel': True}): {'elapsed_time': 0.03814}
+SQLTableScan({'name': 'scan_phase2_78', 'parallel': True}): {'elapsed_time': 59.26179, 'query_bytes': 5910, 'cost': 0.0002005253216251731, 'time_to_first_response': 1.13137, 'bytes_processed': 107655709, 'time_to_first_record_response': 59.23809, 'time_to_last_record_response': 59.23809, 'bytes_scanned': 107655709, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_78', 'parallel': True}): {'elapsed_time': 0.0379}
+SQLTableScan({'name': 'scan_phase2_79', 'parallel': True}): {'elapsed_time': 68.16188, 'query_bytes': 5910, 'cost': 0.0002005192312411964, 'time_to_first_response': 1.12728, 'bytes_processed': 107652441, 'time_to_first_record_response': 68.13722, 'time_to_last_record_response': 68.13722, 'bytes_scanned': 107652441, 'rows_returned': 1, 'bytes_returned': 1433}
+GroupbyDecoder({'name': 'groupby_decoder_79', 'parallel': True}): {'elapsed_time': 0.03898}
+SQLTableScan({'name': 'scan_phase2_65', 'parallel': True}): {'elapsed_time': 54.59133, 'query_bytes': 5910, 'cost': 0.0002005203241482377, 'time_to_first_response': 1.12424, 'bytes_processed': 107653026, 'time_to_first_record_response': 54.56823, 'time_to_last_record_response': 54.56823, 'bytes_scanned': 107653026, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_65', 'parallel': True}): {'elapsed_time': 0.03314}
+SQLTableScan({'name': 'scan_phase2_64', 'parallel': True}): {'elapsed_time': 56.85482, 'query_bytes': 5910, 'cost': 0.00020052262246608734, 'time_to_first_response': 1.1044, 'bytes_processed': 107654262, 'time_to_first_record_response': 56.83127, 'time_to_last_record_response': 56.83127, 'bytes_scanned': 107654262, 'rows_returned': 1, 'bytes_returned': 1432}
+GroupbyDecoder({'name': 'groupby_decoder_64', 'parallel': True}): {'elapsed_time': 0.03884}
+SQLTableScan({'name': 'scan_phase2_67', 'parallel': True}): {'elapsed_time': 54.88911, 'query_bytes': 5910, 'cost': 0.00020051539670675993, 'time_to_first_response': 1.13947, 'bytes_processed': 107650382, 'time_to_first_record_response': 54.86608, 'time_to_last_record_response': 54.86608, 'bytes_scanned': 107650382, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_67', 'parallel': True}): {'elapsed_time': 0.03853}
+SQLTableScan({'name': 'scan_phase2_66', 'parallel': True}): {'elapsed_time': 56.91427, 'query_bytes': 5910, 'cost': 0.00020052201403304934, 'time_to_first_response': 1.1694, 'bytes_processed': 107653935, 'time_to_first_record_response': 56.88949, 'time_to_last_record_response': 56.88949, 'bytes_scanned': 107653935, 'rows_returned': 1, 'bytes_returned': 1433}
+GroupbyDecoder({'name': 'groupby_decoder_66', 'parallel': True}): {'elapsed_time': 0.03783}
+SQLTableScan({'name': 'scan_phase2_61', 'parallel': True}): {'elapsed_time': 57.71969, 'query_bytes': 5910, 'cost': 0.0002005163960158825, 'time_to_first_response': 1.20343, 'bytes_processed': 107650915, 'time_to_first_record_response': 57.69596, 'time_to_last_record_response': 57.69596, 'bytes_scanned': 107650915, 'rows_returned': 1, 'bytes_returned': 1444}
+GroupbyDecoder({'name': 'groupby_decoder_61', 'parallel': True}): {'elapsed_time': 0.03978}
+SQLTableScan({'name': 'scan_phase2_60', 'parallel': True}): {'elapsed_time': 57.97788, 'query_bytes': 5910, 'cost': 0.00020052193477749825, 'time_to_first_response': 1.14031, 'bytes_processed': 107653890, 'time_to_first_record_response': 57.9545, 'time_to_last_record_response': 57.9545, 'bytes_scanned': 107653890, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_60', 'parallel': True}): {'elapsed_time': 0.0378}
+SQLTableScan({'name': 'scan_phase2_63', 'parallel': True}): {'elapsed_time': 57.83279, 'query_bytes': 5910, 'cost': 0.00020052480502054094, 'time_to_first_response': 1.13242, 'bytes_processed': 107655432, 'time_to_first_record_response': 57.80959, 'time_to_last_record_response': 57.80959, 'bytes_scanned': 107655432, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_63', 'parallel': True}): {'elapsed_time': 0.03894}
+SQLTableScan({'name': 'scan_phase2_62', 'parallel': True}): {'elapsed_time': 61.26689, 'query_bytes': 5910, 'cost': 0.00020051408484578133, 'time_to_first_response': 1.27461, 'bytes_processed': 107649677, 'time_to_first_record_response': 61.24377, 'time_to_last_record_response': 61.24377, 'bytes_scanned': 107649677, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_62', 'parallel': True}): {'elapsed_time': 0.03913}
+SQLTableScan({'name': 'scan_phase2_69', 'parallel': True}): {'elapsed_time': 57.49502, 'query_bytes': 5910, 'cost': 0.00020052214255556465, 'time_to_first_response': 1.19642, 'bytes_processed': 107654004, 'time_to_first_record_response': 57.472, 'time_to_last_record_response': 57.472, 'bytes_scanned': 107654004, 'rows_returned': 1, 'bytes_returned': 1433}
+GroupbyDecoder({'name': 'groupby_decoder_69', 'parallel': True}): {'elapsed_time': 0.03623}
+SQLTableScan({'name': 'scan_phase2_68', 'parallel': True}): {'elapsed_time': 61.35548, 'query_bytes': 5910, 'cost': 0.00020052219722419977, 'time_to_first_response': 1.15758, 'bytes_processed': 107654033, 'time_to_first_record_response': 61.33014, 'time_to_last_record_response': 61.33014, 'bytes_scanned': 107654033, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_68', 'parallel': True}): {'elapsed_time': 0.03411}
+SQLTableScan({'name': 'scan_phase2_98', 'parallel': True}): {'elapsed_time': 53.24778, 'query_bytes': 5910, 'cost': 0.0002005232627503574, 'time_to_first_response': 1.108, 'bytes_processed': 107654604, 'time_to_first_record_response': 53.22289, 'time_to_last_record_response': 53.22289, 'bytes_scanned': 107654604, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_98', 'parallel': True}): {'elapsed_time': 0.03905}
+SQLTableScan({'name': 'scan_phase2_99', 'parallel': True}): {'elapsed_time': 56.40881, 'query_bytes': 5910, 'cost': 0.00020052143363282084, 'time_to_first_response': 1.11198, 'bytes_processed': 107653622, 'time_to_first_record_response': 56.38577, 'time_to_last_record_response': 56.38577, 'bytes_scanned': 107653622, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_99', 'parallel': True}): {'elapsed_time': 0.03603}
+SQLTableScan({'name': 'scan_phase2_90', 'parallel': True}): {'elapsed_time': 58.46784, 'query_bytes': 5910, 'cost': 0.00020052026547491553, 'time_to_first_response': 1.19264, 'bytes_processed': 107652998, 'time_to_first_record_response': 58.44404, 'time_to_last_record_response': 58.44404, 'bytes_scanned': 107652998, 'rows_returned': 1, 'bytes_returned': 1428}
+GroupbyDecoder({'name': 'groupby_decoder_90', 'parallel': True}): {'elapsed_time': 0.03875}
+SQLTableScan({'name': 'scan_phase2_91', 'parallel': True}): {'elapsed_time': 60.92523, 'query_bytes': 5910, 'cost': 0.00020051948297768833, 'time_to_first_response': 1.11503, 'bytes_processed': 107652573, 'time_to_first_record_response': 60.90135, 'time_to_last_record_response': 60.90135, 'bytes_scanned': 107652573, 'rows_returned': 1, 'bytes_returned': 1442}
+GroupbyDecoder({'name': 'groupby_decoder_91', 'parallel': True}): {'elapsed_time': 0.03965}
+SQLTableScan({'name': 'scan_phase2_92', 'parallel': True}): {'elapsed_time': 60.95248, 'query_bytes': 5910, 'cost': 0.00020051980633288623, 'time_to_first_response': 1.17523, 'bytes_processed': 107652748, 'time_to_first_record_response': 60.92966, 'time_to_last_record_response': 60.92966, 'bytes_scanned': 107652748, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_92', 'parallel': True}): {'elapsed_time': 0.03862}
+SQLTableScan({'name': 'scan_phase2_93', 'parallel': True}): {'elapsed_time': 64.63283, 'query_bytes': 5910, 'cost': 0.00020051868939772248, 'time_to_first_response': 1.13084, 'bytes_processed': 107652148, 'time_to_first_record_response': 64.60735, 'time_to_last_record_response': 64.60735, 'bytes_scanned': 107652148, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_93', 'parallel': True}): {'elapsed_time': 0.03887}
+SQLTableScan({'name': 'scan_phase2_94', 'parallel': True}): {'elapsed_time': 54.17377, 'query_bytes': 5910, 'cost': 0.00020052139274775982, 'time_to_first_response': 1.12058, 'bytes_processed': 107653599, 'time_to_first_record_response': 54.1503, 'time_to_last_record_response': 54.1503, 'bytes_scanned': 107653599, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_94', 'parallel': True}): {'elapsed_time': 0.03883}
+SQLTableScan({'name': 'scan_phase2_95', 'parallel': True}): {'elapsed_time': 59.98713, 'query_bytes': 5910, 'cost': 0.00020052327644079924, 'time_to_first_response': 1.17014, 'bytes_processed': 107654611, 'time_to_first_record_response': 59.96332, 'time_to_last_record_response': 59.96332, 'bytes_scanned': 107654611, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_95', 'parallel': True}): {'elapsed_time': 0.03448}
+SQLTableScan({'name': 'scan_phase2_96', 'parallel': True}): {'elapsed_time': 58.61474, 'query_bytes': 5910, 'cost': 0.0002005191202275455, 'time_to_first_response': 1.17135, 'bytes_processed': 107652380, 'time_to_first_record_response': 58.58989, 'time_to_last_record_response': 58.58989, 'bytes_scanned': 107652380, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_96', 'parallel': True}): {'elapsed_time': 0.03295}
+SQLTableScan({'name': 'scan_phase2_97', 'parallel': True}): {'elapsed_time': 60.07854, 'query_bytes': 5910, 'cost': 0.00020051460266113283, 'time_to_first_response': 1.15257, 'bytes_processed': 107649955, 'time_to_first_record_response': 60.05841, 'time_to_last_record_response': 60.05841, 'bytes_scanned': 107649955, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_97', 'parallel': True}): {'elapsed_time': 0.03918}
+SQLTableScan({'name': 'scan_phase2_10', 'parallel': True}): {'elapsed_time': 58.55488, 'query_bytes': 5910, 'cost': 0.0002005168124102056, 'time_to_first_response': 1.1554, 'bytes_processed': 107651141, 'time_to_first_record_response': 58.53145, 'time_to_last_record_response': 58.53145, 'bytes_scanned': 107651141, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_10', 'parallel': True}): {'elapsed_time': 0.03816}
+SQLTableScan({'name': 'scan_phase2_11', 'parallel': True}): {'elapsed_time': 59.20075, 'query_bytes': 5910, 'cost': 0.00020051299389451743, 'time_to_first_response': 1.11647, 'bytes_processed': 107649092, 'time_to_first_record_response': 59.18141, 'time_to_last_record_response': 59.18141, 'bytes_scanned': 107649092, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_11', 'parallel': True}): {'elapsed_time': 0.03755}
+SQLTableScan({'name': 'scan_phase2_12', 'parallel': True}): {'elapsed_time': 60.40569, 'query_bytes': 5910, 'cost': 0.0002005211088806391, 'time_to_first_response': 1.18672, 'bytes_processed': 107653448, 'time_to_first_record_response': 60.38335, 'time_to_last_record_response': 60.38335, 'bytes_scanned': 107653448, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_12', 'parallel': True}): {'elapsed_time': 0.03753}
+SQLTableScan({'name': 'scan_phase2_13', 'parallel': True}): {'elapsed_time': 57.06628, 'query_bytes': 5910, 'cost': 0.00020051911594346167, 'time_to_first_response': 1.1243, 'bytes_processed': 107652377, 'time_to_first_record_response': 57.04281, 'time_to_last_record_response': 57.04281, 'bytes_scanned': 107652377, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_13', 'parallel': True}): {'elapsed_time': 0.03928}
+SQLTableScan({'name': 'scan_phase2_14', 'parallel': True}): {'elapsed_time': 55.85723, 'query_bytes': 5910, 'cost': 0.00020052519161254168, 'time_to_first_response': 1.12184, 'bytes_processed': 107655642, 'time_to_first_record_response': 55.83402, 'time_to_last_record_response': 55.83402, 'bytes_scanned': 107655642, 'rows_returned': 1, 'bytes_returned': 1430}
+GroupbyDecoder({'name': 'groupby_decoder_14', 'parallel': True}): {'elapsed_time': 0.03847}
+SQLTableScan({'name': 'scan_phase2_15', 'parallel': True}): {'elapsed_time': 60.53516, 'query_bytes': 5910, 'cost': 0.00020051745139062406, 'time_to_first_response': 1.11769, 'bytes_processed': 107651483, 'time_to_first_record_response': 60.51161, 'time_to_last_record_response': 60.51161, 'bytes_scanned': 107651483, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_15', 'parallel': True}): {'elapsed_time': 0.03724}
+SQLTableScan({'name': 'scan_phase2_16', 'parallel': True}): {'elapsed_time': 62.20222, 'query_bytes': 5910, 'cost': 0.0002005196450278163, 'time_to_first_response': 1.12024, 'bytes_processed': 107652660, 'time_to_first_record_response': 62.17909, 'time_to_last_record_response': 62.17909, 'bytes_scanned': 107652660, 'rows_returned': 1, 'bytes_returned': 1442}
+GroupbyDecoder({'name': 'groupby_decoder_16', 'parallel': True}): {'elapsed_time': 0.03562}
+SQLTableScan({'name': 'scan_phase2_17', 'parallel': True}): {'elapsed_time': 53.53599, 'query_bytes': 5910, 'cost': 0.00020052102580666543, 'time_to_first_response': 1.10471, 'bytes_processed': 107653402, 'time_to_first_record_response': 53.51243, 'time_to_last_record_response': 53.51243, 'bytes_scanned': 107653402, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_17', 'parallel': True}): {'elapsed_time': 0.03828}
+SQLTableScan({'name': 'scan_phase2_18', 'parallel': True}): {'elapsed_time': 61.17416, 'query_bytes': 5910, 'cost': 0.00020052140755578876, 'time_to_first_response': 1.14069, 'bytes_processed': 107653608, 'time_to_first_record_response': 61.15089, 'time_to_last_record_response': 61.15089, 'bytes_scanned': 107653608, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_18', 'parallel': True}): {'elapsed_time': 0.03875}
+SQLTableScan({'name': 'scan_phase2_19', 'parallel': True}): {'elapsed_time': 59.38492, 'query_bytes': 5910, 'cost': 0.00020051935194060206, 'time_to_first_response': 1.13608, 'bytes_processed': 107652503, 'time_to_first_record_response': 59.36167, 'time_to_last_record_response': 59.36167, 'bytes_scanned': 107652503, 'rows_returned': 1, 'bytes_returned': 1441}
+GroupbyDecoder({'name': 'groupby_decoder_19', 'parallel': True}): {'elapsed_time': 0.03297}
+SQLTableScan({'name': 'scan_phase2_87', 'parallel': True}): {'elapsed_time': 62.18378, 'query_bytes': 5910, 'cost': 0.00020051835514605046, 'time_to_first_response': 1.14799, 'bytes_processed': 107651971, 'time_to_first_record_response': 62.16495, 'time_to_last_record_response': 62.16495, 'bytes_scanned': 107651971, 'rows_returned': 1, 'bytes_returned': 1432}
+GroupbyDecoder({'name': 'groupby_decoder_87', 'parallel': True}): {'elapsed_time': 0.03846}
+SQLTableScan({'name': 'scan_phase2_86', 'parallel': True}): {'elapsed_time': 55.78013, 'query_bytes': 5910, 'cost': 0.00020052187871187927, 'time_to_first_response': 1.12432, 'bytes_processed': 107653862, 'time_to_first_record_response': 55.75655, 'time_to_last_record_response': 55.75655, 'bytes_scanned': 107653862, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_86', 'parallel': True}): {'elapsed_time': 0.03907}
+SQLTableScan({'name': 'scan_phase2_85', 'parallel': True}): {'elapsed_time': 60.0546, 'query_bytes': 5910, 'cost': 0.0002005232526920736, 'time_to_first_response': 1.13926, 'bytes_processed': 107654600, 'time_to_first_record_response': 60.0313, 'time_to_last_record_response': 60.0313, 'bytes_scanned': 107654600, 'rows_returned': 1, 'bytes_returned': 1433}
+GroupbyDecoder({'name': 'groupby_decoder_85', 'parallel': True}): {'elapsed_time': 0.03344}
+SQLTableScan({'name': 'scan_phase2_84', 'parallel': True}): {'elapsed_time': 58.18443, 'query_bytes': 5910, 'cost': 0.0002005194317549467, 'time_to_first_response': 1.10997, 'bytes_processed': 107652549, 'time_to_first_record_response': 58.16109, 'time_to_last_record_response': 58.16109, 'bytes_scanned': 107652549, 'rows_returned': 1, 'bytes_returned': 1432}
+GroupbyDecoder({'name': 'groupby_decoder_84', 'parallel': True}): {'elapsed_time': 0.03765}
+SQLTableScan({'name': 'scan_phase2_83', 'parallel': True}): {'elapsed_time': 63.02732, 'query_bytes': 5910, 'cost': 0.0002005194852128625, 'time_to_first_response': 1.17717, 'bytes_processed': 107652577, 'time_to_first_record_response': 63.00299, 'time_to_last_record_response': 63.00299, 'bytes_scanned': 107652577, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_83', 'parallel': True}): {'elapsed_time': 0.03879}
+SQLTableScan({'name': 'scan_phase2_82', 'parallel': True}): {'elapsed_time': 54.56599, 'query_bytes': 5910, 'cost': 0.00020052014645189048, 'time_to_first_response': 1.12488, 'bytes_processed': 107652932, 'time_to_first_record_response': 54.54203, 'time_to_last_record_response': 54.54203, 'bytes_scanned': 107652932, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_82', 'parallel': True}): {'elapsed_time': 0.03707}
+SQLTableScan({'name': 'scan_phase2_81', 'parallel': True}): {'elapsed_time': 55.73525, 'query_bytes': 5910, 'cost': 0.00020051982374861836, 'time_to_first_response': 1.13206, 'bytes_processed': 107652757, 'time_to_first_record_response': 55.71208, 'time_to_last_record_response': 55.71208, 'bytes_scanned': 107652757, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_81', 'parallel': True}): {'elapsed_time': 0.03901}
+SQLTableScan({'name': 'scan_phase2_80', 'parallel': True}): {'elapsed_time': 63.84302, 'query_bytes': 5910, 'cost': 0.00020052269510924817, 'time_to_first_response': 1.18583, 'bytes_processed': 107654301, 'time_to_first_record_response': 63.81945, 'time_to_last_record_response': 63.81945, 'bytes_scanned': 107654301, 'rows_returned': 1, 'bytes_returned': 1432}
+GroupbyDecoder({'name': 'groupby_decoder_80', 'parallel': True}): {'elapsed_time': 0.0387}
+SQLTableScan({'name': 'scan_phase2_89', 'parallel': True}): {'elapsed_time': 61.17131, 'query_bytes': 5910, 'cost': 0.00020051620192825794, 'time_to_first_response': 1.19944, 'bytes_processed': 107650815, 'time_to_first_record_response': 61.14858, 'time_to_last_record_response': 61.14858, 'bytes_scanned': 107650815, 'rows_returned': 1, 'bytes_returned': 1432}
+GroupbyDecoder({'name': 'groupby_decoder_89', 'parallel': True}): {'elapsed_time': 0.03855}
+SQLTableScan({'name': 'scan_phase2_88', 'parallel': True}): {'elapsed_time': 66.66076, 'query_bytes': 5910, 'cost': 0.00020051908595487475, 'time_to_first_response': 1.18143, 'bytes_processed': 107652363, 'time_to_first_record_response': 66.6372, 'time_to_last_record_response': 66.6372, 'bytes_scanned': 107652363, 'rows_returned': 1, 'bytes_returned': 1433}
+GroupbyDecoder({'name': 'groupby_decoder_88', 'parallel': True}): {'elapsed_time': 0.03936}
+SQLTableScan({'name': 'scan_phase2_38', 'parallel': True}): {'elapsed_time': 55.86831, 'query_bytes': 5910, 'cost': 0.0002005205847322941, 'time_to_first_response': 1.24764, 'bytes_processed': 107653168, 'time_to_first_record_response': 55.84738, 'time_to_last_record_response': 55.84738, 'bytes_scanned': 107653168, 'rows_returned': 1, 'bytes_returned': 1432}
+GroupbyDecoder({'name': 'groupby_decoder_38', 'parallel': True}): {'elapsed_time': 0.0368}
+SQLTableScan({'name': 'scan_phase2_39', 'parallel': True}): {'elapsed_time': 56.33625, 'query_bytes': 5910, 'cost': 0.00020051993802189827, 'time_to_first_response': 1.09569, 'bytes_processed': 107652818, 'time_to_first_record_response': 56.31327, 'time_to_last_record_response': 56.31327, 'bytes_scanned': 107652818, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_39', 'parallel': True}): {'elapsed_time': 0.03738}
+SQLTableScan({'name': 'scan_phase2_32', 'parallel': True}): {'elapsed_time': 56.78729, 'query_bytes': 5910, 'cost': 0.00020052225505933166, 'time_to_first_response': 1.17523, 'bytes_processed': 107654063, 'time_to_first_record_response': 56.76388, 'time_to_last_record_response': 56.76388, 'bytes_scanned': 107654063, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_32', 'parallel': True}): {'elapsed_time': 0.03846}
+SQLTableScan({'name': 'scan_phase2_33', 'parallel': True}): {'elapsed_time': 55.21243, 'query_bytes': 5910, 'cost': 0.0002005239189602435, 'time_to_first_response': 1.11225, 'bytes_processed': 107654957, 'time_to_first_record_response': 55.19143, 'time_to_last_record_response': 55.19143, 'bytes_scanned': 107654957, 'rows_returned': 1, 'bytes_returned': 1435}
+GroupbyDecoder({'name': 'groupby_decoder_33', 'parallel': True}): {'elapsed_time': 0.03336}
+SQLTableScan({'name': 'scan_phase2_30', 'parallel': True}): {'elapsed_time': 61.71847, 'query_bytes': 5910, 'cost': 0.00020052013602107763, 'time_to_first_response': 1.09733, 'bytes_processed': 107652925, 'time_to_first_record_response': 61.68992, 'time_to_last_record_response': 61.68992, 'bytes_scanned': 107652925, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_30', 'parallel': True}): {'elapsed_time': 0.04177}
+SQLTableScan({'name': 'scan_phase2_31', 'parallel': True}): {'elapsed_time': 59.19705, 'query_bytes': 5910, 'cost': 0.0002005199453793466, 'time_to_first_response': 1.16913, 'bytes_processed': 107652823, 'time_to_first_record_response': 59.17512, 'time_to_last_record_response': 59.17512, 'bytes_scanned': 107652823, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_31', 'parallel': True}): {'elapsed_time': 0.03328}
+SQLTableScan({'name': 'scan_phase2_36', 'parallel': True}): {'elapsed_time': 60.56985, 'query_bytes': 5910, 'cost': 0.00020052008759230376, 'time_to_first_response': 1.19314, 'bytes_processed': 107652899, 'time_to_first_record_response': 60.54673, 'time_to_last_record_response': 60.54673, 'bytes_scanned': 107652899, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_36', 'parallel': True}): {'elapsed_time': 0.03704}
+SQLTableScan({'name': 'scan_phase2_37', 'parallel': True}): {'elapsed_time': 60.75112, 'query_bytes': 5910, 'cost': 0.0002005207791924477, 'time_to_first_response': 1.14925, 'bytes_processed': 107653271, 'time_to_first_record_response': 60.72744, 'time_to_last_record_response': 60.72744, 'bytes_scanned': 107653271, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_37', 'parallel': True}): {'elapsed_time': 0.03893}
+SQLTableScan({'name': 'scan_phase2_34', 'parallel': True}): {'elapsed_time': 56.7635, 'query_bytes': 5910, 'cost': 0.0002005164586938918, 'time_to_first_response': 1.16661, 'bytes_processed': 107650949, 'time_to_first_record_response': 56.73121, 'time_to_last_record_response': 56.73121, 'bytes_scanned': 107650949, 'rows_returned': 1, 'bytes_returned': 1443}
+GroupbyDecoder({'name': 'groupby_decoder_34', 'parallel': True}): {'elapsed_time': 0.03856}
+SQLTableScan({'name': 'scan_phase2_35', 'parallel': True}): {'elapsed_time': 58.51704, 'query_bytes': 5910, 'cost': 0.00020052044782787562, 'time_to_first_response': 1.23911, 'bytes_processed': 107653091, 'time_to_first_record_response': 58.49382, 'time_to_last_record_response': 58.49382, 'bytes_scanned': 107653091, 'rows_returned': 1, 'bytes_returned': 1442}
+GroupbyDecoder({'name': 'groupby_decoder_35', 'parallel': True}): {'elapsed_time': 0.03896}
+SQLTableScan({'name': 'scan_phase2_29', 'parallel': True}): {'elapsed_time': 55.15456, 'query_bytes': 5910, 'cost': 0.00020051827458664775, 'time_to_first_response': 1.11423, 'bytes_processed': 107651926, 'time_to_first_record_response': 55.13141, 'time_to_last_record_response': 55.13141, 'bytes_scanned': 107651926, 'rows_returned': 1, 'bytes_returned': 1437}
+GroupbyDecoder({'name': 'groupby_decoder_29', 'parallel': True}): {'elapsed_time': 0.03902}
+SQLTableScan({'name': 'scan_phase2_28', 'parallel': True}): {'elapsed_time': 53.33986, 'query_bytes': 5910, 'cost': 0.00020051771886646748, 'time_to_first_response': 1.12464, 'bytes_processed': 107651628, 'time_to_first_record_response': 53.31345, 'time_to_last_record_response': 53.31345, 'bytes_scanned': 107651628, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_28', 'parallel': True}): {'elapsed_time': 0.03855}
+SQLTableScan({'name': 'scan_phase2_21', 'parallel': True}): {'elapsed_time': 57.98678, 'query_bytes': 5910, 'cost': 0.0002005166285671294, 'time_to_first_response': 1.10153, 'bytes_processed': 107651043, 'time_to_first_record_response': 57.97105, 'time_to_last_record_response': 57.97105, 'bytes_scanned': 107651043, 'rows_returned': 1, 'bytes_returned': 1435}
+GroupbyDecoder({'name': 'groupby_decoder_21', 'parallel': True}): {'elapsed_time': 0.03492}
+SQLTableScan({'name': 'scan_phase2_20', 'parallel': True}): {'elapsed_time': 61.39727, 'query_bytes': 5910, 'cost': 0.00020052100960165262, 'time_to_first_response': 1.11654, 'bytes_processed': 107653394, 'time_to_first_record_response': 61.37414, 'time_to_last_record_response': 61.37414, 'bytes_scanned': 107653394, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_20', 'parallel': True}): {'elapsed_time': 0.03926}
+SQLTableScan({'name': 'scan_phase2_23', 'parallel': True}): {'elapsed_time': 59.52688, 'query_bytes': 5910, 'cost': 0.00020051640486344697, 'time_to_first_response': 1.1569, 'bytes_processed': 107650925, 'time_to_first_record_response': 59.50364, 'time_to_last_record_response': 59.50364, 'bytes_scanned': 107650925, 'rows_returned': 1, 'bytes_returned': 1429}
+GroupbyDecoder({'name': 'groupby_decoder_23', 'parallel': True}): {'elapsed_time': 0.03986}
+SQLTableScan({'name': 'scan_phase2_22', 'parallel': True}): {'elapsed_time': 53.74152, 'query_bytes': 5910, 'cost': 0.00020052480809390548, 'time_to_first_response': 1.15752, 'bytes_processed': 107655434, 'time_to_first_record_response': 53.7195, 'time_to_last_record_response': 53.7195, 'bytes_scanned': 107655434, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_22', 'parallel': True}): {'elapsed_time': 0.03869}
+SQLTableScan({'name': 'scan_phase2_25', 'parallel': True}): {'elapsed_time': 57.4593, 'query_bytes': 5910, 'cost': 0.00020051761837676168, 'time_to_first_response': 1.12773, 'bytes_processed': 107651573, 'time_to_first_record_response': 57.42821, 'time_to_last_record_response': 57.42821, 'bytes_scanned': 107651573, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_25', 'parallel': True}): {'elapsed_time': 0.03651}
+SQLTableScan({'name': 'scan_phase2_24', 'parallel': True}): {'elapsed_time': 55.04642, 'query_bytes': 5910, 'cost': 0.00020051702046766878, 'time_to_first_response': 1.16808, 'bytes_processed': 107651252, 'time_to_first_record_response': 55.02329, 'time_to_last_record_response': 55.02329, 'bytes_scanned': 107651252, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_24', 'parallel': True}): {'elapsed_time': 0.04058}
+SQLTableScan({'name': 'scan_phase2_27', 'parallel': True}): {'elapsed_time': 60.53656, 'query_bytes': 5910, 'cost': 0.00020051831034943463, 'time_to_first_response': 1.09374, 'bytes_processed': 107651948, 'time_to_first_record_response': 60.51335, 'time_to_last_record_response': 60.51335, 'bytes_scanned': 107651948, 'rows_returned': 1, 'bytes_returned': 1429}
+GroupbyDecoder({'name': 'groupby_decoder_27', 'parallel': True}): {'elapsed_time': 0.03837}
+SQLTableScan({'name': 'scan_phase2_26', 'parallel': True}): {'elapsed_time': 54.41115, 'query_bytes': 5910, 'cost': 0.0002005189587362111, 'time_to_first_response': 1.12669, 'bytes_processed': 107652294, 'time_to_first_record_response': 54.38811, 'time_to_last_record_response': 54.38811, 'bytes_scanned': 107652294, 'rows_returned': 1, 'bytes_returned': 1435}
+GroupbyDecoder({'name': 'groupby_decoder_26', 'parallel': True}): {'elapsed_time': 0.0384}
+SQLTableScan({'name': 'scan_phase2_58', 'parallel': True}): {'elapsed_time': 57.87571, 'query_bytes': 5910, 'cost': 0.00020051793074235322, 'time_to_first_response': 1.16494, 'bytes_processed': 107651740, 'time_to_first_record_response': 57.84724, 'time_to_last_record_response': 57.84724, 'bytes_scanned': 107651740, 'rows_returned': 1, 'bytes_returned': 1441}
+GroupbyDecoder({'name': 'groupby_decoder_58', 'parallel': True}): {'elapsed_time': 0.03788}
+SQLTableScan({'name': 'scan_phase2_59', 'parallel': True}): {'elapsed_time': 53.93069, 'query_bytes': 5910, 'cost': 0.00020051703983917833, 'time_to_first_response': 1.14292, 'bytes_processed': 107651261, 'time_to_first_record_response': 53.908, 'time_to_last_record_response': 53.908, 'bytes_scanned': 107651261, 'rows_returned': 1, 'bytes_returned': 1443}
+GroupbyDecoder({'name': 'groupby_decoder_59', 'parallel': True}): {'elapsed_time': 0.03947}
+SQLTableScan({'name': 'scan_phase2_54', 'parallel': True}): {'elapsed_time': 58.73616, 'query_bytes': 5910, 'cost': 0.00020051693292334676, 'time_to_first_response': 1.14614, 'bytes_processed': 107651205, 'time_to_first_record_response': 58.71249, 'time_to_last_record_response': 58.71249, 'bytes_scanned': 107651205, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_54', 'parallel': True}): {'elapsed_time': 0.03873}
+SQLTableScan({'name': 'scan_phase2_55', 'parallel': True}): {'elapsed_time': 60.35274, 'query_bytes': 5910, 'cost': 0.00020051977233961226, 'time_to_first_response': 1.1567, 'bytes_processed': 107652728, 'time_to_first_record_response': 60.32996, 'time_to_last_record_response': 60.32996, 'bytes_scanned': 107652728, 'rows_returned': 1, 'bytes_returned': 1443}
+GroupbyDecoder({'name': 'groupby_decoder_55', 'parallel': True}): {'elapsed_time': 0.03858}
+SQLTableScan({'name': 'scan_phase2_56', 'parallel': True}): {'elapsed_time': 57.73515, 'query_bytes': 5910, 'cost': 0.0002005185020156205, 'time_to_first_response': 1.20804, 'bytes_processed': 107652046, 'time_to_first_record_response': 57.71152, 'time_to_last_record_response': 57.71152, 'bytes_scanned': 107652046, 'rows_returned': 1, 'bytes_returned': 1443}
+GroupbyDecoder({'name': 'groupby_decoder_56', 'parallel': True}): {'elapsed_time': 0.02633}
+SQLTableScan({'name': 'scan_phase2_57', 'parallel': True}): {'elapsed_time': 63.78949, 'query_bytes': 5910, 'cost': 0.0002005212027579546, 'time_to_first_response': 1.12692, 'bytes_processed': 107653497, 'time_to_first_record_response': 63.766, 'time_to_last_record_response': 63.766, 'bytes_scanned': 107653497, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_57', 'parallel': True}): {'elapsed_time': 0.03847}
+SQLTableScan({'name': 'scan_phase2_50', 'parallel': True}): {'elapsed_time': 65.96478, 'query_bytes': 5910, 'cost': 0.00020052034836262465, 'time_to_first_response': 1.2162, 'bytes_processed': 107653039, 'time_to_first_record_response': 65.94126, 'time_to_last_record_response': 65.94126, 'bytes_scanned': 107653039, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_50', 'parallel': True}): {'elapsed_time': 0.03999}
+SQLTableScan({'name': 'scan_phase2_51', 'parallel': True}): {'elapsed_time': 63.90942, 'query_bytes': 5910, 'cost': 0.00020051801810041072, 'time_to_first_response': 1.08649, 'bytes_processed': 107651789, 'time_to_first_record_response': 63.88655, 'time_to_last_record_response': 63.88655, 'bytes_scanned': 107651789, 'rows_returned': 1, 'bytes_returned': 1435}
+GroupbyDecoder({'name': 'groupby_decoder_51', 'parallel': True}): {'elapsed_time': 0.03947}
+SQLTableScan({'name': 'scan_phase2_52', 'parallel': True}): {'elapsed_time': 51.57455, 'query_bytes': 5910, 'cost': 0.00020051906751468777, 'time_to_first_response': 1.30511, 'bytes_processed': 107652351, 'time_to_first_record_response': 51.55007, 'time_to_last_record_response': 51.55007, 'bytes_scanned': 107652351, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_52', 'parallel': True}): {'elapsed_time': 0.0404}
+SQLTableScan({'name': 'scan_phase2_53', 'parallel': True}): {'elapsed_time': 60.08766, 'query_bytes': 5910, 'cost': 0.00020052084624767305, 'time_to_first_response': 1.24229, 'bytes_processed': 107653307, 'time_to_first_record_response': 60.06454, 'time_to_last_record_response': 60.06454, 'bytes_scanned': 107653307, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_53', 'parallel': True}): {'elapsed_time': 0.03446}
+SQLTableScan({'name': 'scan_phase2_8', 'parallel': True}): {'elapsed_time': 65.257, 'query_bytes': 5909, 'cost': 0.0002005186948925257, 'time_to_first_response': 1.18623, 'bytes_processed': 107652152, 'time_to_first_record_response': 65.21041, 'time_to_last_record_response': 65.21041, 'bytes_scanned': 107652152, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_8', 'parallel': True}): {'elapsed_time': 0.03807}
+SQLTableScan({'name': 'scan_phase2_9', 'parallel': True}): {'elapsed_time': 62.18139, 'query_bytes': 5909, 'cost': 0.00020051907375454904, 'time_to_first_response': 1.20483, 'bytes_processed': 107652354, 'time_to_first_record_response': 62.15794, 'time_to_last_record_response': 62.15794, 'bytes_scanned': 107652354, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_9', 'parallel': True}): {'elapsed_time': 0.03911}
+SQLTableScan({'name': 'scan_phase2_0', 'parallel': True}): {'elapsed_time': 55.47859, 'query_bytes': 5909, 'cost': 0.00020052121328189968, 'time_to_first_response': 1.13114, 'bytes_processed': 107653503, 'time_to_first_record_response': 55.45545, 'time_to_last_record_response': 55.45545, 'bytes_scanned': 107653503, 'rows_returned': 1, 'bytes_returned': 1439}
+GroupbyDecoder({'name': 'groupby_decoder_0', 'parallel': True}): {'elapsed_time': 0.04024}
+SQLTableScan({'name': 'scan_phase2_1', 'parallel': True}): {'elapsed_time': 63.30567, 'query_bytes': 5909, 'cost': 0.00020051775723695756, 'time_to_first_response': 1.16869, 'bytes_processed': 107651650, 'time_to_first_record_response': 63.28235, 'time_to_last_record_response': 63.28235, 'bytes_scanned': 107651650, 'rows_returned': 1, 'bytes_returned': 1432}
+GroupbyDecoder({'name': 'groupby_decoder_1', 'parallel': True}): {'elapsed_time': 0.04025}
+SQLTableScan({'name': 'scan_phase2_2', 'parallel': True}): {'elapsed_time': 53.61591, 'query_bytes': 5909, 'cost': 0.00020051616514101626, 'time_to_first_response': 1.09803, 'bytes_processed': 107650797, 'time_to_first_record_response': 53.59263, 'time_to_last_record_response': 53.59263, 'bytes_scanned': 107650797, 'rows_returned': 1, 'bytes_returned': 1427}
+GroupbyDecoder({'name': 'groupby_decoder_2', 'parallel': True}): {'elapsed_time': 0.03809}
+SQLTableScan({'name': 'scan_phase2_3', 'parallel': True}): {'elapsed_time': 61.50821, 'query_bytes': 5909, 'cost': 0.00020052209915593267, 'time_to_first_response': 1.11326, 'bytes_processed': 107653980, 'time_to_first_record_response': 61.48761, 'time_to_last_record_response': 61.48761, 'bytes_scanned': 107653980, 'rows_returned': 1, 'bytes_returned': 1435}
+GroupbyDecoder({'name': 'groupby_decoder_3', 'parallel': True}): {'elapsed_time': 0.03851}
+SQLTableScan({'name': 'scan_phase2_4', 'parallel': True}): {'elapsed_time': 55.03312, 'query_bytes': 5909, 'cost': 0.0002005198902450502, 'time_to_first_response': 1.11319, 'bytes_processed': 107652792, 'time_to_first_record_response': 55.00885, 'time_to_last_record_response': 55.00885, 'bytes_scanned': 107652792, 'rows_returned': 1, 'bytes_returned': 1441}
+GroupbyDecoder({'name': 'groupby_decoder_4', 'parallel': True}): {'elapsed_time': 0.03531}
+SQLTableScan({'name': 'scan_phase2_5', 'parallel': True}): {'elapsed_time': 61.89599, 'query_bytes': 5909, 'cost': 0.00020052051041275263, 'time_to_first_response': 1.20172, 'bytes_processed': 107653126, 'time_to_first_record_response': 61.86871, 'time_to_last_record_response': 61.86871, 'bytes_scanned': 107653126, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_5', 'parallel': True}): {'elapsed_time': 0.03909}
+SQLTableScan({'name': 'scan_phase2_6', 'parallel': True}): {'elapsed_time': 58.01459, 'query_bytes': 5909, 'cost': 0.00020051595736294986, 'time_to_first_response': 1.11312, 'bytes_processed': 107650683, 'time_to_first_record_response': 57.99141, 'time_to_last_record_response': 57.99141, 'bytes_scanned': 107650683, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_6', 'parallel': True}): {'elapsed_time': 0.02362}
+SQLTableScan({'name': 'scan_phase2_7', 'parallel': True}): {'elapsed_time': 57.69783, 'query_bytes': 5909, 'cost': 0.00020052029136568308, 'time_to_first_response': 1.19279, 'bytes_processed': 107653007, 'time_to_first_record_response': 57.67445, 'time_to_last_record_response': 57.67445, 'bytes_scanned': 107653007, 'rows_returned': 1, 'bytes_returned': 1442}
+GroupbyDecoder({'name': 'groupby_decoder_7', 'parallel': True}): {'elapsed_time': 0.02898}
+SQLTableScan({'name': 'scan_phase2_49', 'parallel': True}): {'elapsed_time': 68.34619, 'query_bytes': 5910, 'cost': 0.0002005205338820815, 'time_to_first_response': 1.14535, 'bytes_processed': 107653140, 'time_to_first_record_response': 68.32283, 'time_to_last_record_response': 68.32283, 'bytes_scanned': 107653140, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_49', 'parallel': True}): {'elapsed_time': 0.04017}
+SQLTableScan({'name': 'scan_phase2_48', 'parallel': True}): {'elapsed_time': 61.43876, 'query_bytes': 5910, 'cost': 0.0002005195152014494, 'time_to_first_response': 1.12971, 'bytes_processed': 107652591, 'time_to_first_record_response': 61.41561, 'time_to_last_record_response': 61.41561, 'bytes_scanned': 107652591, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_48', 'parallel': True}): {'elapsed_time': 0.03409}
+SQLTableScan({'name': 'scan_phase2_43', 'parallel': True}): {'elapsed_time': 59.87506, 'query_bytes': 5910, 'cost': 0.00020052167465910316, 'time_to_first_response': 1.14161, 'bytes_processed': 107653750, 'time_to_first_record_response': 59.85195, 'time_to_last_record_response': 59.85195, 'bytes_scanned': 107653750, 'rows_returned': 1, 'bytes_returned': 1441}
+GroupbyDecoder({'name': 'groupby_decoder_43', 'parallel': True}): {'elapsed_time': 0.03948}
+SQLTableScan({'name': 'scan_phase2_42', 'parallel': True}): {'elapsed_time': 59.98049, 'query_bytes': 5910, 'cost': 0.00020051973965018986, 'time_to_first_response': 1.09814, 'bytes_processed': 107652715, 'time_to_first_record_response': 59.95723, 'time_to_last_record_response': 59.95723, 'bytes_scanned': 107652715, 'rows_returned': 1, 'bytes_returned': 1430}
+GroupbyDecoder({'name': 'groupby_decoder_42', 'parallel': True}): {'elapsed_time': 0.03928}
+SQLTableScan({'name': 'scan_phase2_41', 'parallel': True}): {'elapsed_time': 59.13792, 'query_bytes': 5910, 'cost': 0.00020051996279507877, 'time_to_first_response': 1.10981, 'bytes_processed': 107652832, 'time_to_first_record_response': 59.11475, 'time_to_last_record_response': 59.11475, 'bytes_scanned': 107652832, 'rows_returned': 1, 'bytes_returned': 1438}
+GroupbyDecoder({'name': 'groupby_decoder_41', 'parallel': True}): {'elapsed_time': 0.03933}
+SQLTableScan({'name': 'scan_phase2_40', 'parallel': True}): {'elapsed_time': 58.15383, 'query_bytes': 5910, 'cost': 0.00020052440445870163, 'time_to_first_response': 1.13692, 'bytes_processed': 107655218, 'time_to_first_record_response': 58.12985, 'time_to_last_record_response': 58.12985, 'bytes_scanned': 107655218, 'rows_returned': 1, 'bytes_returned': 1434}
+GroupbyDecoder({'name': 'groupby_decoder_40', 'parallel': True}): {'elapsed_time': 0.02588}
+SQLTableScan({'name': 'scan_phase2_47', 'parallel': True}): {'elapsed_time': 56.67162, 'query_bytes': 5910, 'cost': 0.0002005183610133827, 'time_to_first_response': 1.18835, 'bytes_processed': 107651971, 'time_to_first_record_response': 56.64815, 'time_to_last_record_response': 56.64815, 'bytes_scanned': 107651971, 'rows_returned': 1, 'bytes_returned': 1441}
+GroupbyDecoder({'name': 'groupby_decoder_47', 'parallel': True}): {'elapsed_time': 0.0369}
+SQLTableScan({'name': 'scan_phase2_46', 'parallel': True}): {'elapsed_time': 55.62443, 'query_bytes': 5910, 'cost': 0.00020051858201622962, 'time_to_first_response': 1.0914, 'bytes_processed': 107652090, 'time_to_first_record_response': 55.60147, 'time_to_last_record_response': 55.60147, 'bytes_scanned': 107652090, 'rows_returned': 1, 'bytes_returned': 1440}
+GroupbyDecoder({'name': 'groupby_decoder_46', 'parallel': True}): {'elapsed_time': 0.03909}
+SQLTableScan({'name': 'scan_phase2_45', 'parallel': True}): {'elapsed_time': 62.40591, 'query_bytes': 5910, 'cost': 0.00020051686577498914, 'time_to_first_response': 1.19733, 'bytes_processed': 107651170, 'time_to_first_record_response': 62.38311, 'time_to_last_record_response': 62.38311, 'bytes_scanned': 107651170, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_45', 'parallel': True}): {'elapsed_time': 0.03782}
+SQLTableScan({'name': 'scan_phase2_44', 'parallel': True}): {'elapsed_time': 60.78772, 'query_bytes': 5910, 'cost': 0.0002005178362131119, 'time_to_first_response': 1.13171, 'bytes_processed': 107651691, 'time_to_first_record_response': 60.76456, 'time_to_last_record_response': 60.76456, 'bytes_scanned': 107651691, 'rows_returned': 1, 'bytes_returned': 1436}
+GroupbyDecoder({'name': 'groupby_decoder_44', 'parallel': True}): {'elapsed_time': 0.03339}
+Group({'name': 'groupby_reduce_phase2', 'parallel': True}): {'elapsed_time': 1.64595}
+Collate({'name': 'collate', 'parallel': True}): {'elapsed_time': 0.00301}
+

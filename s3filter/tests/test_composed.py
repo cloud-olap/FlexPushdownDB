@@ -29,7 +29,12 @@ def test_sort_topk():
     query_plan = QueryPlan()
 
     # Query plan
-    ts = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts', query_plan, False))
+    ts = query_plan.add_operator(SQLTableScan('supplier.csv',
+                                              'select * from S3Object;',
+                                              False,
+                                              'ts',
+                                              query_plan,
+                                              False))
     s = query_plan.add_operator(Sort([
         SortExpression('_5', float, 'ASC')
     ], 's', query_plan, False))
@@ -86,10 +91,12 @@ def test_join_topk():
     query_plan = QueryPlan()
 
     # Query plan
-    ts1 = query_plan.add_operator(SQLTableScan('supplier.csv', 'select * from S3Object;', 'ts1', query_plan, False))
+    ts1 = query_plan.add_operator(SQLTableScan('supplier.csv',
+                                               'select * from S3Object;', False, 'ts1', query_plan, False))
     ts1_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'ts1_project', query_plan, False))
-    ts2 = query_plan.add_operator(SQLTableScan('nation.csv', 'select * from S3Object;', 'ts2', query_plan, False))
+    ts2 = query_plan.add_operator(SQLTableScan('nation.csv',
+                                               'select * from S3Object;', False, 'ts2', query_plan, False))
     ts2_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', query_plan, False))
     j = query_plan.add_operator(HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'j', query_plan, False))

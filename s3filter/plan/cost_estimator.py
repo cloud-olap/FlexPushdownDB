@@ -106,7 +106,7 @@ class CostEstimator:
     def __init__(self, table_scan_metrics):
         import requests
         try:
-            r = requests.get('http://169.254.169.254/latest/meta-data/instance-type', verify=False, timeout=2)
+            r = requests.get('http://169.254.169.254/latest/meta-data/instance-type', verify=False, timeout=1)
             if r.status_code == 200:
                 instance_type = r.text
             else:
@@ -139,8 +139,12 @@ class CostEstimator:
         :return: The estimated cost of the table scan operation
         """
         computation_cost = self.table_scan_metrics.elapsed_time() * SEC_TO_HOUR * self.ec2_instance.price
-        data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
-                             CostEstimator.DATA_TRANSFER_PRICE_PER_GB
+        data_transfer_cost = 0
+        # Assuming the data transfer cost is charged only in case the data is going out to the internet not to an EC2
+        # instance
+        if self.ec2_instance.region != AWSRegion.Any:
+            data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
+                                 CostEstimator.DATA_TRANSFER_PRICE_PER_GB
         s3_select_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                          CostEstimator.COST_S3_DATA_RETURNED_PER_GB + \
                          self.table_scan_metrics.bytes_scanned * BYTE_TO_GB * CostEstimator.COST_S3_DATA_SCANNED_PER_GB

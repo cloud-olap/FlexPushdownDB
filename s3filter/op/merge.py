@@ -5,12 +5,12 @@
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 
-import objgraph as objgraph
 
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator
 from s3filter.plan.op_metrics import OpMetrics
 import pandas as pd
+
 
 class Merge(Operator):
     """

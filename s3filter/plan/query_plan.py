@@ -5,12 +5,15 @@
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 import traceback
+import warnings
 from collections import OrderedDict, deque
+from logging import warning
 from multiprocessing import Queue
-
 import boto3
 import networkx
 from s3filter.util.constants import *
+from boto3.session import Session
+from botocore.config import Config
 
 from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
@@ -31,8 +34,6 @@ class QueryPlan(object):
 
         :param operators:
         """
-
-        self.s3 = boto3.client('s3')
 
         self.__timer = Timer()
         self.total_elapsed_time = 0.0
@@ -286,7 +287,10 @@ class QueryPlan(object):
                 if type(item) == message_type:
                     return item
                 else:
-                    raise Exception("Unrecognized message {}".format(item))
+                    # Not the message being listened for, warn and skip
+                    # This isn't exceptional, but the listener should be made aware that there are messages arriving that
+                    # are being ignored
+                    warning("While listening for message type {} received message type {} with contents {}".format(message_type, type(item), item))
 
         except BaseException as e:
             tb = traceback.format_exc(e)

@@ -25,13 +25,13 @@ def test_join_baseline():
 
     # Query plan
     supplier_scan = query_plan.add_operator(
-        SQLTableScan('region.csv', 'select * from S3Object;', 'supplier_scan', query_plan, True))
+        SQLTableScan('region.csv', 'select * from S3Object;', False, 'supplier_scan', query_plan, True))
 
     supplier_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'r_regionkey')], 'supplier_project', query_plan, True))
 
     nation_scan = query_plan.add_operator(
-        SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', query_plan, True))
+        SQLTableScan('nation.csv', 'select * from S3Object;', False, 'nation_scan', query_plan, True))
 
     nation_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_2'], 'n_regionkey')], 'nation_project', query_plan, True))
@@ -88,13 +88,13 @@ def test_r_to_l_join():
 
     # Query plan
     supplier_scan = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object;', 'supplier_scan', query_plan, False))
+        SQLTableScan('supplier.csv', 'select * from S3Object;', False, 'supplier_scan', query_plan, False))
 
     supplier_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', query_plan, False))
 
     nation_scan = query_plan.add_operator(
-        SQLTableScan('nation.csv', 'select * from S3Object;', 'nation_scan', query_plan, False))
+        SQLTableScan('nation.csv', 'select * from S3Object;', False, 'nation_scan', query_plan, False))
 
     nation_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', query_plan, False))
@@ -154,13 +154,13 @@ def test_join_empty():
 
     # Query plan
     supplier_scan = query_plan.add_operator(
-        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', 'supplier_scan', query_plan, False))
+        SQLTableScan('supplier.csv', 'select * from S3Object limit 0;', False, 'supplier_scan', query_plan, False))
 
     supplier_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_3'], 's_nationkey')], 'supplier_project', query_plan, False))
 
     nation_scan = query_plan.add_operator(
-        SQLTableScan('nation.csv', 'select * from S3Object limit 0;', 'nation_scan', query_plan, False))
+        SQLTableScan('nation.csv', 'select * from S3Object limit 0;', False, 'nation_scan', query_plan, False))
 
     nation_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'nation_project', query_plan, False))

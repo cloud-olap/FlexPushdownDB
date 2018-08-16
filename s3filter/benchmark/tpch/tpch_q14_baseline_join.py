@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""TPCH Q14 Bloom Join Benchmark
+"""TPCH Q14 Baseline Join Benchmark
 
 """
-import math
+
 import os
 from datetime import datetime, timedelta
 
@@ -12,7 +12,6 @@ from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
-from s3filter.op.merge import Merge
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
@@ -34,8 +33,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     """
 
     print('')
-    print("TPCH Q14 Sharded Baseline Join")
-    print("------------------------------")
+    print("TPCH Q14 Baseline Join")
+    print("----------------------")
 
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
@@ -94,13 +93,6 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                           tpch_q14.filter_brand12_operator_def('part_filter' + '_' + str(p), query_plan)),
                       range(0, part_parts))
 
-    merge = map(lambda p:
-                query_plan.add_operator(Merge(
-                    'merge' + '_' + str(p),
-                    query_plan,
-                    True)),
-                range(0, part_parts))
-
     join_build = map(lambda p:
                      query_plan.add_operator(
                          HashJoinBuild('p_partkey', 'join_build' + '_' + str(p), query_plan, False)),
@@ -114,42 +106,37 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     part_aggregate = map(lambda p:
                          query_plan.add_operator(
-                             tpch_q14.aggregate_promo_revenue_operator_def('part_aggregate' + '_' + str(p),
-                                                                           query_plan)),
+                             tpch_q14.aggregate_promo_revenue_operator_def(
+                                 'part_aggregate' + '_' + str(p),
+                                 query_plan)),
                          range(0, part_parts))
 
-    # aggregate = query_plan.add_operator(
-    #     tpch_q14.aggregate_promo_revenue_operator_def('aggregate', query_plan))
-
-    aggregate = query_plan.add_operator(
+    aggregate_reduce = query_plan.add_operator(
         Aggregate(
             [
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0'])),
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_1']))
             ],
-            'aggregate',
+            'aggregate_reduce',
             query_plan,
             False))
 
     aggregate_project = query_plan.add_operator(
-        tpch_q14.project_promo_revenue_operator_def(
-            'aggregate_project',
-            query_plan))
+        tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
 
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
     # Connect the operators
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
     map(lambda (p, o): o.connect(lineitem_filter[p]), enumerate(lineitem_project))
-    map(lambda (p, o): o.connect(merge[p % part_parts]), enumerate(lineitem_filter))
     map(lambda (p, o): o.connect(part_project[p]), enumerate(part_scan))
     map(lambda (p, o): o.connect(part_filter[p]), enumerate(part_project))
     map(lambda (p, o): o.connect(join_build[p]), enumerate(part_filter))
     map(lambda (p, o): map(lambda (bp, bo): o.connect_build_producer(bo), enumerate(join_build)), enumerate(join_probe))
-    map(lambda (p, o): o.connect_tuple_producer(merge[p]), enumerate(join_probe))
+    map(lambda (p, o): join_probe[p % part_parts].connect_tuple_producer(o), enumerate(lineitem_filter))
     map(lambda (p, o): o.connect(part_aggregate[p]), enumerate(join_probe))
-    map(lambda (p, o): o.connect(aggregate), enumerate(part_aggregate))
-    aggregate.connect(aggregate_project)
+    map(lambda (p, o): o.connect(aggregate_reduce), enumerate(part_aggregate))
+    aggregate_reduce.connect(aggregate_project)
     aggregate_project.connect(collate)
 
     # Plan settings
@@ -185,7 +172,6 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    # assert tuples[1] == [15.090116526324298]
     if s3filter.util.constants.TPCH_SF == 10:
         assert round(float(tuples[1][0]), 10) == 15.4488836202
     elif s3filter.util.constants.TPCH_SF == 1:

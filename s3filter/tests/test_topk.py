@@ -6,7 +6,8 @@ import os
 
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
-from s3filter.op.sql_table_scan import SQLTableScan, SQLShardedTableScan
+from s3filter.op.sql_table_scan import SQLTableScan
+from s3filter.op.sql_sharded_table_scan import SQLShardedTableScan
 from s3filter.op.limit import Limit
 from s3filter.op.top import TopKTableScan, Top
 from s3filter.plan.query_plan import QueryPlan
@@ -16,7 +17,7 @@ import multiprocessing
 from s3filter.util.test_util import gen_test_id
 
 
-def __test_topk_baseline(sort_index='_5', sort_order='DESC'):
+def __test_topk_baseline(sort_index='_5', col_type=float, sort_order='DESC'):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -34,15 +35,16 @@ def __test_topk_baseline(sort_index='_5', sort_order='DESC'):
     # Query plan
     # ts = query_plan.add_operator(
     #     SQLTableScan('lineitem.csv', 'select * from S3Object limit {};'.format(limit), 'table_scan', query_plan, False))
-    sort_exp = SortExpression(sort_index, float, sort_order)
-    top_op = query_plan.add_operator(Top(limit, sort_exp, 'topk', query_plan, False))
+    sort_exp = SortExpression(sort_index, col_type, sort_order)
+    top_op = query_plan.add_operator(Top(limit, sort_exp, True, 'topk', query_plan, False))
     for process in range(processes):
         proc_parts = [x for x in range(shards) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object;',
+        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object;', True, True,
                                                          "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
                                                          "sf1000-lineitem", query_plan, False))
-        pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
-        pc_top = query_plan.add_operator(Top(limit, sort_exp, 'topk_parts_{}'.format(proc_parts), query_plan, False))
+        # pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
+        pc_top = query_plan.add_operator(Top(limit, sort_exp, True, 'topk_parts_{}'.format(proc_parts), query_plan,
+                                             False))
         pc.connect(pc_top)
         pc_top.connect(top_op)
 
@@ -68,7 +70,8 @@ def __test_topk_baseline(sort_index='_5', sort_order='DESC'):
     query_plan.stop()
 
 
-def __test_topk_with_sampling(k_scale=1, sort_index='_5', sort_field='l_extendedprice', sort_order='DESC'):
+def __test_topk_with_sampling(k_scale=1, sort_index='_5', col_type=float, sort_field='l_extendedprice',
+                              sort_order='DESC'):
     """
     Executes the optimized topk query by firstly retrieving the first k tuples.
     Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
@@ -88,8 +91,8 @@ def __test_topk_with_sampling(k_scale=1, sort_index='_5', sort_field='l_extended
 
     # Query plan
     ts = query_plan.add_operator(
-        TopKTableScan('lineitem.csv', 'select * from S3Object', limit, k_scale,
-                      SortExpression(sort_index, float, sort_order, sort_field),
+        TopKTableScan('lineitem.csv', 'select * from S3Object', True, limit, k_scale,
+                      SortExpression(sort_index, col_type, sort_order, sort_field),
                       shards, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))
 
@@ -228,16 +231,16 @@ def __test_topk_with_sampling(k_scale=1, sort_index='_5', sort_field='l_extended
 #     query_plan.print_metrics()
 
 def test_all():
-    __test_topk_baseline('_4', 'ASC')
-    __test_topk_baseline('_4', 'DESC')
-    __test_topk_baseline('_5', 'ASC')
-    __test_topk_baseline('_5', 'DESC')
+    __test_topk_baseline('_4', int, 'ASC')
+    __test_topk_baseline('_4', int, 'DESC')
+    __test_topk_baseline('_5', float, 'ASC')
+    __test_topk_baseline('_5', float, 'DESC')
     for i in range(4):
         scale = pow(2, i)
-        __test_topk_with_sampling(scale, '_4', 'l_quantity', 'ASC')
-        __test_topk_with_sampling(scale, '_4', 'l_quantity', 'DESC')
-        __test_topk_with_sampling(scale, '_5', 'l_extendedprice', 'ASC')
-        __test_topk_with_sampling(scale, '_5', 'l_extendedprice', 'DESC')
+        __test_topk_with_sampling(scale, '_4', int, 'l_quantity', 'ASC')
+        __test_topk_with_sampling(scale, '_4', int, 'l_quantity', 'DESC')
+        __test_topk_with_sampling(scale, '_5', float, 'l_extendedprice', 'ASC')
+        __test_topk_with_sampling(scale, '_5', float, 'l_extendedprice', 'DESC')
 
 
 if __name__ == "__main__":

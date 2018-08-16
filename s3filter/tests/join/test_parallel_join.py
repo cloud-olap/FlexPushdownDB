@@ -52,7 +52,7 @@ def run(parallel, buffer_size):
                          'from S3Object '
                          'where cast(r_regionkey as int) >= {} and cast(r_regionkey as int) < {};'
                          .format(r_region_key_lower, r_region_key_upper),
-                         'region_scan' + '_' + str(p),
+                         False, 'region_scan' + '_' + str(p),
                          query_plan,
                          False))
 
@@ -70,7 +70,7 @@ def run(parallel, buffer_size):
                          'select * from S3Object '
                          'where cast(n_nationkey as int) >= {} and cast(n_nationkey as int) < {};'
                          .format(n_nation_key_lower, n_nation_key_upper),
-                         'nation_scan' + '_' + str(p),
+                         False, 'nation_scan' + '_' + str(p),
                          query_plan,
                          False))
 

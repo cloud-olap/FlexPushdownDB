@@ -10,6 +10,7 @@ from s3filter.op.tuple import Tuple, IndexedTuple
 import cPickle as pickle
 import pandas as pd
 
+
 class ProjectMetrics(OpMetrics):
     """Extra metrics for a project
 
@@ -121,6 +122,7 @@ class Project(Operator):
         """Handles the receipt of a tuple. The tuple is mapped to a new tuple using the given projection expressions.
         The field names are modified according to the new field names in the projection expressions.
 
+        :param producer_name:
         :param tuple_: The received tuple
         :return: None
         """

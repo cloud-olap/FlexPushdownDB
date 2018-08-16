@@ -1,0 +1,362 @@
+
+Groupby Benchmark, Baseline. Group Fields: ['G4'] Aggregate Fields: ['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9']
+----------------------
+
+Settings
+--------
+
+use_pandas: True
+table parts: 100
+
+Done
+
+G4 | F0 | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9
+----------------------------------------------------
+0 | 109962948.515 | 109975198.557 | 109975666.17 | 109970053.654 | 109939996.678 | 109932070.737 | 109924741.0 | 109936648.533 | 109906225.414 | 109894991.788
+1 | 109897650.96 | 109965153.328 | 109987064.841 | 109938965.136 | 109889760.514 | 110023158.09 | 109995168.533 | 109914255.08 | 110036535.139 | 109998657.874
+10 | 109847521.247 | 109755867.131 | 109836568.052 | 109799646.729 | 109827166.486 | 109791755.877 | 109855189.915 | 109812124.024 | 109830231.554 | 109855944.658
+11 | 110034239.652 | 110085314.23 | 110083062.23 | 110001518.966 | 110033203.405 | 110140419.618 | 110087695.623 | 110122247.859 | 110023688.397 | 110022733.635
+12 | 110052434.609 | 110005592.415 | 110069404.51 | 110134879.959 | 110036210.2 | 110041762.616 | 110092858.116 | 110051481.009 | 110071528.056 | 110111807.962
+13 | 110043671.918 | 110078729.67 | 110024403.142 | 110098347.602 | 110056719.314 | 110149014.637 | 109980800.668 | 110036343.195 | 110106677.769 | 110052581.636
+14 | 109968314.446 | 109986310.3 | 109922917.209 | 109966358.442 | 109991767.628 | 110022292.781 | 109975608.805 | 109966858.32 | 109979023.025 | 109873701.378
+15 | 110019032.361 | 110031264.11 | 110035179.777 | 110061413.465 | 110020672.013 | 110095770.929 | 110014637.05 | 110015351.737 | 110092854.808 | 109969164.687
+16 | 109904699.532 | 109890939.794 | 109942996.786 | 109945639.121 | 109856129.739 | 109848366.526 | 109816905.254 | 109861968.531 | 109907940.471 | 109877992.75
+17 | 109986612.337 | 110044156.214 | 110063534.848 | 109986667.33 | 110019423.017 | 110008164.177 | 110006359.614 | 110034807.12 | 110000315.751 | 109996230.568
+18 | 110098827.255 | 110086097.773 | 110063647.463 | 110076408.467 | 110026850.882 | 110032619.367 | 110014644.181 | 110132341.041 | 110033272.661 | 110053505.939
+19 | 109948487.614 | 109980115.311 | 109988051.833 | 109990897.713 | 109968668.989 | 109990510.962 | 109980326.58 | 110053954.909 | 110023799.205 | 110010210.831
+2 | 109920572.686 | 109887542.405 | 109909669.362 | 109841557.695 | 109916154.504 | 109923348.804 | 109907840.833 | 109982032.877 | 109907635.425 | 109796894.563
+20 | 110018947.794 | 109995869.9 | 110040696.613 | 110025458.218 | 109977267.147 | 110036018.163 | 110056630.198 | 109959854.934 | 110016601.573 | 109989990.756
+21 | 110036003.58 | 110091573.097 | 110025714.26 | 110103471.104 | 110088080.352 | 110074861.399 | 110021713.581 | 110059525.118 | 110111713.841 | 110019349.142
+22 | 110022464.002 | 110002543.739 | 109933432.48 | 109999449.671 | 110007377.135 | 109968743.021 | 110048376.947 | 110007394.322 | 110043050.468 | 110026056.764
+23 | 110028974.839 | 110069254.059 | 110066517.92 | 110044079.614 | 110098538.88 | 110099179.992 | 110000411.41 | 110034647.89 | 110074083.515 | 110040770.818
+24 | 110001836.987 | 110017496.526 | 110113568.144 | 110032413.247 | 110063179.47 | 110055182.289 | 110031480.632 | 109988611.86 | 110007119.051 | 110056423.631
+25 | 110011394.663 | 110003115.185 | 109977683.433 | 110037942.554 | 110039717.37 | 109995907.94 | 110020830.044 | 110019682.645 | 110110108.975 | 110005317.149
+26 | 110065571.002 | 110010179.868 | 110067467.814 | 110006708.385 | 109958981.674 | 110072542.727 | 110075596.702 | 110038786.902 | 110068702.928 | 110049102.868
+27 | 109817550.032 | 109800050.04 | 109922409.009 | 109859938.572 | 109830315.619 | 109917676.615 | 109848187.31 | 109911765.817 | 109862089.095 | 109842532.331
+28 | 110043830.573 | 109795082.041 | 109916104.556 | 109892693.446 | 109959526.834 | 109984620.88 | 109894447.478 | 109906639.996 | 109902334.859 | 109948364.708
+29 | 109904985.933 | 109882453.838 | 109944593.569 | 109933167.348 | 109916970.494 | 109907338.639 | 109899195.885 | 109903484.217 | 109872181.501 | 109927965.154
+3 | 109970584.15 | 109891823.116 | 109893879.962 | 109901621.048 | 109975917.086 | 109965932.802 | 109905675.549 | 109925877.417 | 109885856.243 | 109902111.868
+30 | 109998478.874 | 109946646.712 | 110034873.34 | 109984575.456 | 110006747.246 | 110046704.047 | 110019425.235 | 110047883.854 | 110056416.245 | 110050438.621
+31 | 110122566.497 | 110083122.139 | 110114171.432 | 110117656.85 | 110194488.517 | 110150593.603 | 110106317.352 | 110114651.842 | 110096863.074 | 110106428.064
+4 | 110004163.02 | 109941227.154 | 109958370.974 | 109927507.817 | 109980001.901 | 109900303.421 | 110002952.926 | 109947394.994 | 109977636.967 | 109937811.898
+5 | 110156193.361 | 110155256.726 | 110137721.512 | 110128704.298 | 110194668.084 | 110141781.236 | 110155299.76 | 110163044.836 | 110132037.642 | 110170730.247
+6 | 110006151.304 | 109981818.367 | 110011053.156 | 110030688.339 | 110048871.571 | 110004835.214 | 110047111.934 | 110102544.266 | 109973791.762 | 110006527.189
+7 | 109883552.353 | 109838810.379 | 109921989.507 | 109796775.931 | 109862053.754 | 109859841.152 | 109827935.411 | 109860140.595 | 109829173.224 | 109810945.446
+8 | 110194395.454 | 110171452.338 | 110210677.074 | 110176613.331 | 110196395.775 | 110208025.072 | 110235016.49 | 110195119.355 | 110225389.685 | 110209148.184
+9 | 109984142.945 | 110018955.603 | 109918602.504 | 110047392.306 | 109979427.902 | 109961085.264 | 109980962.165 | 109961341.685 | 110027023.663 | 110010777.368
+
+Metrics
+-------
+
+Plan
+----
+buffer_size: 0
+is_parallel: True
+total_elapsed_time: 135.3069
+cost: $0.0
+
+Operators
+---------
+SQLTableScan({'name': 'scan_11', 'parallel': True}): {'elapsed_time': 130.59829, 'query_bytes': 103, 'cost': 0.0002595808081328869, 'time_to_first_response': 0.16391, 'bytes_processed': 107649092, 'time_to_first_record_response': 0.16796, 'time_to_last_record_response': 130.58259, 'bytes_scanned': 107649092, 'rows_returned': 640000, 'bytes_returned': 90606552}
+Project({'name': 'project_11', 'parallel': True}): {'elapsed_time': 9.05776, 'rows_projected': 640000}
+Group({'name': 'groupby_11', 'parallel': True}): {'elapsed_time': 63.48618}
+SQLTableScan({'name': 'scan_10', 'parallel': True}): {'elapsed_time': 129.85458, 'query_bytes': 103, 'cost': 0.00025958493174985055, 'time_to_first_response': 0.1953, 'bytes_processed': 107651141, 'time_to_first_record_response': 0.1993, 'time_to_last_record_response': 129.82971, 'bytes_scanned': 107651141, 'rows_returned': 640000, 'bytes_returned': 90607023}
+Project({'name': 'project_10', 'parallel': True}): {'elapsed_time': 12.16849, 'rows_projected': 640000}
+Group({'name': 'groupby_10', 'parallel': True}): {'elapsed_time': 60.77022}
+SQLTableScan({'name': 'scan_13', 'parallel': True}): {'elapsed_time': 132.49766, 'query_bytes': 103, 'cost': 0.0002595880912616849, 'time_to_first_response': 0.18852, 'bytes_processed': 107652377, 'time_to_first_record_response': 0.1932, 'time_to_last_record_response': 132.12379, 'bytes_scanned': 107652377, 'rows_returned': 640000, 'bytes_returned': 90608338}
+Project({'name': 'project_13', 'parallel': True}): {'elapsed_time': 8.24826, 'rows_projected': 640000}
+Group({'name': 'groupby_13', 'parallel': True}): {'elapsed_time': 61.10638}
+SQLTableScan({'name': 'scan_12', 'parallel': True}): {'elapsed_time': 124.08201, 'query_bytes': 103, 'cost': 0.00025959089519456027, 'time_to_first_response': 0.14954, 'bytes_processed': 107653448, 'time_to_first_record_response': 0.15368, 'time_to_last_record_response': 123.75574, 'bytes_scanned': 107653448, 'rows_returned': 640000, 'bytes_returned': 90609579}
+Project({'name': 'project_12', 'parallel': True}): {'elapsed_time': 9.49938, 'rows_projected': 640000}
+Group({'name': 'groupby_12', 'parallel': True}): {'elapsed_time': 59.07838}
+SQLTableScan({'name': 'scan_15', 'parallel': True}): {'elapsed_time': 131.99738, 'query_bytes': 103, 'cost': 0.00025958641367033124, 'time_to_first_response': 0.20393, 'bytes_processed': 107651483, 'time_to_first_record_response': 0.20862, 'time_to_last_record_response': 131.9556, 'bytes_scanned': 107651483, 'rows_returned': 640000, 'bytes_returned': 90608319}
+Project({'name': 'project_15', 'parallel': True}): {'elapsed_time': 11.33884, 'rows_projected': 640000}
+Group({'name': 'groupby_15', 'parallel': True}): {'elapsed_time': 62.63622}
+SQLTableScan({'name': 'scan_14', 'parallel': True}): {'elapsed_time': 133.97745, 'query_bytes': 103, 'cost': 0.00025959492838010194, 'time_to_first_response': 0.22323, 'bytes_processed': 107655642, 'time_to_first_record_response': 0.22763, 'time_to_last_record_response': 133.75646, 'bytes_scanned': 107655642, 'rows_returned': 640000, 'bytes_returned': 90609497}
+Project({'name': 'project_14', 'parallel': True}): {'elapsed_time': 8.8441, 'rows_projected': 640000}
+Group({'name': 'groupby_14', 'parallel': True}): {'elapsed_time': 63.44312}
+SQLTableScan({'name': 'scan_17', 'parallel': True}): {'elapsed_time': 128.82346, 'query_bytes': 103, 'cost': 0.00025959028601646423, 'time_to_first_response': 0.19475, 'bytes_processed': 107653402, 'time_to_first_record_response': 0.19892, 'time_to_last_record_response': 128.36334, 'bytes_scanned': 107653402, 'rows_returned': 640000, 'bytes_returned': 90608776}
+Project({'name': 'project_17', 'parallel': True}): {'elapsed_time': 6.40626, 'rows_projected': 640000}
+Group({'name': 'groupby_17', 'parallel': True}): {'elapsed_time': 59.84428}
+SQLTableScan({'name': 'scan_16', 'parallel': True}): {'elapsed_time': 131.369, 'query_bytes': 103, 'cost': 0.00025958902845159173, 'time_to_first_response': 0.16246, 'bytes_processed': 107652660, 'time_to_first_record_response': 0.16587, 'time_to_last_record_response': 131.10139, 'bytes_scanned': 107652660, 'rows_returned': 640000, 'bytes_returned': 90608967}
+Project({'name': 'project_16', 'parallel': True}): {'elapsed_time': 10.37681, 'rows_projected': 640000}
+Group({'name': 'groupby_16', 'parallel': True}): {'elapsed_time': 59.69333}
+SQLTableScan({'name': 'scan_19', 'parallel': True}): {'elapsed_time': 133.27999, 'query_bytes': 103, 'cost': 0.00025958925625309346, 'time_to_first_response': 0.26586, 'bytes_processed': 107652503, 'time_to_first_record_response': 0.27115, 'time_to_last_record_response': 133.26279, 'bytes_scanned': 107652503, 'rows_returned': 640000, 'bytes_returned': 90609765}
+Project({'name': 'project_19', 'parallel': True}): {'elapsed_time': 11.26148, 'rows_projected': 640000}
+Group({'name': 'groupby_19', 'parallel': True}): {'elapsed_time': 62.73433}
+SQLTableScan({'name': 'scan_18', 'parallel': True}): {'elapsed_time': 120.61996, 'query_bytes': 103, 'cost': 0.00025959113389253615, 'time_to_first_response': 0.17894, 'bytes_processed': 107653608, 'time_to_first_record_response': 0.18397, 'time_to_last_record_response': 120.47939, 'bytes_scanned': 107653608, 'rows_returned': 640000, 'bytes_returned': 90609488}
+Project({'name': 'project_18', 'parallel': True}): {'elapsed_time': 4.74528, 'rows_projected': 640000}
+Group({'name': 'groupby_18', 'parallel': True}): {'elapsed_time': 60.13278}
+SQLTableScan({'name': 'scan_29', 'parallel': True}): {'elapsed_time': 123.88003, 'query_bytes': 103, 'cost': 0.00025958726946264505, 'time_to_first_response': 0.20739, 'bytes_processed': 107651926, 'time_to_first_record_response': 0.21297, 'time_to_last_record_response': 123.4441, 'bytes_scanned': 107651926, 'rows_returned': 640000, 'bytes_returned': 90608366}
+Project({'name': 'project_29', 'parallel': True}): {'elapsed_time': 6.26171, 'rows_projected': 640000}
+Group({'name': 'groupby_29', 'parallel': True}): {'elapsed_time': 59.4963}
+SQLTableScan({'name': 'scan_64', 'parallel': True}): {'elapsed_time': 127.10429, 'query_bytes': 103, 'cost': 0.0002595924720168114, 'time_to_first_response': 0.2847, 'bytes_processed': 107654262, 'time_to_first_record_response': 0.28924, 'time_to_last_record_response': 126.68528, 'bytes_scanned': 107654262, 'rows_returned': 640000, 'bytes_returned': 90609672}
+Project({'name': 'project_64', 'parallel': True}): {'elapsed_time': 8.03795, 'rows_projected': 640000}
+Group({'name': 'groupby_64', 'parallel': True}): {'elapsed_time': 62.54946}
+SQLTableScan({'name': 'scan_98', 'parallel': True}): {'elapsed_time': 127.96201, 'query_bytes': 103, 'cost': 0.0002595934480428696, 'time_to_first_response': 0.21781, 'bytes_processed': 107654604, 'time_to_first_record_response': 0.22681, 'time_to_last_record_response': 127.64409, 'bytes_scanned': 107654604, 'rows_returned': 640000, 'bytes_returned': 90610192}
+Project({'name': 'project_98', 'parallel': True}): {'elapsed_time': 8.62949, 'rows_projected': 640000}
+Group({'name': 'groupby_98', 'parallel': True}): {'elapsed_time': 62.39734}
+SQLTableScan({'name': 'scan_26', 'parallel': True}): {'elapsed_time': 131.6323, 'query_bytes': 103, 'cost': 0.00025958900321274996, 'time_to_first_response': 0.15322, 'bytes_processed': 107652294, 'time_to_first_record_response': 0.15784, 'time_to_last_record_response': 131.53729, 'bytes_scanned': 107652294, 'rows_returned': 640000, 'bytes_returned': 90609974}
+Project({'name': 'project_26', 'parallel': True}): {'elapsed_time': 10.22535, 'rows_projected': 640000}
+Group({'name': 'groupby_26', 'parallel': True}): {'elapsed_time': 62.70723}
+SQLTableScan({'name': 'scan_67', 'parallel': True}): {'elapsed_time': 131.31657, 'query_bytes': 103, 'cost': 0.0002595837031491101, 'time_to_first_response': 0.19258, 'bytes_processed': 107650382, 'time_to_first_record_response': 0.1979, 'time_to_last_record_response': 130.84699, 'bytes_scanned': 107650382, 'rows_returned': 640000, 'bytes_returned': 90607307}
+Project({'name': 'project_67', 'parallel': True}): {'elapsed_time': 6.96777, 'rows_projected': 640000}
+Group({'name': 'groupby_67', 'parallel': True}): {'elapsed_time': 62.42468}
+SQLTableScan({'name': 'scan_91', 'parallel': True}): {'elapsed_time': 124.8137, 'query_bytes': 103, 'cost': 0.0002595885828137398, 'time_to_first_response': 0.19934, 'bytes_processed': 107652573, 'time_to_first_record_response': 0.20408, 'time_to_last_record_response': 124.76247, 'bytes_scanned': 107652573, 'rows_returned': 640000, 'bytes_returned': 90608532}
+Project({'name': 'project_91', 'parallel': True}): {'elapsed_time': 5.5928, 'rows_projected': 640000}
+Group({'name': 'groupby_91', 'parallel': True}): {'elapsed_time': 61.43977}
+SQLTableScan({'name': 'scan_90', 'parallel': True}): {'elapsed_time': 132.10836, 'query_bytes': 103, 'cost': 0.00025958968475461007, 'time_to_first_response': 0.1472, 'bytes_processed': 107652998, 'time_to_first_record_response': 0.15311, 'time_to_last_record_response': 131.82037, 'bytes_scanned': 107652998, 'rows_returned': 640000, 'bytes_returned': 90609008}
+Project({'name': 'project_90', 'parallel': True}): {'elapsed_time': 9.97402, 'rows_projected': 640000}
+Group({'name': 'groupby_90', 'parallel': True}): {'elapsed_time': 62.76324}
+SQLTableScan({'name': 'scan_54', 'parallel': True}): {'elapsed_time': 128.74436, 'query_bytes': 103, 'cost': 0.00025958645194768904, 'time_to_first_response': 0.18558, 'bytes_processed': 107651205, 'time_to_first_record_response': 0.19043, 'time_to_last_record_response': 128.58643, 'bytes_scanned': 107651205, 'rows_returned': 640000, 'bytes_returned': 90609172}
+Project({'name': 'project_54', 'parallel': True}): {'elapsed_time': 11.34476, 'rows_projected': 640000}
+Group({'name': 'groupby_54', 'parallel': True}): {'elapsed_time': 58.19673}
+SQLTableScan({'name': 'scan_92', 'parallel': True}): {'elapsed_time': 128.65559, 'query_bytes': 103, 'cost': 0.0002595887294970453, 'time_to_first_response': 0.24414, 'bytes_processed': 107652748, 'time_to_first_record_response': 0.24785, 'time_to_last_record_response': 128.34338, 'bytes_scanned': 107652748, 'rows_returned': 640000, 'bytes_returned': 90608257}
+Project({'name': 'project_92', 'parallel': True}): {'elapsed_time': 6.56853, 'rows_projected': 640000}
+Group({'name': 'groupby_92', 'parallel': True}): {'elapsed_time': 61.62415}
+SQLTableScan({'name': 'scan_60', 'parallel': True}): {'elapsed_time': 131.39648, 'query_bytes': 103, 'cost': 0.00025959148118272424, 'time_to_first_response': 0.2002, 'bytes_processed': 107653890, 'time_to_first_record_response': 0.20519, 'time_to_last_record_response': 130.66657, 'bytes_scanned': 107653890, 'rows_returned': 640000, 'bytes_returned': 90609215}
+Project({'name': 'project_60', 'parallel': True}): {'elapsed_time': 11.37056, 'rows_projected': 640000}
+Group({'name': 'groupby_60', 'parallel': True}): {'elapsed_time': 61.52732}
+SQLTableScan({'name': 'scan_94', 'parallel': True}): {'elapsed_time': 126.9358, 'query_bytes': 103, 'cost': 0.0002595901777036488, 'time_to_first_response': 0.24084, 'bytes_processed': 107653599, 'time_to_first_record_response': 0.24543, 'time_to_last_record_response': 126.74628, 'bytes_scanned': 107653599, 'rows_returned': 640000, 'bytes_returned': 90608047}
+Project({'name': 'project_94', 'parallel': True}): {'elapsed_time': 7.89563, 'rows_projected': 640000}
+Group({'name': 'groupby_94', 'parallel': True}): {'elapsed_time': 63.06016}
+SQLTableScan({'name': 'scan_97', 'parallel': True}): {'elapsed_time': 125.99741, 'query_bytes': 103, 'cost': 0.0002595830922946334, 'time_to_first_response': 0.21455, 'bytes_processed': 107649955, 'time_to_first_record_response': 0.22633, 'time_to_last_record_response': 125.89551, 'bytes_scanned': 107649955, 'rows_returned': 640000, 'bytes_returned': 90607590}
+Project({'name': 'project_97', 'parallel': True}): {'elapsed_time': 6.65056, 'rows_projected': 640000}
+Group({'name': 'groupby_97', 'parallel': True}): {'elapsed_time': 63.34859}
+SQLTableScan({'name': 'scan_96', 'parallel': True}): {'elapsed_time': 130.92547, 'query_bytes': 103, 'cost': 0.00025958792669698595, 'time_to_first_response': 0.26228, 'bytes_processed': 107652380, 'time_to_first_record_response': 0.26688, 'time_to_last_record_response': 130.5379, 'bytes_scanned': 107652380, 'rows_returned': 640000, 'bytes_returned': 90608077}
+Project({'name': 'project_96', 'parallel': True}): {'elapsed_time': 6.07453, 'rows_projected': 640000}
+Group({'name': 'groupby_96', 'parallel': True}): {'elapsed_time': 61.59892}
+SQLTableScan({'name': 'scan_51', 'parallel': True}): {'elapsed_time': 131.84726, 'query_bytes': 103, 'cost': 0.0002595878813415766, 'time_to_first_response': 0.20822, 'bytes_processed': 107651789, 'time_to_first_record_response': 0.21266, 'time_to_last_record_response': 131.4814, 'bytes_scanned': 107651789, 'rows_returned': 640000, 'bytes_returned': 90609696}
+Project({'name': 'project_51', 'parallel': True}): {'elapsed_time': 6.89665, 'rows_projected': 640000}
+Group({'name': 'groupby_51', 'parallel': True}): {'elapsed_time': 61.62925}
+SQLTableScan({'name': 'scan_63', 'parallel': True}): {'elapsed_time': 128.81628, 'query_bytes': 103, 'cost': 0.0002595950913615525, 'time_to_first_response': 0.28939, 'bytes_processed': 107655432, 'time_to_first_record_response': 0.29701, 'time_to_last_record_response': 128.73257, 'bytes_scanned': 107655432, 'rows_returned': 640000, 'bytes_returned': 90610347}
+Project({'name': 'project_63', 'parallel': True}): {'elapsed_time': 7.40418, 'rows_projected': 640000}
+Group({'name': 'groupby_63', 'parallel': True}): {'elapsed_time': 64.12149}
+SQLTableScan({'name': 'scan_50', 'parallel': True}): {'elapsed_time': 119.82045, 'query_bytes': 103, 'cost': 0.0002595901262015104, 'time_to_first_response': 0.21152, 'bytes_processed': 107653039, 'time_to_first_record_response': 0.21597, 'time_to_last_record_response': 119.75449, 'bytes_scanned': 107653039, 'rows_returned': 640000, 'bytes_returned': 90609568}
+Project({'name': 'project_50', 'parallel': True}): {'elapsed_time': 4.72058, 'rows_projected': 640000}
+Group({'name': 'groupby_50', 'parallel': True}): {'elapsed_time': 58.10581}
+SQLTableScan({'name': 'scan_20', 'parallel': True}): {'elapsed_time': 128.24665, 'query_bytes': 103, 'cost': 0.0002595907202921808, 'time_to_first_response': 0.25229, 'bytes_processed': 107653394, 'time_to_first_record_response': 0.25771, 'time_to_last_record_response': 127.77645, 'bytes_scanned': 107653394, 'rows_returned': 640000, 'bytes_returned': 90609465}
+Project({'name': 'project_20', 'parallel': True}): {'elapsed_time': 8.83894, 'rows_projected': 640000}
+Group({'name': 'groupby_20', 'parallel': True}): {'elapsed_time': 59.83703}
+SQLTableScan({'name': 'scan_22', 'parallel': True}): {'elapsed_time': 129.28464, 'query_bytes': 103, 'cost': 0.0002595952215604484, 'time_to_first_response': 0.32133, 'bytes_processed': 107655434, 'time_to_first_record_response': 0.32694, 'time_to_last_record_response': 128.84027, 'bytes_scanned': 107655434, 'rows_returned': 640000, 'bytes_returned': 90610541}
+Project({'name': 'project_22', 'parallel': True}): {'elapsed_time': 9.50628, 'rows_projected': 640000}
+Group({'name': 'groupby_22', 'parallel': True}): {'elapsed_time': 61.55258}
+SQLTableScan({'name': 'scan_87', 'parallel': True}): {'elapsed_time': 131.07138, 'query_bytes': 103, 'cost': 0.00025958756254985927, 'time_to_first_response': 0.21878, 'bytes_processed': 107651971, 'time_to_first_record_response': 0.23916, 'time_to_last_record_response': 131.03269, 'bytes_scanned': 107651971, 'rows_returned': 640000, 'bytes_returned': 90608687}
+Project({'name': 'project_87', 'parallel': True}): {'elapsed_time': 8.76717, 'rows_projected': 640000}
+Group({'name': 'groupby_87', 'parallel': True}): {'elapsed_time': 62.15893}
+SQLTableScan({'name': 'scan_84', 'parallel': True}): {'elapsed_time': 134.4886, 'query_bytes': 103, 'cost': 0.00025958896577358247, 'time_to_first_response': 0.21263, 'bytes_processed': 107652549, 'time_to_first_record_response': 0.21856, 'time_to_last_record_response': 134.41482, 'bytes_scanned': 107652549, 'rows_returned': 640000, 'bytes_returned': 90609188}
+Project({'name': 'project_84', 'parallel': True}): {'elapsed_time': 10.43987, 'rows_projected': 640000}
+Group({'name': 'groupby_84', 'parallel': True}): {'elapsed_time': 60.57332}
+SQLTableScan({'name': 'scan_55', 'parallel': True}): {'elapsed_time': 129.3163, 'query_bytes': 103, 'cost': 0.0002595889354124665, 'time_to_first_response': 0.29628, 'bytes_processed': 107652728, 'time_to_first_record_response': 0.30248, 'time_to_last_record_response': 129.19899, 'bytes_scanned': 107652728, 'rows_returned': 640000, 'bytes_returned': 90608630}
+Project({'name': 'project_55', 'parallel': True}): {'elapsed_time': 5.88979, 'rows_projected': 640000}
+Group({'name': 'groupby_55', 'parallel': True}): {'elapsed_time': 59.97278}
+SQLTableScan({'name': 'scan_82', 'parallel': True}): {'elapsed_time': 131.34427, 'query_bytes': 103, 'cost': 0.0002595896765589714, 'time_to_first_response': 0.21423, 'bytes_processed': 107652932, 'time_to_first_record_response': 0.22327, 'time_to_last_record_response': 131.03734, 'bytes_scanned': 107652932, 'rows_returned': 640000, 'bytes_returned': 90609184}
+Project({'name': 'project_82', 'parallel': True}): {'elapsed_time': 8.46027, 'rows_projected': 640000}
+Group({'name': 'groupby_82', 'parallel': True}): {'elapsed_time': 60.94784}
+SQLTableScan({'name': 'scan_83', 'parallel': True}): {'elapsed_time': 134.54915, 'query_bytes': 103, 'cost': 0.00025958879301324486, 'time_to_first_response': 0.23569, 'bytes_processed': 107652577, 'time_to_first_record_response': 0.24068, 'time_to_last_record_response': 134.46414, 'bytes_scanned': 107652577, 'rows_returned': 640000, 'bytes_returned': 90608843}
+Project({'name': 'project_83', 'parallel': True}): {'elapsed_time': 7.90077, 'rows_projected': 640000}
+Group({'name': 'groupby_83', 'parallel': True}): {'elapsed_time': 63.70512}
+SQLTableScan({'name': 'scan_23', 'parallel': True}): {'elapsed_time': 133.41963, 'query_bytes': 103, 'cost': 0.0002595851187594235, 'time_to_first_response': 0.18062, 'bytes_processed': 107650925, 'time_to_first_record_response': 0.18465, 'time_to_last_record_response': 133.11631, 'bytes_scanned': 107650925, 'rows_returned': 640000, 'bytes_returned': 90607927}
+Project({'name': 'project_23', 'parallel': True}): {'elapsed_time': 8.82092, 'rows_projected': 640000}
+Group({'name': 'groupby_23', 'parallel': True}): {'elapsed_time': 59.80805}
+SQLTableScan({'name': 'scan_81', 'parallel': True}): {'elapsed_time': 122.77534, 'query_bytes': 103, 'cost': 0.00025958939557895063, 'time_to_first_response': 0.20088, 'bytes_processed': 107652757, 'time_to_first_record_response': 0.2174, 'time_to_last_record_response': 122.74706, 'bytes_scanned': 107652757, 'rows_returned': 640000, 'bytes_returned': 90609253}
+Project({'name': 'project_81', 'parallel': True}): {'elapsed_time': 4.72743, 'rows_projected': 640000}
+Group({'name': 'groupby_81', 'parallel': True}): {'elapsed_time': 58.94172}
+SQLTableScan({'name': 'scan_66', 'parallel': True}): {'elapsed_time': 134.65839, 'query_bytes': 103, 'cost': 0.00025959175014868377, 'time_to_first_response': 0.2644, 'bytes_processed': 107653935, 'time_to_first_record_response': 0.2681, 'time_to_last_record_response': 134.60515, 'bytes_scanned': 107653935, 'rows_returned': 640000, 'bytes_returned': 90609499}
+Project({'name': 'project_66', 'parallel': True}): {'elapsed_time': 13.51827, 'rows_projected': 640000}
+Group({'name': 'groupby_66', 'parallel': True}): {'elapsed_time': 63.80827}
+SQLTableScan({'name': 'scan_68', 'parallel': True}): {'elapsed_time': 134.24771, 'query_bytes': 103, 'cost': 0.0002595924522727728, 'time_to_first_response': 0.21598, 'bytes_processed': 107654033, 'time_to_first_record_response': 0.22036, 'time_to_last_record_response': 133.99385, 'bytes_scanned': 107654033, 'rows_returned': 640000, 'bytes_returned': 90610296}
+Project({'name': 'project_68', 'parallel': True}): {'elapsed_time': 11.81557, 'rows_projected': 640000}
+Group({'name': 'groupby_68', 'parallel': True}): {'elapsed_time': 63.10887}
+SQLTableScan({'name': 'scan_88', 'parallel': True}): {'elapsed_time': 131.34514, 'query_bytes': 103, 'cost': 0.0002595883539877832, 'time_to_first_response': 0.18963, 'bytes_processed': 107652363, 'time_to_first_record_response': 0.20587, 'time_to_last_record_response': 130.99927, 'bytes_scanned': 107652363, 'rows_returned': 640000, 'bytes_returned': 90608781}
+Project({'name': 'project_88', 'parallel': True}): {'elapsed_time': 11.01821, 'rows_projected': 640000}
+Group({'name': 'groupby_88', 'parallel': True}): {'elapsed_time': 61.03599}
+SQLTableScan({'name': 'scan_89', 'parallel': True}): {'elapsed_time': 133.4633, 'query_bytes': 103, 'cost': 0.0002595851505175233, 'time_to_first_response': 0.2284, 'bytes_processed': 107650815, 'time_to_first_record_response': 0.23558, 'time_to_last_record_response': 133.37575, 'bytes_scanned': 107650815, 'rows_returned': 640000, 'bytes_returned': 90608290}
+Project({'name': 'project_89', 'parallel': True}): {'elapsed_time': 6.73045, 'rows_projected': 640000}
+Group({'name': 'groupby_89', 'parallel': True}): {'elapsed_time': 61.41293}
+SQLTableScan({'name': 'scan_28', 'parallel': True}): {'elapsed_time': 132.8, 'query_bytes': 103, 'cost': 0.00025958784027025104, 'time_to_first_response': 0.21483, 'bytes_processed': 107651628, 'time_to_first_record_response': 0.22488, 'time_to_last_record_response': 132.77812, 'bytes_scanned': 107651628, 'rows_returned': 640000, 'bytes_returned': 90610093}
+Project({'name': 'project_28', 'parallel': True}): {'elapsed_time': 10.61121, 'rows_projected': 640000}
+Group({'name': 'groupby_28', 'parallel': True}): {'elapsed_time': 62.7826}
+SQLTableScan({'name': 'scan_39', 'parallel': True}): {'elapsed_time': 134.06713, 'query_bytes': 103, 'cost': 0.00025958896158263084, 'time_to_first_response': 0.25129, 'bytes_processed': 107652818, 'time_to_first_record_response': 0.25538, 'time_to_last_record_response': 133.90346, 'bytes_scanned': 107652818, 'rows_returned': 640000, 'bytes_returned': 90608413}
+Project({'name': 'project_39', 'parallel': True}): {'elapsed_time': 9.99427, 'rows_projected': 640000}
+Group({'name': 'groupby_39', 'parallel': True}): {'elapsed_time': 61.52307}
+SQLTableScan({'name': 'scan_38', 'parallel': True}): {'elapsed_time': 128.24415, 'query_bytes': 103, 'cost': 0.00025959013504907487, 'time_to_first_response': 0.27715, 'bytes_processed': 107653168, 'time_to_first_record_response': 0.28237, 'time_to_last_record_response': 127.83868, 'bytes_scanned': 107653168, 'rows_returned': 640000, 'bytes_returned': 90609213}
+Project({'name': 'project_38', 'parallel': True}): {'elapsed_time': 10.86486, 'rows_projected': 640000}
+Group({'name': 'groupby_38', 'parallel': True}): {'elapsed_time': 65.7995}
+SQLTableScan({'name': 'scan_33', 'parallel': True}): {'elapsed_time': 134.44178, 'query_bytes': 103, 'cost': 0.0002595942372456193, 'time_to_first_response': 0.20526, 'bytes_processed': 107654957, 'time_to_first_record_response': 0.20997, 'time_to_last_record_response': 134.35588, 'bytes_scanned': 107654957, 'rows_returned': 640000, 'bytes_returned': 90610394}
+Project({'name': 'project_33', 'parallel': True}): {'elapsed_time': 11.75704, 'rows_projected': 640000}
+Group({'name': 'groupby_33', 'parallel': True}): {'elapsed_time': 62.58065}
+SQLTableScan({'name': 'scan_32', 'parallel': True}): {'elapsed_time': 128.46809, 'query_bytes': 103, 'cost': 0.00025959200421348216, 'time_to_first_response': 0.26868, 'bytes_processed': 107654063, 'time_to_first_record_response': 0.28694, 'time_to_last_record_response': 128.08491, 'bytes_scanned': 107654063, 'rows_returned': 640000, 'bytes_returned': 90609523}
+Project({'name': 'project_32', 'parallel': True}): {'elapsed_time': 5.05323, 'rows_projected': 640000}
+Group({'name': 'groupby_32', 'parallel': True}): {'elapsed_time': 63.97793}
+SQLTableScan({'name': 'scan_31', 'parallel': True}): {'elapsed_time': 134.82633, 'query_bytes': 103, 'cost': 0.000259589131269604, 'time_to_first_response': 0.2056, 'bytes_processed': 107652823, 'time_to_first_record_response': 0.21114, 'time_to_last_record_response': 134.79626, 'bytes_scanned': 107652823, 'rows_returned': 640000, 'bytes_returned': 90608659}
+Project({'name': 'project_31', 'parallel': True}): {'elapsed_time': 8.61917, 'rows_projected': 640000}
+Group({'name': 'groupby_31', 'parallel': True}): {'elapsed_time': 62.96082}
+SQLTableScan({'name': 'scan_30', 'parallel': True}): {'elapsed_time': 132.56113, 'query_bytes': 103, 'cost': 0.00025958953769877554, 'time_to_first_response': 0.26897, 'bytes_processed': 107652925, 'time_to_first_record_response': 0.28131, 'time_to_last_record_response': 132.42996, 'bytes_scanned': 107652925, 'rows_returned': 640000, 'bytes_returned': 90608991}
+Project({'name': 'project_30', 'parallel': True}): {'elapsed_time': 8.46217, 'rows_projected': 640000}
+Group({'name': 'groupby_30', 'parallel': True}): {'elapsed_time': 63.29013}
+SQLTableScan({'name': 'scan_37', 'parallel': True}): {'elapsed_time': 119.96031, 'query_bytes': 103, 'cost': 0.00025958973951637745, 'time_to_first_response': 0.30537, 'bytes_processed': 107653271, 'time_to_first_record_response': 0.3089, 'time_to_last_record_response': 119.91817, 'bytes_scanned': 107653271, 'rows_returned': 640000, 'bytes_returned': 90608312}
+Project({'name': 'project_37', 'parallel': True}): {'elapsed_time': 6.74592, 'rows_projected': 640000}
+Group({'name': 'groupby_37', 'parallel': True}): {'elapsed_time': 60.21083}
+SQLTableScan({'name': 'scan_36', 'parallel': True}): {'elapsed_time': 131.12826, 'query_bytes': 103, 'cost': 0.0002595884122885764, 'time_to_first_response': 0.31911, 'bytes_processed': 107652899, 'time_to_first_record_response': 0.32402, 'time_to_last_record_response': 131.1092, 'bytes_scanned': 107652899, 'rows_returned': 640000, 'bytes_returned': 90607339}
+Project({'name': 'project_36', 'parallel': True}): {'elapsed_time': 7.15639, 'rows_projected': 640000}
+Group({'name': 'groupby_36', 'parallel': True}): {'elapsed_time': 61.11361}
+SQLTableScan({'name': 'scan_35', 'parallel': True}): {'elapsed_time': 122.13175, 'query_bytes': 103, 'cost': 0.0002595911057665944, 'time_to_first_response': 0.19317, 'bytes_processed': 107653091, 'time_to_first_record_response': 0.19688, 'time_to_last_record_response': 122.09005, 'bytes_scanned': 107653091, 'rows_returned': 640000, 'bytes_returned': 90610922}
+Project({'name': 'project_35', 'parallel': True}): {'elapsed_time': 5.43347, 'rows_projected': 640000}
+Group({'name': 'groupby_35', 'parallel': True}): {'elapsed_time': 62.4908}
+SQLTableScan({'name': 'scan_34', 'parallel': True}): {'elapsed_time': 133.76643, 'query_bytes': 103, 'cost': 0.0002595837285742164, 'time_to_first_response': 0.20413, 'bytes_processed': 107650949, 'time_to_first_record_response': 0.20852, 'time_to_last_record_response': 133.49573, 'bytes_scanned': 107650949, 'rows_returned': 640000, 'bytes_returned': 90605726}
+Project({'name': 'project_34', 'parallel': True}): {'elapsed_time': 12.91385, 'rows_projected': 640000}
+Group({'name': 'groupby_34', 'parallel': True}): {'elapsed_time': 64.05968}
+SQLTableScan({'name': 'scan_93', 'parallel': True}): {'elapsed_time': 133.01823, 'query_bytes': 103, 'cost': 0.00025958796720951797, 'time_to_first_response': 0.16061, 'bytes_processed': 107652148, 'time_to_first_record_response': 0.18091, 'time_to_last_record_response': 132.94777, 'bytes_scanned': 107652148, 'rows_returned': 640000, 'bytes_returned': 90608802}
+Project({'name': 'project_93', 'parallel': True}): {'elapsed_time': 9.79677, 'rows_projected': 640000}
+Group({'name': 'groupby_93', 'parallel': True}): {'elapsed_time': 62.68752}
+SQLTableScan({'name': 'scan_95', 'parallel': True}): {'elapsed_time': 133.73225, 'query_bytes': 103, 'cost': 0.0002595931644551456, 'time_to_first_response': 0.371, 'bytes_processed': 107654611, 'time_to_first_record_response': 0.37556, 'time_to_last_record_response': 133.71217, 'bytes_scanned': 107654611, 'rows_returned': 640000, 'bytes_returned': 90609737}
+Project({'name': 'project_95', 'parallel': True}): {'elapsed_time': 9.79635, 'rows_projected': 640000}
+Group({'name': 'groupby_95', 'parallel': True}): {'elapsed_time': 62.40625}
+SQLTableScan({'name': 'scan_56', 'parallel': True}): {'elapsed_time': 134.71282, 'query_bytes': 103, 'cost': 0.00025958801452070473, 'time_to_first_response': 0.17263, 'bytes_processed': 107652046, 'time_to_first_record_response': 0.17697, 'time_to_last_record_response': 134.67427, 'bytes_scanned': 107652046, 'rows_returned': 640000, 'bytes_returned': 90609166}
+Project({'name': 'project_56', 'parallel': True}): {'elapsed_time': 11.27265, 'rows_projected': 640000}
+Group({'name': 'groupby_56', 'parallel': True}): {'elapsed_time': 62.20669}
+SQLTableScan({'name': 'scan_9', 'parallel': True}): {'elapsed_time': 134.96583, 'query_bytes': 102, 'cost': 0.00025958798779174687, 'time_to_first_response': 0.23004, 'bytes_processed': 107652354, 'time_to_first_record_response': 0.23451, 'time_to_last_record_response': 134.94422, 'bytes_scanned': 107652354, 'rows_returned': 640000, 'bytes_returned': 90608245}
+Project({'name': 'project_9', 'parallel': True}): {'elapsed_time': 10.04379, 'rows_projected': 640000}
+Group({'name': 'groupby_9', 'parallel': True}): {'elapsed_time': 61.63338}
+SQLTableScan({'name': 'scan_8', 'parallel': True}): {'elapsed_time': 129.11637, 'query_bytes': 102, 'cost': 0.0002595873448997736, 'time_to_first_response': 0.19608, 'bytes_processed': 107652152, 'time_to_first_record_response': 0.20102, 'time_to_last_record_response': 128.68562, 'bytes_scanned': 107652152, 'rows_returned': 640000, 'bytes_returned': 90607836}
+Project({'name': 'project_8', 'parallel': True}): {'elapsed_time': 5.09515, 'rows_projected': 640000}
+Group({'name': 'groupby_8', 'parallel': True}): {'elapsed_time': 62.46097}
+SQLTableScan({'name': 'scan_3', 'parallel': True}): {'elapsed_time': 132.89668, 'query_bytes': 102, 'cost': 0.0002595912804827094, 'time_to_first_response': 0.15979, 'bytes_processed': 107653980, 'time_to_first_record_response': 0.16328, 'time_to_last_record_response': 132.86496, 'bytes_scanned': 107653980, 'rows_returned': 640000, 'bytes_returned': 90608650}
+Project({'name': 'project_3', 'parallel': True}): {'elapsed_time': 11.6504, 'rows_projected': 640000}
+Group({'name': 'groupby_3', 'parallel': True}): {'elapsed_time': 63.46702}
+SQLTableScan({'name': 'scan_2', 'parallel': True}): {'elapsed_time': 132.85979, 'query_bytes': 102, 'cost': 0.00025958510460332037, 'time_to_first_response': 0.20256, 'bytes_processed': 107650797, 'time_to_first_record_response': 0.20709, 'time_to_last_record_response': 132.69626, 'bytes_scanned': 107650797, 'rows_returned': 640000, 'bytes_returned': 90608271}
+Project({'name': 'project_2', 'parallel': True}): {'elapsed_time': 7.90602, 'rows_projected': 640000}
+Group({'name': 'groupby_2', 'parallel': True}): {'elapsed_time': 61.39837}
+SQLTableScan({'name': 'scan_1', 'parallel': True}): {'elapsed_time': 133.96908, 'query_bytes': 102, 'cost': 0.0002595868433825672, 'time_to_first_response': 0.21518, 'bytes_processed': 107651650, 'time_to_first_record_response': 0.21865, 'time_to_last_record_response': 133.94773, 'bytes_scanned': 107651650, 'rows_returned': 640000, 'bytes_returned': 90608501}
+Project({'name': 'project_1', 'parallel': True}): {'elapsed_time': 9.52872, 'rows_projected': 640000}
+Group({'name': 'groupby_1', 'parallel': True}): {'elapsed_time': 61.97081}
+SQLTableScan({'name': 'scan_0', 'parallel': True}): {'elapsed_time': 132.26725, 'query_bytes': 102, 'cost': 0.00025959013449028135, 'time_to_first_response': 0.22664, 'bytes_processed': 107653503, 'time_to_first_record_response': 0.2309, 'time_to_last_record_response': 131.78425, 'bytes_scanned': 107653503, 'rows_returned': 640000, 'bytes_returned': 90608255}
+Project({'name': 'project_0', 'parallel': True}): {'elapsed_time': 12.91117, 'rows_projected': 640000}
+Group({'name': 'groupby_0', 'parallel': True}): {'elapsed_time': 60.31535}
+SQLTableScan({'name': 'scan_7', 'parallel': True}): {'elapsed_time': 130.94184, 'query_bytes': 102, 'cost': 0.000259589933604002, 'time_to_first_response': 0.23012, 'bytes_processed': 107653007, 'time_to_first_record_response': 0.2383, 'time_to_last_record_response': 130.91666, 'bytes_scanned': 107653007, 'rows_returned': 640000, 'bytes_returned': 90609364}
+Project({'name': 'project_7', 'parallel': True}): {'elapsed_time': 9.94004, 'rows_projected': 640000}
+Group({'name': 'groupby_7', 'parallel': True}): {'elapsed_time': 60.53096}
+SQLTableScan({'name': 'scan_6', 'parallel': True}): {'elapsed_time': 134.13534, 'query_bytes': 102, 'cost': 0.00025958413537591695, 'time_to_first_response': 0.20528, 'bytes_processed': 107650683, 'time_to_first_record_response': 0.21259, 'time_to_last_record_response': 134.11888, 'bytes_scanned': 107650683, 'rows_returned': 640000, 'bytes_returned': 90607110}
+Project({'name': 'project_6', 'parallel': True}): {'elapsed_time': 9.97833, 'rows_projected': 640000}
+Group({'name': 'groupby_6', 'parallel': True}): {'elapsed_time': 60.24371}
+SQLTableScan({'name': 'scan_5', 'parallel': True}): {'elapsed_time': 132.56904, 'query_bytes': 102, 'cost': 0.00025958986384794116, 'time_to_first_response': 0.17683, 'bytes_processed': 107653126, 'time_to_first_record_response': 0.18139, 'time_to_last_record_response': 132.46192, 'bytes_scanned': 107653126, 'rows_returned': 640000, 'bytes_returned': 90608917}
+Project({'name': 'project_5', 'parallel': True}): {'elapsed_time': 8.46778, 'rows_projected': 640000}
+Group({'name': 'groupby_5', 'parallel': True}): {'elapsed_time': 59.65978}
+SQLTableScan({'name': 'scan_4', 'parallel': True}): {'elapsed_time': 128.60619, 'query_bytes': 102, 'cost': 0.00025958923129364847, 'time_to_first_response': 0.17492, 'bytes_processed': 107652792, 'time_to_first_record_response': 0.17992, 'time_to_last_record_response': 128.16703, 'bytes_scanned': 107652792, 'rows_returned': 640000, 'bytes_returned': 90608901}
+Project({'name': 'project_4', 'parallel': True}): {'elapsed_time': 7.94011, 'rows_projected': 640000}
+Group({'name': 'groupby_4', 'parallel': True}): {'elapsed_time': 63.71326}
+SQLTableScan({'name': 'scan_21', 'parallel': True}): {'elapsed_time': 133.90713, 'query_bytes': 103, 'cost': 0.00025958450539037586, 'time_to_first_response': 0.21353, 'bytes_processed': 107651043, 'time_to_first_record_response': 0.21963, 'time_to_last_record_response': 133.69253, 'bytes_scanned': 107651043, 'rows_returned': 640000, 'bytes_returned': 90606649}
+Project({'name': 'project_21', 'parallel': True}): {'elapsed_time': 13.51058, 'rows_projected': 640000}
+Group({'name': 'groupby_21', 'parallel': True}): {'elapsed_time': 62.1045}
+SQLTableScan({'name': 'scan_24', 'parallel': True}): {'elapsed_time': 134.56662, 'query_bytes': 103, 'cost': 0.00025958603229373693, 'time_to_first_response': 0.30205, 'bytes_processed': 107651252, 'time_to_first_record_response': 0.30724, 'time_to_last_record_response': 134.52154, 'bytes_scanned': 107651252, 'rows_returned': 640000, 'bytes_returned': 90608394}
+Project({'name': 'project_24', 'parallel': True}): {'elapsed_time': 8.52797, 'rows_projected': 640000}
+Group({'name': 'groupby_24', 'parallel': True}): {'elapsed_time': 63.25176}
+SQLTableScan({'name': 'scan_25', 'parallel': True}): {'elapsed_time': 124.82834, 'query_bytes': 103, 'cost': 0.00025958721498027445, 'time_to_first_response': 0.23687, 'bytes_processed': 107651573, 'time_to_first_record_response': 0.24485, 'time_to_last_record_response': 124.66717, 'bytes_scanned': 107651573, 'rows_returned': 640000, 'bytes_returned': 90609291}
+Project({'name': 'project_25', 'parallel': True}): {'elapsed_time': 6.55184, 'rows_projected': 640000}
+Group({'name': 'groupby_25', 'parallel': True}): {'elapsed_time': 62.61296}
+SQLTableScan({'name': 'scan_27', 'parallel': True}): {'elapsed_time': 129.2545, 'query_bytes': 103, 'cost': 0.000259587670955807, 'time_to_first_response': 0.24827, 'bytes_processed': 107651948, 'time_to_first_record_response': 0.25682, 'time_to_last_record_response': 129.10375, 'bytes_scanned': 107651948, 'rows_returned': 640000, 'bytes_returned': 90608919}
+Project({'name': 'project_27', 'parallel': True}): {'elapsed_time': 8.95605, 'rows_projected': 640000}
+Group({'name': 'groupby_27', 'parallel': True}): {'elapsed_time': 61.15847}
+SQLTableScan({'name': 'scan_62', 'parallel': True}): {'elapsed_time': 130.26232, 'query_bytes': 103, 'cost': 0.0002595827198587358, 'time_to_first_response': 0.21936, 'bytes_processed': 107649677, 'time_to_first_record_response': 0.2224, 'time_to_last_record_response': 129.79032, 'bytes_scanned': 107649677, 'rows_returned': 640000, 'bytes_returned': 90607813}
+Project({'name': 'project_62', 'parallel': True}): {'elapsed_time': 8.39453, 'rows_projected': 640000}
+Group({'name': 'groupby_62', 'parallel': True}): {'elapsed_time': 60.91367}
+SQLTableScan({'name': 'scan_85', 'parallel': True}): {'elapsed_time': 131.91137, 'query_bytes': 103, 'cost': 0.0002595928284339607, 'time_to_first_response': 0.22546, 'bytes_processed': 107654600, 'time_to_first_record_response': 0.24237, 'time_to_last_record_response': 131.56517, 'bytes_scanned': 107654600, 'rows_returned': 640000, 'bytes_returned': 90609253}
+Project({'name': 'project_85', 'parallel': True}): {'elapsed_time': 9.51285, 'rows_projected': 640000}
+Group({'name': 'groupby_85', 'parallel': True}): {'elapsed_time': 63.90188}
+SQLTableScan({'name': 'scan_99', 'parallel': True}): {'elapsed_time': 131.01825, 'query_bytes': 103, 'cost': 0.00025959223825484516, 'time_to_first_response': 0.27862, 'bytes_processed': 107653622, 'time_to_first_record_response': 0.2844, 'time_to_last_record_response': 130.52721, 'bytes_scanned': 107653622, 'rows_returned': 640000, 'bytes_returned': 90611142}
+Project({'name': 'project_99', 'parallel': True}): {'elapsed_time': 9.8033, 'rows_projected': 640000}
+Group({'name': 'groupby_99', 'parallel': True}): {'elapsed_time': 59.93924}
+SQLTableScan({'name': 'scan_59', 'parallel': True}): {'elapsed_time': 134.45872, 'query_bytes': 103, 'cost': 0.00025958594474941493, 'time_to_first_response': 0.22433, 'bytes_processed': 107651261, 'time_to_first_record_response': 0.23361, 'time_to_last_record_response': 134.44025, 'bytes_scanned': 107651261, 'rows_returned': 640000, 'bytes_returned': 90608234}
+Project({'name': 'project_59', 'parallel': True}): {'elapsed_time': 9.985, 'rows_projected': 640000}
+Group({'name': 'groupby_59', 'parallel': True}): {'elapsed_time': 60.95562}
+SQLTableScan({'name': 'scan_58', 'parallel': True}): {'elapsed_time': 131.84216, 'query_bytes': 103, 'cost': 0.00025958737544715403, 'time_to_first_response': 0.33607, 'bytes_processed': 107651740, 'time_to_first_record_response': 0.34071, 'time_to_last_record_response': 131.36033, 'bytes_scanned': 107651740, 'rows_returned': 640000, 'bytes_returned': 90609060}
+Project({'name': 'project_58', 'parallel': True}): {'elapsed_time': 11.41444, 'rows_projected': 640000}
+Group({'name': 'groupby_58', 'parallel': True}): {'elapsed_time': 60.45523}
+SQLTableScan({'name': 'scan_53', 'parallel': True}): {'elapsed_time': 131.67194, 'query_bytes': 103, 'cost': 0.00025959031442180275, 'time_to_first_response': 0.20062, 'bytes_processed': 107653307, 'time_to_first_record_response': 0.20526, 'time_to_last_record_response': 131.58646, 'bytes_scanned': 107653307, 'rows_returned': 640000, 'bytes_returned': 90609091}
+Project({'name': 'project_53', 'parallel': True}): {'elapsed_time': 6.83857, 'rows_projected': 640000}
+Group({'name': 'groupby_53', 'parallel': True}): {'elapsed_time': 65.31779}
+SQLTableScan({'name': 'scan_52', 'parallel': True}): {'elapsed_time': 133.80585, 'query_bytes': 103, 'cost': 0.0002595879795961082, 'time_to_first_response': 0.2456, 'bytes_processed': 107652351, 'time_to_first_record_response': 0.25253, 'time_to_last_record_response': 133.61309, 'bytes_scanned': 107652351, 'rows_returned': 640000, 'bytes_returned': 90608241}
+Project({'name': 'project_52', 'parallel': True}): {'elapsed_time': 11.67111, 'rows_projected': 640000}
+Group({'name': 'groupby_52', 'parallel': True}): {'elapsed_time': 64.6794}
+SQLTableScan({'name': 'scan_61', 'parallel': True}): {'elapsed_time': 132.72784, 'query_bytes': 103, 'cost': 0.00025958504797890785, 'time_to_first_response': 0.19204, 'bytes_processed': 107650915, 'time_to_first_record_response': 0.19669, 'time_to_last_record_response': 132.5322, 'bytes_scanned': 107650915, 'rows_returned': 640000, 'bytes_returned': 90607847}
+Project({'name': 'project_61', 'parallel': True}): {'elapsed_time': 9.74065, 'rows_projected': 640000}
+Group({'name': 'groupby_61', 'parallel': True}): {'elapsed_time': 60.21974}
+SQLTableScan({'name': 'scan_48', 'parallel': True}): {'elapsed_time': 134.3312, 'query_bytes': 103, 'cost': 0.0002595889110118151, 'time_to_first_response': 0.19129, 'bytes_processed': 107652591, 'time_to_first_record_response': 0.19665, 'time_to_last_record_response': 134.26065, 'bytes_scanned': 107652591, 'rows_returned': 640000, 'bytes_returned': 90608984}
+Project({'name': 'project_48', 'parallel': True}): {'elapsed_time': 11.1953, 'rows_projected': 640000}
+Group({'name': 'groupby_48', 'parallel': True}): {'elapsed_time': 63.3416}
+SQLTableScan({'name': 'scan_49', 'parallel': True}): {'elapsed_time': 130.62387, 'query_bytes': 103, 'cost': 0.00025959081696346403, 'time_to_first_response': 0.25437, 'bytes_processed': 107653140, 'time_to_first_record_response': 0.26366, 'time_to_last_record_response': 130.18194, 'bytes_scanned': 107653140, 'rows_returned': 640000, 'bytes_returned': 90610339}
+Project({'name': 'project_49', 'parallel': True}): {'elapsed_time': 7.95124, 'rows_projected': 640000}
+Group({'name': 'groupby_49', 'parallel': True}): {'elapsed_time': 60.02043}
+SQLTableScan({'name': 'scan_42', 'parallel': True}): {'elapsed_time': 134.03318, 'query_bytes': 103, 'cost': 0.0002595886745490134, 'time_to_first_response': 0.22809, 'bytes_processed': 107652715, 'time_to_first_record_response': 0.23357, 'time_to_last_record_response': 133.96325, 'bytes_scanned': 107652715, 'rows_returned': 640000, 'bytes_returned': 90608267}
+Project({'name': 'project_42', 'parallel': True}): {'elapsed_time': 10.44409, 'rows_projected': 640000}
+Group({'name': 'groupby_42', 'parallel': True}): {'elapsed_time': 62.83645}
+SQLTableScan({'name': 'scan_43', 'parallel': True}): {'elapsed_time': 122.77864, 'query_bytes': 103, 'cost': 0.0002595912882126868, 'time_to_first_response': 0.20854, 'bytes_processed': 107653750, 'time_to_first_record_response': 0.21822, 'time_to_last_record_response': 122.3351, 'bytes_scanned': 107653750, 'rows_returned': 640000, 'bytes_returned': 90609319}
+Project({'name': 'project_43', 'parallel': True}): {'elapsed_time': 6.30681, 'rows_projected': 640000}
+Group({'name': 'groupby_43', 'parallel': True}): {'elapsed_time': 59.55204}
+SQLTableScan({'name': 'scan_40', 'parallel': True}): {'elapsed_time': 113.57177, 'query_bytes': 103, 'cost': 0.00025959498286247254, 'time_to_first_response': 0.3664, 'bytes_processed': 107655218, 'time_to_first_record_response': 0.37094, 'time_to_last_record_response': 113.06294, 'bytes_scanned': 107655218, 'rows_returned': 640000, 'bytes_returned': 90610792}
+Project({'name': 'project_40', 'parallel': True}): {'elapsed_time': 5.72986, 'rows_projected': 640000}
+Group({'name': 'groupby_40', 'parallel': True}): {'elapsed_time': 57.38233}
+SQLTableScan({'name': 'scan_41', 'parallel': True}): {'elapsed_time': 133.1605, 'query_bytes': 103, 'cost': 0.00025958985537290576, 'time_to_first_response': 0.19871, 'bytes_processed': 107652832, 'time_to_first_record_response': 0.21006, 'time_to_last_record_response': 132.79067, 'bytes_scanned': 107652832, 'rows_returned': 640000, 'bytes_returned': 90609744}
+Project({'name': 'project_41', 'parallel': True}): {'elapsed_time': 11.03356, 'rows_projected': 640000}
+Group({'name': 'groupby_41', 'parallel': True}): {'elapsed_time': 62.88789}
+SQLTableScan({'name': 'scan_46', 'parallel': True}): {'elapsed_time': 126.24309, 'query_bytes': 103, 'cost': 0.00025958842569962144, 'time_to_first_response': 0.19478, 'bytes_processed': 107652090, 'time_to_first_record_response': 0.20494, 'time_to_last_record_response': 126.18385, 'bytes_scanned': 107652090, 'rows_returned': 640000, 'bytes_returned': 90609671}
+Project({'name': 'project_46', 'parallel': True}): {'elapsed_time': 7.21407, 'rows_projected': 640000}
+Group({'name': 'groupby_46', 'parallel': True}): {'elapsed_time': 62.89932}
+SQLTableScan({'name': 'scan_47', 'parallel': True}): {'elapsed_time': 125.1186, 'query_bytes': 103, 'cost': 0.00025958748692646625, 'time_to_first_response': 0.51507, 'bytes_processed': 107651971, 'time_to_first_record_response': 0.51865, 'time_to_last_record_response': 124.48589, 'bytes_scanned': 107651971, 'rows_returned': 640000, 'bytes_returned': 90608571}
+Project({'name': 'project_47', 'parallel': True}): {'elapsed_time': 6.25175, 'rows_projected': 640000}
+Group({'name': 'groupby_47', 'parallel': True}): {'elapsed_time': 58.94893}
+SQLTableScan({'name': 'scan_44', 'parallel': True}): {'elapsed_time': 132.99299, 'query_bytes': 103, 'cost': 0.00025958628868684176, 'time_to_first_response': 0.13518, 'bytes_processed': 107651691, 'time_to_first_record_response': 0.13845, 'time_to_last_record_response': 132.91468, 'bytes_scanned': 107651691, 'rows_returned': 640000, 'bytes_returned': 90607533}
+Project({'name': 'project_44', 'parallel': True}): {'elapsed_time': 9.89902, 'rows_projected': 640000}
+Group({'name': 'groupby_44', 'parallel': True}): {'elapsed_time': 62.65326}
+SQLTableScan({'name': 'scan_45', 'parallel': True}): {'elapsed_time': 133.6935, 'query_bytes': 103, 'cost': 0.0002595860627479851, 'time_to_first_response': 0.22503, 'bytes_processed': 107651170, 'time_to_first_record_response': 0.23792, 'time_to_last_record_response': 133.56143, 'bytes_scanned': 107651170, 'rows_returned': 640000, 'bytes_returned': 90608675}
+Project({'name': 'project_45', 'parallel': True}): {'elapsed_time': 10.22914, 'rows_projected': 640000}
+Group({'name': 'groupby_45', 'parallel': True}): {'elapsed_time': 64.88192}
+SQLTableScan({'name': 'scan_57', 'parallel': True}): {'elapsed_time': 130.05274, 'query_bytes': 103, 'cost': 0.00025959017872810363, 'time_to_first_response': 0.25067, 'bytes_processed': 107653497, 'time_to_first_record_response': 0.26094, 'time_to_last_record_response': 129.52582, 'bytes_scanned': 107653497, 'rows_returned': 640000, 'bytes_returned': 90608340}
+Project({'name': 'project_57', 'parallel': True}): {'elapsed_time': 11.91975, 'rows_projected': 640000}
+Group({'name': 'groupby_57', 'parallel': True}): {'elapsed_time': 61.76782}
+SQLTableScan({'name': 'scan_65', 'parallel': True}): {'elapsed_time': 133.04408, 'query_bytes': 103, 'cost': 0.0002595904866233468, 'time_to_first_response': 0.24106, 'bytes_processed': 107653026, 'time_to_first_record_response': 0.245, 'time_to_last_record_response': 133.00534, 'bytes_scanned': 107653026, 'rows_returned': 640000, 'bytes_returned': 90610158}
+Project({'name': 'project_65', 'parallel': True}): {'elapsed_time': 9.84071, 'rows_projected': 640000}
+Group({'name': 'groupby_65', 'parallel': True}): {'elapsed_time': 63.07556}
+SQLTableScan({'name': 'scan_69', 'parallel': True}): {'elapsed_time': 132.62015, 'query_bytes': 103, 'cost': 0.00025959285916760566, 'time_to_first_response': 0.15277, 'bytes_processed': 107654004, 'time_to_first_record_response': 0.15764, 'time_to_last_record_response': 132.30903, 'bytes_scanned': 107654004, 'rows_returned': 640000, 'bytes_returned': 90611003}
+Project({'name': 'project_69', 'parallel': True}): {'elapsed_time': 12.19165, 'rows_projected': 640000}
+Group({'name': 'groupby_69', 'parallel': True}): {'elapsed_time': 62.57783}
+SQLTableScan({'name': 'scan_86', 'parallel': True}): {'elapsed_time': 133.76985, 'query_bytes': 103, 'cost': 0.00025959183843806387, 'time_to_first_response': 0.20337, 'bytes_processed': 107653862, 'time_to_first_record_response': 0.21075, 'time_to_last_record_response': 133.48389, 'bytes_scanned': 107653862, 'rows_returned': 640000, 'bytes_returned': 90609843}
+Project({'name': 'project_86', 'parallel': True}): {'elapsed_time': 7.18439, 'rows_projected': 640000}
+Group({'name': 'groupby_86', 'parallel': True}): {'elapsed_time': 62.78596}
+SQLTableScan({'name': 'scan_77', 'parallel': True}): {'elapsed_time': 132.75624, 'query_bytes': 103, 'cost': 0.00025958520649001, 'time_to_first_response': 0.19757, 'bytes_processed': 107650984, 'time_to_first_record_response': 0.20618, 'time_to_last_record_response': 132.73891, 'bytes_scanned': 107650984, 'rows_returned': 640000, 'bytes_returned': 90607893}
+Project({'name': 'project_77', 'parallel': True}): {'elapsed_time': 11.7871, 'rows_projected': 640000}
+Group({'name': 'groupby_77', 'parallel': True}): {'elapsed_time': 63.56891}
+SQLTableScan({'name': 'scan_76', 'parallel': True}): {'elapsed_time': 128.10433, 'query_bytes': 103, 'cost': 0.00025959637882187964, 'time_to_first_response': 0.21054, 'bytes_processed': 107656091, 'time_to_first_record_response': 0.21652, 'time_to_last_record_response': 127.53554, 'bytes_scanned': 107656091, 'rows_returned': 640000, 'bytes_returned': 90610439}
+Project({'name': 'project_76', 'parallel': True}): {'elapsed_time': 6.8965, 'rows_projected': 640000}
+Group({'name': 'groupby_76', 'parallel': True}): {'elapsed_time': 64.36914}
+SQLTableScan({'name': 'scan_75', 'parallel': True}): {'elapsed_time': 126.52811, 'query_bytes': 103, 'cost': 0.0002595869249664247, 'time_to_first_response': 0.26864, 'bytes_processed': 107651978, 'time_to_first_record_response': 0.27329, 'time_to_last_record_response': 126.17168, 'bytes_scanned': 107651978, 'rows_returned': 640000, 'bytes_returned': 90607689}
+Project({'name': 'project_75', 'parallel': True}): {'elapsed_time': 7.06537, 'rows_projected': 640000}
+Group({'name': 'groupby_75', 'parallel': True}): {'elapsed_time': 62.60438}
+SQLTableScan({'name': 'scan_74', 'parallel': True}): {'elapsed_time': 133.54905, 'query_bytes': 103, 'cost': 0.00025958617581054566, 'time_to_first_response': 0.23784, 'bytes_processed': 107651370, 'time_to_first_record_response': 0.24488, 'time_to_last_record_response': 133.26369, 'bytes_scanned': 107651370, 'rows_returned': 640000, 'bytes_returned': 90608277}
+Project({'name': 'project_74', 'parallel': True}): {'elapsed_time': 9.19273, 'rows_projected': 640000}
+Group({'name': 'groupby_74', 'parallel': True}): {'elapsed_time': 62.71201}
+SQLTableScan({'name': 'scan_73', 'parallel': True}): {'elapsed_time': 127.5157, 'query_bytes': 103, 'cost': 0.0002595848492346704, 'time_to_first_response': 0.19518, 'bytes_processed': 107650865, 'time_to_first_record_response': 0.2005, 'time_to_last_record_response': 127.05661, 'bytes_scanned': 107650865, 'rows_returned': 640000, 'bytes_returned': 90607685}
+Project({'name': 'project_73', 'parallel': True}): {'elapsed_time': 10.13394, 'rows_projected': 640000}
+Group({'name': 'groupby_73', 'parallel': True}): {'elapsed_time': 59.95091}
+SQLTableScan({'name': 'scan_72', 'parallel': True}): {'elapsed_time': 134.37795, 'query_bytes': 103, 'cost': 0.0002595913335680962, 'time_to_first_response': 0.23814, 'bytes_processed': 107654040, 'time_to_first_record_response': 0.24461, 'time_to_last_record_response': 134.27845, 'bytes_scanned': 107654040, 'rows_returned': 640000, 'bytes_returned': 90608560}
+Project({'name': 'project_72', 'parallel': True}): {'elapsed_time': 10.91923, 'rows_projected': 640000}
+Group({'name': 'groupby_72', 'parallel': True}): {'elapsed_time': 59.97221}
+SQLTableScan({'name': 'scan_71', 'parallel': True}): {'elapsed_time': 128.63545, 'query_bytes': 103, 'cost': 0.0002595889473333955, 'time_to_first_response': 0.16934, 'bytes_processed': 107652698, 'time_to_first_record_response': 0.17489, 'time_to_last_record_response': 128.24244, 'bytes_scanned': 107652698, 'rows_returned': 640000, 'bytes_returned': 90608734}
+Project({'name': 'project_71', 'parallel': True}): {'elapsed_time': 9.51018, 'rows_projected': 640000}
+Group({'name': 'groupby_71', 'parallel': True}): {'elapsed_time': 62.49909}
+SQLTableScan({'name': 'scan_70', 'parallel': True}): {'elapsed_time': 131.03293, 'query_bytes': 103, 'cost': 0.00025958750545978544, 'time_to_first_response': 0.46467, 'bytes_processed': 107652129, 'time_to_first_record_response': 0.47018, 'time_to_last_record_response': 130.57932, 'bytes_scanned': 107652129, 'rows_returned': 640000, 'bytes_returned': 90608148}
+Project({'name': 'project_70', 'parallel': True}): {'elapsed_time': 8.68551, 'rows_projected': 640000}
+Group({'name': 'groupby_70', 'parallel': True}): {'elapsed_time': 62.84015}
+SQLTableScan({'name': 'scan_79', 'parallel': True}): {'elapsed_time': 133.02814, 'query_bytes': 103, 'cost': 0.000259588083345443, 'time_to_first_response': 0.19104, 'bytes_processed': 107652441, 'time_to_first_record_response': 0.20943, 'time_to_last_record_response': 132.92997, 'bytes_scanned': 107652441, 'rows_returned': 640000, 'bytes_returned': 90608143}
+Project({'name': 'project_79', 'parallel': True}): {'elapsed_time': 9.04975, 'rows_projected': 640000}
+Group({'name': 'groupby_79', 'parallel': True}): {'elapsed_time': 63.27302}
+SQLTableScan({'name': 'scan_78', 'parallel': True}): {'elapsed_time': 131.86649, 'query_bytes': 103, 'cost': 0.0002595956861972809, 'time_to_first_response': 0.19726, 'bytes_processed': 107655709, 'time_to_first_record_response': 0.20325, 'time_to_last_record_response': 131.48105, 'bytes_scanned': 107655709, 'rows_returned': 640000, 'bytes_returned': 90610468}
+Project({'name': 'project_78', 'parallel': True}): {'elapsed_time': 6.68608, 'rows_projected': 640000}
+Group({'name': 'groupby_78', 'parallel': True}): {'elapsed_time': 62.77518}
+SQLTableScan({'name': 'scan_80', 'parallel': True}): {'elapsed_time': 125.50726, 'query_bytes': 103, 'cost': 0.00025959206027910116, 'time_to_first_response': 0.27412, 'bytes_processed': 107654301, 'time_to_first_record_response': 0.27893, 'time_to_last_record_response': 125.06522, 'bytes_scanned': 107654301, 'rows_returned': 640000, 'bytes_returned': 90608929}
+Project({'name': 'project_80', 'parallel': True}): {'elapsed_time': 7.14361, 'rows_projected': 640000}
+Group({'name': 'groupby_80', 'parallel': True}): {'elapsed_time': 61.97873}
+Group({'name': 'groupby_reduce', 'parallel': True}): {'elapsed_time': 3.13047}
+Collate({'name': 'collate', 'parallel': True}): {'elapsed_time': 0.0021}
+

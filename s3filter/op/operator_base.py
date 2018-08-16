@@ -79,7 +79,12 @@ class Operator(object):
     """
 
     def work(self, queue):
+        if self.is_profiled:
+            cProfile.runctx('self.do_work(queue)', globals(), locals(), self.profile_file_name)
+        else:
+            self.do_work(queue)
 
+    def do_work(self, queue):
         running = True
 
         try:
@@ -107,6 +112,7 @@ class Operator(object):
                 else:
                     message = item[0]
                     sender = item[1]
+
                     self.on_receive(message, sender)
 
         except BaseException as e:
@@ -114,7 +120,6 @@ class Operator(object):
             print(tb)
             self.exception = e
             running = False
-
 
     def run(self):
         """Abstract method for running the execution of this operator. This is different from the start method which
@@ -145,7 +150,6 @@ class Operator(object):
         """Constructs a new operator
 
         """
-
         self.name = name
 
         self.op_metrics = op_metrics
@@ -178,7 +182,7 @@ class Operator(object):
         # Default to 1024 element buffer, use 0 to send immediately, and float('inf') for unlimited buffer
         self.buffer_size = 1024
 
-        self.query_plan = query_plan
+        # self.query_plan = query_plan
 
         self.async_ = query_plan.is_async
 
@@ -187,6 +191,9 @@ class Operator(object):
         self.completion_queue = None
 
         self.runner = None
+
+        self.__buffers = {}
+        self.buffered_size = 0
 
     def init_async(self, completion_queue):
 
@@ -249,6 +256,8 @@ class Operator(object):
         self.consumer_completions[consumer.name] = False
         self.consumers = sorted(self.consumers, key=lambda c: c.name)
 
+        self.__buffers[consumer] = []
+
     def add_producer(self, producer):
         """Appends the given producing operator to this operators list of producers.
 
@@ -285,37 +294,34 @@ class Operator(object):
         """
 
         if len(operators) == 0:
-            raise Exception("Producer {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
+            raise Exception("Message {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
 
         if self.buffer_size == 0:
             for op in operators:
                 if op.async_:
                     self.query_plan.send([[message], self.name], op.name)
                 else:
-                    if op.is_profiled:
-                        cProfile.runctx('self.fire_on_receive([message], op)',
-                                        globals(), locals(), op.profile_file_name)
-                    else:
-                        self.fire_on_receive([message], op)
+                    self.fire_on_receive([message], op)
 
         else:
-            self.__buffer.append(message)
-            if len(self.__buffer) >= self.buffer_size:
-                self.do_send(operators)
+            for o in operators:
+                self.__buffers[o].append(message)
+                self.buffered_size += 1
 
-    def do_send(self, operators):
-        for op in operators:
-            # Should really be if the operator is async not this
-            if self.async_:
-                self.query_plan.send([self.__buffer, self.name], op.name)
-            else:
-                if op.is_profiled:
-                    cProfile.runctx('self.fire_on_receive([message], op)',
-                                    globals(), locals(), op.profile_file_name)
-                else:
-                    self.fire_on_receive(self.__buffer, op)
+            if self.buffered_size >= self.buffer_size:
+                for (o, messages) in self.__buffers.items():
+                    self.do_send(messages, o)
+                    self.__buffers[o] = []
 
-        self.__buffer = []
+                self.buffered_size = 0
+
+    def do_send(self, messages, op):
+
+        # Should really be if the operator is async not this
+        if op.async_:
+            self.query_plan.send([messages, self.name], op.name)
+        else:
+            self.fire_on_receive(messages, op)
 
     def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
@@ -335,6 +341,13 @@ class Operator(object):
         producer.on_consumer_completed(self.name)
         switch_context(producer, self)
 
+    def flush(self):
+        for (o, messages) in self.__buffers.items():
+            self.do_send(messages, o)
+            self.__buffers[o] = []
+
+        self.buffered_size = 0
+
     def complete(self):
         """Sets the operator to complete, meaning it has completed what it needed to do. This includes marking the
         operator as completed and signalling to to connected operators that this operator has
@@ -353,14 +366,19 @@ class Operator(object):
 
             self.__completed = True
 
-            # Flush the buffer
-            for c in self.consumers:
-                if c.async_:
-                    self.query_plan.send([self.__buffer, self.name], c.name)
-                else:
-                    self.fire_on_receive(self.__buffer, c)
+            # for (o, messages) in self.__buffers.items():
+            #     self.do_send( messages, o)
+            #     self.__buffers[o.name] = []
 
-            self.__buffer = []
+            # Flush the buffer
+            self.flush()
+            # for c in self.consumers:
+            #     if c.async_:
+            #         self.query_plan.send([self.__buffer, self.name], c.name)
+            #     else:
+            #         self.fire_on_receive(self.__buffer, c)
+            #
+            # self.__buffer = []
 
             for p in self.producers:
                 if p.async_:

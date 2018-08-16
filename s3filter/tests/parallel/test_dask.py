@@ -2,12 +2,16 @@
 """Actor tests
 
 """
+import os
+
 import dask
 from dask.distributed import Client, LocalCluster
 
+from s3filter import ROOT_DIR
+
 
 def test_dask():
-    _cluster = LocalCluster()
+    _cluster = LocalCluster(local_dir=os.path.join(ROOT_DIR, "../tests-output/dask-worker-space"))
     _client = Client(_cluster)
 
     def load1(shard):
@@ -68,8 +72,13 @@ def test_dask():
     #
     # total = dask.delayed(sum)(output)
 
-    total.visualize()
+    total.visualize(filename=os.path.join(ROOT_DIR, "../tests-output/mydask.png"))
 
     res = total.compute()
 
     print(res)
+
+    _client.close()
+    _cluster.close()
+
+

@@ -4,12 +4,14 @@ from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
 from s3filter.op.sort import SortExpression
-from s3filter.op.sql_table_scan import SQLTableScanMetrics
+from s3filter.op.sql_table_scan import SQLTableScanMetrics, is_header
 from s3filter.plan.query_plan import QueryPlan
-from s3filter.op.sql_table_scan import SQLTableScan, SQLShardedTableScan
+from s3filter.op.sql_table_scan import SQLTableScan
+from s3filter.op.sql_sharded_table_scan import SQLShardedTableScan
 from s3filter.op.collate import Collate
 from s3filter.util.heap import MaxHeap, MinHeap, HeapTuple
 import time
+import pandas as pd
 
 __author__ = "Abdurrahman Ghanem <abghanem@qf.org.qa>"
 
@@ -20,7 +22,7 @@ class Top(Operator):
     consumes tuples from producer operators and uses a heap to keep track of the top k tuples.
     """
 
-    def __init__(self, max_tuples, sort_expression, name, query_plan, log_enabled):
+    def __init__(self, max_tuples, sort_expression, use_pandas, name, query_plan, log_enabled):
         """Creates a new Sort operator.
 
                 :param sort_expression: The sort expression to apply to the tuples
@@ -31,11 +33,15 @@ class Top(Operator):
         super(Top, self).__init__(name, OpMetrics(), query_plan, log_enabled)
 
         self.sort_expression = sort_expression
+        self.use_pandas = use_pandas
 
-        if sort_expression.sort_order == 'ASC':
-            self.heap = MaxHeap(max_tuples)
+        if not self.use_pandas:
+            if sort_expression.sort_order == 'ASC':
+                self.heap = MaxHeap(max_tuples)
+            else:
+                self.heap = MinHeap(max_tuples)
         else:
-            self.heap = MinHeap(max_tuples)
+            self.global_topk_df = pd.DataFrame()
 
         self.max_tuples = max_tuples
 
@@ -50,11 +56,13 @@ class Top(Operator):
         """
         for m in ms:
             if type(m) is TupleMessage:
-                self.on_receive_tuple(m.tuple_)
+                self.__on_receive_tuple(m.tuple_, _producer)
+            elif type(m) is pd.DataFrame:
+                self.__on_receive_dataframe(m, _producer)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_):
+    def __on_receive_tuple(self, tuple_, producer_name):
         """Handles the receipt of a tuple. When a tuple is received, it's compared with the top of the heap to decide
         on adding to the heap or skip it. Given this process, it is guaranteed to keep the k topmost tuples given some
         defined comparison criteria
@@ -71,19 +79,49 @@ class Top(Operator):
             ht = HeapTuple(tuple_, self.field_names, self.sort_expression)
             self.heap.push(ht)
 
+    def __on_receive_dataframe(self, df, producer_name):
+        """Event handler for a received pandas dataframe. With every dataframe received, the topk tuples are mantained
+        and merged
+
+        :param df: The received dataframe
+        :return: None
+        """
+        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
+                                                    .astype(self.sort_expression.col_type.__name__)
+        if self.sort_expression.sort_order == 'ASC':
+            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+            self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
+                                                                                self.sort_expression.col_index)\
+                                                                                .head(self.max_tuples)
+        elif self.sort_expression.sort_order == 'DESC':
+            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+            self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
+                                                                               self.sort_expression.col_index) \
+                                                                               .head(self.max_tuples)
+
     def complete(self):
         """
         When all producers complete, the topk tuples are passed to the next operators.
         :return:
         """
-        for t in self.heap.get_topk(self.max_tuples, sort=True):
 
-            if self.is_completed():
-                break
+        if not self.use_pandas:
 
-            self.send(TupleMessage(t.tuple), self.consumers)
+            for t in self.heap.get_topk(self.max_tuples, sort=True):
+                if self.is_completed():
+                    break
+                self.send(TupleMessage(t.tuple), self.consumers)
 
-        self.heap.clear()
+            self.heap.clear()
+        else:
+            if self.sort_expression.sort_order == 'ASC':
+                self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index)\
+                    .head(self.max_tuples)
+            elif self.sort_expression.sort_order == 'DESC':
+                self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index)\
+                    .head(self.max_tuples)
+
+            self.send(self.global_topk_df, self.consumers)
 
         super(Top, self).complete()
         self.op_metrics.timer_stop()
@@ -94,11 +132,13 @@ class TopKTableScan(Operator):
     This operator scans a table and emits the k topmost tuples based on a user-defined ranking criteria
     """
 
-    def __init__(self, s3key, s3sql, max_tuples, k_scale, sort_expression, shards, processes, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, max_tuples, k_scale, sort_expression, shards, processes, name,
+                 query_plan, log_enabled):
         """
         Creates a table scan operator that emits only the k topmost tuples from the table
         :param s3key: the table's s3 object key
         :param s3sql: the select statement to apply on the table
+        :param use_pandas: use pandas DataFrames as the tuples engine
         :param max_tuples: the maximum number of tuples to return (K)
         :param k_scale: sampling scale factor to retrieve more sampling tuples (s * K)
         :param sort_expression: the expression on which the table tuples are sorted in order to get the top k
@@ -108,10 +148,10 @@ class TopKTableScan(Operator):
         """
         super(TopKTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
-        self.s3 = query_plan.s3
-
         self.s3key = s3key
         self.s3sql = s3sql
+        self.query_plan = query_plan
+        self.use_pandas = use_pandas
 
         self.field_names = None
 
@@ -121,10 +161,13 @@ class TopKTableScan(Operator):
         self.max_tuples = max_tuples
         self.sort_expression = sort_expression
 
-        if sort_expression.sort_order == 'ASC':
-            self.heap = MaxHeap(max_tuples)
+        if not self.use_pandas:
+            if sort_expression.sort_order == 'ASC':
+                self.heap = MaxHeap(max_tuples)
+            else:
+                self.heap = MinHeap(max_tuples)
         else:
-            self.heap = MinHeap(max_tuples)
+            self.global_topk_df = pd.DataFrame()
 
         self.local_operators = []
 
@@ -140,27 +183,29 @@ class TopKTableScan(Operator):
                                                                self.sort_expression.col_type.__name__, comp_op, msv)
 
         if self.processes == 1:
-            ts = SQLTableScan(self.s3key, filtered_sql, 'baseline_topk_table_scan', self.query_plan, self.log_enabled)
+            ts = SQLTableScan(self.s3key, filtered_sql, self.use_pandas, True, 'baseline_topk_table_scan',
+                              self.query_plan, self.log_enabled)
             ts.connect(self)
             self.local_operators.append(ts)
-        for process in range(self.processes):
-            proc_parts = [x for x in range(self.shards) if x % self.processes == process]
-            pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql,
-                                                                  "topk_table_scan_parts_{}".format(proc_parts),
-                                                                  proc_parts, "sf1000-lineitem",
-                                                                  self.query_plan, self.log_enabled))
-            proc_top = self.query_plan.add_operator(Top(self.max_tuples, self.sort_expression,
-                                                        "top_parts_{}".format(proc_parts), self.query_plan,
-                                                        self.log_enabled))
-            pc.connect(proc_top)
-            proc_top.connect(self)
+        else:
+            for process in range(self.processes):
+                proc_parts = [x for x in range(self.shards) if x % self.processes == process]
+                pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql, self.use_pandas, True,
+                                                                      "topk_table_scan_parts_{}".format(proc_parts),
+                                                                      proc_parts, "sf1000-lineitem",
+                                                                      self.query_plan, self.log_enabled))
+                proc_top = self.query_plan.add_operator(Top(self.max_tuples, self.sort_expression, True,
+                                                            "top_parts_{}".format(proc_parts), self.query_plan,
+                                                            self.log_enabled))
+                pc.connect(proc_top)
+                proc_top.connect(self)
 
-            if self.query_plan.is_async:
-                pc.init_async(self.query_plan.queue)
-                proc_top.init_async(self.query_plan.queue)
+                if self.query_plan.is_async:
+                    pc.init_async(self.query_plan.queue)
+                    proc_top.init_async(self.query_plan.queue)
 
-            self.local_operators.append(pc)
-            self.local_operators.append(proc_top)
+                self.local_operators.append(pc)
+                self.local_operators.append(proc_top)
 
     def run(self):
         """
@@ -190,11 +235,13 @@ class TopKTableScan(Operator):
         """
         for m in messages:
             if type(m) is TupleMessage:
-                self.on_receive_tuple(m.tuple_)
+                self.__on_receive_tuple(m.tuple_, producer_name)
+            elif type(m) is pd.DataFrame:
+                self.__on_receive_dataframe(m, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def on_receive_tuple(self, tuple_):
+    def __on_receive_tuple(self, tuple_, producer_name):
         """Handles the receipt of a tuple. When a tuple is received, it's compared with the top of the heap to decide
         on adding to the heap or skip it. Given this process, it is guaranteed to keep the k topmost tuples given some
         defined comparison criteria
@@ -211,24 +258,53 @@ class TopKTableScan(Operator):
             ht = HeapTuple(tuple_, self.field_names, self.sort_expression)
             self.heap.push(ht)
 
+    def __on_receive_dataframe(self, df, producer_name):
+        """Event handler for a received pandas dataframe. With every dataframe received, the topk tuples are mantained
+        and merged
+
+        :param df: The received dataframe
+        :return: None
+        """
+        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]] \
+                                                    .astype(self.sort_expression.col_type.__name__)
+
+        if self.sort_expression.sort_order == 'ASC':
+            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+            self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
+                                                                                self.sort_expression.col_index) \
+                                                                                .head(self.max_tuples)
+        elif self.sort_expression.sort_order == 'DESC':
+            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+            self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
+                                                                               self.sort_expression.col_index) \
+                                                                                .head(self.max_tuples)
+
     def complete(self):
         """
         When all producers complete, the topk tuples are passed to the next operators.
         :return:
         """
-        # if the number of tuples beyond the cut-off value is less than k, we need to some tuples from
-        # the sample set
-        if len(self.heap) < self.max_tuples:
-            self.on_receive([TupleMessage(t) for t in self.sample_tuples], self.name)
+        if not self.use_pandas:
+            # if the number of tuples beyond the cut-off value is less than k, we need to some tuples from
+            # the sample set
+            if len(self.heap) < self.max_tuples:
+                self.on_receive([TupleMessage(t) for t in self.sample_tuples], self.name)
 
-        for t in self.heap.get_topk(self.max_tuples, sort=True):
+            for t in self.heap.get_topk(self.max_tuples, sort=True):
+                if self.is_completed():
+                    break
+                self.send(TupleMessage(t.tuple), self.consumers)
 
-            if self.is_completed():
-                break
+            self.heap.clear()
+        else:
+            if self.sort_expression.sort_order == 'ASC':
+                self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index) \
+                    .head(self.max_tuples)
+            elif self.sort_expression.sort_order == 'DESC':
+                self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) \
+                    .head(self.max_tuples)
 
-            self.send(TupleMessage(t.tuple), self.consumers)
-
-        self.heap.clear()
+            self.send(self.global_topk_df, self.consumers)
 
         super(TopKTableScan, self).complete()
 
@@ -248,7 +324,8 @@ class TopKTableScan(Operator):
 
         sql = "SELECT {} FROM S3Object LIMIT {}".format(", ".join(keys), k)
         q_plan = QueryPlan(is_async=False)
-        select = q_plan.add_operator(SQLTableScan(s3key, sql, "sample_{}_scan".format(s3key), q_plan, False))
+        select = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, "sample_{}_scan".format(s3key),
+                                                  q_plan, False))
         collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, False))
         select.connect(collate)
 
@@ -271,7 +348,3 @@ class TopKTableScan(Operator):
             return min([sort_exp.col_type(t[idx]) for t in tuples]), '<='
         elif sort_exp.sort_order == "DESC":
             return max([sort_exp.col_type(t[idx]) for t in tuples]), '>='
-
-
-def is_header(tuple_):
-    return all([type(field) == str and field.startswith('_') for field in tuple_])

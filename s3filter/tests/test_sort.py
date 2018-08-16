@@ -24,7 +24,7 @@ def test_sort_asc():
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'ts', query_plan,
+                                              False, 'ts', query_plan,
                                               False))
 
     s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', query_plan, False))
@@ -75,7 +75,7 @@ def test_sort_desc():
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              'ts', query_plan,
+                                              False, 'ts', query_plan,
                                               False))
 
     s = query_plan.add_operator(Sort([SortExpression('_5', float, 'DESC')], 's', query_plan, False))
@@ -126,7 +126,7 @@ def test_sort_empty():
     ts = query_plan.add_operator(SQLTableScan('supplier.csv',
                                               'select * from S3Object '
                                               'limit 0;',
-                                              'ts', query_plan,
+                                              False, 'ts', query_plan,
                                               False))
 
     s = query_plan.add_operator(Sort([SortExpression('_5', float, 'ASC')], 's', query_plan, False))

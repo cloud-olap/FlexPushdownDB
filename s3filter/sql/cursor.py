@@ -7,9 +7,12 @@ import boto3
 import csv
 import s3filter.util.constants
 import io
+import os
+import time
 
 from s3filter.util.py_util import PYTHON_3
 from s3filter.util.timer import Timer
+from s3filter.util.constants import *
 
 
 class Cursor(object):
@@ -29,7 +32,9 @@ class Cursor(object):
 
         self.s3key = None
         self.s3sql = None
+        self.need_s3select = True
         self.event_stream = None
+        self.table_local_file_path = None
 
         self.timer = Timer()
 
@@ -52,6 +57,9 @@ class Cursor(object):
         self.s3key = s3key
         self.s3sql = s3sql
 
+        # TODO:only simple SQL queries are considered. Nested and complex queries will need a lot of work to handle
+        self.need_s3select = not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
+
         # There doesn't seem to be a way to capture the bytes sent to s3, but we can use this for comparison purposes
         self.query_bytes = len(self.s3key.encode('utf-8')) + len(self.s3sql.encode('utf-8'))
 
@@ -68,26 +76,43 @@ class Cursor(object):
 
         self.timer.start()
 
-        # Note:
-        #
-        # CSV files use | as a delimiter and have a trailing delimiter so record delimiter is |\n
-        #
-        # NOTE: As responses are chunked the file headers are only returned in the first chunk. We ignore them for now
-        # just because its simpler. It does mean the records are returned as a list instead of a dict though (can change
-        # in future).
-        #
-        response = self.s3.select_object_content(
-            Bucket=s3filter.util.constants.S3_BUCKET_NAME,
-            Key=self.s3key,
-            ExpressionType='SQL',
-            Expression=self.s3sql,
-            InputSerialization={'CSV': {'FileHeaderInfo': 'Use', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
-            OutputSerialization={'CSV': {}}
-        )
+        if not self.need_s3select:
+            proj_dir = os.environ['PYTHONPATH'].split(":")[0]
+            table_loc = os.path.join(proj_dir, TABLE_STORAGE_LOC)
+            if not os.path.exists(table_loc):
+                os.makedirs(table_loc)
 
-        self.event_stream = response['Payload']
+            self.table_local_file_path = os.path.join(table_loc, self.s3key)
 
-        return self.parse_event_stream()
+            if not os.path.exists(self.table_local_file_path) or not USE_CACHED_TABLES:
+                self.s3.download_file(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=self.s3key,
+                    Filename=self.table_local_file_path
+                )
+
+            return self.parse_file()
+        else:
+            # Note:
+            #
+            # CSV files use | as a delimiter and have a trailing delimiter so record delimiter is |\n
+            #
+            # NOTE: As responses are chunked the file headers are only returned in the first chunk.
+            # We ignore them for now just because its simpler. It does mean the records are returned as a list
+            #  instead of a dict though (can change in future).
+            #
+            response = self.s3.select_object_content(
+                Bucket=S3_BUCKET_NAME,
+                Key=self.s3key,
+                ExpressionType='SQL',
+                Expression=self.s3sql,
+                InputSerialization={'CSV': {'FileHeaderInfo': 'Use', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
+                OutputSerialization={'CSV': {}}
+            )
+
+            self.event_stream = response['Payload']
+
+            return self.parse_event_stream()
 
     def parse_event_stream(self):
         """Generator that hands out records from the event stream lazily
@@ -188,6 +213,25 @@ class Cursor(object):
 
             else:
                 raise Exception("Unrecognized event {}".format(event))
+
+    def parse_file(self):
+        try:
+            self.time_to_first_record_response = self.time_to_last_record_response = self.timer.elapsed()
+
+            with open(self.table_local_file_path, 'r', buffering=(2 << 16) + 8) as table_file:
+                header_row = True
+                for t in table_file:
+
+                    if header_row:
+                        header_row = False
+                        continue
+
+                    tup = t.split('|')[:-1]
+
+                    yield tup
+        except Exception as e:
+            print("can not open table file at {} with error {}".format(self.table_local_file_path, e.message))
+            raise e
 
     def close(self):
         """Closes the s3 event stream
