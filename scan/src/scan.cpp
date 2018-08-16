@@ -42,7 +42,7 @@
 //#include <string>
 #include <aws/event-stream/event_stream.h>
 #include <aws/common/common.h>
-#include "/home/matt/Work/csv-parser/parser.hpp"
+#include "csv-parser/parser.hpp"
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 

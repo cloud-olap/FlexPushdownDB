@@ -6,7 +6,8 @@ import imp
 numpy_include_dir = os.path.join(filename, "core/include")
 
 scanmodule = Extension('scan',
-                       include_dirs=[numpy_include_dir],
+                       include_dirs=[numpy_include_dir,
+                                     'build/thirdparty'],
                        libraries=['aws-cpp-sdk-core',
                                   'aws-cpp-sdk-s3',
                                   'aws-c-common',
@@ -20,7 +21,7 @@ scanmodule = Extension('scan',
 
 setup(name='scan',
       version='1.0',
-      description='This is a demo package',
+      description='Fast s3',
       packages=['scan'],
       package_data={'scan': ['scan.so']},
       ext_modules=[scanmodule])
