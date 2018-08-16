@@ -125,7 +125,8 @@ class CostEstimator:
             else:
                 instance_type = EC2InstanceType.not_ec2
 
-            r = requests.get("http://169.254.169.254/latest/dynamic/instance-identity/document")
+            r = requests.get("http://169.254.169.254/latest/dynamic/instance-identity/document", verify=False,
+                             timeout=1)
             response_json = r.json()
             region = response_json.get('region')
         except requests.ConnectionError:
@@ -146,7 +147,7 @@ class CostEstimator:
         else:
             os_type = EC2InstanceOS.Any
 
-        self.ec2_instance = EC2Instance.get_instance_info(os_type, instance_type, region)
+        self.ec2_instance = EC2Instance.get_instance_info(os_type, instance_type, AWSRegion.Default)#region)
         self.table_scan_metrics = table_scan_metrics
 
     def estimate_cost(self):
