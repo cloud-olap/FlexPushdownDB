@@ -1,7 +1,7 @@
 
 
 from s3filter.plan.op_metrics import OpMetrics
-from s3filter.op.operator_base import Operator
+from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.op.message import TupleMessage
 from s3filter.op.sort import SortExpression
 from s3filter.op.sql_table_scan import SQLTableScanMetrics, is_header
@@ -175,8 +175,9 @@ class TopKTableScan(Operator):
         # duplicates, scanning table shards won't return any tuples and the sample will be considered the topk while
         # this is not necessarily the correct topk. A suggestion is to take a random step back on the cutting threshold
         # to make sure the max value is not used as the threshold
-        self.sample_tuples, self.sample_op = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples)
-        self.field_names = self.sample_tuples[0]
+        self.sample_tuples, self.sample_op = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples,
+                                                                        self.sort_expression)
+        # self.field_names = self.sample_tuples[0]
         msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
 
         filtered_sql = "{} WHERE CAST({} AS {}) {} {};".format(self.s3sql.rstrip(';'), self.sort_expression.col_name,
@@ -311,18 +312,17 @@ class TopKTableScan(Operator):
         self.op_metrics.timer_stop()
 
     @staticmethod
-    def sample_table(s3key, k, keys=None):
+    def sample_table(s3key, k, sort_exp):
         """
         Given a table name, return a random sample of records. Currently, the returned records are the first k tuples
         :param s3key: the s3 object name
         :param k: the number of tuples to return (the number added to the SQL Limit clause
-        :param keys: the keys on which table sorting will be applied
+        :param sort_exp: the sort expression in which the topk is chosen upon
         :return: the list of selected keys from the first k tuples in the table
         """
-        if keys is None:
-            keys = "*"
+        projection = "CAST({} as {})".format(sort_exp.col_name, sort_exp.col_type.__name__)
 
-        sql = "SELECT {} FROM S3Object LIMIT {}".format(", ".join(keys), k)
+        sql = "SELECT {} FROM S3Object LIMIT {}".format(projection, k)
         q_plan = QueryPlan(is_async=False)
         select = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, "sample_{}_scan".format(s3key),
                                                   q_plan, False))
@@ -342,9 +342,9 @@ class TopKTableScan(Operator):
         :return: the cut-off value
         """
         sort_exp = self.sort_expression
-        idx = self.field_names.index(sort_exp.col_index)
+        # idx = self.field_names.index(sort_exp.col_index)
 
         if sort_exp.sort_order == "ASC":
-            return min([sort_exp.col_type(t[idx]) for t in tuples]), '<='
+            return min([sort_exp.col_type(t[0]) for t in tuples]), '<='
         elif sort_exp.sort_order == "DESC":
-            return max([sort_exp.col_type(t[idx]) for t in tuples]), '>='
+            return max([sort_exp.col_type(t[0]) for t in tuples]), '>='

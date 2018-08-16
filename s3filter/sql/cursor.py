@@ -9,10 +9,12 @@ import s3filter.util.constants
 import io
 import os
 import time
+import math
 
 from s3filter.util.py_util import PYTHON_3
 from s3filter.util.timer import Timer
 from s3filter.util.constants import *
+from boto3.s3.transfer import TransferConfig, MB
 
 
 class Cursor(object):
@@ -45,6 +47,8 @@ class Cursor(object):
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
+
+        self.num_http_get_requests = 0
 
     def select(self, s3key, s3sql):
         """Creates a select cursor
@@ -85,11 +89,19 @@ class Cursor(object):
             self.table_local_file_path = os.path.join(table_loc, self.s3key)
 
             if not os.path.exists(self.table_local_file_path) or not USE_CACHED_TABLES:
+                config = TransferConfig(
+                    multipart_chunksize=8 * MB,
+                    multipart_threshold=8 * MB
+                )
+
                 self.s3.download_file(
                     Bucket=S3_BUCKET_NAME,
                     Key=self.s3key,
                     Filename=self.table_local_file_path
                 )
+
+                self.num_http_get_requests = Cursor.calculate_num_http_requests(self.table_local_file_path,
+                                                                                      config)
 
             return self.parse_file()
         else:
@@ -240,3 +252,12 @@ class Cursor(object):
         """
         if self.event_stream:
             self.event_stream.close()
+
+    @staticmethod
+    def calculate_num_http_requests(file_path, config):
+        if os.path.exists(file_path):
+            file_size = os.path.getsize(file_path)
+            shard_max_size = config.multipart_threshold
+            return math.ceil(file_size / (1.0 * shard_max_size))
+
+        return 1

@@ -17,7 +17,7 @@ import multiprocessing
 from s3filter.util.test_util import gen_test_id
 
 
-def __test_topk_baseline(sort_index='_5', col_type=float, sort_order='DESC'):
+def __test_topk_baseline(sort_index='_5', col_type=float, col_name='l_quantity', sort_order='DESC', use_pandas=True):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -28,7 +28,7 @@ def __test_topk_baseline(sort_index='_5', col_type=float, sort_order='DESC'):
     shards = 32
     processes = multiprocessing.cpu_count()
 
-    print("Baseline TopK with order {} on field {}\n".format(sort_order, sort_index))
+    print("\n\nBaseline TopK with order {} on field {}\n".format(sort_order, col_name))
 
     query_plan = QueryPlan(is_async=True)
 
@@ -36,15 +36,15 @@ def __test_topk_baseline(sort_index='_5', col_type=float, sort_order='DESC'):
     # ts = query_plan.add_operator(
     #     SQLTableScan('lineitem.csv', 'select * from S3Object limit {};'.format(limit), 'table_scan', query_plan, False))
     sort_exp = SortExpression(sort_index, col_type, sort_order)
-    top_op = query_plan.add_operator(Top(limit, sort_exp, True, 'topk', query_plan, False))
+    top_op = query_plan.add_operator(Top(limit, sort_exp, use_pandas, 'topk', query_plan, False))
     for process in range(processes):
         proc_parts = [x for x in range(shards) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object;', True, True,
+        pc = query_plan.add_operator(SQLShardedTableScan("lineitem.csv", 'select * from S3Object;', use_pandas, True,
                                                          "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
                                                          "sf1000-lineitem", query_plan, False))
         # pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
-        pc_top = query_plan.add_operator(Top(limit, sort_exp, True, 'topk_parts_{}'.format(proc_parts), query_plan,
-                                             False))
+        pc_top = query_plan.add_operator(Top(limit, sort_exp, use_pandas, 'topk_parts_{}'.format(proc_parts),
+                                             query_plan, False))
         pc.connect(pc_top)
         pc_top.connect(top_op)
 
@@ -71,7 +71,7 @@ def __test_topk_baseline(sort_index='_5', col_type=float, sort_order='DESC'):
 
 
 def __test_topk_with_sampling(k_scale=1, sort_index='_5', col_type=float, sort_field='l_extendedprice',
-                              sort_order='DESC'):
+                              sort_order='DESC', use_pandas=True):
     """
     Executes the optimized topk query by firstly retrieving the first k tuples.
     Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
@@ -84,14 +84,14 @@ def __test_topk_with_sampling(k_scale=1, sort_index='_5', col_type=float, sort_f
     shards = 32
     processes = multiprocessing.cpu_count()
 
-    print("Sampling params:")
+    print("\n\nSampling params:")
     print("Scale: {}, Sort Field: {}, Sort Order: {}\n".format(k_scale, sort_field, sort_order))
 
     query_plan = QueryPlan(is_async=True)
 
     # Query plan
     ts = query_plan.add_operator(
-        TopKTableScan('lineitem.csv', 'select * from S3Object', True, limit, k_scale,
+        TopKTableScan('lineitem.csv', 'select * from S3Object', use_pandas, limit, k_scale,
                       SortExpression(sort_index, col_type, sort_order, sort_field),
                       shards, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))
@@ -109,7 +109,7 @@ def __test_topk_with_sampling(k_scale=1, sort_index='_5', col_type=float, sort_f
         num_rows += 1
         print("{}:{}".format(num_rows, t))
 
-    assert num_rows == limit
+    assert num_rows == limit + 1
 
     # Write the metrics
     query_plan.print_metrics()
@@ -231,16 +231,17 @@ def __test_topk_with_sampling(k_scale=1, sort_index='_5', col_type=float, sort_f
 #     query_plan.print_metrics()
 
 def test_all():
-    __test_topk_baseline('_4', int, 'ASC')
-    __test_topk_baseline('_4', int, 'DESC')
-    __test_topk_baseline('_5', float, 'ASC')
-    __test_topk_baseline('_5', float, 'DESC')
+    use_pandas = True
+    __test_topk_baseline('_4', int, 'l_quantity', 'ASC', use_pandas)
+    __test_topk_baseline('_4', int, 'l_quantity','DESC', use_pandas)
+    __test_topk_baseline('_5', float, 'l_extendedprice', 'ASC', use_pandas)
+    __test_topk_baseline('_5', float, 'l_extendedprice', 'DESC', use_pandas)
     for i in range(4):
         scale = pow(2, i)
-        __test_topk_with_sampling(scale, '_4', int, 'l_quantity', 'ASC')
-        __test_topk_with_sampling(scale, '_4', int, 'l_quantity', 'DESC')
-        __test_topk_with_sampling(scale, '_5', float, 'l_extendedprice', 'ASC')
-        __test_topk_with_sampling(scale, '_5', float, 'l_extendedprice', 'DESC')
+        __test_topk_with_sampling(scale, '_4', int, 'l_quantity', 'ASC', use_pandas)
+        __test_topk_with_sampling(scale, '_4', int, 'l_quantity', 'DESC', use_pandas)
+        __test_topk_with_sampling(scale, '_5', float, 'l_extendedprice', 'ASC', use_pandas)
+        __test_topk_with_sampling(scale, '_5', float, 'l_extendedprice', 'DESC', use_pandas)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 from s3filter.op.sql_table_scan import SQLTableScanMetrics, SQLTableScan, is_header
-from s3filter.op.operator_base import Operator, StartMessage
+from s3filter.op.operator_base import Operator, StartMessage, EvalMessage, EvaluatedMessage
 from s3filter.op.message import StringMessage, TupleMessage
 import pandas as pd
 import time

@@ -26,10 +26,6 @@ class SQLTableScanMetrics(OpMetrics):
     """Extra metrics for a sql table scan
     """
 
-    # These amounts vary by region, but let's assume it's a flat rate for simplicity
-    COST_S3_DATA_RETURNED_PER_GB = 0.0007
-    COST_S3_DATA_SCANNED_PER_GB = 0.002
-
     def __init__(self):
         super(SQLTableScanMetrics, self).__init__()
 
@@ -43,6 +39,7 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
+        self.num_http_get_requests = 0
 
         self.cost_estimator = CostEstimator(self)
 
@@ -76,8 +73,8 @@ class SQLTableScanMetrics(OpMetrics):
             'time_to_last_record_response':
                 None if self.time_to_last_record_response is None
                 else round(self.time_to_last_record_response, 5),
-            'cost': self.cost()
-
+            'cost': "${0:.8f}".format(self.cost()),
+            'cost_for_instance': self.cost_estimator.ec2_instance
         }.__repr__()
 
 
@@ -145,6 +142,7 @@ class SQLTableScan(Operator):
         self.op_metrics.bytes_returned = cur.bytes_returned
         self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
         self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
+        self.op_metrics.num_http_get_requests = cur.num_http_get_requests
 
         if not self.is_completed():
             self.complete()

@@ -181,12 +181,6 @@ class QueryPlan(object):
 
     def print_metrics(self):
 
-        operators = self.traverse_topological_from_root()
-        if self.is_async:
-            for o in operators:
-                o.queue.put(EvalMessage("self.op_metrics"))
-                o.op_metrics = self.listen(EvaluatedMessage).val
-
         cost, bytes_scanned, bytes_returned, rows = self.cost()
 
         print("")
@@ -203,13 +197,13 @@ class QueryPlan(object):
         print("total_scanned_bytes: {} MB".format(bytes_scanned * BYTE_TO_MB))
         print("total_returned_bytes: {} MB".format(bytes_returned * BYTE_TO_MB))
         print("total_returned_rows: {}".format(rows))
-        print("cost: ${}".format(round(cost, 7)))
+        print("cost: ${0:.10f}".format(cost))
 
         print("")
         print("Operators")
         print("---------")
 
-        OpMetrics.print_metrics(operators)
+        OpMetrics.print_metrics(self.traverse_topological_from_root())
 
         # self.assert_operator_time_equals_plan_time()
 
@@ -271,6 +265,13 @@ class QueryPlan(object):
             while not all(operator_completions.values()):
                 completed_message = self.listen(OperatorCompletedMessage)
                 operator_completions[completed_message.name] = True
+            # retrieve metrics of all operators. This is important in async queries since the operator runs in a
+            # different process.
+            operators = self.traverse_topological_from_root()
+            for o in operators:
+                o.queue.put(EvalMessage("self.op_metrics"))
+                o.op_metrics = self.listen(EvaluatedMessage).val
+
             map(lambda o: o.set_completed(True), self.operators.values())
 
         self.__timer.stop()

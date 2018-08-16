@@ -76,6 +76,19 @@ class EC2Instance:
         self.storage_type = storage_type
         self.price = price
 
+    def __repr__(self):
+        return {
+            'region': self.region,
+            'os_type': self.os_type,
+            'category': self.category,
+            'instance_name': self.instance_name,
+            'cpus': self.cpus,
+            'memory': self.memory,
+            'storage': self.storage,
+            'storage_type': self.storage_type,
+            'price': "${} per Hour".format(self.price)
+        }.__repr__()
+
     @staticmethod
     def get_instance_info(os_type=EC2InstanceOS.Any, name=EC2InstanceType.r48xlarge,
                           region=AWSRegion.Any):
@@ -138,16 +151,17 @@ class CostEstimator:
         <https://aws.amazon.com/s3/pricing/>
         :return: The estimated cost of the table scan operation
         """
+
         computation_cost = self.table_scan_metrics.elapsed_time() * SEC_TO_HOUR * self.ec2_instance.price
         data_transfer_cost = 0
         # Assuming the data transfer cost is charged only in case the data is going out to the internet not to an EC2
         # instance
-        if self.ec2_instance.region != AWSRegion.Any:
+        if self.ec2_instance.region == AWSRegion.Any:
             data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                                  CostEstimator.DATA_TRANSFER_PRICE_PER_GB
         s3_select_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                          CostEstimator.COST_S3_DATA_RETURNED_PER_GB + \
                          self.table_scan_metrics.bytes_scanned * BYTE_TO_GB * CostEstimator.COST_S3_DATA_SCANNED_PER_GB
-        request_cost = CostEstimator.REQUEST_PRICE
+        request_cost = self.table_scan_metrics.num_http_get_requests * CostEstimator.REQUEST_PRICE
 
         return computation_cost + data_transfer_cost + s3_select_cost + request_cost
