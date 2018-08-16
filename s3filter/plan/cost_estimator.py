@@ -157,11 +157,11 @@ class CostEstimator:
         :return: The estimated cost of the table scan operation
         """
 
-        computation_cost = self.table_scan_metrics.elapsed_time() * SEC_TO_HOUR * self.ec2_instance.price
+        computation_cost = 0#self.table_scan_metrics.elapsed_time() * SEC_TO_HOUR * self.ec2_instance.price
         data_transfer_cost = 0
         # Assuming the data transfer cost is charged only in case the data is going out to the internet not to an EC2
         # instance
-        if self.ec2_instance.region == AWSRegion.Any:
+        if self.ec2_instance.region != AWSRegion.Default:
             data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                                  CostEstimator.DATA_TRANSFER_PRICE_PER_GB
         s3_select_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \

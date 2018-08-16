@@ -182,6 +182,7 @@ class QueryPlan(object):
     def print_metrics(self):
 
         cost, bytes_scanned, bytes_returned, rows = self.cost()
+        cost += self.total_elapsed_time * SEC_TO_HOUR * 2.128   # needs to be cleanly moved to the cost estimator class
 
         print("")
         print("Metrics")
