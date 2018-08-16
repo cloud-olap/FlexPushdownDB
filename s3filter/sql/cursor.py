@@ -124,6 +124,8 @@ class Cursor(object):
 
             self.event_stream = response['Payload']
 
+            self.num_http_get_requests = 1
+
             return self.parse_event_stream()
 
     def parse_event_stream(self):
