@@ -14,12 +14,16 @@ from s3filter.op.operator_base import Operator, StartMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
+from s3filter.sql.native_cursor import NativeCursor
 from s3filter.util.constants import *
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 
 from s3filter.sql.pandas_cursor import PandasCursor
 import pandas as pd
+from ctypes import *
+import imp
+import scan
 
 
 class SQLTableScanMetrics(OpMetrics):
@@ -98,7 +102,7 @@ class SQLTableScan(Operator):
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __init__(self, s3key, s3sql, use_pandas, secure, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
 
         :param s3key: The object key to select against
@@ -108,20 +112,31 @@ class SQLTableScan(Operator):
         super(SQLTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
 
         # Boto is not thread safe so need one of these per scan op
-        if secure:
-            cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
-            session = Session()
-            self.s3 = session.client('s3', config=cfg)
+        if not use_native:
+            if secure:
+                cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
+                session = Session()
+                self.s3 = session.client('s3', config=cfg)
+            else:
+                cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10,
+                             s3={'payload_signing_enabled': False})
+                session = Session()
+                self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
         else:
-            cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10,
-                         s3={'payload_signing_enabled': False})
-            session = Session()
-            self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
+            # # x = imp.import_module('scan.so')
+            # import sys
+            # print ('\n'.join(sys.path))
+            # fp, pathname, description = imp.find_module('scan')
+            # # self.fast_s3 = scan
+            # self.fast_s3 = imp.load_module('scan', fp, pathname, description)
+            self.fast_s3 = scan
 
         self.s3key = s3key
         self.s3sql = s3sql
 
         self.use_pandas = use_pandas
+
+        self.use_native = use_native
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -196,45 +211,54 @@ class SQLTableScan(Operator):
 
     @staticmethod
     def execute_pandas_query(op):
-        cur = PandasCursor(op.s3).select(op.s3key, op.s3sql)
-        dfs = cur.execute()
-        op.op_metrics.query_bytes = cur.query_bytes
-        op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
-        first_tuple = True
+        if op.use_native:
+            cur = NativeCursor(op.fast_s3).select(op.s3key, op.s3sql)
+            df = cur.execute()
+            op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
+            op.send(df, op.consumers)
 
-        counter = 0
+            return cur
+        else:
 
-        buffer_ = pd.DataFrame()
-        for df in dfs:
+            cur = PandasCursor(op.s3).select(op.s3key, op.s3sql)
+            dfs = cur.execute()
+            op.op_metrics.query_bytes = cur.query_bytes
+            op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
+            first_tuple = True
 
-            if first_tuple:
-                assert (len(df.columns.values) > 0)
-                op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
-                first_tuple = False
+            counter = 0
+
+            buffer_ = pd.DataFrame()
+            for df in dfs:
+
+                if first_tuple:
+                    assert (len(df.columns.values) > 0)
+                    op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
+                    first_tuple = False
+
+                    # if op.log_enabled:
+                    #     print("{}('{}') | Sending field names: {}"
+                    #           .format(op.__class__.__name__, op.name, df.columns.values))
+
+                op.op_metrics.rows_returned += len(df)
 
                 # if op.log_enabled:
-                #     print("{}('{}') | Sending field names: {}"
-                #           .format(op.__class__.__name__, op.name, df.columns.values))
+                #     print("{}('{}') | Sending field values: {}".format(op.__class__.__name__, op.name, df))
 
-            op.op_metrics.rows_returned += len(df)
+                counter += 1
+                if op.log_enabled:
+                    sys.stdout.write('.')
+                    if counter % 100 == 0:
+                        print("Rows {}".format(op.op_metrics.rows_returned))
 
-            # if op.log_enabled:
-            #     print("{}('{}') | Sending field values: {}".format(op.__class__.__name__, op.name, df))
+                op.send(df, op.consumers)
+                # buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
+                # if len(buffer_) >= 8192:
+                #    op.send(buffer_, op.consumers)
+                #    buffer_ = pd.DataFrame()
 
-            counter += 1
-            if op.log_enabled:
-                sys.stdout.write('.')
-                if counter % 100 == 0:
-                    print("Rows {}".format(op.op_metrics.rows_returned))
+            if len(buffer_) > 0:
+                op.send(buffer_, op.consumers)
+                del buffer_
 
-            op.send(df, op.consumers)
-            # buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
-            # if len(buffer_) >= 8192:
-            #    op.send(buffer_, op.consumers)
-            #    buffer_ = pd.DataFrame()
-
-        if len(buffer_) > 0:
-            op.send(buffer_, op.consumers)
-            del buffer_
-
-        return cur
+            return cur
