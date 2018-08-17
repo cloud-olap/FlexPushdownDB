@@ -39,7 +39,7 @@ class GroupbyDecoder(Operator):
             elif type(m) is pd.DataFrame:
                 self.__on_receive_dataframe(m)
             else:
-                raise Exception("Unrecognized message {}".format(m))
+                raise Exception("Unrecognized message (type={}) {}".format(type(m), m))
 
     def __on_receive_tuple(self, tuple_, _producer_name):
         
@@ -51,11 +51,11 @@ class GroupbyDecoder(Operator):
         if not type(self.group_df) is pd.DataFrame:
             self.group_df = df.sort_values(by = list(df) ).reset_index(drop=True)
             return
-       
+
         value_df = pd.DataFrame()
         chunk_size =len(self.group_df) 
         num_chunks = len(df.columns) / chunk_size 
-        assert(len(df.columns) % chunk_size == 0)
+        assert len(df.columns) % chunk_size == 0, "len(df)={}, chunk_size={}".format(len(df.columns), chunk_size)
         
         for i in range(num_chunks):
             sliced_df = df[ df.columns[i*chunk_size : (i+1)*chunk_size] ]

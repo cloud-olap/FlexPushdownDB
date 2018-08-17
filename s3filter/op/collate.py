@@ -6,6 +6,7 @@
 import cPickle as pickle
 import sys
 
+import pandas as pd
 from pandas import DataFrame
 
 from s3filter.op.message import TupleMessage
@@ -79,8 +80,12 @@ class Collate(Operator):
 
         # TODO: Also adding to tuples for now just so the existing tests work,
         # eventually they should inspect the dataframe
-        self.__tuples.extend(df.values.tolist())
-        self.df = self.df.append(df)
+
+        self.df = pd.concat([self.df, df])
+        self.__tuples = [list(self.df)] + self.df.values.tolist()
+
+        #self.__tuples.extend(df.values.tolist())
+        #self.df = self.df.append(df)
 
     def __on_receive_tuple(self, tuple_):
         """Event handler for a received tuple

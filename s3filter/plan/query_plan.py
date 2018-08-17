@@ -37,6 +37,7 @@ class QueryPlan(object):
 
         self.__timer = Timer()
         self.total_elapsed_time = 0.0
+        self.__debug_timer = OrderedDict() 
         self.completion_counter = 0
 
         if operators is None:
@@ -194,6 +195,12 @@ class QueryPlan(object):
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
         print("cost: ${}".format(round(self.cost(), 7)))
 
+        print("") 
+        print("Operator Completion Time")
+        print("------------------------")
+        for k, v in self.__debug_timer.items():
+            print("{}: {}".format(k, v))
+
         print("")
         print("Operators")
         print("---------")
@@ -267,6 +274,7 @@ class QueryPlan(object):
             while not all(operator_completions.values()):
                 completed_message = self.listen(OperatorCompletedMessage)
                 operator_completions[completed_message.name] = True
+                self.debug_time(completed_message.name)
 
         self.__timer.stop()
 
@@ -322,3 +330,6 @@ class QueryPlan(object):
             warnings.warn("Can't get cost in parallel mode... yet :)")
 
         return total_cost
+
+    def debug_time(self, name):
+        self.__debug_timer[name] = self.__timer.elapsed()

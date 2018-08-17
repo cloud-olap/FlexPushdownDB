@@ -32,15 +32,24 @@ class GroupbyFilterBuild(Operator):
 
     """
 
-    def __init__(self, exprs, name, query_plan, log_enabled):
+    def __init__(self, group_fields, agg_fields, exprs, name, query_plan, log_enabled):
         """
         Creates a new join operator.
 
         """
-        self.groups = [] 
+        self.groups = []
+        self.group_fields = group_fields
+        self.agg_fields = agg_fields
         self.aggregate_exprs = exprs
-        self.sql = '' 
+        self.sql_agg = '' 
+        self.sql_scan = ''
+        self.hybrid = False
+        self.nlargest = None 
         super(GroupbyFilterBuild, self).__init__(name, GroupbyFilterBuildMetrics(), query_plan, log_enabled)
+
+    def set_nlargest(self, nlargest):
+        self.hybrid = True
+        self.nlargest = nlargest
 
     def on_receive(self, ms, producer_name):
         """Handles the event of receiving a new message from a producer.
@@ -62,22 +71,47 @@ class GroupbyFilterBuild(Operator):
         pass
 
     def __on_receive_dataframe(self, df):
-        group_fields = list(df)
-        self.groups = df.sort_values(by = group_fields).values.tolist()
-        self.sql = 'select '        
+        if self.hybrid:
+            total_records = df['_count'].sum()
+            remote_aggregate_df = df.nlargest( self.nlargest, ['_count'] ) 
+            remote_aggregate_df = remote_aggregate_df[self.group_fields].sort_values(by = self.group_fields) 
+            remote_scan_df = df[self.group_fields] 
+            remote_scan_df = remote_scan_df[ ~remote_scan_df.index.isin(remote_aggregate_df.index) ]
+        
+            remote_aggregate_df.reset_index(drop=True, inplace=True) 
+            remote_scan_df.reset_index(drop=True, inplace=True) 
+        else:
+            remote_aggregate_df = df
+            remote_aggregate_df.sort_values(by = self.group_fields)
+
+        self.groups = remote_aggregate_df.values.tolist()
+        self.sql_agg = 'select '
         for expr_num, expr in enumerate(self.aggregate_exprs):
             for group in self.groups:
-                self.sql += ' {}(CASE'.format(expr[0])
-                self.sql += ' WHEN '
-                self.sql += 'AND'.join([ ' {} = \'{}\' '.format(gname, group[n]) for n, gname in enumerate(group_fields) ])
-                self.sql += ' THEN '
-                self.sql += expr[1] 
-                self.sql += ' ELSE 0 END '
-                self.sql += ') AS G{}_AGG{}'.format('_'.join(group), expr_num) 
+                self.sql_agg += ' {}(CASE'.format(expr[0])
+                self.sql_agg += ' WHEN '
+                self.sql_agg += 'AND'.join([ ' {} = \'{}\' '.format(gname, group[n]) for n, gname in enumerate(self.group_fields) ])
+                self.sql_agg += ' THEN '
+                self.sql_agg += expr[1] 
+                self.sql_agg += ' ELSE 0 END '
+                self.sql_agg += ')' #.format('_'.join(group), expr_num) 
                 if not (expr == self.aggregate_exprs[-1] and group == self.groups[-1]):
-                    self.sql += ','
-        self.sql += ' from s3Object;'
-        self.send(  StringMessage(self.sql), self.consumers)
+                    self.sql_agg += ','
+        self.sql_agg += ' from s3Object;'
+        self.send(  StringMessage(self.sql_agg), self.tagged_consumers[0])
+        self.send(  remote_aggregate_df, self.tagged_consumers[1])
+        
+        if self.hybrid:
+            assert len(remote_scan_df) > 0
+            self.sql_scan = 'select ' + ','.join(self.group_fields + self.agg_fields)
+            self.sql_scan += ' from s3Object where '
+            for group in self.groups:
+                self.sql_scan += 'NOT ('
+                self.sql_scan += ' AND'.join([ ' {} = \'{}\' '.format(gname, group[n]) for n, gname in enumerate(self.group_fields) ])
+                self.sql_scan += ')'
+                if not group == self.groups[-1]:
+                    self.sql_scan += 'AND '
+            self.send( StringMessage(self.sql_scan), self.tagged_consumers[2] )
 
     def on_producer_completed(self, producer_name):
 

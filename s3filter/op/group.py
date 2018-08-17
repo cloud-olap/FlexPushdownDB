@@ -148,7 +148,6 @@ class Group(Operator):
         if not is_all_producers_done:
             return
 
-        print("Producer Complete ({})".format(self.name))
         if not self.use_pandas:
             # Send the field names
             lt = IndexedTuple.build_default(self.group_field_names + self.aggregate_expressions)
@@ -167,8 +166,6 @@ class Group(Operator):
                 t_ = group_fields + group_aggregate_values
                 self.send(TupleMessage(Tuple(t_)), self.consumers)
         else:
-            # TODO 
-            # for average, devide by __count.
             # for groupby_reducer, aggregate one more time.  
             if len(self.producers) > 1:
                 self.aggregate_df = self.pd_expr(self.aggregate_df)

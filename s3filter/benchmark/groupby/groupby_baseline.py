@@ -20,15 +20,17 @@ import pandas as pd
 import numpy as np
 
 def main():
-    table_parts = 100
-    run(['G0', 'G1'], ['F0', 'F1'], parallel=True, use_pandas=True, buffer_size=0, table_parts=2)
+    file_format = 'groupby_benchmark/shards-zipf-10GB/groupby_powerlaw_data_{}.csv'
+    run(['G2'], ['F0', 'F1'], parallel=True, use_pandas=True, buffer_size=0, table_parts=2, files = file_format)
 
-def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts):
+def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts, files):
     """
     
     :return: None
     """
 
+    secure = False
+    use_native = False
     print('')
     print("Groupby Benchmark, Baseline. Group Fields: {} Aggregate Fields: {}".format(group_fields, agg_fields))
     print("----------------------")
@@ -39,8 +41,8 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
     # Scan
     scan = map(lambda p: 
                query_plan.add_operator(
-                    SQLTableScan('groupby_benchmark/shards-10GB/groupby_data_{}.csv'.format(p),
-                        "select * from S3Object;", use_pandas,
+                    SQLTableScan(files.format(p),
+                        "select * from S3Object;", use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
                range(0, table_parts))

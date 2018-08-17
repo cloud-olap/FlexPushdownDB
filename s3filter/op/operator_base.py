@@ -158,6 +158,7 @@ class Operator(object):
 
         self.producers = []
         self.consumers = []
+        self.tagged_consumers = {}
 
         self.exception = None
 
@@ -217,7 +218,7 @@ class Operator(object):
         """
         return self.__completed
 
-    def connect(self, consumer):
+    def connect(self, consumer, tag = 0):
         """Utility method that appends the given consuming operators to this operators list of consumers and appends the
         given consumers producer to this operator. Shorthand for two add consumer, add producer calls.
 
@@ -225,13 +226,14 @@ class Operator(object):
         may have multiple.
 
         :param consumer: An operator that will consume the results of this operator.
+        :param tag: the tag for the consumer.
         :return: None
         """
 
-        self.add_consumer(consumer)
+        self.add_consumer(consumer, tag)
         consumer.add_producer(self)
 
-    def add_consumer(self, consumer):
+    def add_consumer(self, consumer, tag):
         """Appends the given consuming operator to this operators list of consumers
 
         :param consumer: An operator that will consume the results of this operator.
@@ -248,6 +250,10 @@ class Operator(object):
         self.consumers.append(consumer)
         self.consumer_completions[consumer.name] = False
         self.consumers = sorted(self.consumers, key=lambda c: c.name)
+        if not tag in self.tagged_consumers.keys():
+            self.tagged_consumers[tag] = []
+        self.tagged_consumers[tag].append(consumer)
+        self.tagged_consumers[tag] = sorted(self.tagged_consumers[tag], key=lambda c: c.name)
 
         self.__buffers[consumer] = []
 
