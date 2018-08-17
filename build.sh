@@ -5,6 +5,8 @@ pushd `dirname $0` > /dev/null
 SCRIPT_PATH=`pwd`
 popd > /dev/null
 
+clean=false
+
 # Get build args
 while getopts ":c" opt; do
   case $opt in
@@ -35,7 +37,7 @@ sudo make install
 # Build AWS C Common Lib
 mkdir -p ${SCRIPT_PATH}/build/thirdparty/aws-c-common
 cd ${SCRIPT_PATH}/build/thirdparty/aws-c-common
-git clone https://github.com/awslabs/aws-c-common.git ${SCRIPT_PATH}/build/thirdparty/aws-c-common
+git clone https://github.com/mattyouill/aws-c-common.git ${SCRIPT_PATH}/build/thirdparty/aws-c-common
 git pull
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON .
 if [ $clean = true ] ; then
