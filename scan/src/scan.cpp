@@ -58,11 +58,16 @@ using namespace Aws::S3;
 using namespace Aws::Utils;
 
 
+
+
 class Reader
 {
 
     const char* key;
     const char* sql;
+    int bytes_scanned = 0;
+    int bytes_processed = 0;
+    int bytes_returned = 0;
 
 public:
     Reader(const char* key, const char* sql) {
@@ -113,6 +118,10 @@ public:
         return s2.size() <= s1.size() && s1.compare(0, s2.size(), s2) == 0;
     }
 
+    static bool ends_with(const Aws::String& s1, const Aws::String& s2) {
+        return s2.size() <= s1.size() && s1.compare(s1.size() - s2.size(), s1.size(), s2) == 0;
+    }
+
     struct test_decoder_data {
         struct aws_event_stream_message_prelude latest_prelude;
         char latest_header_name[100];
@@ -123,6 +132,9 @@ public:
         int latest_error;
         Aws::String *last_line;
         std::vector<std::vector<std::string>> *data_v;
+        Aws::String latest_event_type;
+        int new_event_sequence;
+        Aws::String stats_str;
     };
 
     static void s_decoder_test_on_payload_segment(struct aws_event_stream_streaming_decoder *decoder,
@@ -133,67 +145,115 @@ public:
 
         cout << "PAYLOAD SEGMENT START!!!" << endl;
 
+        cout << "event is: |||" << decoder_data->latest_event_type << "|||" << endl;
 
         Aws::String buf_s = Aws::String((char*)data->buffer, data->len);
 
         cout << "PAYLOAD IS..." << endl;
         cout << "|||" << buf_s << "|||" << endl;
 
-        if(decoder_data->last_line != NULL){
-            buf_s = *(decoder_data->last_line) + buf_s;
-        }
+        if(decoder_data->latest_event_type == "Records"){
 
-        cout << "APPENDED PAYLOAD IS..." << endl;
-        cout << "|||" << buf_s << "|||" << endl;
-
-        Aws::String stripped_payload;
-        if(buf_s.at(buf_s.size() - 1) == '\n'){
-            // Complete record
-            cout << "Complete" << endl;
-
-            stripped_payload = buf_s;
-        }
-        else{
-            // Incomplete, strip the last line
-            cout << "Incomplete" << endl;
-
-            int last_line_pos = buf_s.rfind('\n');
-
-            cout << "Last line pos: " << last_line_pos << endl;
-
-            decoder_data->last_line = new Aws::String(buf_s.substr(last_line_pos + 1, buf_s.size()));
-
-
-            stripped_payload = buf_s.substr(0, last_line_pos + 1);
-
-            cout << "Last line" << "|||" << *(decoder_data->last_line) << "|||" << endl;
-
-            cout << "Stripped payload" << endl <<"|||" <<  stripped_payload <<"|||" <<  endl;
-
-        }
-
-        Aws::StringStream buf_ss = Aws::StringStream(stripped_payload);
-
-//        cout << data->buffer;
-
-        aria::csv::CsvParser parser = aria::csv::CsvParser(buf_ss)
-          .delimiter(',')    // delimited by ; instead of ,
-          .quote('"')       // quoted fields use ' instead of "
-          .terminator('\n'); // terminated by \0 instead of by \r\n, \n, or \r
-
-        cout << "CSV..." << endl;
-
-        for (auto& row : parser) {
-            std::vector<std::string> row_v = std::vector<std::string>();
-            for (auto& field : row) {
-                row_v.push_back(field);
-                std::cout << field << " | ";
+            if(decoder_data->last_line != NULL){
+                buf_s = *(decoder_data->last_line) + buf_s;
+                decoder_data->last_line = NULL;
             }
-            decoder_data->data_v->push_back(row_v);
-            std::cout << std::endl;
-        }
 
-        cout << "PAYLOAD SEGMENT END!!!" << endl;
+            cout << "APPENDED PAYLOAD IS..." << endl;
+            cout << "|||" << buf_s << "|||" << endl;
+
+            Aws::String stripped_payload;
+            if(buf_s.at(buf_s.size() - 1) == '\n'){
+                // Complete record
+                cout << "Complete" << endl;
+
+                stripped_payload = buf_s;
+            }
+            else{
+                // Incomplete, strip the last line
+                cout << "Incomplete" << endl;
+
+                int last_line_pos = buf_s.rfind('\n');
+
+                cout << "Last line pos: " << last_line_pos << endl;
+
+                decoder_data->last_line = new Aws::String(buf_s.substr(last_line_pos + 1, buf_s.size()));
+
+
+                stripped_payload = buf_s.substr(0, last_line_pos + 1);
+
+                cout << "Last line" << "|||" << *(decoder_data->last_line) << "|||" << endl;
+
+                cout << "Stripped payload" << endl <<"|||" <<  stripped_payload <<"|||" <<  endl;
+
+            }
+
+            Aws::StringStream buf_ss = Aws::StringStream(stripped_payload);
+
+    //        cout << data->buffer;
+
+            aria::csv::CsvParser parser = aria::csv::CsvParser(buf_ss)
+              .delimiter(',')    // delimited by ; instead of ,
+              .quote('"')       // quoted fields use ' instead of "
+              .terminator('\n'); // terminated by \0 instead of by \r\n, \n, or \r
+
+            cout << "CSV..." << endl;
+
+            for (auto& row : parser) {
+                std::vector<std::string> row_v = std::vector<std::string>();
+                for (auto& field : row) {
+                    row_v.push_back(field);
+                    std::cout << field << " | ";
+                }
+                decoder_data->data_v->push_back(row_v);
+                std::cout << std::endl;
+            }
+
+            cout << "PAYLOAD SEGMENT END!!!" << endl;
+        }
+        else if(decoder_data->latest_event_type == "Stats"){
+
+            if(decoder_data->last_line != NULL){
+                buf_s = *(decoder_data->last_line) + buf_s;
+                decoder_data->last_line = NULL;
+            }
+
+            cout << "APPENDED PAYLOAD IS..." << endl;
+            cout << "|||" << buf_s << "|||" << endl;
+
+            Aws::String stripped_payload;
+            Aws::String end_stats = Aws::String("</Stats>");
+
+            if(ends_with(buf_s, end_stats)){
+                // Complete record
+                cout << "Complete" << endl;
+
+                stripped_payload = buf_s;
+            }
+            else{
+                // Incomplete, strip the last line
+                cout << "Incomplete" << endl;
+
+                int last_line_pos = buf_s.rfind('\n');
+
+                cout << "Last line pos: " << last_line_pos << endl;
+
+                decoder_data->last_line = new Aws::String(buf_s.substr(last_line_pos + 1, buf_s.size()));
+
+
+                stripped_payload = buf_s.substr(0, last_line_pos + 1);
+
+                cout << "Last line" << "|||" << *(decoder_data->last_line) << "|||" << endl;
+
+                cout << "Stripped payload" << endl <<"|||" <<  stripped_payload <<"|||" <<  endl;
+
+            }
+
+            cout << "STRIPPED STATS PAYLOAD!!!" << stripped_payload << endl;
+
+             decoder_data->stats_str += stripped_payload;
+
+        }
     }
 
     static void s_decoder_test_on_prelude_received(struct aws_event_stream_streaming_decoder *decoder,
@@ -219,6 +279,30 @@ public:
         memcpy(decoder_data->latest_header_name, header->header_name, (size_t) header->header_name_len);
         memset(decoder_data->latest_header_value, 0, sizeof(decoder_data->latest_header_value));
         memcpy(decoder_data->latest_header_value, header->header_value.variable_len_val, header->header_value_len);
+
+
+
+        cout << "event is: |||" << decoder_data->latest_header_value << "|||" << endl;
+
+        if(strcmp(decoder_data->latest_header_value, "event") == 0){
+            cout << "New Event" << endl;
+            decoder_data->new_event_sequence = 0;
+            return;
+        }
+
+        if(decoder_data->new_event_sequence == 0){
+            cout << "New Event Type" << endl;
+            decoder_data->latest_event_type = Aws::String(decoder_data->latest_header_value);
+            decoder_data->new_event_sequence = 1;
+            return;
+        }
+
+        if(decoder_data->new_event_sequence == 1){
+            cout << "New Event Content Type" << endl;
+            decoder_data->new_event_sequence = -1;
+            return;
+        }
+
     }
 
     static void s_decoder_test_on_error(struct aws_event_stream_streaming_decoder *decoder,
@@ -228,6 +312,25 @@ public:
 
         struct test_decoder_data *decoder_data = (struct test_decoder_data *) user_data;
         decoder_data->latest_error = error_code;
+    }
+
+    PyObject* get_bytes_scanned() {
+        return Py_BuildValue("i", this->bytes_scanned);
+    }
+
+    PyObject* get_bytes_processed() {
+        return Py_BuildValue("i", this->bytes_processed);
+    }
+
+    PyObject* get_bytes_returned() {
+        return Py_BuildValue("i", this->bytes_returned);
+    }
+
+    static int find_nth(const Aws::String& haystack, int pos, const Aws::String& needle, int nth)
+    {
+        int found_pos = haystack.find(needle, pos);
+        if(0 == nth || string::npos == found_pos)  return found_pos;
+        return find_nth(haystack, found_pos+1, needle, nth-1);
     }
 
     PyObject* execute() {
@@ -378,11 +481,11 @@ public:
                     cout << endl;
                 }
 
-                pArray = (PyArrayObject*)(PyArray_SimpleNewFromData(ND, dims, NPY_OBJECT, vec->data()));
-                if (pArray == NULL) {
-                    Py_XDECREF(pArray);
-                    return NULL;
-                }
+//                pArray = (PyArrayObject*)(PyArray_SimpleNewFromData(ND, dims, NPY_OBJECT, vec->data()));
+//                if (pArray == NULL) {
+//                    Py_XDECREF(pArray);
+//                    return NULL;
+//                }
 
                 cout << "DONE NUMPY..." << endl;
 
@@ -400,6 +503,30 @@ public:
                         PyArray_SETITEM((PyArrayObject*)pArray, (char*)PyArray_GETPTR2((PyArrayObject*)pArray, i, j), obj3);
                     }
                 }
+
+
+                // STATS - could use an xml parser but its pretty simple so we just hack through it
+
+                cout << decoder_data.stats_str << endl;
+
+                Aws::String gt = Aws::String(">");
+                Aws::String lt = Aws::String("<");
+
+                int scanned_start = find_nth(decoder_data.stats_str, 0, gt, 1);
+                int scanned_end = find_nth(decoder_data.stats_str, 0, lt, 2);
+                Aws::String bytes_scanned_str = decoder_data.stats_str.substr(scanned_start + 1, scanned_end - scanned_start - 1);
+                this->bytes_scanned = std::stoi(bytes_scanned_str.c_str(), nullptr, 10);
+
+                int processed_start = find_nth(decoder_data.stats_str, 0, gt, 3);
+                int processed_end = find_nth(decoder_data.stats_str, 0, lt, 4);
+                Aws::String bytes_processed_str = decoder_data.stats_str.substr(processed_start + 1, processed_end - processed_start - 1);
+                this->bytes_processed = std::stoi(bytes_processed_str.c_str(), nullptr, 10);
+
+                int returned_start = find_nth(decoder_data.stats_str, 0, gt, 5);
+                int returned_end = find_nth(decoder_data.stats_str, 0, lt, 6);
+                Aws::String bytes_returned_str = decoder_data.stats_str.substr(returned_start + 1, returned_end - returned_start - 1);
+                this->bytes_returned = std::stoi(bytes_returned_str.c_str(), nullptr, 10);
+
 
 
 //                int elements_count = 10;
@@ -522,18 +649,7 @@ public:
     }
 };
 
-
-static PyObject *
-scan_system(PyObject *self, PyObject *args)
-{
-    const char *command;
-    int sts;
-
-    if (!PyArg_ParseTuple(args, "s", &command))
-        return NULL;
-    sts = system(command);
-    return Py_BuildValue("i", sts);
-}
+Reader* reader;
 
 static PyObject *
 scan_execute(PyObject *self, PyObject *args)
@@ -548,7 +664,7 @@ scan_execute(PyObject *self, PyObject *args)
     std::cout << std::endl;
     std::cout << "Execute | Key: " << key << ", sql: " << sql << std::endl;
 
-    Reader* reader = new Reader(key, sql);
+    reader = new Reader(key, sql);
     PyObject* res = reader->execute();
 
 //    std::cout << res;
@@ -556,8 +672,56 @@ scan_execute(PyObject *self, PyObject *args)
     return res;
 }
 
+
+
+static PyObject *
+scan_get_bytes_scanned(PyObject *self, PyObject *args)
+{
+
+    std::cout << std::endl;
+    std::cout << "get_bytes_scanned" << std::endl;
+
+    PyObject* res = reader->get_bytes_scanned();
+
+//    std::cout << res;
+
+    return res;
+}
+
+
+static PyObject *
+scan_get_bytes_processed(PyObject *self, PyObject *args)
+{
+
+    std::cout << std::endl;
+    std::cout << "get_bytes_scanned" << std::endl;
+
+    PyObject* res = reader->get_bytes_processed();
+
+//    std::cout << res;
+
+    return res;
+}
+
+
+static PyObject *
+scan_get_bytes_returned(PyObject *self, PyObject *args)
+{
+
+    std::cout << std::endl;
+    std::cout << "get_bytes_scanned" << std::endl;
+
+    PyObject* res = reader->get_bytes_returned();
+
+//    std::cout << res;
+
+    return res;
+}
+
 static PyMethodDef ScanMethods[] = {
-    {"stuff",  scan_system, METH_VARARGS, "Execute a shell command."},
+    {"get_bytes_scanned",  scan_get_bytes_scanned, METH_VARARGS, "Gets Bytes Scanned."},
+    {"get_bytes_processed",  scan_get_bytes_processed, METH_VARARGS, "Gets Bytes Processed."},
+    {"get_bytes_returned",  scan_get_bytes_returned, METH_VARARGS, "Gets Bytes Returned."},
     {"execute",  scan_execute, METH_VARARGS, "Execute an S3 Select query."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };

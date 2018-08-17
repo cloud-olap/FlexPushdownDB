@@ -66,4 +66,8 @@ class NativeCursor(object):
         df = pd.DataFrame(np_array)
         df = df.add_prefix('_')
 
+        self.bytes_scanned = self.fast_s3.get_bytes_scanned()
+        self.bytes_processed = self.fast_s3.get_bytes_processed()
+        self.bytes_returned = self.fast_s3.get_bytes_returned()
+
         return df

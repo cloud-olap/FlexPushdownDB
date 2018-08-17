@@ -123,12 +123,6 @@ class SQLTableScan(Operator):
                 session = Session()
                 self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
         else:
-            # # x = imp.import_module('scan.so')
-            # import sys
-            # print ('\n'.join(sys.path))
-            # fp, pathname, description = imp.find_module('scan')
-            # # self.fast_s3 = scan
-            # self.fast_s3 = imp.load_module('scan', fp, pathname, description)
             self.fast_s3 = scan
 
         self.s3key = s3key
@@ -211,9 +205,14 @@ class SQLTableScan(Operator):
 
     @staticmethod
     def execute_pandas_query(op):
+
         if op.use_native:
             cur = NativeCursor(op.fast_s3).select(op.s3key, op.s3sql)
             df = cur.execute()
+
+            op.op_metrics.query_bytes = cur.query_bytes
+            op.op_metrics.rows_returned += len(df)
+
             op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
             op.send(df, op.consumers)
 
