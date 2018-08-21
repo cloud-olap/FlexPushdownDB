@@ -15,17 +15,18 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    run(use_pandas=False, secure=True)
-    run(use_pandas=False, secure=False)
-    run(use_pandas=True, secure=True)
-    run(use_pandas=True, secure=False)
+    # run(use_pandas=False, secure=True, use_native=False)
+    # run(use_pandas=False, secure=False, use_native=False)
+    # run(use_pandas=True, secure=True, use_native=False)
+    # run(use_pandas=True, secure=False, use_native=False)
+    run(use_pandas=True, secure=True, use_native=True)
 
 
-def run(use_pandas, secure):
+def run(use_pandas, secure, use_native):
     profile_file_name = os.path.join(ROOT_DIR, "../benchmark-output/" + gen_test_id() + ".prof")
     os.remove(profile_file_name) if os.path.exists(profile_file_name) else None
 
-    print("SQL Table Scan | Settings {}".format({'use_pandas': use_pandas, 'secure': secure}))
+    print("SQL Table Scan | Settings {}".format({'use_pandas': use_pandas, 'secure': secure, 'use_native': use_native}))
 
     query_plan = QueryPlan(is_async=True, buffer_size=0)
 
@@ -35,17 +36,18 @@ def run(use_pandas, secure):
                      "select "
                      "  * "
                      "from "
-                     "  S3Object",
+                     "  S3Object limit 100000",
                      use_pandas,
                      secure,
+                     use_native,
                      'scan',
                      query_plan,
                      True))
 
-    scan.set_profiled(True, profile_file_name)
+    # scan.set_profiled(True, profile_file_name)
 
     null = query_plan.add_operator(
-        Null('null', query_plan, False))
+        Null('null', query_plan, True))
 
     scan.connect(null)
 
@@ -60,8 +62,8 @@ def run(use_pandas, secure):
     query_plan.stop()
 
     # Write the profile
-    s = pstats.Stats(profile_file_name)
-    s.strip_dirs().sort_stats("time").print_stats()
+    # s = pstats.Stats(profile_file_name)
+    # s.strip_dirs().sort_stats("time").print_stats()
 
     print("SQL Table Scan | Done")
 

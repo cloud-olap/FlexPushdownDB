@@ -24,3 +24,15 @@
       synchronize:
         src: "{{ local_package_dir }}/scripts"
         dest: "{{ remote_package_dir }}"
+    - name: Copy setup
+      synchronize:
+        src: "{{ local_package_dir }}/setup.py"
+        dest: "{{ remote_package_dir }}"
+    - name: Copy build
+      synchronize:
+        src: "{{ local_package_dir }}/build.sh"
+        dest: "{{ remote_package_dir }}"
+    - name: Copy C source
+      synchronize:
+        src: "{{ local_package_dir }}/scan"
+        dest: "{{ remote_package_dir }}"
