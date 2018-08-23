@@ -7,7 +7,8 @@ class AWSRegion(Enum):
     """
     Listing aws regions
     """
-    Any = "Any"
+    NOT_AWS = "not-aws"
+    Any = "any-region"
     US_EAST_1 = 'us-east-1'
     US_EAST_2 = 'us-east-2'
     US_WEST_1 = 'us-west-1'
@@ -25,7 +26,7 @@ class EC2InstanceOS(Enum):
     """
     Listing EC2 OS type for different instances
     """
-    Any = "Any"
+    Any = "Any OS"
     Linux = "Linux/UNIX"
     RedHat = "Red Hat Enterprise Linux"
     SUSE = "SUSE Linux Enterprise Server"

@@ -14,7 +14,8 @@ class SQLShardedTableScan(Operator):
         consuming operators as they are received. Generally starting this operator is what begins a query.
         """
 
-    def __init__(self, s3key, s3sql, use_pandas, secure, name, shards, shard_prefix, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, name, shards, shard_prefix, parallel_shards, query_plan,
+                 log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
         :param s3key: The object key to select against
         :param s3sql: The s3 select sql
@@ -30,6 +31,7 @@ class SQLShardedTableScan(Operator):
         self.use_pandas = use_pandas
         self.shard_prefix = shard_prefix
         self.shards = shards
+        self.parallel_shards = parallel_shards
         self.query_plan = query_plan
 
         self.shard_scanner_ops = []
@@ -43,7 +45,7 @@ class SQLShardedTableScan(Operator):
             shard_table_scanner.connect(self)
             self.shard_scanner_ops.append(shard_table_scanner)
 
-            if self.query_plan.is_async:
+            if self.query_plan.is_async and self.parallel_shards:
                 shard_table_scanner.init_async(self.query_plan.queue)
 
     def run(self):
@@ -61,7 +63,7 @@ class SQLShardedTableScan(Operator):
                   .format(time.time(), self.__class__.__name__, self.name))
 
         for op in self.shard_scanner_ops:
-            if self.query_plan.is_async:
+            if self.query_plan.is_async and self.parallel_shards:
                 op.boot()
             op.start()
 
@@ -122,4 +124,4 @@ class SQLShardedTableScan(Operator):
     def get_part_key(self, part):
         fname = os.path.basename(self.s3key)
         filename, ext = os.path.splitext(fname)
-        return '{}/{}_{}{}'.format(self.shard_prefix, filename, part, ext)
+        return '{}/{}{}.{}'.format(self.shard_prefix, filename, ext, part)

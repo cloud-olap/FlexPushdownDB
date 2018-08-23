@@ -24,9 +24,9 @@ class EC2Instance:
 
         from psutil import virtual_memory
 
-        EC2Instance.ec2_instances[AWSRegion.Any][EC2InstanceOS.Any][EC2InstanceType.not_ec2] = \
+        EC2Instance.ec2_instances[AWSRegion.NOT_AWS][EC2InstanceOS.Any][EC2InstanceType.not_ec2] = \
             EC2Instance(
-                region=AWSRegion.Any,
+                region=AWSRegion.NOT_AWS,
                 os_type=EC2InstanceOS.Any,
                 category="General Purpose",
                 name=EC2InstanceType.not_ec2,
@@ -91,7 +91,7 @@ class EC2Instance:
 
     @staticmethod
     def get_instance_info(os_type=EC2InstanceOS.Any, name=EC2InstanceType.r48xlarge,
-                          region=AWSRegion.Any):
+                          region=AWSRegion.NOT_AWS):
         # EC2 instances info lazy loading
         EC2Instance.load_instances_info()
 
@@ -115,39 +115,54 @@ class CostEstimator:
     COST_S3_DATA_SCANNED_PER_GB = 0.002
     REQUEST_PRICE = 0.0004 / 1000.0
     DATA_TRANSFER_PRICE_PER_GB = 0.09
+    DATA_TRANSFER_PRICE_OTHER_REGION_PER_GB = 0.02
 
-    def __init__(self, table_scan_metrics):
-        import requests
-        try:
-            r = requests.get('http://169.254.169.254/latest/meta-data/instance-type', verify=False, timeout=1)
-            if r.status_code == 200:
-                instance_type = r.text
-            else:
-                instance_type = EC2InstanceType.not_ec2
-
-            r = requests.get("http://169.254.169.254/latest/dynamic/instance-identity/document", verify=False,
-                             timeout=1)
-            response_json = r.json()
-            region = response_json.get('region')
-        except requests.ConnectionError:
+    import requests
+    try:
+        r = requests.get('http://169.254.169.254/latest/meta-data/instance-type', verify=False, timeout=1)
+        if r.status_code == 200:
+            instance_type = r.text
+        else:
             instance_type = EC2InstanceType.not_ec2
 
-        import platform
-        pltfrm = platform.system()
-        if pltfrm == 'Linux':
-            dist = platform.linux_distribution()
-            if "RedHat".lower() in dist or "Red Hat".lower() in dist:
-                os_type = EC2InstanceOS.RedHat
-            elif "SUSE".lower() in dist:
-                os_type = EC2InstanceOS.SUSE
-            else:
-                os_type = EC2InstanceOS.Linux
-        elif pltfrm == "Windows":
+        r = requests.get("http://169.254.169.254/latest/dynamic/instance-identity/document", verify=False,
+                         timeout=1)
+        response_json = r.json()
+        region = response_json.get('region')
+    except requests.ConnectionError:
+        instance_type = EC2InstanceType.not_ec2
+        region = AWSRegion.NOT_AWS
+
+    import boto3
+    client = boto3.client('s3')
+    try:
+        response = client.get_bucket_location(Bucket=S3_BUCKET_NAME)
+        s3_region = response['LocationConstraint']
+        if s3_region is None:
+            s3_region = AWSRegion.Any
+    except Exception as e:
+        s3_region = AWSRegion.NOT_AWS
+
+    import platform
+    pltfrm = platform.system()
+    if pltfrm == 'Linux':
+        dist = platform.linux_distribution().lower()
+        if "RedHat".lower() in dist or "Red Hat".lower() in dist:
+            os_type = EC2InstanceOS.RedHat
+        elif "SUSE".lower() in dist:
             os_type = EC2InstanceOS.SUSE
         else:
-            os_type = EC2InstanceOS.Any
+            os_type = EC2InstanceOS.Linux
+    elif pltfrm == "Windows":
+        os_type = EC2InstanceOS.Windows
+    else:
+        os_type = EC2InstanceOS.Any
 
-        self.ec2_instance = EC2Instance.get_instance_info(os_type, instance_type, AWSRegion.Default)#region)
+    def __init__(self, table_scan_metrics):
+
+        self.ec2_instance = EC2Instance.get_instance_info(CostEstimator.os_type, CostEstimator.instance_type,
+                                                          CostEstimator.region)#AWSRegion.Default)
+        self.s3_region = CostEstimator.s3_region
         self.table_scan_metrics = table_scan_metrics
 
     def estimate_cost(self):
@@ -157,16 +172,67 @@ class CostEstimator:
         :return: The estimated cost of the table scan operation
         """
 
-        computation_cost = 0#self.table_scan_metrics.elapsed_time() * SEC_TO_HOUR * self.ec2_instance.price
+        return self.estimate_computation_cost() + \
+               self.estimate_data_cost() + \
+               self.estimate_request_cost()
+
+    def estimate_data_cost(self, ec2_region=None, s3_region=None):
+        """
+        Estimate the cost of: S3 data scan and return + the data transfer cost if exists
+        :return: the estimated data handling cost
+        """
+        if ec2_region is None:
+            ec2_region = self.ec2_instance.region
+
+        if s3_region is None:
+            s3_region = self.s3_region
+
         data_transfer_cost = 0
-        # Assuming the data transfer cost is charged only in case the data is going out to the internet not to an EC2
-        # instance
-        if self.ec2_instance.region != AWSRegion.Default:
+        # In case the computation instance is not located at the same region as the s3 data region
+        # data is transferred outside aws to the internet
+        if ec2_region == AWSRegion.NOT_AWS:
             data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                                  CostEstimator.DATA_TRANSFER_PRICE_PER_GB
+        # data moved within aws services but to another region
+        elif s3_region != AWSRegion.Any and s3_region != ec2_region:
+            data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
+                                 CostEstimator.DATA_TRANSFER_PRICE_OTHER_REGION_PER_GB
+
         s3_select_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                          CostEstimator.COST_S3_DATA_RETURNED_PER_GB + \
                          self.table_scan_metrics.bytes_scanned * BYTE_TO_GB * CostEstimator.COST_S3_DATA_SCANNED_PER_GB
-        request_cost = self.table_scan_metrics.num_http_get_requests * CostEstimator.REQUEST_PRICE
 
-        return computation_cost + data_transfer_cost + s3_select_cost + request_cost
+        return data_transfer_cost + s3_select_cost
+
+    def estimate_request_cost(self):
+        """
+        Estimate the cost of the http GET requests
+        :return: the estimated http GET request cost for this particular operation
+        """
+        return self.table_scan_metrics.num_http_get_requests * CostEstimator.REQUEST_PRICE
+
+    def estimate_computation_cost(self, running_time=None, ec2_instance_type=None, os_type=None):
+        """
+        Estimate the cost of this operation to run on an EC2 machine
+        :return: the estimated computation cost for this operation based on AWS EC2 cost model
+        """
+        if running_time is None:
+            running_time = self.table_scan_metrics.elapsed_time()
+
+        ec2_instance = self.ec2_instance
+        if ec2_instance_type is not None and os_type is not None:
+            ec2_instance = EC2Instance.get_instance_info(os_type, ec2_instance_type, AWSRegion.Default)#region)
+
+        return running_time * SEC_TO_HOUR * ec2_instance.price
+
+    def estimate_cost_for_config(self, ec2_region=AWSRegion.Default, s3_region=AWSRegion.Default):
+        """
+        Estimates the hypothetical cost given ec2 instance region and s3 region of the scan operation based on
+        S3 pricing in the following page:
+        <https://aws.amazon.com/s3/pricing/>
+        :return: The estimated cost of the table scan operation
+        """
+
+        return self.estimate_computation_cost() + \
+               self.estimate_data_cost(ec2_region, s3_region) + \
+               self.estimate_request_cost()

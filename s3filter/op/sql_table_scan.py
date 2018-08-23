@@ -51,6 +51,25 @@ class SQLTableScanMetrics(OpMetrics):
         """
         return self.cost_estimator.estimate_cost()
 
+    def computation_cost(self, running_time=None, ec2_instance_type=None, os_type=None):
+        """
+        Estimates the computation cost of the scan operation based on EC2 pricing in the following page:
+        <https://aws.amazon.com/ec2/pricing/on-demand/>
+        :param running_time: the query running time
+        :param ec2_instance_type: the type of EC2 instance as defined by AWS
+        :param os_type: the name of the os running on the host machine (Linux, Windows ... etc)
+        :return: The estimated computation cost of the table scan operation given the query running time
+        """
+        return self.cost_estimator.estimate_computation_cost(running_time, ec2_instance_type, os_type)
+
+    def data_cost(self, ec2_region=None):
+        """
+        Estimates the cost of the scan operation based on S3 pricing in the following page:
+        <https://aws.amazon.com/s3/pricing/>
+        :return: The estimated data transfer cost of the table scan operation
+        """
+        return self.cost_estimator.estimate_data_cost(ec2_region) + self.cost_estimator.estimate_request_cost()
+
     def __repr__(self):
         return {
             'elapsed_time': round(self.elapsed_time(), 5),

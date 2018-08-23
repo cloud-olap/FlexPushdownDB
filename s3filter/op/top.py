@@ -127,13 +127,53 @@ class Top(Operator):
         self.op_metrics.timer_stop()
 
 
+class TopKTableScanMetrics(SQLTableScanMetrics):
+
+    def __init__(self):
+        super(TopKTableScanMetrics, self).__init__()
+
+        self.sampling_time = 0.0
+        self.sampling_data_cost = 0.0
+        self.sampling_computation_cost = 0.0
+
+    def cost(self):
+        """
+        Estimates the cost of the scan operation based on S3 pricing in the following page:
+        <https://aws.amazon.com/s3/pricing/>
+        :return: The estimated cost of the table scan operation
+        """
+        return self.sampling_computation_cost + self.sampling_data_cost + \
+               super(TopKTableScanMetrics, self).cost()
+
+    def computation_cost(self, running_time=None, ec2_instance_type=None, os_type=None):
+        """
+        Estimates the computation cost of the scan operation based on EC2 pricing in the following page:
+        <https://aws.amazon.com/ec2/pricing/on-demand/>
+        :param running_time: the query running time
+        :param ec2_instance_type: the type of EC2 instance as defined by AWS
+        :param os_type: the name of the os running on the host machine (Linux, Windows ... etc)
+        :return: The estimated computation cost of the table scan operation given the query running time
+        """
+        return self.sampling_computation_cost + \
+               super(TopKTableScanMetrics, self).computation_cost(running_time, ec2_instance_type, os_type)
+
+    def data_cost(self, ec2_region=None):
+        """
+        Estimates the cost of the scan operation based on S3 pricing in the following page:
+        <https://aws.amazon.com/s3/pricing/>
+        :return: The estimated data transfer cost of the table scan operation
+        """
+        return self.sampling_data_cost + \
+               super(TopKTableScanMetrics, self).data_cost(ec2_region)
+
+
 class TopKTableScan(Operator):
     """
     This operator scans a table and emits the k topmost tuples based on a user-defined ranking criteria
     """
 
-    def __init__(self, s3key, s3sql, use_pandas, max_tuples, k_scale, sort_expression, shards, processes, name,
-                 query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, max_tuples, k_scale, sort_expression, shards, parallel_shards,
+                 shards_prefix, processes, name, query_plan, log_enabled):
         """
         Creates a table scan operator that emits only the k topmost tuples from the table
         :param s3key: the table's s3 object key
@@ -146,7 +186,7 @@ class TopKTableScan(Operator):
         :param query_plan: the query plan in which this operator is part of
         :param log_enabled: enable logging
         """
-        super(TopKTableScan, self).__init__(name, SQLTableScanMetrics(), query_plan, log_enabled)
+        super(TopKTableScan, self).__init__(name, TopKTableScanMetrics(), query_plan, log_enabled)
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -156,6 +196,7 @@ class TopKTableScan(Operator):
         self.field_names = None
 
         self.shards = shards
+        self.parallel_shards = parallel_shards
         self.processes = processes
 
         self.max_tuples = max_tuples
@@ -175,10 +216,14 @@ class TopKTableScan(Operator):
         # duplicates, scanning table shards won't return any tuples and the sample will be considered the topk while
         # this is not necessarily the correct topk. A suggestion is to take a random step back on the cutting threshold
         # to make sure the max value is not used as the threshold
-        self.sample_tuples, self.sample_op = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples,
+        self.sample_tuples, self.sample_op, q_plan = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples,
                                                                         self.sort_expression)
         # self.field_names = self.sample_tuples[0]
         msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
+
+        self.op_metrics.sampling_data_cost = q_plan.data_cost()[0]
+        self.op_metrics.sampling_computation_cost = q_plan.computation_cost()
+        self.op_metrics.sampling_time = q_plan.total_elapsed_time
 
         filtered_sql = "{} WHERE CAST({} AS {}) {} {};".format(self.s3sql.rstrip(';'), self.sort_expression.col_name,
                                                                self.sort_expression.col_type.__name__, comp_op, msv)
@@ -190,10 +235,11 @@ class TopKTableScan(Operator):
             self.local_operators.append(ts)
         else:
             for process in range(self.processes):
-                proc_parts = [x for x in range(self.shards) if x % self.processes == process]
+                proc_parts = [x for x in range(1, self.shards + 1) if x % self.processes == process]
                 pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql, self.use_pandas, True,
                                                                       "topk_table_scan_parts_{}".format(proc_parts),
-                                                                      proc_parts, "sf1000-lineitem",
+                                                                      proc_parts, shards_prefix,
+                                                                      self.parallel_shards,
                                                                       self.query_plan, self.log_enabled))
                 proc_top = self.query_plan.add_operator(Top(self.max_tuples, self.sort_expression, True,
                                                             "top_parts_{}".format(proc_parts), self.query_plan,
@@ -324,16 +370,16 @@ class TopKTableScan(Operator):
 
         sql = "SELECT {} FROM S3Object LIMIT {}".format(projection, k)
         q_plan = QueryPlan(is_async=False)
-        select = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, "sample_{}_scan".format(s3key),
+        select_op = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, "sample_{}_scan".format(s3key),
                                                   q_plan, False))
         collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, False))
-        select.connect(collate)
+        select_op.connect(collate)
 
         q_plan.execute()
 
         q_plan.print_metrics()
 
-        return collate.tuples(), select
+        return collate.tuples(), select_op, q_plan
 
     def get_most_significant_value(self, tuples):
         """
