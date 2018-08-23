@@ -21,7 +21,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     limit = k
     num_rows = 0
     shards = 96
-    parallel_shards = False
+    parallel_shards = True
     shards_prefix = "tpch-sf10/lineitem_sharded"
     processes = multiprocessing.cpu_count()
 
@@ -103,7 +103,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     limit = k
     num_rows = 0
     shards = 96
-    parallel_shards = False
+    parallel_shards = True
     shards_prefix = "tpch-sf10/lineitem_sharded"
     processes = multiprocessing.cpu_count()
 
