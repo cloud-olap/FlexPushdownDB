@@ -15,7 +15,7 @@ class AWSRegion(Enum):
     US_WEST_2 = 'us-west-2'
     EU_CENTRAL_1 = 'eu-central-1'
     CANADA_CENTRAL_1 = 'ca-central-1'
-    Default = US_EAST_1
+    Default = US_WEST_2
 
     @staticmethod
     def get_aws_region(region_name):
