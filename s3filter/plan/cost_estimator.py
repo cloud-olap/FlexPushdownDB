@@ -146,7 +146,7 @@ class CostEstimator:
     import platform
     pltfrm = platform.system()
     if pltfrm == 'Linux':
-        dist = platform.linux_distribution().lower()
+        dist = platform.linux_distribution()[0].lower()
         if "RedHat".lower() in dist or "Red Hat".lower() in dist:
             os_type = EC2InstanceOS.RedHat
         elif "SUSE".lower() in dist:
