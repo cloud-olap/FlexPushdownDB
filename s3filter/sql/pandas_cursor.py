@@ -99,8 +99,8 @@ class PandasCursor(object):
                 self.s3.download_file(
                     Bucket=S3_BUCKET_NAME,
                     Key=self.s3key,
-                    Filename=self.table_local_file_path #,
-                    #Config=config
+                    Filename=self.table_local_file_path,
+                    Config=config
                 )
 
                 self.num_http_get_requests = PandasCursor.calculate_num_http_requests(self.table_local_file_path,
