@@ -39,7 +39,7 @@ def parse(fname):
 
 width = 0.2
 path = 'aws-exps/groupby/'
-"""
+
 ##############################
 ## runtime. sweep # of groups
 ##############################
@@ -117,7 +117,6 @@ ax.set_xlim([-0.2, 3.8])
 ax.set_xlabel('Number of Aggregated Fields')
 ax.set_ylabel('Bytes Returned (GB)')
 plt.savefig('figs/bytes_returned_field_num.png')
-"""
 
 ##############################
 ## Skewed data set

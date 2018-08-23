@@ -19,7 +19,7 @@ class SQLTableScanBloomUse(Operator):
 
     """
 
-    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, secure, use_native, name, query_plan, log_enabled):
         """
 
         :param s3key: The s3 key to select against
@@ -34,11 +34,20 @@ class SQLTableScanBloomUse(Operator):
         self.s3key = s3key
         self.s3sql = s3sql
 
-        # Boto is not thread safe so need one of these per scan op
-        cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
-        session = Session()
-        self.s3 = session.client('s3', config=cfg)
-
+        if not use_native:
+            if secure:
+                cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
+                session = Session()
+                self.s3 = session.client('s3', config=cfg)
+            else:
+                cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10,
+                             s3={'payload_signing_enabled': False})
+                session = Session()
+                self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
+        else :
+            self.fast_s3 = scan
+        
+        self.use_native = use_native
         self.use_pandas = use_pandas
 
         self.__field_names = None

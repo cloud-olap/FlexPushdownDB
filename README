@@ -12,3 +12,4 @@ pip install . --upgrade
 
 export PYTHONPATH=/home/ubuntu/s3filter
 
+ulimit -Sn 10000

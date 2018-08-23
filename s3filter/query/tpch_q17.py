@@ -271,19 +271,19 @@ def group_partkey_avg_quantity_5_op(name, query_plan):
         False)
 
 
-def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan):
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  * "
                         "from "
                         "  S3Object ",
-                        use_pandas,
+                        use_pandas, secure, use_native,
                         name,
                         query_plan,
                         False)
 
 
-def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan):
 
     key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
     key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
@@ -296,13 +296,13 @@ def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, name, qu
                         "where "
                         "  cast(p_partkey as int) > {} and cast(p_partkey as int) <= {} "
                         .format(key_lower, key_upper),
-                        use_pandas,
+                        use_pandas, secure, use_native,
                         name,
                         query_plan,
                         False)
 
 
-def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
     :param query_plan:
@@ -316,13 +316,13 @@ def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, us
                         "  S3Object "
                         "where "
                         "  l_partkey in ('181726', '182405') ",
-                        use_pandas,
+                        use_pandas, secure, use_native,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
-def sql_scan_part_select_all_where_brand_and_container_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+def sql_scan_part_select_all_where_brand_and_container_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan):
     """with part_scan as (select * from part)
 
     :param query_plan:
@@ -343,14 +343,14 @@ def sql_scan_part_select_all_where_brand_and_container_op(sharded, shard, num_sh
                         "  p_container = 'SM PACK' and "
                         "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
                         .format(key_lower, key_upper),
-                        use_pandas,
+                        use_pandas, secure, use_native,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
 def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_op(sharded, shard, num_shards,
-                                                                                      use_pandas, name, query_plan):
+                                                                                      use_pandas, secure, use_native, name, query_plan):
     """with lineitem_scan as (select * from lineitem)
 
     :param query_plan:
@@ -364,13 +364,13 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partk
                         "  S3Object "
                         "where "
                         "  l_partkey in ('181726', '182405') ",
-                        use_pandas,
+                        use_pandas, secure, use_native,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
-def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(sharded, shard, num_shards, use_pandas, name,
+def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(sharded, shard, num_shards, use_pandas, secure, use_native, name,
                                                                      query_plan):
     """with lineitem_scan as (select * from lineitem)
 
@@ -386,13 +386,13 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(sharded, sh
                         "  S3Object ",
                         # "where "
                         # "  l_partkey in ('181726', '182405')",
-                        use_pandas,
+                        use_pandas, secure, use_native,
                         name,
                         query_plan,
                         False)
 
 
-def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards, use_pandas, name, query_plan):
+def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan):
     """with part_scan as (select * from part)
 
     :param query_plan:
@@ -413,7 +413,7 @@ def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards,
                         "  p_container = 'SM PACK' and "
                         "  cast(p_partkey as int) > {} and cast(p_partkey as int) <= {} "
                         .format(key_lower, key_upper),
-                        use_pandas,
+                        use_pandas, secure, use_native,
                         name, query_plan,
                         False)
 
@@ -421,7 +421,7 @@ def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards,
 def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_partkey_bloom_partkey_op(sharded,
                                                                                                       shard,
                                                                                                       num_shards,
-                                                                                                      use_pandas,
+                                                                                                      use_pandas, secure, use_native,
                                                                                                       name,
                                                                                                       query_plan):
     return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
@@ -432,7 +432,7 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_par
                                 "where "
                                 "  l_partkey in ('181726', '182405') ",
                                 'l_partkey',
-                                use_pandas,
+                                use_pandas, secure, use_native,
                                 name,
                                 query_plan,
                                 False)
@@ -441,7 +441,7 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_where_par
 def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_partkey_op(sharded,
                                                                                         shard,
                                                                                         num_shards,
-                                                                                        use_pandas,
+                                                                                        use_pandas, secure, use_native,
                                                                                         name, query_plan):
     return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
                                 "select "
@@ -449,7 +449,7 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_par
                                 "from "
                                 "  S3Object ",
                                 'l_partkey',
-                                use_pandas,
+                                use_pandas, secure, use_native,
                                 name, query_plan,
                                 False)
 

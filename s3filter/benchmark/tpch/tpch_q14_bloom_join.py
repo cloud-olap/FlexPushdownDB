@@ -24,7 +24,7 @@ def main():
     elif s3filter.util.constants.TPCH_SF == 1:
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=32, part_parts=4)
+        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32, part_parts=4)
 
 
 def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
@@ -32,6 +32,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     :return: None
     """
+    secure = False
+    use_native = False
 
     print('')
     print("TPCH Q14 Bloom Join")
@@ -48,7 +50,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     part_scan = map(lambda p:
                     query_plan.add_operator(
                         tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(p, part_parts,
-                                                                                                        use_pandas,
+                                                                                                        use_pandas, secure, use_native,
                                                                                                         'part_scan' + '_' + str(
                                                                                                             p),
                                                                                                         query_plan)),
@@ -70,7 +72,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                         query_plan.add_operator(
                             tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date,
                                                                                      lineitem_parts != 1, p,
-                                                                                     use_pandas,
+                                                                                     use_pandas, secure, use_native,
                                                                                      'lineitem_scan' + '_' + str(p),
                                                                                      query_plan)),
                         range(0, lineitem_parts))

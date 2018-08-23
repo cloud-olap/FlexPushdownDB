@@ -136,7 +136,7 @@ public:
         struct test_decoder_data *decoder_data = (struct test_decoder_data *) user_data;
 
         // cout << endl << "PAYLOAD SEGMENT START!!!" << endl;
-        cout << "Event Type is: |||" << decoder_data->latest_event_type << "|||" << endl;
+        //cout << "Event Type is: |||" << decoder_data->latest_event_type << "|||" << endl;
 
         Aws::String buffer_string = Aws::String((char*)(data->buffer), data->len);
         Aws::StringStream buffer_stringstream =  Aws::StringStream();

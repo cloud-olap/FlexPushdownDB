@@ -47,6 +47,9 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     :return: None
     """
 
+    secure = False
+    use_native = False
+
     print('')
     print("TPCH Q17 Baseline Join")
     print("----------------------")
@@ -60,7 +63,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                             part_parts != 1,
                             p,
                             part_parts,
-                            use_pandas,
+                            use_pandas, secure, use_native,
                             'part_scan' + '_' + str(p),
                             query_plan)),
                     range(0, part_parts))
@@ -71,7 +74,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                 lineitem_parts != 1,
                                 p,
                                 lineitem_parts,
-                                use_pandas,
+                                use_pandas, secure, use_native,
                                 'lineitem_scan' + '_' + str(p),
                                 query_plan)),
                         range(0, lineitem_parts))

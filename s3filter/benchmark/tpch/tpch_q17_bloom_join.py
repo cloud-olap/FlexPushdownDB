@@ -24,8 +24,6 @@ def main():
     if s3filter.util.constants.TPCH_SF == 10:
         run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96, part_parts=4)
     elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
         run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32, part_parts=4)
 
 
@@ -34,6 +32,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     :return: None
     """
 
+    secure = False
+    use_native = False
     print('')
     print("TPCH Q17 Bloom Join")
     print("-------------------")
@@ -47,7 +47,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                             part_parts != 1,
                             p,
                             part_parts,
-                            use_pandas,
+                            use_pandas, secure, use_native,
                             'part_scan' + '_' + str(p),
                             query_plan)),
                     range(0, part_parts))
@@ -61,13 +61,13 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     part_bloom_create_map = map(lambda p:
                                 query_plan.add_operator(
-                                    Map('p_partkey', 'part_bloom_create_map' + '_' + str(p), query_plan, True)),
+                                    Map('p_partkey', 'part_bloom_create_map' + '_' + str(p), query_plan, False)),
                                 range(0, part_parts))
 
     part_lineitem_join_build_map = map(lambda p:
                                        query_plan.add_operator(
                                            Map('p_partkey', 'part_lineitem_join_build_map' + '_' + str(p), query_plan,
-                                               True)),
+                                               False)),
                                        range(0, part_parts))
 
     part_bloom_create = map(lambda p:
@@ -81,7 +81,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                      part_parts != 1,
                                      p,
                                      part_parts,
-                                     use_pandas,
+                                     use_pandas, secure, use_native,
                                      'lineitem_bloom_use' + '_' + str(p),
                                      query_plan)),
                              range(0, lineitem_parts))
@@ -96,7 +96,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     part_lineitem_join_probe_map = map(lambda p:
                                        query_plan.add_operator(
                                            Map('l_partkey', 'part_lineitem_join_probe_map' + '_' + str(p), query_plan,
-                                               True)),
+                                               False)),
                                        range(0, lineitem_parts))
 
     # part_lineitem_join = map(lambda p:
@@ -115,7 +115,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                    query_plan.add_operator(
                                        HashJoinProbe(JoinExpression('p_partkey', 'l_partkey'),
                                                      'part_lineitem_join_probe' + '_' + str(p),
-                                                     query_plan, True)),
+                                                     query_plan, False)),
                                    range(0, part_parts))
 
     lineitem_part_avg_group = map(lambda p:
@@ -148,7 +148,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                                       HashJoinProbe(JoinExpression('l_partkey', 'p_partkey'),
                                                                     'part_lineitem_join_avg_group_join_probe' + '_' + str(
                                                                         p),
-                                                                    query_plan, True)),
+                                                                    query_plan, False)),
                                                   range(0, part_parts))
 
     lineitem_filter = map(lambda p:

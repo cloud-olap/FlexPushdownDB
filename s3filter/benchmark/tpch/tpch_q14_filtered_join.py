@@ -32,6 +32,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     :return: None
     """
+    secure = False
+    use_native = False
 
     print('')
     print("TPCH Q14 Filtered Join")
@@ -52,7 +54,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                 max_shipped_date,
                                 lineitem_parts != 1,
                                 p,
-                                use_pandas,
+                                use_pandas, secure, use_native,
                                 'lineitem_scan' + '_' + str(p),
                                 query_plan)),
                         range(0, lineitem_parts))
@@ -68,7 +70,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                         tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(
                             p,
                             part_parts,
-                            use_pandas,
+                            use_pandas, secure, use_native,
                             'part_scan' + '_' + str(p),
                             query_plan)),
                     range(0, part_parts))
