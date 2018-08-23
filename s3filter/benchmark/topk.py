@@ -198,7 +198,7 @@ def run_all():
             topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'DESC', use_pandas)
 
     for stat in stats:
-        print(",".join(stat))
+        print(",".join([str(x) if type(x) is not str else x for x in stat]))
 
 
 if __name__ == "__main__":
