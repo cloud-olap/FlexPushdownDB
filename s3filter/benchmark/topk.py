@@ -178,6 +178,7 @@ def run_all():
         'K',
         'K scale',
         'Sampling time (Sec)',
+        'Total query time (Sec)'
         'Returned Rows',
         'Bytes Scanned MB',
         'Bytes Returned MB',
