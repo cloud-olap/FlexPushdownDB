@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-
 """
 import cProfile
 import sys
@@ -15,6 +14,7 @@ from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
 from s3filter.sql.native_cursor import NativeCursor
+from s3filter.plan.cost_estimator import CostEstimator
 from s3filter.util.constants import *
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
@@ -28,12 +28,7 @@ import scan
 
 class SQLTableScanMetrics(OpMetrics):
     """Extra metrics for a sql table scan
-
     """
-
-    # These amounts vary by region, but let's assume it's a flat rate for simplicity
-    COST_S3_DATA_RETURNED_PER_GB = 0.0007
-    COST_S3_DATA_SCANNED_PER_GB = 0.002
 
     def __init__(self):
         super(SQLTableScanMetrics, self).__init__()
@@ -48,6 +43,9 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
+        self.num_http_get_requests = 0
+
+        self.cost_estimator = CostEstimator(self)
 
     def cost(self):
         """
@@ -55,8 +53,26 @@ class SQLTableScanMetrics(OpMetrics):
         <https://aws.amazon.com/s3/pricing/>
         :return: The estimated cost of the table scan operation
         """
-        return self.bytes_returned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_RETURNED_PER_GB + \
-               self.bytes_scanned * BYTE_TO_GB * SQLTableScanMetrics.COST_S3_DATA_SCANNED_PER_GB
+        return self.cost_estimator.estimate_cost()
+
+    def computation_cost(self, running_time=None, ec2_instance_type=None, os_type=None):
+        """
+        Estimates the computation cost of the scan operation based on EC2 pricing in the following page:
+        <https://aws.amazon.com/ec2/pricing/on-demand/>
+        :param running_time: the query running time
+        :param ec2_instance_type: the type of EC2 instance as defined by AWS
+        :param os_type: the name of the os running on the host machine (Linux, Windows ... etc)
+        :return: The estimated computation cost of the table scan operation given the query running time
+        """
+        return self.cost_estimator.estimate_computation_cost(running_time, ec2_instance_type, os_type)
+
+    def data_cost(self, ec2_region=None):
+        """
+        Estimates the cost of the scan operation based on S3 pricing in the following page:
+        <https://aws.amazon.com/s3/pricing/>
+        :return: The estimated data transfer cost of the table scan operation
+        """
+        return self.cost_estimator.estimate_data_cost(ec2_region) + self.cost_estimator.estimate_request_cost()
 
     def __repr__(self):
         return {
@@ -80,15 +96,14 @@ class SQLTableScanMetrics(OpMetrics):
             'time_to_last_record_response':
                 None if self.time_to_last_record_response is None
                 else round(self.time_to_last_record_response, 5),
-            'cost': self.cost()
-
+            'cost': "${0:.8f}".format(self.cost()),
+            'cost_for_instance': self.cost_estimator.ec2_instance
         }.__repr__()
 
 
 class SQLTableScan(Operator):
     """Represents a table scan operator which reads from an s3 table and emits tuples to consuming operators
     as they are received. Generally starting this operator is what begins a query.
-
     """
 
     def on_receive(self, ms, producer_name):
@@ -104,7 +119,6 @@ class SQLTableScan(Operator):
 
     def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
-
         :param s3key: The object key to select against
         :param s3sql: The s3 select sql
         """
@@ -134,7 +148,6 @@ class SQLTableScan(Operator):
 
     def run(self):
         """Executes the query and begins emitting tuples.
-
         :return: None
         """
         self.do_run()
@@ -157,6 +170,7 @@ class SQLTableScan(Operator):
         self.op_metrics.bytes_returned = cur.bytes_returned
         self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
         self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
+        self.op_metrics.num_http_get_requests = cur.num_http_get_requests
 
         if not self.is_completed():
             self.complete()
@@ -261,3 +275,7 @@ class SQLTableScan(Operator):
                 del buffer_
 
             return cur
+
+
+def is_header(tuple_):
+    return all([type(field) == str and field.startswith('_') for field in tuple_])

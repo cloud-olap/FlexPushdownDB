@@ -218,7 +218,7 @@ class Operator(object):
         """
         return self.__completed
 
-    def connect(self, consumer, tag = 0):
+    def connect(self, consumer, tag=0):
         """Utility method that appends the given consuming operators to this operators list of consumers and appends the
         given consumers producer to this operator. Shorthand for two add consumer, add producer calls.
 
@@ -232,6 +232,13 @@ class Operator(object):
 
         self.add_consumer(consumer, tag)
         consumer.add_producer(self)
+
+    def set_completed(self, completed):
+        """
+        Completed status setter
+        :return:
+        """
+        self.__completed = completed
 
     def add_consumer(self, consumer, tag):
         """Appends the given consuming operator to this operators list of consumers

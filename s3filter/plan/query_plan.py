@@ -9,9 +9,9 @@ import warnings
 from collections import OrderedDict, deque
 from logging import warning
 from multiprocessing import Queue
-
 import boto3
 import networkx
+from s3filter.util.constants import *
 from boto3.session import Session
 from botocore.config import Config
 
@@ -19,6 +19,7 @@ from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics
 from s3filter.plan.graph import Graph
 from s3filter.plan.op_metrics import OpMetrics
+from s3filter.plan.cost_estimator import CostEstimator
 from s3filter.util.timer import Timer
 
 
@@ -193,7 +194,7 @@ class QueryPlan(object):
         print("buffer_size: {}".format(self.buffer_size))
         print("is_parallel: {}".format(self.is_async))
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
-        print("cost: ${}".format(round(self.cost(), 7)))
+        self.print_cost_metrics()
 
         print("") 
         print("Operator Completion Time")
@@ -205,18 +206,23 @@ class QueryPlan(object):
         print("Operators")
         print("---------")
 
-        operators = self.traverse_topological_from_root()
-
-        if self.is_async:
-            for o in operators:
-                o.queue.put(EvalMessage("self.op_metrics"))
-                o.op_metrics = self.listen(EvaluatedMessage).val
-
-        OpMetrics.print_metrics(operators)
+        OpMetrics.print_metrics(self.traverse_topological_from_root())
 
         # self.assert_operator_time_equals_plan_time()
 
         print("")
+
+    def print_cost_metrics(self):
+        cost, bytes_scanned, bytes_returned, rows = self.cost()
+        computation_cost = self.computation_cost()
+        data_cost = self.data_cost()[0]
+
+        print("total_scanned_bytes: {} MB".format(bytes_scanned * BYTE_TO_MB))
+        print("total_returned_bytes: {} MB".format(bytes_returned * BYTE_TO_MB))
+        print("total_returned_rows: {}".format(rows))
+        print("computation_cost: ${0:.10f}".format(computation_cost))
+        print("data_cost: ${0:.10f}".format(data_cost))
+        print("total_cost: ${0:.10f}".format(cost))
 
     def assert_operator_time_equals_plan_time(self):
         """Sanity check to make sure cumulative operator exec time approximately equals total plan exec time. We use a
@@ -280,6 +286,16 @@ class QueryPlan(object):
 
         self.total_elapsed_time = self.__timer.elapsed()
 
+        if self.is_async:
+            # retrieve metrics of all operators. This is important in async queries since the operator runs in a
+            # different process.
+            operators = self.traverse_topological_from_root()
+            for o in operators:
+                o.queue.put(EvalMessage("self.op_metrics"))
+                o.op_metrics = self.listen(EvaluatedMessage).val
+
+            map(lambda op: op.set_completed(True), self.operators.values())
+
     def listen(self, message_type):
         try:
             while True:
@@ -303,6 +319,7 @@ class QueryPlan(object):
         if self.is_async:
             map(lambda o: o.queue.put(StopMessage()), self.operators.values())
             self.join()
+            map(lambda o: o.queue.close(), self.operators.values())
         else:
             pass
 
@@ -311,25 +328,62 @@ class QueryPlan(object):
 
     def cost(self):
         """
+        calculates the overall query cost when runs on S3 by combining the cost of all scan operators in the query
+        plus the computation cost based on the EC2 instance type and the query running time
+        :return: the estimated cost of the whole query
+        """
+        total_data_cost, total_scanned_bytes, total_returned_bytes, total_rows = self.data_cost()
+        total_compute_cost = self.computation_cost()
+
+        return total_compute_cost + total_data_cost, total_scanned_bytes, total_returned_bytes, total_rows
+
+    def data_cost(self, ec2_region=None):
+        """
         calculates the estimated query cost when runs on S3 by combining the cost of all scan operators in the query
         :return: the estimated cost of the whole query
         """
         scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
 
-        total_cost = 0
+        total_data_cost = 0.0
+        total_scanned_bytes = 0
+        total_returned_bytes = 0
+        total_rows = 0
 
-        if not self.is_async:
-            for op in scan_operators:
-                if op.is_completed():
-                    total_cost += op.op_metrics.cost()
-                else:
-                    raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
-                                    .format(op.name))
-        else:
-            # TODO: This won't work in parallel mode as the data will be in other processes
-            warnings.warn("Can't get cost in parallel mode... yet :)")
+        for op in scan_operators:
+            if op.is_completed():
+                total_data_cost += op.op_metrics.data_cost(ec2_region)
+                total_returned_bytes += op.op_metrics.bytes_returned
+                total_scanned_bytes += op.op_metrics.bytes_scanned
+                total_rows += op.op_metrics.rows_returned
+            else:
+                raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
+                                .format(op.name))
 
-        return total_cost
+        return total_data_cost, total_scanned_bytes, total_returned_bytes, total_rows
+
+    def computation_cost(self, ec2_instance_type=None, os_type=None):
+        """
+        calculates the estimated computation cost of the query
+        :return: computation cost
+        """
+        scan_op = None
+
+        for op in self.operators.values():
+            if hasattr(op.op_metrics, "cost"):
+                scan_op = op
+                break
+
+        return scan_op.op_metrics.computation_cost(self.total_elapsed_time, ec2_instance_type, os_type)
+
+    def estimated_cost_for_config(self, ec2_region, ec2_instance_type=None, os_type=None):
+        """
+        estimate the hypothetical cost if the query runs on EC2 instance in a different region
+        :param ec2_region: AWSRegion to calculate the cost for
+        :param ec2_instance_type: the code of an EC2 instance as defined by AWS (r4.8xlarge)
+        :param os_type: the name of the os running on the host machine (Linux, Windows ... etc)
+        :return: the hypothetical estimated cost for the provided region, instance type and os
+        """
+        return self.computation_cost(ec2_instance_type, os_type) + self.data_cost(ec2_region)
 
     def debug_time(self, name):
         self.__debug_timer[name] = self.__timer.elapsed()

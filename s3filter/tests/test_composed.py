@@ -11,7 +11,7 @@ from s3filter.op.join_expression import JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sort import Sort, SortExpression
 from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.top import Top
+from s3filter.op.limit import Limit
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
@@ -38,7 +38,7 @@ def test_sort_topk():
     s = query_plan.add_operator(Sort([
         SortExpression('_5', float, 'ASC')
     ], 's', query_plan, False))
-    t = query_plan.add_operator(Top(limit, 't', query_plan, False))
+    t = query_plan.add_operator(Limit(limit, 't', query_plan, False))
     c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts.connect(s)
@@ -100,7 +100,7 @@ def test_join_topk():
     ts2_project = query_plan.add_operator(
         Project([ProjectExpression(lambda t_: t_['_0'], 'n_nationkey')], 'ts2_project', query_plan, False))
     j = query_plan.add_operator(HashJoin(JoinExpression('s_nationkey', 'n_nationkey'), 'j', query_plan, False))
-    t = query_plan.add_operator(Top(limit, 't', query_plan, False))
+    t = query_plan.add_operator(Limit(limit, 't', query_plan, False))
     c = query_plan.add_operator(Collate('c', query_plan, False))
 
     ts1.connect(ts1_project)
