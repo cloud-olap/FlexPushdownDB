@@ -243,7 +243,7 @@ public:
             // std::cout << std::endl;
         }
 
-        PyArrayObject* pArray = Reader::build_nd_array(data_v);
+        PyArrayObject* pArray = Reader::build_nd_array4(data_v);
         PyObject* ret = PyArray_Return(pArray);
 
         PyObject *arglist = Py_BuildValue("(O)", ret);
@@ -355,6 +355,217 @@ public:
         return find_nth(haystack, found_pos+1, needle, nth-1);
     }
 
+    static PyArrayObject* build_nd_array4(const std::vector<std::vector<std::string>> &vec){
+
+        PyObject *out = nullptr;
+
+        int num_rows = vec.size();
+        int num_cols = vec[0].size();
+
+        npy_intp dims[2];
+        dims[0] = num_rows;
+        dims[1] = num_cols;
+
+        // cout << dims[0] << "," << dims[1] << endl;
+
+        out = PyArray_SimpleNew(2, dims, NPY_OBJECT);
+        out = (PyObject*) PyArray_GETCONTIGUOUS((PyArrayObject*) out);
+
+        PyObject** data = (PyObject**) (PyArrayObject**) PyArray_DATA((PyArrayObject*)out);
+
+        for (auto& row : vec) {
+            for (auto& field : row) {
+
+                // cout << field.c_str() << ",";
+
+                PyObject* py_field = Py_BuildValue("s", field.c_str());
+                *data = py_field;
+                Py_INCREF(*data);
+                if(&field != &row.back())
+                    data += 1;
+            }
+
+            // cout << endl;
+
+            if(&row != &vec.back())
+                data += 1;
+        }
+
+        // data += 16;
+        // PyObject* py_field = Py_BuildValue("s", vec[0][0].c_str());
+        // *data = py_field;
+
+        // cout << "Done" << endl;
+
+        return (PyArrayObject*)out;
+
+    }
+
+    static PyArrayObject* build_nd_array5(const std::vector<std::vector<std::string>> &vec){
+
+        // int num_rows = vec.size();
+        // int num_cols = vec[0].size();
+
+        npy_intp dims[2];
+        dims[0] = 2;
+        dims[1] = 2;
+
+        // PyArrayObject* pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims, NPY_OBJECT);
+
+        // PyObject* data = (PyObject*) PyArray_DATA(pArray);
+
+        // for(size_t i=0;i<vec.size();i++){
+        //     std::vector<std::string> row = vec[i];
+        //     for(size_t j=0;j<row.size();j++){
+        //         PyObject* field_value = Py_BuildValue("s", row[j]);
+        //         memcpy(data, field_value, sizeof(PyObject*) * NumInputs);
+        //     }
+        // }
+
+
+        PyObject *out = nullptr;
+
+        PyObject* str1 = Py_BuildValue("s", "111");
+        PyObject* str2 = Py_BuildValue("s", "222");
+        PyObject* str3 = Py_BuildValue("s", "333");
+        PyObject* str4 = Py_BuildValue("s", "444");
+
+        out = PyArray_SimpleNew(2, dims, NPY_OBJECT);
+        out = (PyObject*) PyArray_GETCONTIGUOUS((PyArrayObject*) out);
+
+        cout << "1" << endl;
+
+        PyObject** data = (PyObject**) (PyArrayObject**) PyArray_DATA((PyArrayObject*)out);
+        
+
+        cout << "2" << endl;
+
+        // void* item_ptr = (char*)PyArray_GETPTR1(out, 0);
+
+        // PyArray_SETITEM(out, (char*)item_ptr, py_int);
+
+        // cout << "5" << endl;
+
+        // PyObject* h = PyArray_GETITEM(out, (char*)item_ptr);
+
+        // cout << "6" << endl;
+
+        // cout << "REPR: " << PyString_AsString(PyObject_Repr(h)) << endl;
+
+        // data +=  sizeof(PyObject*);
+        *data = str1;
+
+        data += 1;
+
+        *data = str2;
+
+        data += 1;
+
+        *data = str3;
+
+         data += 1;
+
+        *data = str4;
+        
+
+        cout << "7" << endl;
+
+        return (PyArrayObject*)out;
+    }
+
+    static PyArrayObject* build_nd_array3(const std::vector<std::vector<std::string>> &vec){
+
+        // int num_rows = vec.size();
+        // int num_cols = vec[0].size();
+
+        // npy_intp dims[2];
+        // dims[0] = num_rows;
+        // dims[1] = num_cols;
+
+        // PyArrayObject* pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims, NPY_OBJECT);
+
+        // PyObject* data = (PyObject*) PyArray_DATA(pArray);
+
+        // for(size_t i=0;i<vec.size();i++){
+        //     std::vector<std::string> row = vec[i];
+        //     for(size_t j=0;j<row.size();j++){
+        //         PyObject* field_value = Py_BuildValue("s", row[j]);
+        //         memcpy(data, field_value, sizeof(PyObject*) * NumInputs);
+        //     }
+        // }
+
+
+        PyObject *out = nullptr;
+
+        PyObject* str1 = Py_BuildValue("s", "111");
+        PyObject* str2 = Py_BuildValue("s", "222");
+
+        npy_intp size = {2};
+
+        out = PyArray_SimpleNew(1, &size, NPY_OBJECT);
+        out = (PyObject*) PyArray_GETCONTIGUOUS((PyArrayObject*) out);
+
+        cout << "1" << endl;
+
+        PyObject** data = (PyObject**) (PyArrayObject**) PyArray_DATA((PyArrayObject*)out);
+        
+
+        cout << "2" << endl;
+
+        PyObject* py_int = Py_BuildValue("s", "111");
+        PyObject* py_int2 = Py_BuildValue("s", "222");
+
+        // void* item_ptr = (char*)PyArray_GETPTR1(out, 0);
+
+        // PyArray_SETITEM(out, (char*)item_ptr, py_int);
+
+        // cout << "5" << endl;
+
+        // PyObject* h = PyArray_GETITEM(out, (char*)item_ptr);
+
+        // cout << "6" << endl;
+
+        // cout << "REPR: " << PyString_AsString(PyObject_Repr(h)) << endl;
+
+        // data +=  sizeof(PyObject*);
+        *data = py_int;
+
+        data += 1;
+
+        *data = py_int2;
+        
+
+        cout << "7" << endl;
+
+        return (PyArrayObject*)out;
+    }
+
+    static PyArrayObject* build_nd_array2(const std::vector<std::vector<std::string>> &vec){
+
+        PyObject *out = nullptr;
+
+        PyObject* str1 = Py_BuildValue("s", "111");
+        PyObject* str2 = Py_BuildValue("s", "222");
+
+        std::vector<PyObject*> *vector = new std::vector<PyObject*>();
+        vector->push_back(str1);
+        vector->push_back(str2);
+
+        cout << "|||" << PyString_AsString(str1) << "|||" << endl;
+
+        PyObject* temp = (*vector)[0];
+
+        cout << "|||" << PyString_AsString(temp) << "|||" << endl;
+
+        npy_intp size = {vector->size()};
+
+        out = PyArray_SimpleNewFromData(1, &size, NPY_OBJECT, vector->data());
+
+
+
+        return (PyArrayObject*)out;
+    }
+
     static PyArrayObject* build_nd_array(const std::vector<std::vector<std::string>> &vec){
 
         PyArrayObject* pArray;
@@ -388,9 +599,9 @@ public:
 
         try
         {
-            Aws::Utils::Logging::InitializeAWSLogging(
-                Aws::MakeShared<Aws::Utils::Logging::DefaultLogSystem>(
-                    "Scan", Aws::Utils::Logging::LogLevel::Info, "aws_sdk_"));
+            // Aws::Utils::Logging::InitializeAWSLogging(
+            //     Aws::MakeShared<Aws::Utils::Logging::DefaultLogSystem>(
+            //         "Scan", Aws::Utils::Logging::LogLevel::Info, "aws_sdk_"));
 
             Aws::SDKOptions options;
             options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;

@@ -85,7 +85,10 @@ def run(use_pandas, secure, use_native):
 
         def on_data(data):
 
+            # print("|||")
+            # print(type(data))
             # print(data)
+            # print("|||")
 
             # if closure['df'] is None:
             #     closure['df'] = pd.DataFrame(data)
