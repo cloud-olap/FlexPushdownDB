@@ -5,6 +5,16 @@ import imp
 (file, filename, (suffix, mode, type)) = imp.find_module('numpy')
 numpy_include_dir = os.path.join(filename, "core/include")
 
+RELEASE = True
+# RELEASE = False
+
+if RELEASE:
+    undef_macros = []
+    extra_compile_args = ['-std=c++11', '-Ofast']
+else:
+    undef_macros = ["NDEBUG"]
+    extra_compile_args = ['-std=c++11', '-O1']
+
 scanmodule = Extension('scan',
                        include_dirs=[numpy_include_dir,
                                      'build/thirdparty'],
@@ -16,7 +26,8 @@ scanmodule = Extension('scan',
                        extra_objects=['/usr/local/lib/libaws-c-common.a',
                                       '/usr/local/lib/libaws-checksums.a',
                                       '/usr/local/lib/libaws-c-event-stream.a'],
-                       extra_compile_args=['-std=c++11'],
+                       extra_compile_args=extra_compile_args,
+                       undef_macros=undef_macros,
                        sources=['scan/src/scan.cpp'])
 
 setup(name='scan',

@@ -2,6 +2,7 @@
 // Name        : cpp-s3filter.cpp
 //============================================================================
 
+#include <assert.h>
 #include <Python.h>
 #include <aws/core/Aws.h>
 #include <aws/core/client/ClientConfiguration.h>
@@ -74,9 +75,8 @@ public:
         return uri;
     }
 
-    std::shared_ptr<HttpRequest> buildRequest(Aws::String url, Aws::IOStreamFactory fac){
+    std::shared_ptr<HttpRequest> buildRequest(Aws::String url){
         std::shared_ptr<HttpRequest> request = Aws::Http::CreateHttpRequest(url, HttpMethod::HTTP_POST, Aws::Utils::Stream::DefaultResponseStreamFactoryMethod);
-        //std::shared_ptr<HttpRequest> request = Aws::Http::CreateHttpRequest(url, HttpMethod::HTTP_POST, fac);
         return request;
     }
 
@@ -125,7 +125,9 @@ public:
         struct aws_allocator *alloc;
         int latest_error;
         Aws::String *last_line;
-        std::vector<std::vector<std::string>> *data_v;
+        Aws::StringStream buffer_stringstream;
+        PyObject *on_data_callback;
+        Reader *reader;
         AwsEventType latest_event_type;
         int new_event_sequence;
         Aws::String stats_str;
@@ -135,69 +137,145 @@ public:
                                               struct aws_byte_buf *data, int8_t final_segment, void *user_data) {
         struct test_decoder_data *decoder_data = (struct test_decoder_data *) user_data;
 
-        // cout << endl << "PAYLOAD SEGMENT START!!!" << endl;
-        //cout << "Event Type is: |||" << decoder_data->latest_event_type << "|||" << endl;
+        // cout << endl << "--------------- PAYLOAD SEGMENT START!!!" << endl;
+        // cout << "Event Type is: |||" << decoder_data->latest_event_type << "|||" << endl;
 
-        Aws::String buffer_string = Aws::String((char*)(data->buffer), data->len);
-        Aws::StringStream buffer_stringstream =  Aws::StringStream();
+        Aws::String payload_str = Aws::String((char*)(data->buffer), data->len);
+        // Aws::StringStream buffer_stringstream =  Aws::StringStream();
 
-        // cout << "PAYLOAD IS..." << endl;
-        // cout << "|||" << buffer_string << "|||" << endl;
+        // cout << "Payload is: " << endl;
+        // cout << "|||" << payload_str << "|||" << endl << endl;
 
         if(decoder_data->last_line != NULL){
-            // cout << "Last line: |||" << *(decoder_data->last_line) << "|||" << endl;
-            buffer_stringstream << *(decoder_data->last_line);
+            // cout << "Last line exists, prepending last line: |||" << *(decoder_data->last_line) << "|||" << endl;
+            payload_str.insert(0, *(decoder_data->last_line));
             decoder_data->last_line = NULL;
         }
 
+        // cout << "Payload with last line prepended: " << endl;
+        // cout << "|||" << payload_str << "|||" << endl << endl;
+
         if(decoder_data->latest_event_type == AwsEventType::records){
-            if(buffer_string.at(buffer_string.size() - 1) == '\n'){
-                // cout << "Complete" << endl;
-                buffer_stringstream << buffer_string;
+            if(payload_str.at(payload_str.size() - 1) == '\n'){
+                // cout << "Payload is complete, appending payload to buffer" << endl;
+                decoder_data->buffer_stringstream << payload_str;
             }
             else{
-                // cout << "Incomplete" << endl;
-                int last_line_pos = buffer_string.rfind('\n');
-                // cout << "Last line pos: " << last_line_pos << endl;
-                decoder_data->last_line = new Aws::String(buffer_string.substr(last_line_pos + 1, buffer_string.size()));
-                buffer_stringstream << buffer_string.substr(0, last_line_pos + 1);
+                // cout << "Payload is incomplete" << endl;
+                int last_line_pos = payload_str.rfind('\n');
+                if(last_line_pos > 0){
+                    // cout << "Payload contains complete records, extracting last line and appending complete payload to buffer" << endl;
+                    // cout << "Last line start position: " << last_line_pos << endl;
+                    decoder_data->last_line = new Aws::String(payload_str.substr(last_line_pos + 1, payload_str.size()));
+                    decoder_data->buffer_stringstream << payload_str.substr(0, last_line_pos + 1); 
+                }
+                else{
+                    // cout << "Payload does not contain complete records, setting to last line" << endl;
+                    decoder_data->last_line = new Aws::String(payload_str);
+                }
 
-                // cout << "New Last line" << "|||" << *(decoder_data->last_line) << "|||" << endl;
-                // cout << "Stripped payload" << endl <<"|||" <<  buffer_stringstream.str() <<"|||" <<  endl;
+                // cout << "New Last incomplete line: " << "|||" << *(decoder_data->last_line) << "|||" << endl;
             }
         }
         else if(decoder_data->latest_event_type == AwsEventType::stats){
-            buffer_stringstream << buffer_string;
+
+            // HACK: Grab the remainder of the records before grabbing the stats
+            int num_chars = decoder_data->buffer_stringstream.tellp();
+            // cout << num_chars << endl;
+            if(num_chars > 0){
+                // cout << "PARSING REMAINING RECORDS PAYLOADS!!!" << decoder_data->buffer_stringstream.str() << endl;
+                parse_records_payload(decoder_data);
+                decoder_data->buffer_stringstream = Aws::StringStream();
+            }
+
+            decoder_data->buffer_stringstream << payload_str;
         }
 
-        
+        // cout << "Buffer: " << endl <<"|||" <<  decoder_data->buffer_stringstream.str() <<"|||" <<  endl;
 
         if(decoder_data->latest_event_type == AwsEventType::records){
 
-            // cout << "RECORDS PAYLOAD!!!" << buffer_stringstream.str() << endl;
-
-            aria::csv::CsvParser parser = aria::csv::CsvParser(buffer_stringstream)
-              .delimiter(',')
-              .quote('"')
-              .terminator('\n');
-
-            for (auto& row : parser) {
-                std::vector<std::string> row_v = std::vector<std::string>();
-                for (auto& field : row) {
-                    row_v.push_back(field);
-                //    std::cout << field << " | ";
-                }
-                decoder_data->data_v->push_back(row_v);
-                // std::cout << std::endl;
+            int num_chars = decoder_data->buffer_stringstream.tellp();
+            // cout << num_chars << endl;
+            if(num_chars > 1024 * 256){
+                // cout << "PARSING RECORDS PAYLOADS!!!" << decoder_data->buffer_stringstream.str() << endl;
+                parse_records_payload(decoder_data);
+                decoder_data->buffer_stringstream = Aws::StringStream();
             }
         }
         else if(decoder_data->latest_event_type == AwsEventType::stats){
-            // cout << "STATS PAYLOAD!!!" << buffer_stringstream.str() << endl;
-            decoder_data->stats_str += buffer_stringstream.str();
+            // cout << "STATS PAYLOAD!!!" << decoder_data->buffer_stringstream.str() << endl;
+            decoder_data->stats_str += decoder_data->buffer_stringstream.str();
         }
 
-        // cout << "PAYLOAD SEGMENT END!!!" << endl;
+        // cout << "----------------------- PAYLOAD SEGMENT END!!!" << endl;
     }
+
+    static void parse_records_payload(test_decoder_data *decoder_data){
+        
+        aria::csv::CsvParser parser = aria::csv::CsvParser(decoder_data->buffer_stringstream)
+            .delimiter(',')
+            .quote('"')
+            .terminator('\n');
+
+        auto data_v = std::vector<std::vector<std::string>>();
+
+        #ifndef NDEBUG
+            int num_cols = -1;
+        #endif
+        
+        for (auto& row : parser) {
+            std::vector<std::string> row_v = std::vector<std::string>();
+            for (auto& field : row) {
+                row_v.push_back(field);
+                // std::cout << field << " | ";
+            }
+
+            #ifndef NDEBUG
+                if(num_cols == -1){
+                    num_cols = row_v.size();
+                    // cout << "Number of columns: " << num_cols << endl;
+                }
+                assert(num_cols == (int)row_v.size());
+            #endif
+
+            data_v.push_back(row_v);
+            // std::cout << std::endl;
+        }
+
+        PyArrayObject* pArray = Reader::build_nd_array(data_v);
+        PyObject* ret = PyArray_Return(pArray);
+
+        PyObject *arglist = Py_BuildValue("(O)", ret);
+        PyObject *result = PyObject_CallObject(decoder_data->on_data_callback, arglist);
+
+        Py_XDECREF(arglist);
+        Py_XDECREF(result);
+    }
+
+    void parse_stats_payload(test_decoder_data *decoder_data){
+
+        // STATS - could use an xml parser but its pretty simple so we just hack through it
+
+        Aws::String gt = Aws::String(">");
+        Aws::String lt = Aws::String("<");
+
+        int scanned_start = find_nth(decoder_data->stats_str, 0, gt, 1);
+        int scanned_end = find_nth(decoder_data->stats_str, 0, lt, 2);
+        Aws::String bytes_scanned_str = decoder_data->stats_str.substr(scanned_start + 1, scanned_end - scanned_start - 1);
+        this->bytes_scanned = std::stoi(bytes_scanned_str.c_str(), nullptr, 10);
+
+        int processed_start = find_nth(decoder_data->stats_str, 0, gt, 3);
+        int processed_end = find_nth(decoder_data->stats_str, 0, lt, 4);
+        Aws::String bytes_processed_str = decoder_data->stats_str.substr(processed_start + 1, processed_end - processed_start - 1);
+        this->bytes_processed = std::stoi(bytes_processed_str.c_str(), nullptr, 10);
+
+        int returned_start = find_nth(decoder_data->stats_str, 0, gt, 5);
+        int returned_end = find_nth(decoder_data->stats_str, 0, lt, 6);
+        Aws::String bytes_returned_str = decoder_data->stats_str.substr(returned_start + 1, returned_end - returned_start - 1);
+        this->bytes_returned = std::stoi(bytes_returned_str.c_str(), nullptr, 10);
+    }
+
 
     static void s_decoder_test_on_prelude_received(struct aws_event_stream_streaming_decoder *decoder,
                                                struct aws_event_stream_message_prelude *prelude, void *user_data) {
@@ -225,7 +303,7 @@ public:
         }
 
         if(decoder_data->new_event_sequence == 0){
-//            cout << "New Event Type" << endl;
+            // cout << "New Event Type" << decoder_data->latest_header_value << endl;
             if(strcmp(decoder_data->latest_header_value, "Records") == 0){
                 decoder_data->latest_event_type = AwsEventType::records;
             }
@@ -234,6 +312,7 @@ public:
             }
             else if(strcmp(decoder_data->latest_header_value, "End") == 0){
                 decoder_data->latest_event_type = AwsEventType::end;
+                decoder_data->reader->parse_stats_payload(decoder_data);
             }
             
             decoder_data->new_event_sequence = 1;
@@ -276,17 +355,42 @@ public:
         return find_nth(haystack, found_pos+1, needle, nth-1);
     }
 
-    PyObject* execute(const char* key, const char* sql) {
-
-        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    static PyArrayObject* build_nd_array(const std::vector<std::vector<std::string>> &vec){
 
         PyArrayObject* pArray;
+
+        int num_rows = vec.size();
+        int num_cols = vec[0].size();
+
+        npy_intp dims6[2];
+        dims6[0] = num_rows;
+        dims6[1] = num_cols;
+
+        pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims6, NPY_OBJECT);
+
+        PyObject *str;
+
+        for(size_t i=0;i<vec.size();i++){
+            std::vector<std::string> row = vec[i];
+            for(size_t j=0;j<row.size();j++){
+                str = Py_BuildValue("s", row[j].data());
+                void* item_ptr = PyArray_GETPTR2(pArray, i, j);
+                PyArray_SETITEM(pArray, (char*)item_ptr, str);
+            }
+        }
+
+        return pArray;
+    }
+
+    PyObject* execute(const char* key, const char* sql, PyObject* on_data_callback) {
+
+        // std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
         try
         {
             Aws::Utils::Logging::InitializeAWSLogging(
                 Aws::MakeShared<Aws::Utils::Logging::DefaultLogSystem>(
-                    "RunUnitTests", Aws::Utils::Logging::LogLevel::Info, "aws_sdk_"));
+                    "Scan", Aws::Utils::Logging::LogLevel::Info, "aws_sdk_"));
 
             Aws::SDKOptions options;
             options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
@@ -323,9 +427,8 @@ public:
                                         AWSAuthV4Signer::PayloadSigningPolicy::Never /*signPayloads*/, true /*useVirtualAddressing*/);
 
 
-                std::chrono::high_resolution_clock::time_point time = std::chrono::high_resolution_clock::now();
-                cout << "TIME_01: " << std::chrono::duration_cast<std::chrono::microseconds>(time - start).count() << endl;
-
+                // std::chrono::high_resolution_clock::time_point time = std::chrono::high_resolution_clock::now();
+                // cout << "Time to client init: " << std::chrono::duration_cast<std::chrono::microseconds>(time - start).count() << endl;
 
                 Aws::String url = buildURI(s3_client, bucket_name, TEST_OBJ_KEY);
                 Aws::String body = buildRequestBody(sql);
@@ -342,25 +445,16 @@ public:
                 std::shared_ptr<Aws::StringStream> body_ss = Aws::MakeShared<Aws::StringStream>(ALLOCATION_TAG);
                 *body_ss << body;
 
-
-                // Aws::StringStream *ss = Aws::New<Aws::StringStream>(ALLOCATION_TAG);
-                // Aws::IOStreamFactory fac = [ss](){
-                //     return ss;
-                // };
-
-                std::shared_ptr<HttpRequest> request = buildRequest(url, nullptr);
+                std::shared_ptr<HttpRequest> request = buildRequest(url);
                 request->SetContentLength(content_length.str());
                 request->AddContentBody(body_ss);
 
 //                cout << "MAKING REQUEST" << endl;
-//                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-                std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
-                cout << "TIME_02: " << std::chrono::duration_cast<std::chrono::microseconds>(time2 - start).count() << endl;
+                // std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
+                // cout << "Time to request built: " << std::chrono::duration_cast<std::chrono::microseconds>(time2 - start).count() << endl;
 
                 Aws::Utils::Logging::GetLogSystem()->Log(Aws::Utils::Logging::LogLevel::Trace, "s3filter", "Making");
-
-                // s3_client->MakeRequestWithUnparsedResponse(url, HttpMethod::HTTP_POST, );
 
                 aws_allocator* alloc = aws_default_allocator();
 
@@ -371,7 +465,9 @@ public:
                     .alloc = alloc,
                     .latest_error = 0,
                     .last_line = NULL,
-                    .data_v = new std::vector<std::vector<std::string>>()
+                    .buffer_stringstream = Aws::StringStream(),
+                    .on_data_callback = on_data_callback,
+                    .reader = this
                 };
 
 //                cout << "Creating decoder" << endl << std::flush;
@@ -387,9 +483,6 @@ public:
 
 //                cout << "Starting" << endl << std::flush;
 
-                std::chrono::high_resolution_clock::time_point time5 = std::chrono::high_resolution_clock::now();
-                cout << "TIME_05: " << std::chrono::duration_cast<std::chrono::microseconds>(time5 - start).count() << endl;
-
                 DataReceivedEventHandler f = [&decoder](const HttpRequest *req, const HttpResponse *res, long length) { 
 
                     // cout << "Data Received Event: " << length << endl; 
@@ -397,100 +490,19 @@ public:
                     char c_buf[length];
                     res->GetResponseBody().read(c_buf, length);
                     aws_byte_buf buf = aws_byte_buf_from_array((const uint8_t *)c_buf, length);
-                    // cout << "Data:" << endl << buf.buffer << endl;
                     aws_event_stream_streaming_decoder_pump(&decoder, &buf);
                 };
                 request->SetDataReceivedEventHandler(f);
 
                 Aws::Utils::Logging::GetLogSystem()->Log(Aws::Utils::Logging::LogLevel::Trace, "s3filter", "Made");
 
-                std::chrono::high_resolution_clock::time_point time3 = std::chrono::high_resolution_clock::now();
-                cout << "TIME_03: " << std::chrono::duration_cast<std::chrono::microseconds>(time3 - start).count() << endl;
+                // std::chrono::high_resolution_clock::time_point time3 = std::chrono::high_resolution_clock::now();
+                // cout << "Time to event stream decoder init: " << std::chrono::duration_cast<std::chrono::microseconds>(time3 - start).count() << endl;
 
                 std::shared_ptr<HttpResponse> response = m_HttpClient->MakeRequest(request);
 
-                cout << "MADE REQUEST" << endl;
-
-                std::chrono::high_resolution_clock::time_point time4 = std::chrono::high_resolution_clock::now();
-                cout << "TIME_04: " << std::chrono::duration_cast<std::chrono::microseconds>(time4 - start).count() << endl;
-
-                int num_cols = decoder_data.data_v[0][0].size();
-                int num_rows = decoder_data.data_v->size();
-
-//                cout << "Rows:" << num_rows << ", Cols:" << num_cols << endl;
-
-//                cout << "TO NUMPY..." << endl;
-
-//                const int ND = 2;
-//                npy_intp dims[2]{num_rows, num_cols};
-
-
-                std::vector<std::vector<std::string>> *vec = decoder_data.data_v;
-
-                for(size_t i=0;i<vec->size();i++){
-//
-                //    cout << "Row " << i << ": ";
-//
-                    std::vector<std::string> row = (*vec)[i];
-                //    for(int j=0;j<row.size();j++){
-                    //    cout << row[j] << " | ";
-                //    }
-//
-                //    cout << endl;
-                }
-
-                std::chrono::high_resolution_clock::time_point time7 = std::chrono::high_resolution_clock::now();
-                cout << "TIME_07: " << std::chrono::duration_cast<std::chrono::microseconds>(time7 - start).count() << endl;
-
-//                pArray = (PyArrayObject*)(PyArray_SimpleNewFromData(ND, dims, NPY_OBJECT, vec->data()));
-//                if (pArray == NULL) {
-//                    Py_XDECREF(pArray);
-//                    return NULL;
-//                }
-
-//                cout << "DONE NUMPY..." << endl;
-
-                npy_intp dims6[2];
-                dims6[0] = num_rows;
-                dims6[1] = num_cols;
-                pArray = (PyArrayObject*)PyArray_New(&PyArray_Type,2, dims6, NPY_OBJECT, nullptr, nullptr, 0, 0, nullptr);
-
-                PyObject *obj3;
-
-                for(size_t i=0;i<vec->size();i++){
-                    std::vector<std::string> row = (*vec)[i];
-                    for(size_t j=0;j<row.size();j++){
-                        obj3 = PyString_FromString(row[j].c_str());
-                        PyArray_SETITEM((PyArrayObject*)pArray, (char*)PyArray_GETPTR2((PyArrayObject*)pArray, i, j), obj3);
-                    }
-                }
-
-                std::chrono::high_resolution_clock::time_point time8 = std::chrono::high_resolution_clock::now();
-                cout << "TIME_08: " << std::chrono::duration_cast<std::chrono::microseconds>(time8 - start).count() << endl;
-
-                // STATS - could use an xml parser but its pretty simple so we just hack through it
-
-//                cout << decoder_data.stats_str << endl;
-
-                Aws::String gt = Aws::String(">");
-                Aws::String lt = Aws::String("<");
-
-                int scanned_start = find_nth(decoder_data.stats_str, 0, gt, 1);
-                int scanned_end = find_nth(decoder_data.stats_str, 0, lt, 2);
-                Aws::String bytes_scanned_str = decoder_data.stats_str.substr(scanned_start + 1, scanned_end - scanned_start - 1);
-                this->bytes_scanned = std::stoi(bytes_scanned_str.c_str(), nullptr, 10);
-
-                int processed_start = find_nth(decoder_data.stats_str, 0, gt, 3);
-                int processed_end = find_nth(decoder_data.stats_str, 0, lt, 4);
-                Aws::String bytes_processed_str = decoder_data.stats_str.substr(processed_start + 1, processed_end - processed_start - 1);
-                this->bytes_processed = std::stoi(bytes_processed_str.c_str(), nullptr, 10);
-
-                int returned_start = find_nth(decoder_data.stats_str, 0, gt, 5);
-                int returned_end = find_nth(decoder_data.stats_str, 0, lt, 6);
-                Aws::String bytes_returned_str = decoder_data.stats_str.substr(returned_start + 1, returned_end - returned_start - 1);
-                this->bytes_returned = std::stoi(bytes_returned_str.c_str(), nullptr, 10);
-
-                return PyArray_Return(pArray);
+                // std::chrono::high_resolution_clock::time_point time4 = std::chrono::high_resolution_clock::now();
+                // cout << "Time to response complete: " << std::chrono::duration_cast<std::chrono::microseconds>(time4 - start).count() << endl;
             }
             Aws::ShutdownAPI(options);
             Aws::Utils::Logging::ShutdownAWSLogging();
@@ -503,9 +515,6 @@ public:
 
         Py_INCREF(Py_None);
         return Py_None;
-
-//        Py_INCREF(pArray);
-
     }
 };
 
@@ -516,19 +525,24 @@ scan_execute(PyObject *self, PyObject *args)
 {
     const char *key;
     const char *sql;
+    static PyObject *on_data_callback = NULL;
 
-    if (!PyArg_ParseTuple(args, "ss", &key, &sql)){
+    if (!PyArg_ParseTuple(args, "ssO", &key, &sql, &on_data_callback)){
         return NULL;
     }
+
+    Py_INCREF(on_data_callback);
 
 //    std::cout << std::endl;
 //    std::cout << "Execute | Key: " << key << ", sql: " << sql << std::endl;
 
-    PyObject* res = reader->execute(key, sql);
+    // PyObject* res = reader->execute(key, sql, on_data_callback);
+    reader->execute(key, sql, on_data_callback);
+
+    Py_INCREF(Py_None);
+    return Py_None;
 
 //    std::cout << res;
-
-    return res;
 }
 
 

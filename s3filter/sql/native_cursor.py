@@ -51,7 +51,7 @@ class NativeCursor(object):
 
         return self
 
-    def execute(self):
+    def execute(self, on_data):
         """Executes the fetch operation. This is different to the DB API as it returns an iterable. Of course we could
         model that API more precisely in future.
 
@@ -60,14 +60,29 @@ class NativeCursor(object):
 
         # print("Executing select_object_content")
 
+        def on_records(np_array):
+
+            # print("|||")
+            # print(type(np_array))
+            # print(np_array)
+            # print("|||")
+
+            elapsed_time = self.timer.elapsed()
+            if self.time_to_first_record_response is None:
+                self.time_to_first_record_response = elapsed_time
+
+            self.time_to_last_record_response = elapsed_time
+
+            df = pd.DataFrame(np_array)
+            df = df.add_prefix('_')
+
+            on_data(df)
+
         self.timer.start()
 
-        np_array = self.fast_s3.execute(self.s3key, self.s3sql)
-        df = pd.DataFrame(np_array)
-        df = df.add_prefix('_')
+        self.fast_s3.execute(self.s3key, self.s3sql, on_records)
 
         self.bytes_scanned = self.fast_s3.get_bytes_scanned()
         self.bytes_processed = self.fast_s3.get_bytes_processed()
         self.bytes_returned = self.fast_s3.get_bytes_returned()
 
-        return df

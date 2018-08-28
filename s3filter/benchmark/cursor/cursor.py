@@ -30,13 +30,13 @@ def main():
     # run(use_pandas=False, secure=False, use_native=False)
     # run(use_pandas=True, secure=True, use_native=False)
     # run(use_pandas=True, secure=False, use_native=False)
-    run(use_pandas=True, secure=True, use_native=True)
+    run(use_pandas=True, secure=False, use_native=True)  # Note: Native does not support secure=True
 
 
 def run(use_pandas, secure, use_native):
     print("Cursor | Settings {}".format({'use_pandas': use_pandas, 'secure': secure, 'use_native': use_native}))
 
-    sql = 'select * from S3Object limit 1000'
+    sql = 'select * from S3Object limit 10000'
 
     if secure:
         cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
@@ -81,11 +81,23 @@ def run(use_pandas, secure, use_native):
 
     elif use_pandas and use_native:
 
-        cur = NativeCursor(scan).select('lineitem.csv', sql)
-        res = cur.execute()
-        df = pd.DataFrame(res)
+        closure = {'df': None, 'rows_returned': 0}
 
-        rows_returned = len(df)
+        def on_data(data):
+
+            # print(data)
+
+            # if closure['df'] is None:
+            #     closure['df'] = pd.DataFrame(data)
+            # else:
+            #     closure['df'] = pd.concat([closure['df'], pd.DataFrame(data)], ignore_index=True, copy=False)
+
+            closure['rows_returned'] += len(pd.DataFrame(data))
+
+        cur = NativeCursor(scan).select('lineitem.csv', sql)
+        cur.execute(on_data)
+
+        rows_returned = closure['rows_returned']
 
         print("{}".format({
             'elapsed_time': round(cur.timer.elapsed(), 5),
@@ -108,6 +120,7 @@ def run(use_pandas, secure, use_native):
                 None if cur.time_to_last_record_response is None
                 else round(cur.time_to_last_record_response, 5)
         }))
+
     else:
 
         timer = Timer()
