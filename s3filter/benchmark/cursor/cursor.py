@@ -36,7 +36,7 @@ def main():
 def run(use_pandas, secure, use_native):
     print("Cursor | Settings {}".format({'use_pandas': use_pandas, 'secure': secure, 'use_native': use_native}))
 
-    sql = 'select * from S3Object limit 10000'
+    sql = 'select * from S3Object'
 
     if secure:
         cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
