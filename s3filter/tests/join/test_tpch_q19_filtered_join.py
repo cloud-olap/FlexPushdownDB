@@ -22,26 +22,46 @@ from s3filter.util.test_util import gen_test_id
 
 
 def test_unbuffered():
-    run(parallel=False, use_pandas=False, buffer_size=0, lineitem_parts=1, part_parts=1, sharded=False)
+    run(parallel=False, use_pandas=False, use_secure=False, use_native=False, buffer_size=0, lineitem_parts=1,
+        part_parts=1, sharded=False)
 
 
 def test_buffered():
-    run(parallel=False, use_pandas=False, buffer_size=1024, lineitem_parts=1, part_parts=1, sharded=False)
+    run(parallel=False, use_pandas=False, use_secure=False, use_native=False, buffer_size=1024, lineitem_parts=1,
+        part_parts=1, sharded=False)
+
+
+def test_pandas():
+    run(parallel=False, use_pandas=True, use_secure=False, use_native=False, buffer_size=1024, lineitem_parts=1,
+        part_parts=1, sharded=False)
+
+
+def test_native():
+    run(parallel=False, use_pandas=True, use_secure=False, use_native=True, buffer_size=1024, lineitem_parts=1,
+        part_parts=1, sharded=False)
 
 
 def test_parallel_buffered():
-    run(parallel=True, use_pandas=True, buffer_size=1024, lineitem_parts=1, part_parts=1, sharded=False)
+    run(parallel=True, use_pandas=True, use_secure=False, use_native=False, buffer_size=1024, lineitem_parts=1,
+        part_parts=1, sharded=False)
 
 
 def test_parallel_unbuffered():
-    run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=1, part_parts=1, sharded=False)
+    run(parallel=True, use_pandas=True, use_secure=False, use_native=False, buffer_size=0, lineitem_parts=1,
+        part_parts=1, sharded=False)
 
 
 def test_parallel_unbuffered_sharded():
-    run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=2, part_parts=2, sharded=False)
+    run(parallel=True, use_pandas=True, use_secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
+        part_parts=2, sharded=False)
 
 
-def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded):
+def test_parallel_native_sharded():
+    run(parallel=True, use_pandas=True, use_secure=False, use_native=True, buffer_size=0, lineitem_parts=2,
+        part_parts=2, sharded=False)
+
+
+def run(parallel, use_pandas, use_secure, use_native, buffer_size, lineitem_parts, part_parts, sharded):
     """
     :return: None
     """
@@ -60,7 +80,10 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded):
                                 p,
                                 lineitem_parts,
                                 use_pandas,
-                                'lineitem_scan' + '_' + str(p), query_plan)),
+                                use_secure,
+                                use_native,
+                                'lineitem_scan' + '_' + str(p),
+                                query_plan)),
                         range(0, lineitem_parts))
 
     part_scan = map(lambda p:
@@ -70,7 +93,10 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded):
                             p,
                             part_parts,
                             use_pandas,
-                            'part_scan' + '_' + str(p), query_plan)),
+                            use_secure,
+                            use_native,
+                            'part_scan' + '_' + str(p),
+                            query_plan)),
                     range(0, part_parts))
 
     lineitem_project = map(lambda p:

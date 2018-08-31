@@ -207,14 +207,21 @@ class SQLTableScan(Operator):
     def execute_pandas_query(op):
 
         if op.use_native:
+
+            def on_numpy_array(np_array):
+
+                df = pd.DataFrame(np_array)
+
+                op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
+                op.op_metrics.rows_returned += len(df)
+
+                op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
+                op.send(df, op.consumers)
+
             cur = NativeCursor(op.fast_s3).select(op.s3key, op.s3sql)
-            df = cur.execute()
+            cur.execute(on_numpy_array)
 
             op.op_metrics.query_bytes = cur.query_bytes
-            op.op_metrics.rows_returned += len(df)
-
-            op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
-            op.send(df, op.consumers)
 
             return cur
         else:

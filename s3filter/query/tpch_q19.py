@@ -270,9 +270,12 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
         sharded,
         shard,
         num_shards,
-        use_pandas, secure, use_native,
+        use_pandas,
+        secure,
+        use_native,
         name,
         query_plan):
+
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         "select "
                         "  l_partkey, "
@@ -309,7 +312,9 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "      ) "
                         "  ) {}"
                         .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
-                        use_pandas, secure, use_native,
+                        use_pandas,
+                        secure,
+                        use_native,
                         name,
                         query_plan,
                         True)
@@ -392,7 +397,9 @@ def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filter
 def sql_scan_part_partkey_brand_size_container_where_filtered_op(sharded,
                                                                  shard,
                                                                  num_shards,
-                                                                 use_pandas, secure, use_native,
+                                                                 use_pandas,
+                                                                 secure,
+                                                                 use_native,
                                                                  name,
                                                                  query_plan):
     return SQLTableScan(get_file_key('part', sharded, shard),
@@ -437,7 +444,7 @@ def sql_scan_part_partkey_brand_size_container_where_filtered_op(sharded,
                         "          ) "
                         "          and cast(p_size as integer) between 1 and 15 "
                         "      ) "
-                        "  )  {}"
+                        "  ) {}"
                         .format(get_sql_suffix('part', num_shards, shard, sharded)),
                         use_pandas, secure, use_native,
                         name,
@@ -507,6 +514,7 @@ def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(sharded,
 
 
 def get_sql_suffix(key, num_shards, shard, sharded, add_where=False):
+
     sql_suffix = ""
 
     if not sharded:
@@ -515,12 +523,12 @@ def get_sql_suffix(key, num_shards, shard, sharded, add_where=False):
             key_upper = math.ceil((6000000.0 / float(num_shards)) * (shard + 1))
             sql_suffix = " cast(l_orderkey as int) > {} and cast(l_orderkey as int) <= {}" \
                 .format(key_lower, key_upper)
-            sql_suffix = sql_suffix + " where " if add_where else " and "
+            sql_suffix = " where " + sql_suffix if add_where else " and " + sql_suffix
         elif key == "part":
             key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
             key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
             sql_suffix = " cast(p_partkey as int) > {} and cast(p_partkey as int) <= {}" \
                 .format(key_lower, key_upper)
-            sql_suffix = sql_suffix + " where " if add_where else " and "
+            sql_suffix = " where " + sql_suffix if add_where else " and " + sql_suffix
 
     return sql_suffix

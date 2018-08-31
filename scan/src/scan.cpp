@@ -82,6 +82,9 @@ public:
 
     Aws::String buildRequestBody(Aws::String sql){
         Aws::StringStream body_ss;
+
+        encode(sql);
+
         body_ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             "<SelectRequest>"
                 "<Expression>" << sql << "</Expression>"
@@ -334,6 +337,8 @@ public:
 
         struct test_decoder_data *decoder_data = (struct test_decoder_data *) user_data;
         decoder_data->latest_error = error_code;
+
+        cout << "An error occurred: (code: " << error_code << ", message: " << message << ")" << endl;
     }
 
     PyObject* get_bytes_scanned() {
@@ -401,196 +406,212 @@ public:
 
     }
 
-    static PyArrayObject* build_nd_array5(const std::vector<std::vector<std::string>> &vec){
+    // static PyArrayObject* build_nd_array5(const std::vector<std::vector<std::string>> &vec){
 
-        // int num_rows = vec.size();
-        // int num_cols = vec[0].size();
+    //     // int num_rows = vec.size();
+    //     // int num_cols = vec[0].size();
 
-        npy_intp dims[2];
-        dims[0] = 2;
-        dims[1] = 2;
+    //     npy_intp dims[2];
+    //     dims[0] = 2;
+    //     dims[1] = 2;
 
-        // PyArrayObject* pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims, NPY_OBJECT);
+    //     // PyArrayObject* pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims, NPY_OBJECT);
 
-        // PyObject* data = (PyObject*) PyArray_DATA(pArray);
+    //     // PyObject* data = (PyObject*) PyArray_DATA(pArray);
 
-        // for(size_t i=0;i<vec.size();i++){
-        //     std::vector<std::string> row = vec[i];
-        //     for(size_t j=0;j<row.size();j++){
-        //         PyObject* field_value = Py_BuildValue("s", row[j]);
-        //         memcpy(data, field_value, sizeof(PyObject*) * NumInputs);
-        //     }
-        // }
+    //     // for(size_t i=0;i<vec.size();i++){
+    //     //     std::vector<std::string> row = vec[i];
+    //     //     for(size_t j=0;j<row.size();j++){
+    //     //         PyObject* field_value = Py_BuildValue("s", row[j]);
+    //     //         memcpy(data, field_value, sizeof(PyObject*) * NumInputs);
+    //     //     }
+    //     // }
 
 
-        PyObject *out = nullptr;
+    //     PyObject *out = nullptr;
 
-        PyObject* str1 = Py_BuildValue("s", "111");
-        PyObject* str2 = Py_BuildValue("s", "222");
-        PyObject* str3 = Py_BuildValue("s", "333");
-        PyObject* str4 = Py_BuildValue("s", "444");
+    //     PyObject* str1 = Py_BuildValue("s", "111");
+    //     PyObject* str2 = Py_BuildValue("s", "222");
+    //     PyObject* str3 = Py_BuildValue("s", "333");
+    //     PyObject* str4 = Py_BuildValue("s", "444");
 
-        out = PyArray_SimpleNew(2, dims, NPY_OBJECT);
-        out = (PyObject*) PyArray_GETCONTIGUOUS((PyArrayObject*) out);
+    //     out = PyArray_SimpleNew(2, dims, NPY_OBJECT);
+    //     out = (PyObject*) PyArray_GETCONTIGUOUS((PyArrayObject*) out);
 
-        cout << "1" << endl;
+    //     cout << "1" << endl;
 
-        PyObject** data = (PyObject**) (PyArrayObject**) PyArray_DATA((PyArrayObject*)out);
+    //     PyObject** data = (PyObject**) (PyArrayObject**) PyArray_DATA((PyArrayObject*)out);
         
 
-        cout << "2" << endl;
+    //     cout << "2" << endl;
 
-        // void* item_ptr = (char*)PyArray_GETPTR1(out, 0);
+    //     // void* item_ptr = (char*)PyArray_GETPTR1(out, 0);
 
-        // PyArray_SETITEM(out, (char*)item_ptr, py_int);
+    //     // PyArray_SETITEM(out, (char*)item_ptr, py_int);
 
-        // cout << "5" << endl;
+    //     // cout << "5" << endl;
 
-        // PyObject* h = PyArray_GETITEM(out, (char*)item_ptr);
+    //     // PyObject* h = PyArray_GETITEM(out, (char*)item_ptr);
 
-        // cout << "6" << endl;
+    //     // cout << "6" << endl;
 
-        // cout << "REPR: " << PyString_AsString(PyObject_Repr(h)) << endl;
+    //     // cout << "REPR: " << PyString_AsString(PyObject_Repr(h)) << endl;
 
-        // data +=  sizeof(PyObject*);
-        *data = str1;
+    //     // data +=  sizeof(PyObject*);
+    //     *data = str1;
 
-        data += 1;
+    //     data += 1;
 
-        *data = str2;
+    //     *data = str2;
 
-        data += 1;
+    //     data += 1;
 
-        *data = str3;
+    //     *data = str3;
 
-         data += 1;
+    //      data += 1;
 
-        *data = str4;
+    //     *data = str4;
         
 
-        cout << "7" << endl;
+    //     cout << "7" << endl;
 
-        return (PyArrayObject*)out;
-    }
+    //     return (PyArrayObject*)out;
+    // }
 
-    static PyArrayObject* build_nd_array3(const std::vector<std::vector<std::string>> &vec){
+    // static PyArrayObject* build_nd_array3(const std::vector<std::vector<std::string>> &vec){
 
-        // int num_rows = vec.size();
-        // int num_cols = vec[0].size();
+    //     // int num_rows = vec.size();
+    //     // int num_cols = vec[0].size();
 
-        // npy_intp dims[2];
-        // dims[0] = num_rows;
-        // dims[1] = num_cols;
+    //     // npy_intp dims[2];
+    //     // dims[0] = num_rows;
+    //     // dims[1] = num_cols;
 
-        // PyArrayObject* pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims, NPY_OBJECT);
+    //     // PyArrayObject* pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims, NPY_OBJECT);
 
-        // PyObject* data = (PyObject*) PyArray_DATA(pArray);
+    //     // PyObject* data = (PyObject*) PyArray_DATA(pArray);
 
-        // for(size_t i=0;i<vec.size();i++){
-        //     std::vector<std::string> row = vec[i];
-        //     for(size_t j=0;j<row.size();j++){
-        //         PyObject* field_value = Py_BuildValue("s", row[j]);
-        //         memcpy(data, field_value, sizeof(PyObject*) * NumInputs);
-        //     }
-        // }
+    //     // for(size_t i=0;i<vec.size();i++){
+    //     //     std::vector<std::string> row = vec[i];
+    //     //     for(size_t j=0;j<row.size();j++){
+    //     //         PyObject* field_value = Py_BuildValue("s", row[j]);
+    //     //         memcpy(data, field_value, sizeof(PyObject*) * NumInputs);
+    //     //     }
+    //     // }
 
 
-        PyObject *out = nullptr;
+    //     PyObject *out = nullptr;
 
-        PyObject* str1 = Py_BuildValue("s", "111");
-        PyObject* str2 = Py_BuildValue("s", "222");
+    //     PyObject* str1 = Py_BuildValue("s", "111");
+    //     PyObject* str2 = Py_BuildValue("s", "222");
 
-        npy_intp size = {2};
+    //     npy_intp size = {2};
 
-        out = PyArray_SimpleNew(1, &size, NPY_OBJECT);
-        out = (PyObject*) PyArray_GETCONTIGUOUS((PyArrayObject*) out);
+    //     out = PyArray_SimpleNew(1, &size, NPY_OBJECT);
+    //     out = (PyObject*) PyArray_GETCONTIGUOUS((PyArrayObject*) out);
 
-        cout << "1" << endl;
+    //     cout << "1" << endl;
 
-        PyObject** data = (PyObject**) (PyArrayObject**) PyArray_DATA((PyArrayObject*)out);
+    //     PyObject** data = (PyObject**) (PyArrayObject**) PyArray_DATA((PyArrayObject*)out);
         
 
-        cout << "2" << endl;
+    //     cout << "2" << endl;
 
-        PyObject* py_int = Py_BuildValue("s", "111");
-        PyObject* py_int2 = Py_BuildValue("s", "222");
+    //     PyObject* py_int = Py_BuildValue("s", "111");
+    //     PyObject* py_int2 = Py_BuildValue("s", "222");
 
-        // void* item_ptr = (char*)PyArray_GETPTR1(out, 0);
+    //     // void* item_ptr = (char*)PyArray_GETPTR1(out, 0);
 
-        // PyArray_SETITEM(out, (char*)item_ptr, py_int);
+    //     // PyArray_SETITEM(out, (char*)item_ptr, py_int);
 
-        // cout << "5" << endl;
+    //     // cout << "5" << endl;
 
-        // PyObject* h = PyArray_GETITEM(out, (char*)item_ptr);
+    //     // PyObject* h = PyArray_GETITEM(out, (char*)item_ptr);
 
-        // cout << "6" << endl;
+    //     // cout << "6" << endl;
 
-        // cout << "REPR: " << PyString_AsString(PyObject_Repr(h)) << endl;
+    //     // cout << "REPR: " << PyString_AsString(PyObject_Repr(h)) << endl;
 
-        // data +=  sizeof(PyObject*);
-        *data = py_int;
+    //     // data +=  sizeof(PyObject*);
+    //     *data = py_int;
 
-        data += 1;
+    //     data += 1;
 
-        *data = py_int2;
+    //     *data = py_int2;
         
 
-        cout << "7" << endl;
+    //     cout << "7" << endl;
 
-        return (PyArrayObject*)out;
-    }
+    //     return (PyArrayObject*)out;
+    // }
 
-    static PyArrayObject* build_nd_array2(const std::vector<std::vector<std::string>> &vec){
+    // static PyArrayObject* build_nd_array2(const std::vector<std::vector<std::string>> &vec){
 
-        PyObject *out = nullptr;
+    //     PyObject *out = nullptr;
 
-        PyObject* str1 = Py_BuildValue("s", "111");
-        PyObject* str2 = Py_BuildValue("s", "222");
+    //     PyObject* str1 = Py_BuildValue("s", "111");
+    //     PyObject* str2 = Py_BuildValue("s", "222");
 
-        std::vector<PyObject*> *vector = new std::vector<PyObject*>();
-        vector->push_back(str1);
-        vector->push_back(str2);
+    //     std::vector<PyObject*> *vector = new std::vector<PyObject*>();
+    //     vector->push_back(str1);
+    //     vector->push_back(str2);
 
-        cout << "|||" << PyString_AsString(str1) << "|||" << endl;
+    //     cout << "|||" << PyString_AsString(str1) << "|||" << endl;
 
-        PyObject* temp = (*vector)[0];
+    //     PyObject* temp = (*vector)[0];
 
-        cout << "|||" << PyString_AsString(temp) << "|||" << endl;
+    //     cout << "|||" << PyString_AsString(temp) << "|||" << endl;
 
-        npy_intp size = {vector->size()};
+    //     npy_intp size = {vector->size()};
 
-        out = PyArray_SimpleNewFromData(1, &size, NPY_OBJECT, vector->data());
+    //     out = PyArray_SimpleNewFromData(1, &size, NPY_OBJECT, vector->data());
 
 
 
-        return (PyArrayObject*)out;
-    }
+    //     return (PyArrayObject*)out;
+    // }
 
-    static PyArrayObject* build_nd_array(const std::vector<std::vector<std::string>> &vec){
+    // static PyArrayObject* build_nd_array(const std::vector<std::vector<std::string>> &vec){
 
-        PyArrayObject* pArray;
+    //     PyArrayObject* pArray;
 
-        int num_rows = vec.size();
-        int num_cols = vec[0].size();
+    //     int num_rows = vec.size();
+    //     int num_cols = vec[0].size();
 
-        npy_intp dims6[2];
-        dims6[0] = num_rows;
-        dims6[1] = num_cols;
+    //     npy_intp dims6[2];
+    //     dims6[0] = num_rows;
+    //     dims6[1] = num_cols;
 
-        pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims6, NPY_OBJECT);
+    //     pArray = (PyArrayObject*)PyArray_SimpleNew(2, dims6, NPY_OBJECT);
 
-        PyObject *str;
+    //     PyObject *str;
 
-        for(size_t i=0;i<vec.size();i++){
-            std::vector<std::string> row = vec[i];
-            for(size_t j=0;j<row.size();j++){
-                str = Py_BuildValue("s", row[j].data());
-                void* item_ptr = PyArray_GETPTR2(pArray, i, j);
-                PyArray_SETITEM(pArray, (char*)item_ptr, str);
+    //     for(size_t i=0;i<vec.size();i++){
+    //         std::vector<std::string> row = vec[i];
+    //         for(size_t j=0;j<row.size();j++){
+    //             str = Py_BuildValue("s", row[j].data());
+    //             void* item_ptr = PyArray_GETPTR2(pArray, i, j);
+    //             PyArray_SETITEM(pArray, (char*)item_ptr, str);
+    //         }
+    //     }
+
+    //     return pArray;
+    // }
+
+    static void encode(Aws::String& data) {
+        Aws::String buffer;
+        buffer.reserve(data.size());
+        for(size_t pos = 0; pos != data.size(); ++pos) {
+            switch(data[pos]) {
+                case '&':  buffer.append("&amp;");       break;
+                case '\"': buffer.append("&quot;");      break;
+                case '\'': buffer.append("&apos;");      break;
+                case '<':  buffer.append("&lt;");        break;
+                case '>':  buffer.append("&gt;");        break;
+                default:   buffer.append(&data[pos], 1); break;
             }
         }
-
-        return pArray;
+        data.swap(buffer);
     }
 
     PyObject* execute(const char* key, const char* sql, PyObject* on_data_callback) {
@@ -644,10 +665,10 @@ public:
                 Aws::String url = buildURI(s3_client, bucket_name, TEST_OBJ_KEY);
                 Aws::String body = buildRequestBody(sql);
 
-//                cout << endl <<
-//                        "Sending request:" << endl <<
-//                        "URL: " << url << endl <<
-//                        "Body: " << endl << body << endl;
+            //    cout << endl <<
+            //            "Sending request:" << endl <<
+            //            "URL: " << url << endl <<
+            //            "Body: " << endl << body << endl;
 
                 Aws::StringStream content_length;
 
@@ -696,7 +717,7 @@ public:
 
                 DataReceivedEventHandler f = [&decoder](const HttpRequest *req, const HttpResponse *res, long length) { 
 
-                    // cout << "Data Received Event: " << length << endl; 
+                    // cout << "Data Received Event: " << length << endl;
 
                     char c_buf[length];
                     res->GetResponseBody().read(c_buf, length);
@@ -711,6 +732,8 @@ public:
                 // cout << "Time to event stream decoder init: " << std::chrono::duration_cast<std::chrono::microseconds>(time3 - start).count() << endl;
 
                 std::shared_ptr<HttpResponse> response = m_HttpClient->MakeRequest(request);
+
+                aws_event_stream_streaming_decoder_clean_up(&decoder);
 
                 // std::chrono::high_resolution_clock::time_point time4 = std::chrono::high_resolution_clock::now();
                 // cout << "Time to response complete: " << std::chrono::duration_cast<std::chrono::microseconds>(time4 - start).count() << endl;

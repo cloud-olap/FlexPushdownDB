@@ -266,7 +266,9 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_sharded_oper
                                                                                          max_shipped_date,
                                                                                          sharded,
                                                                                          shard,
-                                                                                         use_pandas, secure, use_native,
+                                                                                         use_pandas,
+                                                                                         secure,
+                                                                                         use_native,
                                                                                          name,
                                                                                          query_plan):
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
