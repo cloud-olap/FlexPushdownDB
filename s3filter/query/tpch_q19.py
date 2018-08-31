@@ -146,7 +146,7 @@ def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, secure, 
                         "from "
                         "  S3Object "
                         "{} "
-                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded, add_where=True)),
+                        .format(get_sql_suffix('part', num_shards, shard, sharded, add_where=True)),
                         use_pandas, secure, use_native,
                         name,
                         query_plan, False)

@@ -22,23 +22,20 @@ import s3filter.util.constants
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=False, secure=False, use_native=True, buffer_size=0, lineitem_parts=96,
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
             part_parts=4, lineitem_sharded=True, part_sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=32,
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
             part_parts=4, lineitem_sharded=True, part_sharded=False)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
         part_sharded):
     """
+
     :return: None
     """
 
-    secure = False
-    use_native = False
     print('')
     print("TPCH Q17 Filtered Join")
     print("----------------------")
@@ -83,15 +80,15 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                    query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
                    range(0, part_parts))
 
-    lineitem_map = map(lambda p:
-                       query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
-                       range(0, lineitem_parts))
-
     lineitem_project = map(lambda p:
                            query_plan.add_operator(
                                tpch_q17.project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(
                                    'lineitem_project' + '_' + str(p), query_plan)),
                            range(0, lineitem_parts))
+
+    lineitem_map = map(lambda p:
+                       query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, True)),
+                       range(0, lineitem_parts))
 
     # part_lineitem_join = map(lambda p:
     #                          query_plan.add_operator(
@@ -227,8 +224,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("--------")
     print('')
     print('use_pandas: {}'.format(use_pandas))
+    print('secure: {}'.format(secure))
+    print('use_native: {}'.format(use_native))
     print("lineitem parts: {}".format(lineitem_parts))
     print("part_parts: {}".format(part_parts))
+    print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("part_sharded: {}".format(part_sharded))
     print('')
 
     # Write the plan graph

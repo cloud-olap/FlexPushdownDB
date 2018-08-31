@@ -9,9 +9,9 @@ from s3filter.benchmark.tpch import tpch
 
 def main():
 
-    # tpch.main()
+    tpch.main()
     # sql_table_scan.main()
-    cursor.main()
+    # cursor.main()
 
 
 if __name__ == "__main__":

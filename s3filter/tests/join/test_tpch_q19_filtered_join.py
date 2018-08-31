@@ -23,45 +23,45 @@ from s3filter.util.test_util import gen_test_id
 
 def test_unbuffered():
     run(parallel=False, use_pandas=False, use_secure=False, use_native=False, buffer_size=0, lineitem_parts=1,
-        part_parts=1, sharded=False)
+        part_parts=1, lineitem_sharded=False)
 
 
 def test_buffered():
     run(parallel=False, use_pandas=False, use_secure=False, use_native=False, buffer_size=1024, lineitem_parts=1,
-        part_parts=1, sharded=False)
+        part_parts=1, lineitem_sharded=False)
 
 
 def test_pandas():
     run(parallel=False, use_pandas=True, use_secure=False, use_native=False, buffer_size=1024, lineitem_parts=1,
-        part_parts=1, sharded=False)
+        part_parts=1, lineitem_sharded=False)
 
 
 def test_native():
     run(parallel=False, use_pandas=True, use_secure=False, use_native=True, buffer_size=1024, lineitem_parts=1,
-        part_parts=1, sharded=False)
+        part_parts=1, lineitem_sharded=False)
 
 
 def test_parallel_buffered():
     run(parallel=True, use_pandas=True, use_secure=False, use_native=False, buffer_size=1024, lineitem_parts=1,
-        part_parts=1, sharded=False)
+        part_parts=1, lineitem_sharded=False)
 
 
 def test_parallel_unbuffered():
     run(parallel=True, use_pandas=True, use_secure=False, use_native=False, buffer_size=0, lineitem_parts=1,
-        part_parts=1, sharded=False)
+        part_parts=1, lineitem_sharded=False)
 
 
 def test_parallel_unbuffered_sharded():
     run(parallel=True, use_pandas=True, use_secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
-        part_parts=2, sharded=False)
+        part_parts=2, lineitem_sharded=False)
 
 
 def test_parallel_native_sharded():
     run(parallel=True, use_pandas=True, use_secure=False, use_native=True, buffer_size=0, lineitem_parts=2,
-        part_parts=2, sharded=False)
+        part_parts=2, lineitem_sharded=True)
 
 
-def run(parallel, use_pandas, use_secure, use_native, buffer_size, lineitem_parts, part_parts, sharded):
+def run(parallel, use_pandas, use_secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded):
     """
     :return: None
     """
@@ -76,7 +76,7 @@ def run(parallel, use_pandas, use_secure, use_native, buffer_size, lineitem_part
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
                             tpch_q19.sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_extra_filtered_op(
-                                sharded,
+                                lineitem_sharded,
                                 p,
                                 lineitem_parts,
                                 use_pandas,
@@ -89,7 +89,7 @@ def run(parallel, use_pandas, use_secure, use_native, buffer_size, lineitem_part
     part_scan = map(lambda p:
                     query_plan.add_operator(
                         tpch_q19.sql_scan_part_partkey_brand_size_container_where_filtered_op(
-                            sharded,
+                            lineitem_sharded,
                             p,
                             part_parts,
                             use_pandas,

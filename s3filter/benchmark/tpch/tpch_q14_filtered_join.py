@@ -6,6 +6,8 @@
 import os
 from datetime import datetime, timedelta
 
+import numpy
+
 from s3filter import ROOT_DIR
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -20,12 +22,10 @@ import s3filter.util.constants
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=False, secure=False, use_native=True, buffer_size=0, lineitem_parts=96,
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
             part_parts=4, lineitem_sharded=True, part_sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=32,
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
             part_parts=4, lineitem_sharded=True, part_sharded=False)
 
 
@@ -35,8 +35,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
     :return: None
     """
-    secure = False
-    use_native = False
 
     print('')
     print("TPCH Q14 Filtered Join")
@@ -68,7 +66,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     lineitem_project = map(lambda p:
                            query_plan.add_operator(
                                tpch_q14.project_partkey_extendedprice_discount_operator_def(
-                                   'lineitem_project' + '_' + str(p), query_plan)),
+                                   'lineitem_project' + '_' + str(p),
+                                   query_plan)),
                            range(0, lineitem_parts))
 
     part_scan = map(lambda p:
@@ -86,8 +85,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
     part_project = map(lambda p:
                        query_plan.add_operator(
-                           tpch_q14.project_partkey_type_operator_def('part_project' + '_' + str(p),
-                                                                      query_plan)),
+                           tpch_q14.project_partkey_type_operator_def(
+                               'part_project' + '_' + str(p),
+                               query_plan)),
                        range(0, part_parts))
 
     join_build = map(lambda p:
@@ -140,8 +140,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("--------")
     print('')
     print('use_pandas: {}'.format(use_pandas))
+    print('secure: {}'.format(secure))
+    print('use_native: {}'.format(use_native))
     print("lineitem parts: {}".format(lineitem_parts))
     print("part_parts: {}".format(part_parts))
+    print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("part_sharded: {}".format(part_sharded))
     print('')
 
     query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id() + "-" + str(lineitem_parts))
@@ -167,9 +171,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     if s3filter.util.constants.TPCH_SF == 10:
-        assert round(float(tuples[1][0]), 10) == 15.4488836202
+        assert round(float(tuples[1][0])) == 15.4488836202
     elif s3filter.util.constants.TPCH_SF == 1:
-        assert round(float(tuples[1][0]), 10) == 15.0901165263
+        numpy.testing.assert_almost_equal(float(tuples[1][0]), 15.0901165263)
 
 
 if __name__ == "__main__":

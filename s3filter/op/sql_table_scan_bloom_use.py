@@ -12,7 +12,7 @@ from s3filter.op.sql_table_scan import SQLTableScanMetrics, SQLTableScan
 from s3filter.op.tuple import Tuple, IndexedTuple
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
-
+import scan
 
 class SQLTableScanBloomUse(Operator):
     """Performs a table scan using a received bloom filter.
@@ -44,7 +44,9 @@ class SQLTableScanBloomUse(Operator):
                              s3={'payload_signing_enabled': False})
                 session = Session()
                 self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
-        
+        else :
+            self.fast_s3 = scan
+
         self.use_native = use_native
         self.use_pandas = use_pandas
 
