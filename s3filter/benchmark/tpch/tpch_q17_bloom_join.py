@@ -22,12 +22,15 @@ import s3filter.util.constants
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96, part_parts=4)
+        run(parallel=True, use_pandas=False, secure=False, use_native=True, buffer_size=0, lineitem_parts=96,
+            part_parts=4, lineitem_sharded=True, part_sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32, part_parts=4)
+        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=32,
+            part_parts=4, lineitem_sharded=True, part_sharded=False)
 
 
-def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
+def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
+        part_sharded):
     """
     :return: None
     """
@@ -44,10 +47,12 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     part_scan = map(lambda p:
                     query_plan.add_operator(
                         tpch_q17.sql_scan_select_partkey_where_brand_container_op(
-                            part_parts != 1,
+                            part_sharded,
                             p,
                             part_parts,
-                            use_pandas, secure, use_native,
+                            use_pandas,
+                            secure,
+                            use_native,
                             'part_scan' + '_' + str(p),
                             query_plan)),
                     range(0, part_parts))
@@ -75,16 +80,19 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                                 tpch_q17.bloom_create_partkey_op('part_bloom_create' + '_' + str(p), query_plan)),
                             range(0, part_parts))
 
-    lineitem_bloom_use = map(lambda p:
-                             query_plan.add_operator(
-                                 tpch_q17.bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_partkey_op(
-                                     part_parts != 1,
-                                     p,
-                                     part_parts,
-                                     use_pandas, secure, use_native,
-                                     'lineitem_bloom_use' + '_' + str(p),
-                                     query_plan)),
-                             range(0, lineitem_parts))
+    lineitem_bloom_use = \
+        map(lambda p:
+            query_plan.add_operator(
+                tpch_q17.bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_partkey_op(
+                    lineitem_sharded,
+                    p,
+                    part_parts,
+                    use_pandas,
+                    secure,
+                    use_native,
+                    'lineitem_bloom_use' + '_' + str(p),
+                    query_plan)),
+            range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:
                            query_plan.add_operator(
@@ -101,7 +109,9 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     # part_lineitem_join = map(lambda p:
     #                          query_plan.add_operator(
-    #                              tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join' + '_' + str(p), query_plan)),
+    #                              tpch_q17.join_p_partkey_l_partkey_op(
+    # 'part_lineitem_join' + '_' + str(p),
+    # query_plan)),
     #                          range(0, part_parts))
 
     part_lineitem_join_build = map(lambda p:
@@ -136,20 +146,23 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     #                                                 'part_lineitem_join_avg_group_join' + '_' + str(p), query_plan)),
     #                                         range(0, part_parts))
 
-    part_lineitem_join_avg_group_join_build = map(lambda p:
-                                                  query_plan.add_operator(
-                                                      HashJoinBuild('l_partkey',
-                                                                    'part_lineitem_join_avg_group_join_build' + '_' + str(
-                                                                        p), query_plan, False)),
-                                                  range(0, part_parts))
+    part_lineitem_join_avg_group_join_build = \
+        map(lambda p:
+            query_plan.add_operator(
+                HashJoinBuild('l_partkey',
+                              'part_lineitem_join_avg_group_join_build' + '_' + str(p),
+                              query_plan,
+                              False)),
+            range(0, part_parts))
 
-    part_lineitem_join_avg_group_join_probe = map(lambda p:
-                                                  query_plan.add_operator(
-                                                      HashJoinProbe(JoinExpression('l_partkey', 'p_partkey'),
-                                                                    'part_lineitem_join_avg_group_join_probe' + '_' + str(
-                                                                        p),
-                                                                    query_plan, False)),
-                                                  range(0, part_parts))
+    part_lineitem_join_avg_group_join_probe = \
+        map(lambda p:
+            query_plan.add_operator(
+                HashJoinProbe(JoinExpression('l_partkey', 'p_partkey'),
+                              'part_lineitem_join_avg_group_join_probe' + '_' + str(p),
+                              query_plan,
+                              False)),
+            range(0, part_parts))
 
     lineitem_filter = map(lambda p:
                           query_plan.add_operator(
@@ -267,7 +280,8 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     if s3filter.util.constants.TPCH_SF == 10:
-        assert round(float(tuples[1][0]), 10) == 372414.2899999995  # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
+        assert round(float(tuples[1][0]),
+                     10) == 372414.2899999995  # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
     elif s3filter.util.constants.TPCH_SF == 1:
         numpy.testing.assert_almost_equal(float(tuples[1][0]), 372414.29)
 

@@ -44,8 +44,6 @@ class SQLTableScanBloomUse(Operator):
                              s3={'payload_signing_enabled': False})
                 session = Session()
                 self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
-        else :
-            self.fast_s3 = scan
         
         self.use_native = use_native
         self.use_pandas = use_pandas

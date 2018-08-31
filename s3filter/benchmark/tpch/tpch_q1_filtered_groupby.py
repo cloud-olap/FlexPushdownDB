@@ -15,13 +15,17 @@ from s3filter.query import tpch_q1
 from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
 
+
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=1)
+        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=1,
+            sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=2)
+        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=2,
+            sharded=True)
 
-def run(parallel, use_pandas, buffer_size, lineitem_parts):
+
+def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded):
     """
 
     :return: None
@@ -40,9 +44,11 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
                         query_plan.add_operator(
                             tpch_q1.sql_filtered_scan_lineitem_operator_def(
                                 max_shipped_date,
-                                parallel,
+                                sharded,
                                 p,
                                 use_pandas,
+                                secure,
+                                use_native,
                                 'lineitem_scan' + '_' + str(p),
                                 query_plan)),
                         range(0, lineitem_parts))
@@ -54,31 +60,32 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
                                    query_plan)),
                            range(0, lineitem_parts))
 
-    groupby = map(lambda p: 
+    groupby = map(lambda p:
                   query_plan.add_operator(
-                        tpch_q1.groupby_returnflag_linestatus_operator_def(
-                            'groupby' + '_' + str(p),
-                            query_plan)),
-                        range(0, lineitem_parts))
+                      tpch_q1.groupby_returnflag_linestatus_operator_def(
+                          'groupby' + '_' + str(p),
+                          query_plan)),
+                  range(0, lineitem_parts))
 
     groupby_reduce = query_plan.add_operator(
-                        tpch_q1.groupby_reduce_returnflag_linestatus_operator_def(
-                            'groupby_reduce',
-                            query_plan, use_pandas))
+        tpch_q1.groupby_reduce_returnflag_linestatus_operator_def(
+            'groupby_reduce',
+            query_plan, use_pandas))
 
     lineitem_scan[0].set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_scan_0" + ".prof"))
-    lineitem_project[0].set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_project_0" + ".prof"))
+    lineitem_project[0].set_profiled(True,
+                                     os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_project_0" + ".prof"))
     groupby[0].set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_groupby_0" + ".prof"))
-    groupby_reduce.set_profiled(True, os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_groupby_reduce" + ".prof"))
+    groupby_reduce.set_profiled(True,
+                                os.path.join(ROOT_DIR, "../tests-output/", gen_test_id() + "_groupby_reduce" + ".prof"))
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
-    
+
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
     map(lambda (p, o): o.connect(groupby[p]), enumerate(lineitem_project))
     map(lambda (p, o): o.connect(groupby_reduce), enumerate(groupby))
     groupby_reduce.connect(collate)
-    
 
     # Plan settings
     print('')
@@ -104,6 +111,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts):
 
     # Shut everything down
     query_plan.stop()
+
 
 if __name__ == "__main__":
     main()

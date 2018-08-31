@@ -136,11 +136,11 @@ def project_promo_revenue_operator_def(name, query_plan):
 #                         True)
 
 
-def sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(part, parts, use_pandas, secure, use_native, name, query_plan):
+def sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(sharded, part, parts, use_pandas, secure, use_native, name, query_plan):
     key_lower = math.ceil((200000.0 / float(parts)) * part)
     key_upper = math.ceil((200000.0 / float(parts)) * (part + 1))
 
-    return SQLTableScan(get_file_key('part', False),
+    return SQLTableScan(get_file_key('part', sharded),
                         "select "
                         "  p_partkey, p_type "
                         "from "
@@ -418,7 +418,9 @@ def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shippe
                                     max_shipped_date.strftime('%Y-%m-%d'))
                                 ,
                                 'l_partkey',
-                                use_pandas, secure, use_native, 
+                                use_pandas,
+                                secure,
+                                use_native,
                                 name,
                                 query_plan,
                                 False)

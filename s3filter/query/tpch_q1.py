@@ -22,19 +22,19 @@ import pandas as pd
 import numpy as np
 
 
-def sql_scan_lineitem_operator_def(sharded, shard, use_pandas, name, query_plan):
+def sql_scan_lineitem_operator_def(sharded, shard, use_pandas, secure, use_native, name, query_plan):
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
-                        "select * from S3Object;", use_pandas,
+                        "select * from S3Object;", use_pandas, secure, use_native,
                         name, query_plan,
                         False)
 
-def sql_filtered_scan_lineitem_operator_def(max_shipped_date, sharded, shard, use_pandas, name, query_plan):
+def sql_filtered_scan_lineitem_operator_def(max_shipped_date, sharded, shard, use_pandas, secure, use_native, name, query_plan):
     return SQLTableScan(get_file_key('lineitem', sharded, shard),
                         " select l_quantity, l_extendedprice, l_discount, l_tax, l_returnflag, l_linestatus, l_shipdate "
                         " from S3Object "
                         " where cast(l_shipdate as timestamp) <= cast(\'{}\' as timestamp) "
                         ";".format(max_shipped_date.strftime('%Y-%m-%d')),
-                        use_pandas, name, query_plan,
+                        use_pandas, secure, use_native, name, query_plan,
                         False)
 
 def project_lineitem_from_filtered_scan_operator_def(name, query_plan):

@@ -24,14 +24,17 @@ from s3filter.util.test_util import gen_test_id
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96, part_parts=4)
+        run(parallel=True, use_pandas=False, secure=False, use_native=True, buffer_size=0, lineitem_parts=96,
+            part_parts=4, lineitem_sharded=True, part_sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
         # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32, part_parts=4, sharded=True)
+        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=32,
+            part_parts=4, lineitem_sharded=True, part_sharded=False)
 
 
-def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded = True):
+def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
+        part_sharded):
     """
 
     :return: None
@@ -50,10 +53,12 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded =
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
                             tpch_q19.sql_scan_lineitem_select_all_op(
-                                sharded,
+                                lineitem_sharded,
                                 p,
                                 lineitem_parts,
-                                use_pandas, secure, use_native,
+                                use_pandas,
+                                secure,
+                                use_native,
                                 'lineitem_scan' + '_' + str(p),
                                 query_plan)),
                         range(0, lineitem_parts))
@@ -61,10 +66,12 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded =
     part_scan = map(lambda p:
                     query_plan.add_operator(
                         tpch_q19.sql_scan_part_select_all_op(
-                            sharded,
+                            part_sharded,
                             p,
                             part_parts,
-                            use_pandas, secure, use_native,
+                            use_pandas,
+                            secure,
+                            use_native,
                             'part_scan' + '_' + str(p), query_plan)),
                     range(0, part_parts))
 
@@ -178,7 +185,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded =
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    #numpy.testing.assert_almost_equal(tuples[1], 3468861.097000001)
+    numpy.testing.assert_almost_equal(tuples[1], 3468861.097000001)
 
 
 if __name__ == "__main__":
