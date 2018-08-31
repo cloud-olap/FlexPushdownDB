@@ -11,9 +11,11 @@ RELEASE = True
 if RELEASE:
     undef_macros = []
     extra_compile_args = ['-std=c++11', '-Ofast']
+    extra_link_args = []
 else:
     undef_macros = ["NDEBUG"]
-    extra_compile_args = ['-std=c++11', '-O1']
+    extra_compile_args = ['-std=c++11', '-g', '-O0', '-fno-omit-frame-pointer']
+    extra_link_args = ['-g']
 
 scanmodule = Extension('scan',
                        include_dirs=[numpy_include_dir,
@@ -27,6 +29,7 @@ scanmodule = Extension('scan',
                                       '/usr/local/lib/libaws-checksums.a',
                                       '/usr/local/lib/libaws-c-event-stream.a'],
                        extra_compile_args=extra_compile_args,
+                       extra_link_args=extra_link_args,
                        undef_macros=undef_macros,
                        sources=['scan/src/scan.cpp'])
 
