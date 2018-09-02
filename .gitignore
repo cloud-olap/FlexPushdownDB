@@ -118,3 +118,6 @@ venv.bak/
 
 # Ansible retry scripts
 *.retry
+
+*.code-workspace
+/.vscode/

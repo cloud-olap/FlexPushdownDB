@@ -21,23 +21,23 @@ from s3filter.query import tpch_q19
 from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
 
+
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96, part_parts=4)
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
+            part_parts=4, lineitem_sharded=True, part_sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        run(parallel=True, use_pandas=True, buffer_size=0, lineitem_parts=32, part_parts=4, sharded=True)
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
+            part_parts=4, lineitem_sharded=True, part_sharded=False)
 
 
-def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded=True):
+def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
+        part_sharded):
     """
 
     :return: None
     """
 
-    secure = False
-    use_native = False
     print('')
     print("TPCH Q19 Bloom Join")
     print("-------------------")
@@ -45,15 +45,18 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded=T
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Define the operators
-    lineitem_bloom_use = map(lambda p:
-                             query_plan.add_operator(
-                                 tpch_q19.bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(
-                                     sharded,
-                                     p,
-                                     lineitem_parts,
-                                     use_pandas, secure, use_native,
-                                     'lineitem_bloom_use' + '_' + str(p), query_plan)),
-                             range(0, lineitem_parts))
+    lineitem_bloom_use = \
+        map(lambda p:
+            query_plan.add_operator(
+                tpch_q19.bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(
+                    lineitem_sharded,
+                    p,
+                    lineitem_parts,
+                    use_pandas,
+                    secure,
+                    use_native,
+                    'lineitem_bloom_use' + '_' + str(p), query_plan)),
+            range(0, lineitem_parts))
 
     part_bloom_create = map(lambda p:
                             query_plan.add_operator(tpch_q19.bloom_create_partkey_op(
@@ -64,20 +67,23 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded=T
     part_scan = map(lambda p:
                     query_plan.add_operator(
                         tpch_q19.sql_scan_part_partkey_brand_size_container_where_filtered_op(
-                            sharded,
+                            part_sharded,
                             p,
                             part_parts,
-                            use_pandas, secure, use_native,
+                            use_pandas,
+                            secure,
+                            use_native,
                             'part_scan' + '_' + str(p),
                             query_plan)),
                     range(0, part_parts))
 
-    lineitem_project = map(lambda p:
-                           query_plan.add_operator(
-                               tpch_q19.project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(
-                                   'lineitem_project' + '_' + str(p),
-                                   query_plan)),
-                           range(0, lineitem_parts))
+    lineitem_project = \
+        map(lambda p:
+            query_plan.add_operator(
+                tpch_q19.project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_filtered_op(
+                    'lineitem_project' + '_' + str(p),
+                    query_plan)),
+            range(0, lineitem_parts))
 
     lineitem_map = map(lambda p:
                        query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
@@ -174,6 +180,20 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts, sharded=T
 
     # aggregate_project.connect(collate)
     connect_one_to_one(aggregate_project, collate)
+
+    # Plan settings
+    print('')
+    print("Settings")
+    print("--------")
+    print('')
+    print('use_pandas: {}'.format(use_pandas))
+    print('secure: {}'.format(secure))
+    print('use_native: {}'.format(use_native))
+    print("lineitem parts: {}".format(lineitem_parts))
+    print("part_parts: {}".format(part_parts))
+    print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("part_sharded: {}".format(part_sharded))
+    print('')
 
     # Write the plan graph
     query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())

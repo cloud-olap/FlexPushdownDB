@@ -6,6 +6,8 @@
 import os
 from datetime import datetime, timedelta
 
+import numpy
+
 from s3filter import ROOT_DIR
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -20,14 +22,15 @@ import s3filter.util.constants
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=96, part_parts=4)
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
+            part_parts=4, lineitem_sharded=True, part_sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=False, use_pandas=False, buffer_size=8192, lineitem_parts=1, part_parts=1)
-        # run(parallel=True, use_pandas=False, buffer_size=8192, lineitem_parts=32, part_parts=4)
-        run(parallel=True, use_pandas=True, buffer_size=16, lineitem_parts=32, part_parts=4)
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
+            part_parts=4, lineitem_sharded=True, part_sharded=False)
 
 
-def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
+def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
+        part_sharded):
     """
 
     :return: None
@@ -47,10 +50,15 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
 
     part_scan_1 = map(lambda p:
                       query_plan.add_operator(
-                          tpch_q14.sql_scan_part_partkey_where_brand12_operator_def(part_parts != 1, p, part_parts,
-                                                                                    use_pandas,
-                                                                                    'part_table_scan_1' + '_' + str(p),
-                                                                                    query_plan)),
+                          tpch_q14.sql_scan_part_partkey_where_brand12_operator_def(
+                              part_sharded,
+                              p,
+                              part_parts,
+                              use_pandas,
+                              secure,
+                              use_native,
+                              'part_table_scan_1' + '_' + str(p),
+                              query_plan)),
                       range(0, part_parts))
     part_1_project = map(lambda p:
                          query_plan.add_operator(
@@ -64,12 +72,16 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                             range(0, part_parts))
     lineitem_scan_1 = map(lambda p:
                           query_plan.add_operator(
-                              tpch_q14.bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date,
-                                                                                               max_shipped_date,
-                                                                                               lineitem_parts != 1, p,
-                                                                                               use_pandas,
-                                                                                               'lineitem_scan_1' + '_' + str(
-                                                                                                   p), query_plan)),
+                              tpch_q14.bloom_scan_lineitem_partkey_where_shipdate_operator_def(
+                                  min_shipped_date,
+                                  max_shipped_date,
+                                  lineitem_sharded,
+                                  p,
+                                  use_pandas,
+                                  secure,
+                                  use_native,
+                                  'lineitem_scan_1' + '_' + str(p),
+                                  query_plan)),
                           range(0, lineitem_parts))
     lineitem_1_project = map(lambda p:
                              query_plan.add_operator(
@@ -94,10 +106,15 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                             range(0, part_parts))
     part_scan_2 = map(lambda p:
                       query_plan.add_operator(
-                          tpch_q14.bloom_scan_part_partkey_type_brand12_operator_def(part_parts != 1, p, part_parts,
-                                                                                     use_pandas,
-                                                                                     'part_table_scan_2' + '_' + str(p),
-                                                                                     query_plan)),
+                          tpch_q14.bloom_scan_part_partkey_type_brand12_operator_def(
+                              part_sharded,
+                              p,
+                              part_parts,
+                              use_pandas,
+                              secure,
+                              use_native,
+                              'part_table_scan_2' + '_' + str(p),
+                              query_plan)),
                       range(0, part_parts))
     part_2_project = map(lambda p:
                          query_plan.add_operator(
@@ -106,12 +123,16 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
                          range(0, part_parts))
     lineitem_scan_2 = map(lambda p:
                           query_plan.add_operator(
-                              tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date,
-                                                                                       max_shipped_date,
-                                                                                       lineitem_parts != 1, p,
-                                                                                       use_pandas,
-                                                                                       'lineitem_scan_2' + '_' + str(p),
-                                                                                       query_plan)),
+                              tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(
+                                  min_shipped_date,
+                                  max_shipped_date,
+                                  lineitem_sharded,
+                                  p,
+                                  use_pandas,
+                                  secure,
+                                  use_native,
+                                  'lineitem_scan_2' + '_' + str(p),
+                                  query_plan)),
                           range(0, lineitem_parts))
     lineitem_2_project = map(lambda p:
                              query_plan.add_operator(
@@ -187,8 +208,12 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     print("--------")
     print('')
     print('use_pandas: {}'.format(use_pandas))
+    print('secure: {}'.format(secure))
+    print('use_native: {}'.format(use_native))
     print("lineitem parts: {}".format(lineitem_parts))
     print("part_parts: {}".format(part_parts))
+    print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("part_sharded: {}".format(part_sharded))
     print('')
 
     query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())
@@ -216,7 +241,7 @@ def run(parallel, use_pandas, buffer_size, lineitem_parts, part_parts):
     if s3filter.util.constants.TPCH_SF == 10:
         assert round(float(tuples[1][0]), 10) == 15.4488836202
     elif s3filter.util.constants.TPCH_SF == 1:
-        assert round(float(tuples[1][0]), 10) == 15.0901165263
+        numpy.testing.assert_almost_equal(float(tuples[1][0]), 15.0901165263)
 
 
 if __name__ == "__main__":
