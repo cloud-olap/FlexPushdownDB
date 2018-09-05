@@ -374,7 +374,7 @@ class TopKTableScan(Operator):
 
         sql = "SELECT {} FROM S3Object LIMIT {}".format(projection, k)
         q_plan = QueryPlan(is_async=False)
-        select_op = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, "sample_{}_scan".format(s3key),
+        select_op = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, False, "sample_{}_scan".format(s3key),
                                                   q_plan, False))
         collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, False))
         select_op.connect(collate)

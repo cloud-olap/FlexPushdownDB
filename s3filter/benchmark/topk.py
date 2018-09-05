@@ -32,6 +32,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     if filtered:
         sql = '''select l_extendedprice
                   from S3Object;'''
+        sort_index = '_0'
 
     print("\n\nBaseline TopK with order {} on field {}\n".format(sort_order, col_name))
 
@@ -115,6 +116,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     if filtered:
         sql = '''select l_extendedprice
               from S3Object;'''
+        sort_index = '_0'
 
     print("\n\nSampling params:")
     print("Scale: {}, Sort Field: {}, Sort Order: {}\n".format(k_scale, sort_field, sort_order))
