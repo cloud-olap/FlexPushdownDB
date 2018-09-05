@@ -172,8 +172,8 @@ class TopKTableScan(Operator):
     This operator scans a table and emits the k topmost tuples based on a user-defined ranking criteria
     """
 
-    def __init__(self, s3key, s3sql, use_pandas, use_native, max_tuples, k_scale, sort_expression, shards, parallel_shards,
-                 shards_prefix, processes, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, max_tuples, k_scale, sort_expression, shards,
+                 parallel_shards, shards_prefix, processes, name, query_plan, log_enabled):
         """
         Creates a table scan operator that emits only the k topmost tuples from the table
         :param s3key: the table's s3 object key
@@ -193,6 +193,7 @@ class TopKTableScan(Operator):
         self.s3sql = s3sql
         self.query_plan = query_plan
         self.use_pandas = use_pandas
+        self.secure = secure
         self.use_native = use_native
 
         self.field_names = None
@@ -231,7 +232,7 @@ class TopKTableScan(Operator):
                                                                self.sort_expression.col_type.__name__, comp_op, self.msv)
 
         if self.processes == 1:
-            ts = SQLTableScan(self.s3key, filtered_sql, self.use_pandas, True, self.use_native,
+            ts = SQLTableScan(self.s3key, filtered_sql, self.use_pandas, self.secure, self.use_native,
                               'baseline_topk_table_scan',
                               self.query_plan, self.log_enabled)
             ts.connect(self)
@@ -239,7 +240,8 @@ class TopKTableScan(Operator):
         else:
             for process in range(self.processes):
                 proc_parts = [x for x in range(1, self.shards + 1) if x % self.processes == process]
-                pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql, self.use_pandas, True,
+                pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql, self.use_pandas,
+                                                                      self.secure,
                                                                       self.use_native,
                                                                       "topk_table_scan_parts_{}".format(proc_parts),
                                                                       proc_parts, shards_prefix,

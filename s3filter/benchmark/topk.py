@@ -194,13 +194,13 @@ def run_all():
 
     # varying K
     for k in range(100, 400, 100):
-        topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
+        # topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
         topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
-        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
         topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
         for i in range(4):
             scale = pow(2, i)
-            topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'ASC', use_pandas)
+            # topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'ASC', use_pandas)
             topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'DESC', use_pandas)
 
     for stat in stats:
