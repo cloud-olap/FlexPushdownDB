@@ -183,7 +183,8 @@ def run_all():
         'K scale',
         'Sampling Threshold',
         'Sampling time (Sec)',
-        'Total query time (Sec)'
+        'Query time (Sec)',
+        'Total query time (Sec)',
         'Returned Rows',
         'Bytes Scanned MB',
         'Bytes Returned MB',
