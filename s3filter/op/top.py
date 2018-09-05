@@ -221,14 +221,14 @@ class TopKTableScan(Operator):
         self.sample_tuples, self.sample_op, q_plan = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples,
                                                                         self.sort_expression)
         # self.field_names = self.sample_tuples[0]
-        msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
+        self.msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
 
         self.op_metrics.sampling_data_cost = q_plan.data_cost()[0]
         self.op_metrics.sampling_computation_cost = q_plan.computation_cost()
         self.op_metrics.sampling_time = q_plan.total_elapsed_time
 
         filtered_sql = "{} WHERE CAST({} AS {}) {} {};".format(self.s3sql.rstrip(';'), self.sort_expression.col_name,
-                                                               self.sort_expression.col_type.__name__, comp_op, msv)
+                                                               self.sort_expression.col_type.__name__, comp_op, self.msv)
 
         if self.processes == 1:
             ts = SQLTableScan(self.s3key, filtered_sql, self.use_pandas, True, self.use_native,

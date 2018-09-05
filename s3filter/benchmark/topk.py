@@ -30,7 +30,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     sql = 'select * from S3Object;'
 
     if filtered:
-        sql = '''select l_orderkey, l_partkey, l_suppkey, l_linenumber, l_quantity, l_extendedprice, l_comment
+        sql = '''select l_extendedprice
                   from S3Object;'''
 
     print("\n\nBaseline TopK with order {} on field {}\n".format(sort_order, col_name))
@@ -75,6 +75,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     data_cost = query_plan.data_cost()[0]
 
     query_stats += [0,
+                    0,
                     query_plan.total_elapsed_time,
                     query_plan.total_elapsed_time,
                     rows,
@@ -112,7 +113,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     sql = 'select * from S3Object;'
 
     if filtered:
-        sql = '''select l_orderkey, l_partkey, l_suppkey, l_linenumber, l_quantity, l_extendedprice, l_comment
+        sql = '''select l_extendedprice
               from S3Object;'''
 
     print("\n\nSampling params:")
@@ -146,7 +147,8 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     computation_cost = query_plan.computation_cost()
     data_cost = query_plan.data_cost()[0]
 
-    query_stats += [ts.op_metrics.sampling_time,
+    query_stats += [ts.msv,
+                    ts.op_metrics.sampling_time,
                     query_plan.total_elapsed_time,
                     ts.op_metrics.sampling_time + query_plan.total_elapsed_time,
                     rows,
@@ -177,6 +179,7 @@ def run_all():
         'Sort Order',
         'K',
         'K scale',
+        'Sampling Threshold',
         'Sampling time (Sec)',
         'Total query time (Sec)'
         'Returned Rows',
