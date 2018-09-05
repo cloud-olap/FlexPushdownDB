@@ -45,7 +45,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     top_op = query_plan.add_operator(Top(limit, sort_exp, use_pandas, 'topk', query_plan, False))
     for process in range(processes):
         proc_parts = [x for x in range(1, shards + 1) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("tpch-sf10/lineitem.tbl", sql, use_pandas, False, True,
+        pc = query_plan.add_operator(SQLShardedTableScan("tpch-sf10/lineitem.tbl", sql, use_pandas, True, False,
                                                          "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
                                                          shards_prefix, parallel_shards, query_plan, False))
         # pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
@@ -125,7 +125,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
     # Query plan
     ts = query_plan.add_operator(
-        TopKTableScan('tpch-sf10/lineitem.tbl', sql, use_pandas, False, limit, k_scale,
+        TopKTableScan('tpch-sf10/lineitem.tbl', sql, use_pandas, True, False, limit, k_scale,
                       SortExpression(sort_index, col_type, sort_order, sort_field),
                       shards, parallel_shards, shards_prefix, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))
