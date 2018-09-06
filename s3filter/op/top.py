@@ -171,8 +171,8 @@ class TopKTableScan(Operator):
     This operator scans a table and emits the k topmost tuples based on a user-defined ranking criteria
     """
 
-    def __init__(self, s3key, s3sql, use_pandas, use_native, max_tuples, k_scale, sort_expression, shards, parallel_shards,
-                 shards_prefix, processes, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, max_tuples, k_scale, sort_expression, shards,
+                 parallel_shards, shards_prefix, processes, name, query_plan, log_enabled):
         """
         Creates a table scan operator that emits only the k topmost tuples from the table
         :param s3key: the table's s3 object key
@@ -192,6 +192,7 @@ class TopKTableScan(Operator):
         self.s3sql = s3sql
         self.query_plan = query_plan
         self.use_pandas = use_pandas
+        self.secure = secure
         self.use_native = use_native
 
         self.field_names = None
@@ -220,17 +221,17 @@ class TopKTableScan(Operator):
         self.sample_tuples, self.sample_op, q_plan = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples,
                                                                         self.sort_expression)
         # self.field_names = self.sample_tuples[0]
-        msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
+        self.msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
 
         #self.op_metrics.sampling_data_cost = q_plan.data_cost()[0]
         #self.op_metrics.sampling_computation_cost = q_plan.computation_cost()
         #self.op_metrics.sampling_time = q_plan.total_elapsed_time
 
         filtered_sql = "{} WHERE CAST({} AS {}) {} {};".format(self.s3sql.rstrip(';'), self.sort_expression.col_name,
-                                                               self.sort_expression.col_type.__name__, comp_op, msv)
+                                                               self.sort_expression.col_type.__name__, comp_op, self.msv)
 
         if self.processes == 1:
-            ts = SQLTableScan(self.s3key, filtered_sql, self.use_pandas, True, self.use_native,
+            ts = SQLTableScan(self.s3key, filtered_sql, self.use_pandas, self.secure, self.use_native,
                               'baseline_topk_table_scan',
                               self.query_plan, self.log_enabled)
             ts.connect(self)
@@ -239,7 +240,8 @@ class TopKTableScan(Operator):
             for process in range(self.processes):
                 proc_parts = [x for x in range(1, self.shards + 1) if x % self.processes == process]
                 pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql, self.use_pandas,
-                                                                      self.use_native, False,
+                                                                      self.secure,
+                                                                      self.use_native,
                                                                       "topk_table_scan_parts_{}".format(proc_parts),
                                                                       proc_parts, shards_prefix,
                                                                       self.parallel_shards,
@@ -373,7 +375,7 @@ class TopKTableScan(Operator):
 
         sql = "SELECT {} FROM S3Object LIMIT {}".format(projection, k)
         q_plan = QueryPlan(is_async=False)
-        select_op = q_plan.add_operator(SQLTableScan(s3key, sql, True, False, False, "sample_{}_scan".format(s3key),
+        select_op = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, False, "sample_{}_scan".format(s3key),
                                                   q_plan, False))
         collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, False))
         select_op.connect(collate)

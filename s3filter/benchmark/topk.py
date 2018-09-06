@@ -30,8 +30,9 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     sql = 'select * from S3Object;'
 
     if filtered:
-        sql = '''select l_orderkey, l_partkey, l_suppkey, l_linenumber, l_quantity, l_extendedprice, l_comment
+        sql = '''select l_extendedprice
                   from S3Object;'''
+        sort_index = '_0'
 
     print("\n\nBaseline TopK with order {} on field {}\n".format(sort_order, col_name))
 
@@ -44,7 +45,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     top_op = query_plan.add_operator(Top(limit, sort_exp, use_pandas, 'topk', query_plan, False))
     for process in range(processes):
         proc_parts = [x for x in range(1, shards + 1) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("tpch-sf10/lineitem.tbl", sql, use_pandas, False, True,
+        pc = query_plan.add_operator(SQLShardedTableScan("tpch-sf10/lineitem.tbl", sql, use_pandas, True, False,
                                                          "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
                                                          shards_prefix, parallel_shards, query_plan, False))
         # pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
@@ -75,6 +76,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     data_cost = query_plan.data_cost()[0]
 
     query_stats += [0,
+                    0,
                     query_plan.total_elapsed_time,
                     query_plan.total_elapsed_time,
                     rows,
@@ -112,8 +114,9 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     sql = 'select * from S3Object;'
 
     if filtered:
-        sql = '''select l_orderkey, l_partkey, l_suppkey, l_linenumber, l_quantity, l_extendedprice, l_comment
+        sql = '''select l_extendedprice
               from S3Object;'''
+        sort_index = '_0'
 
     print("\n\nSampling params:")
     print("Scale: {}, Sort Field: {}, Sort Order: {}\n".format(k_scale, sort_field, sort_order))
@@ -122,7 +125,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
     # Query plan
     ts = query_plan.add_operator(
-        TopKTableScan('tpch-sf10/lineitem.tbl', sql, use_pandas, False, limit, k_scale,
+        TopKTableScan('tpch-sf10/lineitem.tbl', sql, use_pandas, True, False, limit, k_scale,
                       SortExpression(sort_index, col_type, sort_order, sort_field),
                       shards, parallel_shards, shards_prefix, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))
@@ -146,7 +149,8 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     computation_cost = query_plan.computation_cost()
     data_cost = query_plan.data_cost()[0]
 
-    query_stats += [ts.op_metrics.sampling_time,
+    query_stats += [ts.msv,
+                    ts.op_metrics.sampling_time,
                     query_plan.total_elapsed_time,
                     ts.op_metrics.sampling_time + query_plan.total_elapsed_time,
                     rows,
@@ -177,8 +181,10 @@ def run_all():
         'Sort Order',
         'K',
         'K scale',
+        'Sampling Threshold',
         'Sampling time (Sec)',
-        'Total query time (Sec)'
+        'Query time (Sec)',
+        'Total query time (Sec)',
         'Returned Rows',
         'Bytes Scanned MB',
         'Bytes Returned MB',
@@ -189,13 +195,15 @@ def run_all():
 
     # varying K
     for k in range(100, 400, 100):
-        topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
+        # topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
         topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
-        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
         topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
+
+    for k in range(100, 400, 100):
         for i in range(4):
             scale = pow(2, i)
-            topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'ASC', use_pandas)
+            # topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'ASC', use_pandas)
             topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'DESC', use_pandas)
 
     for stat in stats:

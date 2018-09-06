@@ -14,7 +14,7 @@ class SQLShardedTableScan(Operator):
         consuming operators as they are received. Generally starting this operator is what begins a query.
         """
 
-    def __init__(self, s3key, s3sql, use_pandas, use_native, secure, name, shards, shard_prefix, parallel_shards,
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, shards, shard_prefix, parallel_shards,
                  query_plan, log_enabled):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
         :param s3key: The object key to select against
