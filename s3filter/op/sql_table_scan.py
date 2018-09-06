@@ -96,8 +96,8 @@ class SQLTableScanMetrics(OpMetrics):
             'time_to_last_record_response':
                 None if self.time_to_last_record_response is None
                 else round(self.time_to_last_record_response, 5),
-            'cost': "${0:.8f}".format(self.cost()),
-            'cost_for_instance': self.cost_estimator.ec2_instance
+            #'cost': "${0:.8f}".format(self.cost()),
+            #'cost_for_instance': self.cost_estimator.ec2_instance
         }.__repr__()
 
 

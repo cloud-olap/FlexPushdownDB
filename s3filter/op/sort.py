@@ -31,8 +31,8 @@ class SortExpression(object):
 
         self.col_index = col_index
         self.col_type = col_type
-        self.col_name = col_name
         self.sort_order = sort_order
+        self.col_name = col_name
 
         self._first_tuple = True
 
