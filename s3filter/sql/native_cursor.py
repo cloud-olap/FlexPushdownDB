@@ -35,6 +35,8 @@ class NativeCursor(object):
         self.bytes_processed = 0
         self.bytes_returned = 0
 
+        self.num_http_get_requests = 0
+
     def select(self, s3key, s3sql):
         """Creates a select cursor
 

@@ -180,7 +180,7 @@ class QueryPlan(object):
 
     def send(self, message, operator_name):
         o = self.operators[operator_name]
-        o.queue.put(message)
+        o.queue.put(cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL))
 
     def print_metrics(self):
 
@@ -301,8 +301,8 @@ class QueryPlan(object):
     def listen(self, message_type):
         try:
             while True:
-                item = self.queue.get()
-                # item = cPickle.loads(pickled_item)
+                p_item = self.queue.get()
+                item = cPickle.loads(p_item)
                 # print(item)
 
                 if type(item) == message_type:

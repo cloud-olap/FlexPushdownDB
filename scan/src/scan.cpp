@@ -784,7 +784,7 @@ public:
                 config.requestTimeoutMs = 60000 * 10;
 //                config.readRateLimiter = Limiter;
 //                config.writeRateLimiter = Limiter;
-                config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 1);
+                // config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 1);
 
                 m_HttpClient = Aws::Http::CreateHttpClient(config);
 
@@ -800,7 +800,7 @@ public:
                 ss << "/";
                 ss << key;
                 uri.SetPath(uri.GetPath() + ss.str());
-                uri.SetQueryString("select&select-type=2");
+                uri.SetQueryString("select&select-type=2"); // Enables S3 Select
 
                 auto signerProvider = Aws::MakeShared<AWSAuthV4Signer>(ALLOCATION_TAG, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
                     "s3", config.region, AWSAuthV4Signer::PayloadSigningPolicy::Never, false);
@@ -810,15 +810,14 @@ public:
                 // std::shared_ptr<HttpRequest> request(CreateHttpRequest(uri, HttpMethod::HTTP_POST, Aws::Utils::Stream::DefaultResponseStreamFactoryMethod));
 
                 // NullBuffer null_buffer;
-                CallbackBuffer callback_buffer;
-                const Aws::IOStreamFactory& null_stream_factory = [&callback_buffer](){
+                // CallbackBuffer callback_buffer;
+                // const Aws::IOStreamFactory& stream_factory = [&callback_buffer](){
+                //         cout << "Invoking factory" << endl;
+                //         return Aws::New<Aws::IOStream>(ALLOCATION_TAG, &callback_buffer);
+                //     };
+                const Aws::IOStreamFactory& stream_factory = Aws::Utils::Stream::DefaultResponseStreamFactoryMethod;
 
-                        cout << "Invoking factiory" << endl;
-
-                        return Aws::New<Aws::IOStream>(ALLOCATION_TAG, &callback_buffer);
-                    };
-
-                std::shared_ptr<HttpRequest> request(CreateHttpRequest(uri, HttpMethod::HTTP_POST, null_stream_factory));
+                std::shared_ptr<HttpRequest> request(CreateHttpRequest(uri, HttpMethod::HTTP_POST, stream_factory));
 
 
 
@@ -838,7 +837,7 @@ public:
 
                 AddCommonHeaders(*request, config);
 
-                
+                request->SetHeaderValue("Connection", "keep-alive");
 
 
 
@@ -962,12 +961,14 @@ public:
                     m_HttpClient->MakeRequest(request, config.readRateLimiter.get(), config.writeRateLimiter.get()));
                 // response->SwapResponseStreamOwnership();
 
-                // Aws::StringStream ss2;
-                // ss2 << key <<  " | Request complete | total bytes received: " << total_bytes_received << std::endl;
-                // cout << ss2.str(); 
+                Aws::IOStream &body_stream = response->GetResponseBody();
+                body_stream.seekg(0, ios::end);
+                total_bytes_received = body_stream.tellg();
+
+                // total_bytes_received = callback_buffer.m_bytes_read;
 
                 Aws::StringStream ss2;
-                ss2 << key <<  " | Request complete | total bytes received: " << callback_buffer.m_bytes_read << std::endl;
+                ss2 << key <<  " | Request complete | total bytes received: " << total_bytes_received << std::endl;
                 cout << ss2.str(); 
 
                 if(DoesResponseGenerateError(response)){
@@ -981,9 +982,6 @@ public:
 
                 // Py_INCREF(Py_None);
                 // return Py_None;
-
-
-
 
                 // std::shared_ptr<HttpResponse> response = m_HttpClient->MakeRequest(request);
 
