@@ -2,6 +2,8 @@
 """Filter support
 
 """
+import time
+
 import pandas as pd
 
 from s3filter.op.tuple import IndexedTuple
@@ -83,12 +85,10 @@ class Filter(Operator):
         :return: None
         """
 
-        # def ass(t_):
-        #     return cast(t_['_10'], timestamp) >= cast('1996-03-01', timestamp)
-        # criterion = df.apply(ass, axis=1)
-
-        # df['_10'] = pd.to_datetime(df['_10'])
-        # criterion = df['_10'] >= '1996-03-01'
+        if self.log_enabled:
+            print("{} | {}('{}') | Received data frame:"
+                  .format(time.time(), self.__class__.__name__, self.name))
+            print(df)
 
         self.op_metrics.rows_processed += len(df)
 

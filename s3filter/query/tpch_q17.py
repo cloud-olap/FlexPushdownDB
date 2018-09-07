@@ -133,7 +133,7 @@ def project_lineitem_filtered_orderkey_partkey_quantity_extendedprice_op(name, q
             ProjectExpression(lambda t_: t_['_3'], 'l_extendedprice')
         ],
         name, query_plan,
-        True, fn)
+        False, fn)
 
 
 def project_partkey_brand_container_op(name, query_plan):
@@ -400,7 +400,7 @@ def sql_scan_lineitem_select_orderkey_partkey_quantity_extendedprice(sharded,
                         use_native,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
 def sql_scan_select_partkey_where_brand_container_op(sharded, shard, num_shards, use_pandas, secure, use_native, name,

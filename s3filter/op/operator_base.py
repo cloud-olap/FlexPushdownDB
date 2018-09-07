@@ -2,6 +2,7 @@
 """Operator support
 
 """
+import cPickle
 import cProfile
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
@@ -91,10 +92,10 @@ class Operator(object):
             while running:
 
                 self.op_metrics.timer_stop()
-                item = queue.get()
+                p_item = queue.get()
                 self.op_metrics.timer_start()
 
-                # item = cPickle.loads(pickled_item)
+                item = pickle.loads(p_item)
 
                 # print(item)
 
@@ -108,7 +109,8 @@ class Operator(object):
                     self.on_consumer_completed(item.consumer_name)
                 elif type(item) == EvalMessage:
                     evaluated = eval(item.expr)
-                    self.completion_queue.put(EvaluatedMessage(evaluated))
+                    p_evaluated = pickle.dumps(EvaluatedMessage(evaluated))
+                    self.completion_queue.put(p_evaluated)
                 else:
                     message = item[0]
                     sender = item[1]
@@ -368,7 +370,8 @@ class Operator(object):
                 print("{} | {}('{}') | Completed".format(time.time(), self.__class__.__name__, self.name))
 
             if self.async_:
-                self.completion_queue.put(OperatorCompletedMessage(self.name))
+                p_msg = cPickle.dumps(OperatorCompletedMessage(self.name))
+                self.completion_queue.put(p_msg)
 
             self.__completed = True
 

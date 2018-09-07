@@ -38,7 +38,8 @@ class Collate(Operator):
         """
 
         if self.async_:
-            self.queue.put(EvalMessage("self.local_tuples()"))
+            p_message = pickle.dumps(EvalMessage("self.local_tuples()"))
+            self.queue.put(p_message)
             item = self.query_plan.listen(EvaluatedMessage)
             tuples = item.val
             return tuples

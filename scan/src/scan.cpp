@@ -11,6 +11,7 @@
 #include <aws/core/platform/Platform.h>
 //#include <aws/core/utils/Outcome.h>
 #include <aws/s3/S3Client.h>
+#include <aws/s3/S3Endpoint.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
 //#include <aws/s3/model/DeleteBucketRequest.h>
 //#include <aws/s3/model/CreateBucketRequest.h>
@@ -20,7 +21,7 @@
 //#include <aws/core/utils/HashingUtils.h>
 //#include <aws/core/utils/StringUtils.h>
 //#include <aws/core/utils/UUID.h>
-//#include <aws/s3/model/GetObjectRequest.h>
+#include <aws/s3/model/GetObjectRequest.h>
 //#include <aws/s3/model/DeleteObjectRequest.h>
 //#include <aws/s3/model/HeadObjectRequest.h>
 //#include <aws/s3/model/CreateMultipartUploadRequest.h>
@@ -59,6 +60,32 @@ using namespace Aws::S3;
 //using namespace Aws::S3::Model;
 using namespace Aws::Utils;
 
+static const int SUCCESS_RESPONSE_MIN = 200;
+static const int SUCCESS_RESPONSE_MAX = 299;
+
+class NullBuffer : public std::streambuf
+{
+public:
+  int overflow(int c) { 
+      return c; 
+  }
+};
+
+class CallbackBuffer : public std::streambuf
+{
+public:
+     int m_bytes_read = 0;
+protected:
+   
+
+  int_type overflow(int_type c) override { 
+        // cout << (char)c;
+        m_bytes_read += 1;
+        return c; 
+  }
+};
+
+
 class Reader
 {
     int bytes_scanned = 0;
@@ -70,14 +97,54 @@ public:
     }
 
 
+
     Aws::String buildURI(std::shared_ptr<S3Client> s3_client, Aws::String bucket_name, Aws::String TEST_OBJ_KEY){
+        // Aws::StringStream uri_ss;
+        // uri_ss << "http://" << bucket_name << ".s3.amazonaws.com/" << TEST_OBJ_KEY;
+        // return uri_ss.str();
+
         Aws::String uri = s3_client->GeneratePresignedUrl(bucket_name, TEST_OBJ_KEY, HttpMethod::HTTP_POST);
         return uri;
     }
 
+    Aws::String ComputeEndpointString(const Aws::String& bucket, const Aws::Client::ClientConfiguration& config, bool vitual_addressing) const
+    {
+        Aws::StringStream ss;
+        if(vitual_addressing && Aws::Utils::IsValidDnsLabel(bucket) && 
+                bucket == Aws::Utils::StringUtils::ToLower(bucket.c_str())) 
+        {
+            ss << SchemeMapper::ToString(config.scheme) << "://" << bucket << "." << S3Endpoint::ForRegion(config.region, config.useDualStack);
+        }
+        else
+            
+            ss << SchemeMapper::ToString(config.scheme) << "://" << S3Endpoint::ForRegion(config.region, config.useDualStack) << "/" << bucket;
+        
+        return ss.str();
+    }
+
+    // Aws::Client::AWSAuthSigner* GetSignerByName(const char* name, const Aws::Client& config) const
+    // {
+    //     const auto& signer =  config.>GetSigner(name);
+    //     return signer ? signer.get() : nullptr;
+    // }
+
     std::shared_ptr<HttpRequest> buildRequest(Aws::String url){
         std::shared_ptr<HttpRequest> request = Aws::Http::CreateHttpRequest(url, HttpMethod::HTTP_POST, Aws::Utils::Stream::DefaultResponseStreamFactoryMethod);
         return request;
+    }
+
+    void AddCommonHeaders(HttpRequest& httpRequest, const Aws::Client::ClientConfiguration& config) const
+    {
+        httpRequest.SetUserAgent(config.userAgent);
+    }
+
+    static bool DoesResponseGenerateError(const std::shared_ptr<HttpResponse>& response)
+    {
+        if (!response) return true;
+
+        int responseCode = static_cast<int>(response->GetResponseCode());
+        return responseCode < SUCCESS_RESPONSE_MIN || responseCode > SUCCESS_RESPONSE_MAX;
+
     }
 
     Aws::String buildRequestBody(Aws::String sql){
@@ -85,22 +152,40 @@ public:
 
         encode(sql);
 
-        body_ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            "<SelectRequest>"
+        // body_ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        //     "<SelectRequest>"
+        //         "<Expression>" << sql << "</Expression>"
+        //         "<ExpressionType>SQL</ExpressionType>"
+        //         "<InputSerialization>"
+        //             "<CSV>"
+        //                 "<FileHeaderInfo>USE</FileHeaderInfo>"
+        //                 "<RecordDelimiter>|\n</RecordDelimiter>"
+        //                 "<FieldDelimiter>|</FieldDelimiter>"
+        //             "</CSV>"
+        //         "</InputSerialization>"
+        //         "<OutputSerialization>"
+        //             "<CSV>"
+        //             "</CSV>"
+        //        " </OutputSerialization>"
+        //     "</SelectRequest> ";
+
+        body_ss << "<SelectObjectContentRequest xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
                 "<Expression>" << sql << "</Expression>"
                 "<ExpressionType>SQL</ExpressionType>"
                 "<InputSerialization>"
                     "<CSV>"
-                        "<FileHeaderInfo>USE</FileHeaderInfo>"
+                        "<FileHeaderInfo>Use</FileHeaderInfo>"
                         "<RecordDelimiter>|\n</RecordDelimiter>"
                         "<FieldDelimiter>|</FieldDelimiter>"
                     "</CSV>"
                 "</InputSerialization>"
                 "<OutputSerialization>"
-                    "<CSV>"
-                    "</CSV>"
+                    "<CSV/>"
                " </OutputSerialization>"
-            "</SelectRequest> ";
+            "</SelectObjectContentRequest> ";
+
+
+            
 
         return body_ss.str();
     }
@@ -111,7 +196,7 @@ public:
         return key_ss.str();
     }
 
-    bool starts_with(const Aws::String& s1, const Aws::String& s2) {
+    static bool starts_with(const Aws::String& s1, const Aws::String& s2) {
         return s2.size() <= s1.size() && s1.compare(0, s2.size(), s2) == 0;
     }
 
@@ -127,18 +212,31 @@ public:
         char latest_header_value[100];
         struct aws_allocator *alloc;
         int latest_error;
+        Aws::String *latest_error_message;
         Aws::String *last_line;
         Aws::StringStream buffer_stringstream;
         PyObject *on_data_callback;
         Reader *reader;
-        AwsEventType latest_event_type;
+        const char *key;
         int new_event_sequence;
+        AwsEventType latest_event_type;
         Aws::String stats_str;
     };
 
     static void s_decoder_test_on_payload_segment(struct aws_event_stream_streaming_decoder *decoder,
                                               struct aws_byte_buf *data, int8_t final_segment, void *user_data) {
         struct test_decoder_data *decoder_data = (struct test_decoder_data *) user_data;
+
+        bool final_segment_bool = final_segment == true;
+
+        Aws::StringStream ss;
+        ss << 
+            decoder_data->key << 
+            " | Segment received: event type is currently: " << decoder_data->latest_event_type << 
+            ", final segment marker is: " <<  final_segment_bool << 
+            ", buffer length is: " <<  data->len << 
+            endl;
+        cout << ss.str();
 
         // cout << endl << "--------------- PAYLOAD SEGMENT START!!!" << endl;
         // cout << "Event Type is: |||" << decoder_data->latest_event_type << "|||" << endl;
@@ -182,13 +280,15 @@ public:
         }
         else if(decoder_data->latest_event_type == AwsEventType::stats){
 
+            // cout << "Latest Event Type is Stats: Payload is: |||" << payload_str << "|||" << endl;
+            // cout << "Latest Event Type is Stats: Buffer is: |||" << decoder_data->buffer_stringstream.str() << "|||" << endl;
+
             // HACK: Grab the remainder of the records before grabbing the stats
             int num_chars = decoder_data->buffer_stringstream.tellp();
-            // cout << num_chars << endl;
+            // cout << "Latest Event Type is Stats: Num chars in buffer is: |||" << num_chars << "|||" << endl;
             if(num_chars > 0){
                 // cout << "PARSING REMAINING RECORDS PAYLOADS!!!" << decoder_data->buffer_stringstream.str() << endl;
                 parse_records_payload(decoder_data);
-                decoder_data->buffer_stringstream = Aws::StringStream();
             }
 
             decoder_data->buffer_stringstream << payload_str;
@@ -201,14 +301,13 @@ public:
             int num_chars = decoder_data->buffer_stringstream.tellp();
             // cout << num_chars << endl;
             if(num_chars > 1024 * 256){
-                // cout << "PARSING RECORDS PAYLOADS!!!" << decoder_data->buffer_stringstream.str() << endl;
                 parse_records_payload(decoder_data);
-                decoder_data->buffer_stringstream = Aws::StringStream();
             }
         }
         else if(decoder_data->latest_event_type == AwsEventType::stats){
             // cout << "STATS PAYLOAD!!!" << decoder_data->buffer_stringstream.str() << endl;
             decoder_data->stats_str += decoder_data->buffer_stringstream.str();
+            decoder_data->buffer_stringstream = Aws::StringStream();
         }
 
         // cout << "----------------------- PAYLOAD SEGMENT END!!!" << endl;
@@ -216,6 +315,9 @@ public:
 
     static void parse_records_payload(test_decoder_data *decoder_data){
         
+        // cout << "Parsing records buffer. Buffer is: " << endl << "|||" << decoder_data->buffer_stringstream.str() << "|||" << endl;
+        // cout << "Parsing records buffer. Buffer is: " << endl;
+
         aria::csv::CsvParser parser = aria::csv::CsvParser(decoder_data->buffer_stringstream)
             .delimiter(',')
             .quote('"')
@@ -226,12 +328,14 @@ public:
         #ifndef NDEBUG
             int num_cols = -1;
         #endif
+
+        // cout << "Parsed records buffer. Parsed vector is: " << endl;
         
         for (auto& row : parser) {
             std::vector<std::string> row_v = std::vector<std::string>();
             for (auto& field : row) {
                 row_v.push_back(field);
-                // std::cout << field << " | ";
+                // std::cout << field << ", ";
             }
 
             #ifndef NDEBUG
@@ -246,11 +350,19 @@ public:
             // std::cout << std::endl;
         }
 
+        decoder_data->buffer_stringstream = Aws::StringStream();
+
         PyArrayObject* pArray = Reader::build_nd_array4(data_v);
         PyObject* ret = PyArray_Return(pArray);
 
         PyObject *arglist = Py_BuildValue("(O)", ret);
         PyObject *result = PyObject_CallObject(decoder_data->on_data_callback, arglist);
+
+        if (result == NULL){
+
+            cout << "CALLBACK Failed" << endl;
+
+        }
 
         Py_XDECREF(arglist);
         Py_XDECREF(result);
@@ -288,6 +400,20 @@ public:
 
 
 
+    /**
+     * This handler maintains a state machine of the headers that have been received.
+     * 
+     * new_event_sequence keeps track of where we are up to in the state transtion.
+     *  -1: Start state
+     *  0:  A new event marker has been received in the event stream.
+     *  1:  A new event type has been received in the event stream. The type is extracted and stored in 
+     *      latest_event_type. The next header that will be received is the content-type, if new_event_sequence
+     *      is 1 it is set back to 0.
+     * 
+     * If an end event type is received the stats are parsed from decoder data.
+     * 
+     * 
+     */ 
     static void s_decoder_test_header_received(struct aws_event_stream_streaming_decoder *decoder,
                                            struct aws_event_stream_message_prelude *prelude,
                                            struct aws_event_stream_header_value_pair *header, void *user_data) {
@@ -297,16 +423,22 @@ public:
         memset(decoder_data->latest_header_value, 0, sizeof(decoder_data->latest_header_value));
         memcpy(decoder_data->latest_header_value, header->header_value.variable_len_val, header->header_value_len);
 
-//        cout << "event is: |||" << decoder_data->latest_header_value << "|||" << endl;
+        cout << decoder_data->key << " | Header received: event is: |||" << decoder_data->latest_header_value << "|||" << endl;
 
-        if(strcmp(decoder_data->latest_header_value, "event") == 0){
-//            cout << "New Event" << endl;
-            decoder_data->new_event_sequence = 0;
-            return;
+        if(decoder_data->new_event_sequence == -1){
+            if(strcmp(decoder_data->latest_header_value, "event") == 0){
+            //    cout << "New Event: " << decoder_data->latest_header_value << endl;
+                decoder_data->new_event_sequence = 0;
+                return;
+            }
+            else {
+                cout << decoder_data->key << " | ERROR | Unknown message type header" << decoder_data->latest_header_value << endl;
+                decoder_data->new_event_sequence = 0;
+                return;
+            }
         }
-
-        if(decoder_data->new_event_sequence == 0){
-            // cout << "New Event Type" << decoder_data->latest_header_value << endl;
+        else if(decoder_data->new_event_sequence == 0){
+            // cout << "New Event Type: " << decoder_data->latest_header_value << endl;
             if(strcmp(decoder_data->latest_header_value, "Records") == 0){
                 decoder_data->latest_event_type = AwsEventType::records;
             }
@@ -317,12 +449,14 @@ public:
                 decoder_data->latest_event_type = AwsEventType::end;
                 decoder_data->reader->parse_stats_payload(decoder_data);
             }
+            else{
+                cout << decoder_data->key << " | ERROR | Unknown event type header" << decoder_data->latest_header_value << endl;
+            }
             
             decoder_data->new_event_sequence = 1;
             return;
         }
-
-        if(decoder_data->new_event_sequence == 1){
+        else if(decoder_data->new_event_sequence == 1){
 //            cout << "New Event Content Type" << endl;
             decoder_data->new_event_sequence = -1;
             return;
@@ -336,7 +470,9 @@ public:
                                     void *user_data) {
 
         struct test_decoder_data *decoder_data = (struct test_decoder_data *) user_data;
+
         decoder_data->latest_error = error_code;
+        decoder_data->latest_error_message = new Aws::String(message);
 
         cout << "An error occurred: (code: " << error_code << ", message: " << message << ")" << endl;
     }
@@ -625,11 +761,9 @@ public:
             //         "Scan", Aws::Utils::Logging::LogLevel::Info, "aws_sdk_"));
 
             Aws::SDKOptions options;
-            options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
+            options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
             Aws::InitAPI(options);
             {
-
-                Aws::Utils::Logging::GetLogSystem()->Log(Aws::Utils::Logging::LogLevel::Trace, "s3filter", "Starting");
 
                 // Do AWS stuff
                 static const Aws::String bucket_name = "s3filter";
@@ -646,47 +780,84 @@ public:
 //                config.scheme = Scheme::HTTPS;
                 config.verifySSL = false;
                 config.scheme = Scheme::HTTP;
-                config.connectTimeoutMs = 30000;
-                config.requestTimeoutMs = 30000;
+                config.connectTimeoutMs = 60000;
+                config.requestTimeoutMs = 60000 * 10;
 //                config.readRateLimiter = Limiter;
 //                config.writeRateLimiter = Limiter;
-                config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 8);
+                config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 1);
 
                 m_HttpClient = Aws::Http::CreateHttpClient(config);
 
-                s3_client = Aws::MakeShared<S3Client>(ALLOCATION_TAG,
-                                    Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG), config,
-                                        AWSAuthV4Signer::PayloadSigningPolicy::Never /*signPayloads*/, true /*useVirtualAddressing*/);
+                // s3_client = Aws::MakeShared<S3Client>(ALLOCATION_TAG,
+                //                     Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG), config,
+                //                         AWSAuthV4Signer::PayloadSigningPolicy::Never /*signPayloads*/, true /*useVirtualAddressing*/);
 
 
-                // std::chrono::high_resolution_clock::time_point time = std::chrono::high_resolution_clock::now();
-                // cout << "Time to client init: " << std::chrono::duration_cast<std::chrono::microseconds>(time - start).count() << endl;
 
-                Aws::String url = buildURI(s3_client, bucket_name, TEST_OBJ_KEY);
+
+                Aws::StringStream ss;
+                Aws::Http::URI uri = ComputeEndpointString("s3filter", config, true);
+                ss << "/";
+                ss << key;
+                uri.SetPath(uri.GetPath() + ss.str());
+                uri.SetQueryString("select&select-type=2");
+
+                auto signerProvider = Aws::MakeShared<AWSAuthV4Signer>(ALLOCATION_TAG, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+                    "s3", config.region, AWSAuthV4Signer::PayloadSigningPolicy::Never, false);
+
+                auto signer = (Aws::MakeUnique<Aws::Auth::DefaultAuthSignerProvider>(ALLOCATION_TAG, signerProvider));
+
+                // std::shared_ptr<HttpRequest> request(CreateHttpRequest(uri, HttpMethod::HTTP_POST, Aws::Utils::Stream::DefaultResponseStreamFactoryMethod));
+
+                // NullBuffer null_buffer;
+                CallbackBuffer callback_buffer;
+                const Aws::IOStreamFactory& null_stream_factory = [&callback_buffer](){
+
+                        cout << "Invoking factiory" << endl;
+
+                        return Aws::New<Aws::IOStream>(ALLOCATION_TAG, &callback_buffer);
+                    };
+
+                std::shared_ptr<HttpRequest> request(CreateHttpRequest(uri, HttpMethod::HTTP_POST, null_stream_factory));
+
+
+
+
+
                 Aws::String body = buildRequestBody(sql);
 
-            //    cout << endl <<
-            //            "Sending request:" << endl <<
-            //            "URL: " << url << endl <<
-            //            "Body: " << endl << body << endl;
-
                 Aws::StringStream content_length;
-
                 content_length << std::to_string(body.length());
-
                 std::shared_ptr<Aws::StringStream> body_ss = Aws::MakeShared<Aws::StringStream>(ALLOCATION_TAG);
                 *body_ss << body;
-
-                std::shared_ptr<HttpRequest> request = buildRequest(url);
                 request->SetContentLength(content_length.str());
                 request->AddContentBody(body_ss);
 
-//                cout << "MAKING REQUEST" << endl;
 
-                // std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
-                // cout << "Time to request built: " << std::chrono::duration_cast<std::chrono::microseconds>(time2 - start).count() << endl;
+                signer->GetSigner(Aws::Auth::SIGV4_SIGNER)->SignRequest(*request);
 
-                Aws::Utils::Logging::GetLogSystem()->Log(Aws::Utils::Logging::LogLevel::Trace, "s3filter", "Making");
+                AddCommonHeaders(*request, config);
+
+                
+
+
+
+
+
+
+                // Aws::String url = buildURI(s3_client, bucket_name, TEST_OBJ_KEY);
+                // Aws::String body = buildRequestBody(sql);
+
+                // Aws::StringStream content_length;
+
+                // content_length << std::to_string(body.length());
+
+                // std::shared_ptr<Aws::StringStream> body_ss = Aws::MakeShared<Aws::StringStream>(ALLOCATION_TAG);
+                // *body_ss << body;
+
+                // std::shared_ptr<HttpRequest> request = buildRequest(url);
+                // request->SetContentLength(content_length.str());
+                // request->AddContentBody(body_ss);
 
                 aws_allocator* alloc = aws_default_allocator();
 
@@ -696,13 +867,14 @@ public:
                     .latest_header_value = {},
                     .alloc = alloc,
                     .latest_error = 0,
+                    .latest_error_message = nullptr,
                     .last_line = NULL,
                     .buffer_stringstream = Aws::StringStream(),
                     .on_data_callback = on_data_callback,
-                    .reader = this
+                    .reader = this,
+                    .key = key,
+                    .new_event_sequence = -1
                 };
-
-//                cout << "Creating decoder" << endl << std::flush;
 
                 struct aws_event_stream_streaming_decoder decoder;
                 aws_event_stream_streaming_decoder_init(&decoder,
@@ -713,42 +885,158 @@ public:
                                                         s_decoder_test_on_error,
                                                         &decoder_data);
 
-//                cout << "Starting" << endl << std::flush;
+                int total_bytes_received = 0;
 
-                DataReceivedEventHandler f = [&decoder](const HttpRequest *req, const HttpResponse *res, long length) { 
+                DataReceivedEventHandler f = [&key, &decoder, &total_bytes_received](const HttpRequest *req, const HttpResponse *res, long length) { 
 
-                    // cout << "Data Received Event: " << length << endl;
+                    // Aws::StringStream ss;
+                    // ss << key <<  " | Data received event | Length: " << length << std::endl;
+                    // cout << ss.str();
 
-                    char c_buf[length];
-                    res->GetResponseBody().read(c_buf, length);
-                    aws_byte_buf buf = aws_byte_buf_from_array((const uint8_t *)c_buf, length);
-                    aws_event_stream_streaming_decoder_pump(&decoder, &buf);
+                    Aws::IOStream &body_stream = res->GetResponseBody();
+
+                    // ByteBuffer bb;
+                    // bb = ByteBuffer((unsigned char*)body_stream.rdbuf(), length) ;
+
+                    // Aws::StringStream ss;
+                    // for(int i = 0;i< bb.GetLength();i++)
+                    //     ss << bb[i];
+
+                    // cout << key << " | Data received event | buffer: " << endl << ss.str() << endl << endl;
+                    // aws_byte_buf buf = aws_byte_buf_from_array(bb.GetUnderlyingData(), length);
+
+
+                    char data[length];
+                    body_stream.read(data, sizeof(data));
+
+                    total_bytes_received += sizeof(data);
+
+                    if(!body_stream){
+                        // cout << key << " | Data received event | Could not read data from HTTP stream" << endl;
+
+                        Aws::StringStream err_ss;
+                        err_ss << "An error occurred: Could not read data from HTTP stream" << endl;
+                        PyErr_SetString(PyExc_Exception, err_ss.str().c_str());
+
+                        return;
+                    }
+
+                    const char *error_prefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error>";
+                    if(starts_with(data, error_prefix)){
+                        // cout << key << " | Data received event | Data received starts with error prefix. Data was: " << data << endl;
+
+                        Aws::StringStream err_ss;
+                        err_ss << "An error occurred: Response was " << data << endl;
+                        PyErr_SetString(PyExc_Exception, err_ss.str().c_str());
+
+                        return;
+                    }
+
+                    // Aws::StringStream ss;
+                    // ss << key <<  " | Data received event | buffer: " << data << std::endl;
+                    // cout << ss.str();
+
+                    // aws_byte_buf decoded_data = aws_byte_buf_from_array((uint8_t*)data, length);
+                    // int pump_err = aws_event_stream_streaming_decoder_pump(&decoder, &decoded_data);
+
+                    // if(pump_err){
+                    //     cout << key << " | Data received event | Pump error: " << pump_err << endl;
+
+                    //     Aws::StringStream err_ss;
+                    //     err_ss << "An error occurred: Pump error: " << pump_err << endl;
+                    //     PyErr_SetString(PyExc_Exception, err_ss.str().c_str());
+
+                    //     return;
+                    // }
+
+                    // aws_byte_buf_clean_up(&decoded_data);
+
                 };
-                request->SetDataReceivedEventHandler(f);
+                // request->SetDataReceivedEventHandler(f);
 
-                Aws::Utils::Logging::GetLogSystem()->Log(Aws::Utils::Logging::LogLevel::Trace, "s3filter", "Made");
+                // Aws::S3::Model::GetObjectRequest getObjectRequest;
+                // getObjectRequest.WithBucket("s3filter").WithKey("region.csv");
+                // auto outcome = s3_client->GetObject(getObjectRequest);
 
-                // std::chrono::high_resolution_clock::time_point time3 = std::chrono::high_resolution_clock::now();
-                // cout << "Time to event stream decoder init: " << std::chrono::duration_cast<std::chrono::microseconds>(time3 - start).count() << endl;
+                std::shared_ptr<HttpResponse> response(
+                    m_HttpClient->MakeRequest(request, config.readRateLimiter.get(), config.writeRateLimiter.get()));
+                // response->SwapResponseStreamOwnership();
 
-                std::shared_ptr<HttpResponse> response = m_HttpClient->MakeRequest(request);
+                // Aws::StringStream ss2;
+                // ss2 << key <<  " | Request complete | total bytes received: " << total_bytes_received << std::endl;
+                // cout << ss2.str(); 
+
+                Aws::StringStream ss2;
+                ss2 << key <<  " | Request complete | total bytes received: " << callback_buffer.m_bytes_read << std::endl;
+                cout << ss2.str(); 
+
+                if(DoesResponseGenerateError(response)){
+                    cout << "Err" << endl;    
+                }
+
+                // Aws::StringStream ss2;
+                // ss2 << httpResponse->GetResponseBody().rdbuf();
+
+                // cout << ss2.str() << endl;
+
+                // Py_INCREF(Py_None);
+                // return Py_None;
+
+
+
+
+                // std::shared_ptr<HttpResponse> response = m_HttpClient->MakeRequest(request);
+
+                if(decoder_data.latest_event_type != AwsEventType::end){
+                    Aws::StringStream ss;
+                    ss << key << " | An error occurred: HTTP response was " << (int)response->GetResponseCode() << " but stream was truncated" << endl;
+                    clog << ss.str();
+                    Aws::StringStream err_ss;
+                    err_ss << "An error occurred: HTTP response was " << (int)response->GetResponseCode() << " but stream was truncated" << endl;
+                    PyErr_SetString(PyExc_Exception, err_ss.str().c_str());
+                }
+
+                // cout << key << " | Done. Code: " << (int)response->GetResponseCode() << endl;
+
+                if(PyErr_Occurred() == NULL && response->GetResponseCode() != Aws::Http::HttpResponseCode::OK){
+
+                    // cout << key << " | An error occurred: Response code was " << (int)response->GetResponseCode() << endl;
+                    Aws::StringStream err_ss;
+                    err_ss << "An error occurred: Response code was " << (int)response->GetResponseCode() << endl;
+                    PyErr_SetString(PyExc_Exception, err_ss.str().c_str());
+                }
+
+                if(PyErr_Occurred() == NULL && decoder_data.latest_error != 0){
+
+                    // cout << key << " | An error occurred during data parsing: Error message was " << *decoder_data.latest_error_message << endl;
+                    Aws::StringStream err_ss;
+                    err_ss << "An error occurred: " << decoder_data.latest_error << ": " << *decoder_data.latest_error_message;
+                    PyErr_SetString(PyExc_Exception, err_ss.str().c_str());
+                }
 
                 aws_event_stream_streaming_decoder_clean_up(&decoder);
 
-                // std::chrono::high_resolution_clock::time_point time4 = std::chrono::high_resolution_clock::now();
-                // cout << "Time to response complete: " << std::chrono::duration_cast<std::chrono::microseconds>(time4 - start).count() << endl;
             }
             Aws::ShutdownAPI(options);
             Aws::Utils::Logging::ShutdownAWSLogging();
         }
         catch(std::exception const& e)
         {
-            std::cerr << "Error: " << e.what() << std::endl;
-//            return EXIT_FAILURE;
+            // cout << key <<  "Error: " << e.what() << std::endl;
+
+            Aws::StringStream err_ss;
+            err_ss << "A c++ exception occurred: " << e.what();
+            PyErr_SetString(PyExc_Exception, err_ss.str().c_str());
+
         }
 
-        Py_INCREF(Py_None);
-        return Py_None;
+        if(PyErr_Occurred() != NULL){
+            return NULL;
+        }
+        else{
+            Py_INCREF(Py_None);
+            return Py_None;
+        }
     }
 };
 
@@ -771,12 +1059,7 @@ scan_execute(PyObject *self, PyObject *args)
 //    std::cout << "Execute | Key: " << key << ", sql: " << sql << std::endl;
 
     // PyObject* res = reader->execute(key, sql, on_data_callback);
-    reader->execute(key, sql, on_data_callback);
-
-    Py_INCREF(Py_None);
-    return Py_None;
-
-//    std::cout << res;
+    return reader->execute(key, sql, on_data_callback);
 }
 
 

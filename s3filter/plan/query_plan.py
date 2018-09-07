@@ -3,6 +3,7 @@
 
 """
 # noinspection PyCompatibility,PyPep8Naming
+import cPickle
 import cPickle as pickle
 import traceback
 import warnings
@@ -291,7 +292,8 @@ class QueryPlan(object):
             # different process.
             operators = self.traverse_topological_from_root()
             for o in operators:
-                o.queue.put(EvalMessage("self.op_metrics"))
+                p_message = pickle.dumps(EvalMessage("self.op_metrics"))
+                o.queue.put(p_message)
                 o.op_metrics = self.listen(EvaluatedMessage).val
 
             map(lambda op: op.set_completed(True), self.operators.values())
@@ -317,7 +319,7 @@ class QueryPlan(object):
 
     def stop(self):
         if self.is_async:
-            map(lambda o: o.queue.put(StopMessage()), self.operators.values())
+            map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
             self.join()
             map(lambda o: o.queue.close(), self.operators.values())
         else:

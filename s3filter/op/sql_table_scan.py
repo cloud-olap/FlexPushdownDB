@@ -240,6 +240,11 @@ class SQLTableScan(Operator):
                 op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
                 op.op_metrics.rows_returned += len(df)
 
+                if op.log_enabled:
+                    print("{}('{}') | Sending field values:"
+                          .format(op.__class__.__name__, op.name))
+                    print(df)
+
                 op.send(df, op.consumers)
 
             cur = NativeCursor(op.fast_s3).select(op.s3key, op.s3sql)

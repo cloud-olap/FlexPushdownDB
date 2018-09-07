@@ -60,6 +60,8 @@ class NativeCursor(object):
 
         # print("Executing select_object_content")
 
+        # self.last_df = None
+
         def on_records(np_array):
 
             # print("|||")
@@ -76,11 +78,17 @@ class NativeCursor(object):
             df = pd.DataFrame(np_array)
             df = df.add_prefix('_')
 
+            # self.last_df = df
+
             on_data(df)
 
         self.timer.start()
 
-        self.fast_s3.execute(self.s3key, self.s3sql, on_records)
+        try:
+            self.fast_s3.execute(self.s3key, self.s3sql, on_records)
+        except Exception as e:
+            # print (e)
+            pass
 
         self.bytes_scanned = self.fast_s3.get_bytes_scanned()
         self.bytes_processed = self.fast_s3.get_bytes_processed()

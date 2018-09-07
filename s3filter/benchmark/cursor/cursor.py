@@ -2,12 +2,13 @@
 """Table scan benchmark
 
 """
-
+import logging
 import os
 import pstats
 import scan
 
 import boto3
+import botocore
 from boto3 import Session
 from botocore.config import Config
 
@@ -30,13 +31,16 @@ def main():
     # run(use_pandas=False, secure=False, use_native=False)
     # run(use_pandas=True, secure=True, use_native=False)
     # run(use_pandas=True, secure=False, use_native=False)
-    run(use_pandas=True, secure=False, use_native=True)  # Note: Native does not support secure=True
+    run(use_pandas=True, secure=False, use_native=False)  # Note: Native does not support secure=True
 
 
 def run(use_pandas, secure, use_native):
     print("Cursor | Settings {}".format({'use_pandas': use_pandas, 'secure': secure, 'use_native': use_native}))
 
-    sql = 'select * from S3Object'
+    key = 'sf1000-lineitem/lineitem_27.csv'
+    sql = 'select * from S3Object limit 10000'
+
+    boto3.set_stream_logger('', logging.DEBUG)
 
     if secure:
         cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
@@ -50,7 +54,7 @@ def run(use_pandas, secure, use_native):
 
     if use_pandas and not use_native:
 
-        cur = PandasCursor(s3).select('lineitem.csv', sql)
+        cur = PandasCursor(s3).select(key, sql)
         dfs = cur.execute()
 
         rows_returned = 0
@@ -97,7 +101,7 @@ def run(use_pandas, secure, use_native):
 
             closure['rows_returned'] += len(pd.DataFrame(data))
 
-        cur = NativeCursor(scan).select('lineitem.csv', sql)
+        cur = NativeCursor(scan).select(key, sql)
         cur.execute(on_data)
 
         rows_returned = closure['rows_returned']
@@ -129,7 +133,7 @@ def run(use_pandas, secure, use_native):
         timer = Timer()
         timer.start()
 
-        cur = Cursor(s3).select('lineitem.csv', sql)
+        cur = Cursor(s3).select(key, sql)
         rows = cur.execute()
         for _ in rows:
             pass
