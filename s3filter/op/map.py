@@ -14,6 +14,23 @@ from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 import pandas as pd
 
+
+class MapMetrics(OpMetrics):
+    """Extra metrics for a sql table scan
+    """
+
+    def __init__(self):
+        super(MapMetrics, self).__init__()
+
+        self.rows_mapped = 0
+
+    def __repr__(self):
+        return {
+            'elapsed_time': round(self.elapsed_time(), 5),
+            'rows_mapped': self.rows_mapped
+        }.__repr__()
+
+
 class Map(Operator):
     """Maps tuples using a mapping fn to particular consumers.
 
@@ -24,7 +41,7 @@ class Map(Operator):
 
         """
 
-        super(Map, self).__init__(name, OpMetrics(), query_plan, log_enabled)
+        super(Map, self).__init__(name, MapMetrics(), query_plan, log_enabled)
 
         self.field_names = None
 
@@ -60,6 +77,7 @@ class Map(Operator):
         grouped = df.groupby(consumer_indexes)
         for idx, df in grouped:
             operator = self.consumers[idx]
+            self.op_metrics.rows_mapped += len(df)
             self.send(df, [operator])
 
             # if self.log_enabled:
@@ -86,4 +104,7 @@ class Map(Operator):
                 it = IndexedTuple.build(tuple_, self.field_names)
 
                 idx = int(it[self.map_field_name]) % len(self.consumers)
+
+                self.op_metrics.rows_mapped += 1
+
                 self.send(TupleMessage(tuple_), [self.consumers[idx]])

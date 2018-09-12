@@ -519,16 +519,35 @@ def get_sql_suffix(key, num_shards, shard, sharded, add_where=False):
 
     if not sharded:
         if key == "lineitem":
-            key_lower = math.ceil((6000000.0 / float(num_shards)) * shard)
-            key_upper = math.ceil((6000000.0 / float(num_shards)) * (shard + 1))
-            sql_suffix = " cast(l_orderkey as int) > {} and cast(l_orderkey as int) <= {}" \
-                .format(key_lower, key_upper)
-            sql_suffix = " where " + sql_suffix if add_where else " and " + sql_suffix
+            field_name = 'l_orderkey'
+            field_min_val = 1
+            field_max_val = 6000000
         elif key == "part":
-            key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
-            key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
-            sql_suffix = " cast(p_partkey as int) > {} and cast(p_partkey as int) <= {}" \
-                .format(key_lower, key_upper)
-            sql_suffix = " where " + sql_suffix if add_where else " and " + sql_suffix
+            field_name = 'p_partkey'
+            field_min_val = 1
+            field_max_val = 200000
+        elif key == "nation":
+            field_name = 'n_nationkey'
+            field_min_val = 0
+            field_max_val = 24
+        elif key == "region":
+            field_name = 'r_regionkey'
+            field_min_val = 0
+            field_max_val = 4
+        elif key == "supplier":
+            field_name = 's_suppkey'
+            field_min_val = 1
+            field_max_val = 10000
+        else:
+            raise NotImplementedError("TODO: Partitioning scheme not yet implemented for this table {}".format(key))
+
+        total_distinct_field_vals = field_max_val - field_min_val + 1
+        part_field_min_val = math.ceil((total_distinct_field_vals / float(num_shards)) * shard) + field_min_val
+        part_field_max_val = math.ceil((total_distinct_field_vals / float(num_shards)) * (shard + 1)) + field_min_val
+
+        sql_suffix = " cast({} as int) >= {} and cast({} as int) < {}" \
+            .format(field_name, part_field_min_val, field_name, part_field_max_val)
+
+        sql_suffix = " where " + sql_suffix if add_where else " and " + sql_suffix
 
     return sql_suffix
