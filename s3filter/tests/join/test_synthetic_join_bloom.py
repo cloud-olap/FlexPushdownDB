@@ -22,8 +22,8 @@ from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q19
-from s3filter.query.join import synthetic_join_baseline
-from s3filter.query.join.synthetic_join_settings import SyntheticBaselineJoinSettings
+from s3filter.query.join import synthetic_join_baseline, synthetic_join_filtered, synthetic_join_bloom
+from s3filter.query.join.synthetic_join_settings import SyntheticFilteredJoinSettings, SyntheticBloomJoinSettings
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
 from s3filter.util.test_util import gen_test_id
@@ -31,13 +31,13 @@ import s3filter.util.constants
 
 
 def test():
-    run(SyntheticBaselineJoinSettings(
-        parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
+    run(SyntheticBloomJoinSettings(
+        parallel=False, use_pandas=True, secure=False, use_native=False, buffer_size=0,
         table_A_key='region',
         table_A_parts=2,
         table_A_sharded=False,
         table_A_field_names=['r_regionkey', 'r_name', 'r_comment'],
-        table_A_filter_fn=lambda df: df['r_name'] == 'ASIA',
+        table_A_filter_sql='r_name = \'ASIA\'',
         table_A_AB_join_key='r_regionkey',
         table_B_key='nation',
         table_B_parts=2,
@@ -53,13 +53,14 @@ def test():
         expected_total_balance=8975843.09)
 
 
-def run(settings, expected_total_balance):
+def run(settings,
+        expected_total_balance):
     """
 
     :return: None
     """
 
-    query_plan = synthetic_join_baseline.query_plan(settings)
+    query_plan = synthetic_join_bloom.query_plan(settings)
 
     collate = query_plan.get_operator('collate')
 

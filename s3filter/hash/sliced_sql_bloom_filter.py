@@ -31,10 +31,16 @@ class SlicedSQLBloomFilter(object):
         sql = ""
 
         for i, slice_bit_array in enumerate(self._bloom_filter.bit_arrays):
-            hash_fn = self._bloom_filter.hash_functions[i]
-            hash_fn_sql = hash_fn.sql(field)
-            bit_array_str = "".join(map(lambda b: "1" if b else "0", slice_bit_array))
-            sql += " substring('" + bit_array_str + "', " + hash_fn_sql + " + 1, 1) = '1' "
+
+            # NOTE: S3 Select SUBSTRING fails if given an empty string, so simply use False if the bit array is empty
+            if len(slice_bit_array) == 0:
+                sql += " False "
+            else:
+                hash_fn = self._bloom_filter.hash_functions[i]
+                hash_fn_sql = hash_fn.sql(field)
+                bit_array_str = "".join(map(lambda b: "1" if b else "0", slice_bit_array))
+                sql += " substring('" + bit_array_str + "', " + hash_fn_sql + " + 1, 1) = '1' "
+
             if i < len(self._bloom_filter.bit_arrays) - 1:
                 sql += " and "
 
