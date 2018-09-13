@@ -22,7 +22,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     num_rows = 0
     shards = 96
     parallel_shards = True
-    shards_prefix = "tpch-sf100/lineitem_sharded"
+    shards_prefix = "tpch-sf10/lineitem_sharded"
     processes = multiprocessing.cpu_count()
 
     query_stats = ['baseline' if filtered is False else 'filtered', shards_prefix, col_name, sort_order, limit, '']
@@ -45,7 +45,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     top_op = query_plan.add_operator(Top(limit, sort_exp, use_pandas, 'topk', query_plan, False))
     for process in range(processes):
         proc_parts = [x for x in range(1, shards + 1) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("tpch-sf100/lineitem.csv", sql, use_pandas, True, False,
+        pc = query_plan.add_operator(SQLShardedTableScan("tpch-sf10/lineitem.tbl", sql, use_pandas, True, False,
                                                          "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
                                                          shards_prefix, parallel_shards, query_plan, False))
         # pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
@@ -107,7 +107,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     num_rows = 0
     shards = 96
     parallel_shards = True
-    shards_prefix = "tpch-sf100/lineitem_sharded"
+    shards_prefix = "tpch-sf10/lineitem_sharded"
     processes = multiprocessing.cpu_count()
 
     query_stats = ['sampling', shards_prefix, sort_field, sort_order, limit, k_scale]
@@ -126,7 +126,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
     # Query plan
     ts = query_plan.add_operator(
-        TopKTableScan('tpch-sf100/lineitem.csv', sql, use_pandas, True, False, limit, k_scale,
+        TopKTableScan('tpch-sf10/lineitem.tbl', sql, use_pandas, True, False, limit, k_scale,
                       SortExpression(sort_index, col_type, sort_order, sort_field), conservative,
                       shards, parallel_shards, shards_prefix, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))

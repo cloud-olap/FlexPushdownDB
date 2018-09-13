@@ -87,17 +87,17 @@ class Top(Operator):
         :param df: The received dataframe
         :return: None
         """
-        #df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
-        #                                            .astype(self.sort_expression.col_type.__name__)
+        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
+                                                   .astype(self.sort_expression.col_type.__name__)
         if len(df) == 0:
             return
         if self.sort_expression.sort_order == 'ASC':
-            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
+            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
             self.global_topk_df = self.global_topk_df.append(topk_df)
             if len(self.global_topk_df) > 10 * self.max_tuples:
                 self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
         elif self.sort_expression.sort_order == 'DESC':
-            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
+            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
             self.global_topk_df = self.global_topk_df.append(topk_df)
             if len(self.global_topk_df) > 10 * self.max_tuples:
                 self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)

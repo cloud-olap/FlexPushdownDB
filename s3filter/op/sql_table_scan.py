@@ -23,7 +23,7 @@ from s3filter.sql.pandas_cursor import PandasCursor
 import pandas as pd
 from ctypes import *
 import imp
-import scan
+# import scan
 
 
 class SQLTableScanMetrics(OpMetrics):
@@ -136,8 +136,8 @@ class SQLTableScan(Operator):
                              s3={'payload_signing_enabled': False})
                 session = Session()
                 self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
-        else:
-            self.fast_s3 = scan
+        # else:
+        #     self.fast_s3 = scan
 
         self.s3key = s3key
         self.s3sql = s3sql
@@ -247,12 +247,12 @@ class SQLTableScan(Operator):
 
                 op.send(df, op.consumers)
 
-            cur = NativeCursor(op.fast_s3).select(op.s3key, op.s3sql)
-            cur.execute(on_numpy_array)
-
-            op.op_metrics.query_bytes = cur.query_bytes
-
-            return cur
+            # cur = NativeCursor(op.fast_s3).select(op.s3key, op.s3sql)
+            # cur.execute(on_numpy_array)
+            #
+            # op.op_metrics.query_bytes = cur.query_bytes
+            #
+            # return cur
         else:
 
             cur = PandasCursor(op.s3).select(op.s3key, op.s3sql)

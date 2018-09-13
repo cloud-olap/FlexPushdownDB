@@ -64,7 +64,7 @@ class PandasCursor(object):
         self.s3sql = s3sql
 
         # TODO:only simple SQL queries are considered. Nested and complex queries will need a lot of work to handle
-        #self.need_s3select = not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
+        self.need_s3select = not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
 
         # There doesn't seem to be a way to capture the bytes sent to s3, but we can use this for comparison purposes
         self.query_bytes = len(self.s3key.encode('utf-8')) + len(self.s3sql.encode('utf-8'))
@@ -228,7 +228,7 @@ class PandasCursor(object):
             for df in pd.read_csv(self.table_local_file_path, delimiter='|', header=None, prefix='_', dtype=numpy.str,
                              engine='c', quotechar='"', na_filter=False, compression=None, low_memory=False,
                              skiprows=1,
-                             chunksize=10**8):
+                             chunksize=10**7):
                 # drop last column since the line separator | creates a new empty column at the end of every record
                 df_col_names = list(df)
                 last_col = df_col_names[-1]
