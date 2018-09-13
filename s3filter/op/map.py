@@ -81,8 +81,8 @@ class Map(Operator):
             self.send(df, [operator])
 
             # if self.log_enabled:
-            #     print("{}('{}') | Mapped dataframe {} to operator {}"
-            #           .format(self.__class__.__name__, self.name, df, operator))
+            #     print("{}('{}') | Mapped dataframe to operator {}. Dataframe was: \n{}"
+            #           .format(self.__class__.__name__, self.name, operator, df.values))
 
     def __on_receive_tuple(self, tuple_, producer_name):
         """Event handler for a received tuple
