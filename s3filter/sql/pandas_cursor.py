@@ -225,15 +225,16 @@ class PandasCursor(object):
         try:
             self.time_to_first_record_response = self.time_to_last_record_response = self.timer.elapsed()
 
-            df = pd.read_csv(self.table_local_file_path, delimiter='|', header=None, prefix='_', dtype=numpy.str,
+            for df in pd.read_csv(self.table_local_file_path, delimiter='|', header=None, prefix='_', dtype=numpy.str,
                              engine='c', quotechar='"', na_filter=False, compression=None, low_memory=False,
-                             skiprows=1)
-            # drop last column since the line separator | creates a new empty column at the end of every record
-            df_col_names = list(df)
-            last_col = df_col_names[-1]
-            df.drop(last_col, axis=1, inplace=True)
+                             skiprows=1,
+                             chunksize=10**8):
+                # drop last column since the line separator | creates a new empty column at the end of every record
+                df_col_names = list(df)
+                last_col = df_col_names[-1]
+                df.drop(last_col, axis=1, inplace=True)
 
-            yield df
+                yield df
         except Exception as e:
             print("can not read table file at {} with error {}".format(self.table_local_file_path, e.message))
             raise e

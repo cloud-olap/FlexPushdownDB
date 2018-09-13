@@ -198,10 +198,10 @@ def run_all():
 
     # varying K
     for k in [100, 1000, 10000, 100000]:
-        # topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
-        topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
+        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
-        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
 
     for k in [100, 1000, 10000, 100000]:
         for kscale in [1, 2, 4, 8, 16, 100, 1000]:
