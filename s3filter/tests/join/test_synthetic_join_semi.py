@@ -22,8 +22,10 @@ from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q19
-from s3filter.query.join import synthetic_join_baseline, synthetic_join_filtered, synthetic_join_bloom
-from s3filter.query.join.synthetic_join_settings import SyntheticFilteredJoinSettings, SyntheticBloomJoinSettings
+from s3filter.query.join import synthetic_join_baseline, synthetic_join_filtered, synthetic_join_bloom, \
+    synthetic_join_semi
+from s3filter.query.join.synthetic_join_settings import SyntheticFilteredJoinSettings, SyntheticBloomJoinSettings, \
+    SyntheticSemiJoinSettings
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
 from s3filter.util.test_util import gen_test_id
@@ -31,25 +33,26 @@ import s3filter.util.constants
 
 
 def test():
-    run(SyntheticBloomJoinSettings(
+    run(SyntheticSemiJoinSettings(
         parallel=False, use_pandas=True, secure=False, use_native=False, buffer_size=0,
         table_A_key='region',
         table_A_parts=2,
         table_A_sharded=False,
-        table_A_field_names=['r_regionkey', 'r_name', 'r_comment'],
+        table_A_field_names=['r_regionkey'],
         table_A_filter_sql='r_name = \'ASIA\'',
         table_A_AB_join_key='r_regionkey',
         table_B_key='nation',
         table_B_parts=2,
         table_B_sharded=False,
-        table_B_field_names=['n_nationkey', 'n_name', 'n_regionkey', 'n_comment'],
+        table_B_field_names=['n_nationkey', 'n_regionkey'],
         table_B_AB_join_key='n_regionkey',
         table_B_BC_join_key='n_nationkey',
         table_C_key='supplier',
         table_C_parts=2,
         table_C_sharded=False,
-        table_C_field_names=['s_suppkey', 's_name', 's_address', 's_nationkey', 's_phone', 's_acctbal', 's_comment'],
+        table_C_field_names=['s_suppkey', 's_nationkey'],
         table_C_BC_join_key='s_nationkey',
+        table_C_primary_key='s_suppkey',
         table_C_detail_field_name='s_acctbal'),
         expected_total_balance=8975843.09)
 
@@ -61,7 +64,7 @@ def run(settings,
     :return: None
     """
 
-    query_plan = synthetic_join_bloom.query_plan(settings)
+    query_plan = synthetic_join_semi.query_plan(settings)
 
     collate = query_plan.get_operator('collate')
 

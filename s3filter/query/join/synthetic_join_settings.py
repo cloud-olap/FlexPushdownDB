@@ -40,7 +40,8 @@ class SyntheticJoinSettings(object):
                  table_C_parts,
                  table_C_sharded,
                  table_C_field_names,
-                 table_C_BC_join_key):
+                 table_C_BC_join_key,
+                 table_C_detail_field_name):
         self.parallel = parallel
         self.use_pandas = use_pandas
         self.secure = secure
@@ -62,6 +63,7 @@ class SyntheticJoinSettings(object):
         self.table_C_sharded = table_C_sharded
         self.table_C_field_names = table_C_field_names
         self.table_C_BC_join_key = table_C_BC_join_key
+        self.table_C_detail_field_name = table_C_detail_field_name
 
 
 class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
@@ -87,7 +89,8 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                  table_C_parts,
                  table_C_sharded,
                  table_C_field_names,
-                 table_C_BC_join_key):
+                 table_C_BC_join_key,
+                 table_C_detail_field_name):
         super(SyntheticBaselineJoinSettings, self).__init__(parallel,
                                                             use_pandas,
                                                             secure,
@@ -108,7 +111,8 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                                                             table_C_parts,
                                                             table_C_sharded,
                                                             table_C_field_names,
-                                                            table_C_BC_join_key)
+                                                            table_C_BC_join_key,
+                                                            table_C_detail_field_name)
 
         self.table_A_filter_fn = table_A_filter_fn
 
@@ -136,7 +140,8 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                  table_C_parts,
                  table_C_sharded,
                  table_C_field_names,
-                 table_C_BC_join_key):
+                 table_C_BC_join_key,
+                 table_C_detail_field_name):
         super(SyntheticFilteredJoinSettings, self).__init__(parallel,
                                                             use_pandas,
                                                             secure,
@@ -157,7 +162,8 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                                                             table_C_parts,
                                                             table_C_sharded,
                                                             table_C_field_names,
-                                                            table_C_BC_join_key)
+                                                            table_C_BC_join_key,
+                                                            table_C_detail_field_name)
 
         self.table_A_filter_sql = table_A_filter_sql
 
@@ -185,7 +191,8 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                  table_C_parts,
                  table_C_sharded,
                  table_C_field_names,
-                 table_C_BC_join_key):
+                 table_C_BC_join_key,
+                 table_C_detail_field_name):
         super(SyntheticBloomJoinSettings, self).__init__(parallel,
                                                          use_pandas,
                                                          secure,
@@ -206,7 +213,8 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                                                          table_C_parts,
                                                          table_C_sharded,
                                                          table_C_field_names,
-                                                         table_C_BC_join_key)
+                                                         table_C_BC_join_key,
+                                                         table_C_detail_field_name)
 
         self.table_A_filter_sql = table_A_filter_sql
 
@@ -222,6 +230,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  table_A_parts,
                  table_A_sharded,
                  table_A_field_names,
+                 table_A_filter_sql,
                  table_A_AB_join_key,
                  table_B_key,
                  table_B_parts,
@@ -233,7 +242,9 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  table_C_parts,
                  table_C_sharded,
                  table_C_field_names,
-                 table_C_BC_join_key):
+                 table_C_BC_join_key,
+                 table_C_primary_key,
+                 table_C_detail_field_name):
         super(SyntheticSemiJoinSettings, self).__init__(parallel,
                                                         use_pandas,
                                                         secure,
@@ -254,4 +265,9 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                                                         table_C_parts,
                                                         table_C_sharded,
                                                         table_C_field_names,
-                                                        table_C_BC_join_key)
+                                                        table_C_BC_join_key,
+                                                        table_C_detail_field_name)
+
+        self.table_A_filter_sql = table_A_filter_sql
+
+        self.table_C_primary_key = table_C_primary_key

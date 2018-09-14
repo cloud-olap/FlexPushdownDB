@@ -49,7 +49,8 @@ def test():
         table_C_parts=2,
         table_C_sharded=False,
         table_C_field_names=['s_suppkey', 's_name', 's_address', 's_nationkey', 's_phone', 's_acctbal', 's_comment'],
-        table_C_BC_join_key='s_nationkey'),
+        table_C_BC_join_key='s_nationkey',
+        table_C_detail_field_name='s_acctbal'),
         expected_total_balance=8975843.09)
 
 

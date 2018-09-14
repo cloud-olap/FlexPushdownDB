@@ -151,20 +151,20 @@ def query_plan(settings):
                          Map(settings.table_A_AB_join_key, 'map_A_to_B_{}'.format(p), query_plan, False)),
                      range(0, settings.table_A_parts))
 
-    map_bloom_A_to_B = map(lambda p:
-                           query_plan.add_operator(
-                               Map(settings.table_A_AB_join_key, 'map_bloom_A_to_B_{}'.format(p), query_plan, True)),
-                           range(0, settings.table_A_parts))
+    # map_bloom_A_to_B = map(lambda p:
+    #                        query_plan.add_operator(
+    #                            Map(settings.table_A_AB_join_key, 'map_bloom_A_to_B_{}'.format(p), query_plan, True)),
+    #                        range(0, settings.table_A_parts))
 
     map_B_to_B = map(lambda p:
                      query_plan.add_operator(
                          Map(settings.table_B_AB_join_key, 'map_B_to_B_{}'.format(p), query_plan, False)),
                      range(0, settings.table_B_parts))
 
-    map_bloom_B_to_B = map(lambda p:
-                           query_plan.add_operator(
-                               Map(settings.table_B_AB_join_key, 'map_bloom_b_to_b_{}'.format(p), query_plan, True)),
-                           range(0, settings.table_A_parts))
+    # map_bloom_B_to_B = map(lambda p:
+    #                        query_plan.add_operator(
+    #                            Map(settings.table_B_AB_join_key, 'map_bloom_b_to_b_{}'.format(p), query_plan, True)),
+    #                        range(0, settings.table_A_parts))
 
     map_B_to_C = map(lambda p:
                      query_plan.add_operator(
@@ -210,7 +210,7 @@ def query_plan(settings):
     part_aggregate = map(lambda p:
                          query_plan.add_operator(Aggregate(
                              [
-                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['s_acctbal']))
+                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t[settings.table_C_detail_field_name]))
                              ],
                              'part_aggregate_{}'.format(p), query_plan, False)),
                          range(0, settings.table_C_parts))
@@ -233,18 +233,24 @@ def query_plan(settings):
     # Connect the operators
     connect_many_to_many(scan_A, project_A)
     connect_many_to_many(project_A, map_A_to_B)
-    connect_many_to_many(project_A, map_bloom_A_to_B)
+    # connect_many_to_many(project_A, map_bloom_A_to_B)
     connect_all_to_all(map_A_to_B, join_build_A_B)
     connect_many_to_many(join_build_A_B, join_probe_A_B)
 
-    connect_all_to_all(map_bloom_A_to_B, bloom_create_a)
+    # connect_all_to_all(map_bloom_A_to_B, bloom_create_a)
+
+    connect_many_to_many(project_A, bloom_create_a)
+
     connect_all_to_all(bloom_create_a, scan_B)
     connect_many_to_many(scan_B, project_B)
     connect_many_to_many(project_B, map_B_to_B)
     connect_all_to_all(map_B_to_B, join_probe_A_B)
 
-    connect_many_to_many(join_probe_A_B, map_bloom_B_to_B)
-    connect_all_to_all(map_bloom_B_to_B, bloom_create_ab)
+    # connect_many_to_many(join_probe_A_B, map_bloom_B_to_B)
+    # connect_all_to_all(map_bloom_B_to_B, bloom_create_ab)
+
+    connect_many_to_many(join_probe_A_B, bloom_create_ab)
+
     connect_all_to_all(bloom_create_ab, scan_C)
 
     connect_many_to_many(join_build_AB_C, join_probe_AB_C)

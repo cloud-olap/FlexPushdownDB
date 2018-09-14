@@ -92,7 +92,10 @@ class HashJoinBuild(Operator):
         if all(self.producer_completions.values()):
 
             if self.log_enabled:
-             print("{}{}".format(self, self.hashtable))
+                print("{}('{}') | Hashtable is:\n{}".format(
+                    self.__class__.__name__,
+                    self.name,
+                    self.hashtable))
 
             self.send(HashTableMessage(self.hashtable), self.consumers)
             Operator.on_producer_completed(self, producer_name)

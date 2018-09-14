@@ -193,7 +193,7 @@ def query_plan(settings):
     part_aggregate = map(lambda p:
                          query_plan.add_operator(Aggregate(
                              [
-                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['s_acctbal']))
+                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t[settings.table_C_detail_field_name]))
                              ],
                              'part_aggregate_{}'.format(p), query_plan, False)),
                          range(0, settings.table_C_parts))
