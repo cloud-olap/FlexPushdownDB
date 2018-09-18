@@ -61,6 +61,9 @@ class QueryPlan(object):
         self.returned_bytes = 0
         self.num_http_get_requests = 0
 
+    def get_operator(self, name):
+        return self.operators[name]
+
     def add_operator(self, operator):
         """Adds the operator to the list of operators in the plan. This method ensures the operators are sorted by
         operator name - which is important only for retrieving the root operators.

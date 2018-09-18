@@ -100,7 +100,9 @@ class EC2Instance:
                 name in EC2Instance.ec2_instances[region][os_type]:
             return EC2Instance.ec2_instances[region][os_type][name]
         else:
-            raise Exception('Invalid info for EC2 instance {}, {}, {}'.format(region, os_type, name))
+            # TODO: Should possibly warn here, not sure, shouldn't be an exception though as need to be able to run locally, Abdu?
+            #raise Exception('Invalid info for EC2 instance {}, {}, {}'.format(region, os_type, name))
+            pass
 
 
 class CostEstimator:
@@ -182,7 +184,11 @@ class CostEstimator:
         :return: the estimated data handling cost
         """
         if ec2_region is None:
-            ec2_region = self.ec2_instance.region
+            if self.ec2_instance is not None:
+                ec2_region = self.ec2_instance.region
+            else:
+                # TODO: In the case of running locally these items can't be set, unsure how to handle, am simply passing for now, Abdu?
+                pass
 
         if s3_region is None:
             s3_region = self.s3_region
@@ -223,7 +229,11 @@ class CostEstimator:
         if ec2_instance_type is not None and os_type is not None:
             ec2_instance = EC2Instance.get_instance_info(os_type, ec2_instance_type, AWSRegion.Default)#region)
 
-        return running_time * SEC_TO_HOUR * ec2_instance.price
+        # TODO: Cant't calculate this if running locally, not sure how to handle, am simply passing for now, Abdu?
+        if ec2_instance is not None:
+            return running_time * SEC_TO_HOUR * ec2_instance.price
+        else:
+            return 0
 
     def estimate_cost_for_config(self, ec2_region=AWSRegion.Default, s3_region=AWSRegion.Default):
         """

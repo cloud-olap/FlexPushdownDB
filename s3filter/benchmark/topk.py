@@ -79,6 +79,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
                     0,
                     query_plan.total_elapsed_time,
                     query_plan.total_elapsed_time,
+                    0,
                     rows,
                     bytes_scanned,
                     bytes_returned,
@@ -94,7 +95,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
 
 
 def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sort_field='l_extendedprice',
-                              sort_order='DESC', use_pandas=True, filtered=False):
+                              sort_order='DESC', use_pandas=True, filtered=False, conservative=False):
     """
     Executes the optimized topk query by firstly retrieving the first k tuples.
     Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
@@ -126,7 +127,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     # Query plan
     ts = query_plan.add_operator(
         TopKTableScan('tpch-sf10/lineitem.tbl', sql, use_pandas, True, False, limit, k_scale,
-                      SortExpression(sort_index, col_type, sort_order, sort_field),
+                      SortExpression(sort_index, col_type, sort_order, sort_field), conservative,
                       shards, parallel_shards, shards_prefix, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))
 
@@ -153,6 +154,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
                     ts.op_metrics.sampling_time,
                     query_plan.total_elapsed_time,
                     ts.op_metrics.sampling_time + query_plan.total_elapsed_time,
+                    0 if num_rows >= limit else 1,
                     rows,
                     bytes_scanned,
                     bytes_returned,
@@ -185,6 +187,7 @@ def run_all():
         'Sampling time (Sec)',
         'Query time (Sec)',
         'Total query time (Sec)',
+        'Second trial time (Sec)',
         'Returned Rows',
         'Bytes Scanned MB',
         'Bytes Returned MB',
@@ -194,17 +197,22 @@ def run_all():
     ])
 
     # varying K
-    for k in range(100, 400, 100):
-        # topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
-        topk_baseline(stats, k, '_4', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
+    for k in [100, 1000, 10000, 100000]:
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
+        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
-        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
 
-    for k in range(100, 400, 100):
-        for i in range(4):
-            scale = pow(2, i)
+    for k in [100, 1000, 10000, 100000]:
+        for kscale in [1, 2, 4, 8, 16, 100, 1000]:
+            # scale = pow(2, i)
             # topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'ASC', use_pandas)
-            topk_with_sampling(stats, k, scale, '_5', float, 'l_extendedprice', 'DESC', use_pandas)
+            topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
+                               filtered=False,
+                               conservative=True)
+            topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
+                               filtered=False,
+                               conservative=False)
 
     for stat in stats:
         print(",".join([str(x) if type(x) is not str else x for x in stat]))

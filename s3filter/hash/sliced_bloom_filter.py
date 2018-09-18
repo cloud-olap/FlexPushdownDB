@@ -28,8 +28,8 @@ class SlicedBloomFilter(object):
         :param error_rate: The desired false positive rate that needs to be supported
         """
 
-        if not capacity > 0:
-            raise Exception("Capacity must be > 0")
+        # if not capacity > 0:
+        #     raise Exception("Capacity must be > 0")
         if not (0 < error_rate < 1):
             raise Exception("Illegal error rate {}. Error rate must be between 0 and 1.".format(error_rate))
 

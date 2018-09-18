@@ -116,6 +116,11 @@ class Project(Operator):
 
         self.op_metrics.rows_projected += len(df)
 
+        # if self.log_enabled:
+        #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #         print("{}('{}') | Sending projected field values: \n{}"
+        #               .format(self.__class__.__name__, self.name, df))
+
         self.send(df, self.consumers)
 
     def on_receive_tuple(self, tuple_, producer_name):
@@ -168,9 +173,9 @@ class Project(Operator):
 
                 self.op_metrics.rows_projected += 1
 
-                # if self.log_enabled:
-                #     print("{}('{}') | Sending projected field values: from: {} to: {}"
-                #           .format(self.__class__.__name__, self.name, tuple_, projected_field_values))
+                if self.log_enabled:
+                    print("{}('{}') | Sending projected field values: from: {} to: {}"
+                          .format(self.__class__.__name__, self.name, tuple_, projected_field_values))
 
                 assert(len(projected_field_values) == len(self.project_exprs))
 

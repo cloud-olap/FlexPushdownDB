@@ -87,21 +87,32 @@ class Top(Operator):
         :param df: The received dataframe
         :return: None
         """
-        #df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
-        #                                            .astype(self.sort_expression.col_type.__name__)
+        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
+                                                   .astype(self.sort_expression.col_type.__name__)
         if len(df) == 0:
             return
+
         if self.sort_expression.sort_order == 'ASC':
-            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
-            self.global_topk_df = self.global_topk_df.append(topk_df)
-            if len(self.global_topk_df) > 10 * self.max_tuples:
-                self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
+            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+            self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
+                                                                                    self.sort_expression.col_index) \
+                    .head(self.max_tuples)
         elif self.sort_expression.sort_order == 'DESC':
-            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
-            self.global_topk_df = self.global_topk_df.append(topk_df)
-            if len(self.global_topk_df) > 10 * self.max_tuples:
-                self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
-   
+            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+            self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
+                                                                                   self.sort_expression.col_index) \
+                    .head(self.max_tuples)
+
+        # if self.sort_expression.sort_order == 'ASC':
+        #     topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+        #     self.global_topk_df = self.global_topk_df.append(topk_df)
+        #     if len(self.global_topk_df) > 10 * self.max_tuples:
+        #         self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
+        # elif self.sort_expression.sort_order == 'DESC':
+        #     topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+        #     self.global_topk_df = self.global_topk_df.append(topk_df)
+        #     if len(self.global_topk_df) > 10 * self.max_tuples:
+        #         self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
 
     def on_producer_completed(self, producer_name):
         if producer_name in self.producer_completions.keys():
@@ -171,8 +182,8 @@ class TopKTableScan(Operator):
     This operator scans a table and emits the k topmost tuples based on a user-defined ranking criteria
     """
 
-    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, max_tuples, k_scale, sort_expression, shards,
-                 parallel_shards, shards_prefix, processes, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, max_tuples, k_scale, sort_expression,
+                 is_conservative, shards, parallel_shards, shards_prefix, processes, name, query_plan, log_enabled):
         """
         Creates a table scan operator that emits only the k topmost tuples from the table
         :param s3key: the table's s3 object key
@@ -194,6 +205,7 @@ class TopKTableScan(Operator):
         self.use_pandas = use_pandas
         self.secure = secure
         self.use_native = use_native
+        self.is_conservative = is_conservative
 
         self.field_names = None
 
@@ -396,6 +408,12 @@ class TopKTableScan(Operator):
         # idx = self.field_names.index(sort_exp.col_index)
 
         if sort_exp.sort_order == "ASC":
-            return min([sort_exp.col_type(t[0]) for t in tuples]), '<='
+            if self.is_conservative:
+                return max(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples]), '<='
+            else:
+                return min(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples]), '<='
         elif sort_exp.sort_order == "DESC":
-            return max([sort_exp.col_type(t[0]) for t in tuples]), '>='
+            if self.is_conservative:
+                return min(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples]), '>='
+            else:
+                return max(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples]), '>='

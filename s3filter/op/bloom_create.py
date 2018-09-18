@@ -58,7 +58,7 @@ class BloomCreate(Operator):
 
         super(BloomCreate, self).__init__(name, BloomCreateMetrics(), query_plan, log_enabled)
 
-        self.__bloom_field_name = bloom_field_name
+        self.bloom_field_name = bloom_field_name
 
         self.__field_names = None
 
@@ -134,7 +134,7 @@ class BloomCreate(Operator):
 
             for t in self.__tuples:
                 lt = IndexedTuple.build(t, self.__field_names)
-                bloom_filter.add(int(lt[self.__bloom_field_name]))
+                bloom_filter.add(int(lt[self.bloom_field_name]))
 
             del self.__tuples
 
@@ -168,11 +168,11 @@ class BloomCreate(Operator):
 
         if not self.__field_names:
 
-            if self.__bloom_field_name not in tuple_:
+            if self.bloom_field_name not in tuple_:
                 raise Exception(
                     "Received invalid tuple {}. "
                     "Tuple field names '{}' do not contain field with bloom field name '{}'"
-                    .format(tuple_, tuple_, self.__bloom_field_name))
+                    .format(tuple_, tuple_, self.bloom_field_name))
 
             # Don't send the field names, just collect them
             self.__field_names = tuple_
