@@ -125,7 +125,7 @@ class PandasCursor(object):
                 OutputSerialization={'CSV': {}}
             )
 
-            self.num_http_get_requests = 1
+            self.num_http_get_requests += 1
 
             self.event_stream = response['Payload']
 
