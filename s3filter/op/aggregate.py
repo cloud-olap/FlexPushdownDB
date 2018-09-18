@@ -90,7 +90,8 @@ class Aggregate(Operator):
         if producer_name in self.producer_completions.keys():
             self.producer_completions[producer_name] = True
         if self.use_pandas:
-            self.send(self.agg_df.agg(['sum']), self.consumers) 
+            if all(self.producer_completions.values()):
+                self.send(self.agg_df.agg(['sum']), self.consumers) 
         else:
             if all(self.producer_completions.values()):
                 # Build and send the field names
