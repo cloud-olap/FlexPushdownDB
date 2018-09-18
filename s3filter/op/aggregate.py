@@ -11,7 +11,7 @@ from s3filter.op.message import TupleMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
-
+import pandas as pd
 
 class AggregateMetrics(OpMetrics):
     """Extra metrics for a project
@@ -69,6 +69,10 @@ class Aggregate(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, producer_name)
+            elif type(m) is pd.DataFrame:
+                for t in m.values.tolist():
+                    self.__on_receive_tuple(t, producer_name)
+                # self.__on_receive_tuple(m.tuple_, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 

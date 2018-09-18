@@ -61,6 +61,9 @@ class HashJoinProbe(Operator):
         self.hashtable = {}
         self.tuples = []
 
+        self.hashtable_df = None
+        self.tuples_df = None
+
     def connect_build_producer(self, producer):
         """Connects a producer as the producer of left tuples in the join expression
 
@@ -115,10 +118,17 @@ class HashJoinProbe(Operator):
             elif type(m) is HashTableMessage:
                 self.on_receive_hashtable(m.hashtable, producer_name)
             elif type(m) is pd.DataFrame:
-                for t in m.values.tolist():
-                    self.on_receive_tuple(t, producer_name)
+                self.on_receive_dataframe(m, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_dataframe(self, df, _producer_name):
+        if self.tuples_df is None:
+            self.tuples_df = pd.DataFrame()
+
+        self.op_metrics.tuple_rows_processed += len(df)
+
+        self.tuples_df = self.tuples_df.append(df, ignore_index=True)
 
     def on_receive_tuple(self, tuple_, producer_name):
 
@@ -164,7 +174,13 @@ class HashJoinProbe(Operator):
 
     def on_receive_hashtable(self, hashtable, _producer_name):
 
-        self.hashtable.update(hashtable)
+        if type(hashtable) is pd.DataFrame:
+            if self.hashtable_df is None:
+                self.hashtable_df = pd.DataFrame()
+            self.hashtable_df = self.hashtable_df.append(hashtable)
+        else:
+            self.hashtable.update(hashtable)
+
         self.op_metrics.build_rows_processed = len(hashtable)
 
     def on_producer_completed(self, producer_name):
@@ -181,10 +197,40 @@ class HashJoinProbe(Operator):
                                 all(self.tuple_producer_completions.values())
 
         if is_all_producers_done and not self.is_completed():
-            self.join_field_names()
-            self.join_field_values()
+
+            if self.hashtable_df is not None:
+                self.join_field_names_pd()
+                self.join_field_values_pd()
+            else:
+                self.join_field_names()
+                self.join_field_values()
 
         Operator.on_producer_completed(self, producer_name)
+
+    def join_field_names_pd(self):
+
+        grouped = self.hashtable_df.groupby(self.join_expr.l_field)
+
+        for name, group in grouped:
+            df = group.reset_index()
+            self.hashtable[name] = df.values.tolist()
+
+        self.join_field_names()
+
+
+    def join_field_values_pd(self):
+
+        # self.tuples_df = self.tuples_df.set_index(self.join_expr.r_field)
+
+        df = self.hashtable_df.merge(self.tuples_df, how='inner', left_index=True, right_index=False, right_on=self.join_expr.r_field)
+        df = df.reset_index()
+        df = df.rename(columns={'index' : self.join_expr.l_field})
+
+        df[self.join_expr.r_field] = df[self.join_expr.l_field]
+
+        self.op_metrics.rows_joined += len(df)
+
+        self.send(df, self.consumers)
 
     def join_field_values(self):
         """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.
