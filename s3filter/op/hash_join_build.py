@@ -71,8 +71,11 @@ class HashJoinBuild(Operator):
         if self.hashtable_df is None:
             self.hashtable_df = pd.DataFrame()
 
-        self.hashtable_df = self.hashtable_df.append(df, ignore_index=True)
+        df.set_index(self.key, inplace=True, drop=False)
 
+        self.hashtable_df = self.hashtable_df.append(df)
+
+        self.op_metrics.rows_processed += len(df)
 
     def on_receive_tuple(self, tuple_, _producer_name):
 
@@ -106,7 +109,6 @@ class HashJoinBuild(Operator):
                     self.hashtable))
 
             if self.hashtable_df is not None:
-                self.hashtable_df = self.hashtable_df.set_index(self.key)
                 self.send(HashTableMessage(self.hashtable_df), self.consumers)
             else:
                 self.send(HashTableMessage(self.hashtable), self.consumers)
