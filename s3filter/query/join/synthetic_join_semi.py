@@ -14,8 +14,7 @@ from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
-from s3filter.query.join.synthetic_join_settings import SyntheticFilteredJoinSettings, SyntheticBloomJoinSettings, \
-    SyntheticSemiJoinSettings
+from s3filter.query.join.synthetic_join_settings import SyntheticSemiJoinSettings
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
 
@@ -70,10 +69,10 @@ def query_plan(settings):
                     range(0, settings.table_A_parts))
 
     bloom_create_ab_join_key = map(lambda p:
-                                         query_plan.add_operator(BloomCreate(
-                                             settings.table_A_AB_join_key,
-                                             'bloom_create_ab_join_key' + '_{}'.format(p), query_plan, False)),
-                                         range(0, settings.table_A_parts))
+                                   query_plan.add_operator(BloomCreate(
+                                       settings.table_A_AB_join_key,
+                                       'bloom_create_ab_join_key' + '_{}'.format(p), query_plan, False)),
+                                   range(0, settings.table_A_parts))
 
     scan_b_on_ab_join_key = \
         map(lambda p:
@@ -83,10 +82,14 @@ def query_plan(settings):
                                      "  {},{} "
                                      "from "
                                      "  S3Object "
-                                     "{}"
-                                     .format(settings.table_B_BC_join_key, settings.table_B_AB_join_key,
+                                     "where "
+                                     "  {} "
+                                     "  {} "
+                                     .format(settings.table_B_BC_join_key,
+                                             settings.table_B_AB_join_key,
+                                             settings.table_B_filter_sql,
                                              get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
-                                                            settings.table_B_sharded, add_where=True)),
+                                                            settings.table_B_sharded, add_where=False)),
                                      settings.table_B_AB_join_key,
                                      settings.use_pandas,
                                      settings.secure,
@@ -104,10 +107,14 @@ def query_plan(settings):
                                      "  {}, {} "
                                      "from "
                                      "  S3Object "
-                                     "{}"
-                                     .format(settings.table_C_primary_key, settings.table_C_BC_join_key,
+                                     "where "
+                                     "  {} "
+                                     "  {} "
+                                     .format(settings.table_C_primary_key,
+                                             settings.table_C_BC_join_key,
+                                             settings.table_C_filter_sql,
                                              get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
-                                                            settings.table_C_sharded, add_where=True)),
+                                                            settings.table_C_sharded, add_where=False)),
                                      settings.table_C_BC_join_key,
                                      settings.use_pandas,
                                      settings.secure,
@@ -125,13 +132,13 @@ def query_plan(settings):
         return df
 
     project_b = map(lambda p:
-                                    query_plan.add_operator(Project(
-                                        [ProjectExpression(k, v) for k, v in field_names_map_b.iteritems()],
-                                        'project_b' + '_{}'.format(p),
-                                        query_plan,
-                                        False,
-                                        project_fn_b)),
-                                    range(0, settings.table_B_parts))
+                    query_plan.add_operator(Project(
+                        [ProjectExpression(k, v) for k, v in field_names_map_b.iteritems()],
+                        'project_b' + '_{}'.format(p),
+                        query_plan,
+                        False,
+                        project_fn_b)),
+                    range(0, settings.table_B_parts))
 
     field_names_map_c = OrderedDict(
         zip(['_{}'.format(i) for i, name in enumerate(settings.table_C_field_names)], settings.table_C_field_names))
@@ -141,13 +148,13 @@ def query_plan(settings):
         return df
 
     project_c = map(lambda p:
-                                       query_plan.add_operator(Project(
-                                           [ProjectExpression(k, v) for k, v in field_names_map_c.iteritems()],
-                                           'project_c' + '_{}'.format(p),
-                                           query_plan,
-                                           False,
-                                           project_fn_c)),
-                                       range(0, settings.table_C_parts))
+                    query_plan.add_operator(Project(
+                        [ProjectExpression(k, v) for k, v in field_names_map_c.iteritems()],
+                        'project_c' + '_{}'.format(p),
+                        query_plan,
+                        False,
+                        project_fn_c)),
+                    range(0, settings.table_C_parts))
 
     scan_c_detail_on_c_pk = \
         map(lambda p:
@@ -157,10 +164,14 @@ def query_plan(settings):
                                      "  {},{} "
                                      "from "
                                      "  S3Object "
-                                     "{}"
-                                     .format(settings.table_C_primary_key, settings.table_C_detail_field_name,
+                                     "where "
+                                     "  {} "
+                                     "  {} "
+                                     .format(settings.table_C_primary_key,
+                                             settings.table_C_detail_field_name,
+                                             settings.table_C_filter_sql,
                                              get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
-                                                            settings.table_C_sharded, add_where=True)),
+                                                            settings.table_C_sharded, add_where=False)),
                                      settings.table_C_primary_key,
                                      settings.use_pandas,
                                      settings.secure,
@@ -187,27 +198,28 @@ def query_plan(settings):
                            range(0, settings.table_C_parts))
 
     map_ab_a_join_key = map(lambda p:
-                     query_plan.add_operator(
-                         Map(settings.table_A_AB_join_key, 'map_ab_a_join_key' + '_{}'.format(p), query_plan, False)),
-                     range(0, settings.table_A_parts))
+                            query_plan.add_operator(
+                                Map(settings.table_A_AB_join_key, 'map_ab_a_join_key' + '_{}'.format(p), query_plan,
+                                    False)),
+                            range(0, settings.table_A_parts))
 
     map_ab_b_join_key = map(lambda p:
-                                query_plan.add_operator(
-                                    Map(settings.table_B_AB_join_key, 'map_ab_b_join_key' + '_{}'.format(p),
-                                        query_plan, False)),
-                                range(0, settings.table_B_parts))
+                            query_plan.add_operator(
+                                Map(settings.table_B_AB_join_key, 'map_ab_b_join_key' + '_{}'.format(p),
+                                    query_plan, False)),
+                            range(0, settings.table_B_parts))
 
     map_bc_c_join_key = map(lambda p:
-                                query_plan.add_operator(
-                                    Map(settings.table_C_BC_join_key, 'map_bc_c_join_key' + '_{}'.format(p),
-                                        query_plan, False)),
-                                range(0, settings.table_B_parts))
+                            query_plan.add_operator(
+                                Map(settings.table_C_BC_join_key, 'map_bc_c_join_key' + '_{}'.format(p),
+                                    query_plan, False)),
+                            range(0, settings.table_B_parts))
 
     map_bc_b_join_key = map(lambda p:
-                                query_plan.add_operator(
-                                    Map(settings.table_B_BC_join_key, 'map_bc_b_join_key' + '_{}'.format(p),
-                                        query_plan, False)),
-                                range(0, settings.table_C_parts))
+                            query_plan.add_operator(
+                                Map(settings.table_B_BC_join_key, 'map_bc_b_join_key' + '_{}'.format(p),
+                                    query_plan, False)),
+                            range(0, settings.table_C_parts))
 
     map_c_pk_1 = map(lambda p:
                      query_plan.add_operator(
@@ -216,72 +228,74 @@ def query_plan(settings):
                      range(0, settings.table_C_parts))
 
     map_c_pk_2 = map(lambda p:
-                      query_plan.add_operator(
-                          Map(settings.table_C_primary_key, 'map_c_pk_2' + '_{}'.format(p),
-                              query_plan, False)),
-                      range(0, settings.table_C_parts))
+                     query_plan.add_operator(
+                         Map(settings.table_C_primary_key, 'map_c_pk_2' + '_{}'.format(p),
+                             query_plan, False)),
+                     range(0, settings.table_C_parts))
 
     join_build_a_and_b_on_ab_join_key = map(lambda p:
-                                       query_plan.add_operator(
-                                           HashJoinBuild(settings.table_A_AB_join_key,
-                                                         'join_build_a_and_b_on_ab_join_key' + '_{}'.format(p), query_plan,
-                                                         False)),
-                                       range(0, settings.table_B_parts))
+                                            query_plan.add_operator(
+                                                HashJoinBuild(settings.table_A_AB_join_key,
+                                                              'join_build_a_and_b_on_ab_join_key' + '_{}'.format(p),
+                                                              query_plan,
+                                                              False)),
+                                            range(0, settings.table_B_parts))
 
     join_probe_a_and_b_on_ab_join_key = map(lambda p:
-                            query_plan.add_operator(
-                                HashJoinProbe(
-                                    JoinExpression(settings.table_A_AB_join_key, settings.table_B_AB_join_key),
-                                    'join_probe_a_and_b_on_ab_join_key' + '_{}'.format(p),
-                                    query_plan, False)),
-                            range(0, settings.table_B_parts))
+                                            query_plan.add_operator(
+                                                HashJoinProbe(
+                                                    JoinExpression(settings.table_A_AB_join_key,
+                                                                   settings.table_B_AB_join_key),
+                                                    'join_probe_a_and_b_on_ab_join_key' + '_{}'.format(p),
+                                                    query_plan, False)),
+                                            range(0, settings.table_B_parts))
 
     bloom_create_bc_join_key = map(lambda p:
-                                          query_plan.add_operator(BloomCreate(
-                                              settings.table_B_BC_join_key,
-                                              'bloom_create_bc_join_key' + '_{}'.format(p), query_plan, False)),
-                                          range(0, settings.table_B_parts))
+                                   query_plan.add_operator(BloomCreate(
+                                       settings.table_B_BC_join_key,
+                                       'bloom_create_bc_join_key' + '_{}'.format(p), query_plan, False)),
+                                   range(0, settings.table_B_parts))
 
     bloom_create_c_pk = map(lambda p:
-                                          query_plan.add_operator(BloomCreate(
-                                              settings.table_C_primary_key,
-                                              'bloom_create_bc_b_to_c_join_key_{}'.format(p), query_plan, False)),
-                                          range(0, settings.table_C_parts))
+                            query_plan.add_operator(BloomCreate(
+                                settings.table_C_primary_key,
+                                'bloom_create_bc_b_to_c_join_key_{}'.format(p), query_plan, False)),
+                            range(0, settings.table_C_parts))
 
     join_build_ab_and_c_on_bc_join_key = map(lambda p:
-                                                 query_plan.add_operator(
-                                                     HashJoinBuild(settings.table_B_BC_join_key,
-                                                                   'join_build_ab_and_c_on_bc_join_key' + '_{}'.format(
-                                                                       p), query_plan,
-                                                                   False)),
-                                                 range(0, settings.table_C_parts))
+                                             query_plan.add_operator(
+                                                 HashJoinBuild(settings.table_B_BC_join_key,
+                                                               'join_build_ab_and_c_on_bc_join_key' + '_{}'.format(
+                                                                   p), query_plan,
+                                                               False)),
+                                             range(0, settings.table_C_parts))
 
     join_probe_ab_and_c_on_bc_join_key = map(lambda p:
-                                                 query_plan.add_operator(
-                                                     HashJoinProbe(
-                                                         JoinExpression(settings.table_B_BC_join_key,
-                                                                        settings.table_C_BC_join_key),
-                                                         'join_probe_ab_and_c_on_bc_join_key' + '_{}'.format(p),
-                                                         query_plan, False)),
-                                                 range(0, settings.table_C_parts))
+                                             query_plan.add_operator(
+                                                 HashJoinProbe(
+                                                     JoinExpression(settings.table_B_BC_join_key,
+                                                                    settings.table_C_BC_join_key),
+                                                     'join_probe_ab_and_c_on_bc_join_key' + '_{}'.format(p),
+                                                     query_plan, False)),
+                                             range(0, settings.table_C_parts))
 
     join_build_abc_and_c_on_c_pk = map(lambda p:
-                                                query_plan.add_operator(
-                                                    HashJoinBuild(settings.table_C_primary_key,
-                                                                  'join_build_abc_and_c_on_c_pk' + '_{}'.format(
-                                                                      p),
-                                                                  query_plan,
-                                                                  False)),
-                                                range(0, settings.table_C_parts))
+                                       query_plan.add_operator(
+                                           HashJoinBuild(settings.table_C_primary_key,
+                                                         'join_build_abc_and_c_on_c_pk' + '_{}'.format(
+                                                             p),
+                                                         query_plan,
+                                                         False)),
+                                       range(0, settings.table_C_parts))
 
     join_probe_abc_and_c_on_c_pk = map(lambda p:
-                                                query_plan.add_operator(
-                                                    HashJoinProbe(JoinExpression(settings.table_C_primary_key,
-                                                                                 settings.table_C_primary_key),
-                                                                  'join_probe_abc_and_c_on_c_pk' + '_{}'.format(
-                                                                      p),
-                                                                  query_plan, False)),
-                                                range(0, settings.table_C_parts))
+                                       query_plan.add_operator(
+                                           HashJoinProbe(JoinExpression(settings.table_C_primary_key,
+                                                                        settings.table_C_primary_key),
+                                                         'join_probe_abc_and_c_on_c_pk' + '_{}'.format(
+                                                             p),
+                                                         query_plan, False)),
+                                       range(0, settings.table_C_parts))
 
     part_aggregate = map(lambda p:
                          query_plan.add_operator(Aggregate(
@@ -317,8 +331,6 @@ def query_plan(settings):
     # connect_all_to_all(map_A_to_B, join_build_a_and_b_on_ab_join_key)
     connect_many_to_many(join_build_a_and_b_on_ab_join_key, join_probe_a_and_b_on_ab_join_key)
 
-
-
     # connect_all_to_all(map_bloom_A_to_B, bloom_create_ab_join_key)
     connect_all_to_all(bloom_create_ab_join_key, scan_b_on_ab_join_key)
     connect_many_to_many(scan_b_on_ab_join_key, project_b)
@@ -338,22 +350,10 @@ def query_plan(settings):
     connect_many_to_many(project_c, map_bc_c_join_key)
     connect_all_to_all(map_bc_c_join_key, join_probe_ab_and_c_on_bc_join_key)
 
-
-
-
-
     # connect_many_to_many(join_probe_a_and_b_on_ab_join_key, join_build_ab_and_c_on_bc_join_key)
-
-
-
-
-
-
 
     connect_many_to_many(join_probe_a_and_b_on_ab_join_key, map_bc_b_join_key)
     connect_all_to_all(map_bc_b_join_key, join_build_ab_and_c_on_bc_join_key)
-
-
 
     connect_many_to_many(join_build_ab_and_c_on_bc_join_key, join_probe_ab_and_c_on_bc_join_key)
 
@@ -363,44 +363,22 @@ def query_plan(settings):
     connect_many_to_many(join_probe_ab_and_c_on_bc_join_key, map_c_pk_1)
     connect_all_to_all(map_c_pk_1, join_build_abc_and_c_on_c_pk)
 
-
     connect_all_to_all(bloom_create_c_pk, scan_c_detail_on_c_pk)
 
     # connect_all_to_all(bloom_create_bc_join_key, scan_c_detail_on_c_pk)
 
     connect_many_to_many(join_build_abc_and_c_on_c_pk, join_probe_abc_and_c_on_c_pk)
 
-
-
-
-
-
-
-
-
-
-
     # connect_many_to_many(join_probe_a_and_b_on_ab_join_key, map_B_to_C)
     # connect_all_to_all(join_probe_a_and_b_on_ab_join_key, join_build_abc_and_c_on_c_pk)
 
     connect_many_to_many(scan_c_detail_on_c_pk, project_c_detail)
 
-
-
-
-
-
-
     # connect_many_to_many(project_c_detail, map_C_to_C)
     # connect_all_to_all(project_c_detail, join_probe_abc_and_c_on_c_pk)
 
-
-
-
     connect_many_to_many(project_c_detail, map_c_pk_2)
     connect_all_to_all(map_c_pk_2, join_probe_abc_and_c_on_c_pk)
-
-
 
     connect_many_to_many(join_probe_abc_and_c_on_c_pk, part_aggregate)
 

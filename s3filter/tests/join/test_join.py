@@ -86,7 +86,7 @@ def test_join_baseline_pandas():
     :return: None
     """
 
-    query_plan = QueryPlan(is_async=True, buffer_size=1024)
+    query_plan = QueryPlan(is_async=True, buffer_size=0)
 
     # Query plan
     supplier_scan = query_plan.add_operator(

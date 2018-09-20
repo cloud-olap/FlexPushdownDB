@@ -14,7 +14,7 @@ from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.plan.query_plan import QueryPlan
-from s3filter.query.join.synthetic_join_settings import SyntheticFilteredJoinSettings, SyntheticBloomJoinSettings
+from s3filter.query.join.synthetic_join_settings import SyntheticBloomJoinSettings
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
 
@@ -34,13 +34,14 @@ def query_plan(settings):
             query_plan.add_operator(
                 SQLTableScan(get_file_key(settings.table_A_key, settings.table_A_sharded, p),
                              "select "
-                             "  * "
+                             "  {} "
                              "from "
                              "  S3Object "
                              "where "
                              "  {} "
                              "  {} "
-                             .format(settings.table_A_filter_sql,
+                             .format(','.join(settings.table_A_field_names),
+                                     settings.table_A_filter_sql,
                                      get_sql_suffix(settings.table_A_key, settings.table_A_parts, p,
                                                     settings.table_A_sharded)),
                              settings.use_pandas,
@@ -48,7 +49,7 @@ def query_plan(settings):
                              settings.use_native,
                              'scan_A_{}'.format(p),
                              query_plan,
-                             True)),
+                             False)),
             range(0, settings.table_A_parts))
 
     field_names_map_A = OrderedDict(
@@ -77,20 +78,23 @@ def query_plan(settings):
             query_plan.add_operator(
                 SQLTableScanBloomUse(get_file_key(settings.table_B_key, settings.table_B_sharded, p),
                                      "select "
-                                     "  * "
+                                     "  {} "
                                      "from "
                                      "  S3Object "
-                                     "{}"
-                                     .format(
-                                         get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
-                                                        settings.table_B_sharded, add_where=True)),
+                                     "where "
+                                     "  {} "
+                                     "  {} "
+                                     .format(','.join(settings.table_B_field_names),
+                                             settings.table_B_filter_sql,
+                                             get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
+                                                            settings.table_B_sharded, add_where=False)),
                                      settings.table_B_AB_join_key,
                                      settings.use_pandas,
                                      settings.secure,
                                      settings.use_native,
                                      'scan_B_{}'.format(p),
                                      query_plan,
-                                     True)),
+                                     False)),
             range(0, settings.table_B_parts))
 
     field_names_map_B = OrderedDict(
@@ -114,13 +118,16 @@ def query_plan(settings):
             query_plan.add_operator(
                 SQLTableScanBloomUse(get_file_key(settings.table_C_key, settings.table_C_sharded, p),
                                      "select "
-                                     "  * "
+                                     "  {} "
                                      "from "
                                      "  S3Object "
-                                     "{}"
-                                     .format(
-                                         get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
-                                                        settings.table_C_sharded, add_where=True)),
+                                     "where "
+                                     "  {} "
+                                     "  {} "
+                                     .format(','.join(settings.table_C_field_names),
+                                             settings.table_C_filter_sql,
+                                             get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
+                                                            settings.table_C_sharded, add_where=False)),
                                      settings.table_C_BC_join_key,
                                      settings.use_pandas,
                                      settings.secure,
@@ -142,7 +149,7 @@ def query_plan(settings):
                         [ProjectExpression(k, v) for k, v in field_names_map_C.iteritems()],
                         'project_C_{}'.format(p),
                         query_plan,
-                        False,
+                        True,
                         project_fn_C)),
                     range(0, settings.table_C_parts))
 
@@ -151,20 +158,10 @@ def query_plan(settings):
                          Map(settings.table_A_AB_join_key, 'map_A_to_B_{}'.format(p), query_plan, False)),
                      range(0, settings.table_A_parts))
 
-    # map_bloom_A_to_B = map(lambda p:
-    #                        query_plan.add_operator(
-    #                            Map(settings.table_A_AB_join_key, 'map_bloom_A_to_B_{}'.format(p), query_plan, True)),
-    #                        range(0, settings.table_A_parts))
-
     map_B_to_B = map(lambda p:
                      query_plan.add_operator(
                          Map(settings.table_B_AB_join_key, 'map_B_to_B_{}'.format(p), query_plan, False)),
                      range(0, settings.table_B_parts))
-
-    # map_bloom_B_to_B = map(lambda p:
-    #                        query_plan.add_operator(
-    #                            Map(settings.table_B_AB_join_key, 'map_bloom_b_to_b_{}'.format(p), query_plan, True)),
-    #                        range(0, settings.table_A_parts))
 
     map_B_to_C = map(lambda p:
                      query_plan.add_operator(
@@ -210,7 +207,8 @@ def query_plan(settings):
     part_aggregate = map(lambda p:
                          query_plan.add_operator(Aggregate(
                              [
-                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t[settings.table_C_detail_field_name]))
+                                 AggregateExpression(AggregateExpression.SUM,
+                                                     lambda t: float(t[settings.table_C_detail_field_name]))
                              ],
                              'part_aggregate_{}'.format(p), query_plan, False)),
                          range(0, settings.table_C_parts))
@@ -233,26 +231,16 @@ def query_plan(settings):
     # Connect the operators
     connect_many_to_many(scan_A, project_A)
     connect_many_to_many(project_A, map_A_to_B)
-    # connect_many_to_many(project_A, map_bloom_A_to_B)
     connect_all_to_all(map_A_to_B, join_build_A_B)
     connect_many_to_many(join_build_A_B, join_probe_A_B)
 
-    # connect_all_to_all(map_bloom_A_to_B, bloom_create_a)
-
     connect_many_to_many(project_A, bloom_create_a)
-
     connect_all_to_all(bloom_create_a, scan_B)
     connect_many_to_many(scan_B, project_B)
     connect_many_to_many(project_B, map_B_to_B)
     connect_all_to_all(map_B_to_B, join_probe_A_B)
-
-    # connect_many_to_many(join_probe_A_B, map_bloom_B_to_B)
-    # connect_all_to_all(map_bloom_B_to_B, bloom_create_ab)
-
     connect_many_to_many(join_probe_A_B, bloom_create_ab)
-
     connect_all_to_all(bloom_create_ab, scan_C)
-
     connect_many_to_many(join_build_AB_C, join_probe_AB_C)
 
     connect_many_to_many(join_probe_A_B, map_B_to_C)
