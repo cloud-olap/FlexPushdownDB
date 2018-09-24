@@ -49,9 +49,11 @@ class GroupbyDecoder(Operator):
     def __on_receive_dataframe(self, df):
         
         if not type(self.group_df) is pd.DataFrame:
-            self.group_df = df.sort_values(by = list(df) ).reset_index(drop=True)
+            self.group_df = df
+            #self.group_df = df.sort_values(by = list(df) ).reset_index(drop=True)
             return
-
+    
+        # print "decoder: ", df
         value_df = pd.DataFrame()
         chunk_size =len(self.group_df) 
         num_chunks = len(df.columns) / chunk_size 

@@ -17,12 +17,8 @@ import s3filter.util.constants
 
 
 def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=1,
-            sharded=True)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=2,
-            sharded=True)
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, 
+            buffer_size=0, lineitem_parts=1, sharded=True)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded):

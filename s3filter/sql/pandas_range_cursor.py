@@ -50,6 +50,8 @@ class PandasRangeCursor(object):
         
         self.records_str = ''
         self.nthreads = 16
+        
+        self.num_http_get_requests = 0
 
     def add_range(self, range_df):
         
@@ -99,6 +101,8 @@ class PandasRangeCursor(object):
         #
         # TODO if the ranges is too long, should chop it up. 
         pool = ThreadPool(self.nthreads)
+        self.num_http_get_requests += len(self.ranges)
+
         if len(self.ranges) > 0:
             results = pool.map(self.get_object_thread, self.ranges.values.tolist())
             pool.close()

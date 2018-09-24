@@ -11,6 +11,7 @@ from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.plan.query_plan import QueryPlan
+from s3filter.op.table_scan import TableScan
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.group import Group
@@ -41,8 +42,8 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
     # Scan
     scan = map(lambda p: 
                query_plan.add_operator(
-                    SQLTableScan(files.format(p),
-                        "select * from S3Object;", use_pandas, secure, use_native,
+                    TableScan(files.format(p),
+                        use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
                range(0, table_parts))
