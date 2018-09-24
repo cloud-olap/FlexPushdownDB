@@ -6,6 +6,7 @@
 import cStringIO
 import csv
 import multiprocessing
+import scan
 
 import agate
 from enum import Enum
@@ -19,6 +20,8 @@ class BaseParser(Enum):
     pandas = 1
     python = 2
     agate = 3
+    scan = 4
+    paratext = 5
 
 
 def parse_chunk_str(chunk, base_parser, callback):
@@ -46,6 +49,9 @@ def read_csv(stream, base_parser):
         csv_reader = agate.csv_py2.reader(stream)
         df = pd.DataFrame(list(csv_reader), dtype=str)
         df = df.add_prefix('_')
+    elif base_parser is BaseParser.scan:
+        nd_array = scan.read_csv(stream)
+        df = pd.DataFrame(nd_array)
     else:
         raise Exception("Unrecognised base parser '{}'".format(base_parser))
 
