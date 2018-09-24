@@ -76,6 +76,18 @@ cd ${SCRIPT_PATH}/build/thirdparty/csv-parser
 git clone https://github.com/AriaFallah/csv-parser.git ${SCRIPT_PATH}/build/thirdparty/csv-parser
 git pull
 
+# Get CSV Parser Lib
+mkdir -p ${SCRIPT_PATH}/build/thirdparty/paratext
+cd ${SCRIPT_PATH}/build/thirdparty/paratext
+git clone https://github.com/wiseio/paratext.git ${SCRIPT_PATH}/build/thirdparty/paratext
+git pull
+
+# Get CSV Parser Lib
+mkdir -p ${SCRIPT_PATH}/build/thirdparty/fast-cpp-csv-parser
+cd ${SCRIPT_PATH}/build/thirdparty/fast-cpp-csv-parser
+git clone https://github.com/ben-strasser/fast-cpp-csv-parser.git ${SCRIPT_PATH}/build/thirdparty/fast-cpp-csv-parser
+git pull
+
 
 cd ${SCRIPT_PATH}
 
