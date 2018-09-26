@@ -538,8 +538,16 @@ def get_sql_suffix(key, num_shards, shard, sharded, add_where=False):
             field_name = 's_suppkey'
             field_min_val = 1
             field_max_val = 10000
+        elif key == "customer":
+            field_name = 'c_custkey'
+            field_min_val = 1
+            field_max_val = 150000
+        elif key == "orders":
+            field_name = 'o_orderkey'
+            field_min_val = 1
+            field_max_val = 6000000
         else:
-            raise NotImplementedError("TODO: Partitioning scheme not yet implemented for this table {}".format(key))
+            raise NotImplementedError("TODO: Partitioning scheme not yet implemented for table '{}'".format(key))
 
         total_distinct_field_vals = field_max_val - field_min_val + 1
         part_field_min_val = math.ceil((total_distinct_field_vals / float(num_shards)) * shard) + field_min_val

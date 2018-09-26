@@ -5,11 +5,13 @@
 
 import pygraphviz
 
+from s3filter.op.bloom_create import BloomCreate
 from s3filter.op.hash_join import HashJoin
 from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.map import Map
 from s3filter.op.nested_loop_join import NestedLoopJoin
+from s3filter.op.project import Project
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 
@@ -35,13 +37,33 @@ class Graph(object):
         # Nodes
         if type(operator) is Map:
             self.graph.add_node(operator.name,
-                                label="{}\n({}, '{}')".format(operator.__class__.__name__, operator.name,
+                                label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name,
                                                               operator.map_field_name),
                                 shape="box")
         elif type(operator) is SQLTableScan or type(operator) is SQLTableScanBloomUse:
             self.graph.add_node(operator.name,
-                                label="{}\n({})".format(operator.__class__.__name__, operator.name),
-                                tooltip="key: '{}'&#10;sql: '{}'".format(operator.s3key, operator.s3sql),
+                                label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name, operator.s3key),
+                                tooltip="sql: '{}'&#10;".format(operator.s3sql),
+                                shape="box")
+        elif type(operator) is BloomCreate:
+            self.graph.add_node(operator.name,
+                                label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name,
+                                                            operator.bloom_field_name),
+                                shape="box")
+        elif type(operator) is Project:
+            self.graph.add_node(operator.name,
+                                label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name,
+                                                            ', '.join([pe.new_field_name for pe in operator.project_exprs])),
+                                shape="box")
+        elif type(operator) is HashJoinBuild:
+            self.graph.add_node(operator.name,
+                                label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name,
+                                                            operator.key),
+                                shape="box")
+        elif type(operator) is HashJoinProbe:
+            self.graph.add_node(operator.name,
+                                label="{}\n{}\n({}, {})".format(operator.__class__.__name__, operator.name,
+                                                            operator.join_expr.l_field, operator.join_expr.r_field),
                                 shape="box")
         else:
             self.graph.add_node(operator.name, label="{}\n({})"

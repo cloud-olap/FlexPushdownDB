@@ -61,6 +61,12 @@ class HashJoinProbe(Operator):
         self.hashtable = {}
         self.tuples = []
 
+        self.hashtable_df = None
+        self.tuples_df = None
+
+        self.do_join = False
+        self.field_names_joined = False
+
     def connect_build_producer(self, producer):
         """Connects a producer as the producer of left tuples in the join expression
 
@@ -115,10 +121,41 @@ class HashJoinProbe(Operator):
             elif type(m) is HashTableMessage:
                 self.on_receive_hashtable(m.hashtable, producer_name)
             elif type(m) is pd.DataFrame:
-                for t in m.values.tolist():
-                    self.on_receive_tuple(t, producer_name)
+                self.on_receive_dataframe(m, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_dataframe(self, df, _producer_name):
+
+        if self.tuples_df is None:
+            self.tuples_df = pd.DataFrame()
+
+        self.op_metrics.tuple_rows_processed += len(df)
+
+        self.tuples_df = self.tuples_df.append(df, ignore_index=True)
+
+        if self.do_join:
+            # if self.log_enabled:
+            #     print("{}('{}') | All build producers complete, performing join".format(
+            #         self.__class__.__name__,
+            #         self.name))
+
+            if self.hashtable_df is not None:
+                if not self.field_names_joined:
+                    self.join_field_names()
+                    self.field_names_joined = True
+                self.join_field_values_pd()
+            else:
+                if not self.field_names_joined:
+                    self.join_field_names()
+                    self.field_names_joined = True
+                self.join_field_values()
+        else:
+            # if self.log_enabled:
+            #     print("{}('{}') | Not all build producers complete, delaying join".format(
+            #         self.__class__.__name__,
+            #         self.name))
+            pass
 
     def on_receive_tuple(self, tuple_, producer_name):
 
@@ -164,7 +201,13 @@ class HashJoinProbe(Operator):
 
     def on_receive_hashtable(self, hashtable, _producer_name):
 
-        self.hashtable.update(hashtable)
+        if type(hashtable) is pd.DataFrame:
+            if self.hashtable_df is None:
+                self.hashtable_df = pd.DataFrame()
+            self.hashtable_df = self.hashtable_df.append(hashtable)
+        else:
+            self.hashtable.update(hashtable)
+
         self.op_metrics.build_rows_processed = len(hashtable)
 
     def on_producer_completed(self, producer_name):
@@ -177,14 +220,50 @@ class HashJoinProbe(Operator):
             raise Exception("Unrecognized producer {} has completed".format(producer_name))
 
         # Check that we have received a completed event from all the producers
-        is_all_producers_done = all(self.build_producer_completions.values()) & \
+        is_all_build_producers_done = all(self.build_producer_completions.values())
+
+        is_all_producers_done = is_all_build_producers_done and \
                                 all(self.tuple_producer_completions.values())
 
+        if is_all_build_producers_done:
+            # if self.log_enabled:
+            #     print("{}('{}') | All build producers complete, enabling join".format(
+            #         self.__class__.__name__,
+            #         self.name))
+            self.do_join = True
+
         if is_all_producers_done and not self.is_completed():
-            self.join_field_names()
-            self.join_field_values()
+
+            if self.hashtable_df is not None:
+                if not self.field_names_joined:
+                    self.join_field_names()
+                    self.field_names_joined = True
+                self.join_field_values_pd()
+            else:
+                if not self.field_names_joined:
+                    self.join_field_names()
+                    self.field_names_joined = True
+                self.join_field_values()
+
+            self.hashtable_df = None
+            self.tuples_df = None
 
         Operator.on_producer_completed(self, producer_name)
+
+    def join_field_values_pd(self):
+
+        # self.tuples_df = self.tuples_df.set_index(self.join_expr.r_field)
+        if len(self.tuples_df) > 0:
+
+            # Peform the join - loop over the right table rows, and use the hashtable for the left table rows
+            df = self.hashtable_df.merge(self.tuples_df, how='inner', left_index=True, right_index=False, right_on=self.join_expr.r_field, copy=False)
+            df = df.reset_index(drop=True) # Discard the index
+
+            self.op_metrics.rows_joined += len(df)
+
+            self.send(df, self.consumers)
+
+            self.tuples_df = pd.DataFrame()
 
     def join_field_values(self):
         """Performs the join on data tuples using a nested loop joining algorithm. The joined tuples are each sent.

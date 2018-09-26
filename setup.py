@@ -19,7 +19,8 @@ else:
 
 scanmodule = Extension('scan',
                        include_dirs=[numpy_include_dir,
-                                     'build/thirdparty'],
+                                     'build/thirdparty',
+                                     'scan/include'],
                        libraries=['aws-cpp-sdk-core',
                                   'aws-cpp-sdk-s3',
                                   'aws-c-common',
@@ -31,7 +32,7 @@ scanmodule = Extension('scan',
                        extra_compile_args=extra_compile_args,
                        extra_link_args=extra_link_args,
                        undef_macros=undef_macros,
-                       sources=['scan/src/scan.cpp'])
+                       sources=['scan/src/scan.cpp', 'scan/src/NDArrayBuilder.cpp', 'scan/src/CsvParser.cpp'])
 
 setup(name='scan',
       version='1.0',

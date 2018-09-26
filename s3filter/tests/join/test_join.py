@@ -7,6 +7,8 @@ import os
 from s3filter import ROOT_DIR
 from s3filter.op.collate import Collate
 from s3filter.op.hash_join import HashJoin
+from s3filter.op.hash_join_build import HashJoinBuild
+from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -76,6 +78,83 @@ def test_join_baseline():
         if num_rows > 1:
             lt = IndexedTuple.build(t, field_names)
             assert lt['r_regionkey'] == lt['n_regionkey']
+
+
+def test_join_baseline_pandas():
+    """Tests a join
+
+    :return: None
+    """
+
+    query_plan = QueryPlan(is_async=True, buffer_size=0)
+
+    # Query plan
+    supplier_scan = query_plan.add_operator(
+        SQLTableScan('region.csv', 'select * from S3Object;', True, False, False, 'supplier_scan', query_plan, True))
+
+    def supplier_project_fn(df):
+        df = df.filter(['_0'], axis='columns')
+        df = df.rename(columns={'_0': 'r_regionkey'})
+        return df
+
+    supplier_project = query_plan.add_operator(
+        Project([ProjectExpression(lambda t_: t_['_0'], 'r_regionkey')], 'supplier_project', query_plan, True, supplier_project_fn))
+
+    nation_scan = query_plan.add_operator(
+        SQLTableScan('nation.csv', 'select * from S3Object;', True, False, False, 'nation_scan', query_plan, True))
+
+    def nation_project_fn(df):
+        df = df.filter(['_2'], axis='columns')
+        df = df.rename(columns={'_2': 'n_regionkey'})
+        return df
+
+    nation_project = query_plan.add_operator(
+        Project([ProjectExpression(lambda t_: t_['_2'], 'n_regionkey')], 'nation_project', query_plan, True, nation_project_fn))
+
+    supplier_nation_join_build = query_plan.add_operator(
+        HashJoinBuild('n_regionkey', 'supplier_nation_join_build', query_plan, True))
+
+    supplier_nation_join_probe = query_plan.add_operator(
+        HashJoinProbe(JoinExpression('n_regionkey', 'r_regionkey'), 'supplier_nation_join_probe', query_plan, True))
+
+    collate = query_plan.add_operator(Collate('collate', query_plan, True))
+
+    supplier_scan.connect(supplier_project)
+    nation_scan.connect(nation_project)
+    nation_project.connect(supplier_nation_join_build)
+    supplier_nation_join_probe.connect_build_producer(supplier_nation_join_build)
+    supplier_nation_join_probe.connect_tuple_producer(supplier_project)
+    supplier_nation_join_probe.connect(collate)
+
+    # Write the plan graph
+    query_plan.write_graph(os.path.join(ROOT_DIR, "../tests-output"), gen_test_id())
+
+    # Start the query
+    query_plan.execute()
+
+    tuples = collate.tuples()
+
+    collate.print_tuples(tuples)
+
+    # Write the metrics
+    query_plan.print_metrics()
+
+    # Shut everything down
+    query_plan.stop()
+
+    field_names = ['n_regionkey', 'r_regionkey']
+
+    assert len(tuples) == 25 + 1
+
+    assert tuples[0] == field_names
+
+    num_rows = 0
+    for t in tuples:
+        num_rows += 1
+        # Assert that the nation_key in table 1 has been joined with the record in table 2 with the same nation_key
+        if num_rows > 1:
+            lt = IndexedTuple.build(t, field_names)
+            assert lt['n_regionkey'] == lt['r_regionkey']
 
 
 def test_r_to_l_join():

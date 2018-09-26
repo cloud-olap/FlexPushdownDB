@@ -50,6 +50,8 @@ class HashJoinBuild(Operator):
 
         self.hashtable = {}
 
+        self.hashtable_df = None
+
     def on_receive(self, ms, producer_name):
         """Handles the event of receiving a new message from a producer.
 
@@ -61,10 +63,19 @@ class HashJoinBuild(Operator):
             if type(m) is TupleMessage:
                 self.on_receive_tuple(m.tuple_, producer_name)
             elif type(m) is pd.DataFrame:
-                for t in m.values.tolist():
-                    self.on_receive_tuple(t, producer_name)
+                self.on_receive_dataframe(m, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
+
+    def on_receive_dataframe(self, df, _producer_name):
+        if self.hashtable_df is None:
+            self.hashtable_df = pd.DataFrame()
+
+        df.set_index(self.key, inplace=True, drop=False)
+
+        self.hashtable_df = self.hashtable_df.append(df)
+
+        self.op_metrics.rows_processed += len(df)
 
     def on_receive_tuple(self, tuple_, _producer_name):
 
@@ -92,7 +103,14 @@ class HashJoinBuild(Operator):
         if all(self.producer_completions.values()):
 
             if self.log_enabled:
-             print("{}{}".format(self, self.hashtable))
+                print("{}('{}') | Hashtable is:\n{}".format(
+                    self.__class__.__name__,
+                    self.name,
+                    self.hashtable))
 
-            self.send(HashTableMessage(self.hashtable), self.consumers)
+            if self.hashtable_df is not None:
+                self.send(HashTableMessage(self.hashtable_df), self.consumers)
+            else:
+                self.send(HashTableMessage(self.hashtable), self.consumers)
+
             Operator.on_producer_completed(self, producer_name)

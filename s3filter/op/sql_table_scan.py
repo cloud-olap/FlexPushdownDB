@@ -279,7 +279,8 @@ class SQLTableScan(Operator):
                 op.op_metrics.rows_returned += len(df)
 
                 # if op.log_enabled:
-                #     print("{}('{}') | Sending field values: {}".format(op.__class__.__name__, op.name, df))
+                #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                #         print("{}('{}') | Sending field values: \n{}".format(op.__class__.__name__, op.name, df))
 
                 counter += 1
                 if op.log_enabled:

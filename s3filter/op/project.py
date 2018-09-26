@@ -117,8 +117,9 @@ class Project(Operator):
         self.op_metrics.rows_projected += len(df)
 
         # if self.log_enabled:
-        #     print("{}('{}') | Sending projected field values: {}"
-        #           .format(self.__class__.__name__, self.name, df.values))
+        #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #         print("{}('{}') | Sending projected field values: \n{}"
+        #               .format(self.__class__.__name__, self.name, df))
 
         self.send(df, self.consumers)
 

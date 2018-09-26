@@ -12,6 +12,8 @@ from s3filter.op.tuple import Tuple, IndexedTuple
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 
+import pandas as pd
+import numpy as np
 
 class AggregateMetrics(OpMetrics):
     """Extra metrics for a project
@@ -37,7 +39,7 @@ class Aggregate(Operator):
 
     """
 
-    def __init__(self, expressions, name, query_plan, log_enabled):
+    def __init__(self, expressions, use_pandas, name, query_plan, log_enabled, agg_fun):
         """Creates a new aggregate operator from the given list of expressions.
 
         :param expressions: List of aggregate expressions.
@@ -53,6 +55,10 @@ class Aggregate(Operator):
                                 .format(type(e), AggregateExpression.__class__.__name__))
 
         self.__expressions = expressions
+        self.use_pandas = use_pandas
+        
+        self.agg_fun = agg_fun
+        self.agg_df = pd.DataFrame()
 
         self.producer_field_names = {}
 
@@ -69,6 +75,8 @@ class Aggregate(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, producer_name)
+            elif type(m) is pd.DataFrame:
+                self.__on_receive_dataframe(m)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -81,19 +89,19 @@ class Aggregate(Operator):
 
         if producer_name in self.producer_completions.keys():
             self.producer_completions[producer_name] = True
+        if self.use_pandas:
+            if all(self.producer_completions.values()):
+                self.send(self.agg_df.agg(['sum']), self.consumers) 
+        else:
+            if all(self.producer_completions.values()):
+                # Build and send the field names
+                field_names = self.__build_field_names()
+                self.send(TupleMessage(Tuple(field_names)), self.consumers)
 
-        if all(self.producer_completions.values()):
-            # Build and send the field names
-            field_names = self.__build_field_names()
-            self.send(TupleMessage(Tuple(field_names)), self.consumers)
-
-            # Send the field values, if there are any
-            if self.__expression_contexts is not None:
-                field_values = self.__build_field_values()
-                self.send(TupleMessage(Tuple(field_values)), self.consumers)
-
-        # # Clean up
-        # self.del_()
+                # Send the field values, if there are any
+                if self.__expression_contexts is not None:
+                    field_values = self.__build_field_values()
+                    self.send(TupleMessage(Tuple(field_values)), self.consumers)
 
         Operator.on_producer_completed(self, producer_name)
 
@@ -165,4 +173,6 @@ class Aggregate(Operator):
 
         return field_values
 
-
+    def __on_receive_dataframe(self, df):
+        df2 = self.agg_fun(df)
+        self.agg_df = self.agg_df.append( df2 )

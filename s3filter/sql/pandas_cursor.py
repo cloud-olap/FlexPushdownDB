@@ -123,7 +123,7 @@ class PandasCursor(object):
                 OutputSerialization={'CSV': {}}
             )
 
-            self.num_http_get_requests = 1
+            self.num_http_get_requests += 1
 
             self.event_stream = response['Payload']
 
@@ -165,7 +165,7 @@ class PandasCursor(object):
                         prev_record_str = records_str[last_newline_pos + 1:]
                         records_str_rdr.write(records_str[:last_newline_pos + 1])
 
-                if records_str_rdr.tell() > 1024 * 256:
+                if records_str_rdr.tell() > 1024 * 1024 * 16:
                     records_str_rdr.seek(0)
                     df = pd.read_csv(records_str_rdr, header=None, prefix='_', dtype=numpy.str, engine='c',
                                      quotechar='"', na_filter=False, compression=None, low_memory=False)

@@ -32,13 +32,14 @@ def query_plan(settings):
             query_plan.add_operator(
                 SQLTableScan(get_file_key(settings.table_A_key, settings.table_A_sharded, p),
                              "select "
-                             "  * "
+                             "  {} "
                              "from "
                              "  S3Object "
                              "where "
                              "  {} "
                              "  {} "
-                             .format(settings.table_A_filter_sql,
+                             .format(','.join(settings.table_A_field_names),
+                                     settings.table_A_filter_sql,
                                      get_sql_suffix(settings.table_A_key, settings.table_A_parts, p,
                                                     settings.table_A_sharded)),
                              settings.use_pandas,
@@ -53,7 +54,7 @@ def query_plan(settings):
         zip(['_{}'.format(i) for i, name in enumerate(settings.table_A_field_names)], settings.table_A_field_names))
 
     def project_fn_A(df):
-        df.rename(columns=field_names_map_A, inplace=True)
+        df = df.rename(columns=field_names_map_A, copy=False)
         return df
 
     project_A = map(lambda p:
@@ -70,13 +71,16 @@ def query_plan(settings):
             query_plan.add_operator(
                 SQLTableScan(get_file_key(settings.table_B_key, settings.table_B_sharded, p),
                              "select "
-                             "  * "
+                             "  {} "
                              "from "
                              "  S3Object "
-                             "{}"
-                             .format(
-                                 get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
-                                                settings.table_B_sharded, add_where=True)),
+                             "where "
+                             "  {} "
+                             "  {} "
+                             .format(','.join(settings.table_B_field_names),
+                                     settings.table_B_filter_sql,
+                                     get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
+                                                    settings.table_B_sharded, add_where=False)),
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -106,13 +110,16 @@ def query_plan(settings):
             query_plan.add_operator(
                 SQLTableScan(get_file_key(settings.table_C_key, settings.table_C_sharded, p),
                              "select "
-                             "  * "
+                             "  {} "
                              "from "
                              "  S3Object "
-                             "{}"
-                             .format(
-                                 get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
-                                                settings.table_C_sharded, add_where=True)),
+                             "where "
+                             "  {} "
+                             "  {} "
+                             .format(','.join(settings.table_C_field_names),
+                                     settings.table_C_filter_sql,
+                                     get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
+                                                    settings.table_C_sharded, add_where=False)),
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -125,7 +132,7 @@ def query_plan(settings):
         zip(['_{}'.format(i) for i, name in enumerate(settings.table_C_field_names)], settings.table_C_field_names))
 
     def project_fn_C(df):
-        df.rename(columns=field_names_map_C, inplace=True)
+        df = df.rename(columns=field_names_map_C, copy=False)
         return df
 
     project_C = map(lambda p:
@@ -167,7 +174,7 @@ def query_plan(settings):
                          query_plan.add_operator(
                              HashJoinProbe(JoinExpression(settings.table_A_AB_join_key, settings.table_B_AB_join_key),
                                            'join_probe_A_B_{}'.format(p),
-                                           query_plan, False)),
+                                           query_plan, True)),
                          range(0, settings.table_B_parts))
 
     join_build_AB_C = map(lambda p:
@@ -180,13 +187,14 @@ def query_plan(settings):
                           query_plan.add_operator(
                               HashJoinProbe(JoinExpression(settings.table_B_BC_join_key, settings.table_C_BC_join_key),
                                             'join_probe_AB_C_{}'.format(p),
-                                            query_plan, False)),
+                                            query_plan, True)),
                           range(0, settings.table_C_parts))
 
     part_aggregate = map(lambda p:
                          query_plan.add_operator(Aggregate(
                              [
-                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['s_acctbal']))
+                                 AggregateExpression(AggregateExpression.SUM,
+                                                     lambda t: float(t[settings.table_C_detail_field_name]))
                              ],
                              'part_aggregate_{}'.format(p), query_plan, False)),
                          range(0, settings.table_C_parts))

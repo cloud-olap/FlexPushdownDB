@@ -39,6 +39,7 @@
 #include <aws/core/utils/logging/AWSLogging.h>
 #include <aws/core/utils/logging/DefaultLogSystem.h>
 #include <aws/transfer/TransferManager.h>
+
 //
 //#include <cstdlib>
 #include <iostream>
@@ -48,8 +49,10 @@
 #include "csv-parser/parser.hpp"
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define PY_ARRAY_UNIQUE_SYMBOL _scan_module_ARRAY_API
+#include <numpy/arrayobject.h>
 
-#include "numpy/arrayobject.h"
+#include <scan/CsvParser.h>
 //
 using namespace std;
 //using namespace Aws;
@@ -1106,11 +1109,31 @@ scan_get_bytes_returned(PyObject *self, PyObject *args)
     return res;
 }
 
+static PyObject *
+read_csv(PyObject *self, PyObject *args)
+{
+    PyObject* stream;
+
+    if (!PyArg_ParseTuple(args, "O", &stream)){
+        return NULL;
+    }
+    auto csv_parser = std::make_shared<CsvParser>();
+
+    PyArrayObject* nd_array = csv_parser->Parse(*stream);
+    Py_XDECREF(stream);
+
+    PyObject* ret = PyArray_Return(nd_array);
+    Py_INCREF(ret);
+    
+    return ret;
+}
+
 static PyMethodDef ScanMethods[] = {
     {"get_bytes_scanned",  scan_get_bytes_scanned, METH_VARARGS, "Gets Bytes Scanned."},
     {"get_bytes_processed",  scan_get_bytes_processed, METH_VARARGS, "Gets Bytes Processed."},
     {"get_bytes_returned",  scan_get_bytes_returned, METH_VARARGS, "Gets Bytes Returned."},
     {"execute",  scan_execute, METH_VARARGS, "Execute an S3 Select query."},
+    {"read_csv",  read_csv, METH_VARARGS, "Read a CSV stream into a Numpy array"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

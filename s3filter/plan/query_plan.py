@@ -17,7 +17,9 @@ from boto3.session import Session
 from botocore.config import Config
 
 from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
-from s3filter.op.sql_table_scan import SQLTableScanMetrics
+from s3filter.op.sql_table_scan import SQLTableScanMetrics, SQLTableScan
+from s3filter.op.table_scan import TableScan
+from s3filter.op.table_range_access import TableRangeAccess
 from s3filter.plan.graph import Graph
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.plan.cost_estimator import CostEstimator
@@ -53,6 +55,11 @@ class QueryPlan(object):
         self.queue = Queue()
 
         self.buffer_size = buffer_size
+        # Cost related metrics
+        self.sql_scanned_bytes = 0
+        self.sql_returned_bytes = 0
+        self.returned_bytes = 0
+        self.num_http_get_requests = 0
 
     def get_operator(self, name):
         return self.operators[name]
@@ -198,6 +205,10 @@ class QueryPlan(object):
         print("buffer_size: {}".format(self.buffer_size))
         print("is_parallel: {}".format(self.is_async))
         print("total_elapsed_time: {}".format(round(self.total_elapsed_time, 5)))
+
+        print("")
+        print("Cost")
+        print("----")
         self.print_cost_metrics()
 
         print("") 
@@ -217,16 +228,37 @@ class QueryPlan(object):
         print("")
 
     def print_cost_metrics(self):
+        scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
+        for op in scan_operators:
+            if type(op) is TableRangeAccess:
+                self.returned_bytes += op.op_metrics.bytes_returned
+                self.num_http_get_requests += op.op_metrics.num_http_get_requests
+            elif type(op) is TableScan:
+                self.returned_bytes += op.op_metrics.bytes_returned
+                self.num_http_get_requests += op.op_metrics.num_http_get_requests
+            elif type(op) is SQLTableScan:
+                self.sql_returned_bytes += op.op_metrics.bytes_returned
+                self.sql_scanned_bytes += op.op_metrics.bytes_scanned
+                self.num_http_get_requests += op.op_metrics.num_http_get_requests
+            else:
+                raise Exception("Unrecognized scan operator {}".format(type(op)))
+
+        print("sql_scanned_bytes: {}".format(self.sql_scanned_bytes))
+        print("sql_returned_bytes: {}".format(self.sql_returned_bytes))
+        print("returned_bytes: {}".format(self.returned_bytes))
+        print("num_http_get_requests: {}".format(self.num_http_get_requests))
+        print("")
+        """
         cost, bytes_scanned, bytes_returned, rows = self.cost()
         computation_cost = self.computation_cost()
         data_cost = self.data_cost()[0]
-
         print("total_scanned_bytes: {} MB".format(bytes_scanned * BYTE_TO_MB))
         print("total_returned_bytes: {} MB".format(bytes_returned * BYTE_TO_MB))
         print("total_returned_rows: {}".format(rows))
         print("computation_cost: ${0:.10f}".format(computation_cost))
         print("data_cost: ${0:.10f}".format(data_cost))
         print("total_cost: ${0:.10f}".format(cost))
+        """
 
     def assert_operator_time_equals_plan_time(self):
         """Sanity check to make sure cumulative operator exec time approximately equals total plan exec time. We use a

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from collections import OrderedDict
 
 from s3filter.op.aggregate import Aggregate
@@ -68,7 +70,7 @@ def query_plan(settings):
 
     filter_A = map(lambda p:
                    query_plan.add_operator(Filter(
-                       PredicateExpression(None, settings.table_A_filter_fn), 'filter_A_{}'.format(p), query_plan,
+                       PredicateExpression(None, pd_expr=settings.table_A_filter_fn), 'filter_A_{}'.format(p), query_plan,
                        False)),
                    range(0, settings.table_A_parts))
 
@@ -108,6 +110,12 @@ def query_plan(settings):
                         project_fn_B)),
                     range(0, settings.table_B_parts))
 
+    filter_b = map(lambda p:
+                   query_plan.add_operator(Filter(
+                       PredicateExpression(None, pd_expr=settings.table_B_filter_fn), 'filter_b' + '_{}'.format(p), query_plan,
+                       False)),
+                   range(0, settings.table_B_parts))
+
     scan_C = \
         map(lambda p:
             query_plan.add_operator(
@@ -143,6 +151,12 @@ def query_plan(settings):
                         True,
                         project_fn_C)),
                     range(0, settings.table_C_parts))
+
+    filter_c = map(lambda p:
+                   query_plan.add_operator(Filter(
+                       PredicateExpression(None, pd_expr=settings.table_C_filter_fn), 'filter_c' + '_{}'.format(p), query_plan,
+                       False)),
+                   range(0, settings.table_C_parts))
 
     map_A_to_B = map(lambda p:
                      query_plan.add_operator(
@@ -193,7 +207,7 @@ def query_plan(settings):
     part_aggregate = map(lambda p:
                          query_plan.add_operator(Aggregate(
                              [
-                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['s_acctbal']))
+                                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t[settings.table_C_detail_field_name]))
                              ],
                              'part_aggregate_{}'.format(p), query_plan, False)),
                          range(0, settings.table_C_parts))
@@ -221,7 +235,8 @@ def query_plan(settings):
     connect_many_to_many(join_build_A_B, join_probe_A_B)
 
     connect_many_to_many(scan_B, project_B)
-    connect_many_to_many(project_B, map_B_to_B)
+    connect_many_to_many(project_B, filter_b)
+    connect_many_to_many(filter_b, map_B_to_B)
     connect_all_to_all(map_B_to_B, join_probe_A_B)
     connect_many_to_many(join_build_AB_C, join_probe_AB_C)
 
@@ -229,7 +244,8 @@ def query_plan(settings):
     connect_all_to_all(map_B_to_C, join_build_AB_C)
 
     connect_many_to_many(scan_C, project_C)
-    connect_many_to_many(project_C, map_C_to_C)
+    connect_many_to_many(project_C, filter_c)
+    connect_many_to_many(filter_c, map_C_to_C)
     connect_all_to_all(map_C_to_C, join_probe_AB_C)
 
     connect_many_to_many(join_probe_AB_C, part_aggregate)
