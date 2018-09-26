@@ -17,7 +17,7 @@ class TableScan(SQLTableScan):
     def on_receive(self, message, producer_name):
         raise NotImplementedError
 
-    def __init__(self, s3key, use_pandas, secure, use_native, name, query_plan, log_enabled):
+    def __init__(self, s3key, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None):
         """Creates a new TableScan operator using the given s3 object key
 
         :param s3key: The object key to select against
@@ -27,4 +27,4 @@ class TableScan(SQLTableScan):
             s3key,
             "select * from S3Object", use_pandas, secure, use_native,
             name, query_plan,
-            log_enabled)
+            log_enabled, fn=fn)
