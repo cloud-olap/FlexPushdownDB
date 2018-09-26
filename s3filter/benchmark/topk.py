@@ -11,8 +11,8 @@ from s3filter.op.sort import SortExpression
 import multiprocessing
 
 
-def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantity', sort_order='DESC', use_pandas=True,
-                         filtered=False):
+def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extendedprice', sort_order='DESC', use_pandas=True,
+                         filtered=False, table_name='tpch-sf1/lineitem.csv', shards_prefix='tpch-sf1/lineitem_sharded'):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -20,9 +20,8 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
 
     limit = k
     num_rows = 0
-    shards = 96
+    shards = 32
     parallel_shards = True
-    shards_prefix = "tpch-sf10/lineitem_sharded"
     processes = multiprocessing.cpu_count()
 
     query_stats = ['baseline' if filtered is False else 'filtered', shards_prefix, col_name, sort_order, limit, '']
@@ -44,8 +43,8 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     sort_exp = SortExpression(sort_index, col_type, sort_order)
     top_op = query_plan.add_operator(Top(limit, sort_exp, use_pandas, 'topk', query_plan, False))
     for process in range(processes):
-        proc_parts = [x for x in range(1, shards + 1) if x % processes == process]
-        pc = query_plan.add_operator(SQLShardedTableScan("tpch-sf10/lineitem.tbl", sql, use_pandas, True, False,
+        proc_parts = [x for x in range(0, shards) if x % processes == process]
+        pc = query_plan.add_operator(SQLShardedTableScan(table_name, sql, use_pandas, True, False,
                                                          "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
                                                          shards_prefix, parallel_shards, query_plan, False))
         # pc.set_profiled(True, "topk_table_scan_parts_{}.txt".format(proc_parts))
@@ -67,9 +66,9 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
     # Assert the results
     for t in c.tuples():
         num_rows += 1
-        print("{}:{}".format(num_rows, t))
+        # print("{}:{}".format(num_rows, t))
 
-    assert num_rows == limit + 1
+    # assert num_rows == limit + 1
 
     cost, bytes_scanned, bytes_returned, rows = query_plan.cost()
     computation_cost = query_plan.computation_cost()
@@ -85,7 +84,8 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
                     bytes_returned,
                     data_cost,
                     computation_cost,
-                    cost
+                    cost,
+                    num_rows == limit + 1
                     ]
     stats.append(query_stats)
 
@@ -95,7 +95,8 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_quantit
 
 
 def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sort_field='l_extendedprice',
-                              sort_order='DESC', use_pandas=True, filtered=False, conservative=False):
+                       sort_order='DESC', use_pandas=True, filtered=False, conservative=False,
+                       table_name='tpch-sf1/lineitem.csv', shards_prefix='tpch-sf1/lineitem_sharded'):
     """
     Executes the optimized topk query by firstly retrieving the first k tuples.
     Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
@@ -105,9 +106,8 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
     limit = k
     num_rows = 0
-    shards = 96
+    shards = 31
     parallel_shards = True
-    shards_prefix = "tpch-sf10/lineitem_sharded"
     processes = multiprocessing.cpu_count()
 
     query_stats = ['sampling', shards_prefix, sort_field, sort_order, limit, k_scale]
@@ -126,7 +126,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
     # Query plan
     ts = query_plan.add_operator(
-        TopKTableScan('tpch-sf10/lineitem.tbl', sql, use_pandas, True, False, limit, k_scale,
+        TopKTableScan(table_name, sql, use_pandas, True, False, limit, k_scale,
                       SortExpression(sort_index, col_type, sort_order, sort_field), conservative,
                       shards, parallel_shards, shards_prefix, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))
@@ -142,9 +142,9 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     # Assert the results
     for t in c.tuples():
         num_rows += 1
-        print("{}:{}".format(num_rows, t))
+        # print("{}:{}".format(num_rows, t))
 
-    assert num_rows == limit + 1
+    # assert num_rows == limit + 1
 
     cost, bytes_scanned, bytes_returned, rows = query_plan.cost()
     computation_cost = query_plan.computation_cost()
@@ -160,7 +160,8 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
                     bytes_returned,
                     data_cost,
                     computation_cost,
-                    cost
+                    cost,
+                    num_rows == limit + 1
                     ]
     stats.append(query_stats)
 
@@ -193,7 +194,8 @@ def run_all():
         'Bytes Returned MB',
         'Data Cost $',
         'Computation Cost $',
-        'Total Cost $'
+        'Total Cost $',
+        'Succeeded'
     ])
 
     # varying K
@@ -219,4 +221,79 @@ def run_all():
 
 
 if __name__ == "__main__":
-    run_all()
+    # run_all()
+    import sys,os
+
+    stats_header = [
+        'Method',
+        'Table',
+        'Sort Field',
+        'Sort Order',
+        'K',
+        'K scale',
+        'Sampling Threshold',
+        'Sampling time (Sec)',
+        'Query time (Sec)',
+        'Total query time (Sec)',
+        'Second trial time (Sec)',
+        'Returned Rows',
+        'Bytes Scanned MB',
+        'Bytes Returned MB',
+        'Data Cost $',
+        'Computation Cost $',
+        'Total Cost $',
+        'Succeeded'
+    ]
+
+    if len(sys.argv) >= 4:
+        topk_type = sys.argv[1]
+        k = int(sys.argv[2])
+        k_scale = int(sys.argv[3])
+        is_conservative = True if int(sys.argv[4]) != 0 else False
+        table_name = sys.argv[5]
+        shards_prefix = sys.argv[6]
+        if len(sys.argv) >= 8:
+            stats_file_name = sys.argv[7]
+        else:
+            stats_file_name = 'topk_stats.txt'
+
+        run_stats = []
+
+        if topk_type == 'baseline':
+            topk_baseline(stats=run_stats,
+                          k=k,
+                          sort_index='_5',
+                          col_type=float,
+                          col_name='l_extendedprice',
+                          sort_order='DESC',
+                          use_pandas=True,
+                          filtered=False,
+                          table_name=table_name,
+                          shards_prefix=shards_prefix)
+        elif topk_type == 'sampled':
+            topk_with_sampling(stats=run_stats,
+                               k=k,
+                               k_scale=k_scale,
+                               sort_index='_5',
+                               col_type=float,
+                               sort_field='l_extendedprice',
+                               sort_order='DESC',
+                               use_pandas=True,
+                               filtered=False,
+                               conservative=is_conservative,
+                               table_name=table_name,
+                               shards_prefix=shards_prefix)
+
+        proj_dir = os.environ['PYTHONPATH'].split(":")[0]
+        stats_dir = os.path.join(proj_dir, '..')
+        stats_dir = os.path.join(stats_dir, stats_file_name)
+
+        if os.path.exists(stats_dir):
+            mode = 'a'
+        else:
+            mode = 'w'
+
+        with open(stats_dir, mode) as stats_file:
+            if mode == 'w':
+                stats_file.write(",".join([str(x) if type(x) is not str else x for x in stats_header]) + "\n")
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats[0]]) + "\n")

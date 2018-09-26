@@ -8,18 +8,33 @@ class AWSRegion(Enum):
     Listing aws regions
     """
     NOT_AWS = "not-aws"
-    Any = "any-region"
+    ANY = "any-region"
     US_EAST_1 = 'us-east-1'
     US_EAST_2 = 'us-east-2'
     US_WEST_1 = 'us-west-1'
     US_WEST_2 = 'us-west-2'
     EU_CENTRAL_1 = 'eu-central-1'
     CANADA_CENTRAL_1 = 'ca-central-1'
-    Default = US_WEST_2
+    ASIA_PACIFIC_MUMBAI = 'ap-south-1'
+    ASIA_PACIFIC_SEOUL = 'ap-northeast-2'
+    ASIA_PACIFIC_SINGAPORE = 'ap-southeast-1'
+    ASIA_PACIFIC_SYDNEY = 'ap-southeast-2'
+    ASIA_PACIFIC_TOKYO = 'ap-northeast-1'
+    CHINA = 'cn-north-1'
+    EU_FRANKFURT = 'eu-central-1'
+    EU_IRELAND = 'eu-west-1'
+    EU_LONDON = 'eu-west-2'
+    EU_PARIS = 'eu-west-3'
+    SOUTH_AMERICA = 'sa-east-1'
+    DEFAULT = US_WEST_2
 
     @staticmethod
-    def get_aws_region(region_name):
-        return
+    def get_all_regions():
+        all_vars = [getattr(AWSRegion, attr) for attr in dir(AWSRegion) if '__' not in attr]
+        all_vars.remove('not-aws')
+        all_vars.remove('any-region')
+
+        return all_vars
 
 
 class EC2InstanceOS(Enum):

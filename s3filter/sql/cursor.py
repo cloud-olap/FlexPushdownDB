@@ -14,6 +14,7 @@ import math
 from s3filter.util.py_util import PYTHON_3
 from s3filter.util.timer import Timer
 from s3filter.util.constants import *
+from s3filter.util.filesystem_util import *
 from boto3.s3.transfer import TransferConfig, MB
 
 
@@ -49,6 +50,7 @@ class Cursor(object):
         self.bytes_returned = 0
 
         self.num_http_get_requests = 0
+        self.table_data = None
 
     def select(self, s3key, s3sql):
         """Creates a select cursor
@@ -94,15 +96,16 @@ class Cursor(object):
                     multipart_threshold=8 * MB
                 )
 
-                self.s3.download_file(
+                self.table_data = io.BytesIO()
+
+                self.s3.download_fileobj(
                     Bucket=S3_BUCKET_NAME,
                     Key=self.s3key,
-                    Filename=self.table_local_file_path,
+                    Fileobj=self.table_data,
                     Config=config
                 )
 
-                self.num_http_get_requests = Cursor.calculate_num_http_requests(self.table_local_file_path,
-                                                                                      config)
+                self.num_http_get_requests = Cursor.calculate_num_http_requests(self.table_data, config)
 
             return self.parse_file()
         else:
@@ -231,22 +234,32 @@ class Cursor(object):
 
     def parse_file(self):
         try:
+            if self.table_data and len(self.table_data.getvalue()) > 0:
+                ip_stream = io.StringIO(self.table_data.getvalue().decode('utf-8'))
+            elif os.path.exists(self.table_local_file_path):
+                ip_stream = open(self.table_local_file_path, 'r')
+            else:
+                return
+
             self.time_to_first_record_response = self.time_to_last_record_response = self.timer.elapsed()
 
-            with open(self.table_local_file_path, 'r', buffering=(2 << 16) + 8) as table_file:
-                header_row = True
-                for t in table_file:
+            # with open(self.table_local_file_path, 'r', buffering=(2 << 16) + 8) as table_file:
+            header_row = True
+            for t in ip_stream:
 
-                    if header_row:
-                        header_row = False
-                        continue
+                if header_row:
+                    header_row = False
+                    continue
 
-                    tup = t.split('|')[:-1]
+                tup = t.split('|')[:-1]
 
-                    yield tup
+                yield tup
+
         except Exception as e:
             print("can not open table file at {} with error {}".format(self.table_local_file_path, e.message))
             raise e
+        finally:
+            ip_stream.close()
 
     def close(self):
         """Closes the s3 event stream
@@ -255,12 +268,30 @@ class Cursor(object):
         """
         if self.event_stream:
             self.event_stream.close()
+        if self.table_data:
+            self.table_data.close()
+
+    def save_table(self):
+        """
+        Saves the table data to disk
+        :return:
+        """
+        if self.table_data:
+            proj_dir = os.environ['PYTHONPATH'].split(":")[0]
+            table_loc = os.path.join(proj_dir, TABLE_STORAGE_LOC)
+            create_dirs(table_loc)
+
+            self.table_local_file_path = os.path.join(table_loc, self.s3key)
+
+            if not os.path.exists(self.table_local_file_path):
+                create_file_dirs(self.table_local_file_path)
+                with open(self.table_local_file_path, 'w') as table_file:
+                    table_file.write(self.table_data.getvalue())
 
     @staticmethod
-    def calculate_num_http_requests(file_path, config):
-        if os.path.exists(file_path):
-            file_size = os.path.getsize(file_path)
+    def calculate_num_http_requests(table_data, config):
+        if table_data is not None and len(table_data.getvalue()):
             shard_max_size = config.multipart_threshold
-            return math.ceil(file_size / (1.0 * shard_max_size))
+            return math.ceil(len(table_data.getvalue()) / (1.0 * shard_max_size))
 
         return 1

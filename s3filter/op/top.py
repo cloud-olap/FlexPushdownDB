@@ -11,6 +11,7 @@ from s3filter.op.sql_sharded_table_scan import SQLShardedTableScan
 from s3filter.op.collate import Collate
 from s3filter.util.heap import MaxHeap, MinHeap, HeapTuple
 import time
+import sys
 import pandas as pd
 
 __author__ = "Abdurrahman Ghanem <abghanem@qf.org.qa>"
@@ -233,14 +234,20 @@ class TopKTableScan(Operator):
         self.sample_tuples, self.sample_op, q_plan = TopKTableScan.sample_table(self.s3key, k_scale * self.max_tuples,
                                                                         self.sort_expression)
         # self.field_names = self.sample_tuples[0]
-        self.msv, comp_op = self.get_most_significant_value(self.sample_tuples[1:])
+        self.lsv, self.msv, comp_op = self.get_significant_values(self.sample_tuples[1:])
 
-        #self.op_metrics.sampling_data_cost = q_plan.data_cost()[0]
-        #self.op_metrics.sampling_computation_cost = q_plan.computation_cost()
-        #self.op_metrics.sampling_time = q_plan.total_elapsed_time
+        self.op_metrics.sampling_data_cost = q_plan.data_cost()[0]
+        self.op_metrics.sampling_computation_cost = q_plan.computation_cost()
+        self.op_metrics.sampling_time = q_plan.total_elapsed_time
+
+        if self.is_conservative:
+            threshold = self.lsv
+        else:
+            threshold = self.msv
 
         filtered_sql = "{} WHERE CAST({} AS {}) {} {};".format(self.s3sql.rstrip(';'), self.sort_expression.col_name,
-                                                               self.sort_expression.col_type.__name__, comp_op, self.msv)
+                                                               self.sort_expression.col_type.__name__, comp_op,
+                                                               threshold)
 
         if self.processes == 1:
             ts = SQLTableScan(self.s3key, filtered_sql, self.use_pandas, self.secure, self.use_native,
@@ -250,7 +257,7 @@ class TopKTableScan(Operator):
             self.local_operators.append(ts)
         else:
             for process in range(self.processes):
-                proc_parts = [x for x in range(1, self.shards + 1) if x % self.processes == process]
+                proc_parts = [x for x in range(0, self.shards) if x % self.processes == process]
                 pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql, self.use_pandas,
                                                                       self.secure,
                                                                       self.use_native,
@@ -329,19 +336,20 @@ class TopKTableScan(Operator):
         :param df: The received dataframe
         :return: None
         """
-        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]] \
-                                                    .astype(self.sort_expression.col_type.__name__)
+        if len(df) > 0:
+            df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]] \
+                                                        .astype(self.sort_expression.col_type.__name__)
 
-        if self.sort_expression.sort_order == 'ASC':
-            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-            self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
-                                                                                self.sort_expression.col_index) \
-                                                                                .head(self.max_tuples)
-        elif self.sort_expression.sort_order == 'DESC':
-            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-            self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
-                                                                               self.sort_expression.col_index) \
-                                                                                .head(self.max_tuples)
+            if self.sort_expression.sort_order == 'ASC':
+                topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+                self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
+                                                                                    self.sort_expression.col_index) \
+                                                                                    .head(self.max_tuples)
+            elif self.sort_expression.sort_order == 'DESC':
+                topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+                self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
+                                                                                   self.sort_expression.col_index) \
+                                                                                    .head(self.max_tuples)
 
     def complete(self):
         """
@@ -389,8 +397,19 @@ class TopKTableScan(Operator):
         q_plan = QueryPlan(is_async=False)
         select_op = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, False, "sample_{}_scan".format(s3key),
                                                   q_plan, False))
+
+        from copy import deepcopy
+        sample_topk_sort_exp = deepcopy(sort_exp)
+        sample_topk_sort_exp.col_index = '_0'
+        topk = q_plan.add_operator(Top(max_tuples=k,
+                                       sort_expression=sample_topk_sort_exp,
+                                       use_pandas=True,
+                                       name="sampling_topk",
+                                       query_plan=q_plan,
+                                       log_enabled=False))
         collate = q_plan.add_operator(Collate("sample_{}_collate".format(s3key), q_plan, False))
-        select_op.connect(collate)
+        select_op.connect(topk)
+        topk.connect(collate)
 
         q_plan.execute()
 
@@ -398,7 +417,7 @@ class TopKTableScan(Operator):
 
         return collate.tuples(), select_op, q_plan
 
-    def get_most_significant_value(self, tuples):
+    def get_significant_values(self, tuples):
         """
         Returns the cut-off value from the passed tuples in order to retrieve only tuples beyond this point
         :param tuples: the tuples representing the table sample of size k
@@ -408,12 +427,40 @@ class TopKTableScan(Operator):
         # idx = self.field_names.index(sort_exp.col_index)
 
         if sort_exp.sort_order == "ASC":
-            if self.is_conservative:
-                return max(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples]), '<='
-            else:
-                return min(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples]), '<='
-        elif sort_exp.sort_order == "DESC":
-            if self.is_conservative:
-                return min(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples]), '>='
-            else:
-                return max(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples]), '>='
+            min_val, max_val = TopKTableScan.min_max(
+                sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples])
+            # max_val = max(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples])
+            # min_val = min(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples])
+
+            return max_val, min_val, '<='
+        elif sort_exp.sort_order == 'DESC':
+            min_val, max_val = TopKTableScan.min_max(
+                sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples])
+            # max_val = max(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples])
+            # min_val = min(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples])
+
+            return min_val, max_val, '>='
+
+        # if sort_exp.sort_order == "ASC":
+        #     if self.is_conservative:
+        #         return max(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples]), '<='
+        #     else:
+        #         return min(sorted([sort_exp.col_type(t[0]) for t in tuples])[:self.max_tuples]), '<='
+        # elif sort_exp.sort_order == "DESC":
+        #     if self.is_conservative:
+        #         return min(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples]), '>='
+        #     else:
+        #         return max(sorted([sort_exp.col_type(t[0]) for t in tuples], reverse=True)[:self.max_tuples]), '>='
+
+    @staticmethod
+    def min_max(iterable):
+        min_val = sys.maxint
+        max_val = -1 * (sys.maxint - 1)
+
+        for n in iterable:
+            if n < min_val:
+                min_val = n
+            if n > max_val:
+                max_val = n
+
+        return min_val, max_val

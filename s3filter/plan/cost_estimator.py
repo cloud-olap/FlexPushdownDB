@@ -3,6 +3,7 @@ from collections import defaultdict
 from s3filter.plan.cost_estimator_enum import EC2InstanceType, EC2InstanceOS, AWSRegion
 import os
 import multiprocessing
+import warnings
 
 __author__ = "Abdurrahman Ghanem <abghanem@qf.org.qa>"
 
@@ -12,6 +13,7 @@ class EC2Instance:
     EC2 instance information
     """
     ec2_instances = defaultdict(lambda: defaultdict(dict))
+    local_machine = None
 
     @staticmethod
     def load_instances_info():
@@ -25,6 +27,7 @@ class EC2Instance:
         from psutil import virtual_memory
 
         EC2Instance.ec2_instances[AWSRegion.NOT_AWS][EC2InstanceOS.Any][EC2InstanceType.not_ec2] = \
+            EC2Instance.local_machine = \
             EC2Instance(
                 region=AWSRegion.NOT_AWS,
                 os_type=EC2InstanceOS.Any,
@@ -39,31 +42,32 @@ class EC2Instance:
         with open(instances_price_path, 'r') as ec2_info_file:
             first_line = True
 
-            for line in ec2_info_file:
-                if first_line:
-                    first_line = False
-                    continue
-                else:
-                    lc = line.split(',')
-                    os_type = lc[0].strip()
-                    category = lc[1].strip()
-                    name = lc[2].strip()
-                    cpus = lc[3].strip()
-                    memory = lc[4].strip()
-                    storage = lc[5].strip()
-                    storage_type = lc[6].strip()
-                    price = float(lc[7].strip())
+            for region in AWSRegion.get_all_regions():
+                for line in ec2_info_file:
+                    if first_line:
+                        first_line = False
+                        continue
+                    else:
+                        lc = line.split(',')
+                        os_type = lc[0].strip()
+                        category = lc[1].strip()
+                        name = lc[2].strip()
+                        cpus = lc[3].strip()
+                        memory = lc[4].strip()
+                        storage = lc[5].strip()
+                        storage_type = lc[6].strip()
+                        price = float(lc[7].strip())
 
-                    EC2Instance.ec2_instances[AWSRegion.Default][os_type][name] = EC2Instance(
-                                                                           region=AWSRegion.Default,
-                                                                           os_type=os_type,
-                                                                           category=category,
-                                                                           name=name,
-                                                                           cpus=cpus,
-                                                                           memory=memory,
-                                                                           storage=storage,
-                                                                           storage_type=storage_type,
-                                                                           price=price)
+                        EC2Instance.ec2_instances[region][os_type][name] = EC2Instance(
+                                                                               region=region,
+                                                                               os_type=os_type,
+                                                                               category=category,
+                                                                               name=name,
+                                                                               cpus=cpus,
+                                                                               memory=memory,
+                                                                               storage=storage,
+                                                                               storage_type=storage_type,
+                                                                               price=price)
 
     def __init__(self, region, os_type, category, name, cpus, memory, storage, storage_type, price):
         self.region = region
@@ -90,19 +94,23 @@ class EC2Instance:
         }.__repr__()
 
     @staticmethod
-    def get_instance_info(os_type=EC2InstanceOS.Any, name=EC2InstanceType.r48xlarge,
+    def get_instance_info(os_type=EC2InstanceOS.Any, ins_type=EC2InstanceType.r48xlarge,
                           region=AWSRegion.NOT_AWS):
         # EC2 instances info lazy loading
         EC2Instance.load_instances_info()
 
+        if region == AWSRegion.NOT_AWS:
+            os_type = EC2InstanceOS.Any
+            ins_type = EC2InstanceType.not_ec2
+
         if region in EC2Instance.ec2_instances and \
                 os_type in EC2Instance.ec2_instances[region] and \
-                name in EC2Instance.ec2_instances[region][os_type]:
-            return EC2Instance.ec2_instances[region][os_type][name]
+                ins_type in EC2Instance.ec2_instances[region][os_type]:
+            return EC2Instance.ec2_instances[region][os_type][ins_type]
         else:
-            # TODO: Should possibly warn here, not sure, shouldn't be an exception though as need to be able to run locally, Abdu?
-            #raise Exception('Invalid info for EC2 instance {}, {}, {}'.format(region, os_type, name))
-            pass
+            warnings.warn('Could not find a match for EC2 instance. You are probably running from local machine',
+                          RuntimeWarning)
+            return EC2Instance.local_machine
 
 
 class CostEstimator:
@@ -141,7 +149,7 @@ class CostEstimator:
         response = client.get_bucket_location(Bucket=S3_BUCKET_NAME)
         s3_region = response['LocationConstraint']
         if s3_region is None:
-            s3_region = AWSRegion.Any
+            s3_region = AWSRegion.ANY
     except Exception as e:
         s3_region = AWSRegion.NOT_AWS
 
@@ -163,7 +171,7 @@ class CostEstimator:
     def __init__(self, table_scan_metrics):
 
         self.ec2_instance = EC2Instance.get_instance_info(CostEstimator.os_type, CostEstimator.instance_type,
-                                                          CostEstimator.region)#AWSRegion.Default)
+                                                          CostEstimator.region)
         self.s3_region = CostEstimator.s3_region
         self.table_scan_metrics = table_scan_metrics
 
@@ -184,23 +192,19 @@ class CostEstimator:
         :return: the estimated data handling cost
         """
         if ec2_region is None:
-            if self.ec2_instance is not None:
-                ec2_region = self.ec2_instance.region
-            else:
-                # TODO: In the case of running locally these items can't be set, unsure how to handle, am simply passing for now, Abdu?
-                pass
+            ec2_region = self.ec2_instance.region
 
         if s3_region is None:
             s3_region = self.s3_region
 
         data_transfer_cost = 0
-        # In case the computation instance is not located at the same region as the s3 data region
+        # In case the computation instance is not located at the same region as the s3 data region or
         # data is transferred outside aws to the internet
         if ec2_region == AWSRegion.NOT_AWS:
             data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                                  CostEstimator.DATA_TRANSFER_PRICE_PER_GB
         # data moved within aws services but to another region
-        elif s3_region != AWSRegion.Any and s3_region != ec2_region:
+        elif s3_region != AWSRegion.ANY and s3_region != ec2_region:
             data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                                  CostEstimator.DATA_TRANSFER_PRICE_OTHER_REGION_PER_GB
 
@@ -227,15 +231,11 @@ class CostEstimator:
 
         ec2_instance = self.ec2_instance
         if ec2_instance_type is not None and os_type is not None:
-            ec2_instance = EC2Instance.get_instance_info(os_type, ec2_instance_type, AWSRegion.Default)#region)
+            ec2_instance = EC2Instance.get_instance_info(os_type, ec2_instance_type, self.ec2_instance.region)
 
-        # TODO: Cant't calculate this if running locally, not sure how to handle, am simply passing for now, Abdu?
-        if ec2_instance is not None:
-            return running_time * SEC_TO_HOUR * ec2_instance.price
-        else:
-            return 0
+        return running_time * SEC_TO_HOUR * ec2_instance.price
 
-    def estimate_cost_for_config(self, ec2_region=AWSRegion.Default, s3_region=AWSRegion.Default):
+    def estimate_cost_for_config(self, ec2_region=AWSRegion.DEFAULT, s3_region=AWSRegion.DEFAULT):
         """
         Estimates the hypothetical cost given ec2 instance region and s3 region of the scan operation based on
         S3 pricing in the following page:

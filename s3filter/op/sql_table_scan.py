@@ -176,6 +176,7 @@ class SQLTableScan(Operator):
             self.complete()
 
         self.op_metrics.timer_stop()
+        cur.save_table()
 
     @staticmethod
     def execute_py_query(op):
