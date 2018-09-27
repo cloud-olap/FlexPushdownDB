@@ -12,7 +12,8 @@ import multiprocessing
 
 
 def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extendedprice', sort_order='DESC', use_pandas=True,
-                         filtered=False, table_name='tpch-sf1/lineitem.csv', shards_prefix='tpch-sf1/lineitem_sharded'):
+                         filtered=False, table_name='tpch-sf1/lineitem.csv', shards_prefix='tpch-sf1/lineitem_sharded',
+                         shards_start=0, shards_end=31):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -20,7 +21,6 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extende
 
     limit = k
     num_rows = 0
-    shards = 32
     parallel_shards = True
     processes = multiprocessing.cpu_count()
 
@@ -43,7 +43,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extende
     sort_exp = SortExpression(sort_index, col_type, sort_order)
     top_op = query_plan.add_operator(Top(limit, sort_exp, use_pandas, 'topk', query_plan, False))
     for process in range(processes):
-        proc_parts = [x for x in range(0, shards) if x % processes == process]
+        proc_parts = [x for x in range(shards_start, shards_end+1) if x % processes == process]
         pc = query_plan.add_operator(SQLShardedTableScan(table_name, sql, use_pandas, True, False,
                                                          "topk_table_scan_parts_{}".format(proc_parts), proc_parts,
                                                          shards_prefix, parallel_shards, query_plan, False))
@@ -96,7 +96,8 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extende
 
 def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sort_field='l_extendedprice',
                        sort_order='DESC', use_pandas=True, filtered=False, conservative=False,
-                       table_name='tpch-sf1/lineitem.csv', shards_prefix='tpch-sf1/lineitem_sharded'):
+                       table_name='tpch-sf1/lineitem.csv', shards_prefix='tpch-sf1/lineitem_sharded',
+                       shards_start=0, shards_end=31):
     """
     Executes the optimized topk query by firstly retrieving the first k tuples.
     Based on the retrieved tuples, table scan operator gets only the tuples larger/less than the most significant
@@ -106,7 +107,6 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
     limit = k
     num_rows = 0
-    shards = 31
     parallel_shards = True
     processes = multiprocessing.cpu_count()
 
@@ -129,7 +129,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     ts = query_plan.add_operator(
         TopKTableScan(table_name, sql, use_pandas, True, False, limit, k_scale,
                       SortExpression(sort_index, col_type, sort_order, sort_field), conservative,
-                      shards, parallel_shards, shards_prefix, processes, 'topk_table_scan', query_plan, False))
+                      shards_start, shards_end, parallel_shards, shards_prefix, processes, 'topk_table_scan', query_plan, False))
     c = query_plan.add_operator(Collate('collate', query_plan, False))
 
     ts.connect(c)
@@ -253,8 +253,10 @@ if __name__ == "__main__":
         is_conservative = True if int(sys.argv[4]) != 0 else False
         table_name = sys.argv[5]
         shards_prefix = sys.argv[6]
-        if len(sys.argv) >= 8:
-            stats_file_name = sys.argv[7]
+        shards_start = int(sys.argv[7])
+        shards_end = int(sys.argv[8])
+        if len(sys.argv) >= 10:
+            stats_file_name = sys.argv[9]
         else:
             stats_file_name = 'topk_stats.txt'
 
@@ -270,7 +272,9 @@ if __name__ == "__main__":
                           use_pandas=True,
                           filtered=False,
                           table_name=table_name,
-                          shards_prefix=shards_prefix)
+                          shards_prefix=shards_prefix,
+                          shards_start=shards_start,
+                          shards_end = shards_end)
         elif topk_type == 'sampled':
             topk_with_sampling(stats=run_stats,
                                k=k,
@@ -283,7 +287,9 @@ if __name__ == "__main__":
                                filtered=False,
                                conservative=is_conservative,
                                table_name=table_name,
-                               shards_prefix=shards_prefix)
+                               shards_prefix=shards_prefix,
+                               shards_start=shards_start,
+                               shards_end=shards_end)
 
         proj_dir = os.environ['PYTHONPATH'].split(":")[0]
         stats_dir = os.path.join(proj_dir, '..')
