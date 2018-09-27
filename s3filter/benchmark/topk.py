@@ -110,7 +110,8 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     parallel_shards = True
     processes = multiprocessing.cpu_count()
 
-    query_stats = ['sampling', shards_prefix, sort_field, sort_order, limit, k_scale]
+    query_stats = ['sampling_{}'.format('conservative' if conservative else 'aggressive'), shards_prefix, sort_field,
+                   sort_order, limit, k_scale]
 
     sql = 'select * from S3Object;'
 

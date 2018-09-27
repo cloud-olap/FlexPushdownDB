@@ -241,14 +241,15 @@ class QueryPlan(object):
                 self.sql_scanned_bytes += op.op_metrics.bytes_scanned
                 self.num_http_get_requests += op.op_metrics.num_http_get_requests
             else:
-                raise Exception("Unrecognized scan operator {}".format(type(op)))
+                # raise Exception("Unrecognized scan operator {}".format(type(op)))
+                pass
 
-        print("sql_scanned_bytes: {}".format(self.sql_scanned_bytes))
-        print("sql_returned_bytes: {}".format(self.sql_returned_bytes))
-        print("returned_bytes: {}".format(self.returned_bytes))
-        print("num_http_get_requests: {}".format(self.num_http_get_requests))
-        print("")
-        """
+        # print("sql_scanned_bytes: {}".format(self.sql_scanned_bytes))
+        # print("sql_returned_bytes: {}".format(self.sql_returned_bytes))
+        # print("returned_bytes: {}".format(self.returned_bytes))
+        # print("num_http_get_requests: {}".format(self.num_http_get_requests))
+        # print("")
+
         cost, bytes_scanned, bytes_returned, rows = self.cost()
         computation_cost = self.computation_cost()
         data_cost = self.data_cost()[0]
@@ -258,7 +259,6 @@ class QueryPlan(object):
         print("computation_cost: ${0:.10f}".format(computation_cost))
         print("data_cost: ${0:.10f}".format(data_cost))
         print("total_cost: ${0:.10f}".format(cost))
-        """
 
     def assert_operator_time_equals_plan_time(self):
         """Sanity check to make sure cumulative operator exec time approximately equals total plan exec time. We use a
