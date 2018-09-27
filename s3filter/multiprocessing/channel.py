@@ -81,3 +81,6 @@ class Channel(object):
         pickled_msg = self.queue.get()
         msg = cPickle.loads(pickled_msg)
         return msg
+
+    def close(self):
+        self.queue.close()

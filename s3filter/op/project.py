@@ -77,13 +77,14 @@ class Project(Operator):
         """
 
         # print("Project | {}".format(t))
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+        # for m in ms:
+        m = ms
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.data, producer_name)
+        elif type(m) is pd.DataFrame:
+            self.__on_receive_dataframe(m)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_dataframe(self, df):
         """Event handler for a received tuple
@@ -121,7 +122,7 @@ class Project(Operator):
         #         print("{}('{}') | Sending projected field values: \n{}"
         #               .format(self.__class__.__name__, self.name, df))
 
-        self.send(df, self.consumers)
+        self.send(df, self.consumers, self)
 
     def on_receive_tuple(self, tuple_, producer_name):
         """Handles the receipt of a tuple. The tuple is mapped to a new tuple using the given projection expressions.
@@ -152,7 +153,7 @@ class Project(Operator):
 
             assert (len(projected_field_names) == len(self.project_exprs))
 
-            self.send(TupleMessage(Tuple(projected_field_names)), self.consumers)
+            self.send(TupleMessage(self.name, Tuple(projected_field_names)), self.consumers, self)
 
         else:
 

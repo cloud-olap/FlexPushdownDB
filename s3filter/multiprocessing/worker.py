@@ -1,24 +1,26 @@
+import threading
 from collections import deque
 from multiprocessing import Process
 
 import pandas as pd
 
 from s3filter.multiprocessing.channel import Channel
+from s3filter.multiprocessing.header_message_data import HeaderMessageData
 from s3filter.multiprocessing.message_base import MessageBase
 from s3filter.multiprocessing.message_base_type import MessageBaseType
 
 
 class Worker(object):
 
-    def __init__(self, name, handler, consumer_names, buffer_size, max_element_size, workers):
-        self.consumer_names = consumer_names
+    def __init__(self, name, buffer_size, max_element_size, system, handler):
         self.name = name
         self.handler = handler
         self.channel = Channel(buffer_size, max_element_size)
         self.pending_queues = {}
-        self.workers = workers
+        self.system = system
         self.pending_buffer_requests = deque()
-        self.process = Process(target=self.work, args=())
+        # self.process = Process(target=self.work, args=())
+        self.process = threading.Thread(target=self.work, args=())
         self.running = True
         self.proxy = True
 
@@ -31,9 +33,8 @@ class Worker(object):
 
             msg = self.channel.get()
 
-            print(
-                "{} {} | Get | type: {}, sender: {}".format(self.name, 'proxy' if self.proxy else '', msg.message_type,
-                                                            msg.sender_name))
+            print("{} {} | Get | type: {}, sender: {}, data {}".
+                  format(self.name, 'proxy' if self.proxy else '', msg.message_type, msg.sender_name, msg.data))
 
             if msg.message_type is MessageBaseType.stop:
                 self.on_stop(msg)
@@ -63,19 +64,20 @@ class Worker(object):
         pending_msg = self.pending_queues[msg.sender_name].pop()
 
         # Put the dataframe into shared memory
-        self.workers[msg.sender_name].channel.copy_dataframe_to_buffer(pending_msg.data)
+        self.system.workers[msg.sender_name].channel.copy_dataframe_to_buffer(pending_msg.data)
 
         # Send the meta data to the consumer
         header_msg = MessageBase(MessageBaseType.header, pending_msg.sender_name,
-                                 (pending_msg.data.shape[0], pending_msg.data.shape[1]))
-        self.workers[msg.sender_name].put(header_msg, self)
+                                 HeaderMessageData(pending_msg.data.shape, pending_msg.data.columns.values))
+        self.system.workers[msg.sender_name].put(header_msg, self)
 
     def on_user_defined(self, msg):
-        self.running = self.handler(msg, self, self.consumer_names, self.workers)
+        self.running = self.handler.on_message(msg, self, self.system)
 
     def on_header(self, msg):
         # Get dataframe from buffer
-        df = self.channel.copy_dataframe_from_buffer(msg.data)
+        df = self.channel.copy_dataframe_from_buffer(msg.data.shape)
+        df.columns = msg.data.columns
 
         # Release buffer, and make available to others waiting for it
         self.channel.release()
@@ -96,8 +98,8 @@ class Worker(object):
         self.channel.acquire(worker_name)
 
         # Send the grant message to the given worker
-        msg = MessageBase(MessageBaseType.grant_buffer, self.name, None)
-        self.workers[worker_name].put(msg, self)
+        msg = self.create_message(MessageBaseType.grant_buffer, None)
+        self.system.put(worker_name, msg, self)
 
     def start(self):
         self.process.start()
@@ -110,7 +112,7 @@ class Worker(object):
         # print("{} {} | Put | type: {}, sender: {}".format(self.name, 'proxy' if self.proxy else '', msg.message_type,
         #                                                   msg.sender_name))
 
-        if type(msg.data) is pd.DataFrame:
+        if type(msg) is MessageBase and type(msg.data) is pd.DataFrame:
 
             # Add message to pending messages queue
             sender.pending_queues.setdefault(self.name, deque())
@@ -121,3 +123,10 @@ class Worker(object):
             self.channel.put(request_buffer_msg)
         else:
             self.channel.put(msg)
+
+    def create_message(self, messsage_type, data):
+        msg = MessageBase(messsage_type, self.name, data)
+        return msg
+
+    def close(self):
+        self.channel.close()

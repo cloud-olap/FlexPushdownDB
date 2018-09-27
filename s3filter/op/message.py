@@ -2,27 +2,31 @@
 """Operator messages
 
 """
-
+from s3filter.multiprocessing.message_base import MessageBase
+from s3filter.multiprocessing.message_base_type import MessageBaseType
 from s3filter.op.tuple import Tuple
 from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
 
 
-class TupleMessage(object):
+class TupleMessage(MessageBase):
     """Message containing a tuple.
 
     """
 
-    def __init__(self, tuple_):
+    def __init__(self, sender_name, data):
         """Creates a new TupleMessage
 
         :param tuple_: The tuple content of the message
         """
 
-        if type(tuple_) is not Tuple:
-            raise Exception("Message content type is {}. Type must be Tuple".format(type(tuple_)))
+        super(TupleMessage, self).__init__(MessageBaseType.tuple, sender_name, data)
 
-        self.tuple_ = tuple_
+        if type(data) is not Tuple:
+            raise Exception("Message content type is {}. Type must be Tuple".format(type(data)))
+
+        self.data = data
+        self.tuple_ = data
 
 
 class BloomMessage(object):

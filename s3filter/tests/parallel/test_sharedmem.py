@@ -1,6 +1,7 @@
 import StringIO
 import cPickle
 import cProfile
+import multiprocessing
 import pstats
 import random
 import timeit
@@ -11,8 +12,10 @@ import numpy as np
 import pandas as pd
 from enum import Enum
 
+from s3filter.multiprocessing.handler_base import HandlerBase
 from s3filter.multiprocessing.message_base import MessageBase
 from s3filter.multiprocessing.message_base_type import MessageBaseType
+from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.multiprocessing.worker import Worker
 
 buffer_num_cols = 20
@@ -35,6 +38,7 @@ def random_shaped_dataframe(field_value):
     cols = [row] * num_rows
 
     df = pd.DataFrame(cols)
+    df = df.add_prefix('_')
     return df
 
 
@@ -187,100 +191,132 @@ def random_shaped_dataframe(field_value):
 #                                                                  bytes_sec / 1000 / 1000))
 
 
-def get_queues(names, queues):
-    return map(lambda n: queues[n], names)
+# def get_queues(names, queues):
+#     return map(lambda n: queues[n], names)
 
 
 def test_fork_join_sharedmem_complex():
     num_messages_to_send = 10
     closure = {'num_messages_received': 0}
 
-    def p(message, worker, consumer_names, workers):
+    class Handler(HandlerBase):
 
-        running = True
+        def __init__(self, consumer_names):
+            super(Handler, self).__init__()
+            self.consumer_names = consumer_names
 
-        # print("{} | type: {}, sender: {}".format(name, message.message_type, message.sender_name))
-        if message.message_type is MessageBaseType.start:
-            for i in range(0, num_messages_to_send):
-                test_df = random_shaped_dataframe(worker.name)
-                map(lambda q: q.put(MessageBase(MessageBaseType.data, worker.name, test_df), worker),
-                    get_queues(consumer_names, workers))
-        elif message.message_type is MessageBaseType.data:
-            closure['num_messages_received'] += 1
-            df = message.data
-            # print(df)
-            if len(consumer_names) > 0:
-                map(lambda q: q.put(MessageBase(MessageBaseType.data, worker.name, df), worker),
-                    get_queues(consumer_names, workers))
+        def on_message(self, message, worker, workers):
+
+            running = True
+
+            # print("{} | type: {}, sender: {}".format(name, message.message_type, message.sender_name))
+            if message.message_type is MessageBaseType.start:
+                for i in range(0, num_messages_to_send):
+                    test_df = random_shaped_dataframe(worker.name)
+                    msg = worker.create_message(MessageBaseType.data, test_df)
+                    system.put_many(self.consumer_names, msg, worker)
+            elif message.message_type is MessageBaseType.data:
+                closure['num_messages_received'] += 1
+                df = message.data
+                # print(df)
+                if len(self.consumer_names) > 0:
+                    msg = worker.create_message(MessageBaseType.data, df)
+                    system.put_many(self.consumer_names, msg, worker)
+                else:
+                    if closure['num_messages_received'] >= num_messages_to_send * 2:
+                        # msg = worker.create_message(MessageBaseType.stop, None)
+                        # system.put_all(msg, worker)
+                        msg = system.create_message(MessageBaseType.operator_completed, worker.name)
+                        system.put('system', msg, worker)
             else:
-                if closure['num_messages_received'] >= num_messages_to_send * 2:
-                    map(lambda q: q.put(MessageBase(MessageBaseType.stop, worker.name, None), worker), workers.values())
-        else:
-            raise Exception("Unrecognised message type {}".format(message.message_type))
+                raise Exception("Unrecognised message type {}".format(message.message_type))
 
-        return running
+            return running
 
     shared_array_size = buffer_num_cols * buffer_num_rows * buffer_item_size
 
-    workers = {}
-    workers['p1'] = Worker('p1', p, ['p3'], shared_array_size, buffer_item_size, workers)
-    workers['p2'] = Worker('p2', p, ['p3'], shared_array_size, buffer_item_size, workers)
-    workers['p3'] = Worker('p3', p, ['p4', 'p5'], shared_array_size, buffer_item_size, workers)
-    workers['p4'] = Worker('p4', p, ['p6'], shared_array_size, buffer_item_size, workers)
-    workers['p5'] = Worker('p5', p, ['p6'], shared_array_size, buffer_item_size, workers)
-    workers['p6'] = Worker('p6', p, [], shared_array_size, buffer_item_size, workers)
+    system = WorkerSystem()
 
-    map(lambda p: p.start(), workers.values())
+    system.create_worker('p1', shared_array_size, buffer_item_size, Handler(['p3']))
+    system.create_worker('p2', shared_array_size, buffer_item_size, Handler(['p3']))
+    system.create_worker('p3', shared_array_size, buffer_item_size, Handler(['p4', 'p5']))
+    system.create_worker('p4', shared_array_size, buffer_item_size, Handler(['p6']))
+    system.create_worker('p5', shared_array_size, buffer_item_size, Handler(['p6']))
+    system.create_worker('p6', shared_array_size, buffer_item_size, Handler([]))
 
-    name = 'driver'
+    system.start()
 
-    workers['p1'].put(MessageBase(MessageBaseType.start, name, None), None)
-    workers['p2'].put(MessageBase(MessageBaseType.start, name, None), None)
+    system.put('p1', system.create_message(MessageBaseType.start, None), None)
+    system.put('p2', system.create_message(MessageBaseType.start, None), None)
 
-    map(lambda p: p.join(), workers.values())
+    completed_workers = {worker_name: False for worker_name in system.workers.keys()}
+    while completed_workers['p6'] is False:
+        msg = system.listen(MessageBaseType.operator_completed)
+        completed_workers[msg.data] = True
+
+    msg = system.create_message(MessageBaseType.stop, None)
+    system.put_all(msg, system)
+
+    system.join()
 
 
 def test_fork_join_sharedmem_simple():
     num_messages_to_send = 10
     closure = {'num_messages_received': 0}
 
-    def p(message, worker, consumer_names, workers):
+    class Handler(HandlerBase):
 
-        running = True
+        def __init__(self, consumer_names):
+            super(Handler, self).__init__()
+            self.consumer_names = consumer_names
 
-        # print("{} | type: {}, sender: {}".format(name, message.message_type, message.sender_name))
-        if message.message_type is MessageBaseType.start:
-            for i in range(0, num_messages_to_send):
-                test_df = random_shaped_dataframe(worker.name)
-                map(lambda q: q.put(MessageBase(MessageBaseType.data, worker.name, test_df), worker),
-                    get_queues(consumer_names, workers))
-        elif message.message_type is MessageBaseType.data:
-            closure['num_messages_received'] += 1
-            df = message.data
-            # print(df)
-            if len(consumer_names) > 0:
-                map(lambda q: q.put(MessageBase(MessageBaseType.data, worker.name, df), worker),
-                    get_queues(consumer_names, workers))
+        def on_message(self, message, worker, system):
+
+            running = True
+
+            # print("{} | type: {}, sender: {}".format(name, message.message_type, message.sender_name))
+            if message.message_type is MessageBaseType.start:
+                for i in range(0, num_messages_to_send):
+                    test_df = random_shaped_dataframe(worker.name)
+                    msg = worker.create_message(MessageBaseType.data, test_df)
+                    system.put_many(self.consumer_names, msg, worker)
+            elif message.message_type is MessageBaseType.data:
+                closure['num_messages_received'] += 1
+                df = message.data
+                # print(df)
+                if len(self.consumer_names) > 0:
+                    msg = worker.create_message(MessageBaseType.data, df)
+                    system.put_many(self.consumer_names, msg, worker)
+                else:
+                    if closure['num_messages_received'] >= num_messages_to_send * 2:
+                        # msg = worker.create_message(MessageBaseType.stop, None)
+                        # system.put_all(msg, worker)
+                        msg = system.create_message(MessageBaseType.operator_completed, worker.name)
+                        system.put('system', msg, worker)
             else:
-                if closure['num_messages_received'] >= num_messages_to_send * 2:
-                    map(lambda q: q.put(MessageBase(MessageBaseType.stop, worker.name, None), worker), workers.values())
-        else:
-            raise Exception("Unrecognised message type {}".format(message.message_type))
+                raise Exception("Unrecognised message type {}".format(message.message_type))
 
-        return running
+            return running
 
     shared_array_size = buffer_num_cols * buffer_num_rows * buffer_item_size
 
-    workers = {}
-    workers['p1'] = Worker('p1', p, ['p3'], shared_array_size, buffer_item_size, workers)
-    workers['p2'] = Worker('p2', p, ['p3'], shared_array_size, buffer_item_size, workers)
-    workers['p3'] = Worker('p3', p, [], shared_array_size, buffer_item_size, workers)
+    system = WorkerSystem()
 
-    map(lambda p: p.start(), workers.values())
+    system.create_worker('p1', shared_array_size, buffer_item_size, Handler(['p3']))
+    system.create_worker('p2', shared_array_size, buffer_item_size, Handler(['p3']))
+    system.create_worker('p3', shared_array_size, buffer_item_size, Handler([]))
 
-    name = 'driver'
+    system.start()
 
-    workers['p1'].put(MessageBase(MessageBaseType.start, name, None), None)
-    workers['p2'].put(MessageBase(MessageBaseType.start, name, None), None)
+    system.put('p1', system.create_message(MessageBaseType.start, None), None)
+    system.put('p2', system.create_message(MessageBaseType.start, None), None)
 
-    map(lambda p: p.join(), workers.values())
+    completed_workers = {worker_name: False for worker_name in system.workers.keys()}
+    while completed_workers['p3'] is False:
+        msg = system.listen(MessageBaseType.operator_completed)
+        completed_workers[msg.data] = True
+
+    msg = system.create_message(MessageBaseType.stop, None)
+    system.put_all(msg, system)
+
+    system.join()

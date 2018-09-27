@@ -9,6 +9,7 @@ import sys
 import pandas as pd
 from pandas import DataFrame
 
+from s3filter.multiprocessing.message_base_type import MessageBaseType
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.plan.op_metrics import OpMetrics
@@ -38,10 +39,14 @@ class Collate(Operator):
         """
 
         if self.async_:
-            p_message = pickle.dumps(EvalMessage("self.local_tuples()"))
-            self.queue.put(p_message)
-            item = self.query_plan.listen(EvaluatedMessage)
-            tuples = item.val
+            # p_message = pickle.dumps(EvalMessage("self.local_tuples()"))
+            # self.queue.put(p_message)
+
+            msg = self.worker.create_message(MessageBaseType.eval, "self.local_tuples()")
+            self.system.put(self.name, msg, self.name)
+
+            item = self.query_plan.listen(MessageBaseType.evaluated)
+            tuples = item.data
             return tuples
         else:
             return self.__tuples
@@ -64,13 +69,14 @@ class Collate(Operator):
         """
 
         # print("Collate | {}".format(t))
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_)
-            elif type(m) is DataFrame:
-                self.__on_receive_dataframe(m)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+        # for m in ms:
+        m = ms
+        if type(m) is TupleMessage:
+            self.__on_receive_tuple(m.tuple_)
+        elif type(m) is DataFrame:
+            self.__on_receive_dataframe(m)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_dataframe(self, df):
         """Event handler for a received tuple

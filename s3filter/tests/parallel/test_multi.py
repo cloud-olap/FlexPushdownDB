@@ -9,6 +9,7 @@ import timeit
 from multiprocessing import Process, Queue
 
 from s3filter import ROOT_DIR
+from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.op.collate import Collate
 from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -138,14 +139,16 @@ def test_multi_message_throughput():
 
 def test_operators():
 
-    query_plan = QueryPlan(is_async=True, buffer_size=64)
+    system = WorkerSystem()
+
+    query_plan = QueryPlan(system, is_async=True, buffer_size=0)
 
     # Query plan
     ts = query_plan.add_operator(SQLTableScan('nation.csv',
                                               'select * from S3Object '
                                               'limit 3;',
-                                              False, 'scan', query_plan,
-                                              False))
+                                              True, False, False, 'scan', query_plan,
+                                              True))
 
     p = query_plan.add_operator(Project(
         [
@@ -155,9 +158,9 @@ def test_operators():
             ProjectExpression(lambda t_: t_['_3'], 'n_comment')
         ],
         'project', query_plan,
-        False))
+        True))
 
-    c = query_plan.add_operator(Collate('collate', query_plan, False))
+    c = query_plan.add_operator(Collate('collate', query_plan, True))
 
     ts.connect(p)
     p.connect(c)
