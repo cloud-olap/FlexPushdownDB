@@ -15,3 +15,4 @@ class MessageBaseType(Enum):
     operator_completed = 12
     eval = 13
     evaluated = 14
+    hash_table = 15

@@ -48,7 +48,7 @@ class HashJoinBuild(Operator):
 
         self.producers_received = {}
 
-        self.hashtable = {}
+        self.hashtable = None
 
         self.hashtable_df = None
 
@@ -59,13 +59,14 @@ class HashJoinBuild(Operator):
         :param producer_name: The producer of the tuple
         :return: None
         """
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.on_receive_dataframe(m, producer_name)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+        # for m in ms:
+        m = ms
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_, producer_name)
+        elif type(m) is pd.DataFrame:
+            self.on_receive_dataframe(m, producer_name)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_dataframe(self, df, _producer_name):
         if self.hashtable_df is None:
@@ -81,7 +82,7 @@ class HashJoinBuild(Operator):
 
         if not self.field_names_index:
             self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
-            self.send(TupleMessage(tuple_), self.consumers)
+            self.send(TupleMessage(self.name, tuple_), self.consumers, self)
             self.producers_received[_producer_name] = True
         else:
 
@@ -89,6 +90,10 @@ class HashJoinBuild(Operator):
                 # Will be field names, skip
                 self.producers_received[_producer_name] = True
             else:
+
+                if self.hashtable is None:
+                    self.hashtable = {}
+
                 self.op_metrics.rows_processed += 1
                 it = IndexedTuple(tuple_, self.field_names_index)
                 itd = self.hashtable.setdefault(it[self.key], [])
@@ -102,15 +107,18 @@ class HashJoinBuild(Operator):
 
         if all(self.producer_completions.values()):
 
-            if self.log_enabled:
-                print("{}('{}') | Hashtable is:\n{}".format(
-                    self.__class__.__name__,
-                    self.name,
-                    self.hashtable))
+            # if self.log_enabled:
+            #     print("{}('{}') | Hashtable is:\n py: {}, pandas: {}".format(
+            #         self.__class__.__name__,
+            #         self.name,
+            #         self.hashtable,
+            #         self.hashtable_df))
 
             if self.hashtable_df is not None:
-                self.send(HashTableMessage(self.hashtable_df), self.consumers)
+                self.send(HashTableMessage(self.hashtable_df, self.name), self.consumers, self)
+            elif self.hashtable is not None:
+                self.send(HashTableMessage(self.hashtable, self.name), self.consumers, self)
             else:
-                self.send(HashTableMessage(self.hashtable), self.consumers)
+                raise Exception("All producers completed but have not received field value tuples")
 
             Operator.on_producer_completed(self, producer_name)

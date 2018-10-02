@@ -20,7 +20,7 @@ class TupleMessage(MessageBase):
         :param tuple_: The tuple content of the message
         """
 
-        super(TupleMessage, self).__init__(MessageBaseType.tuple, sender_name, data)
+        super(TupleMessage, self).__init__(MessageBaseType.tuple, sender_name, data, False)
 
         if type(data) is not Tuple:
             raise Exception("Message content type is {}. Type must be Tuple".format(type(data)))
@@ -50,9 +50,10 @@ class BloomMessage(object):
         self.bloom_filter = bloom_filter
 
 
-class HashTableMessage(object):
+class HashTableMessage(MessageBase):
 
-    def __init__(self, hashtable):
+    def __init__(self, hashtable, sender_name):
+        super(HashTableMessage, self).__init__(MessageBaseType.hash_table, sender_name, hashtable, False)
         self.hashtable = hashtable
 
 class StringMessage(object):

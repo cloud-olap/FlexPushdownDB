@@ -53,35 +53,35 @@ class StopMessage(object):
 class ProducerCompletedMessage(MessageBase):
 
     def __init__(self, producer_name, sender_name):
-        super(ProducerCompletedMessage, self).__init__(MessageBaseType.producer_completed, sender_name, producer_name)
+        super(ProducerCompletedMessage, self).__init__(MessageBaseType.producer_completed, sender_name, producer_name, False)
         self.producer_name = producer_name
 
 
 class ConsumerCompletedMessage(MessageBase):
 
     def __init__(self, consumer_name, sender_name):
-        super(ConsumerCompletedMessage, self).__init__(MessageBaseType.consumer_completed, sender_name, consumer_name)
+        super(ConsumerCompletedMessage, self).__init__(MessageBaseType.consumer_completed, sender_name, consumer_name, False)
         self.consumer_name = consumer_name
 
 
 class OperatorCompletedMessage(MessageBase):
 
     def __init__(self, name, sender_name):
-        super(OperatorCompletedMessage, self).__init__(MessageBaseType.operator_completed, sender_name, name)
+        super(OperatorCompletedMessage, self).__init__(MessageBaseType.operator_completed, sender_name, name, False)
         self.name = name
 
 
 class EvalMessage(MessageBase):
 
     def __init__(self, expr, sender_name):
-        super(EvalMessage, self).__init__(MessageBaseType.eval, sender_name, expr)
+        super(EvalMessage, self).__init__(MessageBaseType.eval, sender_name, expr, False)
         self.expr = expr
 
 
 class EvaluatedMessage(MessageBase):
 
     def __init__(self, val, sender_name):
-        super(EvaluatedMessage, self).__init__(MessageBaseType.evaluated, sender_name, val)
+        super(EvaluatedMessage, self).__init__(MessageBaseType.evaluated, sender_name, val, False)
         self.val = val
 
 class Operator(HandlerBase):
@@ -150,8 +150,8 @@ class Operator(HandlerBase):
                 self.on_consumer_completed(item.consumer_name)
             elif item.message_type == MessageBaseType.eval:
                 evaluated = eval(item.data)
-                msg = self.system.create_message(MessageBaseType.evaluated, evaluated)
-                self.system.put('system', msg, self.name)
+                msg = self.worker.create_message(MessageBaseType.evaluated, evaluated, False)
+                self.system.put('system', msg, self.worker)
 
                 # p_evaluated = pickle.dumps(EvaluatedMessage(evaluated))
                 # self.completion_queue.put(p_evaluated)
@@ -192,7 +192,7 @@ class Operator(HandlerBase):
             # m = cPickle.dumps(StartMessage())
             # self.queue.put(m)
 
-            msg = self.system.create_message(MessageBaseType.start, None)
+            msg = self.system.create_message(MessageBaseType.start, None, True)
 
             self.system.put(self.name, msg, None)
         else:
@@ -263,7 +263,7 @@ class Operator(HandlerBase):
 
         # self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
         self.system = system
-        self.worker = self.system.create_worker(self.name, 200000, 200, self)
+        self.worker = self.system.create_worker(self.name, system.channel.num_elements, system.channel.element_size, self)
 
     def boot(self):
         # self.runner.start()
@@ -429,7 +429,7 @@ class Operator(HandlerBase):
                 # p_msg = cPickle.dumps(OperatorCompletedMessage(self.name))
                 # self.completion_queue.put(p_msg)
 
-                msg = self.worker.create_message(MessageBaseType.operator_completed, self.name)
+                msg = self.worker.create_message(MessageBaseType.operator_completed, self.name, False)
                 self.system.put('system', msg, self.worker)
 
             self.__completed = True

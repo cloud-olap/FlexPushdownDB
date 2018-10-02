@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
@@ -15,6 +16,8 @@ from s3filter.plan.query_plan import QueryPlan
 from s3filter.query.join.synthetic_join_settings import SyntheticFilteredJoinSettings
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
+import pandas as pd
+import numpy as np
 
 
 def query_plan(settings):
@@ -24,7 +27,9 @@ def query_plan(settings):
     :return: None
     """
 
-    query_plan = QueryPlan(is_async=settings.parallel, buffer_size=settings.buffer_size)
+    system = WorkerSystem(64 * 1024, 200)
+
+    query_plan = QueryPlan(system, is_async=settings.parallel, buffer_size=settings.buffer_size)
 
     # Define the operators
     scan_A = \
@@ -167,7 +172,7 @@ def query_plan(settings):
     join_build_A_B = map(lambda p:
                          query_plan.add_operator(
                              HashJoinBuild(settings.table_A_AB_join_key, 'join_build_A_B_{}'.format(p), query_plan,
-                                           False)),
+                                           True)),
                          range(0, settings.table_B_parts))
 
     join_probe_A_B = map(lambda p:
@@ -180,7 +185,7 @@ def query_plan(settings):
     join_build_AB_C = map(lambda p:
                           query_plan.add_operator(
                               HashJoinBuild(settings.table_B_BC_join_key, 'join_build_AB_C_{}'.format(p), query_plan,
-                                            False)),
+                                            True)),
                           range(0, settings.table_C_parts))
 
     join_probe_AB_C = map(lambda p:
@@ -190,20 +195,30 @@ def query_plan(settings):
                                             query_plan, True)),
                           range(0, settings.table_C_parts))
 
+    def part_aggregate_fn(df):
+        sum_ = df[settings.table_C_detail_field_name].astype(np.float).sum()
+        return pd.DataFrame({'_0': [sum_]})
+
     part_aggregate = map(lambda p:
                          query_plan.add_operator(Aggregate(
                              [
                                  AggregateExpression(AggregateExpression.SUM,
                                                      lambda t: float(t[settings.table_C_detail_field_name]))
                              ],
-                             'part_aggregate_{}'.format(p), query_plan, False)),
+                             settings.use_pandas,
+                             'part_aggregate_{}'.format(p), query_plan, True, part_aggregate_fn)),
                          range(0, settings.table_C_parts))
+
+    def aggregate_reduce_fn(df):
+        sum_ = df['_0'].astype(np.float).sum()
+        return pd.DataFrame({'_0': [sum_]})
 
     aggregate_reduce = query_plan.add_operator(Aggregate(
         [
             AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0']))
         ],
-        'aggregate_reduce', query_plan, False))
+        settings.use_pandas,
+        'aggregate_reduce', query_plan, True, aggregate_reduce_fn))
 
     aggregate_project = query_plan.add_operator(Project(
         [

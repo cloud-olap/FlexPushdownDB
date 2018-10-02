@@ -42,8 +42,8 @@ class Collate(Operator):
             # p_message = pickle.dumps(EvalMessage("self.local_tuples()"))
             # self.queue.put(p_message)
 
-            msg = self.worker.create_message(MessageBaseType.eval, "self.local_tuples()")
-            self.system.put(self.name, msg, self.name)
+            msg = self.worker.create_message(MessageBaseType.eval, "self.local_tuples()", False)
+            self.system.put(self.name, msg, self.worker)
 
             item = self.query_plan.listen(MessageBaseType.evaluated)
             tuples = item.data

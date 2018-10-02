@@ -139,7 +139,7 @@ def test_multi_message_throughput():
 
 def test_operators():
 
-    system = WorkerSystem()
+    system = WorkerSystem(num_elements=1000, element_size=200)
 
     query_plan = QueryPlan(system, is_async=True, buffer_size=0)
 

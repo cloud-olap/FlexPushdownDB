@@ -18,8 +18,8 @@ from s3filter.multiprocessing.message_base_type import MessageBaseType
 from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.multiprocessing.worker import Worker
 
-buffer_num_cols = 20
-buffer_num_rows = 100
+buffer_num_cols = 4
+buffer_num_rows = 10
 buffer_item_size = 100
 num_iterations = 10
 
@@ -233,16 +233,17 @@ def test_fork_join_sharedmem_complex():
 
             return running
 
-    shared_array_size = buffer_num_cols * buffer_num_rows * buffer_item_size
+    num_elements = buffer_num_cols * buffer_num_rows
+    element_size = buffer_item_size
 
-    system = WorkerSystem()
+    system = WorkerSystem(num_elements, element_size)
 
-    system.create_worker('p1', shared_array_size, buffer_item_size, Handler(['p3']))
-    system.create_worker('p2', shared_array_size, buffer_item_size, Handler(['p3']))
-    system.create_worker('p3', shared_array_size, buffer_item_size, Handler(['p4', 'p5']))
-    system.create_worker('p4', shared_array_size, buffer_item_size, Handler(['p6']))
-    system.create_worker('p5', shared_array_size, buffer_item_size, Handler(['p6']))
-    system.create_worker('p6', shared_array_size, buffer_item_size, Handler([]))
+    system.create_worker('p1', num_elements, element_size, Handler(['p3']))
+    system.create_worker('p2', num_elements, element_size, Handler(['p3']))
+    system.create_worker('p3', num_elements, element_size, Handler(['p4', 'p5']))
+    system.create_worker('p4', num_elements, element_size, Handler(['p6']))
+    system.create_worker('p5', num_elements, element_size, Handler(['p6']))
+    system.create_worker('p6', num_elements, element_size, Handler([]))
 
     system.start()
 
@@ -298,13 +299,14 @@ def test_fork_join_sharedmem_simple():
 
             return running
 
-    shared_array_size = buffer_num_cols * buffer_num_rows * buffer_item_size
+    num_elements = buffer_num_cols * buffer_num_rows
+    element_size = buffer_item_size
 
-    system = WorkerSystem()
+    system = WorkerSystem(num_elements=num_elements, element_size=element_size)
 
-    system.create_worker('p1', shared_array_size, buffer_item_size, Handler(['p3']))
-    system.create_worker('p2', shared_array_size, buffer_item_size, Handler(['p3']))
-    system.create_worker('p3', shared_array_size, buffer_item_size, Handler([]))
+    system.create_worker('p1', num_elements, element_size, Handler(['p3']))
+    system.create_worker('p2', num_elements, element_size, Handler(['p3']))
+    system.create_worker('p3', num_elements, element_size, Handler([]))
 
     system.start()
 

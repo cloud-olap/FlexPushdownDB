@@ -201,7 +201,7 @@ class QueryPlan(object):
         if type(message) is list:
             for e in message[0]:
                 if type(e) is pd.DataFrame:
-                    msg = sender_op.worker.create_message(MessageBaseType.data, e)
+                    msg = sender_op.worker.create_message(MessageBaseType.data, e, False)
                     self.system.put(operator_name, msg, sender_op.worker)
                 else:
                     self.system.put(operator_name, e, sender_op.worker)
@@ -348,7 +348,7 @@ class QueryPlan(object):
                 # p_message = pickle.dumps(EvalMessage("self.op_metrics"))
                 # o.queue.put(p_message)
 
-                msg = self.system.create_message(MessageBaseType.eval, "self.op_metrics")
+                msg = self.system.create_message(MessageBaseType.eval, "self.op_metrics", False)
                 self.system.put(o.name, msg, None)
 
                 evaluated_msg = self.listen(MessageBaseType.evaluated)
@@ -380,7 +380,7 @@ class QueryPlan(object):
     def stop(self):
         if self.is_async:
             # map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
-            msg = self.system.create_message(MessageBaseType.stop, None)
+            msg = self.system.create_message(MessageBaseType.stop, None, True)
             self.system.put_all(msg)
             self.system.join()
             self.system.close()
