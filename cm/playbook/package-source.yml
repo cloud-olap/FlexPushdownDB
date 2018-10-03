@@ -16,6 +16,10 @@
       synchronize:
         src: "{{ local_package_src_dir }}"
         dest: "{{ remote_package_dir }}" # Note this needs to be the parent dest dir not the actual dest dir
+    - name: Copy resources
+      synchronize:
+        src: "{{ local_package_dir }}/resources"
+        dest: "{{ remote_package_dir }}"
     - name: Copy requirements.txt
       synchronize:
         src: "{{ local_package_dir }}/requirements.txt"
