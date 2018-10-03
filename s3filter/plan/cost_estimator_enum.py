@@ -31,8 +31,8 @@ class AWSRegion(Enum):
     @staticmethod
     def get_all_regions():
         all_vars = [getattr(AWSRegion, attr) for attr in dir(AWSRegion) if '__' not in attr and not callable(getattr(AWSRegion, attr))]
-        all_vars.remove('not-aws')
-        all_vars.remove('any-region')
+        all_vars.remove(AWSRegion.NOT_AWS)
+        all_vars.remove(AWSRegion.ANY)
 
         return all_vars
 
