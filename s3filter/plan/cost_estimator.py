@@ -42,12 +42,14 @@ class EC2Instance:
         with open(instances_price_path, 'r') as ec2_info_file:
             first_line = True
 
-            for region in AWSRegion.get_all_regions():
-                for line in ec2_info_file:
-                    if first_line:
-                        first_line = False
-                        continue
-                    else:
+            all_regions = AWSRegion.get_all_regions()
+
+            for line in ec2_info_file:
+                if first_line:
+                    first_line = False
+                    continue
+                else:
+                    for region in all_regions:
                         lc = line.split(',')
                         os_type = lc[0].strip()
                         category = lc[1].strip()
@@ -59,15 +61,15 @@ class EC2Instance:
                         price = float(lc[7].strip())
 
                         EC2Instance.ec2_instances[region][os_type][name] = EC2Instance(
-                                                                               region=region,
-                                                                               os_type=os_type,
-                                                                               category=category,
-                                                                               name=name,
-                                                                               cpus=cpus,
-                                                                               memory=memory,
-                                                                               storage=storage,
-                                                                               storage_type=storage_type,
-                                                                               price=price)
+                            region=region,
+                            os_type=os_type,
+                            category=category,
+                            name=name,
+                            cpus=cpus,
+                            memory=memory,
+                            storage=storage,
+                            storage_type=storage_type,
+                            price=price)
 
     def __init__(self, region, os_type, category, name, cpus, memory, storage, storage_type, price):
         self.region = region

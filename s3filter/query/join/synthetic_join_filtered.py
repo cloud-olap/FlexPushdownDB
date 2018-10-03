@@ -16,9 +16,8 @@ from s3filter.plan.query_plan import QueryPlan
 from s3filter.query.join.synthetic_join_settings import SyntheticFilteredJoinSettings
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 
 def query_plan(settings):
     # type: (SyntheticFilteredJoinSettings) -> QueryPlan
@@ -206,7 +205,7 @@ def query_plan(settings):
                                                      lambda t: float(t[settings.table_C_detail_field_name]))
                              ],
                              settings.use_pandas,
-                             'part_aggregate_{}'.format(p), query_plan, True, part_aggregate_fn)),
+                             'part_aggregate_{}'.format(p), query_plan, False, part_aggregate_fn)),
                          range(0, settings.table_C_parts))
 
     def aggregate_reduce_fn(df):
@@ -218,7 +217,7 @@ def query_plan(settings):
             AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0']))
         ],
         settings.use_pandas,
-        'aggregate_reduce', query_plan, True, aggregate_reduce_fn))
+        'aggregate_reduce', query_plan, False, aggregate_reduce_fn))
 
     aggregate_project = query_plan.add_operator(Project(
         [

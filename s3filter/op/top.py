@@ -184,7 +184,8 @@ class TopKTableScan(Operator):
     """
 
     def __init__(self, s3key, s3sql, use_pandas, secure, use_native, max_tuples, k_scale, sort_expression,
-                 is_conservative, shards, parallel_shards, shards_prefix, processes, name, query_plan, log_enabled):
+                 is_conservative, shards_start, shards_end, parallel_shards, shards_prefix, processes, name, query_plan,
+                 log_enabled):
         """
         Creates a table scan operator that emits only the k topmost tuples from the table
         :param s3key: the table's s3 object key
@@ -210,7 +211,7 @@ class TopKTableScan(Operator):
 
         self.field_names = None
 
-        self.shards = shards
+        self.shards = shards_end - shards_start + 1
         self.parallel_shards = parallel_shards
         self.processes = processes
 
@@ -257,7 +258,7 @@ class TopKTableScan(Operator):
             self.local_operators.append(ts)
         else:
             for process in range(self.processes):
-                proc_parts = [x for x in range(0, self.shards) if x % self.processes == process]
+                proc_parts = [x for x in range(shards_start, shards_end + 1) if x % self.processes == process]
                 pc = self.query_plan.add_operator(SQLShardedTableScan(self.s3key, filtered_sql, self.use_pandas,
                                                                       self.secure,
                                                                       self.use_native,
