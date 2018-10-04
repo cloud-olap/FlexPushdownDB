@@ -2,6 +2,7 @@
 """Join support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, HashTableMessage
@@ -63,8 +64,8 @@ class HashJoinBuild(Operator):
         m = ms
         if type(m) is TupleMessage:
             self.on_receive_tuple(m.tuple_, producer_name)
-        elif type(m) is pd.DataFrame:
-            self.on_receive_dataframe(m, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.on_receive_dataframe(m.dataframe, producer_name)
         else:
             raise Exception("Unrecognized message {}".format(m))
 
@@ -72,7 +73,8 @@ class HashJoinBuild(Operator):
         if self.hashtable_df is None:
             self.hashtable_df = pd.DataFrame()
 
-        df.set_index(self.key, inplace=True, drop=False)
+        # Can't do this with shared mem, the index is lost when converting to numpy
+        # df.set_index(self.key, inplace=True, drop=False)
 
         self.hashtable_df = self.hashtable_df.append(df)
 
@@ -82,7 +84,7 @@ class HashJoinBuild(Operator):
 
         if not self.field_names_index:
             self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
-            self.send(TupleMessage(self.name, tuple_), self.consumers, self)
+            self.send(TupleMessage(tuple_), self.consumers, self)
             self.producers_received[_producer_name] = True
         else:
 
@@ -115,9 +117,9 @@ class HashJoinBuild(Operator):
             #         self.hashtable_df))
 
             if self.hashtable_df is not None:
-                self.send(HashTableMessage(self.hashtable_df, self.name), self.consumers, self)
+                self.send(HashTableMessage(self.hashtable_df), self.consumers, self)
             elif self.hashtable is not None:
-                self.send(HashTableMessage(self.hashtable, self.name), self.consumers, self)
+                self.send(HashTableMessage(self.hashtable), self.consumers, self)
             else:
                 raise Exception("All producers completed but have not received field value tuples")
 

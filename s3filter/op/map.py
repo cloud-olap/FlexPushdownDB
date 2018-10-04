@@ -8,7 +8,7 @@ import sys
 
 from pandas import DataFrame
 
-from s3filter.multiprocessing.message_base_type import MessageBaseType
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.op.tuple import IndexedTuple
@@ -63,8 +63,8 @@ class Map(Operator):
         m = ms
         if type(m) is TupleMessage:
             self.__on_receive_tuple(m.tuple_, producer_name)
-        elif type(m) is DataFrame:
-            self.__on_receive_dataframe(m, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.__on_receive_dataframe(m.dataframe, producer_name)
         else:
             raise Exception("Unrecognized message {}".format(m))
 
@@ -96,7 +96,7 @@ class Map(Operator):
         if self.field_names is None:
             self.field_names = tuple_
 
-            self.send(TupleMessage(self.name, tuple_), self.consumers, self)
+            self.send(TupleMessage(tuple_), self.consumers, self)
             self.producers_received[producer_name] = True
         else:
 

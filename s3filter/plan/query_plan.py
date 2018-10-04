@@ -13,14 +13,15 @@ from multiprocessing import Queue
 import boto3
 import networkx
 import pandas as pd
+from typing import TypeVar
 
-from s3filter.multiprocessing.message_base_type import MessageBaseType
+from s3filter.multiprocessing.message import DataFrameMessage, MessageBase, StopMessage
 from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.util.constants import *
 from boto3.session import Session
 from botocore.config import Config
 
-from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
+from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics, SQLTableScan
 from s3filter.op.table_scan import TableScan
 from s3filter.op.table_range_access import TableRangeAccess
@@ -201,12 +202,11 @@ class QueryPlan(object):
         if type(message) is list:
             for e in message[0]:
                 if type(e) is pd.DataFrame:
-                    msg = sender_op.worker.create_message(MessageBaseType.data, e, False)
-                    self.system.put(operator_name, msg, sender_op.worker)
+                    self.system.send(operator_name, DataFrameMessage(e), sender_op.worker)
                 else:
-                    self.system.put(operator_name, e, sender_op.worker)
+                    self.system.send(operator_name, e, sender_op.worker)
         else:
-            self.system.put(operator_name, message, sender_op.worker)
+            self.system.send(operator_name, message, sender_op.worker)
 
     def print_metrics(self):
 
@@ -331,9 +331,9 @@ class QueryPlan(object):
         if self.is_async:
             operator_completions = {k: False for k, v in self.operators.items()}
             while not all(operator_completions.values()):
-                completed_message = self.listen(MessageBaseType.operator_completed)
-                operator_completions[completed_message.data] = True
-                self.debug_time(completed_message.data)
+                completed_message = self.listen(OperatorCompletedMessage)
+                operator_completions[completed_message.name] = True
+                self.debug_time(completed_message.name)
 
         self.__timer.stop()
 
@@ -348,15 +348,15 @@ class QueryPlan(object):
                 # p_message = pickle.dumps(EvalMessage("self.op_metrics"))
                 # o.queue.put(p_message)
 
-                msg = self.system.create_message(MessageBaseType.eval, "self.op_metrics", False)
-                self.system.put(o.name, msg, None)
+                self.system.send(o.name, EvalMessage("self.op_metrics"), None)
 
-                evaluated_msg = self.listen(MessageBaseType.evaluated)
-                o.op_metrics = evaluated_msg.data
+                evaluated_msg = self.listen(EvaluatedMessage)  # type: EvaluatedMessage
+                o.op_metrics = evaluated_msg.val
 
             map(lambda op: op.set_completed(True), self.operators.values())
 
     def listen(self, message_type):
+        # type: (TypeVar[MessageBase]) -> MessageBase
         try:
             # while True:
             #     p_item = self.queue.get()
@@ -380,8 +380,7 @@ class QueryPlan(object):
     def stop(self):
         if self.is_async:
             # map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
-            msg = self.system.create_message(MessageBaseType.stop, None, True)
-            self.system.put_all(msg)
+            self.system.send_all(StopMessage())
             self.system.join()
             self.system.close()
             # map(lambda o: o.queue.close(), self.operators.values())

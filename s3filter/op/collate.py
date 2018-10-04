@@ -9,7 +9,7 @@ import sys
 import pandas as pd
 from pandas import DataFrame
 
-from s3filter.multiprocessing.message_base_type import MessageBaseType
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.plan.op_metrics import OpMetrics
@@ -42,11 +42,10 @@ class Collate(Operator):
             # p_message = pickle.dumps(EvalMessage("self.local_tuples()"))
             # self.queue.put(p_message)
 
-            msg = self.worker.create_message(MessageBaseType.eval, "self.local_tuples()", False)
-            self.system.put(self.name, msg, self.worker)
+            self.system.send(self.name, EvalMessage("self.local_tuples()"), self.worker)
 
-            item = self.query_plan.listen(MessageBaseType.evaluated)
-            tuples = item.data
+            item = self.query_plan.listen(EvaluatedMessage)
+            tuples = item.val
             return tuples
         else:
             return self.__tuples
@@ -73,8 +72,8 @@ class Collate(Operator):
         m = ms
         if type(m) is TupleMessage:
             self.__on_receive_tuple(m.tuple_)
-        elif type(m) is DataFrame:
-            self.__on_receive_dataframe(m)
+        elif isinstance(m, DataFrameMessage):
+            self.__on_receive_dataframe(m.dataframe)
         else:
             raise Exception("Unrecognized message {}".format(m))
 

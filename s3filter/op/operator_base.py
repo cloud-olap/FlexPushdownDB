@@ -14,9 +14,11 @@ import pandas as pd
 
 from s3filter.multiprocessing.channel import Channel
 from s3filter.multiprocessing.handler_base import HandlerBase
-from s3filter.multiprocessing.message_base import MessageBase
-from s3filter.multiprocessing.message_base_type import MessageBaseType
+from s3filter.multiprocessing.message import StartMessage, StopMessage, DataFrameMessage, MessageBase
+from s3filter.multiprocessing.packet import PacketBase
+
 from s3filter.multiprocessing.worker import Worker
+from s3filter.multiprocessing.worker_system import WorkerSystem
 
 
 def switch_context(from_op, to_op):
@@ -42,46 +44,46 @@ def switch_context(from_op, to_op):
     to_op.op_metrics.timer_start()
 
 
-class StartMessage(object):
-    pass
-
-
-class StopMessage(object):
-    pass
+# class StartMessage(object):
+#     pass
+#
+#
+# class StopMessage(object):
+#     pass
 
 
 class ProducerCompletedMessage(MessageBase):
 
-    def __init__(self, producer_name, sender_name):
-        super(ProducerCompletedMessage, self).__init__(MessageBaseType.producer_completed, sender_name, producer_name, False)
+    def __init__(self, producer_name):
+        super(ProducerCompletedMessage, self).__init__()
         self.producer_name = producer_name
 
 
 class ConsumerCompletedMessage(MessageBase):
 
-    def __init__(self, consumer_name, sender_name):
-        super(ConsumerCompletedMessage, self).__init__(MessageBaseType.consumer_completed, sender_name, consumer_name, False)
+    def __init__(self, consumer_name):
+        super(ConsumerCompletedMessage, self).__init__()
         self.consumer_name = consumer_name
 
 
 class OperatorCompletedMessage(MessageBase):
 
-    def __init__(self, name, sender_name):
-        super(OperatorCompletedMessage, self).__init__(MessageBaseType.operator_completed, sender_name, name, False)
+    def __init__(self, name):
+        super(OperatorCompletedMessage, self).__init__()
         self.name = name
 
 
 class EvalMessage(MessageBase):
 
-    def __init__(self, expr, sender_name):
-        super(EvalMessage, self).__init__(MessageBaseType.eval, sender_name, expr, False)
+    def __init__(self, expr):
+        super(EvalMessage, self).__init__()
         self.expr = expr
 
 
 class EvaluatedMessage(MessageBase):
 
-    def __init__(self, val, sender_name):
-        super(EvaluatedMessage, self).__init__(MessageBaseType.evaluated, sender_name, val, False)
+    def __init__(self, val):
+        super(EvaluatedMessage, self).__init__()
         self.val = val
 
 class Operator(HandlerBase):
@@ -89,6 +91,7 @@ class Operator(HandlerBase):
     operators (a.k.a. producers) and send tuples to other operators (a.k.a. consumers).
 
     """
+    system = None  # type: WorkerSystem
 
     def work(self, queue):
         if self.is_profiled:
@@ -135,28 +138,25 @@ class Operator(HandlerBase):
             running = False
 
 
-    def on_message(self, item, worker, system):
+    def on_message(self, item, worker):
         try:
 
             running = True
 
-            if item.message_type is MessageBaseType.start:
+            if isinstance(item, StartMessage):
                 self.run()
-            elif type(item) == StopMessage:
+            elif isinstance(item, StopMessage):
                 running = False
-            elif type(item) == ProducerCompletedMessage:
+            elif isinstance(item, ProducerCompletedMessage):
                 self.on_producer_completed(item.producer_name)
-            elif type(item) == ConsumerCompletedMessage:
+            elif isinstance(item, ConsumerCompletedMessage):
                 self.on_consumer_completed(item.consumer_name)
-            elif item.message_type == MessageBaseType.eval:
-                evaluated = eval(item.data)
-                msg = self.worker.create_message(MessageBaseType.evaluated, evaluated, False)
-                self.system.put('system', msg, self.worker)
+            elif isinstance(item, EvalMessage):
+                evaluated = eval(item.expr)
+                self.system.send('system', EvaluatedMessage(evaluated), self.worker)
 
                 # p_evaluated = pickle.dumps(EvaluatedMessage(evaluated))
                 # self.completion_queue.put(p_evaluated)
-            elif item.message_type is MessageBaseType.data:
-                self.on_receive(item.data, item.sender_name)
             else:
                 # message = item[0]
                 # sender = item[1]
@@ -191,10 +191,7 @@ class Operator(HandlerBase):
         if self.async_:
             # m = cPickle.dumps(StartMessage())
             # self.queue.put(m)
-
-            msg = self.system.create_message(MessageBaseType.start, None, True)
-
-            self.system.put(self.name, msg, None)
+            self.system.send(self.name, StartMessage(), None)
         else:
             self.run()
 
@@ -263,7 +260,7 @@ class Operator(HandlerBase):
 
         # self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
         self.system = system
-        self.worker = self.system.create_worker(self.name, system.channel.num_elements, system.channel.element_size, self)
+        self.worker = self.system.create_worker(self.name, self, 1 * 1024 * 1024)
 
     def boot(self):
         # self.runner.start()
@@ -429,8 +426,7 @@ class Operator(HandlerBase):
                 # p_msg = cPickle.dumps(OperatorCompletedMessage(self.name))
                 # self.completion_queue.put(p_msg)
 
-                msg = self.worker.create_message(MessageBaseType.operator_completed, self.name, False)
-                self.system.put('system', msg, self.worker)
+                self.system.send('system', OperatorCompletedMessage(self.worker.name), self.worker)
 
             self.__completed = True
 
@@ -451,14 +447,14 @@ class Operator(HandlerBase):
             for p in self.producers:
                 if p.async_:
                     # p.queue.put(cPickle.dumps(ConsumerCompletedMessage(self.name)))
-                    self.query_plan.send(ConsumerCompletedMessage(self.name, self.name), p.name, self)
+                    self.query_plan.send(ConsumerCompletedMessage(self.name), p.name, self)
                 else:
                     self.fire_on_consumer_completed(p)
 
             for c in self.consumers:
                 if c.async_:
                     # c.queue.put(cPickle.dumps(ProducerCompletedMessage(self.name)))
-                    self.query_plan.send(ProducerCompletedMessage(self.name, self.name), c.name, self)
+                    self.query_plan.send(ProducerCompletedMessage(self.name), c.name, self)
                 else:
                     self.fire_on_producer_completed(c)
 

@@ -1,51 +1,68 @@
 # noinspection PyCompatibility
 import cPickle
-import multiprocessing
+import warnings
 from ctypes import c_char
 from multiprocessing import RawArray
+from multiprocessing.queues import Queue
 
 import numpy as np
 import pandas as pd
 
+from s3filter.multiprocessing.message import StartMessage
+from s3filter.multiprocessing.packet import PacketBase, MessagePacket
+
 
 class Channel(object):
-    MAX_BUFFER_SIZE = 16 * 1024 * 1024
 
-    def __init__(self, num_elements, element_size):
-        """
+    # Maximum size of shared memory array, just a safety check it's not set to something ridiculous
+    MAX_BUFFER_SIZE = 256 * 1024 * 1024
 
-        :param buffer_size: Should be sized according to the maximum expected size of the dataframes sent over
-        the channel. This equals rows x cols x element size.
-        :param max_element_size: Maximum size of the strings stored in the dataframe.
-        """
-        self.num_elements = num_elements
-        self.element_size = element_size
-        self.buffer_size = num_elements * element_size
+    def __init__(self, buffer_size):
+        # type: (int) -> None
+
+        self.buffer_size = buffer_size
 
         if self.buffer_size > Channel.MAX_BUFFER_SIZE:
             raise Exception("{} exceeds allowable size ({}) of shared memory to allocate"
                             .format(self.buffer_size, Channel.MAX_BUFFER_SIZE))
         else:
-            self.queue = multiprocessing.Queue()
+            self.__queue = Queue()
 
             # Create the shared memory array
-            self.shared_array = RawArray(c_char, self.buffer_size)
-
-            # Wrap the shared array
-            self.shared_array_wrapper = np.frombuffer(self.shared_array, dtype='S' + str(self.element_size))
+            self.__shared_array = RawArray(c_char, self.buffer_size)
 
             # Tracks who has been given permission to write to the shared array
             self.__owner = None
 
-    def put(self, msg):
-        self.__pickle_and_send(msg)
+    def put(self, sending_worker_name, packet):
+        # type: (str, PacketBase) -> None
+
+        # if sending_worker_name is None:
+        #     warnings.warn("Put packet with no sender {}".format(packet))
+
+        packet.set_sender(sending_worker_name)
+
+        if not isinstance(packet, PacketBase):
+            raise Exception("Packet {} is not of type {}".format(packet, PacketBase))
+
+        self.__pickle_and_put(packet)
 
     def get(self):
-        return self.__receive_and_unpickle()
+        packet = self.__get_and_unpickle()
 
-    def __pickle_and_send(self, header_msg):
-        pickled_msg = cPickle.dumps(header_msg, cPickle.HIGHEST_PROTOCOL)
-        self.queue.put(pickled_msg)
+        # if packet.sender_name is None:
+        #     warnings.warn("Get packet with no sender {}".format(packet))
+
+        return packet
+
+    def __pickle_and_put(self, packet):
+        # type: (PacketBase) -> None
+        pickled_packet = self.__pickle(packet)
+        self.__queue.put(pickled_packet)
+
+    @staticmethod
+    def __pickle(packet):
+        return cPickle.dumps(packet, cPickle.HIGHEST_PROTOCOL)
 
     def available(self):
         return self.__owner is None
@@ -60,44 +77,42 @@ class Channel(object):
             raise Exception("Shared array is owned by '{}'. '{}' cannot acquire.".format(
                 self.__owner, worker_name))
 
-    def copy_dataframe_to_buffer(self, df):
+    def copy_array_to_buffer(self, ndarray):
+        # type: (np.ndarray) -> None
 
-        df_size = df.shape[0] * df.shape[1] * self.element_size
-        if df_size > self.buffer_size:
-            raise Exception("Dataframe size {} ({} x {} x {}) exceeds capacity of shared memory {}."
-                            .format(df_size, df.shape[0], df.shape[1], self.element_size, self.buffer_size))
+        total_bytes = ndarray.nbytes
+        if total_bytes > self.buffer_size:
+            raise Exception("Numpy array ({} bytes) exceeds capacity of shared memory ({} bytes)."
+                            .format(total_bytes, self.buffer_size))
         else:
-            # Make sure the src array are sized strings not objects
-            nd_array = df.values.astype('S' + str(self.element_size), copy=False)
+            # Reshape the source array into 1 row, wrap the shared array and copy the ndarray into the wrapper
+            ndarray = ndarray.reshape(1, ndarray.shape[0] * ndarray.shape[1])
+            shared_array_wrapper = np.frombuffer(self.__shared_array, dtype=ndarray.dtype, count=ndarray.size)
+            shared_array_wrapper[0: ndarray.shape[0] * ndarray.shape[1]] = ndarray
 
-            # Reshape the source array into 1 row
-            nd_array = nd_array.reshape(1, df.shape[0] * df.shape[1])
+    def copy_array_from_buffer(self, df_shape, dtype):
+        # type: (tuple, str) -> pd.DataFrame
 
-            self.shared_array_wrapper[0: df.shape[0] * df.shape[1]] = nd_array
-
-    def copy_dataframe_from_buffer(self, df_shape):
-
-        df_size = df_shape[0] * df_shape[1] * self.element_size
-        if df_size > self.buffer_size:
-            raise Exception("Dataframe size {} ({} x {} x {}) exceeds capacity of shared memory {}."
-                            .format(df_size, df_shape[0], df_shape[1], self.element_size, self.buffer_size))
+        num_elements = df_shape[0] * df_shape[1]
+        num_bytes = num_elements * np.dtype(dtype).itemsize
+        if num_bytes > self.buffer_size:
+            raise Exception("Array size {} exceeds capacity of shared memory {}."
+                            .format(num_bytes, self.buffer_size))
         else:
-            num_items = df_shape[0] * df_shape[1]
-
-            shared_array = np.frombuffer(self.shared_array, dtype='S' + str(self.element_size))
-
-            sliced_array = shared_array[0: num_items]
-
-            shaped_array = sliced_array.reshape(df_shape[0], df_shape[1])
-
+            # Wrap the shared array, reshape the shared array and reconstruct the dataframe
+            shared_array_wrapper = np.frombuffer(self.__shared_array, dtype=dtype, count=num_elements)
+            shaped_array = shared_array_wrapper.reshape(df_shape[0], df_shape[1])
             df = pd.DataFrame(shaped_array, copy=False)
-
             return df
 
-    def __receive_and_unpickle(self):
-        pickled_msg = self.queue.get()
-        msg = cPickle.loads(pickled_msg)
+    def __get_and_unpickle(self):
+        pickled_msg = self.__queue.get()
+        msg = self.__unpickle(pickled_msg)
         return msg
 
+    @staticmethod
+    def __unpickle(pickled_msg):
+        return cPickle.loads(pickled_msg)
+
     def close(self):
-        self.queue.close()
+        self.__queue.close()

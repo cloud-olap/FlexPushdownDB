@@ -3,5 +3,5 @@ class HandlerBase(object):
     def __init__(self):
         pass
 
-    def on_message(self, message, worker, system):
+    def on_message(self, message, worker):
         raise NotImplementedError()

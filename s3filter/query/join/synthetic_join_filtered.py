@@ -26,7 +26,7 @@ def query_plan(settings):
     :return: None
     """
 
-    system = WorkerSystem(64 * 1024, 200)
+    system = WorkerSystem(1 * 1024 * 1024)
 
     query_plan = QueryPlan(system, is_async=settings.parallel, buffer_size=settings.buffer_size)
 

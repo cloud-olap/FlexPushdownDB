@@ -2,7 +2,7 @@
 """Aggregate support
 
 """
-
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.group import AggregateExpressionContext
@@ -84,8 +84,8 @@ class Aggregate(Operator):
         m = ms
         if type(m) is TupleMessage:
             self.__on_receive_tuple(m.tuple_, producer_name)
-        elif type(m) is pd.DataFrame:
-            self.__on_receive_dataframe(m)
+        elif isinstance(m, DataFrameMessage):
+            self.__on_receive_dataframe(m.dataframe)
         else:
             raise Exception("Unrecognized message {}".format(m))
 

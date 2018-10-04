@@ -8,9 +8,9 @@ import time
 from boto3 import Session
 from botocore.config import Config
 
-from s3filter.multiprocessing.message_base_type import MessageBaseType
+
 from s3filter.op.message import TupleMessage, StringMessage
-from s3filter.op.operator_base import Operator, StartMessage
+from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
@@ -270,7 +270,7 @@ class SQLTableScan(Operator):
 
                 if first_tuple:
                     assert (len(df.columns.values) > 0)
-                    op.send(TupleMessage(op.name, Tuple(df.columns.values)), op.consumers, op)
+                    op.send(TupleMessage(Tuple(df.columns.values)), op.consumers, op)
                     first_tuple = False
 
                     if op.log_enabled:

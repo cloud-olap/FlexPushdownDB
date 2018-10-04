@@ -1,43 +1,42 @@
 import StringIO
-import cPickle
 import cProfile
-import multiprocessing
 import pstats
 import random
-import timeit
-from ctypes import c_char
-from multiprocessing import Process, RawArray, Queue
 
 import numpy as np
 import pandas as pd
-from enum import Enum
 
 from s3filter.multiprocessing.handler_base import HandlerBase
-from s3filter.multiprocessing.message_base import MessageBase
-from s3filter.multiprocessing.message_base_type import MessageBaseType
+from s3filter.multiprocessing.message import DataFrameMessage, MessageBase, StartMessage, StopMessage
 from s3filter.multiprocessing.worker_system import WorkerSystem
-from s3filter.multiprocessing.worker import Worker
 
-buffer_num_cols = 4
-buffer_num_rows = 10
-buffer_item_size = 100
+buffer_size = 256 * 1024 * 1024
 num_iterations = 10
 
 
-def random_dataframe():
-    df = pd.DataFrame(np.random.randint(0, 10000, size=(buffer_num_rows, buffer_num_cols)))
-    df = df.applymap(str)
-    return df
+# def random_dataframe():
+#     df = pd.DataFrame(np.random.randint(0, 10000, size=(buffer_num_rows, buffer_num_cols)))
+#     df = df.applymap(str)
+#     return df
 
 
-def random_shaped_dataframe(field_value):
+def random_shaped_dataframe(field_value, min_rows, max_rows):
     num_cols = random.randint(10, 20)
-    num_rows = random.randint(50, 100)
+    num_rows = random.randint(min_rows, max_rows)
 
-    row = [field_value] * num_cols
-    cols = [row] * num_rows
+    # row = [field_value] * num_cols
+    # row = [field_value + '_' + str(i) for i in range(num_cols)]
+    # rows2 = [row] * num_rows
 
-    df = pd.DataFrame(cols)
+    rows = []
+    for r in range(num_rows):
+        col = []
+        for c in range(num_cols):
+            field = field_value + '_(' + str(c) + ',' + str(r) + ')'
+            col.append(field)
+        rows.append(col)
+
+    df = pd.DataFrame(rows)
     df = df.add_prefix('_')
     return df
 
@@ -195,130 +194,225 @@ def random_shaped_dataframe(field_value):
 #     return map(lambda n: queues[n], names)
 
 
-def test_fork_join_sharedmem_complex():
-    num_messages_to_send = 10
-    closure = {'num_messages_received': 0}
+class ProcessCompletedMessage(MessageBase):
 
-    class Handler(HandlerBase):
+    def __init__(self, operator_name):
+        super(ProcessCompletedMessage, self).__init__()
+        self.operator_name = operator_name
 
-        def __init__(self, consumer_names):
-            super(Handler, self).__init__()
-            self.consumer_names = consumer_names
+    def __repr__(self):
+        return "{}".format(self.__class__.__name__)
 
-        def on_message(self, message, worker, workers):
 
-            running = True
+class CustomDataFrameMessage(DataFrameMessage):
 
-            # print("{} | type: {}, sender: {}".format(name, message.message_type, message.sender_name))
-            if message.message_type is MessageBaseType.start:
-                for i in range(0, num_messages_to_send):
-                    test_df = random_shaped_dataframe(worker.name)
-                    msg = worker.create_message(MessageBaseType.data, test_df)
-                    system.put_many(self.consumer_names, msg, worker)
-            elif message.message_type is MessageBaseType.data:
-                closure['num_messages_received'] += 1
-                df = message.data
-                # print(df)
-                if len(self.consumer_names) > 0:
-                    msg = worker.create_message(MessageBaseType.data, df)
-                    system.put_many(self.consumer_names, msg, worker)
-                else:
-                    if closure['num_messages_received'] >= num_messages_to_send * 2:
-                        # msg = worker.create_message(MessageBaseType.stop, None)
-                        # system.put_all(msg, worker)
-                        msg = system.create_message(MessageBaseType.operator_completed, worker.name)
-                        system.put('system', msg, worker)
+    def __init__(self, dataframe, custom_data):
+        super(CustomDataFrameMessage, self).__init__(dataframe)
+        self.custom_data = custom_data
+
+    def __repr__(self):
+        return "{}".format(self.__class__.__name__)
+
+
+class Handler(HandlerBase):
+
+    def __init__(self, dataframe_to_send, num_dataframes_to_send, expected_dataframes, consumer_names):
+        super(Handler, self).__init__()
+        self.consumer_names = consumer_names
+        self.num_dataframes_to_send = num_dataframes_to_send
+        self.num_messages_received = 0
+        self.dataframe_to_send = dataframe_to_send
+        self.expected_dataframes = expected_dataframes
+        self.received_dataframes = {}
+
+    def assert_expected(self):
+        for sender_name, expected_df in self.expected_dataframes.items():
+            assert sender_name in self.received_dataframes
+            received_df = self.received_dataframes[sender_name]
+            assert received_df.shape == expected_df.shape
+
+    def received_expected(self):
+        all_rows_received = True
+        for sender_name, expected_df in self.expected_dataframes.items():
+
+            if sender_name in self.received_dataframes:
+                received_df = self.received_dataframes[sender_name]
+
+                if len(received_df) < len(expected_df):
+                    all_rows_received = False
+                    break
             else:
-                raise Exception("Unrecognised message type {}".format(message.message_type))
+                all_rows_received = False
 
-            return running
+        return all_rows_received
 
-    num_elements = buffer_num_cols * buffer_num_rows
-    element_size = buffer_item_size
+    def on_message(self, message, worker):
 
-    system = WorkerSystem(num_elements, element_size)
+        running = True
 
-    system.create_worker('p1', num_elements, element_size, Handler(['p3']))
-    system.create_worker('p2', num_elements, element_size, Handler(['p3']))
-    system.create_worker('p3', num_elements, element_size, Handler(['p4', 'p5']))
-    system.create_worker('p4', num_elements, element_size, Handler(['p6']))
-    system.create_worker('p5', num_elements, element_size, Handler(['p6']))
-    system.create_worker('p6', num_elements, element_size, Handler([]))
+        # print("{} | message: {}".format(worker.name, type(message)))
 
-    system.start()
+        if isinstance(message, StartMessage):
+            self.on_start_message(message, worker)
+        elif isinstance(message, DataFrameMessage):
+            self.on_dataframe_message(message, worker)
+        elif isinstance(message, CustomDataFrameMessage):
+            self.on_dataframe_message(message, worker)
+        elif isinstance(message, StopMessage):
+            pass  # NOOP
+        else:
+            raise Exception("Unrecognised message '{}'".format(type(message)))
 
-    system.put('p1', system.create_message(MessageBaseType.start, None), None)
-    system.put('p2', system.create_message(MessageBaseType.start, None), None)
+        return running
 
-    completed_workers = {worker_name: False for worker_name in system.workers.keys()}
-    while completed_workers['p6'] is False:
-        msg = system.listen(MessageBaseType.operator_completed)
-        completed_workers[msg.data] = True
+    def on_dataframe_message(self, message, worker):
 
-    msg = system.create_message(MessageBaseType.stop, None)
-    system.put_all(msg, system)
+        self.num_messages_received += 1
+
+        df = message.dataframe
+        # print("{} | Received Message {}".format(worker.name, df))
+        # Peek at first element
+        first_element = df.loc[0][0]
+        originator = first_element[:2]
+
+        if isinstance(message, CustomDataFrameMessage):
+            assert message.custom_data == 'custom_data'
+
+        self.received_dataframes.setdefault(originator, pd.DataFrame())
+        self.received_dataframes[originator] = self.received_dataframes[originator] \
+            .append(df, ignore_index=True)
+        if len(self.consumer_names) > 0:
+            worker.system.send_many(self.consumer_names, CustomDataFrameMessage(df, 'custom_data'), worker)
+        else:
+            if self.received_expected():
+                self.assert_expected()
+                worker.system.send('system', ProcessCompletedMessage(worker.name), worker)
+
+    def on_start_message(self, message, worker):
+        for i in range(0, self.num_dataframes_to_send):
+            msg = DataFrameMessage(self.dataframe_to_send)
+            worker.system.send_many(self.consumer_names, msg, worker)
+
+
+def test_fork_join_sharedmem_3():
+    num_records_to_send = 100000
+    num_records_per_batch = 10000
+    num_batches = num_records_to_send / num_records_per_batch
+
+    df1, df2 = generate_dataframes_to_send(num_records_per_batch * 0.8, num_records_per_batch * 1.2)
+
+    edf1, edf2 = generate_expected_dataframes(df1, df2, num_batches, 2)
+
+    # print()
+    # print("Sending df1 {} times \n{}".format(num_messages_to_send, df1))
+    # print("Sending df2 {} times \n{}".format(num_messages_to_send, df2))
+    # print("Expecting df1 \n{}".format(edf1))
+    # print("Expecting df2 s \n{}".format(edf2))
+
+    h1 = Handler(df1, num_batches, None, ['p3'])
+    h2 = Handler(df2, num_batches, None, ['p3'])
+
+    expected_dataframes = {'p1': edf1, 'p2': edf2}
+
+    h3 = Handler(None, 0, None, ['p4', 'p5'])
+    h4 = Handler(None, 0, None, ['p6'])
+    h5 = Handler(None, 0, None, ['p6'])
+    h6 = Handler(None, 0, expected_dataframes, [])
+
+    system = WorkerSystem(buffer_size)
+
+    system.create_worker('p1', h1, buffer_size)
+    system.create_worker('p2', h2, buffer_size)
+    system.create_worker('p3', h3, buffer_size)
+    system.create_worker('p4', h4, buffer_size)
+    system.create_worker('p5', h5, buffer_size)
+    system.create_worker('p6', h6, buffer_size)
+
+    execute(system, ['p1', 'p2'], ['p6'])
+
+    system.send_all(StopMessage(), None)
 
     system.join()
 
 
-def test_fork_join_sharedmem_simple():
-    num_messages_to_send = 10
-    closure = {'num_messages_received': 0}
-
-    class Handler(HandlerBase):
-
-        def __init__(self, consumer_names):
-            super(Handler, self).__init__()
-            self.consumer_names = consumer_names
-
-        def on_message(self, message, worker, system):
-
-            running = True
-
-            # print("{} | type: {}, sender: {}".format(name, message.message_type, message.sender_name))
-            if message.message_type is MessageBaseType.start:
-                for i in range(0, num_messages_to_send):
-                    test_df = random_shaped_dataframe(worker.name)
-                    msg = worker.create_message(MessageBaseType.data, test_df)
-                    system.put_many(self.consumer_names, msg, worker)
-            elif message.message_type is MessageBaseType.data:
-                closure['num_messages_received'] += 1
-                df = message.data
-                # print(df)
-                if len(self.consumer_names) > 0:
-                    msg = worker.create_message(MessageBaseType.data, df)
-                    system.put_many(self.consumer_names, msg, worker)
-                else:
-                    if closure['num_messages_received'] >= num_messages_to_send * 2:
-                        # msg = worker.create_message(MessageBaseType.stop, None)
-                        # system.put_all(msg, worker)
-                        msg = system.create_message(MessageBaseType.operator_completed, worker.name)
-                        system.put('system', msg, worker)
-            else:
-                raise Exception("Unrecognised message type {}".format(message.message_type))
-
-            return running
-
-    num_elements = buffer_num_cols * buffer_num_rows
-    element_size = buffer_item_size
-
-    system = WorkerSystem(num_elements=num_elements, element_size=element_size)
-
-    system.create_worker('p1', num_elements, element_size, Handler(['p3']))
-    system.create_worker('p2', num_elements, element_size, Handler(['p3']))
-    system.create_worker('p3', num_elements, element_size, Handler([]))
-
+def execute(system, workers_to_start, workers_to_wait_on):
     system.start()
 
-    system.put('p1', system.create_message(MessageBaseType.start, None), None)
-    system.put('p2', system.create_message(MessageBaseType.start, None), None)
+    map(lambda w: system.send(w, StartMessage(), None), workers_to_start)
 
-    completed_workers = {worker_name: False for worker_name in system.workers.keys()}
-    while completed_workers['p3'] is False:
-        msg = system.listen(MessageBaseType.operator_completed)
-        completed_workers[msg.data] = True
+    completed_workers = {worker_name: False for worker_name in workers_to_wait_on}
+    while not all(completed_workers.values()):
+        msg = system.listen(ProcessCompletedMessage)
+        completed_workers[msg.operator_name] = True
 
-    msg = system.create_message(MessageBaseType.stop, None)
-    system.put_all(msg, system)
+
+def generate_dataframes_to_send(min_rows, max_rows):
+    df1 = random_shaped_dataframe('p1', min_rows, max_rows)
+    df2 = random_shaped_dataframe('p2', min_rows, max_rows)
+    return df1, df2
+
+
+def generate_expected_dataframes(df1, df2, num_messages_to_send, duplicates):
+    edf1 = pd.DataFrame()
+    edf2 = pd.DataFrame()
+    for _ in range(num_messages_to_send * duplicates):
+        edf1 = edf1.append(df1, ignore_index=True)
+        edf2 = edf2.append(df2, ignore_index=True)
+    return edf1, edf2
+
+
+def test_fork_join_sharedmem_2():
+    num_records_to_send = 100
+    num_records_per_batch = 10
+    num_batches = num_records_to_send / num_records_per_batch
+
+    df1, df2 = generate_dataframes_to_send(num_records_per_batch * 0.8, num_records_per_batch * 1.2)
+
+    edf1, edf2 = generate_expected_dataframes(df1, df2, num_batches, 1)
+
+    h1 = Handler(df1, num_batches, None, ['p3'])
+    h2 = Handler(df2, num_batches, None, ['p3'])
+
+    expected_dataframes = {'p1': edf1, 'p2': edf2}
+
+    h3 = Handler(None, 0, expected_dataframes, [])
+
+    system = WorkerSystem(buffer_size)
+
+    system.create_worker('p1', h1, buffer_size)
+    system.create_worker('p2', h2, buffer_size)
+    system.create_worker('p3', h3, buffer_size)
+
+    execute(system, ['p1', 'p2'], ['p3'])
+
+    system.send_all(StopMessage(), None)
+
+    system.join()
+
+
+def test_fork_join_sharedmem_1():
+    num_records_to_send = 10
+    num_records_per_batch = 2
+    num_batches = num_records_to_send / num_records_per_batch
+
+    df1 = random_shaped_dataframe('p1', 8, 12)
+    edf1 = pd.DataFrame()
+    for _ in range(num_batches * 1):
+        edf1 = edf1.append(df1, ignore_index=True)
+
+    h1 = Handler(df1, num_batches, None, ['p2'])
+
+    expected_dataframes = {'p1': edf1}
+
+    h2 = Handler(None, 0, expected_dataframes, [])
+
+    system = WorkerSystem(buffer_size)
+
+    system.create_worker('p1', h1, buffer_size)
+    system.create_worker('p2', h2, buffer_size)
+
+    execute(system, ['p1'], ['p2'])
+
+    system.send_all(StopMessage(), None)
 
     system.join()

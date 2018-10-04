@@ -4,6 +4,7 @@
 """
 import time
 
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, HashTableMessage
@@ -121,10 +122,10 @@ class HashJoinProbe(Operator):
         m = ms
         if type(m) is TupleMessage:
             self.on_receive_tuple(m.tuple_, producer_name)
-        elif type(m) is HashTableMessage:
-            self.on_receive_hashtable(m.hashtable, producer_name)
-        elif type(m) is pd.DataFrame:
-            self.on_receive_dataframe(m, producer_name)
+        elif isinstance(m, HashTableMessage):
+            self.on_receive_hashtable(m.dataframe, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.on_receive_dataframe(m.dataframe, producer_name)
         else:
             raise Exception("Unrecognized message {}".format(m))
 
@@ -135,7 +136,7 @@ class HashJoinProbe(Operator):
 
         self.op_metrics.tuple_rows_processed += len(df)
 
-        self.tuples_df = self.tuples_df.append(df, ignore_index=True)
+        self.tuples_df = self.tuples_df.append(df, ignore_index=True, sort=False)
 
         if self.do_join:
             # if self.log_enabled:
@@ -210,7 +211,7 @@ class HashJoinProbe(Operator):
         if type(hashtable) is pd.DataFrame:
             if self.hashtable_df is None:
                 self.hashtable_df = pd.DataFrame()
-            self.hashtable_df = self.hashtable_df.append(hashtable)
+            self.hashtable_df = self.hashtable_df.append(hashtable, sort=False)
         else:
             self.hashtable.update(hashtable)
 
@@ -237,6 +238,10 @@ class HashJoinProbe(Operator):
             #         time.time(),
             #         self.__class__.__name__,
             #         self.name))
+
+            # Need to build index here rather than build job
+            self.hashtable_df.set_index(self.join_expr.l_field, inplace=True, drop=False)
+
             self.do_join = True
 
         if is_all_producers_done and not self.is_completed():
@@ -357,4 +362,4 @@ class HashJoinProbe(Operator):
                     self.name,
                     {'field_names': joined_field_names}))
 
-            self.send(TupleMessage(self.name, Tuple(joined_field_names)), self.consumers, self)
+            self.send(TupleMessage(Tuple(joined_field_names)), self.consumers, self)

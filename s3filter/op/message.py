@@ -2,8 +2,9 @@
 """Operator messages
 
 """
-from s3filter.multiprocessing.message_base import MessageBase
-from s3filter.multiprocessing.message_base_type import MessageBaseType
+from s3filter.multiprocessing.message import MessageBase, DataFrameMessage
+from s3filter.multiprocessing.packet import PacketBase
+
 from s3filter.op.tuple import Tuple
 from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
@@ -14,19 +15,18 @@ class TupleMessage(MessageBase):
 
     """
 
-    def __init__(self, sender_name, data):
+    def __init__(self, tuple_):
         """Creates a new TupleMessage
 
         :param tuple_: The tuple content of the message
         """
 
-        super(TupleMessage, self).__init__(MessageBaseType.tuple, sender_name, data, False)
+        super(TupleMessage, self).__init__()
 
-        if type(data) is not Tuple:
-            raise Exception("Message content type is {}. Type must be Tuple".format(type(data)))
+        if type(tuple_) is not Tuple:
+            raise Exception("Message content type is {}. Type must be Tuple".format(type(tuple_)))
 
-        self.data = data
-        self.tuple_ = data
+        self.tuple_ = tuple_
 
 
 class BloomMessage(object):
@@ -50,11 +50,11 @@ class BloomMessage(object):
         self.bloom_filter = bloom_filter
 
 
-class HashTableMessage(MessageBase):
+class HashTableMessage(DataFrameMessage):
 
-    def __init__(self, hashtable, sender_name):
-        super(HashTableMessage, self).__init__(MessageBaseType.hash_table, sender_name, hashtable, False)
-        self.hashtable = hashtable
+    def __init__(self, hashtable):
+        super(HashTableMessage, self).__init__(hashtable)
+
 
 class StringMessage(object):
     """Message containing a string.
@@ -71,3 +71,9 @@ class StringMessage(object):
             raise Exception("Message content type is {}. Type must be str".format(type(string_)))
 
         self.string_ = string_
+
+
+class DataMessage(object):
+
+    def __init(self, dataframe):
+        self.dataframe = dataframe
