@@ -5,7 +5,6 @@ import math
 import re
 from collections import OrderedDict
 
-from numba import jit
 
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression

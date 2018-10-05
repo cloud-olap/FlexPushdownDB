@@ -12,11 +12,16 @@ from logging import warning
 from multiprocessing import Queue
 import boto3
 import networkx
+import pandas as pd
+from typing import TypeVar
+
+from s3filter.multiprocessing.message import DataFrameMessage, MessageBase, StopMessage
+from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.util.constants import *
 from boto3.session import Session
 from botocore.config import Config
 
-from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage, StopMessage
+from s3filter.op.operator_base import OperatorCompletedMessage, EvaluatedMessage, EvalMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics, SQLTableScan
 from s3filter.op.table_scan import TableScan
 from s3filter.op.table_range_access import TableRangeAccess
@@ -32,12 +37,15 @@ class QueryPlan(object):
 
     """
 
-    def __init__(self, operators=None, is_async=False, buffer_size=1024):
-        # type: (list, bool, int) -> None
+    def __init__(self, system, operators=None, is_async=False, buffer_size=1024, use_shared_mem=False):
+        # type: (WorkerSystem, list, bool, int, bool) -> None
         """
 
         :param operators:
         """
+
+        self.system = system
+        self.use_shared_mem = use_shared_mem
 
         self.__timer = Timer()
         self.total_elapsed_time = 0.0
@@ -188,9 +196,19 @@ class QueryPlan(object):
                 root_operators.append(o)
         return root_operators
 
-    def send(self, message, operator_name):
-        o = self.operators[operator_name]
-        o.queue.put(cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL))
+    def send(self, message, operator_name, sender_op):
+        if self.use_shared_mem:
+            if type(message) is list:
+                for e in message[0]:
+                    if type(e) is pd.DataFrame:
+                        self.system.send(operator_name, DataFrameMessage(e), sender_op.worker)
+                    else:
+                        self.system.send(operator_name, e, sender_op.worker)
+            else:
+                self.system.send(operator_name, message, sender_op.worker)
+        else:
+            o = self.operators[operator_name]
+            o.queue.put(cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL))
 
     def print_metrics(self):
 
@@ -296,8 +314,11 @@ class QueryPlan(object):
     def execute(self):
 
         if self.is_async:
-            map(lambda o: o.init_async(self.queue), self.operators.values())
-            map(lambda o: o.boot(), self.operators.values())
+            map(lambda o: o.init_async(self.queue, self.system, self.use_shared_mem), self.operators.values())
+            if self.use_shared_mem:
+                self.system.start()
+            else:
+                map(lambda o: o.boot(), self.operators.values())
 
         # Find the root operators
         root_operators = self.find_root_operators()
@@ -327,26 +348,37 @@ class QueryPlan(object):
             # different process.
             operators = self.traverse_topological_from_root()
             for o in operators:
-                p_message = pickle.dumps(EvalMessage("self.op_metrics"))
-                o.queue.put(p_message)
-                o.op_metrics = self.listen(EvaluatedMessage).val
+                if self.use_shared_mem:
+                    self.system.send(o.name, EvalMessage("self.op_metrics"), None)
+                else:
+                    p_message = pickle.dumps(EvalMessage("self.op_metrics"))
+                    o.queue.put(p_message)
+
+                evaluated_msg = self.listen(EvaluatedMessage)  # type: EvaluatedMessage
+                o.op_metrics = evaluated_msg.val
 
             map(lambda op: op.set_completed(True), self.operators.values())
 
     def listen(self, message_type):
+        # type: (TypeVar[MessageBase]) -> MessageBase
         try:
-            while True:
-                p_item = self.queue.get()
-                item = cPickle.loads(p_item)
-                # print(item)
+            if self.use_shared_mem:
+                msg = self.system.listen(message_type)
+                return msg
+            else:
+                while True:
+                    p_item = self.queue.get()
+                    item = cPickle.loads(p_item)
+                    # print(item)
 
-                if type(item) == message_type:
-                    return item
-                else:
-                    # Not the message being listened for, warn and skip
-                    # This isn't exceptional, but the listener should be made aware that there are messages arriving that
-                    # are being ignored
-                    warning("While listening for message type {} received message type {} with contents {}".format(message_type, type(item), item))
+                    if type(item) == message_type:
+                        return item
+                    else:
+                        # Not the message being listened for, warn and skip
+                        # This isn't exceptional, but the listener should be made aware that there are messages arriving that
+                        # are being ignored
+                        warning("While listening for message type {} received message type {} with contents {}".format(message_type, type(item), item))
+
 
         except BaseException as e:
             tb = traceback.format_exc(e)
@@ -354,9 +386,14 @@ class QueryPlan(object):
 
     def stop(self):
         if self.is_async:
-            map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
-            self.join()
-            map(lambda o: o.queue.close(), self.operators.values())
+            if self.use_shared_mem:
+                self.system.send_all(StopMessage())
+                self.system.join()
+                self.system.close()
+            else:
+                map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
+                self.join()
+                map(lambda o: o.queue.close(), self.operators.values())
         else:
             pass
 

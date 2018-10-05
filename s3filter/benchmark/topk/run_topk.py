@@ -2,6 +2,7 @@
 """Groupby Benchmarks
 
 """
+import os
 
 import s3filter.benchmark.topk.topk_baseline as topk_baseline
 import s3filter.benchmark.topk.topk_filtered as topk_filtered

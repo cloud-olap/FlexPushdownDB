@@ -8,8 +8,9 @@ import time
 from boto3 import Session
 from botocore.config import Config
 
+from s3filter.multiprocessing.message import DataFrameMessage, StartMessage
 from s3filter.op.message import TupleMessage, StringMessage
-from s3filter.op.operator_base import Operator, StartMessage
+from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
@@ -280,9 +281,9 @@ class SQLTableScan(Operator):
 
                 op.op_metrics.rows_returned += len(df)
 
-                # if op.log_enabled:
-                #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                #         print("{}('{}') | Sending field values: \n{}".format(op.__class__.__name__, op.name, df))
+                if op.log_enabled:
+                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                        print("{}('{}') | Sending field values: \n{}".format(op.__class__.__name__, op.name, df))
 
                 counter += 1
                 if op.log_enabled:
@@ -290,7 +291,8 @@ class SQLTableScan(Operator):
                     if counter % 100 == 0:
                         print("Rows {}".format(op.op_metrics.rows_returned))
 
-                op.send(df, op.consumers)
+                op.send(DataFrameMessage(df), op.consumers)
+
                 # buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
                 # if len(buffer_) >= 8192:
                 #    op.send(buffer_, op.consumers)

@@ -3,9 +3,6 @@ import s3filter.util.constants
 
 def get_file_key(file_, sharded, shard=None, sf=None):
 
-    # Temp
-    # return "{}.csv".format(file_)
-
     if sf == None:
         sf = s3filter.util.constants.TPCH_SF
     if sf == 1:

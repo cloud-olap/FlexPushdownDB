@@ -5,6 +5,8 @@ class SyntheticJoinSettings(object):
                  secure,
                  use_native,
                  buffer_size,
+                 use_shared_mem,
+                 shared_memory_size,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -27,6 +29,8 @@ class SyntheticJoinSettings(object):
         self.secure = secure
         self.use_native = use_native
         self.buffer_size = buffer_size
+        self.use_shared_mem = use_shared_mem
+        self.shared_memory_size = shared_memory_size
         self.table_A_key = table_A_key
         self.table_A_parts = table_A_parts
         self.table_A_sharded = table_A_sharded
@@ -53,6 +57,8 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                  secure,
                  use_native,
                  buffer_size,
+                 use_shared_mem,
+                 shared_memory_size,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -78,6 +84,8 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                                                             secure,
                                                             use_native,
                                                             buffer_size,
+                                                            use_shared_mem,
+                                                            shared_memory_size,
                                                             table_A_key,
                                                             table_A_parts,
                                                             table_A_sharded,
@@ -108,6 +116,8 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                  secure,
                  use_native,
                  buffer_size,
+                 use_shared_mem,
+                 shared_memory_size,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -133,6 +143,8 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                                                             secure,
                                                             use_native,
                                                             buffer_size,
+                                                            use_shared_mem,
+                                                            shared_memory_size,
                                                             table_A_key,
                                                             table_A_parts,
                                                             table_A_sharded,
@@ -163,6 +175,8 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                  secure,
                  use_native,
                  buffer_size,
+                 use_shared_mem,
+                 shared_memory_size,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -188,6 +202,8 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                                                          secure,
                                                          use_native,
                                                          buffer_size,
+                                                         use_shared_mem,
+                                                         shared_memory_size,
                                                          table_A_key,
                                                          table_A_parts,
                                                          table_A_sharded,
@@ -218,6 +234,8 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  secure,
                  use_native,
                  buffer_size,
+                 use_shared_mem,
+                 shared_memory_size,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -244,6 +262,8 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                                                         secure,
                                                         use_native,
                                                         buffer_size,
+                                                        use_shared_mem,
+                                                        shared_memory_size,
                                                         table_A_key,
                                                         table_A_parts,
                                                         table_A_sharded,
