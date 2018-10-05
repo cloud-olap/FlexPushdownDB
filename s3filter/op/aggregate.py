@@ -2,7 +2,7 @@
 """Aggregate support
 
 """
-
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.group import AggregateExpressionContext
@@ -14,6 +14,9 @@ import cPickle as pickle
 
 import pandas as pd
 import numpy as np
+
+from s3filter.plan.query_plan import QueryPlan
+
 
 class AggregateMetrics(OpMetrics):
     """Extra metrics for a project
@@ -40,8 +43,12 @@ class Aggregate(Operator):
     """
 
     def __init__(self, expressions, use_pandas, name, query_plan, log_enabled, agg_fun):
+        # type: ([], bool, str, QueryPlan, bool, function) -> None
         """Creates a new aggregate operator from the given list of expressions.
 
+        :param use_pandas:
+        :param query_plan:
+        :param agg_fun:
         :param expressions: List of aggregate expressions.
         :param name: Operator name
         :param log_enabled: Logging enabled.
@@ -72,13 +79,21 @@ class Aggregate(Operator):
         :param producer_name: The producer that sent the message
         :return: None
         """
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
+        if type(m) is TupleMessage:
+            self.__on_receive_tuple(m.tuple_, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.__on_receive_dataframe(m.dataframe)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def on_producer_completed(self, producer_name):
         """Event handler for a producer completion event.
@@ -91,17 +106,17 @@ class Aggregate(Operator):
             self.producer_completions[producer_name] = True
         if self.use_pandas:
             if all(self.producer_completions.values()):
-                self.send(self.agg_df.agg(['sum']), self.consumers) 
+                self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers, self)
         else:
             if all(self.producer_completions.values()):
                 # Build and send the field names
                 field_names = self.__build_field_names()
-                self.send(TupleMessage(Tuple(field_names)), self.consumers)
+                self.send(TupleMessage(Tuple(field_names)), self.consumers, self)
 
                 # Send the field values, if there are any
                 if self.__expression_contexts is not None:
                     field_values = self.__build_field_values()
-                    self.send(TupleMessage(Tuple(field_values)), self.consumers)
+                    self.send(TupleMessage(Tuple(field_values)), self.consumers, self)
 
         Operator.on_producer_completed(self, producer_name)
 
@@ -174,5 +189,11 @@ class Aggregate(Operator):
         return field_values
 
     def __on_receive_dataframe(self, df):
+
+        # if self.log_enabled:
+        #     print("{}('{}') | Received dataframe: {}"
+        #           .format(self.__class__.__name__, self.name, df))
+
         df2 = self.agg_fun(df)
         self.agg_df = self.agg_df.append( df2 )
+

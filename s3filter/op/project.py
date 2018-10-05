@@ -2,6 +2,7 @@
 """Projection support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage
@@ -77,13 +78,20 @@ class Project(Operator):
         """
 
         # print("Project | {}".format(t))
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.__on_receive_dataframe(m.dataframe)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_dataframe(self, df):
         """Event handler for a received tuple
@@ -121,7 +129,7 @@ class Project(Operator):
         #         print("{}('{}') | Sending projected field values: \n{}"
         #               .format(self.__class__.__name__, self.name, df))
 
-        self.send(df, self.consumers)
+        self.send(DataFrameMessage(df), self.consumers, self)
 
     def on_receive_tuple(self, tuple_, producer_name):
         """Handles the receipt of a tuple. The tuple is mapped to a new tuple using the given projection expressions.
@@ -152,7 +160,7 @@ class Project(Operator):
 
             assert (len(projected_field_names) == len(self.project_exprs))
 
-            self.send(TupleMessage(Tuple(projected_field_names)), self.consumers)
+            self.send(TupleMessage(Tuple(projected_field_names)), self.consumers, self)
 
         else:
 
@@ -179,4 +187,4 @@ class Project(Operator):
 
                 assert(len(projected_field_values) == len(self.project_exprs))
 
-                self.send(TupleMessage(Tuple(projected_field_values)), self.consumers)
+                self.send(TupleMessage(Tuple(projected_field_values)), self.consumers, self)

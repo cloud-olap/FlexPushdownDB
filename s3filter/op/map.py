@@ -8,6 +8,7 @@ import sys
 
 from pandas import DataFrame
 
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.message import TupleMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.op.tuple import IndexedTuple
@@ -57,14 +58,21 @@ class Map(Operator):
         :return: None
         """
 
-        # print("Collate | {}".format(t))
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is DataFrame:
-                self.__on_receive_dataframe(m, producer_name)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+        # print("Map | {}".format(t))
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
+        if type(m) is TupleMessage:
+            self.__on_receive_tuple(m.tuple_, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.__on_receive_dataframe(m.dataframe, producer_name)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def __on_receive_dataframe(self, df,producer_name):
         """Event handler for a received tuple
@@ -78,7 +86,7 @@ class Map(Operator):
         for idx, df in grouped:
             operator = self.consumers[idx]
             self.op_metrics.rows_mapped += len(df)
-            self.send(df, [operator])
+            self.send(DataFrameMessage(df), [operator], self)
 
             # if self.log_enabled:
             #     print("{}('{}') | Mapped dataframe to operator {}. Dataframe was: \n{}"
@@ -93,7 +101,8 @@ class Map(Operator):
 
         if self.field_names is None:
             self.field_names = tuple_
-            self.send(TupleMessage(tuple_), self.consumers)
+
+            self.send(TupleMessage(tuple_), self.consumers, self)
             self.producers_received[producer_name] = True
         else:
 
@@ -107,4 +116,4 @@ class Map(Operator):
 
                 self.op_metrics.rows_mapped += 1
 
-                self.send(TupleMessage(tuple_), [self.consumers[idx]])
+                self.send(TupleMessage(self.name, tuple_), [self.consumers[idx]], self)

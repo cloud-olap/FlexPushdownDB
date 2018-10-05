@@ -10,7 +10,7 @@ from boto3 import Session
 from botocore.config import Config
 
 from s3filter.op.message import TupleMessage, StringMessage
-from s3filter.op.operator_base import Operator, StartMessage
+from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.native_cursor import NativeCursor

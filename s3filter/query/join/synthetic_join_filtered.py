@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
@@ -25,7 +26,9 @@ def query_plan(settings):
     :return: None
     """
 
-    query_plan = QueryPlan(is_async=settings.parallel, buffer_size=settings.buffer_size)
+    system = WorkerSystem(settings.shared_memory_size)
+
+    query_plan = QueryPlan(system, is_async=settings.parallel, buffer_size=settings.buffer_size, use_shared_mem=settings.use_shared_mem)
 
     # Define the operators
     scan_A = \
@@ -168,7 +171,7 @@ def query_plan(settings):
     join_build_A_B = map(lambda p:
                          query_plan.add_operator(
                              HashJoinBuild(settings.table_A_AB_join_key, 'join_build_A_B_{}'.format(p), query_plan,
-                                           False)),
+                                           True)),
                          range(0, settings.table_B_parts))
 
     join_probe_A_B = map(lambda p:
@@ -181,7 +184,7 @@ def query_plan(settings):
     join_build_AB_C = map(lambda p:
                           query_plan.add_operator(
                               HashJoinBuild(settings.table_B_BC_join_key, 'join_build_AB_C_{}'.format(p), query_plan,
-                                            False)),
+                                            True)),
                           range(0, settings.table_C_parts))
 
     join_probe_AB_C = map(lambda p:

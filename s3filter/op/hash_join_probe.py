@@ -2,6 +2,9 @@
 """Join support
 
 """
+import time
+
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, HashTableMessage
@@ -115,15 +118,22 @@ class HashJoinProbe(Operator):
         :return: None
         """
 
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is HashTableMessage:
-                self.on_receive_hashtable(m.hashtable, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.on_receive_dataframe(m, producer_name)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_, producer_name)
+        elif isinstance(m, HashTableMessage):
+            self.on_receive_hashtable(m.dataframe, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.on_receive_dataframe(m.dataframe, producer_name)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_dataframe(self, df, _producer_name):
 
@@ -132,7 +142,7 @@ class HashJoinProbe(Operator):
 
         self.op_metrics.tuple_rows_processed += len(df)
 
-        self.tuples_df = self.tuples_df.append(df, ignore_index=True)
+        self.tuples_df = self.tuples_df.append(df, ignore_index=True, sort=False)
 
         if self.do_join:
             # if self.log_enabled:
@@ -145,11 +155,14 @@ class HashJoinProbe(Operator):
                     self.join_field_names()
                     self.field_names_joined = True
                 self.join_field_values_pd()
-            else:
+            elif self.hashtable is not None:
                 if not self.field_names_joined:
                     self.join_field_names()
                     self.field_names_joined = True
                 self.join_field_values()
+            else:
+                raise Exception("All build producers done but have not received a hashtable")
+
         else:
             # if self.log_enabled:
             #     print("{}('{}') | Not all build producers complete, delaying join".format(
@@ -204,7 +217,7 @@ class HashJoinProbe(Operator):
         if type(hashtable) is pd.DataFrame:
             if self.hashtable_df is None:
                 self.hashtable_df = pd.DataFrame()
-            self.hashtable_df = self.hashtable_df.append(hashtable)
+            self.hashtable_df = self.hashtable_df.append(hashtable, sort=False)
         else:
             self.hashtable.update(hashtable)
 
@@ -227,9 +240,14 @@ class HashJoinProbe(Operator):
 
         if is_all_build_producers_done:
             # if self.log_enabled:
-            #     print("{}('{}') | All build producers complete, enabling join".format(
+            #     print("{} | {}('{}') | All build producers complete, enabling join".format(
+            #         time.time(),
             #         self.__class__.__name__,
             #         self.name))
+
+            # Need to build index here rather than build job
+            self.hashtable_df.set_index(self.join_expr.l_field, inplace=True, drop=False)
+
             self.do_join = True
 
         if is_all_producers_done and not self.is_completed():
@@ -239,11 +257,13 @@ class HashJoinProbe(Operator):
                     self.join_field_names()
                     self.field_names_joined = True
                 self.join_field_values_pd()
-            else:
+            elif self.hashtable is not None:
                 if not self.field_names_joined:
                     self.join_field_names()
                     self.field_names_joined = True
                 self.join_field_values()
+            else:
+                raise Exception("All producers done but have not received a hashtable")
 
             self.hashtable_df = None
             self.tuples_df = None
@@ -261,7 +281,14 @@ class HashJoinProbe(Operator):
 
             self.op_metrics.rows_joined += len(df)
 
-            self.send(df, self.consumers)
+            # if self.log_enabled:
+            #     print("{} | {}('{}') | Sending field values {}".format(
+            #         time.time(),
+            #         self.__class__.__name__,
+            #         self.name,
+            #         {'data': df}))
+
+            self.send(DataFrameMessage(df), self.consumers, self)
 
             self.tuples_df = pd.DataFrame()
 
@@ -303,7 +330,8 @@ class HashJoinProbe(Operator):
                         t = inner_tuple + outer_tuple
 
                         if self.log_enabled:
-                            print("{}('{}') | Sending field values [{}]".format(
+                            print("{} | {}('{}') | Sending field values [{}]".format(
+                                time.time(),
                                 self.__class__.__name__,
                                 self.name,
                                 {'data': t}))
@@ -334,9 +362,10 @@ class HashJoinProbe(Operator):
                 joined_field_names.append(field_name)
 
             if self.log_enabled:
-                print("{}('{}') | Sending field names [{}]".format(
+                print("{} | {}('{}') | Sending field names [{}]".format(
+                    time.time(),
                     self.__class__.__name__,
                     self.name,
                     {'field_names': joined_field_names}))
 
-            self.send(TupleMessage(Tuple(joined_field_names)), self.consumers)
+            self.send(TupleMessage(Tuple(joined_field_names)), self.consumers, self)
