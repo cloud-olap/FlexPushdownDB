@@ -19,7 +19,7 @@ class SQLTableScanBloomUse(Operator):
 
     """
 
-    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, secure, use_native, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None):
         """
 
         :param s3key: The s3 key to select against
@@ -33,6 +33,7 @@ class SQLTableScanBloomUse(Operator):
 
         self.s3key = s3key
         self.s3sql = s3sql
+        self.fn = fn
 
         if not use_native:
             if secure:

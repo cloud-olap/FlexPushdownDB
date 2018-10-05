@@ -117,7 +117,7 @@ class SQLTableScan(Operator):
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
         :param s3key: The object key to select against
         :param s3sql: The s3 select sql
@@ -138,7 +138,7 @@ class SQLTableScan(Operator):
                 self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
         # else:
         #     self.fast_s3 = scan
-
+        self.fn = fn
         self.s3key = s3key
         self.s3sql = s3sql
 
@@ -266,10 +266,12 @@ class SQLTableScan(Operator):
 
             buffer_ = pd.DataFrame()
             for df in dfs:
+                if op.fn:
+                    df = op.fn(df)
 
                 if first_tuple:
                     assert (len(df.columns.values) > 0)
-                    op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
+                    #op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
                     first_tuple = False
 
                     if op.log_enabled:

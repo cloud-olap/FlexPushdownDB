@@ -253,7 +253,7 @@ class HashJoinProbe(Operator):
     def join_field_values_pd(self):
 
         # self.tuples_df = self.tuples_df.set_index(self.join_expr.r_field)
-        if len(self.tuples_df) > 0:
+        if type(self.tuples_df) is pd.DataFrame and len(self.tuples_df) > 0:
 
             # Peform the join - loop over the right table rows, and use the hashtable for the left table rows
             df = self.hashtable_df.merge(self.tuples_df, how='inner', left_index=True, right_index=False, right_on=self.join_expr.r_field, copy=False)

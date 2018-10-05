@@ -91,7 +91,10 @@ class Aggregate(Operator):
             self.producer_completions[producer_name] = True
         if self.use_pandas:
             if all(self.producer_completions.values()):
-                self.send(self.agg_df.agg(['sum']), self.consumers) 
+                if len(self.agg_df > 0):
+                    self.send(self.agg_df.agg(['sum']), self.consumers) 
+                else: 
+                    self.send(pd.DataFrame(), self.consumers)
         else:
             if all(self.producer_completions.values()):
                 # Build and send the field names
@@ -174,5 +177,6 @@ class Aggregate(Operator):
         return field_values
 
     def __on_receive_dataframe(self, df):
-        df2 = self.agg_fun(df)
-        self.agg_df = self.agg_df.append( df2 )
+        if len(df) > 0:
+            df2 = self.agg_fun(df)
+            self.agg_df = self.agg_df.append( df2 )
