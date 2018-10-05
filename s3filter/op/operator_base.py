@@ -189,9 +189,11 @@ class Operator(HandlerBase):
         """
 
         if self.async_:
-            # m = cPickle.dumps(StartMessage())
-            # self.queue.put(m)
-            self.system.send(self.name, StartMessage(), None)
+            if self.use_shared_mem:
+                self.system.send(self.name, StartMessage(), None)
+            else:
+                m = cPickle.dumps(StartMessage())
+                self.queue.put(m)
         else:
             self.run()
 
@@ -237,34 +239,39 @@ class Operator(HandlerBase):
 
         self.async_ = query_plan.is_async
 
-        # self.queue = None
+        self.queue = None
 
         self.completion_queue = None
 
-        # self.runner = None
+        self.runner = None
+
+        self.use_shared_mem = False
         self.worker = None
         self.system = None
 
         self.__buffers = {}
         self.buffered_size = 0
 
-    def init_async(self, completion_queue, system):
+    def init_async(self, completion_queue, system, use_shared_mem):
 
         self.async_ = True
-
-        # self.queue = multiprocessing.Queue()
+        self.use_shared_mem = use_shared_mem
 
         self.completion_queue = completion_queue
 
-        # self.runner = threading.Thread(target=self.work, args=(self.queue, ))
-
-        # self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
-        self.system = system
-        self.worker = self.system.create_worker(self.name, self, 1 * 1024 * 1024)
+        if self.use_shared_mem:
+            self.system = system
+            self.worker = self.system.create_worker(self.name, self, 1 * 1024 * 1024)
+        else:
+            self.queue = multiprocessing.Queue()
+            # self.runner = threading.Thread(target=self.work, args=(self.queue, ))
+            self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
 
     def boot(self):
-        # self.runner.start()
-        self.start()
+        if not self.use_shared_mem:
+            self.runner.start()
+        else:
+            self.start()
 
     def is_completed(self):
         """Accessor for completed status.
@@ -354,8 +361,11 @@ class Operator(HandlerBase):
         :return: None
         """
 
+        if not isinstance(message, MessageBase):
+            raise Exception("Message type {} does not extend {}".format(message, MessageBase.__class__.__name__))
+
         if len(operators) == 0:
-            raise Exception("Message {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
+            raise Exception("Operator {} has 0 consumers. Cannot send message to 0 consumers.".format(self.name))
 
         if self.buffer_size == 0:
             for op in operators:
@@ -423,10 +433,11 @@ class Operator(HandlerBase):
                 print("{} | {}('{}') | Completed".format(time.time(), self.__class__.__name__, self.name))
 
             if self.async_:
-                # p_msg = cPickle.dumps(OperatorCompletedMessage(self.name))
-                # self.completion_queue.put(p_msg)
-
-                self.system.send('system', OperatorCompletedMessage(self.worker.name), self.worker)
+                if self.use_shared_mem:
+                    self.system.send('system', OperatorCompletedMessage(self.worker.name), self.worker)
+                else:
+                    p_msg = cPickle.dumps(OperatorCompletedMessage(self.name))
+                    self.completion_queue.put(p_msg)
 
             self.__completed = True
 

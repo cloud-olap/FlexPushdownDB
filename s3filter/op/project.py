@@ -78,8 +78,14 @@ class Project(Operator):
         """
 
         # print("Project | {}".format(t))
-        # for m in ms:
-        m = ms
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
         if type(m) is TupleMessage:
             self.on_receive_tuple(m.tuple_, producer_name)
         elif isinstance(m, DataFrameMessage):
@@ -123,7 +129,7 @@ class Project(Operator):
         #         print("{}('{}') | Sending projected field values: \n{}"
         #               .format(self.__class__.__name__, self.name, df))
 
-        self.send(df, self.consumers, self)
+        self.send(DataFrameMessage(df), self.consumers, self)
 
     def on_receive_tuple(self, tuple_, producer_name):
         """Handles the receipt of a tuple. The tuple is mapped to a new tuple using the given projection expressions.
@@ -181,4 +187,4 @@ class Project(Operator):
 
                 assert(len(projected_field_values) == len(self.project_exprs))
 
-                self.send(TupleMessage(Tuple(projected_field_values)), self.consumers)
+                self.send(TupleMessage(Tuple(projected_field_values)), self.consumers, self)

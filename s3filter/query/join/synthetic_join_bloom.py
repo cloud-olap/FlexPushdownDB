@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from s3filter.multiprocessing.worker_system import WorkerSystem
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.bloom_create import BloomCreate
@@ -25,8 +26,8 @@ def query_plan(settings):
 
     :return: None
     """
-
-    query_plan = QueryPlan(is_async=settings.parallel, buffer_size=settings.buffer_size)
+    system = WorkerSystem(settings.shared_memory_size)
+    query_plan = QueryPlan(is_async=settings.parallel, buffer_size=settings.buffer_size, use_shared_mem=settings.use_shared_mem)
 
     # Define the operators
     scan_A = \

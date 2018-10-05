@@ -118,8 +118,14 @@ class HashJoinProbe(Operator):
         :return: None
         """
 
-        # for m in ms:
-        m = ms
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
         if type(m) is TupleMessage:
             self.on_receive_tuple(m.tuple_, producer_name)
         elif isinstance(m, HashTableMessage):
@@ -282,7 +288,7 @@ class HashJoinProbe(Operator):
             #         self.name,
             #         {'data': df}))
 
-            self.send(df, self.consumers, self)
+            self.send(DataFrameMessage(df), self.consumers, self)
 
             self.tuples_df = pd.DataFrame()
 

@@ -39,10 +39,11 @@ class Collate(Operator):
         """
 
         if self.async_:
-            # p_message = pickle.dumps(EvalMessage("self.local_tuples()"))
-            # self.queue.put(p_message)
-
-            self.system.send(self.name, EvalMessage("self.local_tuples()"), self.worker)
+            if self.use_shared_mem:
+                self.system.send(self.name, EvalMessage("self.local_tuples()"), self.worker)
+            else:
+                p_message = pickle.dumps(EvalMessage("self.local_tuples()"))
+                self.queue.put(p_message)
 
             item = self.query_plan.listen(EvaluatedMessage)
             tuples = item.val
@@ -69,7 +70,14 @@ class Collate(Operator):
 
         # print("Collate | {}".format(t))
         # for m in ms:
-        m = ms
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m)
+        else:
+            for m in ms:
+                self.on_receive_message(m)
+
+    def on_receive_message(self, m):
         if type(m) is TupleMessage:
             self.__on_receive_tuple(m.tuple_)
         elif isinstance(m, DataFrameMessage):

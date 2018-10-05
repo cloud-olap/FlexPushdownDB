@@ -60,8 +60,15 @@ class HashJoinBuild(Operator):
         :param producer_name: The producer of the tuple
         :return: None
         """
-        # for m in ms:
-        m = ms
+
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
         if type(m) is TupleMessage:
             self.on_receive_tuple(m.tuple_, producer_name)
         elif isinstance(m, DataFrameMessage):

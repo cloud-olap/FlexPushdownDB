@@ -8,7 +8,7 @@ import time
 from boto3 import Session
 from botocore.config import Config
 
-
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.message import TupleMessage, StringMessage
 from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
@@ -289,7 +289,7 @@ class SQLTableScan(Operator):
                     if counter % 100 == 0:
                         print("Rows {}".format(op.op_metrics.rows_returned))
 
-                op.send(df, op.consumers, op)
+                op.send(DataFrameMessage(df), op.consumers, op)
 
                 # buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
                 # if len(buffer_) >= 8192:

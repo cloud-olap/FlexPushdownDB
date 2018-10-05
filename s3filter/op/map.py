@@ -58,9 +58,15 @@ class Map(Operator):
         :return: None
         """
 
-        # print("Collate | {}".format(t))
-        # for m in ms:
-        m = ms
+        # print("Map | {}".format(t))
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
         if type(m) is TupleMessage:
             self.__on_receive_tuple(m.tuple_, producer_name)
         elif isinstance(m, DataFrameMessage):
@@ -80,7 +86,7 @@ class Map(Operator):
         for idx, df in grouped:
             operator = self.consumers[idx]
             self.op_metrics.rows_mapped += len(df)
-            self.send(df, [operator], self)
+            self.send(DataFrameMessage(df), [operator], self)
 
             # if self.log_enabled:
             #     print("{}('{}') | Mapped dataframe to operator {}. Dataframe was: \n{}"

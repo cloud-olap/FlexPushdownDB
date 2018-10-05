@@ -80,8 +80,14 @@ class Aggregate(Operator):
         :return: None
         """
 
-        # for m in ms:
-        m = ms
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
         if type(m) is TupleMessage:
             self.__on_receive_tuple(m.tuple_, producer_name)
         elif isinstance(m, DataFrameMessage):
@@ -100,17 +106,17 @@ class Aggregate(Operator):
             self.producer_completions[producer_name] = True
         if self.use_pandas:
             if all(self.producer_completions.values()):
-                self.send(self.agg_df.agg(['sum']), self.consumers, self)
+                self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers, self)
         else:
             if all(self.producer_completions.values()):
                 # Build and send the field names
                 field_names = self.__build_field_names()
-                self.send(TupleMessage(self.name, Tuple(field_names)), self.consumers, self)
+                self.send(TupleMessage(Tuple(field_names)), self.consumers, self)
 
                 # Send the field values, if there are any
                 if self.__expression_contexts is not None:
                     field_values = self.__build_field_values()
-                    self.send(TupleMessage(self.name, Tuple(field_values)), self.consumers, self)
+                    self.send(TupleMessage(Tuple(field_values)), self.consumers, self)
 
         Operator.on_producer_completed(self, producer_name)
 
