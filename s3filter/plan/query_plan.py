@@ -244,11 +244,11 @@ class QueryPlan(object):
                 # raise Exception("Unrecognized scan operator {}".format(type(op)))
                 pass
 
-        # print("sql_scanned_bytes: {}".format(self.sql_scanned_bytes))
-        # print("sql_returned_bytes: {}".format(self.sql_returned_bytes))
-        # print("returned_bytes: {}".format(self.returned_bytes))
-        # print("num_http_get_requests: {}".format(self.num_http_get_requests))
-        # print("")
+        print("sql_scanned_bytes: {}".format(self.sql_scanned_bytes))
+        print("sql_returned_bytes: {}".format(self.sql_returned_bytes))
+        print("returned_bytes: {}".format(self.returned_bytes))
+        print("num_http_get_requests: {}".format(self.num_http_get_requests))
+        print("")
 
         cost, bytes_scanned, bytes_returned, rows = self.cost()
         computation_cost = self.computation_cost()

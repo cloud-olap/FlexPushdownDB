@@ -43,6 +43,10 @@ class TableRangeAccessMetrics(OpMetrics):
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
+        self.num_http_get_requests = 0
+
+    def data_cost(self, ec2_region=None):
+        return 0
 
     def cost(self):
         raise Exception("Not Implemented")
@@ -135,12 +139,6 @@ class TableRangeAccess(Operator):
         else:
             raise NotImplementedError
 
-        self.op_metrics.bytes_scanned = cur.bytes_scanned
-        self.op_metrics.bytes_processed = cur.bytes_processed
-        self.op_metrics.bytes_returned = cur.bytes_returned
-        self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
-        self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
-
         if not self.is_completed():
             self.complete()
 
@@ -217,7 +215,13 @@ class TableRangeAccess(Operator):
             #    op.send(buffer_, op.consumers)
             #    del buffer_
 
-            op.op_metrics.bytes_returned += op.cur.bytes_returned
+            op.op_metrics.bytes_scanned = op.cur.bytes_scanned
+            op.op_metrics.bytes_processed = op.cur.bytes_processed
+            op.op_metrics.bytes_returned = op.cur.bytes_returned
+            op.op_metrics.time_to_first_record_response = op.cur.time_to_first_record_response
+            op.op_metrics.time_to_last_record_response = op.cur.time_to_last_record_response
+            op.op_metrics.num_http_get_requests = op.cur.num_http_get_requests
+
             if not op.is_completed():
                 op.complete()
             return op.cur
