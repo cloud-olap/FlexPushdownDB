@@ -30,7 +30,7 @@ def query_plan(settings):
     :return: None
     """
     system = WorkerSystem(settings.shared_memory_size)
-    query_plan = QueryPlan(is_async=settings.parallel, buffer_size=settings.buffer_size, use_shared_mem=settings.use_shared_mem)
+    query_plan = QueryPlan(system, is_async=settings.parallel, buffer_size=settings.buffer_size, use_shared_mem=settings.use_shared_mem)
 
     # Define the operators
     scan_A = \

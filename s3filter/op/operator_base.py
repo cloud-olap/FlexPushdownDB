@@ -235,7 +235,7 @@ class Operator(HandlerBase):
         # Default to 1024 element buffer, use 0 to send immediately, and float('inf') for unlimited buffer
         self.buffer_size = 1024
 
-        # self.query_plan = query_plan
+        self.query_plan = query_plan
 
         self.async_ = query_plan.is_async
 
@@ -353,7 +353,7 @@ class Operator(HandlerBase):
     def set_query_plan(self, query_plan):
         self.query_plan = query_plan
 
-    def send(self, message, operators, sender_op):
+    def send(self, message, operators):
         """Emits the given tuple to each of the connected consumers.
 
         :param operators:
@@ -370,7 +370,7 @@ class Operator(HandlerBase):
         if self.buffer_size == 0:
             for op in operators:
                 if op.async_:
-                    self.query_plan.send([[message], self.name], op.name, sender_op)
+                    self.query_plan.send([[message], self.name], op.name, self)
                 else:
                     self.fire_on_receive([message], op)
 
@@ -386,11 +386,11 @@ class Operator(HandlerBase):
 
                 self.buffered_size = 0
 
-    def do_send(self, messages, op, sender_op):
+    def do_send(self, messages, op):
 
         # Should really be if the operator is async not this
         if op.async_:
-            self.query_plan.send([messages, self.name], op.name, sender_op)
+            self.query_plan.send([messages, self.name], op.name, self)
         else:
             self.fire_on_receive(messages, op)
 
@@ -412,9 +412,9 @@ class Operator(HandlerBase):
         producer.on_consumer_completed(self.name)
         switch_context(producer, self)
 
-    def flush(self, sender_op):
+    def flush(self):
         for (o, messages) in self.__buffers.items():
-            self.do_send(messages, o, sender_op)
+            self.do_send(messages, o)
             self.__buffers[o] = []
 
         self.buffered_size = 0
@@ -446,7 +446,7 @@ class Operator(HandlerBase):
             #     self.__buffers[o.name] = []
 
             # Flush the buffer
-            self.flush(self)
+            self.flush()
             # for c in self.consumers:
             #     if c.async_:
             #         self.query_plan.send([self.__buffer, self.name], c.name)

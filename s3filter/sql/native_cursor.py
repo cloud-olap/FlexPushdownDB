@@ -86,11 +86,7 @@ class NativeCursor(object):
 
         self.timer.start()
 
-        try:
-            self.fast_s3.execute(self.s3key, self.s3sql, on_records)
-        except Exception as e:
-            # print (e)
-            pass
+        self.fast_s3.execute(self.s3key, self.s3sql, on_records)
 
         self.bytes_scanned = self.fast_s3.get_bytes_scanned()
         self.bytes_processed = self.fast_s3.get_bytes_processed()

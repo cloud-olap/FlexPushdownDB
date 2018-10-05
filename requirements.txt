@@ -1,3 +1,6 @@
+agate
+psutil
+botocore
 pandas>0.23
 ray>=0.5
 dask>=0.18

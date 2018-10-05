@@ -88,7 +88,7 @@ class BloomCreate(Operator):
 
         return bloom_filter
 
-    def connect(self, consumer):
+    def connect(self, consumer, tag=0):
         """Overrides the generic connect method to make sure that the connecting operator is an operator that consumes
         bloom filters.
 

@@ -86,7 +86,7 @@ class Map(Operator):
         for idx, df in grouped:
             operator = self.consumers[idx]
             self.op_metrics.rows_mapped += len(df)
-            self.send(DataFrameMessage(df), [operator], self)
+            self.send(DataFrameMessage(df), [operator])
 
             # if self.log_enabled:
             #     print("{}('{}') | Mapped dataframe to operator {}. Dataframe was: \n{}"
@@ -102,7 +102,7 @@ class Map(Operator):
         if self.field_names is None:
             self.field_names = tuple_
 
-            self.send(TupleMessage(tuple_), self.consumers, self)
+            self.send(TupleMessage(tuple_), self.consumers)
             self.producers_received[producer_name] = True
         else:
 
@@ -116,4 +116,4 @@ class Map(Operator):
 
                 self.op_metrics.rows_mapped += 1
 
-                self.send(TupleMessage(self.name, tuple_), [self.consumers[idx]], self)
+                self.send(TupleMessage(tuple_), [self.consumers[idx]])

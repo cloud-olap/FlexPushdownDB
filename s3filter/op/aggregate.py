@@ -106,17 +106,17 @@ class Aggregate(Operator):
             self.producer_completions[producer_name] = True
         if self.use_pandas:
             if all(self.producer_completions.values()):
-                self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers, self)
+                self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers)
         else:
             if all(self.producer_completions.values()):
                 # Build and send the field names
                 field_names = self.__build_field_names()
-                self.send(TupleMessage(Tuple(field_names)), self.consumers, self)
+                self.send(TupleMessage(Tuple(field_names)), self.consumers)
 
                 # Send the field values, if there are any
                 if self.__expression_contexts is not None:
                     field_values = self.__build_field_values()
-                    self.send(TupleMessage(Tuple(field_values)), self.consumers, self)
+                    self.send(TupleMessage(Tuple(field_values)), self.consumers)
 
         Operator.on_producer_completed(self, producer_name)
 

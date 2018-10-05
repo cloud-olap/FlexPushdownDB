@@ -288,7 +288,7 @@ class HashJoinProbe(Operator):
             #         self.name,
             #         {'data': df}))
 
-            self.send(DataFrameMessage(df), self.consumers, self)
+            self.send(DataFrameMessage(df), self.consumers)
 
             self.tuples_df = pd.DataFrame()
 
@@ -368,4 +368,4 @@ class HashJoinProbe(Operator):
                     self.name,
                     {'field_names': joined_field_names}))
 
-            self.send(TupleMessage(Tuple(joined_field_names)), self.consumers, self)
+            self.send(TupleMessage(Tuple(joined_field_names)), self.consumers)

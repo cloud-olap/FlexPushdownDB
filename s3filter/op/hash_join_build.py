@@ -91,7 +91,7 @@ class HashJoinBuild(Operator):
 
         if not self.field_names_index:
             self.field_names_index = IndexedTuple.build_field_names_index(tuple_)
-            self.send(TupleMessage(tuple_), self.consumers, self)
+            self.send(TupleMessage(tuple_), self.consumers)
             self.producers_received[_producer_name] = True
         else:
 
@@ -124,9 +124,9 @@ class HashJoinBuild(Operator):
             #         self.hashtable_df))
 
             if self.hashtable_df is not None:
-                self.send(HashTableMessage(self.hashtable_df), self.consumers, self)
+                self.send(HashTableMessage(self.hashtable_df), self.consumers)
             elif self.hashtable is not None:
-                self.send(HashTableMessage(self.hashtable), self.consumers, self)
+                self.send(HashTableMessage(self.hashtable), self.consumers)
             else:
                 raise Exception("All producers completed but have not received field value tuples")
 
