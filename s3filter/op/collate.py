@@ -71,8 +71,7 @@ class Collate(Operator):
         # print("Collate | {}".format(t))
         # for m in ms:
         if self.use_shared_mem:
-            m = ms
-            self.on_receive_message(m)
+            self.on_receive_message(ms)
         else:
             for m in ms:
                 self.on_receive_message(m)

@@ -14,9 +14,9 @@ class WorkerSystem(object):
         self.workers = {}
         self.channel = channel.Channel(buffer_size)
 
-    def create_worker(self, name, handler, buffer_size=DEFAULT_BUFFER_SIZE):
-        # type: (str, HandlerBase, int) -> object
-        worker = Worker(name, buffer_size, self, handler)
+    def create_worker(self, name, handler, buffer_size=DEFAULT_BUFFER_SIZE, is_profiled=False, profile_file_name=None):
+        # type: (str, HandlerBase, int, bool, str) -> object
+        worker = Worker(name, buffer_size, self, handler, is_profiled, profile_file_name)
         self.workers[name] = worker
         return worker
 

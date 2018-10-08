@@ -81,8 +81,7 @@ class Aggregate(Operator):
         """
 
         if self.use_shared_mem:
-            m = ms
-            self.on_receive_message(m, producer_name)
+            self.on_receive_message(ms, producer_name)
         else:
             for m in ms:
                 self.on_receive_message(m, producer_name)
@@ -102,21 +101,22 @@ class Aggregate(Operator):
         :return: None
         """
 
-        if producer_name in self.producer_completions.keys():
-            self.producer_completions[producer_name] = True
-        if self.use_pandas:
-            if all(self.producer_completions.values()):
-                self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers)
-        else:
-            if all(self.producer_completions.values()):
-                # Build and send the field names
-                field_names = self.__build_field_names()
-                self.send(TupleMessage(Tuple(field_names)), self.consumers)
+        if not self.is_completed():
+            if producer_name in self.producer_completions.keys():
+                self.producer_completions[producer_name] = True
+            if self.use_pandas:
+                if all(self.producer_completions.values()):
+                    self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers)
+            else:
+                if all(self.producer_completions.values()):
+                    # Build and send the field names
+                    field_names = self.__build_field_names()
+                    self.send(TupleMessage(Tuple(field_names)), self.consumers)
 
-                # Send the field values, if there are any
-                if self.__expression_contexts is not None:
-                    field_values = self.__build_field_values()
-                    self.send(TupleMessage(Tuple(field_values)), self.consumers)
+                    # Send the field values, if there are any
+                    if self.__expression_contexts is not None:
+                        field_values = self.__build_field_values()
+                        self.send(TupleMessage(Tuple(field_values)), self.consumers)
 
         Operator.on_producer_completed(self, producer_name)
 

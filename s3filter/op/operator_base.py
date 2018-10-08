@@ -93,6 +93,9 @@ class Operator(HandlerBase):
     """
     system = None  # type: WorkerSystem
 
+    def set_async(self, parallel):
+        self.async_ = parallel
+
     def work(self, queue):
         if self.is_profiled:
             cProfile.runctx('self.do_work(queue)', globals(), locals(), self.profile_file_name)
@@ -254,24 +257,30 @@ class Operator(HandlerBase):
 
     def init_async(self, completion_queue, system, use_shared_mem):
 
-        self.async_ = True
+        # self.async_ = True
         self.use_shared_mem = use_shared_mem
 
         self.completion_queue = completion_queue
 
-        if self.use_shared_mem:
-            self.system = system
-            self.worker = self.system.create_worker(self.name, self, 1 * 1024 * 1024)
-        else:
-            self.queue = multiprocessing.Queue()
-            # self.runner = threading.Thread(target=self.work, args=(self.queue, ))
-            self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
+        if self.async_:
+            if self.use_shared_mem:
+                self.system = system
+                self.worker = self.system.create_worker(self.name, self, self.system.channel.buffer_size, self.is_profiled, self.profile_file_name)
+            else:
+                self.queue = multiprocessing.Queue()
+                # self.runner = threading.Thread(target=self.work, args=(self.queue, ))
+                self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
+
 
     def boot(self):
-        if not self.use_shared_mem:
-            self.runner.start()
+        if self.async_:
+            if not self.use_shared_mem:
+                self.runner.start()
+            else:
+                self.start()
         else:
-            self.start()
+            pass
+            # NOOP
 
     def is_completed(self):
         """Accessor for completed status.
@@ -388,11 +397,11 @@ class Operator(HandlerBase):
 
     def do_send(self, messages, op):
 
-        # Should really be if the operator is async not this
-        if op.async_:
-            self.query_plan.send([messages, self.name], op.name, self)
-        else:
-            self.fire_on_receive(messages, op)
+        if len(messages) > 0:
+            if op.async_:
+                self.query_plan.send([messages, self.name], op.name, self)
+            else:
+                self.fire_on_receive(messages, op)
 
     def fire_on_receive(self, message, consumer):
         switch_context(self, consumer)
@@ -432,12 +441,11 @@ class Operator(HandlerBase):
             if self.log_enabled:
                 print("{} | {}('{}') | Completed".format(time.time(), self.__class__.__name__, self.name))
 
-            if self.async_:
-                if self.use_shared_mem:
-                    self.system.send('system', OperatorCompletedMessage(self.worker.name), self.worker)
-                else:
-                    p_msg = cPickle.dumps(OperatorCompletedMessage(self.name))
-                    self.completion_queue.put(p_msg)
+            if self.use_shared_mem:
+                self.system.send('system', OperatorCompletedMessage(self.worker.name), self.worker)
+            else:
+                p_msg = cPickle.dumps(OperatorCompletedMessage(self.name))
+                self.completion_queue.put(p_msg)
 
             self.__completed = True
 
