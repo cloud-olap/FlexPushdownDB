@@ -7,6 +7,7 @@ class SyntheticJoinSettings(object):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 sf,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -18,6 +19,7 @@ class SyntheticJoinSettings(object):
                  table_B_field_names,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -31,6 +33,7 @@ class SyntheticJoinSettings(object):
         self.buffer_size = buffer_size
         self.use_shared_mem = use_shared_mem
         self.shared_memory_size = shared_memory_size
+        self.sf = sf
         self.table_A_key = table_A_key
         self.table_A_parts = table_A_parts
         self.table_A_sharded = table_A_sharded
@@ -42,6 +45,7 @@ class SyntheticJoinSettings(object):
         self.table_B_field_names = table_B_field_names
         self.table_B_AB_join_key = table_B_AB_join_key
         self.table_B_BC_join_key = table_B_BC_join_key
+        self.table_B_detail_field_name = table_B_detail_field_name
         self.table_C_key = table_C_key
         self.table_C_parts = table_C_parts
         self.table_C_sharded = table_C_sharded
@@ -59,6 +63,7 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 sf,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -72,6 +77,7 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                  table_B_filter_fn,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -86,6 +92,7 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                                                             buffer_size,
                                                             use_shared_mem,
                                                             shared_memory_size,
+                                                            sf,
                                                             table_A_key,
                                                             table_A_parts,
                                                             table_A_sharded,
@@ -97,6 +104,7 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                                                             table_B_field_names,
                                                             table_B_AB_join_key,
                                                             table_B_BC_join_key,
+                                                            table_B_detail_field_name,
                                                             table_C_key,
                                                             table_C_parts,
                                                             table_C_sharded,
@@ -118,6 +126,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 sf,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -131,6 +140,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                  table_B_filter_sql,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -145,6 +155,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                                                             buffer_size,
                                                             use_shared_mem,
                                                             shared_memory_size,
+                                                            sf,
                                                             table_A_key,
                                                             table_A_parts,
                                                             table_A_sharded,
@@ -156,6 +167,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                                                             table_B_field_names,
                                                             table_B_AB_join_key,
                                                             table_B_BC_join_key,
+                                                            table_B_detail_field_name,
                                                             table_C_key,
                                                             table_C_parts,
                                                             table_C_sharded,
@@ -177,6 +189,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 sf,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -190,6 +203,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                  table_B_filter_sql,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -204,6 +218,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                                                          buffer_size,
                                                          use_shared_mem,
                                                          shared_memory_size,
+                                                         sf,
                                                          table_A_key,
                                                          table_A_parts,
                                                          table_A_sharded,
@@ -215,6 +230,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                                                          table_B_field_names,
                                                          table_B_AB_join_key,
                                                          table_B_BC_join_key,
+                                                         table_B_detail_field_name,
                                                          table_C_key,
                                                          table_C_parts,
                                                          table_C_sharded,
@@ -236,6 +252,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 sf,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -249,6 +266,8 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  table_B_filter_sql,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_primary_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -264,6 +283,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                                                         buffer_size,
                                                         use_shared_mem,
                                                         shared_memory_size,
+                                                        sf,
                                                         table_A_key,
                                                         table_A_parts,
                                                         table_A_sharded,
@@ -275,6 +295,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                                                         table_B_field_names,
                                                         table_B_AB_join_key,
                                                         table_B_BC_join_key,
+                                                        table_B_detail_field_name,
                                                         table_C_key,
                                                         table_C_parts,
                                                         table_C_sharded,
@@ -285,4 +306,5 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
         self.table_A_filter_sql = table_A_filter_sql
         self.table_B_filter_sql = table_B_filter_sql
         self.table_C_filter_sql = table_C_filter_sql
+        self.table_B_primary_key = table_B_primary_key
         self.table_C_primary_key = table_C_primary_key

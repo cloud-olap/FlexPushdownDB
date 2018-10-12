@@ -2,6 +2,7 @@
 """Bloom filter creation support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator

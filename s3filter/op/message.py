@@ -29,7 +29,7 @@ class TupleMessage(MessageBase):
         self.tuple_ = tuple_
 
 
-class BloomMessage(object):
+class BloomMessage(MessageBase):
     """Message containing a bloom filter.
 
     """
@@ -40,6 +40,7 @@ class BloomMessage(object):
         :param bloom_filter: The bloom filter content of the message
         """
 
+        super(BloomMessage, self).__init__()
         if type(bloom_filter) is not ScalableBloomFilter and \
                 type(bloom_filter) is not SlicedBloomFilter:
             raise Exception("Message content type is {}. Type must be '{}', or '{}'"

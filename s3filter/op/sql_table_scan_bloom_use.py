@@ -56,6 +56,8 @@ class SQLTableScanBloomUse(Operator):
 
         self.__bloom_filters = []
 
+        self.filter_fn = fn
+
         if type(bloom_filter_field_name) is str:
             self.__bloom_filter_field_name = bloom_filter_field_name
         else:

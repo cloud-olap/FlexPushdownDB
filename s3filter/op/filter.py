@@ -6,6 +6,7 @@ import time
 
 import pandas as pd
 
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
@@ -70,15 +71,21 @@ class Filter(Operator):
         """
 
         # print("Filter | {}".format(t))
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.__on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+        if isinstance(ms, list):
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+        else:
+            self.on_receive_message(ms, producer_name)
 
-    def __on_receive_dataframe(self, df):
+    def on_receive_message(self, m, producer_name):
+        if type(m) is TupleMessage:
+            self.__on_receive_tuple(m.tuple_, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.__on_receive_dataframe(m.dataframe, producer_name)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
+
+    def __on_receive_dataframe(self, df, producer_name):
         """Event handler for a received tuple
 
         :param tuple_: The received tuple
@@ -98,7 +105,7 @@ class Filter(Operator):
 
         self.op_metrics.rows_filtered += len(filtered_df)
 
-        self.send(filtered_df, self.consumers)
+        self.send(DataFrameMessage(filtered_df), self.consumers)
 
     def __on_receive_tuple(self, tuple_, producer_name):
         """Event handler to handle receipt of a tuple

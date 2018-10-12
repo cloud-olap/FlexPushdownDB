@@ -13,4 +13,5 @@ boto3>=1.7
 awscli>=1.15
 pytest>=3.6
 requests
-enum34>=1.1.6
+enum34>=1.1
+typing>3.6

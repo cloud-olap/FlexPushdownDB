@@ -81,8 +81,7 @@ class Aggregate(Operator):
         """
 
         if self.use_shared_mem:
-            m = ms
-            self.on_receive_message(m, producer_name)
+            self.on_receive_message(ms, producer_name)
         else:
             for m in ms:
                 self.on_receive_message(m, producer_name)

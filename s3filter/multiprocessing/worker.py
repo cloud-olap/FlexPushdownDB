@@ -1,3 +1,4 @@
+import cProfile
 import copy
 from collections import deque
 from multiprocessing import Process
@@ -14,7 +15,7 @@ from s3filter.multiprocessing.packet import StopPacket, RequestBufferPacket, Gra
 
 class Worker(object):
 
-    def __init__(self, name, buffer_size, system, handler):
+    def __init__(self, name, buffer_size, system, handler, is_profiled, profile_file_name):
         self.name = name
         self.handler = handler
         self.channel = Channel(buffer_size)
@@ -25,11 +26,19 @@ class Worker(object):
         # self.process = threading.Thread(target=self.work, args=())
         self.running = True
         self.proxy = True
+        self.is_profiled = is_profiled
+        self.profile_file_name = profile_file_name
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self.name)
 
     def work(self):
+        if self.is_profiled:
+            cProfile.runctx('self.do_work()', globals(), locals(), self.profile_file_name)
+        else:
+            self.do_work()
+
+    def do_work(self):
 
         # This allows us to see whethere an instance is a proxy or the actual remote process
         self.proxy = False

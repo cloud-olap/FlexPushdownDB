@@ -246,7 +246,8 @@ class HashJoinProbe(Operator):
             #         self.name))
 
             # Need to build index here rather than build job
-            self.hashtable_df.set_index(self.join_expr.l_field, inplace=True, drop=False)
+            if self.hashtable_df is not None:
+                self.hashtable_df.set_index(self.join_expr.l_field, inplace=True, drop=False)
 
             self.do_join = True
 
@@ -273,7 +274,7 @@ class HashJoinProbe(Operator):
     def join_field_values_pd(self):
 
         # self.tuples_df = self.tuples_df.set_index(self.join_expr.r_field)
-        if type(self.tuples_df) is pd.DataFrame and len(self.tuples_df) > 0:
+        if type(self.tuples_df) is pd.DataFrame and and self.hashtable_df is not None:
 
             # Peform the join - loop over the right table rows, and use the hashtable for the left table rows
             df = self.hashtable_df.merge(self.tuples_df, how='inner', left_index=True, right_index=False, right_on=self.join_expr.r_field, copy=False)

@@ -147,6 +147,8 @@ class SQLTableScan(Operator):
 
         self.use_native = use_native
 
+        self.filter_fn = fn
+
     def run(self):
         """Executes the query and begins emitting tuples.
         :return: None
@@ -281,9 +283,13 @@ class SQLTableScan(Operator):
 
                 op.op_metrics.rows_returned += len(df)
 
-                if op.log_enabled:
-                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                        print("{}('{}') | Sending field values: \n{}".format(op.__class__.__name__, op.name, df))
+                # Apply filter if there is one
+                if op.filter_fn is not None:
+                    df = df[op.filter_fn(df)]
+
+                # if op.log_enabled:
+                #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                #         print("{}('{}') | Sending field values: \n{}".format(op.__class__.__name__, op.name, df))
 
                 counter += 1
                 if op.log_enabled:
