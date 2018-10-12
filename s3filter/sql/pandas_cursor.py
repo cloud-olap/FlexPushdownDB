@@ -62,7 +62,7 @@ class PandasCursor(object):
         self.s3sql = s3sql
 
         # TODO:only simple SQL queries are considered. Nested and complex queries will need a lot of work to handle
-        self.need_s3select = not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
+        self.need_s3select = True #not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
 
         # There doesn't seem to be a way to capture the bytes sent to s3, but we can use this for comparison purposes
         self.query_bytes = len(self.s3key.encode('utf-8')) + len(self.s3sql.encode('utf-8'))

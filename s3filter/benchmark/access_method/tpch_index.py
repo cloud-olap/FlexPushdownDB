@@ -19,7 +19,7 @@ import numpy as np
 import os
 
 def main():
-    run(True, True, 0, 100, 900, 1000, 10, 16) 
+    run(True, True, 0, 1, 0, 901.04, 1) 
 
 def run(parallel, use_pandas, buffer_size, table_parts, lower, upper, sf, nthreads = 16):
     
@@ -30,7 +30,7 @@ def run(parallel, use_pandas, buffer_size, table_parts, lower, upper, sf, nthrea
     print("------------------")
 
     # Query plan
-    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
+    query_plan = QueryPlan(None, is_async=parallel, buffer_size=buffer_size)
     assert sf == 1 or sf == 10
     
     # Scan Index Files

@@ -46,7 +46,7 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_returned = 0
         self.num_http_get_requests = 0
 
-        self.cost_estimator = CostEstimator(self)
+        #self.cost_estimator = CostEstimator(self)
 
     def cost(self):
         """
@@ -147,7 +147,7 @@ class SQLTableScan(Operator):
 
         self.use_native = use_native
 
-        self.filter_fn = fn
+        #self.filter_fn = fn
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -284,8 +284,8 @@ class SQLTableScan(Operator):
                 op.op_metrics.rows_returned += len(df)
 
                 # Apply filter if there is one
-                if op.filter_fn is not None:
-                    df = df[op.filter_fn(df)]
+                #if op.filter_fn is not None:
+                #    df = df[op.filter_fn(df)]
 
                 # if op.log_enabled:
                 #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
