@@ -2,6 +2,7 @@
 """Bloom filter creation support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
@@ -112,8 +113,8 @@ class BloomCreate(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                for t in m.values.tolist():
+            elif isinstance(m, DataFrameMessage):
+                for t in m.dataframe.values.tolist():
                     self.__on_receive_tuple(t, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))

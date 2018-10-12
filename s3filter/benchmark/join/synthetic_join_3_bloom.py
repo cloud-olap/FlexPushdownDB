@@ -11,31 +11,35 @@ from s3filter.util.test_util import gen_test_id
 def main():
     settings = SyntheticBloomJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
-        use_shared_mem=True, shared_memory_size=2 * 1024 * 1024,
+        use_shared_mem=False, shared_memory_size=-1, sf=1,
         table_A_key='customer',
-        table_A_parts=8,
+        table_A_parts=2,
         table_A_sharded=False,
         table_A_field_names=['c_custkey'],
-        table_A_filter_sql='c_mktsegment = \'BUILDING\'',
+        table_A_filter_sql='cast(c_custkey as int) <= 100',
         table_A_AB_join_key='c_custkey',
         table_B_key='orders',
-        table_B_parts=8,
+        table_B_parts=2,
         table_B_sharded=False,
         table_B_field_names=['o_orderkey', 'o_custkey', 'o_orderdate', 'o_shippriority'],
-        table_B_filter_sql='cast(o_orderdate as timestamp) < cast(\'1995-03-01\' as timestamp)',
+        table_B_filter_sql='cast(o_orderdate as timestamp) < cast(\'1992-01-15\' as timestamp)',
         table_B_AB_join_key='o_custkey',
         table_B_BC_join_key='o_orderkey',
+        table_B_detail_field_name=None,
         table_C_key='lineitem',
-        table_C_parts=8,
+        table_C_parts=2,
         table_C_sharded=False,
         table_C_field_names=['l_orderkey', 'l_extendedprice', 'l_discount'],
-        table_C_filter_sql='cast(l_shipdate as timestamp) > cast(\'1995-03-01\' as timestamp)',
+        table_C_filter_sql='cast(l_shipdate as timestamp) < cast(\'1992-01-15\' as timestamp)',
         table_C_BC_join_key='l_orderkey',
         table_C_detail_field_name='l_extendedprice')
 
+    # expected_result = 1171288505.15
+    expected_result = 4429.68
+
     query_plan = synthetic_join_bloom.query_plan(settings)
 
-    runner.run(query_plan, expected_result=1171288505.15, test_id=gen_test_id())
+    runner.run(query_plan, expected_result=expected_result, test_id=gen_test_id())
 
 
 if __name__ == "__main__":
