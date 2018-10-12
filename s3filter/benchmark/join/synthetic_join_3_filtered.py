@@ -11,7 +11,7 @@ from s3filter.util.test_util import gen_test_id
 def main():
     settings = SyntheticFilteredJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
-        use_shared_mem=False, shared_memory_size=-1,
+        use_shared_mem=False, shared_memory_size=-1, sf=1,
         table_A_key='customer',
         table_A_parts=2,
         table_A_sharded=False,

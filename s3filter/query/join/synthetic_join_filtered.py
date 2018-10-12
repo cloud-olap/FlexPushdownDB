@@ -39,7 +39,7 @@ def query_plan(settings):
     scan_A = \
         map(lambda p:
             query_plan.add_operator(
-                SQLTableScan(get_file_key(settings.table_A_key, settings.table_A_sharded, p),
+                SQLTableScan(get_file_key(settings.table_A_key, settings.table_A_sharded, p, settings.sf),
                              "select "
                              "  {} "
                              "from "
@@ -78,7 +78,7 @@ def query_plan(settings):
     scan_B = \
         map(lambda p:
             query_plan.add_operator(
-                SQLTableScan(get_file_key(settings.table_B_key, settings.table_B_sharded, p),
+                SQLTableScan(get_file_key(settings.table_B_key, settings.table_B_sharded, p, settings.sf),
                              "select "
                              "  {} "
                              "from "
@@ -118,7 +118,7 @@ def query_plan(settings):
         scan_C = \
             map(lambda p:
                 query_plan.add_operator(
-                    SQLTableScan(get_file_key(settings.table_C_key, settings.table_C_sharded, p),
+                    SQLTableScan(get_file_key(settings.table_C_key, settings.table_C_sharded, p, settings.sf),
                                  "select "
                                  "  {} "
                                  "from "
@@ -168,7 +168,7 @@ def query_plan(settings):
                               query_plan.add_operator(
                                   HashJoinBuild(settings.table_B_BC_join_key, 'join_build_AB_C_{}'.format(p),
                                                 query_plan,
-                                                True)),
+                                                False)),
                               range(0, settings.table_C_parts))
 
         join_probe_AB_C = map(lambda p:
@@ -176,7 +176,7 @@ def query_plan(settings):
                                   HashJoinProbe(
                                       JoinExpression(settings.table_B_BC_join_key, settings.table_C_BC_join_key),
                                       'join_probe_AB_C_{}'.format(p),
-                                      query_plan, True)),
+                                      query_plan, False)),
                               range(0, settings.table_C_parts))
 
     map_A_to_B = map(lambda p:
@@ -192,19 +192,18 @@ def query_plan(settings):
     join_build_A_B = map(lambda p:
                          query_plan.add_operator(
                              HashJoinBuild(settings.table_A_AB_join_key, 'join_build_A_B_{}'.format(p), query_plan,
-                                           True)),
+                                           False)),
                          range(0, settings.table_B_parts))
 
     join_probe_A_B = map(lambda p:
                          query_plan.add_operator(
                              HashJoinProbe(JoinExpression(settings.table_A_AB_join_key, settings.table_B_AB_join_key),
                                            'join_probe_A_B_{}'.format(p),
-                                           query_plan, True)),
+                                           query_plan, False)),
                          range(0, settings.table_B_parts))
 
-
-
     if settings.table_C_key is None:
+
         def part_aggregate_fn(df):
             sum_ = df[settings.table_B_detail_field_name].astype(np.float).sum()
             return pd.DataFrame({'_0': [sum_]})
@@ -270,11 +269,9 @@ def query_plan(settings):
         connect_many_to_many(join_probe_A_B, map_B_to_C)
         connect_all_to_all(map_B_to_C, join_build_AB_C)
         connect_many_to_many(join_build_AB_C, join_probe_AB_C)
-        connect_all_to_all(map_B_to_C, join_build_AB_C)
         connect_many_to_many(scan_C, project_C)
         connect_many_to_many(project_C, map_C_to_C)
         connect_all_to_all(map_C_to_C, join_probe_AB_C)
-
         connect_many_to_many(join_probe_AB_C, part_aggregate)
 
     connect_many_to_one(part_aggregate, aggregate_reduce)
