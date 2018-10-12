@@ -18,6 +18,7 @@ class SyntheticJoinSettings(object):
                  table_B_field_names,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -42,6 +43,7 @@ class SyntheticJoinSettings(object):
         self.table_B_field_names = table_B_field_names
         self.table_B_AB_join_key = table_B_AB_join_key
         self.table_B_BC_join_key = table_B_BC_join_key
+        self.table_B_detail_field_name = table_B_detail_field_name
         self.table_C_key = table_C_key
         self.table_C_parts = table_C_parts
         self.table_C_sharded = table_C_sharded
@@ -131,6 +133,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                  table_B_filter_sql,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -156,6 +159,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                                                             table_B_field_names,
                                                             table_B_AB_join_key,
                                                             table_B_BC_join_key,
+                                                            table_B_detail_field_name,
                                                             table_C_key,
                                                             table_C_parts,
                                                             table_C_sharded,

@@ -49,7 +49,7 @@ def main():
 
     query_plan = synthetic_join_baseline.query_plan(settings)
 
-    runner.run(query_plan, expected_total_balance=1171288505.15, test_id=gen_test_id())
+    runner.run(query_plan, expected_result=1171288505.15, test_id=gen_test_id())
 
 
 if __name__ == "__main__":
