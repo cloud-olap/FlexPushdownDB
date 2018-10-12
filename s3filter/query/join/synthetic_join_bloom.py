@@ -21,6 +21,7 @@ from s3filter.query.tpch_q19 import get_sql_suffix
 import pandas as pd
 import numpy as np
 
+
 def query_plan(settings):
     # type: (SyntheticBloomJoinSettings) -> QueryPlan
     """
@@ -72,13 +73,14 @@ def query_plan(settings):
                         [ProjectExpression(k, v) for k, v in field_names_map_A.iteritems()],
                         'project_A_{}'.format(p),
                         query_plan,
-                        True,
+                        False,
                         project_fn_A)),
                     range(0, settings.table_A_parts))
 
     bloom_create_a = map(lambda p:
                          query_plan.add_operator(BloomCreate(
-                             settings.table_A_AB_join_key, 'bloom_create_a_{}'.format(p), query_plan, False)),
+                             settings.table_A_AB_join_key, 'bloom_create_a_{}'.format(p),
+                             query_plan, False)),
                          range(0, settings.table_A_parts))
 
     scan_B = \

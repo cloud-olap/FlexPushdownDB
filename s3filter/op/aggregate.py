@@ -106,7 +106,11 @@ class Aggregate(Operator):
                 self.producer_completions[producer_name] = True
             if self.use_pandas:
                 if all(self.producer_completions.values()):
-                    self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers)
+                    if len(self.agg_df) > 0:
+                        self.send(DataFrameMessage(self.agg_df.agg(['sum'])), self.consumers)
+                    else:
+                        # TODO: Should probably send an empty dataframe here
+                        pass
             else:
                 if all(self.producer_completions.values()):
                     # Build and send the field names

@@ -252,6 +252,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 sf,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -265,6 +266,8 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  table_B_filter_sql,
                  table_B_AB_join_key,
                  table_B_BC_join_key,
+                 table_B_primary_key,
+                 table_B_detail_field_name,
                  table_C_key,
                  table_C_parts,
                  table_C_sharded,
@@ -280,6 +283,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                                                         buffer_size,
                                                         use_shared_mem,
                                                         shared_memory_size,
+                                                        sf,
                                                         table_A_key,
                                                         table_A_parts,
                                                         table_A_sharded,
@@ -291,6 +295,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                                                         table_B_field_names,
                                                         table_B_AB_join_key,
                                                         table_B_BC_join_key,
+                                                        table_B_detail_field_name,
                                                         table_C_key,
                                                         table_C_parts,
                                                         table_C_sharded,
@@ -301,4 +306,5 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
         self.table_A_filter_sql = table_A_filter_sql
         self.table_B_filter_sql = table_B_filter_sql
         self.table_C_filter_sql = table_C_filter_sql
+        self.table_B_primary_key = table_B_primary_key
         self.table_C_primary_key = table_C_primary_key

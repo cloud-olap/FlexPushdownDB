@@ -127,7 +127,9 @@ class HashJoinBuild(Operator):
                 self.send(HashTableMessage(self.hashtable_df), self.consumers)
             elif self.hashtable is not None:
                 self.send(HashTableMessage(self.hashtable), self.consumers)
-            else:
-                raise Exception("All producers completed but have not received field value tuples")
+
+            # Note: It is a legitimate state for no tuples to be received, it just means an emtpy hash table
+            # else:
+            #     raise Exception("All producers completed but have not received field value tuples")
 
             Operator.on_producer_completed(self, producer_name)
