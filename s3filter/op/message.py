@@ -2,13 +2,15 @@
 """Operator messages
 
 """
+from s3filter.multiprocessing.message import MessageBase, DataFrameMessage
+from s3filter.multiprocessing.packet import PacketBase
 
 from s3filter.op.tuple import Tuple
 from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 from s3filter.hash.scalable_bloom_filter import ScalableBloomFilter
 
 
-class TupleMessage(object):
+class TupleMessage(MessageBase):
     """Message containing a tuple.
 
     """
@@ -19,13 +21,15 @@ class TupleMessage(object):
         :param tuple_: The tuple content of the message
         """
 
+        super(TupleMessage, self).__init__()
+
         if type(tuple_) is not Tuple:
             raise Exception("Message content type is {}. Type must be Tuple".format(type(tuple_)))
 
         self.tuple_ = tuple_
 
 
-class BloomMessage(object):
+class BloomMessage(MessageBase):
     """Message containing a bloom filter.
 
     """
@@ -36,6 +40,7 @@ class BloomMessage(object):
         :param bloom_filter: The bloom filter content of the message
         """
 
+        super(BloomMessage, self).__init__()
         if type(bloom_filter) is not ScalableBloomFilter and \
                 type(bloom_filter) is not SlicedBloomFilter:
             raise Exception("Message content type is {}. Type must be '{}', or '{}'"
@@ -46,10 +51,11 @@ class BloomMessage(object):
         self.bloom_filter = bloom_filter
 
 
-class HashTableMessage(object):
+class HashTableMessage(DataFrameMessage):
 
     def __init__(self, hashtable):
-        self.hashtable = hashtable
+        super(HashTableMessage, self).__init__(hashtable)
+
 
 class StringMessage(object):
     """Message containing a string.
@@ -66,3 +72,9 @@ class StringMessage(object):
             raise Exception("Message content type is {}. Type must be str".format(type(string_)))
 
         self.string_ = string_
+
+
+class DataMessage(object):
+
+    def __init(self, dataframe):
+        self.dataframe = dataframe

@@ -8,8 +8,9 @@ import time
 from boto3 import Session
 from botocore.config import Config
 
+from s3filter.multiprocessing.message import DataFrameMessage, StartMessage
 from s3filter.op.message import TupleMessage, StringMessage
-from s3filter.op.operator_base import Operator, StartMessage
+from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
@@ -45,7 +46,7 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_returned = 0
         self.num_http_get_requests = 0
 
-        self.cost_estimator = CostEstimator(self)
+        #self.cost_estimator = CostEstimator(self)
 
     def cost(self):
         """
@@ -117,7 +118,7 @@ class SQLTableScan(Operator):
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled):
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
         :param s3key: The object key to select against
         :param s3sql: The s3 select sql
@@ -138,13 +139,15 @@ class SQLTableScan(Operator):
                 self.s3 = session.client('s3', use_ssl=False, verify=False, config=cfg)
         # else:
         #     self.fast_s3 = scan
-
+        self.fn = fn
         self.s3key = s3key
         self.s3sql = s3sql
 
         self.use_pandas = use_pandas
 
         self.use_native = use_native
+
+        #self.filter_fn = fn
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -266,10 +269,12 @@ class SQLTableScan(Operator):
 
             buffer_ = pd.DataFrame()
             for df in dfs:
+                if op.fn:
+                    df = op.fn(df)
 
                 if first_tuple:
                     assert (len(df.columns.values) > 0)
-                    op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
+                    #op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
                     first_tuple = False
 
                     if op.log_enabled:
@@ -277,6 +282,10 @@ class SQLTableScan(Operator):
                               .format(op.__class__.__name__, op.name, df.columns.values))
 
                 op.op_metrics.rows_returned += len(df)
+
+                # Apply filter if there is one
+                #if op.filter_fn is not None:
+                #    df = df[op.filter_fn(df)]
 
                 # if op.log_enabled:
                 #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
@@ -288,7 +297,8 @@ class SQLTableScan(Operator):
                     if counter % 100 == 0:
                         print("Rows {}".format(op.op_metrics.rows_returned))
 
-                op.send(df, op.consumers)
+                op.send(DataFrameMessage(df), op.consumers)
+
                 # buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
                 # if len(buffer_) >= 8192:
                 #    op.send(buffer_, op.consumers)

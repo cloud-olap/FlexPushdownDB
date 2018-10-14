@@ -178,8 +178,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
 def run_all():
     use_pandas = True
-    stats = []
-    stats.append([
+    stats = [[
         'Method',
         'Table',
         'Sort Field',
@@ -198,7 +197,7 @@ def run_all():
         'Computation Cost $',
         'Total Cost $',
         'Succeeded'
-    ])
+    ]]
 
     # varying K
     for k in [100, 1000, 10000, 100000]:

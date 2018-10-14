@@ -2,6 +2,7 @@
 """Bloom filter creation support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
@@ -88,7 +89,7 @@ class BloomCreate(Operator):
 
         return bloom_filter
 
-    def connect(self, consumer):
+    def connect(self, consumer, tag=0):
         """Overrides the generic connect method to make sure that the connecting operator is an operator that consumes
         bloom filters.
 
@@ -113,8 +114,7 @@ class BloomCreate(Operator):
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, producer_name)
             elif type(m) is pd.DataFrame:
-                for t in m.values.tolist():
-                    self.__on_receive_tuple(t, producer_name)
+                self.__on_receive_dataframe(m, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -166,13 +166,13 @@ class BloomCreate(Operator):
         :return: None
         """
 
-        if not self.__field_names:
+        if self.__field_names is None:
 
             if self.bloom_field_name not in tuple_:
                 raise Exception(
-                    "Received invalid tuple {}. "
+                    "Received invalid tuple {} from {}. "
                     "Tuple field names '{}' do not contain field with bloom field name '{}'"
-                    .format(tuple_, tuple_, self.bloom_field_name))
+                    .format(tuple_, producer_name, tuple_, self.bloom_field_name))
 
             # Don't send the field names, just collect them
             self.__field_names = tuple_
@@ -192,3 +192,33 @@ class BloomCreate(Operator):
                 #
                 # # NOTE: Bloom filter only supports ints. Not clear how to make it support strings as yet
                 # self.__bloom_filter.add(int(lt[self.__bloom_field_name]))
+
+    def __on_receive_dataframe(self, df, producer_name):
+        """Event handler for receiving a dataframe
+
+        :param df: The received dataframe
+        :return: None
+        """
+
+        if self.__field_names is None:
+
+            if self.bloom_field_name not in df.columns.values:
+                raise Exception(
+                    "Received invalid tuple {} from {}. "
+                    "Tuple field names '{}' do not contain field with bloom field name '{}'"
+                    .format(tuple_, producer_name, tuple_, self.bloom_field_name))
+
+            # Don't send the field names, just collect them
+            self.__field_names = df.columns.values
+
+            self.producers_received[producer_name] = True
+
+
+        if producer_name not in self.producers_received.keys():
+            # This will be the field names tuple, skip it
+            self.producers_received[producer_name] = True
+
+        # TODO directly compute on df
+        for t in df.values.tolist():
+            self.__tuples.append(t)
+            self.op_metrics.tuple_count += 1

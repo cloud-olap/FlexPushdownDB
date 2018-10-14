@@ -2,6 +2,7 @@
 """Join support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, HashTableMessage
@@ -48,7 +49,7 @@ class HashJoinBuild(Operator):
 
         self.producers_received = {}
 
-        self.hashtable = {}
+        self.hashtable = None
 
         self.hashtable_df = None
 
@@ -59,19 +60,28 @@ class HashJoinBuild(Operator):
         :param producer_name: The producer of the tuple
         :return: None
         """
-        for m in ms:
-            if type(m) is TupleMessage:
-                self.on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.on_receive_dataframe(m, producer_name)
-            else:
-                raise Exception("Unrecognized message {}".format(m))
+
+        if self.use_shared_mem:
+            m = ms
+            self.on_receive_message(m, producer_name)
+        else:
+            for m in ms:
+                self.on_receive_message(m, producer_name)
+
+    def on_receive_message(self, m, producer_name):
+        if type(m) is TupleMessage:
+            self.on_receive_tuple(m.tuple_, producer_name)
+        elif isinstance(m, DataFrameMessage):
+            self.on_receive_dataframe(m.dataframe, producer_name)
+        else:
+            raise Exception("Unrecognized message {}".format(m))
 
     def on_receive_dataframe(self, df, _producer_name):
         if self.hashtable_df is None:
             self.hashtable_df = pd.DataFrame()
 
-        df.set_index(self.key, inplace=True, drop=False)
+        # Can't do this with shared mem, the index is lost when converting to numpy
+        # df.set_index(self.key, inplace=True, drop=False)
 
         self.hashtable_df = self.hashtable_df.append(df)
 
@@ -89,6 +99,10 @@ class HashJoinBuild(Operator):
                 # Will be field names, skip
                 self.producers_received[_producer_name] = True
             else:
+
+                if self.hashtable is None:
+                    self.hashtable = {}
+
                 self.op_metrics.rows_processed += 1
                 it = IndexedTuple(tuple_, self.field_names_index)
                 itd = self.hashtable.setdefault(it[self.key], [])
@@ -102,15 +116,20 @@ class HashJoinBuild(Operator):
 
         if all(self.producer_completions.values()):
 
-            if self.log_enabled:
-                print("{}('{}') | Hashtable is:\n{}".format(
-                    self.__class__.__name__,
-                    self.name,
-                    self.hashtable))
+            # if self.log_enabled:
+            #     print("{}('{}') | Hashtable is:\n py: {}, pandas: {}".format(
+            #         self.__class__.__name__,
+            #         self.name,
+            #         self.hashtable,
+            #         self.hashtable_df))
 
             if self.hashtable_df is not None:
                 self.send(HashTableMessage(self.hashtable_df), self.consumers)
-            else:
+            elif self.hashtable is not None:
                 self.send(HashTableMessage(self.hashtable), self.consumers)
+
+            # Note: It is a legitimate state for no tuples to be received, it just means an emtpy hash table
+            # else:
+            #     raise Exception("All producers completed but have not received field value tuples")
 
             Operator.on_producer_completed(self, producer_name)

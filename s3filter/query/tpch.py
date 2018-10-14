@@ -2,14 +2,13 @@
 import s3filter.util.constants
 
 def get_file_key(file_, sharded, shard=None, sf=None):
+
     if sf == None:
         sf = s3filter.util.constants.TPCH_SF
     if sf == 1:
         if sharded:
-            if file_ == 'lineitem':
-                return 'tpch-sf1/lineitem_sharded/lineitem.csv.{}'.format(shard)
-            elif file_ == 'part':
-                return '{}.csv'.format(file_)  # Not sharded yet
+            if file_ in ['lineitem', 'customer', 'orders']:
+                return 'tpch-sf1/{}_sharded/{}.csv.{}'.format(file_, file_, shard)
             else:
                 raise Exception()
         else:

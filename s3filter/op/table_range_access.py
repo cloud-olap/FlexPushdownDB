@@ -10,7 +10,8 @@ from boto3 import Session
 from botocore.config import Config
 
 from s3filter.op.message import TupleMessage, StringMessage
-from s3filter.op.operator_base import Operator, StartMessage
+from s3filter.multiprocessing.message import DataFrameMessage
+from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.native_cursor import NativeCursor
@@ -43,6 +44,10 @@ class TableRangeAccessMetrics(OpMetrics):
         self.bytes_scanned = 0
         self.bytes_processed = 0
         self.bytes_returned = 0
+        self.num_http_get_requests = 0
+
+    def data_cost(self, ec2_region=None):
+        return 0
 
     def cost(self):
         raise Exception("Not Implemented")
@@ -135,12 +140,6 @@ class TableRangeAccess(Operator):
         else:
             raise NotImplementedError
 
-        self.op_metrics.bytes_scanned = cur.bytes_scanned
-        self.op_metrics.bytes_processed = cur.bytes_processed
-        self.op_metrics.bytes_returned = cur.bytes_returned
-        self.op_metrics.time_to_first_record_response = cur.time_to_first_record_response
-        self.op_metrics.time_to_last_record_response = cur.time_to_last_record_response
-
         if not self.is_completed():
             self.complete()
 
@@ -150,8 +149,8 @@ class TableRangeAccess(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 pass
-            elif type(m) is pd.DataFrame:
-                self.cur.add_range(m)
+            elif isinstance(m, DataFrameMessage):
+                self.cur.add_range(m.dataframe)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -207,7 +206,7 @@ class TableRangeAccess(Operator):
                     if counter % 100 == 0:
                         print("Rows {}".format(op.op_metrics.rows_returned))
 
-                op.send(df, op.consumers)
+                op.send(DataFrameMessage(df), op.consumers)
                 # buffer_ = pd.concat([buffer_, df], axis=0, sort=False, ignore_index=True, copy=False)
                 # if len(buffer_) >= 8192:
                 #    op.send(buffer_, op.consumers)
@@ -217,7 +216,13 @@ class TableRangeAccess(Operator):
             #    op.send(buffer_, op.consumers)
             #    del buffer_
 
-            op.op_metrics.bytes_returned += op.cur.bytes_returned
+            op.op_metrics.bytes_scanned = op.cur.bytes_scanned
+            op.op_metrics.bytes_processed = op.cur.bytes_processed
+            op.op_metrics.bytes_returned = op.cur.bytes_returned
+            op.op_metrics.time_to_first_record_response = op.cur.time_to_first_record_response
+            op.op_metrics.time_to_last_record_response = op.cur.time_to_last_record_response
+            op.op_metrics.num_http_get_requests = op.cur.num_http_get_requests
+
             if not op.is_completed():
                 op.complete()
             return op.cur

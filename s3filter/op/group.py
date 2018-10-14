@@ -2,6 +2,7 @@
 """Group by with aggregate support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.aggregate_expression import AggregateExpressionContext
 from s3filter.op.operator_base import Operator
@@ -57,8 +58,8 @@ class Group(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, _producer)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m)
+            elif isinstance(m, DataFrameMessage):
+                self.__on_receive_dataframe(m.dataframe)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -172,8 +173,8 @@ class Group(Operator):
             self.aggregate_df.reset_index(drop=True, inplace=True)
 
             if self.aggregate_df is not None:
-                self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
-                self.send(self.aggregate_df, self.consumers)
+                #self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
+                self.send(DataFrameMessage(self.aggregate_df), self.consumers)
 
                 del self.aggregate_df
 
