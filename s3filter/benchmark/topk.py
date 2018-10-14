@@ -110,7 +110,8 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     parallel_shards = True
     processes = multiprocessing.cpu_count()
 
-    query_stats = ['sampling_{}'.format('conservative' if conservative else 'aggressive'), shards_prefix, sort_field,
+    query_stats = ['sampling_{}_{}'.format('conservative' if conservative else 'aggressive',
+                                           'filtered' if filtered else 'non-filtered'), shards_prefix, sort_field,
                    sort_order, limit, k_scale]
 
     sql = 'select * from S3Object;'
@@ -255,8 +256,9 @@ if __name__ == "__main__":
         shards_prefix = sys.argv[6]
         shards_start = int(sys.argv[7])
         shards_end = int(sys.argv[8])
-        if len(sys.argv) >= 10:
-            stats_file_name = sys.argv[9]
+        filtered = False if int(sys.argv[9]) == 0 else True
+        if len(sys.argv) >= 11:
+            stats_file_name = sys.argv[10]
         else:
             stats_file_name = 'topk_stats.txt'
 
@@ -270,7 +272,7 @@ if __name__ == "__main__":
                           col_name='l_extendedprice',
                           sort_order='DESC',
                           use_pandas=True,
-                          filtered=False,
+                          filtered=filtered,
                           table_name=table_name,
                           shards_prefix=shards_prefix,
                           shards_start=shards_start,
@@ -284,7 +286,7 @@ if __name__ == "__main__":
                                sort_field='l_extendedprice',
                                sort_order='DESC',
                                use_pandas=True,
-                               filtered=False,
+                               filtered=filtered,
                                conservative=is_conservative,
                                table_name=table_name,
                                shards_prefix=shards_prefix,
