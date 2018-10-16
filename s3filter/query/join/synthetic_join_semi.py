@@ -450,8 +450,20 @@ def query_plan(settings):
     # Inline some of the operators
     map(lambda o: o.set_async(False), project_a)
     map(lambda o: o.set_async(False), project_b)
-    if settings.table_C_key is not None:
+    map(lambda o: o.set_async(False), map_ab_a_join_key)
+    map(lambda o: o.set_async(False), map_ab_b_join_key)
+    if settings.table_C_key is None:
+        map(lambda o: o.set_async(False), map_b_pk_1)
+        map(lambda o: o.set_async(False), map_b_pk_2)
+        map(lambda o: o.set_async(False), project_b_detail)
+    else:
+        map(lambda o: o.set_async(False), map_bc_b_join_key)
+        map(lambda o: o.set_async(False), map_bc_c_join_key)
+        map(lambda o: o.set_async(False), map_c_pk_1)
+        map(lambda o: o.set_async(False), map_c_pk_2)
         map(lambda o: o.set_async(False), project_c)
+        map(lambda o: o.set_async(False), project_c_detail)
+    aggregate_project.set_async(False)
 
     # Connect the operators
     connect_many_to_many(scan_a, project_a)

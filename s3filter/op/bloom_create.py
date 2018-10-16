@@ -115,8 +115,8 @@ class BloomCreate(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m, producer_name)
+            elif isinstance(m, DataFrameMessage):
+                self.__on_receive_dataframe(m.dataframe, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 

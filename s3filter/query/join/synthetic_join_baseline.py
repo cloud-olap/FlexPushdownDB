@@ -274,9 +274,14 @@ def query_plan(settings):
     map(lambda o: o.set_async(False), filter_A)
     map(lambda o: o.set_async(False), project_B)
     map(lambda o: o.set_async(False), filter_b)
+    map(lambda o: o.set_async(False), map_A_to_B)
+    map(lambda o: o.set_async(False), map_B_to_B)
     if settings.table_C_key is not None:
+        map(lambda o: o.set_async(False), map_B_to_C)
+        map(lambda o: o.set_async(False), map_C_to_C)
         map(lambda o: o.set_async(False), project_C)
         map(lambda o: o.set_async(False), filter_c)
+    aggregate_project.set_async(False)
 
     # Connect the operators
     connect_many_to_many(scan_A, project_A)

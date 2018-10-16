@@ -20,8 +20,8 @@ class ScaleSetting(object):
 def main():
     print("--- SYNTHETIC JOIN START ---")
 
-    # sf = 1
-    sf = 10
+    sf = 1
+    # sf = 10
 
     parts = 2
     # parts = 32
@@ -37,18 +37,18 @@ def main():
     # fp_rate = 0.5
 
     # 2 way join
-    # synthetic_join_2_baseline.main(sf, parts, sharded, expected_result=JOIN_2_RESULT)
-    # synthetic_join_2_filtered.main(sf, parts, sharded, expected_result=JOIN_2_RESULT)
+    synthetic_join_2_baseline.main(sf, parts, sharded, expected_result=JOIN_2_RESULT)
+    synthetic_join_2_filtered.main(sf, parts, sharded, expected_result=JOIN_2_RESULT)
 
     synthetic_join_2_bloom.main(sf, parts, sharded, fp_rate=fp_rate, expected_result=JOIN_2_RESULT)
-    # synthetic_join_2_semi.main(sf, parts, sharded, fp_rate=fp_rate, expected_result=JOIN_2_RESULT)
+    synthetic_join_2_semi.main(sf, parts, sharded, fp_rate=fp_rate, expected_result=JOIN_2_RESULT)
 
     # 3 way join
-    # synthetic_join_3_baseline.main(sf, parts, sharded, expected_result=JOIN_3_RESULT)
-    # synthetic_join_3_filtered.main(sf, parts, sharded, expected_result=JOIN_3_RESULT)
+    synthetic_join_3_baseline.main(sf, parts, sharded, expected_result=JOIN_3_RESULT)
+    synthetic_join_3_filtered.main(sf, parts, sharded, expected_result=JOIN_3_RESULT)
 
-    # synthetic_join_3_bloom.main(sf, parts, sharded, fp_rate=fp_rate, expected_result=JOIN_3_RESULT)
-    # synthetic_join_3_semi.main(sf, parts, sharded, fp_rate=fp_rate, expected_result=JOIN_3_RESULT)
+    synthetic_join_3_bloom.main(sf, parts, sharded, fp_rate=fp_rate, expected_result=JOIN_3_RESULT)
+    synthetic_join_3_semi.main(sf, parts, sharded, fp_rate=fp_rate, expected_result=JOIN_3_RESULT)
 
     print("--- SYNTHETIC JOIN END ---")
 

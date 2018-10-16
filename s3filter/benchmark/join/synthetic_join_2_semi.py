@@ -47,4 +47,4 @@ def main(sf, parts, sharded, fp_rate, expected_result):
 
 
 if __name__ == "__main__":
-    main(1, JOIN_2_RESULT, 0.3)
+    main(1, 2, False, 0.3, JOIN_2_RESULT)
