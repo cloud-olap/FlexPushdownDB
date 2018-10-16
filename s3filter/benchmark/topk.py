@@ -124,7 +124,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     print("\n\nSampling params:")
     print("Scale: {}, Sort Field: {}, Sort Order: {}\n".format(k_scale, sort_field, sort_order))
 
-    query_plan = QueryPlan(is_async=True)
+    query_plan = QueryPlan(None, is_async=True)
 
     # Query plan
     ts = query_plan.add_operator(
@@ -200,9 +200,9 @@ def run_all():
     ]]
 
     # varying K
-    for k in [100, 1000, 10000, 100000]:
+    # for k in [100, 1000, 10000, 100000]:
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
-        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
 
@@ -213,18 +213,19 @@ def run_all():
             topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
                                filtered=False,
                                conservative=True)
-            topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
-                               filtered=False,
-                               conservative=False)
+            # topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
+            #                    filtered=False,
+            #                    conservative=False)
 
     for stat in stats:
         print(",".join([str(x) if type(x) is not str else x for x in stat]))
 
 
 if __name__ == "__main__":
-    # run_all()
-    import sys,os
+    run_all()
 
+    import sys,os
+    sys.exit(0)
     stats_header = [
         'Method',
         'Table',

@@ -3,7 +3,7 @@ from enum import Enum
 __author__ = "Abdurrahman Ghanem <abghanem@qf.org.qa>"
 
 
-class AWSRegion(Enum):
+class AWSRegion:
     """
     Listing aws regions
     """
@@ -37,7 +37,7 @@ class AWSRegion(Enum):
         return all_vars
 
 
-class EC2InstanceOS(Enum):
+class EC2InstanceOS:
     """
     Listing EC2 OS type for different instances
     """
@@ -48,7 +48,7 @@ class EC2InstanceOS(Enum):
     Windows = "Windows"
 
 
-class EC2InstanceType(Enum):
+class EC2InstanceType:
     """
     listing of EC2 instance types
     """
