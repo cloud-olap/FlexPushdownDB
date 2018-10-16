@@ -80,7 +80,7 @@ def query_plan(settings):
     bloom_create_a = map(lambda p:
                          query_plan.add_operator(BloomCreate(
                              settings.table_A_AB_join_key, 'bloom_create_a_{}'.format(p),
-                             query_plan, False)),
+                             query_plan, False, settings.fp_rate)),
                          range(0, settings.table_A_parts))
 
     scan_B = \
@@ -119,7 +119,7 @@ def query_plan(settings):
                         [ProjectExpression(k, v) for k, v in field_names_map_B.iteritems()],
                         'project_B_{}'.format(p),
                         query_plan,
-                        True,
+                        False,
                         project_fn_B)),
                     range(0, settings.table_B_parts))
 
@@ -160,7 +160,7 @@ def query_plan(settings):
                             [ProjectExpression(k, v) for k, v in field_names_map_C.iteritems()],
                             'project_C_{}'.format(p),
                             query_plan,
-                            True,
+                            False,
                             project_fn_C)),
                         range(0, settings.table_C_parts))
 
@@ -191,7 +191,7 @@ def query_plan(settings):
 
         bloom_create_ab = map(lambda p:
                               query_plan.add_operator(BloomCreate(
-                                  settings.table_B_BC_join_key, 'bloom_create_ab_{}'.format(p), query_plan, False)),
+                                  settings.table_B_BC_join_key, 'bloom_create_ab_{}'.format(p), query_plan, False, settings.fp_rate)),
                               range(0, settings.table_B_parts))
 
     map_A_to_B = map(lambda p:
@@ -267,6 +267,12 @@ def query_plan(settings):
         False))
 
     collate = query_plan.add_operator(Collate('collate', query_plan, False))
+
+    # Inline some of the operators
+    map(lambda o: o.set_async(False), project_A)
+    map(lambda o: o.set_async(False), project_B)
+    if settings.table_C_key is not None:
+        map(lambda o: o.set_async(False), project_C)
 
     # Connect the operators
     connect_many_to_many(scan_A, project_A)

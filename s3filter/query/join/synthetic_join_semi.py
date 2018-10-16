@@ -79,7 +79,7 @@ def query_plan(settings):
     bloom_create_ab_join_key = map(lambda p:
                                    query_plan.add_operator(BloomCreate(
                                        settings.table_A_AB_join_key, 'bloom_create_ab_join_key' + '_{}'.format(p),
-                                       query_plan, False)),
+                                       query_plan, False, fp_rate=settings.fp_rate)),
                                    range(0, settings.table_A_parts))
 
     scan_b_on_ab_join_key = \
@@ -165,7 +165,7 @@ def query_plan(settings):
         bloom_create_b_pk = map(lambda p:
                                 query_plan.add_operator(BloomCreate(
                                     settings.table_B_primary_key,
-                                    'bloom_create_b_pk' + '_{}'.format(p), query_plan, False)),
+                                    'bloom_create_b_pk' + '_{}'.format(p), query_plan, False, fp_rate=settings.fp_rate)),
                                 range(0, settings.table_B_parts))
 
         join_probe_ab_and_b_on_b_pk = map(lambda p:
@@ -289,7 +289,7 @@ def query_plan(settings):
         bloom_create_c_pk = map(lambda p:
                                 query_plan.add_operator(BloomCreate(
                                     settings.table_C_primary_key,
-                                    'bloom_create_bc_b_to_c_join_key_{}'.format(p), query_plan, False)),
+                                    'bloom_create_bc_b_to_c_join_key_{}'.format(p), query_plan, False, fp_rate=settings.fp_rate)),
                                 range(0, settings.table_C_parts))
 
         join_build_ab_and_c_on_bc_join_key = map(lambda p:
@@ -306,7 +306,7 @@ def query_plan(settings):
                                                          JoinExpression(settings.table_B_BC_join_key,
                                                                         settings.table_C_BC_join_key),
                                                          'join_probe_ab_and_c_on_bc_join_key' + '_{}'.format(p),
-                                                         query_plan, True)),
+                                                         query_plan, False)),
                                                  range(0, settings.table_C_parts))
 
         join_build_abc_and_c_on_c_pk = map(lambda p:
@@ -315,7 +315,7 @@ def query_plan(settings):
                                                              'join_build_abc_and_c_on_c_pk' + '_{}'.format(
                                                                  p),
                                                              query_plan,
-                                                             True)),
+                                                             False)),
                                            range(0, settings.table_C_parts))
 
         join_probe_abc_and_c_on_c_pk = map(lambda p:
@@ -446,6 +446,12 @@ def query_plan(settings):
         False))
 
     collate = query_plan.add_operator(Collate('collate', query_plan, False))
+
+    # Inline some of the operators
+    map(lambda o: o.set_async(False), project_a)
+    map(lambda o: o.set_async(False), project_b)
+    if settings.table_C_key is not None:
+        map(lambda o: o.set_async(False), project_c)
 
     # Connect the operators
     connect_many_to_many(scan_a, project_a)

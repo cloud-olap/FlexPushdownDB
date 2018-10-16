@@ -3,7 +3,7 @@ import s3filter.util.constants
 
 def get_file_key(file_, sharded, shard=None, sf=None):
 
-    if sf == None:
+    if sf is None:
         sf = s3filter.util.constants.TPCH_SF
     if sf == 1:
         if sharded:

@@ -190,6 +190,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                  use_shared_mem,
                  shared_memory_size,
                  sf,
+                 fp_rate,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -241,6 +242,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
         self.table_A_filter_sql = table_A_filter_sql
         self.table_B_filter_sql = table_B_filter_sql
         self.table_C_filter_sql = table_C_filter_sql
+        self.fp_rate = fp_rate
 
 
 class SyntheticSemiJoinSettings(SyntheticJoinSettings):
@@ -253,6 +255,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  use_shared_mem,
                  shared_memory_size,
                  sf,
+                 fp_rate,
                  table_A_key,
                  table_A_parts,
                  table_A_sharded,
@@ -308,3 +311,5 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
         self.table_C_filter_sql = table_C_filter_sql
         self.table_B_primary_key = table_B_primary_key
         self.table_C_primary_key = table_C_primary_key
+
+        self.fp_rate = fp_rate
