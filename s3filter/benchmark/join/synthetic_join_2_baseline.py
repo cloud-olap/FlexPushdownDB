@@ -4,21 +4,18 @@
 """
 
 from datetime import datetime
-
 from s3filter.benchmark.join import runner
-from s3filter.benchmark.join.join_result import JOIN_2_RESULT
-
+from s3filter.benchmark.join.join_result import SF1_JOIN_2_RESULT
 from s3filter.query.join import synthetic_join_baseline
 from s3filter.query.join.synthetic_join_settings import SyntheticBaselineJoinSettings
 import pandas as pd
-
 from s3filter.util.test_util import gen_test_id
 import numpy as np
 
 
 def main(sf, parts, sharded, expected_result):
-    max_orderdate = datetime.strptime('1992-01-15', '%Y-%m-%d')
-    min_shipdate = datetime.strptime('1992-01-15', '%Y-%m-%d')
+    max_orderdate = datetime.strptime('1995-01-01', '%Y-%m-%d')
+    # max_shipdate = datetime.strptime('1992-01-15', '%Y-%m-%d')
 
     settings = SyntheticBaselineJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
@@ -29,7 +26,7 @@ def main(sf, parts, sharded, expected_result):
         table_A_field_names=['c_custkey', 'c_name', 'c_address', 'c_nationkey', 'c_phone', 'c_acctbal',
                              'c_mktsegment',
                              'c_comment'],
-        table_A_filter_fn=lambda df: df['c_custkey'].astype(np.int) <= 100,
+        table_A_filter_fn=lambda df: df['c_acctbal'].astype(np.float) <= -999.0,
         table_A_AB_join_key='c_custkey',
         table_B_key='orders',
         table_B_parts=parts,
@@ -57,4 +54,4 @@ def main(sf, parts, sharded, expected_result):
 
 
 if __name__ == "__main__":
-    main(1, JOIN_2_RESULT)
+    main(1, SF1_JOIN_2_RESULT)

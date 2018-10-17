@@ -92,5 +92,7 @@ class Graph(object):
         :return: None
         """
 
-        self.graph.layout(prog='dot')
-        self.graph.draw("{}/{}.svg".format(test_output_dir, self.name))
+        # NOTE: This is taking a long time with the large query plans, uncomment it to see the graph
+
+        # self.graph.layout(prog='dot')
+        # self.graph.draw("{}/{}.svg".format(test_output_dir, self.name))
