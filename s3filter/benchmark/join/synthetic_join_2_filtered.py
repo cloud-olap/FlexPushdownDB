@@ -22,8 +22,9 @@ def main(sf, parts, sharded, expected_result):
         table_B_key='orders',
         table_B_parts=parts,
         table_B_sharded=sharded,
-        table_B_field_names=['o_orderkey', 'o_custkey', 'o_totalprice'],
-        table_B_filter_sql='cast(o_orderdate as timestamp) < cast(\'1995-01-01\' as timestamp)',
+        table_B_field_names=['o_orderkey', 'o_custkey', 'o_orderstatus', 'o_totalprice', 'o_orderdate',
+                             'o_orderpriority', 'o_clerk', 'o_shippriority', 'o_comment'],
+        table_B_filter_sql='cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)',
         table_B_AB_join_key='o_custkey',
         table_B_BC_join_key=None,
         table_B_detail_field_name='o_totalprice',
@@ -44,4 +45,4 @@ def main(sf, parts, sharded, expected_result):
 
 
 if __name__ == "__main__":
-    main(1, 2, False, SF1_JOIN_2_RESULT)
+    main(1, 4, False, SF1_JOIN_2_RESULT)

@@ -14,7 +14,7 @@ import numpy as np
 
 
 def main(sf, parts, sharded, expected_result):
-    max_orderdate = datetime.strptime('1995-01-01', '%Y-%m-%d')
+    max_orderdate = datetime.strptime('1998-01-01', '%Y-%m-%d')
     # max_shipdate = datetime.strptime('1992-01-15', '%Y-%m-%d')
 
     settings = SyntheticBaselineJoinSettings(
@@ -54,4 +54,4 @@ def main(sf, parts, sharded, expected_result):
 
 
 if __name__ == "__main__":
-    main(1, SF1_JOIN_2_RESULT)
+    main(1, 2, False, SF1_JOIN_2_RESULT)
