@@ -30,7 +30,7 @@ def main():
             part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10)
     elif s3filter.util.constants.TPCH_SF == 1:
         run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-            part_parts=4, lineitem_sharded=True, part_sharded=False)
+            part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1)
         # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
         #     part_parts=2, lineitem_sharded=False, part_sharded=False, sf=1)
 

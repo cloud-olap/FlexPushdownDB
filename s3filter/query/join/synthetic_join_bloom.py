@@ -285,7 +285,7 @@ def query_plan(settings):
     connect_all_to_all(map_A_to_B, join_build_A_B)
     connect_many_to_many(join_build_A_B, join_probe_A_B)
 
-    connect_all_to_all(project_A, bloom_create_a)
+    connect_all_to_all(map_A_to_B, bloom_create_a)
     connect_many_to_many(bloom_create_a, scan_B)
     connect_many_to_many(scan_B, project_B)
     connect_many_to_many(project_B, map_B_to_B)
