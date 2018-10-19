@@ -204,15 +204,14 @@ def sql_scan_part_partkey_where_brand12_operator_def(sharded, shard, num_shards,
 
 
 def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan):
-    key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
-    key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
-
     return SQLTableScan(get_file_key('part', sharded, shard),
                         "select * from S3Object "
-                        "where "
-                        "  cast(p_partkey as int) >= {} and cast(p_partkey as int) < {} "
-                        .format(key_lower, key_upper), use_pandas, secure, use_native,
-                        name, query_plan,
+                        .format(get_sql_suffix('part', num_shards, shard, sharded, add_where=True)),
+                        use_pandas,
+                        secure,
+                        use_native,
+                        name,
+                        query_plan,
                         False)
 
 
@@ -246,10 +245,15 @@ def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, u
 #                         False)
 
 
-def sql_scan_lineitem_operator_def(sharded, shard, use_pandas, secure, use_native, name, query_plan):
-    return SQLTableScan(get_file_key('lineitem', sharded, shard),
-                        "select * from S3Object;", use_pandas, secure, use_native,
-                        name, query_plan,
+def sql_scan_lineitem_operator_def(sharded, shard, parts, use_pandas, secure, use_native, name, query_plan, sf):
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
+                        "select * from S3Object "
+                        .format(get_sql_suffix('lineitem', parts, shard, sharded, add_where=True)),
+                        use_pandas,
+                        secure,
+                        use_native,
+                        name,
+                        query_plan,
                         False)
 
 
@@ -446,7 +450,8 @@ def bloom_scan_part_partkey_type_brand12_operator_def(sharded, shard, num_shards
                                 False)
 
 
-def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, parts, sharded, shard, use_pandas,
+def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, parts, sharded, shard,
+                                                    use_pandas,
                                                     secure, use_native,
                                                     name, query_plan):
     return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
