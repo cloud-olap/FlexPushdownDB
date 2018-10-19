@@ -514,6 +514,7 @@ def sql_scan_part_partkey_brand_size_container_where_extra_filtered_op(sharded,
 
 
 def get_sql_suffix(key, num_shards, shard, sharded, add_where=False):
+    # type: (str, int, int, bool, bool) -> object
 
     sql_suffix = ""
 

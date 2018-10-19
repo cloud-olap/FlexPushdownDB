@@ -401,12 +401,12 @@ def filter_shipdate_operator_def(min_shipped_date, max_shipped_date, name, query
         False)
 
 
-def bloom_create_l_partkey_operator_def(name, query_plan):
-    return BloomCreate('l_partkey', name, query_plan, False)
+def bloom_create_l_partkey_operator_def(fp_rate, name, query_plan):
+    return BloomCreate('l_partkey', name, query_plan, False, fp_rate)
 
 
-def bloom_create_p_partkey_operator_def(name, query_plan):
-    return BloomCreate('p_partkey', name, query_plan, False)
+def bloom_create_p_partkey_operator_def(fp_rate, name, query_plan):
+    return BloomCreate('p_partkey', name, query_plan, False, fp_rate)
 
 
 def project_l_partkey_operator_def(name, query_plan):
@@ -446,7 +446,7 @@ def bloom_scan_part_partkey_type_brand12_operator_def(sharded, shard, num_shards
                                 False)
 
 
-def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, sharded, shard, use_pandas,
+def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, parts, sharded, shard, use_pandas,
                                                     secure, use_native,
                                                     name, query_plan):
     return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
@@ -457,9 +457,11 @@ def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shippe
                                 "where "
                                 "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
                                 "  cast(l_shipdate as timestamp) < cast(\'{}\' as timestamp) "
+                                "  {}"
                                 " ".format(
                                     min_shipped_date.strftime('%Y-%m-%d'),
-                                    max_shipped_date.strftime('%Y-%m-%d'))
+                                    max_shipped_date.strftime('%Y-%m-%d'),
+                                    get_sql_suffix('lineitem', parts, shard, sharded))
                                 ,
                                 'l_partkey',
                                 use_pandas,
