@@ -132,4 +132,4 @@ class HashJoinBuild(Operator):
             # else:
             #     raise Exception("All producers completed but have not received field value tuples")
 
-            Operator.on_producer_completed(self, producer_name)
+        Operator.on_producer_completed(self, producer_name)
