@@ -20,19 +20,23 @@ from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q19
 from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
+import pandas as pd
+import numpy as np
 
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
         run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            part_parts=4, lineitem_sharded=True, part_sharded=True)
+            part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10, fp_rate=0.001)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-            part_parts=4, lineitem_sharded=True, part_sharded=False)
+        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
+        #     part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1, fp_rate=0.001)
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
+            part_parts=2, lineitem_sharded=False, part_sharded=False, sf=1, fp_rate=0.001)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded):
+        part_sharded, sf, fp_rate):
     """
 
     :return: None
@@ -55,13 +59,13 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                     use_pandas,
                     secure,
                     use_native,
-                    'lineitem_bloom_use' + '_' + str(p), query_plan)),
+                    'lineitem_bloom_use' + '_' + str(p), query_plan, sf)),
             range(0, lineitem_parts))
 
     part_bloom_create = map(lambda p:
                             query_plan.add_operator(tpch_q19.bloom_create_partkey_op(
                                 'part_bloom_create' + '_' + str(p),
-                                query_plan)),
+                                query_plan, fp_rate)),
                             range(0, part_parts))
 
     part_scan = map(lambda p:
@@ -74,7 +78,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                             secure,
                             use_native,
                             'part_scan' + '_' + str(p),
-                            query_plan)),
+                            query_plan, sf)),
                     range(0, part_parts))
 
     lineitem_project = \
@@ -130,17 +134,22 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                     query_plan.add_operator(tpch_q19.filter_def('filter_op' + '_' + str(p), query_plan)),
                     range(0, part_parts))
     aggregate = map(lambda p:
-                    query_plan.add_operator(tpch_q19.aggregate_def('aggregate' + '_' + str(p), query_plan)),
+                    query_plan.add_operator(tpch_q19.aggregate_def('aggregate' + '_' + str(p), query_plan, use_pandas)),
                     range(0, part_parts))
+
+    def aggregate_reduce_fn(df):
+        sum1_ = df['_0'].astype(np.float).sum()
+        return pd.DataFrame({'_0': [sum1_]})
 
     aggregate_reduce = query_plan.add_operator(
         Aggregate(
             [
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0']))
             ],
+            use_pandas,
             'aggregate_reduce',
             query_plan,
-            False))
+            False, aggregate_reduce_fn))
 
     aggregate_project = query_plan.add_operator(
         tpch_q19.aggregate_project_def('aggregate_project', query_plan))
@@ -155,7 +164,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     connect_all_to_all(part_project, part_bloom_create)
 
     # part_bloom_create.connect(lineitem_bloom_use)
-    connect_all_to_all(part_bloom_create, lineitem_bloom_use)
+    connect_many_to_many(part_bloom_create, lineitem_bloom_use)
 
     # lineitem_bloom_use.connect(lineitem_project)
     connect_many_to_many(lineitem_bloom_use, lineitem_project)

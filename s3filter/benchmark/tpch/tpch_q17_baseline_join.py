@@ -29,10 +29,11 @@ def main():
         run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
             part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-            part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1)
-        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
-        #     part_parts=2, lineitem_sharded=False, part_sharded=False, sf=1)
+        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
+        #     part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1)
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=1,
+            part_parts=1, lineitem_sharded=False, part_sharded=False, sf=1)
+
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
         part_sharded, sf):
@@ -71,7 +72,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                             use_native,
                             'part_scan' + '_' + str(p),
                             query_plan,
-                        sf)),
+                            sf)),
                     range(0, part_parts))
 
     lineitem_scan = map(lambda p:
@@ -85,7 +86,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                 use_native,
                                 'lineitem_scan' + '_' + str(p),
                                 query_plan,
-                            sf)),
+                                sf)),
                         range(0, lineitem_parts))
 
     part_project = map(lambda p:
@@ -115,11 +116,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                        query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
                        range(0, lineitem_parts))
 
-    # part_lineitem_join = map(lambda p:
-    #                          query_plan.add_operator(
-    #                              tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join', query_plan)),
-    #                          range(0, lineitem_parts))
-
     part_lineitem_join_build = map(lambda p:
                                    query_plan.add_operator(
                                        HashJoinBuild('p_partkey',
@@ -145,12 +141,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                               tpch_q17.project_partkey_avg_quantity_op(
                                                   'lineitem_part_avg_group_project' + '_' + str(p), query_plan)),
                                           range(0, part_parts))
-
-    # part_lineitem_join_avg_group_join = map(lambda p:
-    #                                         query_plan.add_operator(
-    #                                             tpch_q17.join_l_partkey_p_partkey_op(
-    #                                                 'part_lineitem_join_avg_group_join', query_plan)),
-    #                                         range(0, lineitem_parts))
 
     part_lineitem_join_avg_group_join_build = \
         map(lambda p:
@@ -203,9 +193,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     collate = query_plan.add_operator(tpch_q17.collate_op('collate', query_plan))
 
     # Inline what we can
-    map(lambda o: o.set_async(False), lineitem_project)
-    map(lambda o: o.set_async(False), part_project)
-    extendedprice_sum_aggregate_project.set_async(False)
+    # map(lambda o: o.set_async(False), lineitem_project)
+    # map(lambda o: o.set_async(False), part_project)
+    # extendedprice_sum_aggregate_project.set_async(False)
 
     # Connect the operators
     # part_scan.connect(part_project)

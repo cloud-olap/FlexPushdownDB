@@ -196,12 +196,12 @@ def project_partkey_avg_quantity_op(name, query_plan):
     def fn(df):
         # return df[['_0', '_1', '_2']]
 
-        df['_1'] = 0.2 * df['_1'].astype(np.float)
+        df['avg_l_quantity_computed00'] = 0.2 * (df['sum_l_quantity_computed00'].astype(np.float) / df['cnt_l_quantity_computed00'].astype(np.float))
 
-        df = df.filter(items=['_0', '_1'], axis=1)
+        df = df.filter(items=['l_partkey', 'avg_l_quantity_computed00'], axis=1)
 
-        df.rename(columns={'_0': 'l_partkey', '_1': 'avg_l_quantity_computed00',},
-                  inplace=True)
+        # df.rename(columns={'l_partkey': 'l_partkey', 'l_quantity': 'avg_l_quantity_computed00'},
+        #           inplace=True)
 
         return df
 
@@ -243,7 +243,7 @@ def filter_lineitem_quantity_op(name, query_plan):
     """
 
     def pd_expr(df):
-        return (df['l_quantity'] < df['avg_l_quantity_computed00'])
+        return (df['l_quantity'].astype(np.float) < df['avg_l_quantity_computed00'])
 
     return Filter(PredicateExpression(lambda t_: float(t_['l_quantity']) < t_['avg_l_quantity_computed00'], pd_expr),
                   name, query_plan, False, )
@@ -291,7 +291,10 @@ def group_partkey_avg_quantity_op(name, query_plan):
     def groupby_fn(df):
         df['l_quantity'] = df['l_quantity'].astype(np.float)
         grouped = df.groupby('l_partkey')
-        agg_df = grouped['l_quantity'].mean()
+        agg_df = pd.DataFrame({
+            'sum_l_quantity_computed00': grouped['l_quantity'].sum(),
+            'cnt_l_quantity_computed00': grouped['l_quantity'].size()
+        })
         return agg_df.reset_index()
 
     return Group(
@@ -316,7 +319,13 @@ def group_partkey_avg_quantity_5_op(name, query_plan):
     def groupby_fn(df):
         df['l_quantity'] = df['l_quantity'].astype(np.float)
         grouped = df.groupby('l_partkey')
-        agg_df = grouped['l_quantity'].mean()
+        # agg_df = grouped['l_quantity'].sum()
+
+        agg_df = pd.DataFrame({
+            'sum_l_quantity_computed00': grouped['l_quantity'].sum(),
+            'cnt_l_quantity_computed00': grouped['l_quantity'].size()
+        })
+
         return agg_df.reset_index()
 
     return Group(
@@ -327,7 +336,7 @@ def group_partkey_avg_quantity_5_op(name, query_plan):
             AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_[5]))
         ],
         name, query_plan,
-        False, groupby_fn)
+        True, groupby_fn)
 
 
 def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf):

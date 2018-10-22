@@ -29,10 +29,10 @@ def main():
         run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
             part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-            part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1)
-        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
-        #     part_parts=2, lineitem_sharded=False, part_sharded=False, sf=1)
+        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
+        #     part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1)
+        run(parallel=True, use_pandas=False, secure=False, use_native=False, buffer_size=0, lineitem_parts=1,
+            part_parts=1, lineitem_sharded=False, part_sharded=False, sf=1)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
@@ -73,7 +73,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                 secure,
                                 use_native,
                                 'lineitem_scan' + '_' + str(p),
-                                query_plan)),
+                                query_plan, sf)),
                         range(0, lineitem_parts))
 
     part_project = map(lambda p:
