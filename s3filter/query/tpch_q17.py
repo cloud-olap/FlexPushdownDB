@@ -336,7 +336,7 @@ def group_partkey_avg_quantity_5_op(name, query_plan):
             AggregateExpression(AggregateExpression.AVG, lambda t_: float(t_[5]))
         ],
         name, query_plan,
-        True, groupby_fn)
+        False, groupby_fn)
 
 
 def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf):
@@ -544,5 +544,5 @@ def bloom_scan_lineitem_select_orderkey_partkey_quantity_extendedprice_bloom_par
                                 False)
 
 
-def bloom_create_partkey_op(name, query_plan):
-    return BloomCreate('p_partkey', name, query_plan, False)
+def bloom_create_partkey_op(fp_rate, name, query_plan):
+    return BloomCreate('p_partkey', name, query_plan, False, fp_rate)

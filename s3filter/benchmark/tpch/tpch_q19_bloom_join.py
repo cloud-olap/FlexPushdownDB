@@ -8,6 +8,7 @@ import os
 import numpy
 
 from s3filter import ROOT_DIR
+from s3filter.benchmark.tpch import tpch_results
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
@@ -24,19 +25,14 @@ import pandas as pd
 import numpy as np
 
 
-def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10, fp_rate=0.001)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-        #     part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1, fp_rate=0.001)
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
-            part_parts=2, lineitem_sharded=False, part_sharded=False, sf=1, fp_rate=0.001)
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, fp_rate, expected_result):
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, fp_rate=fp_rate,
+        expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf, fp_rate):
+        part_sharded, sf, fp_rate, expected_result):
     """
 
     :return: None
@@ -227,8 +223,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    numpy.testing.assert_almost_equal(tuples[1], 3468861.097000001)
+    numpy.testing.assert_approx_equal(float(tuples[1][0]), expected_result)
 
 
 if __name__ == "__main__":
-    main()
+    main(1, 2, False, 0.1, tpch_results.q19_sf1_expected_result)

@@ -24,19 +24,14 @@ import pandas as pd
 import numpy as np
 
 
-def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-        #     part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1)
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=4,
-            part_parts=4, lineitem_sharded=False, part_sharded=False, sf=1)
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, fp_rate, expected_result):
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, fp_rate=fp_rate,
+        expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf):
+        part_sharded, sf, fp_rate, expected_result):
     """
     :return: None
     """
@@ -77,7 +72,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
     part_bloom_create = map(lambda p:
                             query_plan.add_operator(
-                                tpch_q17.bloom_create_partkey_op('part_bloom_create' + '_' + str(p), query_plan)),
+                                tpch_q17.bloom_create_partkey_op(fp_rate, 'part_bloom_create' + '_' + str(p),
+                                                                 query_plan)),
                             range(0, part_parts))
 
     lineitem_bloom_use = \
@@ -92,7 +88,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                     use_native,
                     'lineitem_bloom_use' + '_' + str(p),
                     query_plan,
-                sf)),
+                    sf)),
             range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:
@@ -284,7 +280,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
         assert round(float(tuples[1][0]),
                      10) == 372414.2899999995  # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
     elif s3filter.util.constants.TPCH_SF == 1:
-        numpy.testing.assert_approx_equal(float(tuples[1][0]), 372414.29)
+        numpy.testing.assert_approx_equal(float(tuples[1][0]), expected_result)
 
 
 if __name__ == "__main__":

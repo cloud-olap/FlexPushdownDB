@@ -186,11 +186,11 @@ def sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(shard
 
 
 def sql_scan_part_partkey_where_brand12_operator_def(sharded, shard, num_shards, use_pandas, secure, use_native, name,
-                                                     query_plan):
-    key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
-    key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
+                                                     query_plan, sf):
+    # key_lower = math.ceil((200000.0 / float(num_shards)) * shard)
+    # key_upper = math.ceil((200000.0 / float(num_shards)) * (shard + 1))
 
-    return SQLTableScan(get_file_key('part', sharded),
+    return SQLTableScan(get_file_key('part', sharded, shard, sf),
                         "select "
                         "  p_partkey "
                         "from "
@@ -203,8 +203,8 @@ def sql_scan_part_partkey_where_brand12_operator_def(sharded, shard, num_shards,
                         False)
 
 
-def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan):
-    return SQLTableScan(get_file_key('part', sharded, shard),
+def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf):
+    return SQLTableScan(get_file_key('part', sharded, shard, sf),
                         "select * from S3Object "
                         .format(get_sql_suffix('part', num_shards, shard, sharded, add_where=True)),
                         use_pandas,
@@ -257,8 +257,8 @@ def sql_scan_lineitem_operator_def(sharded, shard, parts, use_pandas, secure, us
                         False)
 
 
-def sql_scan_lineitem_extra_filtered_operator_def(sharded, shard, use_pandas, secure, use_native, name, query_plan):
-    return SQLTableScan(get_file_key('lineitem', sharded, shard),
+def sql_scan_lineitem_extra_filtered_operator_def(sharded, shard, use_pandas, secure, use_native, name, query_plan, sf):
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
                         "select "
                         "  * "
                         "from "
@@ -332,10 +332,14 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_sharded_oper
 
 def sql_scan_lineitem_where_shipdate_sharded_operator_def(min_shipped_date,
                                                           max_shipped_date,
-                                                          shard, use_pandas, secure, use_native,
+                                                          shard,
+                                                          sharded,
+                                                          use_pandas,
+                                                          secure,
+                                                          use_native,
                                                           name,
-                                                          query_plan):
-    return SQLTableScan(get_file_key('lineitem', True, shard),
+                                                          query_plan, sf):
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
                         "select * from S3Object "
                         "where "
                         "  cast(l_shipdate as timestamp) >= cast(\'{}\' as timestamp) and "
@@ -350,11 +354,11 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_partitioned_
                                                                                              max_shipped_date, part,
                                                                                              parts, use_pandas, secure,
                                                                                              use_native,
-                                                                                             name, query_plan):
-    key_lower = math.ceil((6000000.0 / float(parts)) * part)
-    key_upper = math.ceil((6000000.0 / float(parts)) * (part + 1))
+                                                                                             name, query_plan, sf):
+    # key_lower = math.ceil((6000000.0 / float(parts)) * part)
+    # key_upper = math.ceil((6000000.0 / float(parts)) * (part + 1))
 
-    return SQLTableScan(get_file_key('lineitem', False),
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
                         "select "
                         "  l_partkey, l_extendedprice, l_discount "
                         "from "
@@ -453,8 +457,8 @@ def bloom_scan_part_partkey_type_brand12_operator_def(sharded, shard, num_shards
 def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shipped_date, parts, sharded, shard,
                                                     use_pandas,
                                                     secure, use_native,
-                                                    name, query_plan):
-    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
+                                                    name, query_plan, sf):
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf),
                                 "select "
                                 "  l_partkey, l_extendedprice, l_discount "
                                 "from "
@@ -480,11 +484,11 @@ def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shippe
 def bloom_scan_lineitem_where_shipdate_sharded_operator_def(min_shipped_date, max_shipped_date, part, parts, use_pandas,
                                                             secure, use_native,
                                                             name,
-                                                            query_plan):
-    key_lower = math.ceil((6000000.0 / float(parts)) * part)
-    key_upper = math.ceil((6000000.0 / float(parts)) * (part + 1))
+                                                            query_plan, sf):
+    # key_lower = math.ceil((6000000.0 / float(parts)) * part)
+    # key_upper = math.ceil((6000000.0 / float(parts)) * (part + 1))
 
-    return SQLTableScanBloomUse(get_file_key('lineitem', False),
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf),
                                 "select "
                                 "  l_partkey, l_extendedprice, l_discount "
                                 "from "
@@ -506,8 +510,8 @@ def bloom_scan_lineitem_where_shipdate_sharded_operator_def(min_shipped_date, ma
 
 def bloom_scan_lineitem_partkey_where_shipdate_operator_def(min_shipped_date, max_shipped_date, sharded, shard,
                                                             use_pandas, secure, use_native, name,
-                                                            query_plan):
-    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard),
+                                                            query_plan, sf):
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf),
                                 "select "
                                 "  l_partkey "
                                 "from "

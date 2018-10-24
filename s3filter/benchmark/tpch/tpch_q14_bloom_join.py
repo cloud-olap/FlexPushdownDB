@@ -24,19 +24,13 @@ import pandas as pd
 import numpy as np
 
 
-def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10, fp_rate=0.01)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-            part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1, fp_rate=0.01)
-        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
-        #     part_parts=2, lineitem_sharded=False, part_sharded=False, sf=1, fp_rate=0.01)
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, fp_rate, expected_result):
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, fp_rate=fp_rate, expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf, fp_rate):
+        part_sharded, sf, fp_rate, expected_result):
     """
 
     :return: None
@@ -93,7 +87,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                 secure,
                                 use_native,
                                 'lineitem_scan' + '_' + str(p),
-                                query_plan)),
+                                query_plan,
+                            sf)),
                         range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:
@@ -199,7 +194,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     if s3filter.util.constants.TPCH_SF == 10:
         assert round(float(tuples[1][0]), 10) == 15.4488836202
     elif s3filter.util.constants.TPCH_SF == 1:
-        numpy.testing.assert_almost_equal(float(tuples[1][0]), 15.0901165263)
+        numpy.testing.assert_approx_equal(float(tuples[1][0]), expected_result)
 
 
 if __name__ == "__main__":

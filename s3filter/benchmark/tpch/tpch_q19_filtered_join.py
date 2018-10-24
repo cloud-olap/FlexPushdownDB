@@ -8,6 +8,7 @@ import os
 import numpy
 
 from s3filter import ROOT_DIR
+from s3filter.benchmark.tpch import tpch_results
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
@@ -24,19 +25,14 @@ import pandas as pd
 import numpy as np
 
 
-def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            part_parts=4, lineitem_sharded=True, part_sharded=True, sf=10)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        # run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-        #     part_parts=4, lineitem_sharded=True, part_sharded=False, sf=1)
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=2,
-            part_parts=2, lineitem_sharded=False, part_sharded=False, sf=1)
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, expected_result):
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf,
+        expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf):
+        part_sharded, sf, expected_result):
     """
 
     :return: None
@@ -140,32 +136,17 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
 
     # Connect the operators
-    # lineitem_scan.connect(lineitem_project)
     connect_many_to_many(lineitem_scan, lineitem_project)
-    connect_all_to_all(lineitem_project, lineitem_map)
-
-    # part_scan.connect(part_project)
+    connect_many_to_many(lineitem_project, lineitem_map)
     connect_many_to_many(part_scan, part_project)
     connect_many_to_many(part_project, part_map)
-
-    # lineitem_part_join.connect_left_producer(lineitem_project)
     connect_all_to_all(part_map, lineitem_part_join_build)
-
-    # lineitem_part_join.connect_right_producer(part_project)
     connect_many_to_many(lineitem_part_join_build, lineitem_part_join_probe)
-    connect_many_to_many(lineitem_map, lineitem_part_join_probe)
-
-    # lineitem_part_join.connect(filter_op)
+    connect_all_to_all(lineitem_map, lineitem_part_join_probe)
     connect_many_to_many(lineitem_part_join_probe, filter_op)
-
-    # filter_op.connect(aggregate)
     connect_many_to_many(filter_op, aggregate)
-
-    # aggregate.connect(aggregate_project)
     connect_many_to_one(aggregate, aggregate_reduce)
     connect_one_to_one(aggregate_reduce, aggregate_project)
-
-    # aggregate_project.connect(collate)
     connect_one_to_one(aggregate_project, collate)
 
     # Plan settings
@@ -205,8 +186,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    numpy.testing.assert_almost_equal(tuples[1], 3468861.097000001)
+    numpy.testing.assert_approx_equal(float(tuples[1][0]), expected_result)
 
 
 if __name__ == "__main__":
-    main()
+    main(1, 2, False, tpch_results.q19_sf1_expected_result)

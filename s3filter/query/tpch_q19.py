@@ -123,6 +123,88 @@ def filter_def(name, query_plan):
         False)
 
 
+def part_filter_def(name, query_plan):
+    def pd_expr(df):
+        return (
+                       (df['p_brand'] == 'Brand#11') &
+                       (df['p_container'].isin(['SM CASE', 'SM BOX', 'SM PACK', 'SM PKG'])) &
+                       (df['p_size'].astype(np.int) >= 1) &
+                       (df['p_size'].astype(np.int) <= 5)
+
+               ) | (
+                       (df['p_brand'] == 'Brand#44') &
+                       (df['p_container'].isin(['MED BAG', 'MED BOX', 'MED PACK', 'MED PKG'])) &
+                       (df['p_size'].astype(np.int) >= 1) &
+                       (df['p_size'].astype(np.int) <= 10)
+
+               ) | (
+                       (df['p_brand'] == 'Brand#53') &
+                       (df['p_container'].isin(['LG CASE', 'LG BOX', 'LG PACK', 'LG PKG'])) &
+                       (df['p_size'].astype(np.int) >= 1) &
+                       (df['p_size'].astype(np.int) <= 15)
+               )
+
+    return Filter(
+        PredicateExpression(lambda t_:
+                            (
+                                    t_['p_brand'] == 'Brand#11' and
+                                    t_['p_container'] in ['SM CASE', 'SM BOX', 'SM PACK', 'SM PKG'] and
+                                    1 <= int(t_['p_size']) <= 5
+                            ) or (
+                                    t_['p_brand'] == 'Brand#44' and
+                                    t_['p_container'] in ['MED BAG', 'MED BOX', 'MED PACK', 'MED PKG'] and
+                                    1 <= int(t_['p_size']) <= 10
+                            ) or (
+                                    t_['p_brand'] == 'Brand#53' and
+                                    t_['p_container'] in ['LG CASE', 'LG BOX', 'LG PACK', 'LG PKG'] and
+                                    1 <= int(t_['p_size']) <= 15
+                            ),
+                            pd_expr),
+        name,
+        query_plan,
+        False)
+
+
+def lineitem_filter_def(name, query_plan):
+    def pd_expr(df):
+        return (
+                       (df['l_quantity'].astype(np.int) >= 3) &
+                       (df['l_quantity'].astype(np.int) <= 3 + 10) &
+                       (df['l_shipmode'].isin(['AIR', 'AIR REG'])) &
+                       (df['l_shipinstruct'] == 'DELIVER IN PERSON')
+               ) | (
+                       (df['l_quantity'].astype(np.int) >= 16) &
+                       (df['l_quantity'].astype(np.int) <= 16 + 10) &
+                       (df['l_shipmode'].isin(['AIR', 'AIR REG'])) &
+                       (df['l_shipinstruct'] == 'DELIVER IN PERSON')
+               ) | (
+                       (df['l_quantity'].astype(np.int) >= 24) &
+                       (df['l_quantity'].astype(np.int) <= 24 + 10) &
+                       (df['l_shipmode'].isin(['AIR', 'AIR REG'])) &
+                       (df['l_shipinstruct'] == 'DELIVER IN PERSON')
+               )
+
+    return Filter(
+        PredicateExpression(lambda t_:
+                            (
+                                    3 <= int(t_['l_quantity']) <= 3 + 10 and
+                                    t_['l_shipmode'] in ['AIR', 'AIR REG'] and
+                                    t_['l_shipinstruct'] == 'DELIVER IN PERSON'
+                            ) or (
+                                    16 <= int(t_['l_quantity']) <= 16 + 10 and
+                                    t_['l_shipmode'] in ['AIR', 'AIR REG'] and
+                                    t_['l_shipinstruct'] == 'DELIVER IN PERSON'
+                            ) or (
+                                    24 <= int(t_['l_quantity']) <= 24 + 10 and
+                                    t_['l_shipmode'] in ['AIR', 'AIR REG'] and
+                                    t_['l_shipinstruct'] == 'DELIVER IN PERSON'
+                            ),
+                            pd_expr),
+        name,
+        query_plan,
+        False)
+
+
 def project_partkey_brand_size_container_op(name, query_plan):
     def fn(df):
         # return df[['_0', '_1', '_2']]
@@ -143,7 +225,8 @@ def project_partkey_brand_size_container_op(name, query_plan):
         ],
         name,
         query_plan,
-        False, fn)
+        False,
+        fn)
 
 
 def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op(name, query_plan):
@@ -152,9 +235,8 @@ def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op(nam
 
         df = df.filter(items=['_1', '_4', '_5', '_6', '_13', '_14'], axis=1)
 
-        df.rename(columns={'_1': 'l_partkey', '_4': 'l_quantity', '_5': 'l_extendedprice', '_6': 'l_discount',
-                           '_13': 'l_shipinstruct', '_14': 'l_shipmode'},
-                  inplace=True)
+        df = df.rename(columns={'_1': 'l_partkey', '_4': 'l_quantity', '_5': 'l_extendedprice', '_6': 'l_discount',
+                                '_13': 'l_shipinstruct', '_14': 'l_shipmode'})
 
         return df
 
@@ -169,7 +251,8 @@ def project_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_op(nam
         ],
         name,
         query_plan,
-        False)
+        False,
+        fn)
 
 
 def sql_scan_part_select_all_where_partkey_op(sharded, shard, num_shards, use_pandas, secure, use_native, name,
@@ -387,7 +470,7 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         use_native,
                         name,
                         query_plan,
-                        True)
+                        False)
 
 
 def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_where_filtered_op(
