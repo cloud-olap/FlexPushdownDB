@@ -1,5 +1,4 @@
-
-
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.op.message import TupleMessage
@@ -58,8 +57,8 @@ class Top(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, _producer)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m, _producer)
+            elif isinstance(m, DataFrameMessage):
+                self.__on_receive_dataframe(m.dataframe, _producer)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -133,7 +132,7 @@ class Top(Operator):
             elif self.sort_expression.sort_order == 'DESC':
                 self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples) 
 
-        self.send(self.global_topk_df, self.consumers)
+        self.send(DataFrameMessage(self.global_topk_df), self.consumers)
 
         Operator.on_producer_completed(self, producer_name)
 
