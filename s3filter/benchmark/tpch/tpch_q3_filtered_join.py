@@ -8,7 +8,7 @@ from datetime import date, datetime
 
 import numpy
 import numpy as np
-
+import pandas as pd
 from s3filter import ROOT_DIR
 from s3filter.benchmark.tpch import tpch_results
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -27,6 +27,7 @@ from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q19
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
+from s3filter.util import test_util
 from s3filter.util.test_util import gen_test_id
 
 
@@ -250,7 +251,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
             False, group_reduce_fn))
 
     top = query_plan.add_operator(
-        Top(10, SortExpression('revenue', float, 'DESC'), use_pandas,
+        Top(10, [SortExpression('revenue', float, 'DESC'), SortExpression('o_orderdate', date, 'ASC')], use_pandas,
             'top', query_plan,
             False))
 
@@ -324,16 +325,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     assert tuples[0] == field_names
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
-    for (tuple, expected_tuple) in itertools.izip(tuples[1:], expected_result):
-        for (field, expected_field) in itertools.izip(tuple, expected_tuple):
-            if isinstance(expected_field, str):
-                assert field == expected_field
-            elif isinstance(expected_field, int):
-                assert int(field) == expected_field
-            elif isinstance(expected_field, float):
-                numpy.testing.assert_approx_equal(float(field), expected_field)
-            elif isinstance(expected_field, date):
-                assert datetime.strptime(field, "%Y-%m-%d").date() == expected_field
+    test_util.assert_tuples(expected_result, tuples)
+
+
+
 
 
 if __name__ == "__main__":

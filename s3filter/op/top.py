@@ -1,3 +1,5 @@
+from datetime import date
+
 from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
@@ -87,21 +89,34 @@ class Top(Operator):
         :param df: The received dataframe
         :return: None
         """
-        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
-                                                   .astype(self.sort_expression.col_type.__name__)
+        # df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
+        #                                            .astype(self.sort_expression.col_type.__name__)
         if len(df) == 0:
             return
 
-        if self.sort_expression.sort_order == 'ASC':
-            topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-            self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
-                                                                                    self.sort_expression.col_index) \
-                    .head(self.max_tuples)
-        elif self.sort_expression.sort_order == 'DESC':
-            topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-            self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
-                                                                                   self.sort_expression.col_index) \
-                    .head(self.max_tuples)
+        # if self.sort_expression.sort_order == 'ASC':
+        #     topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+        #     self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
+        #                                                                             self.sort_expression.col_index) \
+        #             .head(self.max_tuples)
+        # elif self.sort_expression.sort_order == 'DESC':
+        #     topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
+        #     self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
+        #                                                                            self.sort_expression.col_index) \
+        #             .head(self.max_tuples)
+
+        # Support for multiple sort expressions
+        for se in self.sort_expression:
+            if se.col_type is date:
+                df[se.col_index] = pd.to_datetime(df[se.col_index])
+            else:
+                df[se.col_index] = df[se.col_index].astype(se.col_type.__name__)
+
+        by = [se.col_index for se in self.sort_expression]
+        ascending = [se.sort_order == 'ASC' for se in self.sort_expression]
+
+        topk_df = df.sort_values(by=by, ascending=ascending).head(self.max_tuples)
+        self.global_topk_df = self.global_topk_df.append(topk_df).sort_values(by=by, ascending=ascending).head(self.max_tuples)
 
         # if self.sort_expression.sort_order == 'ASC':
         #     topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
@@ -124,13 +139,15 @@ class Top(Operator):
         if not is_all_producers_done:
             return
 
-        if not self.use_pandas:
-            raise Exception("TopK only supports pandas right now")
-        elif len(self.global_topk_df) > 0:
-            if self.sort_expression.sort_order == 'ASC':
-                self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples) 
-            elif self.sort_expression.sort_order == 'DESC':
-                self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples) 
+        # NOTE: Not sure if this is necessary as the global df is sorted on receipt of each dataframe
+
+        # if not self.use_pandas:
+        #     raise Exception("TopK only supports pandas right now")
+        # elif len(self.global_topk_df) > 0:
+        #     if self.sort_expression.sort_order == 'ASC':
+        #         self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
+        #     elif self.sort_expression.sort_order == 'DESC':
+        #         self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
 
         self.send(DataFrameMessage(self.global_topk_df), self.consumers)
 
