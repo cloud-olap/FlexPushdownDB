@@ -270,6 +270,7 @@ class Operator(HandlerBase):
                 self.queue = multiprocessing.Queue()
                 # self.runner = threading.Thread(target=self.work, args=(self.queue, ))
                 self.runner = multiprocessing.Process(target=self.work, args=(self.queue, ))
+                self.runner.daemon = True
 
 
     def boot(self):

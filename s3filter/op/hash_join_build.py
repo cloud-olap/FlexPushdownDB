@@ -114,14 +114,14 @@ class HashJoinBuild(Operator):
 
         self.producer_completions[producer_name] = True
 
-        if all(self.producer_completions.values()):
+        if not self.is_completed() and all(self.producer_completions.values()):
 
-            # if self.log_enabled:
-            #     print("{}('{}') | Hashtable is:\n py: {}, pandas: {}".format(
-            #         self.__class__.__name__,
-            #         self.name,
-            #         self.hashtable,
-            #         self.hashtable_df))
+            if self.log_enabled:
+                print("{}('{}') | Hashtable is:\n py: {}, pandas: {}".format(
+                    self.__class__.__name__,
+                    self.name,
+                    self.hashtable,
+                    self.hashtable_df))
 
             if self.hashtable_df is not None:
                 self.send(HashTableMessage(self.hashtable_df), self.consumers)
@@ -132,4 +132,4 @@ class HashJoinBuild(Operator):
             # else:
             #     raise Exception("All producers completed but have not received field value tuples")
 
-            Operator.on_producer_completed(self, producer_name)
+        Operator.on_producer_completed(self, producer_name)

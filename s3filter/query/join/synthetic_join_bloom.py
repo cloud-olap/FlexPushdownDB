@@ -80,7 +80,7 @@ def query_plan(settings):
     bloom_create_a = map(lambda p:
                          query_plan.add_operator(BloomCreate(
                              settings.table_A_AB_join_key, 'bloom_create_a_{}'.format(p),
-                             query_plan, False)),
+                             query_plan, False, settings.fp_rate)),
                          range(0, settings.table_A_parts))
 
     scan_B = \
@@ -119,7 +119,7 @@ def query_plan(settings):
                         [ProjectExpression(k, v) for k, v in field_names_map_B.iteritems()],
                         'project_B_{}'.format(p),
                         query_plan,
-                        True,
+                        False,
                         project_fn_B)),
                     range(0, settings.table_B_parts))
 
@@ -160,7 +160,7 @@ def query_plan(settings):
                             [ProjectExpression(k, v) for k, v in field_names_map_C.iteritems()],
                             'project_C_{}'.format(p),
                             query_plan,
-                            True,
+                            False,
                             project_fn_C)),
                         range(0, settings.table_C_parts))
 
@@ -191,12 +191,12 @@ def query_plan(settings):
 
         bloom_create_ab = map(lambda p:
                               query_plan.add_operator(BloomCreate(
-                                  settings.table_B_BC_join_key, 'bloom_create_ab_{}'.format(p), query_plan, False)),
+                                  settings.table_B_BC_join_key, 'bloom_create_ab_{}'.format(p), query_plan, False, settings.fp_rate)),
                               range(0, settings.table_B_parts))
 
-    map_A_to_B = map(lambda p:
+    map_a_to_b_join = map(lambda p:
                      query_plan.add_operator(
-                         Map(settings.table_A_AB_join_key, 'map_A_to_B_{}'.format(p), query_plan, False)),
+                         Map(settings.table_A_AB_join_key, 'map_a_to_b_join' + '_{}'.format(p), query_plan, False)),
                      range(0, settings.table_A_parts))
 
     map_B_to_B = map(lambda p:
@@ -268,14 +268,25 @@ def query_plan(settings):
 
     collate = query_plan.add_operator(Collate('collate', query_plan, False))
 
+    # Inline some of the operators
+    map(lambda o: o.set_async(False), project_A)
+    map(lambda o: o.set_async(False), project_B)
+    map(lambda o: o.set_async(False), map_a_to_b_join)
+    map(lambda o: o.set_async(False), map_B_to_B)
+    if settings.table_C_key is not None:
+        map(lambda o: o.set_async(False), map_B_to_C)
+        map(lambda o: o.set_async(False), map_C_to_C)
+        map(lambda o: o.set_async(False), project_C)
+    aggregate_project.set_async(False)
+
     # Connect the operators
     connect_many_to_many(scan_A, project_A)
-    connect_many_to_many(project_A, map_A_to_B)
-    connect_all_to_all(map_A_to_B, join_build_A_B)
+    connect_many_to_many(project_A, map_a_to_b_join)
+    connect_all_to_all(map_a_to_b_join, join_build_A_B)
     connect_many_to_many(join_build_A_B, join_probe_A_B)
 
-    connect_many_to_many(project_A, bloom_create_a)
-    connect_all_to_all(bloom_create_a, scan_B)
+    connect_all_to_all(project_A, bloom_create_a)
+    connect_many_to_many(bloom_create_a, scan_B)
     connect_many_to_many(scan_B, project_B)
     connect_many_to_many(project_B, map_B_to_B)
     connect_all_to_all(map_B_to_B, join_probe_A_B)

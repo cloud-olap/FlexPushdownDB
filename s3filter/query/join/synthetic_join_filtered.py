@@ -71,7 +71,7 @@ def query_plan(settings):
                         [ProjectExpression(k, v) for k, v in field_names_map_A.iteritems()],
                         'project_A_{}'.format(p),
                         query_plan,
-                        True,
+                        False,
                         project_fn_A)),
                     range(0, settings.table_A_parts))
 
@@ -110,7 +110,7 @@ def query_plan(settings):
                         [ProjectExpression(k, v) for k, v in field_names_map_B.iteritems()],
                         'project_B_{}'.format(p),
                         query_plan,
-                        True,
+                        False,
                         project_fn_B)),
                     range(0, settings.table_B_parts))
 
@@ -150,7 +150,7 @@ def query_plan(settings):
                             [ProjectExpression(k, v) for k, v in field_names_map_C.iteritems()],
                             'project_C_{}'.format(p),
                             query_plan,
-                            True,
+                            False,
                             project_fn_C)),
                         range(0, settings.table_C_parts))
 
@@ -252,6 +252,17 @@ def query_plan(settings):
         False))
 
     collate = query_plan.add_operator(Collate('collate', query_plan, False))
+
+    # Inline some of the operators
+    map(lambda o: o.set_async(False), project_A)
+    map(lambda o: o.set_async(False), project_B)
+    map(lambda o: o.set_async(False), map_A_to_B)
+    map(lambda o: o.set_async(False), map_B_to_B)
+    if settings.table_C_key is not None:
+        map(lambda o: o.set_async(False), map_B_to_C)
+        map(lambda o: o.set_async(False), map_C_to_C)
+        map(lambda o: o.set_async(False), project_C)
+    aggregate_project.set_async(False)
 
     # Connect the operators
     connect_many_to_many(scan_A, project_A)

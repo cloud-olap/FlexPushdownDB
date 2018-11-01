@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+from py._log import warning
+
 import s3filter.util.constants
 
-def get_file_key(file_, sharded, shard=None, sf=None):
 
-    if sf == None:
+def get_file_key(file_, sharded, shard=None, sf=None):
+    if sf is None:
         sf = s3filter.util.constants.TPCH_SF
     if sf == 1:
         if sharded:
@@ -25,5 +27,3 @@ def get_file_key(file_, sharded, shard=None, sf=None):
             return 'tpch-sf100/{}.csv'.format(file_)
     else:
         raise Exception()
-
-

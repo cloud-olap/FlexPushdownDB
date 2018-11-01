@@ -37,7 +37,7 @@ class QueryPlan(object):
 
     """
 
-    def __init__(self, system, operators=None, is_async=False, buffer_size=1024, use_shared_mem=False):
+    def __init__(self, system=None, operators=None, is_async=False, buffer_size=1024, use_shared_mem=False):
         # type: (WorkerSystem, list, bool, int, bool) -> None
         """
 

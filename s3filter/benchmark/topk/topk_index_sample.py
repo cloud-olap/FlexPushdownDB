@@ -53,8 +53,8 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
     print("Top K Benchmark, Sampling. Sort Field: {}, Order: {}".format(sort_field, sort_order))
     print("----------------------")
 
-    stats = ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, sample_size,
-             batch_size]
+    stats += ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, sample_size,
+              batch_size]
 
     # Query plan
     query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
@@ -90,7 +90,7 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
     #                             Project(project_exprs, 'sample_project_{}'.format(p), query_plan, False, project_fn))
 
     # TopK samples
-    sort_expr = SortExpression(sort_field, float, sort_order)
+    sort_expr = [SortExpression(sort_field, float, sort_order)]
     sample_topk = map(lambda p: query_plan.add_operator(
                     Top(k, sort_expr, use_pandas, 'sample_topk_{}'.format(p), query_plan, False)),
                       range(table_parts_start, table_parts_end + 1))
@@ -375,7 +375,7 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
     print("Top K Benchmark, Sampling. Sort Field: {}, Order: {}".format(sort_field, sort_order))
     print("----------------------")
 
-    stats = ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, sample_size,
+    stats += ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, sample_size,
              batch_size]
 
     # Query plan
@@ -411,7 +411,7 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
     #                             Project(project_exprs, 'sample_project_{}'.format(p), query_plan, False, project_fn))
 
     # TopK samples
-    sort_expr = SortExpression(sort_field, float, sort_order)
+    sort_expr = [SortExpression(sort_field, float, sort_order)]
     sample_topk = map(lambda p: query_plan.add_operator(
                     Top(k, sort_expr, use_pandas, 'sample_topk_{}'.format(p), query_plan, False)),
                       range(table_parts_start, table_parts_end + 1))
@@ -525,7 +525,7 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
 
 
 def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size,
-        table_parts_start, table_parts_end, shards_path):
+        table_parts_start, table_parts_end, tbl_s3key, shards_path):
 
     secure = False
     use_native = False
@@ -533,15 +533,18 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
     print("Top K Benchmark, Sampling. Sort Field: {}, Order: {}".format(sort_field, sort_order))
     print("----------------------")
 
+    stats += ['sampling_{}_{}'.format('head', 'non-filtered'), shards_path, sort_field, sort_order, sample_size, 1]
+
     # Query plan
     query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
 
     # Sampling
     table_parts = table_parts_end - table_parts_start + 1
     per_part_samples = int(sample_size / table_parts)
+    table_name = os.path.basename(tbl_s3key)
     sample_scan = map(lambda p:
                       query_plan.add_operator(
-                          SQLTableScan("{}.{}".format(shards_path, p),
+                          SQLTableScan("{}/{}.{}".format(shards_path, table_name, p),
                                        'select {} from S3Object limit {};'.format(sort_field, per_part_samples),
                                        use_pandas, secure, use_native,
                                        'sample_scan_{}'.format(p), query_plan, False)),
@@ -561,7 +564,7 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
                          range(table_parts_start, table_parts_end + 1))
 
     # TopK samples
-    sort_expr = SortExpression(sort_field, float, sort_order)
+    sort_expr = [SortExpression(sort_field, float, sort_order)]
     sample_topk = query_plan.add_operator(
         Top(k, sort_expr, use_pandas, 'sample_topk', query_plan, False))
 
@@ -616,10 +619,10 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
 
 
 if __name__ == "__main__":
-    main()
-
+    # main()
+    #
     import sys,os
-    sys.exit(0)
+    # sys.exit(0)
     stats_header = [
         'Method',
         'Table',
@@ -658,20 +661,20 @@ if __name__ == "__main__":
         run_stats = []
 
         if sampling_type == 'indexed':
-            run(stats=run_stats,
-                sort_field_index='_5',
-                sort_field='l_extendedprice',
-                k=k,
-                sample_size=k * k_scale,
-                batch_size=100,
-                parallel=True,
-                use_pandas=True,
-                sort_order='DESC',
-                buffer_size=0,
-                table_parts_start=shards_start,
-                table_parts_end=shards_end,
-                tbl_s3key=table_name,
-                shards_path=shards_prefix)
+            run_memory_indexed_sampling(stats=run_stats,
+                                        sort_field_index='_5',
+                                        sort_field='l_extendedprice',
+                                        k=k,
+                                        sample_size=k * k_scale,
+                                        batch_size=100,
+                                        parallel=True,
+                                        use_pandas=True,
+                                        sort_order='DESC',
+                                        buffer_size=0,
+                                        table_parts_start=shards_start,
+                                        table_parts_end=shards_end,
+                                        tbl_s3key=table_name,
+                                        shards_path=shards_prefix)
         elif sampling_type == 'beginning':
             run_head_table_sampling(
                 stats=run_stats,
@@ -679,7 +682,6 @@ if __name__ == "__main__":
                 sort_field='l_extendedprice',
                 k=k,
                 sample_size=k * k_scale,
-                batch_size=100,
                 parallel=True,
                 use_pandas=True,
                 sort_order='DESC',

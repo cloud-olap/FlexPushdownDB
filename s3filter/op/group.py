@@ -108,7 +108,10 @@ class Group(Operator):
         if not type(self.aggregate_df) is pd.DataFrame:
             self.aggregate_df = agg_df
         else:
-            self.aggregate_df = pd.concat([self.aggregate_df, agg_df])
+            # self.aggregate_df = pd.concat([self.aggregate_df, agg_df])
+            self.aggregate_df = pd.concat([self.aggregate_df, agg_df], ignore_index=True).groupby(
+                self.group_field_names).sum().reset_index()
+
 
 
 
@@ -167,12 +170,18 @@ class Group(Operator):
                 t_ = group_fields + group_aggregate_values
                 self.send(TupleMessage(Tuple(t_)), self.consumers)
         else:
-            # for groupby_reducer, aggregate one more time.  
+            # for groupby_reducer, aggregate one more time.
             if len(self.producers) > 1:
                 self.aggregate_df = self.pd_expr(self.aggregate_df)
             self.aggregate_df.reset_index(drop=True, inplace=True)
 
             if self.aggregate_df is not None:
+
+                # if self.log_enabled:
+                #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                #         print("{}('{}') | Sending grouped field values: \n{}"
+                #               .format(self.__class__.__name__, self.name, self.aggregate_df))
+
                 #self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
                 self.send(DataFrameMessage(self.aggregate_df), self.consumers)
 
