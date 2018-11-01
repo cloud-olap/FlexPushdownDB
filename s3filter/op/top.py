@@ -2,7 +2,7 @@
 
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
-from s3filter.op.message import TupleMessage
+from s3filter.op.message import TupleMessage, DataFrameMessage
 from s3filter.op.sort import SortExpression
 from s3filter.op.sql_table_scan import SQLTableScanMetrics, is_header
 from s3filter.plan.query_plan import QueryPlan
@@ -58,8 +58,8 @@ class Top(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, _producer)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m, _producer)
+            elif type(m) is DataFrameMessage:
+                self.__on_receive_dataframe(m.dataframe, _producer)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -88,10 +88,14 @@ class Top(Operator):
         :param df: The received dataframe
         :return: None
         """
-        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
-                                                   .astype(self.sort_expression.col_type.__name__)
         if len(df) == 0:
             return
+
+        # try:
+        df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
+                                                   .astype(self.sort_expression.col_type.__name__)
+        # except Exception as e:
+        #     print('in topk op ' + e.message)
 
         if self.sort_expression.sort_order == 'ASC':
             topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
@@ -133,7 +137,7 @@ class Top(Operator):
             elif self.sort_expression.sort_order == 'DESC':
                 self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples) 
 
-        self.send(self.global_topk_df, self.consumers)
+        self.send(DataFrameMessage(self.global_topk_df), self.consumers)
 
         Operator.on_producer_completed(self, producer_name)
 
@@ -395,7 +399,7 @@ class TopKTableScan(Operator):
         projection = "CAST({} as {})".format(sort_exp.col_name, sort_exp.col_type.__name__)
 
         sql = "SELECT {} FROM S3Object LIMIT {}".format(projection, k)
-        q_plan = QueryPlan(is_async=False)
+        q_plan = QueryPlan(None, is_async=False)
         select_op = q_plan.add_operator(SQLTableScan(s3key, sql, True, True, False, "sample_{}_scan".format(s3key),
                                                   q_plan, False))
 

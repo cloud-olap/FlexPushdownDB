@@ -24,7 +24,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extende
     parallel_shards = True
     processes = multiprocessing.cpu_count()
 
-    query_stats = ['baseline' if filtered is False else 'filtered', shards_prefix, col_name, sort_order, limit, '']
+    query_stats = ['baseline' if filtered is False else 'filtered', shards_prefix, col_name, sort_order, limit]
 
     sql = 'select * from S3Object;'
 
@@ -112,7 +112,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
 
     query_stats = ['sampling_{}_{}'.format('conservative' if conservative else 'aggressive',
                                            'filtered' if filtered else 'non-filtered'), shards_prefix, sort_field,
-                   sort_order, limit, k_scale]
+                   sort_order, limit * k_scale, limit * k_scale]
 
     sql = 'select * from S3Object;'
 
@@ -156,14 +156,14 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
                     ts.op_metrics.sampling_time,
                     query_plan.total_elapsed_time,
                     ts.op_metrics.sampling_time + query_plan.total_elapsed_time,
-                    0 if num_rows >= limit else 1,
+                    # 0 if num_rows >= limit else 1,
                     rows,
                     bytes_scanned,
                     bytes_returned,
                     data_cost,
                     computation_cost,
-                    cost,
-                    num_rows == limit + 1
+                    cost#,
+                    # num_rows == limit + 1
                     ]
     stats.append(query_stats)
 
@@ -183,8 +183,7 @@ def run_all():
         'Table',
         'Sort Field',
         'Sort Order',
-        'K',
-        'K scale',
+        'Sample Size',
         'Sampling Threshold',
         'Sampling time (Sec)',
         'Query time (Sec)',
@@ -231,8 +230,8 @@ if __name__ == "__main__":
         'Table',
         'Sort Field',
         'Sort Order',
-        'K',
-        'K scale',
+        'Sample Size',
+        'Batch Size',
         'Sampling Threshold',
         'Sampling time (Sec)',
         'Query time (Sec)',

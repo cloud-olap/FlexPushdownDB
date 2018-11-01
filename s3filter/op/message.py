@@ -57,7 +57,7 @@ class HashTableMessage(DataFrameMessage):
         super(HashTableMessage, self).__init__(hashtable)
 
 
-class StringMessage(object):
+class StringMessage(MessageBase):
     """Message containing a string.
 
     """
@@ -74,7 +74,7 @@ class StringMessage(object):
         self.string_ = string_
 
 
-class DataMessage(object):
+class DataMessage(MessageBase):
 
     def __init(self, dataframe):
         self.dataframe = dataframe

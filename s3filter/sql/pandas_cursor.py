@@ -100,7 +100,7 @@ class PandasCursor(object):
                 )
 
             except Exception as e:
-                print("problem downloading key {} with message: {}".format(self.s3key, e.message))
+                print("Error downloading key {} with message: {}".format(self.s3key, e.message))
 
             self.num_http_get_requests = PandasCursor.calculate_num_http_requests(self.table_data, config)
 

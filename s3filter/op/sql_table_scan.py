@@ -46,7 +46,7 @@ class SQLTableScanMetrics(OpMetrics):
         self.bytes_returned = 0
         self.num_http_get_requests = 0
 
-        #self.cost_estimator = CostEstimator(self)
+        self.cost_estimator = CostEstimator(self)
 
     def cost(self):
         """
@@ -112,7 +112,7 @@ class SQLTableScan(Operator):
             if type(m) is StringMessage:
                 self.s3sql = m.string_
                 if self.async_:
-                    self.query_plan.send(StartMessage(), self.name)
+                    self.query_plan.send(StartMessage(), self.name, self)
                 else:
                     self.run()
             else:

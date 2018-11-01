@@ -10,7 +10,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from s3filter.multiprocessing.message import DataFrameMessage
-from s3filter.op.message import TupleMessage
+from s3filter.op.message import TupleMessage, StringMessage
 from s3filter.op.operator_base import Operator, EvalMessage, EvaluatedMessage
 from s3filter.plan.op_metrics import OpMetrics
 
@@ -81,6 +81,8 @@ class Collate(Operator):
             self.__on_receive_tuple(m.tuple_)
         elif isinstance(m, DataFrameMessage):
             self.__on_receive_dataframe(m.dataframe)
+        elif isinstance(m, StringMessage):
+            print m.string_
         else:
             raise Exception("Unrecognized message {}".format(m))
 
