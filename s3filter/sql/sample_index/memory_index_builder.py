@@ -48,13 +48,13 @@ class MemoryIndexHandler:
 
         s3_dir = os.path.dirname(self.s3key)
         s3_name = os.path.basename(self.s3key)
-        self.s3_index_path = '{}/index/seq_index_{}'.format(s3_dir, s3_name)
+        self.s3_index_path = '{}/index/seq_index_{}.indx'.format(s3_dir, s3_name)
         if self.s3_index_exists(self.s3_index_path):
             self.get_table_size()
             self.load_index()
             return self.s3_index_path
 
-        MemoryIndexHandler.download_key(self.s3key, table_loc)
+        MemoryIndexHandler.download_key(self.s3key, table_local_file_path)
 
         if os.path.exists(table_local_file_path):
             got_header = False
@@ -82,14 +82,14 @@ class MemoryIndexHandler:
         return index_local_path
 
     @staticmethod
-    def download_key(key, filepath):
+    def download_key(s3key, filepath):
         if not os.path.exists(filepath):
-            os.makedirs(filepath)
+            # os.makedirs(filepath)
             create_file_dirs(filepath)
             s3_client = boto3.client('s3')
             s3_client.download_file(
                 Bucket=S3_BUCKET_NAME,
-                Key=key,
+                Key=s3key,
                 Filename=filepath
             )
 
