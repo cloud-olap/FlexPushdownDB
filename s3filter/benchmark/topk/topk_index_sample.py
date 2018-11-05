@@ -16,6 +16,8 @@ from s3filter.plan.query_plan import QueryPlan
 from s3filter.op.sort import SortExpression
 
 import numpy as np
+import math
+import os, sys
 import pandas as pd
 import multiprocessing
 
@@ -23,22 +25,145 @@ import multiprocessing
 def main():
     tbl_s3key = 'tpch-sf1/lineitem.csv'
     shards_path = 'tpch-sf1/lineitem_sharded/lineitem.csv'
-    run_memory_indexed_sampling([], '_5', 'l_extendedprice', 100, sample_size=10000, batch_size=100, parallel=True,
-                               use_pandas=True,
-                               sort_order='DESC', buffer_size=0, table_parts_start=0, table_parts_end=31,
-                               tbl_s3key=tbl_s3key,
-                               shards_path=shards_path)
+    table_size = 6000000
+    parts_start = 0
+    parts_end = 31
+    k = 10000
+    stats_file_name = 'indexed_sampling_topk_stats.txt'
+
+    stats_header = [
+        'Method',
+        'Table',
+        'Sort Field',
+        'Sort Order',
+        'K',
+        'Sample Size',
+        'batch_size',
+        'Sampling Threshold',
+        'Sampling time (Sec)',
+        'Query time (Sec)',
+        'Total query time (Sec)',
+        'Returned Rows',
+        'Bytes Scanned MB',
+        'Bytes Returned MB',
+        'Data Cost $',
+        'Computation Cost $',
+        'Total Cost $',
+    ]
+
+    proj_dir = os.environ['PYTHONPATH'].split(":")[0]
+    stats_dir = os.path.join(proj_dir, '..')
+    stats_dir = os.path.join(stats_dir, stats_file_name)
+
+    if os.path.exists(stats_dir):
+        mode = 'a'
+    else:
+        mode = 'w'
+
+    all_runs_stats = []
+
+    #First, varying sample size and compare the time of the indexed sampling vs the head table sampling
+    sample_sizes = [500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 100000, 500000, 1000000]
+
+    for sample_size in sample_sizes:
+        run_stats = []
+        run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+                                    k=k,
+                                    sample_size=sample_size,
+                                    batch_size=100,
+                                    parallel=True,
+                                    use_pandas=True,
+                                    sort_order='DESC',
+                                    buffer_size=0,
+                                    table_parts_start=parts_start,
+                                    table_parts_end=parts_end,
+                                    tbl_s3key=tbl_s3key,
+                                    shards_path=shards_path)
+        all_runs_stats.append(run_stats)
+
+    for sample_size in sample_sizes:
+        run_stats = []
+        run_head_table_sampling(run_stats, '_5', 'l_extendedprice',
+                                k=k,
+                                sample_size=sample_size,
+                                parallel=True,
+                                use_pandas=True,
+                                sort_order='DESC',
+                                buffer_size=0,
+                                table_parts_start=parts_start,
+                                table_parts_end=parts_end,
+                                tbl_s3key=tbl_s3key,
+                                shards_path=shards_path)
+        all_runs_stats.append(run_stats)
+
+    #Check the batch size effect on sampling time. Using the optimal sample size calculated by the formula
+    optimal_sample_size = k * int(math.sqrt(table_size / k))
+
+    for split_factor in [100, 200, 300, 400, 500, 600, 750, 1000, 3000, 5000, 10000, 50000, 100000, optimal_sample_size]:
+        batch_size = int(math.ceil((1.0 * optimal_sample_size) / split_factor))
+        run_stats = []
+        run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+                                    k=k,
+                                    sample_size=optimal_sample_size,
+                                    batch_size=batch_size,
+                                    parallel=True,
+                                    use_pandas=True,
+                                    sort_order='DESC',
+                                    buffer_size=0,
+                                    table_parts_start=parts_start,
+                                    table_parts_end=parts_end,
+                                    tbl_s3key=tbl_s3key,
+                                    shards_path=shards_path)
+        all_runs_stats.append(run_stats)
+
+    #Finally, generally compare the indexed sampling topk vs head table sampling topk
+    for sample_size in sample_sizes:
+        run_stats = []
+        run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+                                    k=k,
+                                    sample_size=sample_size,
+                                    batch_size=100,
+                                    parallel=True,
+                                    use_pandas=True,
+                                    sort_order='DESC',
+                                    buffer_size=0,
+                                    table_parts_start=parts_start,
+                                    table_parts_end=parts_end,
+                                    tbl_s3key=tbl_s3key,
+                                    shards_path=shards_path,
+                                    sampling_only=False)
+        all_runs_stats.append(run_stats)
+
+    for sample_size in sample_sizes:
+        run_stats = []
+        run_head_table_sampling(run_stats, '_5', 'l_extendedprice',
+                                k=k,
+                                sample_size=sample_size,
+                                parallel=True,
+                                use_pandas=True,
+                                sort_order='DESC',
+                                buffer_size=0,
+                                table_parts_start=parts_start,
+                                table_parts_end=parts_end,
+                                tbl_s3key=tbl_s3key,
+                                shards_path=shards_path,
+                                sampling_only=False)
+        all_runs_stats.append(run_stats)
+
+    with open(stats_dir, mode) as stats_file:
+        if mode == 'w':
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in stats_header]) + "\n")
+        else:
+            stats_file.write('\n')
+
+        for run_stats in all_runs_stats:
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
+
     return
-    run_local_indexed_sampling([], '_5', 'l_extendedprice', 100, sample_size=10000, batch_size=100, parallel=True, use_pandas=True,
-                               sort_order='DESC', buffer_size=0, table_parts_start=0, table_parts_end=31, tbl_s3key=tbl_s3key,
-                               shards_path=shards_path)
-    run_head_table_sampling([], '_5', 'l_extendedprice', 100, sample_size=10000, parallel=True, use_pandas=True,
-                         sort_order='DESC', buffer_size=0, table_parts_start=0, table_parts_end=31,
-                         shards_path=shards_path)
 
 
 def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size, batch_size, parallel, use_pandas, sort_order, buffer_size,
-                               table_parts_start, table_parts_end, tbl_s3key, shards_path):
+                               table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
     """
     Executes the randomly sampled topk query by firstly building a random sample, then extracting the filtering threshold
     Finally scanning the table to retrieve only the records beyond the threshold
@@ -50,18 +175,20 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
     n_threads = multiprocessing.cpu_count()
 
     print('')
-    print("Top K Benchmark, Sampling. Sort Field: {}, Order: {}".format(sort_field, sort_order))
+    print("Top K Benchmark, Memory Indexed Sampling. Sort Field: {}, Order: {}, K: {}, Sample Size: {}, Batch Size: {}"
+          .format(sort_field, sort_order, k, sample_size, batch_size))
     print("----------------------")
 
-    stats += ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, sample_size,
-              batch_size]
+    stats += ['sampling_{}_{}'.format('memory_indexed', 'non-filtered'), shards_path, sort_field, sort_order, k,
+              sample_size, batch_size]
 
     # Query plan
     query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
 
     # Sampling
     tbl_smpler = query_plan.add_operator(
-                                 TableRandomSampleGenerator(tbl_s3key, sample_size, batch_size, "table_sampler", query_plan,
+                                 TableRandomSampleGenerator(tbl_s3key, sample_size, batch_size, "table_sampler",
+                                                            query_plan,
                                                             False))
 
     sample_scanners = map(lambda p: query_plan.add_operator(
@@ -105,62 +232,55 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
                    TopKFilterBuild(sort_order, 'float', 'select * from S3object ',
                                    ' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False ))
 
-    # # Scan
-    # scan = map(lambda p:
-    #            query_plan.add_operator(
-    #                 SQLTableScan("{}.{}".format(shards_path, p),
-    #                     "", use_pandas, secure, use_native,
-    #                     'scan_{}'.format(p), query_plan,
-    #                     False)),
-    #            range(table_parts_start, table_parts_end + 1))
+    if not sampling_only:
+        # Scan
+        scan = map(lambda p:
+                   query_plan.add_operator(
+                        SQLTableScan("{}.{}".format(shards_path, p),
+                            "", use_pandas, secure, use_native,
+                            'scan_{}'.format(p), query_plan,
+                            False)),
+                   range(table_parts_start, table_parts_end + 1))
 
-    # # Project
-    # def project_fn(df):
-    #     df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
-    #     df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
-    #     return df
-    #
-    # project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
-    #
-    # project = map(lambda p:
-    #               query_plan.add_operator(
-    #                   Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
-    #               range(table_parts_start, table_parts_end + 1))
-    #
-    # # TopK
-    # topk = map(lambda p:
-    #            query_plan.add_operator(
-    #                 Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
-    #            range(table_parts_start, table_parts_end + 1))
-    #
-    # # TopK reduce
-    # topk_reduce = query_plan.add_operator(
-    #                 Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
+        # Project
+        def project_fn(df):
+            df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
+            df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
+            return df
 
-    collate = query_plan.add_operator(
-        Collate('collate', query_plan, False))
+        project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
+
+        project = map(lambda p:
+                      query_plan.add_operator(
+                          Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
+                      range(table_parts_start, table_parts_end + 1))
+
+        # TopK
+        topk = map(lambda p:
+                   query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
+                   range(table_parts_start, table_parts_end + 1))
+
+        # TopK reduce
+        topk_reduce = query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
+
+    collate = query_plan.add_operator(Collate('collate', query_plan, False))
 
     map(lambda op: tbl_smpler.connect(op), sample_scanners)
     map(lambda (p, o): o.connect(sample_project[p]), enumerate(sample_scanners))
     map(lambda (p, o): o.connect(sample_topk[p]), enumerate(sample_project))
     map(lambda o: o.connect(sample_topk_reduce), sample_topk)
     sample_topk_reduce.connect(sql_gen)
-    sql_gen.connect(collate)
 
-    # map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
-    # map(lambda (p, o): o.connect(project[p]), enumerate(scan))
-    # map(lambda (p, o): o.connect(topk[p]), enumerate(project))
-    # map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
-    # topk_reduce.connect(collate)
-
-    # Plan settings
-    print('')
-    print("Settings")
-    print("--------")
-    print('')
-    print('use_pandas: {}'.format(use_pandas))
-    print("table parts: {}".format(table_parts_end - table_parts_start))
-    print('')
+    if not sampling_only:
+        map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
+        map(lambda (p, o): o.connect(project[p]), enumerate(scan))
+        map(lambda (p, o): o.connect(topk[p]), enumerate(project))
+        map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
+        topk_reduce.connect(collate)
+    else:
+        sql_gen.connect(collate)
 
     # Start the query
     query_plan.execute()
@@ -194,7 +314,7 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
 
 
 def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size, batch_size, parallel, use_pandas, sort_order, buffer_size,
-                               table_parts_start, table_parts_end, tbl_s3key, shards_path):
+                               table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
     """
     Executes the randomly sampled topk query by firstly building a random sample, then extracting the filtering threshold
     Finally scanning the table to retrieve only the records beyond the threshold
@@ -209,7 +329,7 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
     print("Top K Benchmark, Sampling. Sort Field: {}, Order: {}".format(sort_field, sort_order))
     print("----------------------")
 
-    stats = ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, sample_size,
+    stats = ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, k, sample_size,
              batch_size]
 
     # Query plan
@@ -269,37 +389,38 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
                    TopKFilterBuild(sort_order, 'float', 'select * from S3object ',
                                    ' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False ))
 
-    # # Scan
-    # scan = map(lambda p:
-    #            query_plan.add_operator(
-    #                 SQLTableScan("{}.{}".format(shards_path, p),
-    #                     "", use_pandas, secure, use_native,
-    #                     'scan_{}'.format(p), query_plan,
-    #                     False)),
-    #            range(table_parts_start, table_parts_end + 1))
+    if not sampling_only:
+        # Scan
+        scan = map(lambda p:
+                   query_plan.add_operator(
+                        SQLTableScan("{}.{}".format(shards_path, p),
+                            "", use_pandas, secure, use_native,
+                            'scan_{}'.format(p), query_plan,
+                            False)),
+                   range(table_parts_start, table_parts_end + 1))
 
-    # # Project
-    # def project_fn(df):
-    #     df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
-    #     df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
-    #     return df
-    #
-    # project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
-    #
-    # project = map(lambda p:
-    #               query_plan.add_operator(
-    #                   Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
-    #               range(table_parts_start, table_parts_end + 1))
-    #
-    # # TopK
-    # topk = map(lambda p:
-    #            query_plan.add_operator(
-    #                 Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
-    #            range(table_parts_start, table_parts_end + 1))
-    #
-    # # TopK reduce
-    # topk_reduce = query_plan.add_operator(
-    #                 Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
+        # Project
+        def project_fn(df):
+            df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
+            df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
+            return df
+
+        project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
+
+        project = map(lambda p:
+                      query_plan.add_operator(
+                          Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
+                      range(table_parts_start, table_parts_end + 1))
+
+        # TopK
+        topk = map(lambda p:
+                   query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
+                   range(table_parts_start, table_parts_end + 1))
+
+        # TopK reduce
+        topk_reduce = query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
@@ -311,13 +432,15 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
     map(lambda (p, o): o.connect(sample_topk[p]), enumerate(sample_project))
     map(lambda o: o.connect(sample_topk_reduce), sample_topk)
     sample_topk_reduce.connect(sql_gen)
-    sql_gen.connect(collate)
 
-    # map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
-    # map(lambda (p, o): o.connect(project[p]), enumerate(scan))
-    # map(lambda (p, o): o.connect(topk[p]), enumerate(project))
-    # map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
-    # topk_reduce.connect(collate)
+    if not sampling_only:
+        map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
+        map(lambda (p, o): o.connect(project[p]), enumerate(scan))
+        map(lambda (p, o): o.connect(topk[p]), enumerate(project))
+        map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
+        topk_reduce.connect(collate)
+    else:
+        sql_gen.connect(collate)
 
     # Plan settings
     print('')
@@ -360,7 +483,7 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
 
 
 def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size, batch_size, parallel, use_pandas, sort_order, buffer_size,
-                               table_parts_start, table_parts_end, tbl_s3key, shards_path):
+                               table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
     """
     Executes the randomly sampled topk query by firstly building a random sample, then extracting the filtering threshold
     Finally scanning the table to retrieve only the records beyond the threshold
@@ -375,7 +498,7 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
     print("Top K Benchmark, Sampling. Sort Field: {}, Order: {}".format(sort_field, sort_order))
     print("----------------------")
 
-    stats += ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, sample_size,
+    stats += ['sampling_{}_{}'.format('indexed', 'non-filtered'), shards_path, sort_field, sort_order, k, sample_size,
              batch_size]
 
     # Query plan
@@ -425,61 +548,55 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
     sql_gen = query_plan.add_operator(
                    TopKFilterBuild(sort_order, 'float', 'select * from S3object ',
                                    ' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False ))
+    if not sampling_only:
+        # Scan
+        scan = map(lambda p:
+                   query_plan.add_operator(
+                        SQLTableScan("{}.{}".format(shards_path, p),
+                            "", use_pandas, secure, use_native,
+                            'scan_{}'.format(p), query_plan,
+                            False)),
+                   range(table_parts_start, table_parts_end + 1))
 
-    # # Scan
-    # scan = map(lambda p:
-    #            query_plan.add_operator(
-    #                 SQLTableScan("{}.{}".format(shards_path, p),
-    #                     "", use_pandas, secure, use_native,
-    #                     'scan_{}'.format(p), query_plan,
-    #                     False)),
-    #            range(table_parts_start, table_parts_end + 1))
-    #
-    # # Project
-    # def project_fn(df):
-    #     df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
-    #     df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
-    #     return df
-    #
-    # project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
-    #
-    # project = map(lambda p:
-    #               query_plan.add_operator(
-    #                   Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
-    #               range(table_parts_start, table_parts_end + 1))
-    #
-    # # TopK
-    # topk = map(lambda p:
-    #            query_plan.add_operator(
-    #                 Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
-    #            range(table_parts_start, table_parts_end + 1))
-    #
-    # # TopK reduce
-    # topk_reduce = query_plan.add_operator(
-    #                 Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
+        # Project
+        def project_fn(df):
+            df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
+            df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
+            return df
 
-    collate = query_plan.add_operator(
-        Collate('collate', query_plan, False))
+        project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
 
-    #profile_path = '../benchmark-output/groupby/'
-    #scan[0].set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_scan_0" + ".prof"))
-    #project[0].set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_project_0" + ".prof"))
-    #groupby[0].set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_groupby_0" + ".prof"))
-    #groupby_reduce.set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_groupby_reduce" + ".prof"))
-    #collate.set_profiled(True, os.path.join(ROOT_DIR, profile_path, gen_test_id() + "_collate" + ".prof"))
+        project = map(lambda p:
+                      query_plan.add_operator(
+                          Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
+                      range(table_parts_start, table_parts_end + 1))
+
+        # TopK
+        topk = map(lambda p:
+                   query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
+                   range(table_parts_start, table_parts_end + 1))
+
+        # TopK reduce
+        topk_reduce = query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
+
+    collate = query_plan.add_operator(Collate('collate', query_plan, False))
 
     map(lambda o: tbl_smpler.connect(o), sample_scan)
     map(lambda (p, o): o.connect(sample_project[p]), enumerate(sample_scan))
     map(lambda (p, o): o.connect(sample_topk[p]), enumerate(sample_project))
     map(lambda o: o.connect(sample_topk_reduce), sample_topk)
     sample_topk_reduce.connect(sql_gen)
-    sql_gen.connect(collate)
 
-    # map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
-    # map(lambda (p, o): o.connect(project[p]), enumerate(scan))
-    # map(lambda (p, o): o.connect(topk[p]), enumerate(project))
-    # map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
-    # topk_reduce.connect(collate)
+    if not sampling_only:
+        map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
+        map(lambda (p, o): o.connect(project[p]), enumerate(scan))
+        map(lambda (p, o): o.connect(topk[p]), enumerate(project))
+        map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
+        topk_reduce.connect(collate)
+    else:
+        sql_gen.connect(collate)
 
     # Plan settings
     print('')
@@ -525,15 +642,17 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
 
 
 def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size,
-        table_parts_start, table_parts_end, tbl_s3key, shards_path):
+        table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
 
     secure = False
     use_native = False
     print('')
-    print("Top K Benchmark, Sampling. Sort Field: {}, Order: {}".format(sort_field, sort_order))
+    print("Top K Benchmark, Head Table Sampling. Sort Field: {}, Order: {}, k: {}, Sample Size:{}"
+          .format(sort_field, sort_order, k, sample_size))
     print("----------------------")
 
-    stats += ['sampling_{}_{}'.format('head', 'non-filtered'), shards_path, sort_field, sort_order, sample_size, 1]
+    stats += ['sampling_{}_{}'.format('head_table', 'non-filtered'), shards_path, sort_field, sort_order, k,
+              sample_size, 1]
 
     # Query plan
     query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
@@ -544,7 +663,7 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
     table_name = os.path.basename(tbl_s3key)
     sample_scan = map(lambda p:
                       query_plan.add_operator(
-                          SQLTableScan("{}/{}.{}".format(shards_path, table_name, p),
+                          SQLTableScan("{}.{}".format(shards_path, p),
                                        'select {} from S3Object limit {};'.format(sort_field, per_part_samples),
                                        use_pandas, secure, use_native,
                                        'sample_scan_{}'.format(p), query_plan, False)),
@@ -565,30 +684,69 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
 
     # TopK samples
     sort_expr = [SortExpression(sort_field, float, sort_order)]
-    sample_topk = query_plan.add_operator(
-        Top(k, sort_expr, use_pandas, 'sample_topk', query_plan, False))
+    sample_topk = map(lambda p:
+                      query_plan.add_operator(
+                            Top(k, sort_expr, use_pandas, 'sample_topk_{}'.format(p), query_plan, False)),
+                      range(table_parts_start, table_parts_end + 1))
+
+    sample_topk_reduce = query_plan.add_operator(
+        Top(k, sort_expr, use_pandas, 'sample_topk_reduce', query_plan, False)
+    )
 
     # Generate SQL command for second scan
     sql_gen = query_plan.add_operator(
         TopKFilterBuild(sort_order, 'float', 'select * from S3object ',
                         ' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False))
 
+    if not sampling_only:
+        # Scan
+        scan = map(lambda p:
+                   query_plan.add_operator(
+                        SQLTableScan("{}.{}".format(shards_path, p),
+                            "", use_pandas, secure, use_native,
+                            'scan_{}'.format(p), query_plan,
+                            False)),
+                   range(table_parts_start, table_parts_end + 1))
+
+        # Project
+        def project_fn(df):
+            df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
+            df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
+            return df
+
+        project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
+
+        project = map(lambda p:
+                      query_plan.add_operator(
+                          Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
+                      range(table_parts_start, table_parts_end + 1))
+
+        # TopK
+        topk = map(lambda p:
+                   query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
+                   range(table_parts_start, table_parts_end + 1))
+
+        # TopK reduce
+        topk_reduce = query_plan.add_operator(
+                        Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
+
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
 
     map(lambda (p, o): o.connect(sample_project[p]), enumerate(sample_scan))
-    map(lambda (p, o): o.connect(sample_topk), enumerate(sample_project))
-    sample_topk.connect(sql_gen)
-    sql_gen.connect(collate)
+    map(lambda (p, o): o.connect(sample_topk[p]), enumerate(sample_project))
+    map(lambda op: op.connect(sample_topk_reduce), sample_topk)
+    sample_topk_reduce.connect(sql_gen)
 
-    # Plan settings
-    print('')
-    print("Settings")
-    print("--------")
-    print('')
-    print('use_pandas: {}'.format(use_pandas))
-    print("table parts: {}".format(table_parts))
-    print('')
+    if not sampling_only:
+        map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
+        map(lambda (p, o): o.connect(project[p]), enumerate(scan))
+        map(lambda (p, o): o.connect(topk[p]), enumerate(project))
+        map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
+        topk_reduce.connect(collate)
+    else:
+        sql_gen.connect(collate)
 
     # Start the query
     query_plan.execute()
@@ -619,10 +777,8 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
 
 
 if __name__ == "__main__":
-    # main()
-    #
-    import sys,os
-    # sys.exit(0)
+    main()
+    sys.exit(0)
     stats_header = [
         'Method',
         'Table',

@@ -234,7 +234,7 @@ class QueryPlan(object):
         print("----")
         self.print_cost_metrics()
 
-        print("") 
+        print("")
         print("Operator Completion Time")
         print("------------------------")
         for k, v in self.__debug_timer.items():

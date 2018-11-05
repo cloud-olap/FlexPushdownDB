@@ -16,6 +16,8 @@ BLOCK_SIZE = 100000
 
 class MemoryIndexHandler:
 
+    loaded_indexes = dict()
+
     def __init__(self, s3key):
         self.s3key = s3key
         self.table_local_file_path = None
@@ -29,9 +31,9 @@ class MemoryIndexHandler:
     def build_index(self):
         """
         takes s3 table name, if does not exist, an index file mapping the position of the record within the table to
-        the byte range of the corresponding row
+        the byte range of the corresponding row. The index of the whole table is loaded in the memory
         """
-        proj_dir = '/Volumes/ghanemabdo/s3filter/'  # os.environ['PYTHONPATH'].split(":")[0]
+        proj_dir = os.environ['PYTHONPATH'].split(":")[0] #'/Volumes/ghanemabdo/s3filter/'
         table_loc = os.path.join(proj_dir, TABLE_STORAGE_LOC)
 
         table_local_file_path = os.path.join(table_loc, self.s3key)
@@ -93,7 +95,8 @@ class MemoryIndexHandler:
 
     def load_index(self, delete_after_loading=False):
 
-        if len(self.index) > 0:
+        if self.s3key in MemoryIndexHandler.loaded_indexes:
+            self.index = MemoryIndexHandler.loaded_indexes[self.s3key]
             return
 
         print('loading into memory index {}'.format(self.index_local_path))
@@ -106,6 +109,8 @@ class MemoryIndexHandler:
         index_df[index_df.columns[1:3]] = index_df[index_df.columns[1:3]].astype(np.int64)
         for row in index_df.values:
             self.index.append((row[1], row[2]))
+
+        MemoryIndexHandler.loaded_indexes[self.s3key] = self.index
 
         if delete_after_loading:
             os.remove(self.index_local_path)

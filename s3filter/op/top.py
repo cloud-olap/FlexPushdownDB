@@ -90,63 +90,36 @@ class Top(Operator):
         :param df: The received dataframe
         :return: None
         """
-        # if len(df) == 0:
-        #     return
-        #
-        # # try:
-        # df[[self.sort_expression.col_index]] = df[[self.sort_expression.col_index]]\
-        #                                            .astype(self.sort_expression.col_type.__name__)
-        # # except Exception as e:
-        # #     print('in topk op ' + e.message)
-        #
-        # if self.sort_expression.sort_order == 'ASC':
-        #     topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-        #     self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
-        #                                                                             self.sort_expression.col_index) \
-        #             .head(self.max_tuples)
-        # elif self.sort_expression.sort_order == 'DESC':
-        #     topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-        #     self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
-        #                                                                            self.sort_expression.col_index) \
-        #             .head(self.max_tuples)
-
         if len(df) == 0:
             return
 
-        # if self.sort_expression.sort_order == 'ASC':
-        #     topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-        #     self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
-        #                                                                             self.sort_expression.col_index) \
-        #             .head(self.max_tuples)
-        # elif self.sort_expression.sort_order == 'DESC':
-        #     topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-        #     self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples,
-        #                                                                            self.sort_expression.col_index) \
-        #             .head(self.max_tuples)
+        if len(self.sort_expression) == 1:
+            sort_expr = self.sort_expression[0]
+            df[[sort_expr.col_index]] = df[[sort_expr.col_index]]\
+                                                       .astype(sort_expr.col_type.__name__)
 
-        # Support for multiple sort expressions
-        for se in self.sort_expression:
-            if se.col_type is date:
-                df[se.col_index] = pd.to_datetime(df[se.col_index])
-            else:
-                df[se.col_index] = df[se.col_index].astype(se.col_type.__name__)
+            if sort_expr.sort_order == 'ASC':
+                topk_df = df.nsmallest(self.max_tuples, sort_expr.col_index).head(self.max_tuples)
+                self.global_topk_df = self.global_topk_df.append(topk_df).nsmallest(self.max_tuples,
+                                                                                    sort_expr.col_index) \
+                                                                         .head(self.max_tuples)
+            elif sort_expr.sort_order == 'DESC':
+                topk_df = df.nlargest(self.max_tuples, sort_expr.col_index).head(self.max_tuples)
+                self.global_topk_df = self.global_topk_df.append(topk_df).nlargest(self.max_tuples, sort_expr.col_index) \
+                                                                         .head(self.max_tuples)
+        elif len(self.sort_expression) > 1:
+            # Support for multiple sort expressions
+            for se in self.sort_expression:
+                if se.col_type is date:
+                    df[se.col_index] = pd.to_datetime(df[se.col_index])
+                else:
+                    df[se.col_index] = df[se.col_index].astype(se.col_type.__name__)
 
-        by = [se.col_index for se in self.sort_expression]
-        ascending = [se.sort_order == 'ASC' for se in self.sort_expression]
+            by = [se.col_index for se in self.sort_expression]
+            ascending = [se.sort_order == 'ASC' for se in self.sort_expression]
 
-        topk_df = df.sort_values(by=by, ascending=ascending).head(self.max_tuples)
-        self.global_topk_df = self.global_topk_df.append(topk_df).sort_values(by=by, ascending=ascending).head(self.max_tuples)
-
-        # if self.sort_expression.sort_order == 'ASC':
-        #     topk_df = df.nsmallest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-        #     self.global_topk_df = self.global_topk_df.append(topk_df)
-        #     if len(self.global_topk_df) > 10 * self.max_tuples:
-        #         self.global_topk_df = self.global_topk_df.nsmallest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
-        # elif self.sort_expression.sort_order == 'DESC':
-        #     topk_df = df.nlargest(self.max_tuples, self.sort_expression.col_index).head(self.max_tuples)
-        #     self.global_topk_df = self.global_topk_df.append(topk_df)
-        #     if len(self.global_topk_df) > 10 * self.max_tuples:
-        #         self.global_topk_df = self.global_topk_df.nlargest(self.max_tuples, self.sort_expression.col_index) #.head(self.max_tuples)
+            topk_df = df.sort_values(by=by, ascending=ascending).head(self.max_tuples)
+            self.global_topk_df = self.global_topk_df.append(topk_df).sort_values(by=by, ascending=ascending).head(self.max_tuples)
 
     def on_producer_completed(self, producer_name):
         if producer_name in self.producer_completions.keys():

@@ -64,7 +64,7 @@ class TableRandomSampleGenerator(Operator):
 
                 consumer_ranges[idx].append(byte_ranges[i])
 
-            for con_idx in range(len(self.consumers)):
+            for con_idx in range(min([len(consumer_ranges), len(self.consumers)])):
                 self.send(DataFrameMessage(pd.DataFrame(consumer_ranges[con_idx])), [self.consumers[con_idx]])
                 # con_rng_sql = TableRandomSampleGenerator.build_s3_query(consumer_ranges[con_idx])
                 # self.send(StringMessage(con_rng_sql), [self.consumers[con_idx]])
