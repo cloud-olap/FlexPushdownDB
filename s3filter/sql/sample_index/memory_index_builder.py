@@ -41,7 +41,7 @@ class MemoryIndexHandler:
         index_loc = os.path.join(table_loc, 'indexes')
         index_loc = os.path.join(index_loc, self.s3key.split('.')[0] + '_index')
         create_dirs(index_loc)
-        index_local_path = os.path.join(index_loc, os.path.basename(self.s3key).split('.')[0] + '_index')
+        index_local_path = os.path.join(index_loc, os.path.basename(self.s3key).split('.')[0] + '_index.indx')
 
         self.table_local_file_path = table_local_file_path
         self.index_local_path = index_local_path

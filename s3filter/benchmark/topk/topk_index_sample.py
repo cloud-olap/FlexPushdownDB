@@ -55,6 +55,10 @@ def main():
     stats_dir = os.path.join(proj_dir, '..')
     stats_dir = os.path.join(stats_dir, stats_file_name)
 
+    def write_stats(file, stats):
+        file.write(",".join([str(x) if type(x) is not str else x for x in stats]) + "\n")
+        file.flush()
+
     if os.path.exists(stats_dir):
         mode = 'a'
     else:
@@ -83,7 +87,7 @@ def main():
                                         table_parts_end=parts_end,
                                         tbl_s3key=tbl_s3key,
                                         shards_path=shards_path)
-            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
+            write_stats(stats_file, run_stats)
 
         for sample_size in sample_sizes:
             run_stats = []
@@ -98,7 +102,7 @@ def main():
                                     table_parts_end=parts_end,
                                     tbl_s3key=tbl_s3key,
                                     shards_path=shards_path)
-            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
+            write_stats(stats_file, run_stats)
 
         #Check the batch size effect on sampling time. Using the optimal sample size calculated by the formula
         optimal_sample_size = k * int(math.sqrt(table_size / k))
@@ -118,7 +122,7 @@ def main():
                                         table_parts_end=parts_end,
                                         tbl_s3key=tbl_s3key,
                                         shards_path=shards_path)
-            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
+            write_stats(stats_file, run_stats)
 
         #Finally, generally compare the indexed sampling topk vs head table sampling topk
         for sample_size in sample_sizes:
@@ -136,7 +140,7 @@ def main():
                                         tbl_s3key=tbl_s3key,
                                         shards_path=shards_path,
                                         sampling_only=False)
-            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
+            write_stats(stats_file, run_stats)
 
         for sample_size in sample_sizes:
             run_stats = []
@@ -152,7 +156,7 @@ def main():
                                     tbl_s3key=tbl_s3key,
                                     shards_path=shards_path,
                                     sampling_only=False)
-            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
+            write_stats(stats_file, run_stats)
 
     return
 
