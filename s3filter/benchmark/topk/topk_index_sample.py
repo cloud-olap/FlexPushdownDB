@@ -60,17 +60,36 @@ def main():
     else:
         mode = 'w'
 
-    all_runs_stats = []
+    with open(stats_dir, mode) as stats_file:
+        if mode == 'w':
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in stats_header]) + "\n")
+        else:
+            stats_file.write('\n')
 
-    #First, varying sample size and compare the time of the indexed sampling vs the head table sampling
-    sample_sizes = [500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 100000, 500000, 1000000]
+        #First, varying sample size and compare the time of the indexed sampling vs the head table sampling
+        sample_sizes = [500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 100000, 500000, 1000000]
 
-    for sample_size in sample_sizes:
-        run_stats = []
-        run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+        for sample_size in sample_sizes:
+            run_stats = []
+            run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+                                        k=k,
+                                        sample_size=sample_size,
+                                        batch_size=100,
+                                        parallel=True,
+                                        use_pandas=True,
+                                        sort_order='DESC',
+                                        buffer_size=0,
+                                        table_parts_start=parts_start,
+                                        table_parts_end=parts_end,
+                                        tbl_s3key=tbl_s3key,
+                                        shards_path=shards_path)
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
+
+        for sample_size in sample_sizes:
+            run_stats = []
+            run_head_table_sampling(run_stats, '_5', 'l_extendedprice',
                                     k=k,
                                     sample_size=sample_size,
-                                    batch_size=100,
                                     parallel=True,
                                     use_pandas=True,
                                     sort_order='DESC',
@@ -79,50 +98,51 @@ def main():
                                     table_parts_end=parts_end,
                                     tbl_s3key=tbl_s3key,
                                     shards_path=shards_path)
-        all_runs_stats.append(run_stats)
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
 
-    for sample_size in sample_sizes:
-        run_stats = []
-        run_head_table_sampling(run_stats, '_5', 'l_extendedprice',
-                                k=k,
-                                sample_size=sample_size,
-                                parallel=True,
-                                use_pandas=True,
-                                sort_order='DESC',
-                                buffer_size=0,
-                                table_parts_start=parts_start,
-                                table_parts_end=parts_end,
-                                tbl_s3key=tbl_s3key,
-                                shards_path=shards_path)
-        all_runs_stats.append(run_stats)
+        #Check the batch size effect on sampling time. Using the optimal sample size calculated by the formula
+        optimal_sample_size = k * int(math.sqrt(table_size / k))
 
-    #Check the batch size effect on sampling time. Using the optimal sample size calculated by the formula
-    optimal_sample_size = k * int(math.sqrt(table_size / k))
+        for split_factor in [100, 200, 300, 400, 500, 600, 750, 1000, 3000, 5000, 10000, 50000, 100000, optimal_sample_size]:
+            batch_size = int(math.ceil((1.0 * optimal_sample_size) / split_factor))
+            run_stats = []
+            run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+                                        k=k,
+                                        sample_size=optimal_sample_size,
+                                        batch_size=batch_size,
+                                        parallel=True,
+                                        use_pandas=True,
+                                        sort_order='DESC',
+                                        buffer_size=0,
+                                        table_parts_start=parts_start,
+                                        table_parts_end=parts_end,
+                                        tbl_s3key=tbl_s3key,
+                                        shards_path=shards_path)
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
 
-    for split_factor in [100, 200, 300, 400, 500, 600, 750, 1000, 3000, 5000, 10000, 50000, 100000, optimal_sample_size]:
-        batch_size = int(math.ceil((1.0 * optimal_sample_size) / split_factor))
-        run_stats = []
-        run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
-                                    k=k,
-                                    sample_size=optimal_sample_size,
-                                    batch_size=batch_size,
-                                    parallel=True,
-                                    use_pandas=True,
-                                    sort_order='DESC',
-                                    buffer_size=0,
-                                    table_parts_start=parts_start,
-                                    table_parts_end=parts_end,
-                                    tbl_s3key=tbl_s3key,
-                                    shards_path=shards_path)
-        all_runs_stats.append(run_stats)
+        #Finally, generally compare the indexed sampling topk vs head table sampling topk
+        for sample_size in sample_sizes:
+            run_stats = []
+            run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+                                        k=k,
+                                        sample_size=sample_size,
+                                        batch_size=100,
+                                        parallel=True,
+                                        use_pandas=True,
+                                        sort_order='DESC',
+                                        buffer_size=0,
+                                        table_parts_start=parts_start,
+                                        table_parts_end=parts_end,
+                                        tbl_s3key=tbl_s3key,
+                                        shards_path=shards_path,
+                                        sampling_only=False)
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
 
-    #Finally, generally compare the indexed sampling topk vs head table sampling topk
-    for sample_size in sample_sizes:
-        run_stats = []
-        run_memory_indexed_sampling(run_stats, '_5', 'l_extendedprice',
+        for sample_size in sample_sizes:
+            run_stats = []
+            run_head_table_sampling(run_stats, '_5', 'l_extendedprice',
                                     k=k,
                                     sample_size=sample_size,
-                                    batch_size=100,
                                     parallel=True,
                                     use_pandas=True,
                                     sort_order='DESC',
@@ -132,31 +152,6 @@ def main():
                                     tbl_s3key=tbl_s3key,
                                     shards_path=shards_path,
                                     sampling_only=False)
-        all_runs_stats.append(run_stats)
-
-    for sample_size in sample_sizes:
-        run_stats = []
-        run_head_table_sampling(run_stats, '_5', 'l_extendedprice',
-                                k=k,
-                                sample_size=sample_size,
-                                parallel=True,
-                                use_pandas=True,
-                                sort_order='DESC',
-                                buffer_size=0,
-                                table_parts_start=parts_start,
-                                table_parts_end=parts_end,
-                                tbl_s3key=tbl_s3key,
-                                shards_path=shards_path,
-                                sampling_only=False)
-        all_runs_stats.append(run_stats)
-
-    with open(stats_dir, mode) as stats_file:
-        if mode == 'w':
-            stats_file.write(",".join([str(x) if type(x) is not str else x for x in stats_header]) + "\n")
-        else:
-            stats_file.write('\n')
-
-        for run_stats in all_runs_stats:
             stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
 
     return
