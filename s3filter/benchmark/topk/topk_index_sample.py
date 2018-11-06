@@ -776,8 +776,8 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    # main()
+    # sys.exit(0)
     stats_header = [
         'Method',
         'Table',
@@ -800,14 +800,14 @@ if __name__ == "__main__":
     if len(sys.argv) >= 4:
         sampling_type = sys.argv[1]
         k = int(sys.argv[2])
-        k_scale = int(sys.argv[3])
+        sample_size = int(sys.argv[3])
         batch_size = int(sys.argv[4])
         is_conservative = True
         table_name = sys.argv[5]
         shards_prefix = sys.argv[6]
         shards_start = int(sys.argv[7])
         shards_end = int(sys.argv[8])
-        filtered = False if int(sys.argv[9]) == 0 else True
+        sampling_only = False if int(sys.argv[9]) == 0 else True
         if len(sys.argv) >= 11:
             stats_file_name = sys.argv[10]
         else:
@@ -820,7 +820,7 @@ if __name__ == "__main__":
                                         sort_field_index='_5',
                                         sort_field='l_extendedprice',
                                         k=k,
-                                        sample_size=k * k_scale,
+                                        sample_size=sample_size,
                                         batch_size=100,
                                         parallel=True,
                                         use_pandas=True,
@@ -829,14 +829,15 @@ if __name__ == "__main__":
                                         table_parts_start=shards_start,
                                         table_parts_end=shards_end,
                                         tbl_s3key=table_name,
-                                        shards_path=shards_prefix)
-        elif sampling_type == 'beginning':
+                                        shards_path=shards_prefix,
+                                        sampling_only=sampling_only)
+        elif sampling_type == 'head':
             run_head_table_sampling(
                 stats=run_stats,
                 sort_field_index='_5',
                 sort_field='l_extendedprice',
                 k=k,
-                sample_size=k * k_scale,
+                sample_size=sample_size,
                 parallel=True,
                 use_pandas=True,
                 sort_order='DESC',
@@ -844,7 +845,8 @@ if __name__ == "__main__":
                 table_parts_start=shards_start,
                 table_parts_end=shards_end,
                 tbl_s3key=table_name,
-                shards_path=shards_prefix)
+                shards_path=shards_prefix,
+                sampling_only=sampling_only)
 
         proj_dir = os.environ['PYTHONPATH'].split(":")[0]
         stats_dir = os.path.join(proj_dir, '..')
@@ -858,4 +860,4 @@ if __name__ == "__main__":
         with open(stats_dir, mode) as stats_file:
             if mode == 'w':
                 stats_file.write(",".join([str(x) if type(x) is not str else x for x in stats_header]) + "\n")
-            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats[0]]) + "\n")
+            stats_file.write(",".join([str(x) if type(x) is not str else x for x in run_stats]) + "\n")
