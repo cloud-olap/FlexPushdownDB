@@ -799,7 +799,7 @@ def run_baseline_topk(stats, sort_field_index, sort_field, k, parallel, use_pand
     scan = map(lambda p:
                query_plan.add_operator(
                    SQLTableScan("{}.{}".format(shards_path, p),
-                                "", use_pandas, secure, use_native,
+                                "select * from S3Object;", use_pandas, secure, use_native,
                                 'scan_{}'.format(p), query_plan,
                                 False)),
                range(table_parts_start, table_parts_end + 1))
