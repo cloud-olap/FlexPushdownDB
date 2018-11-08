@@ -775,6 +775,95 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
               ]
 
 
+def run_baseline_topk(stats, sort_field_index, sort_field, k, parallel, use_pandas, sort_order, buffer_size,
+        table_parts_start, table_parts_end, tbl_s3key, shards_path):
+
+    secure = False
+    use_native = False
+    print('')
+    print("Top K Benchmark, Baseline. Sort Field: {}, Order: {}, k: {}"
+          .format(sort_field, sort_order, k))
+    print("----------------------")
+
+    stats += ['baseline', shards_path, sort_field, sort_order, k, 0, 0]
+
+    # Query plan
+    query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
+
+    # Sampling
+    table_parts = table_parts_end - table_parts_start + 1
+    per_part_samples = int(sample_size / table_parts)
+    table_name = os.path.basename(tbl_s3key)
+
+    # Scan
+    scan = map(lambda p:
+               query_plan.add_operator(
+                   SQLTableScan("{}.{}".format(shards_path, p),
+                                "", use_pandas, secure, use_native,
+                                'scan_{}'.format(p), query_plan,
+                                False)),
+               range(table_parts_start, table_parts_end + 1))
+
+    # Project
+    def project_fn(df):
+        df.columns = [sort_field if x == sort_field_index else x for x in df.columns]
+        df[[sort_field]] = df[[sort_field]].astype(np.float)
+        return df
+
+    project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
+
+    project = map(lambda p:
+                  query_plan.add_operator(
+                      Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
+                  range(table_parts_start, table_parts_end + 1))
+
+    # TopK
+    sort_expr = [SortExpression(sort_field, float, sort_order)]
+    topk = map(lambda p:
+               query_plan.add_operator(
+                   Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
+               range(table_parts_start, table_parts_end + 1))
+
+    # TopK reduce
+    topk_reduce = query_plan.add_operator(
+        Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False))
+
+    collate = query_plan.add_operator(
+        Collate('collate', query_plan, False))
+
+    map(lambda (p, o): o.connect(project[p]), enumerate(scan))
+    map(lambda (p, o): o.connect(topk[p]), enumerate(project))
+    map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
+    topk_reduce.connect(collate)
+
+    # Start the query
+    query_plan.execute()
+    print('Done')
+
+    # Write the metrics
+    query_plan.print_metrics()
+
+    # Shut everything down
+    query_plan.stop()
+
+    query_time = query_plan.total_elapsed_time
+    cost, bytes_scanned, bytes_returned, rows = query_plan.cost()
+    computation_cost = query_plan.computation_cost()
+    data_cost = query_plan.data_cost()[0]
+
+    stats += [0,
+              0,
+              0,
+              query_time,
+              rows,
+              bytes_scanned,
+              bytes_returned,
+              data_cost,
+              computation_cost,
+              cost
+              ]
+
+
 if __name__ == "__main__":
     # main()
     # sys.exit(0)
@@ -821,7 +910,7 @@ if __name__ == "__main__":
                                         sort_field='l_extendedprice',
                                         k=k,
                                         sample_size=sample_size,
-                                        batch_size=100,
+                                        batch_size=batch_size,
                                         parallel=True,
                                         use_pandas=True,
                                         sort_order='DESC',
@@ -847,6 +936,20 @@ if __name__ == "__main__":
                 tbl_s3key=table_name,
                 shards_path=shards_prefix,
                 sampling_only=sampling_only)
+        elif sampling_type == 'baseline':
+            run_baseline_topk(
+                stats=run_stats,
+                sort_field_index='_5',
+                sort_field='l_extendedprice',
+                k=k,
+                parallel=True,
+                use_pandas=True,
+                sort_order='DESC',
+                buffer_size=0,
+                table_parts_start=shards_start,
+                table_parts_end=shards_end,
+                tbl_s3key=table_name,
+                shards_path=shards_prefix)
 
         proj_dir = os.environ['PYTHONPATH'].split(":")[0]
         stats_dir = os.path.join(proj_dir, '..')
