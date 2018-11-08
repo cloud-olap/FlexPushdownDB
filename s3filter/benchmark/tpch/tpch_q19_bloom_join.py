@@ -227,4 +227,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 2, False, 0.1, tpch_results.q19_sf1_expected_result)
+    main(1, 2, False, 2, False, 0.1, tpch_results.q19_sf1_expected_result)

@@ -172,11 +172,8 @@ def sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(shard
                         "  p_partkey, p_type "
                         "from "
                         "  S3Object "
-                        "where "
-                        "  p_brand = 'Brand#12' "
                         "  {} "
-                        " "
-                        .format(get_sql_suffix('part', parts, part, sharded, add_where=False)),
+                        .format(get_sql_suffix('part', parts, part, sharded, add_where=True)),
                         use_pandas,
                         secure,
                         use_native,
@@ -470,7 +467,7 @@ def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shippe
                                 " ".format(
                                     min_shipped_date.strftime('%Y-%m-%d'),
                                     max_shipped_date.strftime('%Y-%m-%d'),
-                                    get_sql_suffix('lineitem', parts, shard, sharded))
+                                    get_sql_suffix('lineitem', parts, shard, sharded, add_where=False))
                                 ,
                                 'l_partkey',
                                 use_pandas,

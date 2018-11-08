@@ -19,7 +19,7 @@ from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.map import Map
 from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
-    connect_one_to_one
+    connect_one_to_one, connect_one_to_many
 from s3filter.op.project import Project
 from s3filter.op.sort import SortExpression
 from s3filter.op.sql_table_scan import SQLTableScan
@@ -69,8 +69,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                          "  c_mktsegment = 'BUILDING' "
                                          "  {} "
                                          "  {} "
-                                         .format(" and {}".format(
-                                             customer_filter_sql if customer_filter_sql is not None else ""),
+                                         .format(
+                                             ' and ' + customer_filter_sql if customer_filter_sql is not None else "",
                                              get_sql_suffix('customer', customer_parts, p,
                                                             customer_sharded,
                                                             add_where=False)),
@@ -96,11 +96,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                        False, customer_project_fn)),
                            range(0, customer_parts))
 
-    customer_bloom_create = map(lambda p:
-                                query_plan.add_operator(
-                                    BloomCreate('c_custkey', 'customer_bloom_create' + '_' + str(p), query_plan, False,
-                                                fp_rate)),
-                                range(0, customer_parts))
+    customer_bloom_create =                                query_plan.add_operator(
+                                    BloomCreate('c_custkey', 'customer_bloom_create', query_plan, False,
+                                                fp_rate))
 
     customer_map = map(lambda p:
                        query_plan.add_operator(Map('c_custkey', 'customer_map' + '_' + str(p), query_plan, False)),
@@ -117,8 +115,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                               "  cast(o_orderdate as timestamp) < cast('1995-03-01' as timestamp) "
                                               "  {} "
                                               "  {} "
-                                              .format(" and {}".format(
-                                                  order_filter_sql if order_filter_sql is not None else ""),
+                                              .format(
+                                                  ' and ' + order_filter_sql if order_filter_sql is not None else '',
                                                   get_sql_suffix('orders', order_parts, p,
                                                                  order_sharded,
                                                                  add_where=False)),
@@ -163,11 +161,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                       query_plan, False)),
                                     range(0, customer_parts))
 
-    order_bloom_create = map(lambda p:
-                             query_plan.add_operator(
-                                 BloomCreate('o_orderkey', 'order_bloom_create' + '_' + str(p), query_plan, False,
-                                             fp_rate)),
-                             range(0, order_parts))
+    order_bloom_create = query_plan.add_operator(
+                                 BloomCreate('o_orderkey', 'order_bloom_create' , query_plan, False,
+                                             fp_rate))
 
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
@@ -180,8 +176,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                  "  cast(l_shipdate as timestamp) > cast('1995-03-01' as timestamp) "
                                                  "  {} "
                                                  "  {} "
-                                                 .format(" and {}".format(
-                                                     lineitem_filter_sql if lineitem_filter_sql is not None else ""),
+                                                 .format(
+                                                     ' and ' + lineitem_filter_sql if lineitem_filter_sql is not None else '',
                                                      get_sql_suffix('lineitem', lineitem_parts, p,
                                                                     lineitem_sharded,
                                                                     add_where=False)),
@@ -273,12 +269,17 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
 
+    # Inline what we can
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), customer_project)
+    map(lambda o: o.set_async(False), order_project)
+
     # Connect the operators
     connect_many_to_many(customer_scan, customer_project)
     connect_many_to_many(customer_project, customer_map)
 
-    connect_all_to_all(customer_project, customer_bloom_create)
-    connect_many_to_many(customer_bloom_create, order_scan)
+    connect_many_to_one(customer_project, customer_bloom_create)
+    connect_one_to_many(customer_bloom_create, order_scan)
 
     connect_many_to_many(order_scan, order_project)
     connect_many_to_many(order_project, order_map_1)
@@ -289,8 +290,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
     # connect_many_to_one(customer_order_join_probe, collate)
 
-    connect_all_to_all(order_project, order_bloom_create)
-    connect_many_to_many(order_bloom_create, lineitem_scan)
+    connect_many_to_one(order_project, order_bloom_create)
+    connect_one_to_many(order_bloom_create, lineitem_scan)
 
     connect_many_to_many(lineitem_scan, lineitem_project)
     connect_many_to_many(lineitem_project, lineitem_map)
@@ -317,12 +318,13 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     print('use_pandas: {}'.format(use_pandas))
     print('secure: {}'.format(secure))
     print('use_native: {}'.format(use_native))
-    print("customer_parts parts: {}".format(customer_parts))
+    print("customer_parts: {}".format(customer_parts))
     print("order_parts: {}".format(order_parts))
     print("lineitem_parts: {}".format(lineitem_parts))
     print("customer_sharded: {}".format(customer_sharded))
     print("order_sharded: {}".format(order_sharded))
     print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("fp_rate: {}".format(fp_rate))
     print('')
 
     # Write the plan graph

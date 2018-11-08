@@ -8,6 +8,7 @@ import os
 import numpy
 
 from s3filter import ROOT_DIR
+from s3filter.benchmark.tpch import tpch_results
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
@@ -284,4 +285,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main()
+    main(1, 2, False, 2, False, 0.1, tpch_results.q17_sf1_expected_result)

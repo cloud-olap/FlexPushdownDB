@@ -99,10 +99,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                   query_plan)),
                           range(0, lineitem_parts))
 
-    part_filter = map(lambda p:
-                      query_plan.add_operator(
-                          tpch_q14.filter_brand12_operator_def('part_filter' + '_' + str(p), query_plan)),
-                      range(0, part_parts))
+    # part_filter = map(lambda p:
+    #                   query_plan.add_operator(
+    #                       tpch_q14.filter_brand12_operator_def('part_filter' + '_' + str(p), query_plan)),
+    #                   range(0, part_parts))
 
     join_build = map(lambda p:
                      query_plan.add_operator(
@@ -148,7 +148,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     map(lambda o: o.set_async(False), lineitem_project)
     map(lambda o: o.set_async(False), part_project)
     map(lambda o: o.set_async(False), lineitem_filter)
-    map(lambda o: o.set_async(False), part_filter)
     aggregate_project.set_async(False)
 
     # Connect the operators
@@ -165,8 +164,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
     map(lambda (p, o): o.connect(lineitem_filter[p]), enumerate(lineitem_project))
     map(lambda (p, o): o.connect(part_project[p]), enumerate(part_scan))
-    map(lambda (p, o): o.connect(part_filter[p]), enumerate(part_project))
-    map(lambda (p, o): o.connect(join_build[p]), enumerate(part_filter))
+    map(lambda (p, o): o.connect(join_build[p]), enumerate(part_project))
     map(lambda (p, o): map(lambda (bp, bo): o.connect_build_producer(bo), enumerate(join_build)), enumerate(join_probe))
     map(lambda (p, o): join_probe[p % part_parts].connect_tuple_producer(o), enumerate(lineitem_filter))
     map(lambda (p, o): o.connect(part_aggregate[p]), enumerate(join_probe))

@@ -112,6 +112,9 @@ class SQLTableScanBloomUse(Operator):
             bloom_filter_sql_predicate = bf.build_bit_array_string_sql_predicate(self.__bloom_filter_field_name)
             bloom_filter_sql_predicates.append(bloom_filter_sql_predicate)
 
+        # Don't need this anymore
+        del self.__bloom_filters
+
         sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicates)
         self.s3sql = self.s3sql + sql_suffix
 

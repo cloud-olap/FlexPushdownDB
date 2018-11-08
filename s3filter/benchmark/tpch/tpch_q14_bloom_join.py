@@ -9,13 +9,14 @@ from datetime import datetime, timedelta
 import numpy
 
 from s3filter import ROOT_DIR
+from s3filter.benchmark.tpch import tpch_results
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
-    connect_one_to_one
+    connect_one_to_one, connect_one_to_many
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
@@ -68,12 +69,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                                                       query_plan)),
                        range(0, part_parts))
 
-    part_bloom_create = map(lambda p:
-                            query_plan.add_operator(
+    part_bloom_create =                             query_plan.add_operator(
                                 tpch_q14.bloom_create_p_partkey_operator_def(fp_rate,
-                                                                             'part_bloom_create' + '_' + str(p),
-                                                                             query_plan)),
-                            range(0, part_parts))
+                                                                             'part_bloom_create',
+                                                                             query_plan))
 
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
@@ -144,8 +143,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
     # Connect the operators
     connect_many_to_many(part_scan, part_project)
-    connect_all_to_all(part_project, part_bloom_create)
-    connect_many_to_many(part_bloom_create, lineitem_scan)
+    connect_many_to_one(part_project, part_bloom_create)
+    connect_one_to_many(part_bloom_create, lineitem_scan)
     connect_many_to_many(part_project, join_build)
     connect_many_to_many(lineitem_scan, lineitem_project)
     connect_all_to_all(join_build, join_probe)
@@ -198,4 +197,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main()
+    main(1, 2, False, 2, False, 0.3, tpch_results.q14_sf1_expected_result)

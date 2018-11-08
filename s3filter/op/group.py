@@ -173,9 +173,9 @@ class Group(Operator):
             # for groupby_reducer, aggregate one more time.
             if len(self.producers) > 1:
                 self.aggregate_df = self.pd_expr(self.aggregate_df)
-            self.aggregate_df.reset_index(drop=True, inplace=True)
 
             if self.aggregate_df is not None:
+                self.aggregate_df.reset_index(drop=True, inplace=True)
 
                 # if self.log_enabled:
                 #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):

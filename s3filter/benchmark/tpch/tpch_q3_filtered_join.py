@@ -60,17 +60,16 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                         query_plan.add_operator(
                             SQLTableScan(get_file_key('customer', customer_sharded, p, sf),
                                          "select "
-                                         " c_custkey "
+                                         "  c_custkey "
                                          "from "
                                          "  S3Object "
                                          "where "
                                          "  c_mktsegment = 'BUILDING' "
                                          "  {} "
                                          "  {} "
-                                         .format(" and {}".format(
-                                             customer_filter_sql if customer_filter_sql is not None else ""),
-                                             get_sql_suffix('customer', customer_parts, p,
-                                                            customer_sharded,
+                                         .format(
+                                             ' and ' + customer_filter_sql if customer_filter_sql is not None else '',
+                                             get_sql_suffix('customer', customer_parts, p, customer_sharded,
                                                             add_where=False)),
                                          use_pandas, secure, use_native,
                                          'customer_scan' + '_{}'.format(p),
@@ -109,11 +108,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                       "  cast(o_orderdate as timestamp) < cast('1995-03-01' as timestamp) "
                                       "  {} "
                                       "  {} "
-                                      .format(" and {}".format(
-                                          order_filter_sql if order_filter_sql is not None else ""),
-                                          get_sql_suffix('orders', order_parts, p,
-                                                         order_sharded,
-                                                         add_where=False)),
+                                      .format(
+                                          ' and ' + order_filter_sql if order_filter_sql is not None else '',
+                                          get_sql_suffix('orders', order_parts, p, order_sharded, add_where=False)),
                                       use_pandas, secure, use_native,
                                       'order_scan' + '_{}'.format(p),
                                       query_plan,
@@ -165,10 +162,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                          "  cast(l_shipdate as timestamp) > cast('1995-03-01' as timestamp) "
                                          "  {} "
                                          "  {} "
-                                         .format(" and {}".format(
-                                             lineitem_filter_sql if lineitem_filter_sql is not None else ""),
-                                             get_sql_suffix('lineitem', lineitem_parts, p,
-                                                            lineitem_sharded,
+                                         .format(
+                                             ' and ' + lineitem_filter_sql if lineitem_filter_sql is not None else '',
+                                             get_sql_suffix('lineitem', lineitem_parts, p, lineitem_sharded,
                                                             add_where=False)),
                                          use_pandas, secure, use_native,
                                          'lineitem_scan' + '_{}'.format(p),
@@ -232,7 +228,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                 lambda t_: float(t_['l_extendedprice'] * (1 - t_['l_discount'])))
                         ],
                         'group' + '_{}'.format(p), query_plan,
-                        False, groupby_fn)),
+                        True, groupby_fn)),
                 range(0, lineitem_parts))
 
     def group_reduce_fn(df):
@@ -248,7 +244,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                     lambda t_: float(t_['l_extendedprice'] * (1 - t_['l_discount'])))
             ],
             'group_reduce', query_plan,
-            False, group_reduce_fn))
+            True, group_reduce_fn))
 
     top = query_plan.add_operator(
         Top(10, [SortExpression('revenue', float, 'DESC'), SortExpression('o_orderdate', date, 'ASC')], use_pandas,
@@ -326,9 +322,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
     # NOTE: This result has been verified with the equivalent data and query on PostgreSQL
     test_util.assert_tuples(expected_result, tuples)
-
-
-
 
 
 if __name__ == "__main__":

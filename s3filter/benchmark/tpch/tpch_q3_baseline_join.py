@@ -67,11 +67,11 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                          "  S3Object "
                                          "  {} "
                                          "  {} "
-                                         .format(" where {}".format(
-                                             customer_filter_sql if customer_filter_sql is not None else ""),
+                                         .format(
+                                             ' where ' + customer_filter_sql if customer_filter_sql is not None else '',
                                              get_sql_suffix('customer', customer_parts, p,
                                                             customer_sharded,
-                                                            add_where=False)),
+                                                            add_where=customer_filter_sql is None)),
                                          use_pandas, secure, use_native,
                                          'customer_scan' + '_{}'.format(p),
                                          query_plan,
@@ -118,11 +118,11 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                       "  S3Object "
                                       "  {} "
                                       "  {} "
-                                      .format(" where {}".format(
-                                          order_filter_sql if order_filter_sql is not None else ""),
+                                      .format(
+                                          ' where ' + order_filter_sql if order_filter_sql is not None else '',
                                           get_sql_suffix('orders', order_parts, p,
                                                          order_sharded,
-                                                         add_where=False)),
+                                                         add_where=order_filter_sql is None)),
                                       use_pandas, secure, use_native,
                                       'order_scan' + '_{}'.format(p),
                                       query_plan,
@@ -183,11 +183,11 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                          "  S3Object "
                                          "  {} "
                                          "  {} "
-                                         .format(" where {}".format(
-                                             lineitem_filter_sql if lineitem_filter_sql is not None else ""),
+                                         .format(
+                                             ' where ' + lineitem_filter_sql if lineitem_filter_sql is not None else "",
                                              get_sql_suffix('lineitem', lineitem_parts, p,
                                                             lineitem_sharded,
-                                                            add_where=False)),
+                                                            add_where=lineitem_filter_sql is None)),
                                          use_pandas, secure, use_native,
                                          'lineitem_scan' + '_{}'.format(p),
                                          query_plan,
