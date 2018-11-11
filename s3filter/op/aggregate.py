@@ -192,17 +192,10 @@ class Aggregate(Operator):
         return field_values
 
     def __on_receive_dataframe(self, df):
-<<<<<<< HEAD
-        if len(df) > 0:
-            df2 = self.agg_fun(df)
-            self.agg_df = self.agg_df.append( df2 )
-=======
 
         # if self.log_enabled:
         #     print("{}('{}') | Received dataframe: {}"
         #           .format(self.__class__.__name__, self.name, df))
-
-        df2 = self.agg_fun(df)
-        self.agg_df = self.agg_df.append( df2 )
-
->>>>>>> 483c4a68053a09b2742c2f47410b2e5e037458ab
+        if len(df) > 0:
+            df2 = self.agg_fun(df)
+            self.agg_df = self.agg_df.append( df2 )
