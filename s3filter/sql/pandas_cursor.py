@@ -100,7 +100,7 @@ class PandasCursor(object):
                 )
 
             except Exception as e:
-                print("problem downloading key {} with message: {}".format(self.s3key, e.message))
+                print("Error downloading key {} with message: {}".format(self.s3key, e.message))
 
             self.num_http_get_requests = PandasCursor.calculate_num_http_requests(self.table_data, config)
 
@@ -222,7 +222,7 @@ class PandasCursor(object):
     def parse_file(self):
         try:
             if self.table_data and len(self.table_data.getvalue()) > 0:
-                ip_stream = io.StringIO(self.table_data.getvalue().decode('utf-8'))
+                ip_stream = cStringIO.StringIO(self.table_data.getvalue().decode('utf-8'))
             elif os.path.exists(self.table_local_file_path):
                 ip_stream = self.table_local_file_path
             else:
@@ -236,6 +236,9 @@ class PandasCursor(object):
                                   engine='c', quotechar='"', na_filter=False, compression=None, low_memory=False,
                                   skiprows=1,
                                   chunksize=10 ** 7):
+                # Get read bytes
+                self.bytes_returned += ip_stream.tell()
+
                 # drop last column since the line separator | creates a new empty column at the end of every record
                 df_col_names = list(df)
                 last_col = df_col_names[-1]

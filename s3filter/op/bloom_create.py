@@ -2,6 +2,7 @@
 """Bloom filter creation support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
@@ -48,7 +49,7 @@ class BloomCreate(Operator):
 
     BLOOM_FILTER_FP_RATE = 0.3
 
-    def __init__(self, bloom_field_name, name, query_plan, log_enabled):
+    def __init__(self, bloom_field_name, name, query_plan, log_enabled, fp_rate=BLOOM_FILTER_FP_RATE):
         """
 
         :param bloom_field_name: The tuple field name to extract values from to create the bloom filter
@@ -67,6 +68,8 @@ class BloomCreate(Operator):
         self.producer_completions = {}
 
         self.producers_received = {}
+
+        self.fp_rate = fp_rate
 
         # These settings are similar to the simple version
         # self.__bloom_filter = ScalableBloomFilter(64, 0.75, ScalableBloomFilter.LARGE_SET_GROWTH)
@@ -112,8 +115,8 @@ class BloomCreate(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, producer_name)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m, producer_name)
+            elif isinstance(m, DataFrameMessage):
+                self.__on_receive_dataframe(m.dataframe, producer_name)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -129,7 +132,7 @@ class BloomCreate(Operator):
         if all(self.producer_completions.values()):
 
             # Build bloom filter
-            bloom_filter = self.build_bloom_filter(len(self.__tuples), BloomCreate.BLOOM_FILTER_FP_RATE)
+            bloom_filter = self.build_bloom_filter(len(self.__tuples), self.fp_rate)
 
             for t in self.__tuples:
                 lt = IndexedTuple.build(t, self.__field_names)

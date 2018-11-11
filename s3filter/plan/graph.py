@@ -40,9 +40,15 @@ class Graph(object):
                                 label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name,
                                                               operator.map_field_name),
                                 shape="box")
-        elif type(operator) is SQLTableScan or type(operator) is SQLTableScanBloomUse:
+        elif type(operator) is SQLTableScan:
             self.graph.add_node(operator.name,
                                 label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name, operator.s3key),
+                                tooltip="sql: '{}'&#10;".format(operator.s3sql),
+                                shape="box")
+        elif isinstance(operator, SQLTableScanBloomUse):
+            self.graph.add_node(operator.name,
+                                label="{}\n{}\n({}, {})".format(operator.__class__.__name__, operator.name,
+                                                                operator.s3key, operator.get_bloom_filter_field_name()),
                                 tooltip="sql: '{}'&#10;".format(operator.s3sql),
                                 shape="box")
         elif type(operator) is BloomCreate:
@@ -91,6 +97,8 @@ class Graph(object):
 
         :return: None
         """
+
+        # NOTE: This is taking a long time with the large query plans, uncomment it to see the graph
 
         self.graph.layout(prog='dot')
         self.graph.draw("{}/{}.svg".format(test_output_dir, self.name))

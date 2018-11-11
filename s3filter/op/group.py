@@ -2,6 +2,7 @@
 """Group by with aggregate support
 
 """
+from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.aggregate_expression import AggregateExpressionContext
 from s3filter.op.operator_base import Operator
@@ -57,8 +58,8 @@ class Group(Operator):
         for m in ms:
             if type(m) is TupleMessage:
                 self.__on_receive_tuple(m.tuple_, _producer)
-            elif type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m)
+            elif isinstance(m, DataFrameMessage):
+                self.__on_receive_dataframe(m.dataframe)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -107,7 +108,10 @@ class Group(Operator):
         if not type(self.aggregate_df) is pd.DataFrame:
             self.aggregate_df = agg_df
         else:
-            self.aggregate_df = pd.concat([self.aggregate_df, agg_df])
+            # self.aggregate_df = pd.concat([self.aggregate_df, agg_df])
+            self.aggregate_df = pd.concat([self.aggregate_df, agg_df], ignore_index=True).groupby(
+                self.group_field_names).sum().reset_index()
+
 
 
 
@@ -166,14 +170,20 @@ class Group(Operator):
                 t_ = group_fields + group_aggregate_values
                 self.send(TupleMessage(Tuple(t_)), self.consumers)
         else:
-            # for groupby_reducer, aggregate one more time.  
+            # for groupby_reducer, aggregate one more time.
             if len(self.producers) > 1:
                 self.aggregate_df = self.pd_expr(self.aggregate_df)
-            self.aggregate_df.reset_index(drop=True, inplace=True)
 
             if self.aggregate_df is not None:
-                self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
-                self.send(self.aggregate_df, self.consumers)
+                self.aggregate_df.reset_index(drop=True, inplace=True)
+
+                # if self.log_enabled:
+                #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                #         print("{}('{}') | Sending grouped field values: \n{}"
+                #               .format(self.__class__.__name__, self.name, self.aggregate_df))
+
+                #self.send(TupleMessage(Tuple(list(self.aggregate_df))), self.consumers)
+                self.send(DataFrameMessage(self.aggregate_df), self.consumers)
 
                 del self.aggregate_df
 

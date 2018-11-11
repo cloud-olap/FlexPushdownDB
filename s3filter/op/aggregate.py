@@ -81,8 +81,7 @@ class Aggregate(Operator):
         """
 
         if self.use_shared_mem:
-            m = ms
-            self.on_receive_message(m, producer_name)
+            self.on_receive_message(ms, producer_name)
         else:
             for m in ms:
                 self.on_receive_message(m, producer_name)
@@ -197,5 +196,8 @@ class Aggregate(Operator):
         #     print("{}('{}') | Received dataframe: {}"
         #           .format(self.__class__.__name__, self.name, df))
         if len(df) > 0:
+            self.op_metrics.expressions_evaluated += 1
+            self.op_metrics.rows_aggregated += len(df)
+
             df2 = self.agg_fun(df)
             self.agg_df = self.agg_df.append( df2 )

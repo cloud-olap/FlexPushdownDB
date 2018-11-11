@@ -8,6 +8,7 @@ import timeit
 
 import agate
 import numpy
+import math
 import pandas as pd
 from boto3 import Session
 from botocore.config import Config
@@ -101,10 +102,13 @@ class PandasRangeCursor(object):
         #
         # TODO if the ranges is too long, should chop it up. 
         pool = ThreadPool(self.nthreads)
-        self.num_http_get_requests += len(self.ranges)
+        ranges = self.ranges.values.tolist()
+        self.num_http_get_requests += len(ranges)
+
+        # print('ranges per pool = {}'.format(math.ceil(len(ranges) / self.nthreads)))
 
         if len(self.ranges) > 0:
-            results = pool.map(self.get_object_thread, self.ranges.values.tolist())
+            results = pool.map(self.get_object_thread, ranges)
             pool.close()
             pool.join()
             record_str = ''.join(results) 

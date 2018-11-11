@@ -4,11 +4,12 @@
 """
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.operator_base import Operator
-from s3filter.op.message import TupleMessage, StringMessage
+from s3filter.op.message import DataFrameMessage, StringMessage
 from s3filter.op.tuple import Tuple, IndexedTuple
 # noinspection PyCompatibility,PyPep8Naming
 import cPickle as pickle
 import pandas as pd
+import time
 
 
 class TopKFilterBuild(Operator):
@@ -25,6 +26,7 @@ class TopKFilterBuild(Operator):
         self.data_type = data_type
         self.s3sql = s3sql
         self.pred = pred
+        self.threshold = None
 
         super(TopKFilterBuild, self).__init__(name, OpMetrics(), query_plan, log_enabled)
 
@@ -38,8 +40,8 @@ class TopKFilterBuild(Operator):
         for m in ms:
             #if type(m) is TupleMessage:
             #    self.__on_receive_tuple(m.tuple_, producer_name)
-            if type(m) is pd.DataFrame:
-                self.__on_receive_dataframe(m)
+            if type(m) is DataFrameMessage:
+                self.__on_receive_dataframe(m.dataframe)
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
@@ -50,11 +52,11 @@ class TopKFilterBuild(Operator):
     def __on_receive_dataframe(self, df):
         df = df.astype(self.data_type)
         if self.sort_order == 'ASC':
-            thresh = df.max().values[0]
-            where_clause = ' where {} <= {}'.format(self.pred, thresh) 
+            self.threshold = df.max().values[0]
+            where_clause = ' where {} <= {}'.format(self.pred, self.threshold)
         elif self.sort_order == 'DESC':
-            thresh = df.min().values[0]
-            where_clause = ' where {} >= {}'.format(self.pred, thresh) 
+            self.threshold = df.min().values[0]
+            where_clause = ' where {} >= {}'.format(self.pred, self.threshold)
         sql = '{} {};'.format(self.s3sql, where_clause)
         print sql
         self.send(  StringMessage(sql), self.consumers)

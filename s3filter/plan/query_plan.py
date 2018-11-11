@@ -37,7 +37,7 @@ class QueryPlan(object):
 
     """
 
-    def __init__(self, system, operators=None, is_async=False, buffer_size=1024, use_shared_mem=False):
+    def __init__(self, system=None, operators=None, is_async=False, buffer_size=1024, use_shared_mem=False):
         # type: (WorkerSystem, list, bool, int, bool) -> None
         """
 
@@ -197,6 +197,8 @@ class QueryPlan(object):
         return root_operators
 
     def send(self, message, operator_name, sender_op):
+        # NOTE: Have to check that the sender op is async otherwise won't be able to send any messages back to it
+        # (which is needed to send dataframes)
         if self.use_shared_mem:
             if type(message) is list:
                 for e in message[0]:
@@ -207,8 +209,11 @@ class QueryPlan(object):
             else:
                 self.system.send(operator_name, message, sender_op.worker)
         else:
-            o = self.operators[operator_name]
-            o.queue.put(cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL))
+            if type(message) is list and len(message) <= 0:
+                return
+            else:
+                o = self.operators[operator_name]
+                o.queue.put(cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL))
 
     def print_metrics(self):
 
@@ -229,7 +234,7 @@ class QueryPlan(object):
         print("----")
         self.print_cost_metrics()
 
-        print("") 
+        print("")
         print("Operator Completion Time")
         print("------------------------")
         for k, v in self.__debug_timer.items():
@@ -331,6 +336,7 @@ class QueryPlan(object):
 
         # Things become event driven from here, because we may be running async, so we essentially go
         # into an event loop with a state machine to keep track of where we are
+        # async_operators = {name: o for name, o in filter(lambda (name, o): o.async_, self.operators.items())}
 
         if self.is_async:
             operator_completions = {k: False for k, v in self.operators.items()}
@@ -348,14 +354,18 @@ class QueryPlan(object):
             # different process.
             operators = self.traverse_topological_from_root()
             for o in operators:
-                if self.use_shared_mem:
-                    self.system.send(o.name, EvalMessage("self.op_metrics"), None)
-                else:
-                    p_message = pickle.dumps(EvalMessage("self.op_metrics"))
-                    o.queue.put(p_message)
+                if o.async_:
+                    if self.use_shared_mem:
+                        self.system.send(o.name, EvalMessage("self.op_metrics"), None)
+                    else:
+                        p_message = pickle.dumps(EvalMessage("self.op_metrics"))
+                        o.queue.put(p_message)
 
-                evaluated_msg = self.listen(EvaluatedMessage)  # type: EvaluatedMessage
-                o.op_metrics = evaluated_msg.val
+                    evaluated_msg = self.listen(EvaluatedMessage)  # type: EvaluatedMessage
+                    o.op_metrics = evaluated_msg.val
+                else:
+                    # Don't need to request metrics
+                    pass
 
             map(lambda op: op.set_completed(True), self.operators.values())
 
@@ -391,9 +401,9 @@ class QueryPlan(object):
                 self.system.join()
                 self.system.close()
             else:
-                map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), self.operators.values())
+                map(lambda o: o.queue.put(cPickle.dumps(StopMessage())), filter(lambda o: o.async_, self.operators.values()))
                 self.join()
-                map(lambda o: o.queue.close(), self.operators.values())
+                map(lambda o: o.queue.close(), filter(lambda o: o.async_, self.operators.values()))
         else:
             pass
 

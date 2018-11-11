@@ -121,3 +121,4 @@ venv.bak/
 
 *.code-workspace
 /.vscode/
+/benchmark-results/

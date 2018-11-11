@@ -14,23 +14,24 @@ from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
+from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
+    connect_one_to_one
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
 from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
+import pandas as pd
+import numpy as np
 
 
-def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            part_parts=4, lineitem_sharded=True, part_sharded=True)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-            part_parts=4, lineitem_sharded=True, part_sharded=False)
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, expected_result):
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf,
+        expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded):
+        part_sharded, sf, expected_result):
     """
 
     :return: None
@@ -53,11 +54,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                             tpch_q14.sql_scan_lineitem_operator_def(
                                 lineitem_sharded,
                                 p,
+                                lineitem_parts,
                                 use_pandas,
                                 secure,
                                 use_native,
                                 'lineitem_scan' + '_' + str(p),
-                                query_plan)),
+                                query_plan, sf)),
                         range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:
@@ -77,7 +79,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                             secure,
                             use_native,
                             'part_scan' + '_' + str(p),
-                            query_plan)),
+                            query_plan,
+                            sf)),
                     range(0, part_parts))
 
     part_project = map(lambda p:
@@ -96,10 +99,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                   query_plan)),
                           range(0, lineitem_parts))
 
-    part_filter = map(lambda p:
-                      query_plan.add_operator(
-                          tpch_q14.filter_brand12_operator_def('part_filter' + '_' + str(p), query_plan)),
-                      range(0, part_parts))
+    # part_filter = map(lambda p:
+    #                   query_plan.add_operator(
+    #                       tpch_q14.filter_brand12_operator_def('part_filter' + '_' + str(p), query_plan)),
+    #                   range(0, part_parts))
 
     join_build = map(lambda p:
                      query_plan.add_operator(
@@ -115,9 +118,15 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     part_aggregate = map(lambda p:
                          query_plan.add_operator(
                              tpch_q14.aggregate_promo_revenue_operator_def(
+                                 use_pandas,
                                  'part_aggregate' + '_' + str(p),
                                  query_plan)),
                          range(0, part_parts))
+
+    def aggregate_reduce_fn(df):
+        sum1_ = df['_0'].astype(np.float).sum()
+        sum2_ = df['_1'].astype(np.float).sum()
+        return pd.DataFrame({'_0': [sum1_], '_1': [sum2_]})
 
     aggregate_reduce = query_plan.add_operator(
         Aggregate(
@@ -125,21 +134,37 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0'])),
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_1']))
             ],
+            use_pandas,
             'aggregate_reduce',
             query_plan,
-            False))
+            False, aggregate_reduce_fn))
 
     aggregate_project = query_plan.add_operator(
         tpch_q14.project_promo_revenue_operator_def('aggregate_project', query_plan))
 
     collate = query_plan.add_operator(tpch_q14.collate_operator_def('collate', query_plan))
 
+    # Inline what we can
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), part_project)
+    map(lambda o: o.set_async(False), lineitem_filter)
+    aggregate_project.set_async(False)
+
     # Connect the operators
+    # connect_many_to_many(lineitem_scan, lineitem_project)
+    # connect_many_to_many(part_scan, part_project)
+    # connect_many_to_many(part_project, join_build)
+    # connect_all_to_all(join_build, join_probe)
+    # connect_many_to_many(lineitem_project, join_probe)
+    # connect_many_to_many(join_probe, part_aggregate)
+    # connect_many_to_one(part_aggregate, aggregate_reduce)
+    # connect_one_to_one(aggregate_reduce, aggregate_project)
+    # connect_one_to_one(aggregate_project, collate)
+
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
     map(lambda (p, o): o.connect(lineitem_filter[p]), enumerate(lineitem_project))
     map(lambda (p, o): o.connect(part_project[p]), enumerate(part_scan))
-    map(lambda (p, o): o.connect(part_filter[p]), enumerate(part_project))
-    map(lambda (p, o): o.connect(join_build[p]), enumerate(part_filter))
+    map(lambda (p, o): o.connect(join_build[p]), enumerate(part_project))
     map(lambda (p, o): map(lambda (bp, bo): o.connect_build_producer(bo), enumerate(join_build)), enumerate(join_probe))
     map(lambda (p, o): join_probe[p % part_parts].connect_tuple_producer(o), enumerate(lineitem_filter))
     map(lambda (p, o): o.connect(part_aggregate[p]), enumerate(join_probe))
@@ -187,7 +212,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     if s3filter.util.constants.TPCH_SF == 10:
         assert round(float(tuples[1][0]), 10) == 15.4488836202
     elif s3filter.util.constants.TPCH_SF == 1:
-        numpy.testing.assert_almost_equal(float(tuples[1][0]), 15.0901165263)
+        numpy.testing.assert_approx_equal(float(tuples[1][0]), expected_result)
 
 
 if __name__ == "__main__":

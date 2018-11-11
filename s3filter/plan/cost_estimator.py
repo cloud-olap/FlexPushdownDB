@@ -170,6 +170,8 @@ class CostEstimator:
     else:
         os_type = EC2InstanceOS.Any
 
+    print('creating cost estimator with region {}, instance type {} and os type {}'.format(region, instance_type, os_type))
+
     def __init__(self, table_scan_metrics):
 
         self.ec2_instance = EC2Instance.get_instance_info(CostEstimator.os_type, CostEstimator.instance_type,

@@ -14,23 +14,23 @@ from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.map import Map
+from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
+    connect_one_to_one
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q17
 from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
+import pandas as pd
+import numpy as np
 
 
-def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            part_parts=4, lineitem_sharded=True, part_sharded=True)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
-            part_parts=4, lineitem_sharded=True, part_sharded=False)
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, expected_result):
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded):
+        part_sharded, sf, expected_result):
     """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
 
     This works by:
@@ -65,7 +65,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                             secure,
                             use_native,
                             'part_scan' + '_' + str(p),
-                            query_plan)),
+                            query_plan,
+                            sf)),
                     range(0, part_parts))
 
     lineitem_scan = map(lambda p:
@@ -78,7 +79,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                 secure,
                                 use_native,
                                 'lineitem_scan' + '_' + str(p),
-                                query_plan)),
+                                query_plan,
+                                sf)),
                         range(0, lineitem_parts))
 
     part_project = map(lambda p:
@@ -108,11 +110,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                        query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
                        range(0, lineitem_parts))
 
-    # part_lineitem_join = map(lambda p:
-    #                          query_plan.add_operator(
-    #                              tpch_q17.join_p_partkey_l_partkey_op('part_lineitem_join', query_plan)),
-    #                          range(0, lineitem_parts))
-
     part_lineitem_join_build = map(lambda p:
                                    query_plan.add_operator(
                                        HashJoinBuild('p_partkey',
@@ -138,12 +135,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                               tpch_q17.project_partkey_avg_quantity_op(
                                                   'lineitem_part_avg_group_project' + '_' + str(p), query_plan)),
                                           range(0, part_parts))
-
-    # part_lineitem_join_avg_group_join = map(lambda p:
-    #                                         query_plan.add_operator(
-    #                                             tpch_q17.join_l_partkey_p_partkey_op(
-    #                                                 'part_lineitem_join_avg_group_join', query_plan)),
-    #                                         range(0, lineitem_parts))
 
     part_lineitem_join_avg_group_join_build = \
         map(lambda p:
@@ -171,23 +162,34 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     extendedprice_sum_aggregate = map(lambda p:
                                       query_plan.add_operator(
                                           tpch_q17.aggregate_sum_extendedprice_op(
+                                              use_pandas,
                                               'extendedprice_sum_aggregate' + '_' + str(p),
                                               query_plan)),
                                       range(0, part_parts))
+
+    def aggregate_reduce_fn(df):
+        sum1_ = df['_0'].astype(np.float).sum()
+        return pd.DataFrame({'_0': [sum1_]})
 
     aggregate_reduce = query_plan.add_operator(
         Aggregate(
             [
                 AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0']))
             ],
+            use_pandas,
             'aggregate_reduce',
             query_plan,
-            False))
+            False, aggregate_reduce_fn))
 
     extendedprice_sum_aggregate_project = query_plan.add_operator(
         tpch_q17.project_avg_yearly_op('extendedprice_sum_aggregate_project', query_plan))
 
     collate = query_plan.add_operator(tpch_q17.collate_op('collate', query_plan))
+
+    # Inline what we can
+    # map(lambda o: o.set_async(False), lineitem_project)
+    # map(lambda o: o.set_async(False), part_project)
+    # extendedprice_sum_aggregate_project.set_async(False)
 
     # Connect the operators
     # part_scan.connect(part_project)
@@ -278,7 +280,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
         assert round(float(tuples[1][0]),
                      10) == 372414.2899999995  # TODO: This isn't correct but haven't checked tpch17 on 10 sf yet
     elif s3filter.util.constants.TPCH_SF == 1:
-        numpy.testing.assert_almost_equal(float(tuples[1][0]), 372414.29)
+        numpy.testing.assert_approx_equal(float(tuples[1][0]), expected_result)
 
 
 if __name__ == "__main__":

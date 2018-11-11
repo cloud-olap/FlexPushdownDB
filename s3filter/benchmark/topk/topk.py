@@ -24,7 +24,7 @@ def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extende
     parallel_shards = True
     processes = multiprocessing.cpu_count()
 
-    query_stats = ['baseline' if filtered is False else 'filtered', shards_prefix, col_name, sort_order, limit, '']
+    query_stats = ['baseline' if filtered is False else 'filtered', shards_prefix, col_name, sort_order, limit]
 
     sql = 'select * from S3Object;'
 
@@ -110,8 +110,9 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     parallel_shards = True
     processes = multiprocessing.cpu_count()
 
-    query_stats = ['sampling_{}'.format('conservative' if conservative else 'aggressive'), shards_prefix, sort_field,
-                   sort_order, limit, k_scale]
+    query_stats = ['sampling_{}_{}'.format('conservative' if conservative else 'aggressive',
+                                           'filtered' if filtered else 'non-filtered'), shards_prefix, sort_field,
+                   sort_order, limit * k_scale, limit * k_scale]
 
     sql = 'select * from S3Object;'
 
@@ -123,7 +124,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     print("\n\nSampling params:")
     print("Scale: {}, Sort Field: {}, Sort Order: {}\n".format(k_scale, sort_field, sort_order))
 
-    query_plan = QueryPlan(is_async=True)
+    query_plan = QueryPlan(None, is_async=True)
 
     # Query plan
     ts = query_plan.add_operator(
@@ -155,14 +156,14 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
                     ts.op_metrics.sampling_time,
                     query_plan.total_elapsed_time,
                     ts.op_metrics.sampling_time + query_plan.total_elapsed_time,
-                    0 if num_rows >= limit else 1,
+                    # 0 if num_rows >= limit else 1,
                     rows,
                     bytes_scanned,
                     bytes_returned,
                     data_cost,
                     computation_cost,
-                    cost,
-                    num_rows == limit + 1
+                    cost#,
+                    # num_rows == limit + 1
                     ]
     stats.append(query_stats)
 
@@ -182,8 +183,7 @@ def run_all():
         'Table',
         'Sort Field',
         'Sort Order',
-        'K',
-        'K scale',
+        'Sample Size',
         'Sampling Threshold',
         'Sampling time (Sec)',
         'Query time (Sec)',
@@ -199,9 +199,9 @@ def run_all():
     ]]
 
     # varying K
-    for k in [100, 1000, 10000, 100000]:
+    # for k in [100, 1000, 10000, 100000]:
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=False)
-        topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
+        # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=False)
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'ASC', use_pandas=use_pandas, filtered=True)
         # topk_baseline(stats, k, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas, filtered=True)
 
@@ -212,25 +212,26 @@ def run_all():
             topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
                                filtered=False,
                                conservative=True)
-            topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
-                               filtered=False,
-                               conservative=False)
+            # topk_with_sampling(stats, k, kscale, '_5', float, 'l_extendedprice', 'DESC', use_pandas=use_pandas,
+            #                    filtered=False,
+            #                    conservative=False)
 
     for stat in stats:
         print(",".join([str(x) if type(x) is not str else x for x in stat]))
 
 
 if __name__ == "__main__":
-    # run_all()
-    import sys,os
+    run_all()
 
+    import sys,os
+    sys.exit(0)
     stats_header = [
         'Method',
         'Table',
         'Sort Field',
         'Sort Order',
-        'K',
-        'K scale',
+        'Sample Size',
+        'Batch Size',
         'Sampling Threshold',
         'Sampling time (Sec)',
         'Query time (Sec)',
@@ -254,8 +255,9 @@ if __name__ == "__main__":
         shards_prefix = sys.argv[6]
         shards_start = int(sys.argv[7])
         shards_end = int(sys.argv[8])
-        if len(sys.argv) >= 10:
-            stats_file_name = sys.argv[9]
+        filtered = False if int(sys.argv[9]) == 0 else True
+        if len(sys.argv) >= 11:
+            stats_file_name = sys.argv[10]
         else:
             stats_file_name = 'topk_stats.txt'
 
@@ -269,7 +271,7 @@ if __name__ == "__main__":
                           col_name='l_extendedprice',
                           sort_order='DESC',
                           use_pandas=True,
-                          filtered=False,
+                          filtered=filtered,
                           table_name=table_name,
                           shards_prefix=shards_prefix,
                           shards_start=shards_start,
@@ -283,7 +285,7 @@ if __name__ == "__main__":
                                sort_field='l_extendedprice',
                                sort_order='DESC',
                                use_pandas=True,
-                               filtered=False,
+                               filtered=filtered,
                                conservative=is_conservative,
                                table_name=table_name,
                                shards_prefix=shards_prefix,

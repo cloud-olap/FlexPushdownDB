@@ -6,7 +6,7 @@ from s3filter import ROOT_DIR
 from s3filter.util.test_util import gen_test_id
 
 
-def run(query_plan, expected_total_balance, test_id):
+def run(query_plan, expected_result, test_id):
     """
 
     :return: None
@@ -36,4 +36,4 @@ def run(query_plan, expected_total_balance, test_id):
 
     assert tuples[0] == field_names
 
-    np.testing.assert_approx_equal(tuples[1][0], expected_total_balance)
+    np.testing.assert_approx_equal(tuples[1][0], expected_result)

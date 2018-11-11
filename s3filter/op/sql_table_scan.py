@@ -112,7 +112,7 @@ class SQLTableScan(Operator):
             if type(m) is StringMessage:
                 self.s3sql = m.string_
                 if self.async_:
-                    self.query_plan.send(StartMessage(), self.name)
+                    self.query_plan.send(StartMessage(), self.name, self)
                 else:
                     self.run()
             else:
@@ -146,6 +146,8 @@ class SQLTableScan(Operator):
         self.use_pandas = use_pandas
 
         self.use_native = use_native
+
+        #self.filter_fn = fn
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -281,9 +283,13 @@ class SQLTableScan(Operator):
 
                 op.op_metrics.rows_returned += len(df)
 
-                if op.log_enabled:
-                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                        print("{}('{}') | Sending field values: \n{}".format(op.__class__.__name__, op.name, df))
+                # Apply filter if there is one
+                #if op.filter_fn is not None:
+                #    df = df[op.filter_fn(df)]
+
+                # if op.log_enabled:
+                #     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                #         print("{}('{}') | Sending field values: \n{}".format(op.__class__.__name__, op.name, df))
 
                 counter += 1
                 if op.log_enabled:

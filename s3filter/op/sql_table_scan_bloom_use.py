@@ -56,11 +56,16 @@ class SQLTableScanBloomUse(Operator):
 
         self.__bloom_filters = []
 
+        self.filter_fn = fn
+
         if type(bloom_filter_field_name) is str:
             self.__bloom_filter_field_name = bloom_filter_field_name
         else:
             raise Exception("Bloom filter field name is of type {}. Field name must be of type str to be "
                             "used in SQL predicate".format(type(bloom_filter_field_name)))
+
+    def get_bloom_filter_field_name(self):
+        return self.__bloom_filter_field_name
 
     def on_producer_completed(self, producer_name):
         """This event is overridden because we don't want the normal operator completion procedure to run. We want this
@@ -106,6 +111,9 @@ class SQLTableScanBloomUse(Operator):
         for bf in self.__bloom_filters:
             bloom_filter_sql_predicate = bf.build_bit_array_string_sql_predicate(self.__bloom_filter_field_name)
             bloom_filter_sql_predicates.append(bloom_filter_sql_predicate)
+
+        # Don't need this anymore
+        del self.__bloom_filters
 
         sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicates)
         self.s3sql = self.s3sql + sql_suffix
