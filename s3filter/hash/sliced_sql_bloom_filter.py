@@ -1,5 +1,11 @@
 import numpy
 
+from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
+
+NUM_BYTES_RESERVED = 32 * 1024
+
+MAX_S3_SELECT_EXP_LEN = 1024 * 256
+
 
 class SlicedSQLBloomFilter(object):
     """Wrapper class for a sliced bloom filter that adds the methods to convert it into it's SQL representation so it
@@ -113,3 +119,18 @@ class SlicedSQLBloomFilter(object):
             index_arrays.append(slice_index_array)
 
         return index_arrays
+
+    @staticmethod
+    def calc_best_fp_rate(capacity):
+        """
+        Given a capacity, calculates the best achievable false positive rate
+
+        :param capacity:
+        :return:
+        """
+
+        # Substract the number of bytes used for the given sql statement
+        num_available_bytes = MAX_S3_SELECT_EXP_LEN - NUM_BYTES_RESERVED
+        kp = SlicedBloomFilter.kp_from_mn(num_available_bytes, capacity)
+
+        return kp[1]
