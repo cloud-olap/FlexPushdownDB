@@ -30,8 +30,8 @@ class SlicedBloomFilter(object):
 
         # if not capacity > 0:
         #     raise Exception("Capacity must be > 0")
-        if not (0 < error_rate < 1):
-            raise Exception("Illegal error rate {}. Error rate must be between 0 and 1.".format(error_rate))
+        # if not (0 < error_rate < 1):
+        #     raise Exception("Illegal error rate {}. Error rate must be between 0 and 1.".format(error_rate))
 
         self.capacity = capacity
         self.error_rate = error_rate
@@ -45,6 +45,15 @@ class SlicedBloomFilter(object):
         self.hash_functions = self.build_hash_functions()
 
         self.bit_arrays = numpy.zeros((self.num_slices, self.num_bits_per_slice), dtype=bool)
+
+    def __repr__(self):
+        return {
+            'capacity': self.capacity,
+            'error_rate': self.error_rate,
+            'num_slices': self.num_slices,
+            'num_bits_per_slice': self.num_bits_per_slice,
+            'num_bits': self.num_slices * self.num_bits_per_slice
+        }.__repr__()
 
     def build_hash_functions(self):
         """Creates the hash functions needed for the bloom filter. One per slice with each function hashing over the number
@@ -124,7 +133,10 @@ class SlicedBloomFilter(object):
         :return:
         """
 
-        return int(math.ceil((n * abs(math.log(p))) / (k * (math.log(2) ** 2))))
+        if k == 0:
+            return 0
+        else:
+            return int(math.ceil((n * abs(math.log(p))) / (k * (math.log(2) ** 2))))
 
     @staticmethod
     def k_from_p(p):

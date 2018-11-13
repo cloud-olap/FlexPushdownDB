@@ -9,11 +9,12 @@ from s3filter.benchmark.tpch import tpch_q14_baseline_join, tpch_q14_filtered_jo
 
 def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded, fp_rate,
          expected_result):
-
-    tpch_q3_baseline_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded, expected_result)
-    # tpch_q3_filtered_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded, expected_result)
-    # tpch_q3_bloom_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts,
-    #                         lineitem_sharded, fp_rate, expected_result)
+    # tpch_q3_baseline_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts,
+    #                            lineitem_sharded, expected_result)
+    # tpch_q3_filtered_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts,
+    #                            lineitem_sharded, expected_result)
+    tpch_q3_bloom_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts,
+                            lineitem_sharded, fp_rate, expected_result)
 
 
 if __name__ == "__main__":

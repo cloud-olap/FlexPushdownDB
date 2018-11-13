@@ -2,6 +2,9 @@
 """Bloom filter creation support
 
 """
+import warnings
+
+from s3filter.hash.sliced_sql_bloom_filter import SlicedSQLBloomFilter, MAX_S3_SELECT_EXPRESSION_LEN
 from s3filter.multiprocessing.message import DataFrameMessage
 from s3filter.op.tuple import IndexedTuple
 from s3filter.plan.op_metrics import OpMetrics
@@ -131,8 +134,28 @@ class BloomCreate(Operator):
 
         if all(self.producer_completions.values()):
 
+            # Get the SQL from a bloom use operators
+            bloom_use_operators = filter(lambda o: isinstance(o, SQLTableScanBloomUse), self.consumers)
+            bloom_use_sql_strings = map(lambda o: o.s3sql, bloom_use_operators)
+            max_bloom_use_sql_strings = max(map(lambda s: len(s), bloom_use_sql_strings))
+
             # Build bloom filter
-            bloom_filter = self.build_bloom_filter(len(self.__tuples), self.fp_rate)
+            best_possible_fp_rate = SlicedSQLBloomFilter.calc_best_fp_rate(len(self.__tuples),
+                                                                           max_bloom_use_sql_strings)
+
+            if best_possible_fp_rate > self.fp_rate:
+                warnings.warn("{}('{}') | Bloom filter fp rate ({}) too low, "
+                              "will exceed max S3 Select SQL expression length ({}). "
+                              "Raising to best possible ({})".format(self.__class__.__name__,
+                                                                     self.name,
+                                                                     self.fp_rate,
+                                                                     MAX_S3_SELECT_EXPRESSION_LEN,
+                                                                     best_possible_fp_rate))
+                fp_rate_to_use = best_possible_fp_rate
+            else:
+                fp_rate_to_use = self.fp_rate
+
+            bloom_filter = self.build_bloom_filter(len(self.__tuples), fp_rate_to_use)
 
             for t in self.__tuples:
                 lt = IndexedTuple.build(t, self.__field_names)
@@ -174,7 +197,7 @@ class BloomCreate(Operator):
                 raise Exception(
                     "Received invalid tuple {} from {}. "
                     "Tuple field names '{}' do not contain field with bloom field name '{}'"
-                    .format(tuple_, producer_name, tuple_, self.bloom_field_name))
+                        .format(tuple_, producer_name, tuple_, self.bloom_field_name))
 
             # Don't send the field names, just collect them
             self.__field_names = tuple_
@@ -208,13 +231,12 @@ class BloomCreate(Operator):
                 raise Exception(
                     "Received invalid tuple {} from {}. "
                     "Tuple field names '{}' do not contain field with bloom field name '{}'"
-                    .format(tuple_, producer_name, tuple_, self.bloom_field_name))
+                        .format(tuple_, producer_name, tuple_, self.bloom_field_name))
 
             # Don't send the field names, just collect them
             self.__field_names = df.columns.values
 
             self.producers_received[producer_name] = True
-
 
         if producer_name not in self.producers_received.keys():
             # This will be the field names tuple, skip it

@@ -2,6 +2,8 @@
 """
 
 """
+import warnings
+
 from boto3 import Session
 from botocore.config import Config
 
@@ -10,8 +12,8 @@ from s3filter.op.operator_base import Operator
 from s3filter.op.message import TupleMessage, BloomMessage
 from s3filter.op.sql_table_scan import SQLTableScanMetrics, SQLTableScan
 from s3filter.op.tuple import Tuple, IndexedTuple
-# noinspection PyCompatibility,PyPep8Naming
-import cPickle as pickle
+
+
 # import scan
 
 class SQLTableScanBloomUse(Operator):
@@ -19,7 +21,8 @@ class SQLTableScanBloomUse(Operator):
 
     """
 
-    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None):
+    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, secure, use_native, name, query_plan,
+                 log_enabled, fn=None):
         """
 
         :param s3key: The s3 key to select against
@@ -106,20 +109,26 @@ class SQLTableScanBloomUse(Operator):
         :return: None
         """
 
-        # Append the bloom filter predicate either using where... or and...
-        bloom_filter_sql_predicates = []
-        for bf in self.__bloom_filters:
-            bloom_filter_sql_predicate = bf.build_bit_array_string_sql_predicate(self.__bloom_filter_field_name)
-            bloom_filter_sql_predicates.append(bloom_filter_sql_predicate)
+        # NOTE: There should only ever be one bloom filter
+        if self.__bloom_filters[0].fp_rate() < 1.0:
+            bloom_filter_sql_predicates = []
+            for bf in self.__bloom_filters:
+                bloom_filter_sql_predicate = bf.build_bit_array_string_sql_predicate(self.__bloom_filter_field_name)
+                bloom_filter_sql_predicates.append(bloom_filter_sql_predicate)
 
-        # Don't need this anymore
-        del self.__bloom_filters
+            # Don't need this anymore
+            del self.__bloom_filters
 
-        sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicates)
-        self.s3sql = self.s3sql + sql_suffix
+            sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicates)
+            self.s3sql = self.s3sql + sql_suffix
+        else:
+            warnings.warn("{}('{}') | Bloom filter fp rate ({}) is 1.0, not using bloom filter"
+                          .format(self.__class__.__name__,
+                                  self.name,
+                                  self.__bloom_filters[0].fp_rate()))
 
         if self.log_enabled:
-            print("{}('{}') | {}".format(self.__class__.__name__, self.name, self.s3sql))
+            print("{}('{}') | sql length: {}".format(self.__class__.__name__, self.name, len(self.s3sql)))
 
         if self.use_pandas:
             cur = SQLTableScan.execute_pandas_query(self)

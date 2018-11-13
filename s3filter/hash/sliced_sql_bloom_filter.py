@@ -1,10 +1,46 @@
+"""
+NOTE: To calculate the best possible fp rate for a bloom filter we need to calculate the best achievable fp rate for a
+given capacity and bit array size.
+
+We know the capacity but need to calculate the bit array size. We know the max size of an S3 select expression, but we
+also need to take into account the number of characters used by the SQL statement that uses the bloom filter predicate
+and the extra SQL needed for the predicate itself.
+
+However, it's difficult to know precisely what the hash function SQL will be (without actually building it). It can
+approximated though, since we know the bloom filter predicates will be of the form (BF SQL template):
+
+    substring('<SLICE_BIT_ARRAY_STRING>', <HASH_FUNCTION_STR> + 1, 1) = '1'
+    substring('',  + 1, 1) = '1' (28 chars)
+
+where HASH_FUNCTION_STR is:
+
+    ( ( <INT> * cast(<FIELD_NAME> as int) + <INT> ) % <INT> ) % <INT>
+    ( (  * cast( as int) +  ) %  ) % (32 chars)
+
+where 8 chars are reserved for each <INT> and 16 chars are reserved for <FIELD_NAME>
+
+Given this, we approximate the bloom filter predicate lengths as:
+
+    m + (k * (28 + 32 + 8 + 16))
+    m + (k * 84)
+
+where m is the size of the bit array and k is the number of hash functions/slices. Since we don't know the value of k
+until an fp rate is calculated, we assume a maximum for k of 13 - which is a very restrictive bloom filter of fp rate
+0.0001.
+
+Solving for m:
+
+m = MAX_S3_SELECT_EXPRESSION_LEN - ENCLOSING_SQL_LEN - (13 * 84)
+m = MAX_S3_SELECT_EXPRESSION_LEN - ENCLOSING_SQL_LEN - 1092
+
+"""
+
 import numpy
 
 from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 
-NUM_BYTES_RESERVED = 32 * 1024
-
-MAX_S3_SELECT_EXP_LEN = 1024 * 256
+MAX_S3_SELECT_EXPRESSION_LEN = 1024 * 256
+MAX_BLOOM_FILTER_PREDICATE_SQL_TEMPLATE_LEN = 1092
 
 
 class SlicedSQLBloomFilter(object):
@@ -16,6 +52,9 @@ class SlicedSQLBloomFilter(object):
     def __init__(self, sliced_bloom_filter=None):
         if sliced_bloom_filter is not None:
             self._bloom_filter = sliced_bloom_filter
+
+    def fp_rate(self):
+        return self._bloom_filter.error_rate
 
     @staticmethod
     def build(sliced_bloom_filter):
@@ -121,16 +160,17 @@ class SlicedSQLBloomFilter(object):
         return index_arrays
 
     @staticmethod
-    def calc_best_fp_rate(capacity):
+    def calc_best_fp_rate(capacity, enclosing_sql_len):
         """
         Given a capacity, calculates the best achievable false positive rate
 
+        :param enclosing_sql_len:
         :param capacity:
         :return:
         """
 
-        # Substract the number of bytes used for the given sql statement
-        num_available_bytes = MAX_S3_SELECT_EXP_LEN - NUM_BYTES_RESERVED
-        kp = SlicedBloomFilter.kp_from_mn(num_available_bytes, capacity)
+        # Figure out how many bytes we have available for the SQL
+        m = MAX_S3_SELECT_EXPRESSION_LEN - (enclosing_sql_len + MAX_BLOOM_FILTER_PREDICATE_SQL_TEMPLATE_LEN)
+        kp = SlicedBloomFilter.kp_from_mn(m, capacity)
 
         return kp[1]

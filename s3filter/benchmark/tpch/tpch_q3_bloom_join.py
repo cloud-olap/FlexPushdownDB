@@ -96,9 +96,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                        False, customer_project_fn)),
                            range(0, customer_parts))
 
-    customer_bloom_create =                                query_plan.add_operator(
-                                    BloomCreate('c_custkey', 'customer_bloom_create', query_plan, False,
-                                                fp_rate))
+    customer_bloom_create = query_plan.add_operator(
+        BloomCreate('c_custkey', 'customer_bloom_create', query_plan, False,
+                    fp_rate))
 
     customer_map = map(lambda p:
                        query_plan.add_operator(Map('c_custkey', 'customer_map' + '_' + str(p), query_plan, False)),
@@ -162,8 +162,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                     range(0, customer_parts))
 
     order_bloom_create = query_plan.add_operator(
-                                 BloomCreate('o_orderkey', 'order_bloom_create' , query_plan, False,
-                                             fp_rate))
+        BloomCreate('o_orderkey', 'order_bloom_create', query_plan, False,
+                    fp_rate))
 
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
