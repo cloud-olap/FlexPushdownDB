@@ -27,7 +27,8 @@ import numpy as np
 
 def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, fp_rate, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, fp_rate=fp_rate, expected_result=expected_result)
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, fp_rate=fp_rate,
+        expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
@@ -166,6 +167,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("part_parts: {}".format(part_parts))
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("part_sharded: {}".format(part_sharded))
+    print("fp_rate: {}".format(fp_rate))
     print('')
 
     query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())

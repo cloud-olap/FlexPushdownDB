@@ -135,6 +135,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
         tpch_q19.aggregate_project_def('aggregate_project', query_plan))
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
 
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), part_project)
+    aggregate_project.set_async(False)
+
     # Connect the operators
     connect_many_to_many(lineitem_scan, lineitem_project)
     connect_many_to_many(lineitem_project, lineitem_map)
@@ -190,4 +194,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 2, False, tpch_results.q19_sf1_expected_result)
+    main(1, 2, False, 2, False, tpch_results.q19_sf1_expected_result)

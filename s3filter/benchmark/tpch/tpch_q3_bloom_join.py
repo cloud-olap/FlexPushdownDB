@@ -62,7 +62,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                         query_plan.add_operator(
                             SQLTableScan(get_file_key('customer', customer_sharded, p, sf),
                                          "select "
-                                         " c_custkey "
+                                         "  c_custkey "
                                          "from "
                                          "  S3Object "
                                          "where "
@@ -70,9 +70,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                          "  {} "
                                          "  {} "
                                          .format(
-                                             ' and ' + customer_filter_sql if customer_filter_sql is not None else "",
-                                             get_sql_suffix('customer', customer_parts, p,
-                                                            customer_sharded,
+                                             ' and ' + customer_filter_sql if customer_filter_sql is not None else '',
+                                             get_sql_suffix('customer', customer_parts, p, customer_sharded,
                                                             add_where=False)),
                                          use_pandas, secure, use_native,
                                          'customer_scan' + '_{}'.format(p),
@@ -117,8 +116,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                               "  {} "
                                               .format(
                                                   ' and ' + order_filter_sql if order_filter_sql is not None else '',
-                                                  get_sql_suffix('orders', order_parts, p,
-                                                                 order_sharded,
+                                                  get_sql_suffix('orders', order_parts, p, order_sharded,
                                                                  add_where=False)),
                                               'o_custkey',
                                               use_pandas, secure, use_native,
@@ -178,8 +176,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                  "  {} "
                                                  .format(
                                                      ' and ' + lineitem_filter_sql if lineitem_filter_sql is not None else '',
-                                                     get_sql_suffix('lineitem', lineitem_parts, p,
-                                                                    lineitem_sharded,
+                                                     get_sql_suffix('lineitem', lineitem_parts, p, lineitem_sharded,
                                                                     add_where=False)),
                                                  'l_orderkey',
                                                  use_pandas, secure, use_native,

@@ -228,7 +228,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                 lambda t_: float(t_['l_extendedprice'] * (1 - t_['l_discount'])))
                         ],
                         'group' + '_{}'.format(p), query_plan,
-                        True, groupby_fn)),
+                        False, groupby_fn)),
                 range(0, lineitem_parts))
 
     def group_reduce_fn(df):
@@ -244,7 +244,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                     lambda t_: float(t_['l_extendedprice'] * (1 - t_['l_discount'])))
             ],
             'group_reduce', query_plan,
-            True, group_reduce_fn))
+            False, group_reduce_fn))
 
     top = query_plan.add_operator(
         Top(10, [SortExpression('revenue', float, 'DESC'), SortExpression('o_orderdate', date, 'ASC')], use_pandas,
@@ -252,6 +252,11 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
             False))
 
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
+
+    # Inline what we can
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), customer_project)
+    map(lambda o: o.set_async(False), order_project)
 
     # Connect the operators
     connect_many_to_many(customer_scan, customer_project)
@@ -290,7 +295,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     print('use_pandas: {}'.format(use_pandas))
     print('secure: {}'.format(secure))
     print('use_native: {}'.format(use_native))
-    print("customer_parts parts: {}".format(customer_parts))
+    print("customer_parts: {}".format(customer_parts))
     print("order_parts: {}".format(order_parts))
     print("lineitem_parts: {}".format(lineitem_parts))
     print("customer_sharded: {}".format(customer_sharded))

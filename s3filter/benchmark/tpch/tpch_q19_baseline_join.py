@@ -144,14 +144,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
 
     # Inline what we can
-    # map(lambda o: o.set_async(False), lineitem_project)
-    # map(lambda o: o.set_async(False), part_project)
-    # map(lambda o: o.set_async(False), lineitem_map)
-    # map(lambda o: o.set_async(False), part_map)
-    # map(lambda o: o.set_async(False), lineitem_filter)
-    # map(lambda o: o.set_async(False), part_filter)
-    # map(lambda o: o.set_async(False), filter_op)
-    # aggregate_project.set_async(False)
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), part_project)
+    map(lambda o: o.set_async(False), lineitem_filter)
+    map(lambda o: o.set_async(False), part_filter)
+    map(lambda o: o.set_async(False), filter_op)
+    aggregate_project.set_async(False)
 
     # Connect the operators
     connect_many_to_many(lineitem_scan, lineitem_project)

@@ -13,17 +13,17 @@ from s3filter.benchmark.join.join_result import SF1_JOIN_2_RESULT, SF1_JOIN_3_RE
 def main():
     print("--- SYNTHETIC JOIN START ---")
 
-    # sf = 1
-    # expected_2_result = SF1_JOIN_2_RESULT
-    # expected_3_result = SF1_JOIN_3_RESULT
-    # parts = 32
-    # sharded = True
-
-    sf = 10
-    expected_2_result = SF10_JOIN_2_RESULT
-    # expected_3_result = SF10_JOIN_3_RESULT
-    parts = 96
+    sf = 1
+    expected_2_result = SF1_JOIN_2_RESULT
+    expected_3_result = SF1_JOIN_3_RESULT
+    parts = 32
     sharded = True
+
+    # sf = 10
+    # expected_2_result = SF10_JOIN_2_RESULT
+    # # expected_3_result = SF10_JOIN_3_RESULT
+    # parts = 96
+    # sharded = True
 
     # parts = 2
     # sharded = False
@@ -32,8 +32,8 @@ def main():
     # fp_rate = 0.001
     # fp_rate = 0.01
     # fp_rate = 0.1
-    fp_rate = 0.3
-    # fp_rate = 0.5
+    # fp_rate = 0.3
+    fp_rate = 0.5
 
     # 2 way join
     # synthetic_join_2_baseline.main(sf, parts, sharded, expected_result=expected_2_result)

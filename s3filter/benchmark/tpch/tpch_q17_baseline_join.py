@@ -187,9 +187,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     collate = query_plan.add_operator(tpch_q17.collate_op('collate', query_plan))
 
     # Inline what we can
-    # map(lambda o: o.set_async(False), lineitem_project)
-    # map(lambda o: o.set_async(False), part_project)
-    # extendedprice_sum_aggregate_project.set_async(False)
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), part_project)
+    extendedprice_sum_aggregate_project.set_async(False)
 
     # Connect the operators
     # part_scan.connect(part_project)

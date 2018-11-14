@@ -16,7 +16,7 @@ from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.map import Map
 from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
-    connect_one_to_one
+    connect_one_to_one, connect_one_to_many
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q17
 from s3filter.util.test_util import gen_test_id
@@ -71,11 +71,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                                False)),
                                        range(0, part_parts))
 
-    part_bloom_create = map(lambda p:
-                            query_plan.add_operator(
-                                tpch_q17.bloom_create_partkey_op(fp_rate, 'part_bloom_create' + '_' + str(p),
-                                                                 query_plan)),
-                            range(0, part_parts))
+    part_bloom_create = query_plan.add_operator(
+        tpch_q17.bloom_create_partkey_op(fp_rate, 'part_bloom_create',
+                                         query_plan))
 
     lineitem_bloom_use = \
         map(lambda p:
@@ -181,14 +179,19 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
     collate = query_plan.add_operator(tpch_q17.collate_op('collate', query_plan))
 
+    # Inline what we can
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), part_project)
+    extendedprice_sum_aggregate_project.set_async(False)
+
     # Connect the operators
     # part_scan.connect(part_project)
     map(lambda (p, o): o.connect(part_project[p]), enumerate(part_scan))
     # map(lambda (p, o): o.connect(part_bloom_create_map[p]), enumerate(part_project))
     map(lambda (p, o): o.connect(part_lineitem_join_build_map[p]), enumerate(part_project))
 
-    connect_all_to_all(part_project, part_bloom_create)
-    connect_many_to_many(part_bloom_create, lineitem_bloom_use)
+    connect_many_to_one(part_project, part_bloom_create)
+    connect_one_to_many(part_bloom_create, lineitem_bloom_use)
 
     # part_project.connect(part_bloom_create)
     # map(lambda (p1, o1): map(lambda (p2, o2): o1.connect(o2), enumerate(part_bloom_create)),
@@ -252,6 +255,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("part_parts: {}".format(part_parts))
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("part_sharded: {}".format(part_sharded))
+    print("fp_rate: {}".format(fp_rate))
     print('')
 
     # Write the plan graph

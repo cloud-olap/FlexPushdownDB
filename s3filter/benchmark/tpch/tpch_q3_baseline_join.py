@@ -33,6 +33,7 @@ from s3filter.util import test_util
 from s3filter.util.test_util import gen_test_id
 import pandas as pd
 
+
 def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded,
          expected_result, customer_filter_sql=None,
          order_filter_sql=None, lineitem_filter_sql=None):
@@ -98,12 +99,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
         return df['c_mktsegment'] == 'BUILDING'
 
     customer_filter = map(lambda p:
-                           query_plan.add_operator(
-                               Filter(PredicateExpression(pd_expr=customer_filter_fn),
-                                       'customer_filter' + '_{}'.format(p),
-                                       query_plan,
-                                       False)),
-                           range(0, customer_parts))
+                          query_plan.add_operator(
+                              Filter(PredicateExpression(pd_expr=customer_filter_fn),
+                                     'customer_filter' + '_{}'.format(p),
+                                     query_plan,
+                                     False)),
+                          range(0, customer_parts))
 
     customer_map = map(lambda p:
                        query_plan.add_operator(Map('c_custkey', 'customer_map' + '_' + str(p), query_plan, False)),
@@ -149,12 +150,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
         return pd.to_datetime(df['o_orderdate']) < pd.Timestamp(datetime.strptime('1995-03-01', '%Y-%m-%d').date())
 
     order_filter = map(lambda p:
-                      query_plan.add_operator(
-                          Filter(PredicateExpression(pd_expr=order_filter_fn),
-                                 'order_filter' + '_{}'.format(p),
-                                 query_plan,
-                                 False)),
-                      range(0, order_parts))
+                       query_plan.add_operator(
+                           Filter(PredicateExpression(pd_expr=order_filter_fn),
+                                  'order_filter' + '_{}'.format(p),
+                                  query_plan,
+                                  False)),
+                       range(0, order_parts))
 
     order_map_1 = map(lambda p:
                       query_plan.add_operator(Map('o_custkey', 'order_map_1' + '_' + str(p), query_plan, False)),
@@ -185,8 +186,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                          "  {} "
                                          .format(
                                              ' where ' + lineitem_filter_sql if lineitem_filter_sql is not None else "",
-                                             get_sql_suffix('lineitem', lineitem_parts, p,
-                                                            lineitem_sharded,
+                                             get_sql_suffix('lineitem', lineitem_parts, p, lineitem_sharded,
                                                             add_where=lineitem_filter_sql is None)),
                                          use_pandas, secure, use_native,
                                          'lineitem_scan' + '_{}'.format(p),
@@ -197,7 +197,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     def lineitem_project_fn(df):
         df = df.filter(items=['_0', '_5', '_6', '_10'], axis=1)
 
-        df.rename(columns={'_0': 'l_orderkey', '_5': 'l_extendedprice', '_6': 'l_discount',  '_10': 'l_shipdate'},
+        df.rename(columns={'_0': 'l_orderkey', '_5': 'l_extendedprice', '_6': 'l_discount', '_10': 'l_shipdate'},
                   inplace=True)
 
         return df
@@ -214,12 +214,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
         return pd.to_datetime(df['l_shipdate']) > pd.Timestamp(datetime.strptime('1995-03-01', '%Y-%m-%d').date())
 
     lineitem_filter = map(lambda p:
-                      query_plan.add_operator(
-                          Filter(PredicateExpression(pd_expr=lineitem_filter_fn),
-                                 'lineitem_filter' + '_{}'.format(p),
-                                 query_plan,
-                                 False)),
-                      range(0, lineitem_parts))
+                          query_plan.add_operator(
+                              Filter(PredicateExpression(pd_expr=lineitem_filter_fn),
+                                     'lineitem_filter' + '_{}'.format(p),
+                                     query_plan,
+                                     False)),
+                          range(0, lineitem_parts))
 
     lineitem_map = map(lambda p:
                        query_plan.add_operator(Map('l_orderkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
@@ -286,6 +286,11 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
 
+    # Inline what we can
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), customer_project)
+    map(lambda o: o.set_async(False), order_project)
+
     # Connect the operators
     connect_many_to_many(customer_scan, customer_project)
     connect_many_to_many(customer_project, customer_filter)
@@ -326,7 +331,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     print('use_pandas: {}'.format(use_pandas))
     print('secure: {}'.format(secure))
     print('use_native: {}'.format(use_native))
-    print("customer_parts parts: {}".format(customer_parts))
+    print("customer_parts: {}".format(customer_parts))
     print("order_parts: {}".format(order_parts))
     print("lineitem_parts: {}".format(lineitem_parts))
     print("customer_sharded: {}".format(customer_sharded))
