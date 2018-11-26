@@ -15,7 +15,9 @@ from s3filter.util import test_util, filesystem_util
 from s3filter.util.test_util import gen_test_id
 
 
-def main(sf, parts, sharded, table_a_filter_sql, table_b_filter_sql, expected_result):
+def main(sf, parts, sharded, table_a_filter_val, table_b_filter_val, expected_result, trial):
+    table_a_filter_sql, _, table_b_filter_sql, _ = runner.build_filters(table_a_filter_val, table_b_filter_val)
+
     settings = SyntheticFilteredJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
         use_shared_mem=False, shared_memory_size=-1, sf=sf,
@@ -44,7 +46,9 @@ def main(sf, parts, sharded, table_a_filter_sql, table_b_filter_sql, expected_re
 
     path = os.path.join(ROOT_DIR, "../aws-exps/join")
     filesystem_util.create_dirs(path)
-    sys.stdout = open(os.path.join(path, "synthetic_join_2_filtered_sf{}.txt".format(sf)), "w+")
+    out_file = "synthetic_join_2_filtered_sf{}_aval{}_bval{}_trial{}.txt" \
+        .format(sf, table_a_filter_val, table_b_filter_val, trial)
+    sys.stdout = open(os.path.join(path, out_file), "w+")
 
     print("--- TEST: {} ---".format(gen_test_id()))
     print("--- SCALE FACTOR: {} ---".format(sf))
@@ -57,13 +61,13 @@ def main(sf, parts, sharded, table_a_filter_sql, table_b_filter_sql, expected_re
 
     sys.stdout.close()
 
-    subprocess.call(['cat', os.path.join(path, "synthetic_join_2_filtered_sf{}.txt".format(sf))])
+    subprocess.call(['cat', os.path.join(path, out_file)])
+
 
 if __name__ == "__main__":
     # main(1, 1, False, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
-    main(1, 2, False, 'cast(c_acctbal as float) <= -999.0',
-         'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
+    main(1, 4, False, 2000.0, None, SF1_JOIN_2_RESULT, 4)
     # main(1, 4, False, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
     # main(1, 8, False, 'cast(c_acctbal as float) <= -999.0',

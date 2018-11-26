@@ -20,7 +20,8 @@ from s3filter.util.test_util import gen_test_id
 import numpy as np
 
 
-def main(sf, parts, sharded, table_a_filter_fn, table_b_filter_fn, expected_result):
+def main(sf, parts, sharded, table_a_filter_val, table_b_filter_val, expected_result, trial):
+    _, table_a_filter_fn, _, table_b_filter_fn = runner.build_filters(table_a_filter_val, table_b_filter_val)
 
     settings = SyntheticBaselineJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
@@ -52,12 +53,14 @@ def main(sf, parts, sharded, table_a_filter_fn, table_b_filter_fn, expected_resu
 
     path = os.path.join(ROOT_DIR, "../aws-exps/join")
     filesystem_util.create_dirs(path)
-    sys.stdout = open(os.path.join(path, "synthetic_join_2_baseline_sf{}.txt".format(sf)), "w+")
+    out_file = "synthetic_join_2_baseline_sf{}_aval{}_bval{}_trial{}.txt" \
+        .format(sf, table_a_filter_val, table_b_filter_val, trial)
+    sys.stdout = open(os.path.join(path, out_file), "w+")
 
     print("--- TEST: {} ---".format(gen_test_id()))
     print("--- SCALE FACTOR: {} ---".format(sf))
-    print("--- CUSTOMER FILTER: {} ---".format(inspect.getsource(table_a_filter_fn)))
-    print("--- ORDER FILTER: {} ---".format(inspect.getsource(table_b_filter_fn)))
+    print("--- CUSTOMER FILTER: {} table_a_filter_val: {} ---".format(inspect.getsource(table_a_filter_fn) if table_a_filter_fn is not None else None, table_a_filter_val))
+    print("--- ORDER FILTER: {} table_b_filter_val: {} ---".format(inspect.getsource(table_b_filter_fn) if table_b_filter_fn is not None else None, table_b_filter_val))
 
     query_plan = synthetic_join_baseline.query_plan(settings)
 
@@ -65,8 +68,8 @@ def main(sf, parts, sharded, table_a_filter_fn, table_b_filter_fn, expected_resu
 
     sys.stdout.close()
 
-    subprocess.call(['cat', os.path.join(path, "synthetic_join_2_baseline_sf{}.txt".format(sf))])
+    subprocess.call(['cat', os.path.join(path, out_file)])
 
 
 if __name__ == "__main__":
-    main(1, 2, False, SF1_JOIN_2_RESULT)
+    main(1, 4, False, -500, None, SF1_JOIN_2_RESULT, 1)

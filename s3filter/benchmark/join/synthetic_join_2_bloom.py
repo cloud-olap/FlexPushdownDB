@@ -8,14 +8,16 @@ import sys
 
 from s3filter import ROOT_DIR
 from s3filter.benchmark.join import runner
-from s3filter.benchmark.join.join_result import SF1_JOIN_2_RESULT, SF10_JOIN_2_RESULT
+from s3filter.benchmark.join.join_result import SF1_JOIN_2_RESULT
 from s3filter.query.join import synthetic_join_bloom
 from s3filter.query.join.synthetic_join_settings import SyntheticBloomJoinSettings
 from s3filter.util import filesystem_util
 from s3filter.util.test_util import gen_test_id
 
 
-def main(sf, parts, sharded, fp_rate, table_a_filter_sql, table_b_filter_sql, expected_result):
+def main(sf, parts, sharded, fp_rate, table_a_filter_val, table_b_filter_val, expected_result, trial):
+    table_a_filter_sql, _, table_b_filter_sql, _ = runner.build_filters(table_a_filter_val, table_b_filter_val)
+
     settings = SyntheticBloomJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
         use_shared_mem=False, shared_memory_size=-1, sf=sf, fp_rate=fp_rate,
@@ -44,7 +46,9 @@ def main(sf, parts, sharded, fp_rate, table_a_filter_sql, table_b_filter_sql, ex
 
     path = os.path.join(ROOT_DIR, "../aws-exps/join")
     filesystem_util.create_dirs(path)
-    sys.stdout = open(os.path.join(path, "synthetic_join_2_bloom_sf{}.txt".format(sf)), "w+")
+    out_file = "synthetic_join_2_bloom_sf{}_aval{}_bval{}_fp{}_trial{}.txt" \
+        .format(sf, table_a_filter_val, table_b_filter_val, fp_rate, trial)
+    sys.stdout = open(os.path.join(path, out_file), "w+")
 
     print("--- TEST: {} ---".format(gen_test_id()))
     print("--- SCALE FACTOR: {} ---".format(sf))
@@ -58,7 +62,7 @@ def main(sf, parts, sharded, fp_rate, table_a_filter_sql, table_b_filter_sql, ex
 
     sys.stdout.close()
 
-    subprocess.call(['cat', os.path.join(path, "synthetic_join_2_bloom_sf{}.txt".format(sf))])
+    subprocess.call(['cat', os.path.join(path, out_file)])
 
 
 if __name__ == "__main__":
