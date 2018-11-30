@@ -202,7 +202,11 @@ def sql_scan_part_partkey_where_brand12_operator_def(sharded, shard, num_shards,
 
 def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf):
     return SQLTableScan(get_file_key('part', sharded, shard, sf),
-                        "select * from S3Object "
+                        "select "
+                        "  * "
+                        "from "
+                        "  S3Object "
+                        "  {} "
                         .format(get_sql_suffix('part', num_shards, shard, sharded, add_where=True)),
                         use_pandas,
                         secure,
@@ -244,7 +248,11 @@ def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, u
 
 def sql_scan_lineitem_operator_def(sharded, shard, parts, use_pandas, secure, use_native, name, query_plan, sf):
     return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
-                        "select * from S3Object "
+                        "select "
+                        "  * "
+                        "from "
+                        "  S3Object "
+                        "  {} "
                         .format(get_sql_suffix('lineitem', parts, shard, sharded, add_where=True)),
                         use_pandas,
                         secure,
