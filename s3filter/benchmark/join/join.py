@@ -34,8 +34,10 @@ def main():
 
     trials = [1, 2, 3]
     fp_rates = [0.0001, 0.001, 0.01, 0.1, 0.3, 0.5]
-    table_a_filter_vals = [-500, -250, 500, 2000, 4000, None]
-    table_b_filter_vals = ['1992-03-01', '1992-06-01', '1993-01-01', '1994-01-01', '1995-01-01', None]
+    # table_a_filter_vals = [-950, -500, -250, 500, 2000, 4000, None]
+    table_a_filter_vals = [-850,-750,-650,-550, -450]
+    # table_b_filter_vals = ['1992-03-01', '1992-06-01', '1993-01-01', '1994-01-01', '1995-01-01', None]
+    table_b_filter_vals = [None]
 
     # 2 way join
     for table_a_filter_val in table_a_filter_vals:

@@ -72,13 +72,14 @@ def calculate_cost(res):
     total_cost = transfer_cost + scan_cost + request_cost + comp_cost
     return total_cost, transfer_cost, scan_cost, request_cost, comp_cost
 
-
+sf =10
 width = 0.3
-path = os.path.join(ROOT_DIR, "../aws-exps/join")
+path = os.path.join(ROOT_DIR, "../aws-exps/join/sf{}".format(sf))
 filesystem_util.create_dirs(os.path.join(path, "figs"))
 filesystem_util.create_dirs(os.path.join(path, "figs/pdf"))
 
-avals = [-500, -250, 500, 2000, 4000, None]
+# avals = [-500, -250, 500, 2000, 4000, None]
+avals = [-990, -975, -950, -500, -250, 500]
 bvals = ['1992-03-01', '1992-06-01', '1993-01-01', '1994-01-01', '1995-01-01', None]
 # for SF=1
 # actual_sel = [ x / 6001216.0 for x in [1, 13, 35, 140, 866, 3375, 13122] ]
@@ -90,11 +91,11 @@ trials = [1, 2, 3]
 # sfs = [1, 10, 100]
 
 FIXED_A_VAL_IDX = 0
-FIXED_B_VAL_IDX = 0
-FIXED_FP_RATE_IDX = 0
+FIXED_B_VAL_IDX = 5
+FIXED_FP_RATE_IDX = 2
 
 
-sf =1
+
 
 fp_rate = fp_rates[FIXED_FP_RATE_IDX]
 bval = bvals[FIXED_B_VAL_IDX]
@@ -311,7 +312,7 @@ ticklabels = []
 for aval in avals:
     ticklabels.append("{}".format(aval))
 ax.set_xticklabels(ticklabels, fontsize=12)
-ax.text(4.8, 0.092, '0.30', fontsize=16)
+# ax.text(4.8, 0.092, '0.30', fontsize=16)
 ax.set_ylim([0, 0.1])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
 ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)\n\nOrder Filter Selectivity: o_orderdate < \'{}\'\nBloom Filter False Positive Rate: {}'.format(bval, fp_rate))
@@ -396,7 +397,7 @@ ticklabels = []
 for bval in bvals:
     ticklabels.append("{}".format(bval))
 ax.set_xticklabels(ticklabels, fontsize=12)
-ax.text(4.8, 0.092, '0.30', fontsize=16)
+# ax.text(4.8, 0.092, '0.30', fontsize=16)
 ax.set_ylim([0, 0.1])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
 ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)\n\nCustomer Filter Selectivity: c_acctbal <= {}\nBloom Filter False Positive Rate: {}'.format(aval, fp_rate))
@@ -529,7 +530,7 @@ ticklabels.append('N/A')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, fontsize=12)
-ax.text(4.8, 0.092, '0.30', fontsize=16)
+# ax.text(4.8, 0.092, '0.30', fontsize=16)
 ax.set_ylim([0, 0.1])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
 ax.set_xlabel('Bloom Filter False Positive Rate\n\nCustomer Filter Selectivity: c_acctbal <= {}\nOrder Filter Selectivity: o_orderdate < {}'.format(aval, bval))
@@ -589,15 +590,15 @@ for cid, name in enumerate(names):
         else:
             res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
             data.append(res2)
-    pos = [x + width * cid for x in range(len(avals))]
+    pos = [x + width * cid for x in range(len(bvals))]
     ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
     # ax.semilogx(avals, data, label=name, color=colors[cid])
 ax.set_xticks([x + width for x in range(len(bvals))])
 ax.legend(loc='best')
 plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
 ticklabels = []
-for aval in avals:
-    ticklabels.append("{}".format(aval))
+for bval in bvals:
+    ticklabels.append("{}".format(bval))
 ax.set_xticklabels(ticklabels, fontsize=12)
 # ax.set_xlabel('Selectivity')
 ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)\n\nCustomer Filter Selectivity: c_acctbal <= {}\nBloom Filter False Positive Rate: {}'.format(aval, fp_rate))
@@ -607,6 +608,39 @@ plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 
 
 
+bval = bvals[FIXED_B_VAL_IDX]
+aval = avals[FIXED_A_VAL_IDX]
+fig_name = 'join-fp_rate-byteret'
+trial = 1
+
+fig, ax = plt.subplots(figsize=(8, 5))
+for cid, name in enumerate(names):
+    data = []
+    if name != 'bloom':
+        res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_trial{}.txt'.format(path, name, sf, aval, bval, trial))[1]
+        data.append(res2)
+        pos = [cid]
+        ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
+    else:
+        for fp_rate in fp_rates:
+            res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
+            data.append(res2)
+        pos = [2.0 + x for x in range(len(fp_rates))]
+        ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
+        # ax.semilogx(avals, data, label=name, color=colors[cid])
+ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
+ax.legend(loc='best')
+plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+ticklabels = []
+ticklabels.append('N/A')
+ticklabels.append('N/A')
+for fp_rate in fp_rates:
+    ticklabels.append("{}".format(fp_rate))
+ax.set_xticklabels(ticklabels, fontsize=12)
+# ax.set_xlabel('Selectivity')
+ax.set_xlabel('Bloom Filter False Positive Rate\n\nCustomer Filter Selectivity: c_acctbal <= {}\nOrder Filter Selectivity: o_orderdate < {}'.format(aval, bval))
+ax.set_ylabel('Bytes Returned')
+plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 
 # ##############################
 # ## runtime.
