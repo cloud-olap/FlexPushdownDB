@@ -44,13 +44,14 @@ def query_plan(settings):
                              "  {} "
                              "from "
                              "  S3Object "
-                             "where "
                              "  {} "
                              "  {} "
                              .format(','.join(settings.table_A_field_names),
-                                     settings.table_A_filter_sql,
+                                     ' where {} '.format(
+                                         settings.table_A_filter_sql) if settings.table_A_filter_sql is not None else '',
                                      get_sql_suffix(settings.table_A_key, settings.table_A_parts, p,
-                                                    settings.table_A_sharded)),
+                                                    settings.table_A_sharded,
+                                                    add_where=settings.table_A_filter_sql is None)),
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -78,24 +79,26 @@ def query_plan(settings):
     scan_B = \
         map(lambda p:
             query_plan.add_operator(
-                SQLTableScan(get_file_key(settings.table_B_key, settings.table_B_sharded, p, settings.sf),
-                             "select "
-                             "  {} "
-                             "from "
-                             "  S3Object "
-                             "where "
-                             "  {} "
-                             "  {} "
-                             .format(','.join(settings.table_B_field_names),
-                                     settings.table_B_filter_sql,
-                                     get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
-                                                    settings.table_B_sharded, add_where=False)),
-                             settings.use_pandas,
-                             settings.secure,
-                             settings.use_native,
-                             'scan_B_{}'.format(p),
-                             query_plan,
-                             False)),
+                SQLTableScan(
+                    get_file_key(settings.table_B_key, settings.table_B_sharded, p, settings.sf),
+                    "select "
+                    "  {} "
+                    "from "
+                    "  S3Object "
+                    "  {} "
+                    "  {} "
+                        .format(','.join(settings.table_B_field_names),
+                                ' where {} '.format(
+                                    settings.table_B_filter_sql) if settings.table_B_filter_sql is not None else '',
+                                get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
+                                               settings.table_B_sharded,
+                                               add_where=settings.table_B_filter_sql is None)),
+                    settings.use_pandas,
+                    settings.secure,
+                    settings.use_native,
+                    'scan_B_{}'.format(p),
+                    query_plan,
+                    False)),
             range(0, settings.table_B_parts))
 
     field_names_map_B = OrderedDict(
@@ -118,24 +121,25 @@ def query_plan(settings):
         scan_C = \
             map(lambda p:
                 query_plan.add_operator(
-                    SQLTableScan(get_file_key(settings.table_C_key, settings.table_C_sharded, p, settings.sf),
-                                 "select "
-                                 "  {} "
-                                 "from "
-                                 "  S3Object "
-                                 "where "
-                                 "  {} "
-                                 "  {} "
-                                 .format(','.join(settings.table_C_field_names),
-                                         settings.table_C_filter_sql,
-                                         get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
-                                                        settings.table_C_sharded, add_where=False)),
-                                 settings.use_pandas,
-                                 settings.secure,
-                                 settings.use_native,
-                                 'scan_C_{}'.format(p),
-                                 query_plan,
-                                 False)),
+                    SQLTableScan(
+                        get_file_key(settings.table_C_key, settings.table_C_sharded, p, settings.sf),
+                        "select "
+                        "  {} "
+                        "from "
+                        "  S3Object "
+                        "where "
+                        "  {} "
+                        "  {} "
+                            .format(','.join(settings.table_C_field_names),
+                                    settings.table_C_filter_sql,
+                                    get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
+                                                   settings.table_C_sharded, add_where=False)),
+                        settings.use_pandas,
+                        settings.secure,
+                        settings.use_native,
+                        'scan_C_{}'.format(p),
+                        query_plan,
+                        False)),
                 range(0, settings.table_C_parts))
 
         field_names_map_C = OrderedDict(

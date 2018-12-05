@@ -144,7 +144,7 @@ class BloomCreate(Operator):
                                                                            max_bloom_use_sql_strings)
 
             if best_possible_fp_rate > self.fp_rate:
-                warnings.warn("{}('{}') | Bloom filter fp rate ({}) too low, "
+                print("{}('{}') | Bloom filter fp rate ({}) too low, "
                               "will exceed max S3 Select SQL expression length ({}). "
                               "Raising to best possible ({})".format(self.__class__.__name__,
                                                                      self.name,
