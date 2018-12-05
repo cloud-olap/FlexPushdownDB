@@ -72,4 +72,4 @@ def main(sf, parts, sharded, table_a_filter_val, table_b_filter_val, expected_re
 
 
 if __name__ == "__main__":
-    main(1, 4, False, -500, None, SF1_JOIN_2_RESULT, 1)
+    main(10, 2, False, -500, None, SF1_JOIN_2_RESULT, 2)

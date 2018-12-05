@@ -58,7 +58,7 @@ class Graph(object):
                                 shape="box")
         elif type(operator) is Project:
             self.graph.add_node(operator.name,
-                                label="{}\n{}\n({})".format(operator.__class__.__name__, operator.name,
+                                label="{}\n{}".format(operator.__class__.__name__, operator.name,
                                                             ', '.join([pe.new_field_name for pe in operator.project_exprs])),
                                 shape="box")
         elif type(operator) is HashJoinBuild:

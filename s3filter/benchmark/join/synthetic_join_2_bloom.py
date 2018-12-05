@@ -68,8 +68,7 @@ def main(sf, parts, sharded, fp_rate, table_a_filter_val, table_b_filter_val, ex
 if __name__ == "__main__":
     # main(1, 1, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
-    main(1, 2, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
-         'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
+    main(10, 2, False, 0.001, 2000.0, None, SF1_JOIN_2_RESULT, 2)
     # main(1, 4, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
     # main(1, 8, False, 0.001, 'cast(c_acctbal as float) <= -999.0',

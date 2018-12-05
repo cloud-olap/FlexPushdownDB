@@ -12,10 +12,10 @@ from s3filter.benchmark.tpch import tpch
 
 def main():
 
-    # tpch.main()
+    tpch.main()
     # sql_table_scan.main()
     # cursor.main()
-    join.main()
+    # join.main()
     # tpch_scan_ipc.main()
 
 

@@ -221,4 +221,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 4, False, 4, False, 2, 15.4488836202)
+    main(1, 2, False, 2, False, 2, 15.4488836202)
