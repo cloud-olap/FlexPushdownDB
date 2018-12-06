@@ -107,13 +107,13 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     join_build = map(lambda p:
                      query_plan.add_operator(
                          HashJoinBuild('p_partkey', 'join_build' + '_' + str(p), query_plan, False)),
-                     range(0, part_parts))
+                     range(0, other_parts))
 
     join_probe = map(lambda p:
                      query_plan.add_operator(
                          HashJoinProbe(JoinExpression('p_partkey', 'l_partkey'), 'join_probe' + '_' + str(p),
                                        query_plan, False)),
-                     range(0, part_parts))
+                     range(0, other_parts))
 
     part_aggregate = map(lambda p:
                          query_plan.add_operator(
@@ -121,7 +121,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                  use_pandas,
                                  'part_aggregate' + '_' + str(p),
                                  query_plan)),
-                         range(0, part_parts))
+                         range(0, other_parts))
 
     def aggregate_reduce_fn(df):
         sum1_ = df['_0'].astype(np.float).sum()
@@ -208,4 +208,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 2, False, 2, False, 2, tpch_results.q14_sf1_expected_result)
+    main(1, 4, False, 4, False, 2, tpch_results.q14_sf1_expected_result)
