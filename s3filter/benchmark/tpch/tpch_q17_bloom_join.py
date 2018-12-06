@@ -25,14 +25,14 @@ import pandas as pd
 import numpy as np
 
 
-def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, fp_rate, expected_result):
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, fp_rate=fp_rate,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts, sf=sf, fp_rate=fp_rate,
         expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf, fp_rate, expected_result):
+        part_sharded, other_parts, sf, fp_rate, expected_result):
     """
     :return: None
     """
@@ -108,26 +108,26 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                        HashJoinBuild('p_partkey',
                                                      'part_lineitem_join_build' + '_' + str(p), query_plan,
                                                      False)),
-                                   range(0, part_parts))
+                                   range(0, other_parts))
 
     part_lineitem_join_probe = map(lambda p:
                                    query_plan.add_operator(
                                        HashJoinProbe(JoinExpression('p_partkey', 'l_partkey'),
                                                      'part_lineitem_join_probe' + '_' + str(p),
                                                      query_plan, False)),
-                                   range(0, part_parts))
+                                   range(0, other_parts))
 
     lineitem_part_avg_group = map(lambda p:
                                   query_plan.add_operator(
                                       tpch_q17.group_partkey_avg_quantity_op('lineitem_part_avg_group' + '_' + str(p),
                                                                              query_plan)),
-                                  range(0, part_parts))
+                                  range(0, other_parts))
 
     lineitem_part_avg_group_project = map(lambda p:
                                           query_plan.add_operator(
                                               tpch_q17.project_partkey_avg_quantity_op(
                                                   'lineitem_part_avg_group_project' + '_' + str(p), query_plan)),
-                                          range(0, part_parts))
+                                          range(0, other_parts))
 
     part_lineitem_join_avg_group_join_build = \
         map(lambda p:
@@ -136,7 +136,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                               'part_lineitem_join_avg_group_join_build' + '_' + str(p),
                               query_plan,
                               False)),
-            range(0, part_parts))
+            range(0, other_parts))
 
     part_lineitem_join_avg_group_join_probe = \
         map(lambda p:
@@ -145,12 +145,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                               'part_lineitem_join_avg_group_join_probe' + '_' + str(p),
                               query_plan,
                               False)),
-            range(0, part_parts))
+            range(0, other_parts))
 
     lineitem_filter = map(lambda p:
                           query_plan.add_operator(
                               tpch_q17.filter_lineitem_quantity_op('lineitem_filter' + '_' + str(p), query_plan)),
-                          range(0, part_parts))
+                          range(0, other_parts))
 
     extendedprice_sum_aggregate = map(lambda p:
                                       query_plan.add_operator(
@@ -158,7 +158,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                               use_pandas,
                                               'extendedprice_sum_aggregate' + '_' + str(p),
                                               query_plan)),
-                                      range(0, part_parts))
+                                      range(0, other_parts))
 
     def aggregate_reduce_fn(df):
         sum1_ = df['_0'].astype(np.float).sum()
@@ -182,6 +182,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     # Inline what we can
     map(lambda o: o.set_async(False), lineitem_project)
     map(lambda o: o.set_async(False), part_project)
+    map(lambda o: o.set_async(False), lineitem_filter)
+    map(lambda o: o.set_async(False), part_lineitem_join_probe_map)
+    map(lambda o: o.set_async(False), part_lineitem_join_build_map)
+    map(lambda o: o.set_async(False), lineitem_part_avg_group)
+    map(lambda o: o.set_async(False), lineitem_part_avg_group_project)
+    map(lambda o: o.set_async(False), extendedprice_sum_aggregate)
     extendedprice_sum_aggregate_project.set_async(False)
 
     # Connect the operators
@@ -210,7 +216,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     map(lambda (p, o): part_lineitem_join_probe[p].connect_build_producer(o), enumerate(part_lineitem_join_build))
 
     # part_lineitem_join.connect_right_producer(lineitem_project)
-    map(lambda (p, o): o.connect(part_lineitem_join_probe_map[p]), enumerate(lineitem_project))
+    # map(lambda (p, o): o.connect(part_lineitem_join_probe_map[p]), enumerate(lineitem_project))
+    connect_many_to_many(lineitem_project, part_lineitem_join_probe_map)
+
     map(lambda (p1, o1): map(lambda (p2, o2): o2.connect_tuple_producer(o1), enumerate(part_lineitem_join_probe)),
         enumerate(part_lineitem_join_probe_map))
 
@@ -255,6 +263,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("part_parts: {}".format(part_parts))
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("part_sharded: {}".format(part_sharded))
+    print("other_parts: {}".format(other_parts))
     print("fp_rate: {}".format(fp_rate))
     print('')
 
@@ -289,4 +298,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 2, False, 2, False, 0.1, tpch_results.q17_sf1_expected_result)
+    main(1, 4, False, 4, False, 2, 0.1, tpch_results.q17_sf1_expected_result)

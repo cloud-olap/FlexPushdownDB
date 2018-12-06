@@ -8,6 +8,7 @@ import os
 import numpy
 
 from s3filter import ROOT_DIR
+from s3filter.benchmark.tpch import tpch_results
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
@@ -24,13 +25,13 @@ import pandas as pd
 import numpy as np
 
 
-def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, expected_result):
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf, expected_result=expected_result)
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts, sf=sf, expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf, expected_result):
+        part_sharded, other_parts, sf, expected_result):
     """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
 
     This works by:
@@ -115,26 +116,26 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                        HashJoinBuild('p_partkey',
                                                      'part_lineitem_join_build' + '_' + str(p), query_plan,
                                                      False)),
-                                   range(0, part_parts))
+                                   range(0, other_parts))
 
     part_lineitem_join_probe = map(lambda p:
                                    query_plan.add_operator(
                                        HashJoinProbe(JoinExpression('p_partkey', 'l_partkey'),
                                                      'part_lineitem_join_probe' + '_' + str(p),
                                                      query_plan, False)),
-                                   range(0, part_parts))
+                                   range(0, other_parts))
 
     lineitem_part_avg_group = map(lambda p:
                                   query_plan.add_operator(
                                       tpch_q17.group_partkey_avg_quantity_5_op('lineitem_part_avg_group' + '_' + str(p),
                                                                                query_plan)),
-                                  range(0, part_parts))
+                                  range(0, other_parts))
 
     lineitem_part_avg_group_project = map(lambda p:
                                           query_plan.add_operator(
                                               tpch_q17.project_partkey_avg_quantity_op(
                                                   'lineitem_part_avg_group_project' + '_' + str(p), query_plan)),
-                                          range(0, part_parts))
+                                          range(0, other_parts))
 
     part_lineitem_join_avg_group_join_build = \
         map(lambda p:
@@ -143,7 +144,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                               'part_lineitem_join_avg_group_join_build' + '_' + str(p),
                               query_plan,
                               False)),
-            range(0, part_parts))
+            range(0, other_parts))
 
     part_lineitem_join_avg_group_join_probe = \
         map(lambda p:
@@ -152,12 +153,12 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                               'part_lineitem_join_avg_group_join_probe' + '_' + str(p),
                               query_plan,
                               False)),
-            range(0, part_parts))
+            range(0, other_parts))
 
     lineitem_filter = map(lambda p:
                           query_plan.add_operator(
                               tpch_q17.filter_lineitem_quantity_op('lineitem_filter' + '_' + str(p), query_plan)),
-                          range(0, part_parts))
+                          range(0, other_parts))
 
     extendedprice_sum_aggregate = map(lambda p:
                                       query_plan.add_operator(
@@ -165,7 +166,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                               use_pandas,
                                               'extendedprice_sum_aggregate' + '_' + str(p),
                                               query_plan)),
-                                      range(0, part_parts))
+                                      range(0, other_parts))
 
     def aggregate_reduce_fn(df):
         sum1_ = df['_0'].astype(np.float).sum()
@@ -189,6 +190,13 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     # Inline what we can
     map(lambda o: o.set_async(False), lineitem_project)
     map(lambda o: o.set_async(False), part_project)
+    map(lambda o: o.set_async(False), lineitem_filter)
+    map(lambda o: o.set_async(False), part_filter)
+    map(lambda o: o.set_async(False), lineitem_map)
+    map(lambda o: o.set_async(False), part_map)
+    map(lambda o: o.set_async(False), lineitem_part_avg_group)
+    map(lambda o: o.set_async(False), lineitem_part_avg_group_project)
+    map(lambda o: o.set_async(False), extendedprice_sum_aggregate)
     extendedprice_sum_aggregate_project.set_async(False)
 
     # Connect the operators
@@ -251,6 +259,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("part_parts: {}".format(part_parts))
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("part_sharded: {}".format(part_sharded))
+    print("other_parts: {}".format(other_parts))
     print('')
 
     # Write the plan graph
@@ -284,4 +293,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main()
+    main(1, 4, False, 4, False, 2, tpch_results.q17_sf1_expected_result)

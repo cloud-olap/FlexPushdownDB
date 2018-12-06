@@ -325,6 +325,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     print("customer_sharded: {}".format(customer_sharded))
     print("order_sharded: {}".format(order_sharded))
     print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("other_parts: {}".format(other_parts))
     print("fp_rate: {}".format(fp_rate))
     print('')
 
