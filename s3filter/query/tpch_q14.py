@@ -92,7 +92,7 @@ def aggregate_promo_revenue_operator_def(use_pandas, name, query_plan):
             AggregateExpression(AggregateExpression.SUM, ex2)
         ],
         use_pandas, name, query_plan,
-        False, agg_fn)
+        True, agg_fn)
 
 
 def project_partkey_type_operator_def(name, query_plan):

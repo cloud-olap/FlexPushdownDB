@@ -9,11 +9,13 @@ from datetime import datetime, timedelta
 import numpy
 
 from s3filter import ROOT_DIR
+from s3filter.benchmark.tpch import tpch_results
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
+from s3filter.op.map import Map
 from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
     connect_one_to_one
 from s3filter.plan.query_plan import QueryPlan
@@ -24,14 +26,14 @@ import pandas as pd
 import numpy as np
 
 
-def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, expected_result):
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts, sf=sf,
         expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf, expected_result):
+        part_sharded, other_parts, sf, expected_result):
     """
 
     :return: None
@@ -94,6 +96,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                query_plan)),
                        range(0, part_parts))
 
+    lineitem_map = map(lambda p:
+                       query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
+                       range(0, lineitem_parts))
+
+    part_map = map(lambda p:
+                       query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
+                       range(0, part_parts))
+
     join_build = map(lambda p:
                      query_plan.add_operator(
                          HashJoinBuild('p_partkey', 'join_build' + '_' + str(p), query_plan, False)),
@@ -137,14 +147,19 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     # Inline what we can
     map(lambda o: o.set_async(False), lineitem_project)
     map(lambda o: o.set_async(False), part_project)
+    map(lambda o: o.set_async(False), part_map)
+    map(lambda o: o.set_async(False), lineitem_map)
+    map(lambda o: o.set_async(False), part_aggregate)
     aggregate_project.set_async(False)
 
     # Connect the operators
     connect_many_to_many(lineitem_scan, lineitem_project)
     connect_many_to_many(part_scan, part_project)
-    connect_many_to_many(part_project, join_build)
-    connect_all_to_all(join_build, join_probe)
-    connect_many_to_many(lineitem_project, join_probe)
+    connect_many_to_many(part_project, part_map)
+    connect_all_to_all(part_map, join_build)
+    connect_many_to_many(join_build, join_probe)
+    connect_many_to_many(lineitem_project, lineitem_map)
+    connect_all_to_all(lineitem_map, join_probe)
     connect_many_to_many(join_probe, part_aggregate)
     connect_many_to_one(part_aggregate, aggregate_reduce)
     connect_one_to_one(aggregate_reduce, aggregate_project)
@@ -193,4 +208,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main()
+    main(1, 2, False, 2, False, 2, tpch_results.q14_sf1_expected_result)

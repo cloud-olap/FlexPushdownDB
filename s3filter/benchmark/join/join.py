@@ -2,16 +2,10 @@
 """Join Benchmarks
 
 """
-from datetime import datetime
 from sys import stdout
 
-from s3filter.benchmark.join import synthetic_join_3_baseline, synthetic_join_2_filtered, synthetic_join_3_bloom, \
-    synthetic_join_2_semi, synthetic_join_2_baseline, synthetic_join_3_filtered, synthetic_join_2_bloom, \
-    synthetic_join_3_semi
-from s3filter.benchmark.join.join_result import SF1_JOIN_2_RESULT, SF1_JOIN_3_RESULT, SF10_JOIN_2_RESULT, \
-    SF10_JOIN_3_RESULT
-import pandas as pd
-import numpy as np
+from s3filter.benchmark.join import synthetic_join_2_filtered, synthetic_join_2_baseline, synthetic_join_2_bloom
+from s3filter.benchmark.join.join_result import SF10_JOIN_2_RESULT
 
 
 def main():

@@ -160,6 +160,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     map(lambda o: o.set_async(False), lineitem_filter)
     map(lambda o: o.set_async(False), part_map)
     map(lambda o: o.set_async(False), lineitem_map)
+    map(lambda o: o.set_async(False), part_aggregate)
     aggregate_project.set_async(False)
 
     # Connect the operators
@@ -221,4 +222,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 2, False, 2, False, 2, 15.4488836202)
+    main(1, 2, False, 2, False, 2, tpch_results.q14_sf1_expected_result)
