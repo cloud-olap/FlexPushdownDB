@@ -208,14 +208,14 @@ def query_plan(settings):
                          query_plan.add_operator(
                              HashJoinBuild(settings.table_A_AB_join_key, 'join_build_A_B_{}'.format(p), query_plan,
                                            False)),
-                         range(0, settings.table_B_parts))
+                         range(0, settings.other_parts))
 
     join_probe_A_B = map(lambda p:
                          query_plan.add_operator(
                              HashJoinProbe(JoinExpression(settings.table_A_AB_join_key, settings.table_B_AB_join_key),
                                            'join_probe_A_B_{}'.format(p),
                                            query_plan, False)),
-                         range(0, settings.table_B_parts))
+                         range(0, settings.other_parts))
 
     if settings.table_C_key is None:
 
@@ -231,7 +231,7 @@ def query_plan(settings):
                                  ],
                                  settings.use_pandas,
                                  'part_aggregate_{}'.format(p), query_plan, False, part_aggregate_fn)),
-                             range(0, settings.table_B_parts))
+                             range(0, settings.other_parts))
 
     else:
         def part_aggregate_fn(df):
@@ -251,9 +251,6 @@ def query_plan(settings):
     def aggregate_reduce_fn(df):
         sum_ = df['_0'].astype(np.float).sum()
         return pd.DataFrame({'_0': [sum_]})
-
-    def agg_reduce_fun(df):
-        return pd.DataFrame( { '_0' : [df['_0'].sum()] } )
 
     aggregate_reduce = query_plan.add_operator(Aggregate(
         [
@@ -285,6 +282,7 @@ def query_plan(settings):
         map(lambda o: o.set_async(False), map_C_to_C)
         map(lambda o: o.set_async(False), project_C)
         map(lambda o: o.set_async(False), filter_c)
+    map(lambda o: o.set_async(False), part_aggregate)
     aggregate_project.set_async(False)
 
     # Connect the operators

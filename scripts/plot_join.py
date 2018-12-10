@@ -78,8 +78,7 @@ path = os.path.join(ROOT_DIR, "../aws-exps/join/sf{}".format(sf))
 filesystem_util.create_dirs(os.path.join(path, "figs"))
 filesystem_util.create_dirs(os.path.join(path, "figs/pdf"))
 
-# avals = [-500, -250, 500, 2000, 4000, None]
-avals = [-990, -975, -950, -500, -250, 500]
+avals = [-950, -850, -750, -650, -550, -450]
 bvals = ['1992-03-01', '1992-06-01', '1993-01-01', '1994-01-01', '1995-01-01', None]
 # for SF=1
 # actual_sel = [ x / 6001216.0 for x in [1, 13, 35, 140, 866, 3375, 13122] ]
@@ -131,7 +130,7 @@ ticklabels = []
 for aval in avals:
     ticklabels.append("{}".format(aval))
 ax.set_xticklabels(ticklabels, fontsize=12)
-ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)\n\nOrder Filter Selectivity: o_orderdate < \'{}\'\nBloom Filter False Positive Rate: {}'.format(bval, fp_rate))
+ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)')
 ax.set_ylabel('Runtime (sec)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
@@ -175,7 +174,7 @@ ticklabels = []
 for bval in bvals:
     ticklabels.append("{}".format(bval))
 ax.set_xticklabels(ticklabels, fontsize=12)
-ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)\n\nCustomer Filter Selectivity: c_acctbal <= {}\nBloom Filter False Positive Rate: {}'.format(aval, fp_rate))
+ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)')
 ax.set_ylabel('Runtime (sec)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
@@ -229,7 +228,7 @@ ticklabels.append('N/A')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, rotation='45', fontsize=12)
-ax.set_xlabel('Bloom Filter False Positive Rate\n\nCustomer Filter Selectivity: c_acctbal <= {}\nOrder Filter Selectivity: o_orderdate < {}'.format(aval, bval))
+ax.set_xlabel('Bloom Filter False Positive Rate')
 ax.set_ylabel('Runtime (sec)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
@@ -315,7 +314,7 @@ ax.set_xticklabels(ticklabels, fontsize=12)
 # ax.text(4.8, 0.092, '0.30', fontsize=16)
 ax.set_ylim([0, 0.1])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
-ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)\n\nOrder Filter Selectivity: o_orderdate < \'{}\'\nBloom Filter False Positive Rate: {}'.format(bval, fp_rate))
+ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)')
 ax.set_ylabel('Cost ($)', fontsize=16)
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
@@ -400,7 +399,7 @@ ax.set_xticklabels(ticklabels, fontsize=12)
 # ax.text(4.8, 0.092, '0.30', fontsize=16)
 ax.set_ylim([0, 0.1])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
-ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)\n\nCustomer Filter Selectivity: c_acctbal <= {}\nBloom Filter False Positive Rate: {}'.format(aval, fp_rate))
+ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)')
 ax.set_ylabel('Cost ($)', fontsize=16)
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
@@ -533,7 +532,7 @@ ax.set_xticklabels(ticklabels, fontsize=12)
 # ax.text(4.8, 0.092, '0.30', fontsize=16)
 ax.set_ylim([0, 0.1])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
-ax.set_xlabel('Bloom Filter False Positive Rate\n\nCustomer Filter Selectivity: c_acctbal <= {}\nOrder Filter Selectivity: o_orderdate < {}'.format(aval, bval))
+ax.set_xlabel('Bloom Filter False Positive Rate')
 ax.set_ylabel('Cost ($)', fontsize=16)
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
@@ -569,7 +568,7 @@ for aval in avals:
     ticklabels.append("{}".format(aval))
 ax.set_xticklabels(ticklabels, fontsize=12)
 # ax.set_xlabel('Selectivity')
-ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)\n\nOrder Filter Selectivity: o_orderdate < \'{}\'\nBloom Filter False Positive Rate: {}'.format(bval, fp_rate))
+ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)')
 ax.set_ylabel('Bytes Returned')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 
@@ -601,7 +600,7 @@ for bval in bvals:
     ticklabels.append("{}".format(bval))
 ax.set_xticklabels(ticklabels, fontsize=12)
 # ax.set_xlabel('Selectivity')
-ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)\n\nCustomer Filter Selectivity: c_acctbal <= {}\nBloom Filter False Positive Rate: {}'.format(aval, fp_rate))
+ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)')
 ax.set_ylabel('Bytes Returned')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 
@@ -638,7 +637,7 @@ for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, fontsize=12)
 # ax.set_xlabel('Selectivity')
-ax.set_xlabel('Bloom Filter False Positive Rate\n\nCustomer Filter Selectivity: c_acctbal <= {}\nOrder Filter Selectivity: o_orderdate < {}'.format(aval, bval))
+ax.set_xlabel('Bloom Filter False Positive Rate')
 ax.set_ylabel('Bytes Returned')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 
