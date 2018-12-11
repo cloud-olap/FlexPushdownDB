@@ -31,24 +31,24 @@ def main():
     fp_rates = [0.01]
     # fp_rates = [0.0001, 0.001, 0.01, 0.1, 0.3, 0.5]
     # table_a_filter_vals = [-950, -850,-750,-650,-550, -450]
-    table_a_filter_vals = [-950]
-    table_b_filter_vals = ['1992-03-01', '1992-06-01', '1993-01-01', '1994-01-01', '1995-01-01', None]
-    # table_b_filter_vals = [None]
+    table_a_filter_vals = [-750]
+    # table_b_filter_vals = ['1992-03-01', '1992-06-01', '1993-01-01', '1994-01-01', '1995-01-01', None]
+    table_b_filter_vals = [None]
 
     # 2 way join
     for table_a_filter_val in table_a_filter_vals:
         for table_b_filter_val in table_b_filter_vals:
             for trial in trials:
-                stdout.write('baseline_{}_{}_{}_{}\n'.format(sf, table_a_filter_val, table_b_filter_val, trial))
-                synthetic_join_2_baseline.main(sf, parts, sharded, other_parts,
-                                               table_a_filter_val=table_a_filter_val,
-                                               table_b_filter_val=table_b_filter_val,
-                                               expected_result=expected_2_result, trial=trial)
-                stdout.write('filtered_{}_{}_{}_{}\n'.format(sf, table_a_filter_val, table_b_filter_val, trial))
-                synthetic_join_2_filtered.main(sf, parts, sharded, other_parts,
-                                               table_a_filter_val=table_a_filter_val,
-                                               table_b_filter_val=table_b_filter_val,
-                                               expected_result=expected_2_result, trial=trial)
+                # stdout.write('baseline_{}_{}_{}_{}\n'.format(sf, table_a_filter_val, table_b_filter_val, trial))
+                # synthetic_join_2_baseline.main(sf, parts, sharded, other_parts,
+                #                                table_a_filter_val=table_a_filter_val,
+                #                                table_b_filter_val=table_b_filter_val,
+                #                                expected_result=expected_2_result, trial=trial)
+                # stdout.write('filtered_{}_{}_{}_{}\n'.format(sf, table_a_filter_val, table_b_filter_val, trial))
+                # synthetic_join_2_filtered.main(sf, parts, sharded, other_parts,
+                #                                table_a_filter_val=table_a_filter_val,
+                #                                table_b_filter_val=table_b_filter_val,
+                #                                expected_result=expected_2_result, trial=trial)
                 for fp_rate in fp_rates:
                     stdout.write('bloom_{}_{}_{}_{}_{}\n'.format(sf, table_a_filter_val, table_b_filter_val, fp_rate, trial))
                     synthetic_join_2_bloom.main(sf, parts, sharded, other_parts, fp_rate=fp_rate,

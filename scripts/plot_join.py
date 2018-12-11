@@ -101,7 +101,7 @@ bval = bvals[FIXED_B_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-aval-rt'
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
 width = 0.2
 for cid, name in enumerate(names):
     data = []
@@ -124,12 +124,12 @@ ax.set_xticks([x + width for x in range(len(avals))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
 for aval in avals:
     ticklabels.append("{}".format(aval))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14)
 ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)')
 ax.set_ylabel('Runtime (sec)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
@@ -145,7 +145,7 @@ aval = avals[FIXED_A_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-bval-rt'
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
 width = 0.2
 for cid, name in enumerate(names):
     data = []
@@ -167,13 +167,13 @@ for cid, name in enumerate(names):
 ax.set_xticks([x + width for x in range(len(bvals))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
-ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
 plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
 for bval in bvals:
     ticklabels.append("{}".format(bval))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
 ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)')
 ax.set_ylabel('Runtime (sec)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
@@ -187,8 +187,8 @@ bval = bvals[FIXED_B_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-fp_rate-rt'
 
-fig, ax = plt.subplots(figsize=(8, 5))
-width = 0.2
+fig, ax = plt.subplots(figsize=(8, 4))
+width = 0.4
 for cid, name in enumerate(names):
     data = []
     if name != 'bloom':
@@ -219,15 +219,15 @@ for cid, name in enumerate(names):
 ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
-ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.20], fontsize=14)
+plt.subplots_adjust(left=0.12, right=0.99, bottom=0.25, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
 ticklabels.append('N/A')
 ticklabels.append('N/A')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
-ax.set_xticklabels(ticklabels, rotation='45', fontsize=12)
+ax.set_xticklabels(ticklabels, rotation='45', fontsize=14)
 ax.set_xlabel('Bloom Filter False Positive Rate')
 ax.set_ylabel('Runtime (sec)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
@@ -244,7 +244,7 @@ bval = bvals[FIXED_B_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-aval-cost'
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
 width = 0.2
 bars = [0] * len(names)
 for cid, name in enumerate(names):
@@ -300,19 +300,19 @@ ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
 lg2 = ax.legend([b_compute[0], b_request[0], b_scan[0], b_transfer[0]],
                 ['Compute Cost', 'Request Cost', 'Scan Cost', 'Transfer Cost'],
-                ncol=1, bbox_to_anchor=[0.35, 1.02], fontsize=14)
+                ncol=2, bbox_to_anchor=[0.99, 0.99], fontsize=14)
 plt.gca().add_artist(lg1)
 plt.gca().add_artist(lg2)
 # plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.15, top=0.88)
 
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'], fontsize=16)
 ticklabels = []
 for aval in avals:
     ticklabels.append("{}".format(aval))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14)
 # ax.text(4.8, 0.092, '0.30', fontsize=16)
-ax.set_ylim([0, 0.1])
+ax.set_ylim([0, 0.02])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
 ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)')
 ax.set_ylabel('Cost ($)', fontsize=16)
@@ -329,7 +329,7 @@ aval = avals[FIXED_A_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-bval-cost'
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
 width = 0.2
 bars = [0] * len(names)
 for cid, name in enumerate(names):
@@ -382,22 +382,22 @@ ax.set_xticks([x + width for x in range(6)])
 ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
+lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
 lg2 = ax.legend([b_compute[0], b_request[0], b_scan[0], b_transfer[0]],
                 ['Compute Cost', 'Request Cost', 'Scan Cost', 'Transfer Cost'],
-                ncol=1, bbox_to_anchor=[0.35, 1.02], fontsize=14)
+                ncol=2, bbox_to_anchor=[0.99, 0.99], fontsize=14)
 plt.gca().add_artist(lg1)
 plt.gca().add_artist(lg2)
 # plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.35, top=0.88)
 
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'], fontsize=16)
 ticklabels = []
 for bval in bvals:
     ticklabels.append("{}".format(bval))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
 # ax.text(4.8, 0.092, '0.30', fontsize=16)
-ax.set_ylim([0, 0.1])
+ax.set_ylim([0, 0.025])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
 ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)')
 ax.set_ylabel('Cost ($)', fontsize=16)
@@ -413,8 +413,8 @@ bval = bvals[FIXED_B_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-fp_rate-cost'
 
-fig, ax = plt.subplots(figsize=(8, 5))
-width = 0.2
+fig, ax = plt.subplots(figsize=(8, 4))
+width = 0.4
 bars = [0] * len(names)
 for cid, name in enumerate(names):
     transfer_cost = []
@@ -486,7 +486,7 @@ for cid, name in enumerate(names):
             comp_cost.append(vals[min_index][4])
         bottom = [0] * len(comp_cost)
         # plot legend
-        pos = [2.0 + x + cid * width for x in range(len(fp_rates))]
+        pos = [1.20 + x + cid * width for x in range(len(fp_rates))]
         b_compute = ax.bar(pos, bottom, width=width, color='w',
                            label='Compute Cost')
         b_request = ax.bar(pos, bottom, width=width, color='w', hatch='xxx',
@@ -513,14 +513,14 @@ ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
 # ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
+lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.21], fontsize=14)
 lg2 = ax.legend([b_compute[0], b_request[0], b_scan[0], b_transfer[0]],
                 ['Compute Cost', 'Request Cost', 'Scan Cost', 'Transfer Cost'],
-                ncol=1, bbox_to_anchor=[0.35, 1.02], fontsize=14)
+                ncol=2, bbox_to_anchor=[0.99, 0.99], fontsize=14)
 plt.gca().add_artist(lg1)
 plt.gca().add_artist(lg2)
 # plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.25, top=0.88)
 
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'], fontsize=16)
 ticklabels = []
@@ -528,9 +528,9 @@ ticklabels.append('N/A')
 ticklabels.append('N/A')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
 # ax.text(4.8, 0.092, '0.30', fontsize=16)
-ax.set_ylim([0, 0.1])
+ax.set_ylim([0, 0.02])
 # ax.set_xlabel('Filter Selectivity', fontsize=16)
 ax.set_xlabel('Bloom Filter False Positive Rate')
 ax.set_ylabel('Cost ($)', fontsize=16)
@@ -547,7 +547,8 @@ bval = bvals[FIXED_B_VAL_IDX]
 fig_name = 'join-aval-byteret'
 trial = 1
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
+width = 0.2
 for cid, name in enumerate(names):
     data = []
     for aval in avals:
@@ -558,19 +559,21 @@ for cid, name in enumerate(names):
             res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
             data.append(res2)
     pos = [x + width * cid for x in range(len(avals))]
-    ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
+    gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
+    ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
     # ax.semilogx(avals, data, label=name, color=colors[cid])
 ax.set_xticks([x + width for x in range(len(avals))])
-ax.legend(loc='best')
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
+plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
 ticklabels = []
 for aval in avals:
     ticklabels.append("{}".format(aval))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14)
 # ax.set_xlabel('Selectivity')
 ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)')
-ax.set_ylabel('Bytes Returned')
+ax.set_ylabel('Bytes Returned (GB)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
+plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
 
 
 
@@ -579,7 +582,8 @@ aval = avals[FIXED_A_VAL_IDX]
 fig_name = 'join-bval-byteret'
 trial = 1
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
+width = 0.2
 for cid, name in enumerate(names):
     data = []
     for bval in bvals:
@@ -590,19 +594,21 @@ for cid, name in enumerate(names):
             res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
             data.append(res2)
     pos = [x + width * cid for x in range(len(bvals))]
-    ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
+    gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
+    ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
     # ax.semilogx(avals, data, label=name, color=colors[cid])
 ax.set_xticks([x + width for x in range(len(bvals))])
-ax.legend(loc='best')
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
 plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
 ticklabels = []
 for bval in bvals:
     ticklabels.append("{}".format(bval))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
 # ax.set_xlabel('Selectivity')
 ax.set_xlabel('Order Filter Selectivity (o_orderdate < ?)')
-ax.set_ylabel('Bytes Returned')
+ax.set_ylabel('Bytes Returned (GB)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
+plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
 
 
 
@@ -612,34 +618,38 @@ aval = avals[FIXED_A_VAL_IDX]
 fig_name = 'join-fp_rate-byteret'
 trial = 1
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
+width = 0.4
 for cid, name in enumerate(names):
     data = []
     if name != 'bloom':
         res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_trial{}.txt'.format(path, name, sf, aval, bval, trial))[1]
         data.append(res2)
         pos = [cid]
-        ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
+        gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
+        ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
     else:
         for fp_rate in fp_rates:
             res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
             data.append(res2)
         pos = [2.0 + x for x in range(len(fp_rates))]
-        ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
+        gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
+        ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
         # ax.semilogx(avals, data, label=name, color=colors[cid])
 ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
-ax.legend(loc='best')
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.21], fontsize=14)
+plt.subplots_adjust(left=0.12, right=0.99, bottom=0.25, top=0.88)
 ticklabels = []
 ticklabels.append('N/A')
 ticklabels.append('N/A')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
-ax.set_xticklabels(ticklabels, fontsize=12)
+ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
 # ax.set_xlabel('Selectivity')
 ax.set_xlabel('Bloom Filter False Positive Rate')
-ax.set_ylabel('Bytes Returned')
+ax.set_ylabel('Bytes Returned (GB)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
+plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
 
 # ##############################
 # ## runtime.
