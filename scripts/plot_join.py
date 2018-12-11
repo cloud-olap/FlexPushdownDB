@@ -72,6 +72,14 @@ def calculate_cost(res):
     total_cost = transfer_cost + scan_cost + request_cost + comp_cost
     return total_cost, transfer_cost, scan_cost, request_cost, comp_cost
 
+def calculate_download_cost(res):
+    transfer_cost = 0
+    scan_cost = 0
+    request_cost = res[6] * 0.0000004
+    comp_cost = res[0] / 3600.0 * 2.128
+    total_cost = transfer_cost + scan_cost + request_cost + comp_cost
+    return total_cost, transfer_cost, scan_cost, request_cost, comp_cost
+
 sf =10
 width = 0.3
 path = os.path.join(ROOT_DIR, "../aws-exps/join/sf{}".format(sf))
@@ -223,8 +231,8 @@ ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.20], fontsize=14)
 plt.subplots_adjust(left=0.12, right=0.99, bottom=0.25, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
-ticklabels.append('N/A')
-ticklabels.append('N/A')
+ticklabels.append('')
+ticklabels.append('')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, rotation='45', fontsize=14)
@@ -261,7 +269,10 @@ for cid, name in enumerate(names):
             else:
                 t = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))
             rts.append(t)
-            val = calculate_cost(t)
+            if name == 'baseline':
+                val = calculate_download_cost(t)
+            else:
+                val = calculate_cost(t)
             vals.append(val)
         total_cost = [x[0] for x in vals]
         min_index = rts.index(min(rts))
@@ -346,7 +357,10 @@ for cid, name in enumerate(names):
             else:
                 t = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))
             rts.append(t)
-            val = calculate_cost(t)
+            if name == 'baseline':
+                val = calculate_download_cost(t)
+            else:
+                val = calculate_cost(t)
             vals.append(val)
         total_cost = [x[0] for x in vals]
         min_index = rts.index(min(rts))
@@ -428,7 +442,10 @@ for cid, name in enumerate(names):
             t = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_trial{}.txt'
                       .format(path, name, sf, aval, bval, trial))
             rts.append(t)
-            val = calculate_cost(t)
+            if name == 'baseline':
+                val = calculate_download_cost(t)
+            else:
+                val = calculate_cost(t)
             vals.append(val)
         total_cost = [x[0] for x in vals]
         min_index = rts.index(min(rts))
@@ -524,8 +541,8 @@ plt.subplots_adjust(left=0.15, right=0.99, bottom=0.25, top=0.88)
 
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'], fontsize=16)
 ticklabels = []
-ticklabels.append('N/A')
-ticklabels.append('N/A')
+ticklabels.append('')
+ticklabels.append('')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
@@ -640,8 +657,8 @@ ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.21], fontsize=14)
 plt.subplots_adjust(left=0.12, right=0.99, bottom=0.25, top=0.88)
 ticklabels = []
-ticklabels.append('N/A')
-ticklabels.append('N/A')
+ticklabels.append('')
+ticklabels.append('')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
