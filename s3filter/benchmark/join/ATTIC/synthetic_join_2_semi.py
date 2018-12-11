@@ -9,7 +9,7 @@ from s3filter.query.join.synthetic_join_settings import SyntheticSemiJoinSetting
 from s3filter.util.test_util import gen_test_id
 
 
-def main(sf, parts, sharded, fp_rate, expected_result):
+def main(sf, parts, sharded, fp_rate, table_a_filter_sql, table_b_filter_sql, expected_result):
     settings = SyntheticSemiJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
         use_shared_mem=False, shared_memory_size=-1, sf=sf, fp_rate=fp_rate,
@@ -17,14 +17,14 @@ def main(sf, parts, sharded, fp_rate, expected_result):
         table_A_parts=parts,
         table_A_sharded=sharded,
         table_A_field_names=['c_custkey'],
-        table_A_filter_sql='cast(c_acctbal as float) <= -999.0',
+        table_A_filter_sql=table_a_filter_sql,
         table_A_AB_join_key='c_custkey',
         table_B_key='orders',
         table_B_parts=parts,
         table_B_sharded=sharded,
         table_B_field_names=['o_orderkey', 'o_custkey', 'o_orderstatus', 'o_totalprice', 'o_orderdate',
                              'o_orderpriority', 'o_clerk', 'o_shippriority', 'o_comment'],
-        table_B_filter_sql='cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)',
+        table_B_filter_sql=table_b_filter_sql,
         table_B_AB_join_key='o_custkey',
         table_B_BC_join_key='o_orderkey',
         table_B_primary_key='o_orderkey',

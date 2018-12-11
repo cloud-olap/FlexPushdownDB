@@ -76,11 +76,12 @@ def query_plan(settings):
                         project_fn_A)),
                     range(0, settings.table_A_parts))
 
-    filter_A = map(lambda p:
-                   query_plan.add_operator(Filter(
-                       PredicateExpression(None, pd_expr=settings.table_A_filter_fn), 'filter_A_{}'.format(p), query_plan,
-                       False)),
-                   range(0, settings.table_A_parts))
+    if settings.table_A_filter_fn is not None:
+        filter_A = map(lambda p:
+                       query_plan.add_operator(Filter(
+                           PredicateExpression(None, pd_expr=settings.table_A_filter_fn), 'filter_A_{}'.format(p), query_plan,
+                           False)),
+                       range(0, settings.table_A_parts))
 
     scan_B = \
         map(lambda p:
@@ -118,11 +119,12 @@ def query_plan(settings):
                         project_fn_B)),
                     range(0, settings.table_B_parts))
 
-    filter_b = map(lambda p:
-                   query_plan.add_operator(Filter(
-                       PredicateExpression(None, pd_expr=settings.table_B_filter_fn), 'filter_b' + '_{}'.format(p), query_plan,
-                       False)),
-                   range(0, settings.table_B_parts))
+    if settings.table_B_filter_fn is not None:
+        filter_b = map(lambda p:
+                       query_plan.add_operator(Filter(
+                           PredicateExpression(None, pd_expr=settings.table_B_filter_fn), 'filter_b' + '_{}'.format(p), query_plan,
+                           False)),
+                       range(0, settings.table_B_parts))
 
     if settings.table_C_key is not None:
         scan_C = \
@@ -206,14 +208,14 @@ def query_plan(settings):
                          query_plan.add_operator(
                              HashJoinBuild(settings.table_A_AB_join_key, 'join_build_A_B_{}'.format(p), query_plan,
                                            False)),
-                         range(0, settings.table_B_parts))
+                         range(0, settings.other_parts))
 
     join_probe_A_B = map(lambda p:
                          query_plan.add_operator(
                              HashJoinProbe(JoinExpression(settings.table_A_AB_join_key, settings.table_B_AB_join_key),
                                            'join_probe_A_B_{}'.format(p),
                                            query_plan, False)),
-                         range(0, settings.table_B_parts))
+                         range(0, settings.other_parts))
 
     if settings.table_C_key is None:
 
@@ -229,7 +231,7 @@ def query_plan(settings):
                                  ],
                                  settings.use_pandas,
                                  'part_aggregate_{}'.format(p), query_plan, False, part_aggregate_fn)),
-                             range(0, settings.table_B_parts))
+                             range(0, settings.other_parts))
 
     else:
         def part_aggregate_fn(df):
@@ -250,9 +252,6 @@ def query_plan(settings):
         sum_ = df['_0'].astype(np.float).sum()
         return pd.DataFrame({'_0': [sum_]})
 
-    def agg_reduce_fun(df):
-        return pd.DataFrame( { '_0' : [df['_0'].sum()] } )
-
     aggregate_reduce = query_plan.add_operator(Aggregate(
         [
             AggregateExpression(AggregateExpression.SUM, lambda t: float(t['_0']))
@@ -271,9 +270,11 @@ def query_plan(settings):
 
     # Inline some of the operators
     map(lambda o: o.set_async(False), project_A)
-    map(lambda o: o.set_async(False), filter_A)
+    if settings.table_A_filter_fn is not None:
+        map(lambda o: o.set_async(False), filter_A)
     map(lambda o: o.set_async(False), project_B)
-    map(lambda o: o.set_async(False), filter_b)
+    if settings.table_B_filter_fn is not None:
+        map(lambda o: o.set_async(False), filter_b)
     map(lambda o: o.set_async(False), map_A_to_B)
     map(lambda o: o.set_async(False), map_B_to_B)
     if settings.table_C_key is not None:
@@ -281,18 +282,26 @@ def query_plan(settings):
         map(lambda o: o.set_async(False), map_C_to_C)
         map(lambda o: o.set_async(False), project_C)
         map(lambda o: o.set_async(False), filter_c)
+    map(lambda o: o.set_async(False), part_aggregate)
     aggregate_project.set_async(False)
 
     # Connect the operators
     connect_many_to_many(scan_A, project_A)
-    connect_many_to_many(project_A, filter_A)
-    connect_many_to_many(filter_A, map_A_to_B)
+    if settings.table_A_filter_fn is not None:
+        connect_many_to_many(project_A, filter_A)
+        connect_many_to_many(filter_A, map_A_to_B)
+    else:
+        connect_many_to_many(project_A, map_A_to_B)
     connect_all_to_all(map_A_to_B, join_build_A_B)
     connect_many_to_many(join_build_A_B, join_probe_A_B)
 
     connect_many_to_many(scan_B, project_B)
-    connect_many_to_many(project_B, filter_b)
-    connect_many_to_many(filter_b, map_B_to_B)
+    if settings.table_B_filter_fn is not None:
+        connect_many_to_many(project_B, filter_b)
+        connect_many_to_many(filter_b, map_B_to_B)
+    else:
+        connect_many_to_many(project_B, map_B_to_B)
+
     connect_all_to_all(map_B_to_B, join_probe_A_B)
 
     if settings.table_C_key is None:

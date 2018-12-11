@@ -125,8 +125,10 @@ class HashJoinBuild(Operator):
 
             if self.hashtable_df is not None:
                 self.send(HashTableMessage(self.hashtable_df), self.consumers)
+                del self.hashtable_df
             elif self.hashtable is not None:
                 self.send(HashTableMessage(self.hashtable), self.consumers)
+                del self.hashtable
 
             # Note: It is a legitimate state for no tuples to be received, it just means an emtpy hash table
             # else:

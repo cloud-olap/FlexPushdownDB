@@ -18,10 +18,10 @@ import s3filter.util.constants
 
 def main():
     if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=96,
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
             sharded=True)
     elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=True, buffer_size=0, lineitem_parts=32,
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=4,
             sharded=True)
 
 
@@ -94,6 +94,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, s
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
+
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), lineitem_filter)
+    # map(lambda o: o.set_async(False), groupby)
 
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
     map(lambda (p, o): o.connect(lineitem_filter[p]), enumerate(lineitem_project))

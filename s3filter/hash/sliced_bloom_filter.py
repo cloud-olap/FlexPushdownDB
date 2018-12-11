@@ -30,30 +30,30 @@ class SlicedBloomFilter(object):
 
         # if not capacity > 0:
         #     raise Exception("Capacity must be > 0")
-        if not (0 < error_rate < 1):
-            raise Exception("Illegal error rate {}. Error rate must be between 0 and 1.".format(error_rate))
+        # if not (0 < error_rate < 1):
+        #     raise Exception("Illegal error rate {}. Error rate must be between 0 and 1.".format(error_rate))
 
         self.capacity = capacity
         self.error_rate = error_rate
 
-        # given M = num_bits, k = num_slices, P = error_rate, n = capacity
-        #       k = log2(1/P)
-        # solving for m = bits_per_slice
-        # n ~= M * ((ln(2) ** 2) / abs(ln(P)))
-        # n ~= (k * m) * ((ln(2) ** 2) / abs(ln(P)))
-        # m ~= n * abs(ln(P)) / (k * (ln(2) ** 2))
+        self.num_slices = SlicedBloomFilter.k_from_p(error_rate)
+        self.num_bits_per_slice = SlicedBloomFilter.o_from_npk(self.capacity, self.error_rate, self.num_slices)
 
-        self.num_slices = int(math.ceil(math.log(1.0 / self.error_rate, 2)))
-        self.num_bits_per_slice = int(math.ceil(
-            (self.capacity * abs(math.log(self.error_rate))) /
-            (self.num_slices * (math.log(2) ** 2))))
-
-        self.num_bits = self.num_slices * self.num_bits_per_slice
+        self.num_bits = self.m_from_ko(self.num_slices, self.num_bits_per_slice)
         self.count = 0
 
         self.hash_functions = self.build_hash_functions()
 
         self.bit_arrays = numpy.zeros((self.num_slices, self.num_bits_per_slice), dtype=bool)
+
+    def __repr__(self):
+        return {
+            'capacity': self.capacity,
+            'error_rate': self.error_rate,
+            'num_slices': self.num_slices,
+            'num_bits_per_slice': self.num_bits_per_slice,
+            'num_bits': self.num_slices * self.num_bits_per_slice
+        }.__repr__()
 
     def build_hash_functions(self):
         """Creates the hash functions needed for the bloom filter. One per slice with each function hashing over the number
@@ -116,3 +116,57 @@ class SlicedBloomFilter(object):
             return False
         else:
             return True
+
+    @staticmethod
+    def o_from_npk(n, p, k):
+        """
+        given M = num_bits, k = num_slices, P = error_rate, n = capacity
+              k = log2(1/P)
+        solving for o = bits_per_slice
+        n ~= M * ((ln(2) ** 2) / abs(ln(P)))
+        n ~= (k * m) * ((ln(2) ** 2) / abs(ln(P)))
+        m ~= n * abs(ln(P)) / (k * (ln(2) ** 2))
+
+        :param n:
+        :param p:
+        :param k:
+        :return:
+        """
+
+        if k == 0:
+            return 0
+        else:
+            return int(math.ceil((n * abs(math.log(p))) / (k * (math.log(2) ** 2))))
+
+    @staticmethod
+    def k_from_p(p):
+        return int(math.ceil(math.log(1.0 / float(p), 2)))
+
+    @staticmethod
+    def r_from_mn(m, n):
+        return float(m) / float(n)
+
+    @staticmethod
+    def p_from_kr(k, r):
+        return math.pow(1 - math.exp((0 - k) / r), k)
+
+    @staticmethod
+    def p_from_kmn(k, m, n):
+        r = SlicedBloomFilter.r_from_mn(m, n)
+        return SlicedBloomFilter.p_from_kr(k, r)
+
+    @staticmethod
+    def k_from_r(r):
+        return round(math.log(2) * r)
+
+    @staticmethod
+    def m_from_ko(k, o):
+        return k * o
+
+    @staticmethod
+    def kp_from_mn(m, n):
+        r = SlicedBloomFilter.r_from_mn(m, n)
+        k = SlicedBloomFilter.k_from_r(r)
+        p = SlicedBloomFilter.p_from_kr(k, r)
+
+        return k, p

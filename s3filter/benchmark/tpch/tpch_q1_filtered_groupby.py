@@ -17,8 +17,12 @@ import s3filter.util.constants
 
 
 def main():
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, 
-            buffer_size=0, lineitem_parts=1, sharded=True)
+    if s3filter.util.constants.TPCH_SF == 10:
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
+            sharded=True)
+    elif s3filter.util.constants.TPCH_SF == 1:
+        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
+            sharded=True)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded):
@@ -28,7 +32,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, s
     """
 
     print('')
-    print("TPCH Q1 Baseline Group By")
+    print("TPCH Q1 Filtered Group By")
     print("----------------------")
 
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
@@ -77,6 +81,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, s
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
+
+    map(lambda o: o.set_async(False), lineitem_project)
+    # map(lambda o: o.set_async(False), groupby)
 
     map(lambda (p, o): o.connect(lineitem_project[p]), enumerate(lineitem_scan))
     map(lambda (p, o): o.connect(groupby[p]), enumerate(lineitem_project))

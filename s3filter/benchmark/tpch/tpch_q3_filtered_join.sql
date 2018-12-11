@@ -21,7 +21,7 @@ customer_order_join as (
 ),
 customer_order_lineitem_join as (
     select *
-    from lineitem, customer_order_join
+    from lineitem_scan, customer_order_join
     where l_orderkey = o_orderkey
 ),
 group_ as (

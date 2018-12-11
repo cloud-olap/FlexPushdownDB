@@ -31,19 +31,19 @@ from s3filter.util import test_util
 from s3filter.util.test_util import gen_test_id
 
 
-def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded,
+def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded,other_parts,
          expected_result, customer_filter_sql=None,
          order_filter_sql=None, lineitem_filter_sql=None):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, customer_parts=customer_parts,
         order_parts=order_parts, lineitem_parts=lineitem_parts, customer_sharded=customer_sharded,
-        order_sharded=order_sharded, lineitem_sharded=lineitem_sharded, sf=sf,
+        order_sharded=order_sharded, lineitem_sharded=lineitem_sharded, other_parts=other_parts, sf=sf,
         expected_result=expected_result, customer_filter_sql=customer_filter_sql,
         order_filter_sql=order_filter_sql, lineitem_filter_sql=lineitem_filter_sql)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, order_parts, lineitem_parts,
         customer_sharded,
-        order_sharded, lineitem_sharded, sf, expected_result, customer_filter_sql=None,
+        order_sharded, lineitem_sharded, other_parts, sf, expected_result, customer_filter_sql=None,
         order_filter_sql=None, lineitem_filter_sql=None):
     """
 
@@ -60,17 +60,16 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                         query_plan.add_operator(
                             SQLTableScan(get_file_key('customer', customer_sharded, p, sf),
                                          "select "
-                                         " c_custkey "
+                                         "  c_custkey "
                                          "from "
                                          "  S3Object "
                                          "where "
                                          "  c_mktsegment = 'BUILDING' "
                                          "  {} "
                                          "  {} "
-                                         .format(" and {}".format(
-                                             customer_filter_sql if customer_filter_sql is not None else ""),
-                                             get_sql_suffix('customer', customer_parts, p,
-                                                            customer_sharded,
+                                         .format(
+                                             ' and ' + customer_filter_sql if customer_filter_sql is not None else '',
+                                             get_sql_suffix('customer', customer_parts, p, customer_sharded,
                                                             add_where=False)),
                                          use_pandas, secure, use_native,
                                          'customer_scan' + '_{}'.format(p),
@@ -109,11 +108,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                       "  cast(o_orderdate as timestamp) < cast('1995-03-01' as timestamp) "
                                       "  {} "
                                       "  {} "
-                                      .format(" and {}".format(
-                                          order_filter_sql if order_filter_sql is not None else ""),
-                                          get_sql_suffix('orders', order_parts, p,
-                                                         order_sharded,
-                                                         add_where=False)),
+                                      .format(
+                                          ' and ' + order_filter_sql if order_filter_sql is not None else '',
+                                          get_sql_suffix('orders', order_parts, p, order_sharded, add_where=False)),
                                       use_pandas, secure, use_native,
                                       'order_scan' + '_{}'.format(p),
                                       query_plan,
@@ -145,14 +142,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                         HashJoinBuild('c_custkey',
                                                       'customer_order_join_build' + '_' + str(p), query_plan,
                                                       False)),
-                                    range(0, customer_parts))
+                                    range(0, other_parts))
 
     customer_order_join_probe = map(lambda p:
                                     query_plan.add_operator(
                                         HashJoinProbe(JoinExpression('c_custkey', 'o_custkey'),
                                                       'customer_order_join_probe' + '_' + str(p),
                                                       query_plan, False)),
-                                    range(0, customer_parts))
+                                    range(0, other_parts))
 
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
@@ -165,10 +162,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                          "  cast(l_shipdate as timestamp) > cast('1995-03-01' as timestamp) "
                                          "  {} "
                                          "  {} "
-                                         .format(" and {}".format(
-                                             lineitem_filter_sql if lineitem_filter_sql is not None else ""),
-                                             get_sql_suffix('lineitem', lineitem_parts, p,
-                                                            lineitem_sharded,
+                                         .format(
+                                             ' and ' + lineitem_filter_sql if lineitem_filter_sql is not None else '',
+                                             get_sql_suffix('lineitem', lineitem_parts, p, lineitem_sharded,
                                                             add_where=False)),
                                          use_pandas, secure, use_native,
                                          'lineitem_scan' + '_{}'.format(p),
@@ -198,7 +194,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
     order_map_2 = map(lambda p:
                       query_plan.add_operator(Map('o_orderkey', 'order_map_2' + '_' + str(p), query_plan, False)),
-                      range(0, order_parts))
+                      range(0, other_parts))
 
     customer_order_lineitem_join_build = map(lambda p:
                                              query_plan.add_operator(
@@ -206,14 +202,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                                'customer_order_lineitem_join_build' + '_' + str(p),
                                                                query_plan,
                                                                False)),
-                                             range(0, order_parts))
+                                             range(0, other_parts))
 
     customer_order_lineitem_join_probe = map(lambda p:
                                              query_plan.add_operator(
                                                  HashJoinProbe(JoinExpression('o_orderkey', 'l_orderkey'),
                                                                'customer_order_lineitem_join_probe' + '_' + str(p),
                                                                query_plan, False)),
-                                             range(0, order_parts))
+                                             range(0, other_parts))
 
     def groupby_fn(df):
         df['l_extendedprice'] = df['l_extendedprice'].astype(np.float)
@@ -233,7 +229,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                         ],
                         'group' + '_{}'.format(p), query_plan,
                         False, groupby_fn)),
-                range(0, lineitem_parts))
+                range(0, other_parts))
 
     def group_reduce_fn(df):
         grouped = df.groupby(['l_orderkey', 'o_orderdate', 'o_shippriority'])
@@ -256,6 +252,15 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
             False))
 
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
+
+    # Inline what we can
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), customer_project)
+    map(lambda o: o.set_async(False), order_project)
+    map(lambda o: o.set_async(False), lineitem_map)
+    map(lambda o: o.set_async(False), customer_map)
+    map(lambda o: o.set_async(False), order_map_1)
+    map(lambda o: o.set_async(False), order_map_2)
 
     # Connect the operators
     connect_many_to_many(customer_scan, customer_project)
@@ -294,12 +299,13 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     print('use_pandas: {}'.format(use_pandas))
     print('secure: {}'.format(secure))
     print('use_native: {}'.format(use_native))
-    print("customer_parts parts: {}".format(customer_parts))
+    print("customer_parts: {}".format(customer_parts))
     print("order_parts: {}".format(order_parts))
     print("lineitem_parts: {}".format(lineitem_parts))
     print("customer_sharded: {}".format(customer_sharded))
     print("order_sharded: {}".format(order_sharded))
     print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("other_parts: {}".format(other_parts))
     print('')
 
     # Write the plan graph
@@ -328,12 +334,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     test_util.assert_tuples(expected_result, tuples)
 
 
-
-
-
 if __name__ == "__main__":
     main(1,
-         2, False, 2, False, 2, False,
+         4, False, 4, False, 4, False, 2,
          tpch_results.q3_sf1_testing_expected_result,
          tpch_results.q3_sf1_testing_params['customer_filter'],
          tpch_results.q3_sf1_testing_params['order_filter'],

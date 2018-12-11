@@ -25,14 +25,14 @@ import pandas as pd
 import numpy as np
 
 
-def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, expected_result):
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, sf=sf,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts, sf=sf,
         expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, sf, expected_result):
+        part_sharded, other_parts, sf, expected_result):
     """
 
     :return: None
@@ -101,21 +101,21 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                        HashJoinBuild('p_partkey',
                                                      'lineitem_partjoin_build' + '_' + str(p), query_plan,
                                                      False)),
-                                   range(0, part_parts))
+                                   range(0, other_parts))
 
     lineitem_part_join_probe = map(lambda p:
                                    query_plan.add_operator(
                                        HashJoinProbe(JoinExpression('p_partkey', 'l_partkey'),
                                                      'lineitem_part_join_probe' + '_' + str(p),
                                                      query_plan, False)),
-                                   range(0, part_parts))
+                                   range(0, other_parts))
 
     filter_op = map(lambda p:
                     query_plan.add_operator(tpch_q19.filter_def('filter_op' + '_' + str(p), query_plan)),
-                    range(0, part_parts))
+                    range(0, other_parts))
     aggregate = map(lambda p:
                     query_plan.add_operator(tpch_q19.aggregate_def('aggregate' + '_' + str(p), query_plan, use_pandas)),
-                    range(0, part_parts))
+                    range(0, other_parts))
 
     def aggregate_reduce_fn(df):
         sum1_ = df['_0'].astype(np.float).sum()
@@ -134,6 +134,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     aggregate_project = query_plan.add_operator(
         tpch_q19.aggregate_project_def('aggregate_project', query_plan))
     collate = query_plan.add_operator(tpch_q19.collate_op('collate', query_plan))
+
+    map(lambda o: o.set_async(False), lineitem_project)
+    map(lambda o: o.set_async(False), part_project)
+    map(lambda o: o.set_async(False), lineitem_map)
+    map(lambda o: o.set_async(False), part_map)
+    map(lambda o: o.set_async(False), filter_op)
+    map(lambda o: o.set_async(False), aggregate)
+    aggregate_project.set_async(False)
 
     # Connect the operators
     connect_many_to_many(lineitem_scan, lineitem_project)
@@ -161,6 +169,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("part_parts: {}".format(part_parts))
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("part_sharded: {}".format(part_sharded))
+    print("other_parts: {}".format(other_parts))
     print('')
 
     # Write the plan graph
@@ -190,4 +199,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 2, False, tpch_results.q19_sf1_expected_result)
+    main(1, 4, False, 4, False, 2, tpch_results.q19_sf1_expected_result)

@@ -52,7 +52,7 @@ def project_lineitem_from_filtered_scan_operator_def(name, query_plan):
             ProjectExpression(lambda t_: t_['_5'], 'l_linestatus'),
             ProjectExpression(lambda t_: t_['_6'], 'l_shipdate'),
         ],
-        name, query_plan, False, fn)
+        name, query_plan, True, fn)
 
 def project_lineitem_operator_def(name, query_plan):
     # type: (str, QueryPlan) -> Project

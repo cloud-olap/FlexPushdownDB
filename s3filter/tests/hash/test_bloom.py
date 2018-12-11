@@ -16,7 +16,7 @@ def test_bloom_filter():
     capacity = num_keys
     fp_rate = 0.1
 
-    bf = BloomFilter(capacity, fp_rate)
+    bf = SlicedBloomFilter(capacity, fp_rate)
 
     # Fill up the bloom filter to capacity
     for i in range(0, num_keys):
@@ -135,6 +135,51 @@ def test_sliced_bloom_sql():
         assert v1_present
         assert v2_present
         assert num_rows < 200000
+
+    finally:
+        cur.close()
+
+
+def test_bloom_size_check():
+    best_p = SlicedSQLBloomFilter.calc_best_fp_rate(200000)
+    bf = SlicedSQLBloomFilter(SlicedBloomFilter(200000, best_p))
+
+    pass
+
+
+def test_bloom_scan():
+    bf = None
+
+    cur = Cursor(boto3.client('s3')).select('part.csv',
+                                            "select "
+                                            "   p_partkey "
+                                            "from "
+                                            "   S3Object limit 1000")
+
+    try:
+
+        rows = cur.execute()
+        rows_list = list(rows)
+        best_p = SlicedSQLBloomFilter.calc_best_fp_rate(len(rows_list))
+        bf = SlicedSQLBloomFilter(SlicedBloomFilter(len(rows_list), 0.01))
+
+        for r in rows_list:
+            bf.add(int(r[0]))
+
+    finally:
+        cur.close()
+
+    sql = "select    l_partkey from   S3Object where {}" \
+        .format(bf.build_bit_array_string_sql_predicate('l_partkey'))
+
+    cur = Cursor(boto3.client('s3')).select('lineitem.csv',
+                                            sql)
+
+    try:
+
+        rows = cur.execute()
+        for r in rows:
+            print(int(r[0]))
 
     finally:
         cur.close()
