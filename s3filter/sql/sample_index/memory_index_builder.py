@@ -106,7 +106,7 @@ class MemoryIndexHandler:
                     prefix='_', dtype=np.str,
                     engine='c', quotechar='"', na_filter=False, compression=None, low_memory=False,
                     skiprows=1, skip_blank_lines=True)
-        index_df[index_df.columns[1:3]] = index_df[index_df.columns[1:3]].astype(np.int64)
+        index_df[index_df.columns[1:3]] = index_df[index_df.columns[1:3]].astype(np.int)
         for row in index_df.values:
             self.index.append((row[1], row[2]))
 
