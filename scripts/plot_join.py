@@ -145,7 +145,7 @@ aval = avals[FIXED_A_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-bval-rt'
 
-fig, ax = plt.subplots(figsize=(8, 4))
+fig, ax = plt.subplots(figsize=(8, 5))
 width = 0.2
 for cid, name in enumerate(names):
     data = []
@@ -167,8 +167,8 @@ for cid, name in enumerate(names):
 ax.set_xticks([x + width for x in range(len(bvals))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
-ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.17], fontsize=14)
+plt.subplots_adjust(left=0.12, right=0.99, bottom=0.27, top=0.90)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
 for bval in bvals:
@@ -329,7 +329,7 @@ aval = avals[FIXED_A_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-bval-cost'
 
-fig, ax = plt.subplots(figsize=(8, 4))
+fig, ax = plt.subplots(figsize=(8, 5))
 width = 0.2
 bars = [0] * len(names)
 for cid, name in enumerate(names):
@@ -382,14 +382,14 @@ ax.set_xticks([x + width for x in range(6)])
 ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
+lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.20], fontsize=14)
 lg2 = ax.legend([b_compute[0], b_request[0], b_scan[0], b_transfer[0]],
                 ['Compute Cost', 'Request Cost', 'Scan Cost', 'Transfer Cost'],
                 ncol=2, bbox_to_anchor=[0.99, 0.99], fontsize=14)
 plt.gca().add_artist(lg1)
 plt.gca().add_artist(lg2)
 # plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
-plt.subplots_adjust(left=0.15, right=0.99, bottom=0.35, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.27, top=0.88)
 
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'], fontsize=16)
 ticklabels = []
