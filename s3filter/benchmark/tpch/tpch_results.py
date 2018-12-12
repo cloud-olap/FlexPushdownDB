@@ -1,5 +1,7 @@
 from datetime import date
 
+q1_sf1_expected_result = None
+
 # q14_sf1_expected_result = 15.09012
 q14_sf1_expected_result = 16.63567
 q17_sf1_expected_result = 372414.28999
