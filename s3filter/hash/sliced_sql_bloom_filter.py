@@ -17,12 +17,12 @@ where HASH_FUNCTION_STR is:
     ( ( <INT> * cast(<FIELD_NAME> as int) + <INT> ) % <INT> ) % <INT>
     ( (  * cast( as int) +  ) %  ) % (32 chars)
 
-where 8 chars are reserved for each <INT> and 16 chars are reserved for <FIELD_NAME>
+where 16 chars are reserved for each <INT> and 16 chars are reserved for <FIELD_NAME>
 
 Given this, we approximate the bloom filter predicate lengths as:
 
-    m + (k * (28 + 32 + 8 + 16))
-    m + (k * 84)
+    m + (k * (28 + 32 + 16 + 16))
+    m + (k * 92)
 
 where m is the size of the bit array and k is the number of hash functions/slices. Since we don't know the value of k
 until an fp rate is calculated, we assume a maximum for k of 13 - which is a very restrictive bloom filter of fp rate
@@ -30,8 +30,8 @@ until an fp rate is calculated, we assume a maximum for k of 13 - which is a ver
 
 Solving for m:
 
-m = MAX_S3_SELECT_EXPRESSION_LEN - ENCLOSING_SQL_LEN - (13 * 84)
-m = MAX_S3_SELECT_EXPRESSION_LEN - ENCLOSING_SQL_LEN - 1092
+m = MAX_S3_SELECT_EXPRESSION_LEN - ENCLOSING_SQL_LEN - (13 * 92)
+m = MAX_S3_SELECT_EXPRESSION_LEN - ENCLOSING_SQL_LEN - 1196
 
 """
 
@@ -40,7 +40,7 @@ import numpy
 from s3filter.hash.sliced_bloom_filter import SlicedBloomFilter
 
 MAX_S3_SELECT_EXPRESSION_LEN = 1024 * 256
-MAX_BLOOM_FILTER_PREDICATE_SQL_TEMPLATE_LEN = 1092
+MAX_BLOOM_FILTER_PREDICATE_SQL_TEMPLATE_LEN = 1196
 
 
 class SlicedSQLBloomFilter(object):

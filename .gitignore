@@ -123,3 +123,4 @@ venv.bak/
 /.vscode/
 /benchmark-results/
 /aws-exps/
+/.idea/

@@ -872,6 +872,7 @@ if __name__ == "__main__":
         'Table',
         'Sort Field',
         'Sort Order',
+        'K',
         'Sample Size',
         'batch_size',
         'Sampling Threshold',

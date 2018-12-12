@@ -15,7 +15,7 @@ from s3filter.util import filesystem_util
 from s3filter.util.test_util import gen_test_id
 
 
-def main(sf, parts, sharded, fp_rate, table_a_filter_val, table_b_filter_val, expected_result, trial):
+def main(sf, parts, sharded, other_parts, fp_rate, table_a_filter_val, table_b_filter_val, expected_result, trial):
     table_a_filter_sql, _, table_b_filter_sql, _ = runner.build_filters(table_a_filter_val, table_b_filter_val)
 
     settings = SyntheticBloomJoinSettings(
@@ -42,7 +42,8 @@ def main(sf, parts, sharded, fp_rate, table_a_filter_val, table_b_filter_val, ex
         table_C_field_names=None,
         table_C_filter_sql=None,
         table_C_BC_join_key=None,
-        table_C_detail_field_name=None)
+        table_C_detail_field_name=None,
+        other_parts=other_parts)
 
     path = os.path.join(ROOT_DIR, "../aws-exps/join")
     filesystem_util.create_dirs(path)
@@ -68,8 +69,7 @@ def main(sf, parts, sharded, fp_rate, table_a_filter_val, table_b_filter_val, ex
 if __name__ == "__main__":
     # main(1, 1, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
-    main(1, 2, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
-         'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
+    main(1, 4, False, 2, 0.01, -990, '1992-03-01', SF1_JOIN_2_RESULT, 1)
     # main(1, 4, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
     # main(1, 8, False, 0.001, 'cast(c_acctbal as float) <= -999.0',

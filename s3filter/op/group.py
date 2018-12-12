@@ -171,10 +171,10 @@ class Group(Operator):
                 self.send(TupleMessage(Tuple(t_)), self.consumers)
         else:
             # for groupby_reducer, aggregate one more time.
-            if len(self.producers) > 1:
+            if not self.is_completed() and len(self.producers) > 1:
                 self.aggregate_df = self.pd_expr(self.aggregate_df)
 
-            if self.aggregate_df is not None:
+            if not self.is_completed() and self.aggregate_df is not None:
                 self.aggregate_df.reset_index(drop=True, inplace=True)
 
                 # if self.log_enabled:

@@ -34,18 +34,18 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded, fp_rate,
-         expected_result, customer_filter_sql=None,
+         other_parts, expected_result, customer_filter_sql=None,
          order_filter_sql=None, lineitem_filter_sql=None):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, customer_parts=customer_parts,
         order_parts=order_parts, lineitem_parts=lineitem_parts, customer_sharded=customer_sharded,
-        order_sharded=order_sharded, lineitem_sharded=lineitem_sharded, fp_rate=fp_rate, sf=sf,
+        order_sharded=order_sharded, lineitem_sharded=lineitem_sharded, other_parts=other_parts, fp_rate=fp_rate, sf=sf,
         expected_result=expected_result, customer_filter_sql=customer_filter_sql,
         order_filter_sql=order_filter_sql, lineitem_filter_sql=lineitem_filter_sql)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, order_parts, lineitem_parts,
         customer_sharded,
-        order_sharded, lineitem_sharded, fp_rate, sf, expected_result, customer_filter_sql=None,
+        order_sharded, lineitem_sharded, other_parts, fp_rate, sf, expected_result, customer_filter_sql=None,
         order_filter_sql=None, lineitem_filter_sql=None):
     """
 
@@ -150,14 +150,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                         HashJoinBuild('c_custkey',
                                                       'customer_order_join_build' + '_' + str(p), query_plan,
                                                       False)),
-                                    range(0, customer_parts))
+                                    range(0, other_parts))
 
     customer_order_join_probe = map(lambda p:
                                     query_plan.add_operator(
                                         HashJoinProbe(JoinExpression('c_custkey', 'o_custkey'),
                                                       'customer_order_join_probe' + '_' + str(p),
                                                       query_plan, False)),
-                                    range(0, customer_parts))
+                                    range(0, other_parts))
 
     order_bloom_create = query_plan.add_operator(
         BloomCreate('o_orderkey', 'order_bloom_create', query_plan, False,
@@ -207,7 +207,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
     order_map_2 = map(lambda p:
                       query_plan.add_operator(Map('o_orderkey', 'order_map_2' + '_' + str(p), query_plan, False)),
-                      range(0, order_parts))
+                      range(0, other_parts))
 
     customer_order_lineitem_join_build = map(lambda p:
                                              query_plan.add_operator(
@@ -215,14 +215,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                                'customer_order_lineitem_join_build' + '_' + str(p),
                                                                query_plan,
                                                                False)),
-                                             range(0, order_parts))
+                                             range(0, other_parts))
 
     customer_order_lineitem_join_probe = map(lambda p:
                                              query_plan.add_operator(
                                                  HashJoinProbe(JoinExpression('o_orderkey', 'l_orderkey'),
                                                                'customer_order_lineitem_join_probe' + '_' + str(p),
                                                                query_plan, False)),
-                                             range(0, order_parts))
+                                             range(0, other_parts))
 
     def groupby_fn(df):
         df['l_extendedprice'] = df['l_extendedprice'].astype(np.float)
@@ -242,7 +242,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                         ],
                         'group' + '_{}'.format(p), query_plan,
                         False, groupby_fn)),
-                range(0, lineitem_parts))
+                range(0, other_parts))
 
     def group_reduce_fn(df):
         grouped = df.groupby(['l_orderkey', 'o_orderdate', 'o_shippriority'])
@@ -270,6 +270,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     map(lambda o: o.set_async(False), lineitem_project)
     map(lambda o: o.set_async(False), customer_project)
     map(lambda o: o.set_async(False), order_project)
+    map(lambda o: o.set_async(False), lineitem_map)
+    map(lambda o: o.set_async(False), customer_map)
+    map(lambda o: o.set_async(False), order_map_1)
+    map(lambda o: o.set_async(False), order_map_2)
 
     # Connect the operators
     connect_many_to_many(customer_scan, customer_project)
@@ -321,6 +325,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
     print("customer_sharded: {}".format(customer_sharded))
     print("order_sharded: {}".format(order_sharded))
     print("lineitem_sharded: {}".format(lineitem_sharded))
+    print("other_parts: {}".format(other_parts))
     print("fp_rate: {}".format(fp_rate))
     print('')
 
@@ -352,7 +357,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
 if __name__ == "__main__":
     main(1,
-         2, False, 2, False, 2, False, 0.1,
+         4, False, 4, False, 4, False, 0.1, 2,
          tpch_results.q3_sf1_testing_expected_result,
          tpch_results.q3_sf1_testing_params['customer_filter'],
          tpch_results.q3_sf1_testing_params['order_filter'],

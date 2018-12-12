@@ -3,6 +3,7 @@ Creates and reads from local table index
 """
 import math
 import time
+import random
 from random import randint
 
 from s3filter.op.message import StringMessage, DataFrameMessage
@@ -12,6 +13,8 @@ from s3filter.sql.sample_index.s3_index_builder import *
 from s3filter.sql.sample_index.memory_index_builder import MemoryIndexHandler
 
 __author__ = "Abdurrahman Ghanem <abghanem@qf.org.qa>"
+
+RNG_SEED = 1024     # fixed seed in order to be able to regenerate the same results with every execution
 
 
 class TableRandomSampleGenerator(Operator):
@@ -32,6 +35,7 @@ class TableRandomSampleGenerator(Operator):
         self.sample_size = sample_size
 
         self.batch_size = batch_size if batch_size <= (BLOCK_SIZE / 2) else BLOCK_SIZE / 2
+        random.seed(RNG_SEED)
 
         # self.index_mng = IndexHandler(self.s3key)
         self.index_mng = MemoryIndexHandler(self.s3key)
