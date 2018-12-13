@@ -27,4 +27,4 @@ def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_p
 
 
 if __name__ == "__main__":
-    main(1, 4, False, 4, False, 2, 0.1, tpch_results.q14_sf1_expected_result)
+    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q14_sf1_expected_result, 1)

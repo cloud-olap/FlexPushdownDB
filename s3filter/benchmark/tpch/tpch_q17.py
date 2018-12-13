@@ -3,7 +3,7 @@
 
 """
 
-from s3filter.benchmark.tpch import tpch_q17_baseline_join, tpch_q17_filtered_join, tpch_q17_bloom_join
+from s3filter.benchmark.tpch import tpch_q17_baseline_join, tpch_q17_filtered_join, tpch_q17_bloom_join, tpch_results
 from s3filter.benchmark.tpch.run_tpch import start_capture, end_capture
 
 
@@ -27,4 +27,4 @@ def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_p
 
 
 if __name__ == "__main__":
-    main()
+    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q17_sf1_expected_result, 1)
