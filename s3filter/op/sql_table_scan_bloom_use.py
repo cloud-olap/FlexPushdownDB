@@ -122,7 +122,7 @@ class SQLTableScanBloomUse(Operator):
             sql_suffix = self.__build_sql_suffix(self.s3sql, bloom_filter_sql_predicates)
             self.s3sql = self.s3sql + sql_suffix
         else:
-            warnings.warn("{}('{}') | Bloom filter fp rate ({}) is 1.0, not using bloom filter"
+            print("{}('{}') | Bloom filter fp rate ({}) is 1.0, not using bloom filter"
                           .format(self.__class__.__name__,
                                   self.name,
                                   self.__bloom_filters[0].fp_rate()))

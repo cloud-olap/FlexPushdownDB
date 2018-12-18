@@ -141,7 +141,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     part_lineitem_join_avg_group_join_probe = \
         map(lambda p:
             query_plan.add_operator(
-                HashJoinProbe(JoinExpression('l_partkey', 'p_partkey'),
+                HashJoinProbe(JoinExpression('l_partkey', 'l_partkey'),
                               'part_lineitem_join_avg_group_join_probe' + '_' + str(p),
                               query_plan,
                               False)),

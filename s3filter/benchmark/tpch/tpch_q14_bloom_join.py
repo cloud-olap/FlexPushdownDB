@@ -28,7 +28,8 @@ import numpy as np
 
 def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts, sf=sf, fp_rate=fp_rate,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts,
+        sf=sf, fp_rate=fp_rate,
         expected_result=expected_result)
 
 
@@ -67,44 +68,47 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
     part_project = map(lambda p:
                        query_plan.add_operator(
-                           tpch_q14.project_partkey_type_operator_def('part_project' + '_' + str(p),
-                                                                      query_plan)),
+                           tpch_q14.project_partkey_type_operator_def(
+                               'part_project' + '_' + str(p),
+                               query_plan)),
                        range(0, part_parts))
-
-    lineitem_map = map(lambda p:
-                       query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
-                       range(0, lineitem_parts))
 
     part_map = map(lambda p:
-                       query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
-                       range(0, part_parts))
+                   query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
+                   range(0, part_parts))
 
     part_bloom_create = query_plan.add_operator(
-                                tpch_q14.bloom_create_p_partkey_operator_def(fp_rate,
-                                                                             'part_bloom_create',
-                                                                             query_plan))
+        tpch_q14.bloom_create_p_partkey_operator_def(fp_rate,
+                                                     'part_bloom_create',
+                                                     query_plan))
 
-    lineitem_scan = map(lambda p:
-                        query_plan.add_operator(
-                            tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(
-                                min_shipped_date,
-                                max_shipped_date,
-                                lineitem_parts,
-                                lineitem_sharded,
-                                p,
-                                use_pandas,
-                                secure,
-                                use_native,
-                                'lineitem_scan' + '_' + str(p),
-                                query_plan,
-                            sf)),
-                        range(0, lineitem_parts))
+    lineitem_scan = \
+        map(lambda p:
+            query_plan.add_operator(
+                tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(
+                    min_shipped_date,
+                    max_shipped_date,
+                    lineitem_parts,
+                    lineitem_sharded,
+                    p,
+                    use_pandas,
+                    secure,
+                    use_native,
+                    'lineitem_scan' + '_' + str(p),
+                    query_plan,
+                    sf)),
+            range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:
                            query_plan.add_operator(
                                tpch_q14.project_partkey_extendedprice_discount_operator_def(
-                                   'lineitem_project' + '_' + str(p), query_plan)),
+                                   'lineitem_project' + '_' + str(p),
+                                   query_plan)),
                            range(0, lineitem_parts))
+
+    lineitem_map = map(lambda p:
+                       query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
+                       range(0, lineitem_parts))
 
     join_build = map(lambda p:
                      query_plan.add_operator(
@@ -161,7 +165,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     connect_many_to_many(part_project, part_map)
     connect_all_to_all(part_map, join_build)
     connect_many_to_many(lineitem_scan, lineitem_project)
-    connect_all_to_all(join_build, join_probe)
+    connect_many_to_many(join_build, join_probe)
     connect_many_to_many(lineitem_project, lineitem_map)
     connect_all_to_all(lineitem_map, join_probe)
     connect_many_to_many(join_probe, part_aggregate)
@@ -214,4 +218,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 4, False, 4, False, 2, 0.3, tpch_results.q14_sf1_expected_result)
+    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q14_sf1_expected_result)

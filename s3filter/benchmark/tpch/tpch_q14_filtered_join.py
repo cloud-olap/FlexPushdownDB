@@ -28,7 +28,8 @@ import numpy as np
 
 def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts, sf=sf,
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts,
+        sf=sf,
         expected_result=expected_result)
 
 
@@ -50,6 +51,31 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     date = '1993-01-01'
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
+
+    part_scan = map(lambda p:
+                    query_plan.add_operator(
+                        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(
+                            part_sharded,
+                            p,
+                            part_parts,
+                            sf,
+                            use_pandas,
+                            secure,
+                            use_native,
+                            'part_scan' + '_' + str(p),
+                            query_plan)),
+                    range(0, part_parts))
+
+    part_project = map(lambda p:
+                       query_plan.add_operator(
+                           tpch_q14.project_partkey_type_operator_def(
+                               'part_project' + '_' + str(p),
+                               query_plan)),
+                       range(0, part_parts))
+
+    part_map = map(lambda p:
+                   query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
+                   range(0, part_parts))
 
     lineitem_scan = \
         map(lambda p:
@@ -75,34 +101,9 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                    query_plan)),
                            range(0, lineitem_parts))
 
-    part_scan = map(lambda p:
-                    query_plan.add_operator(
-                        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(
-                            part_sharded,
-                            p,
-                            part_parts,
-                            sf,
-                            use_pandas,
-                            secure,
-                            use_native,
-                            'part_scan' + '_' + str(p),
-                            query_plan)),
-                    range(0, part_parts))
-
-    part_project = map(lambda p:
-                       query_plan.add_operator(
-                           tpch_q14.project_partkey_type_operator_def(
-                               'part_project' + '_' + str(p),
-                               query_plan)),
-                       range(0, part_parts))
-
     lineitem_map = map(lambda p:
                        query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
                        range(0, lineitem_parts))
-
-    part_map = map(lambda p:
-                       query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
-                       range(0, part_parts))
 
     join_build = map(lambda p:
                      query_plan.add_operator(
@@ -153,10 +154,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     aggregate_project.set_async(False)
 
     # Connect the operators
-    connect_many_to_many(lineitem_scan, lineitem_project)
     connect_many_to_many(part_scan, part_project)
     connect_many_to_many(part_project, part_map)
     connect_all_to_all(part_map, join_build)
+    connect_many_to_many(lineitem_scan, lineitem_project)
     connect_many_to_many(join_build, join_probe)
     connect_many_to_many(lineitem_project, lineitem_map)
     connect_all_to_all(lineitem_map, join_probe)
@@ -180,7 +181,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("other_parts: {}".format(other_parts))
     print('')
 
-    query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id() + "-" + str(lineitem_parts))
+    query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())
 
     # Start the query
     query_plan.execute()
