@@ -78,12 +78,9 @@ class HashJoinBuild(Operator):
 
     def on_receive_dataframe(self, df, _producer_name):
         if self.hashtable_df is None:
-            self.hashtable_df = pd.DataFrame()
-
-        # Can't do this with shared mem, the index is lost when converting to numpy
-        # df.set_index(self.key, inplace=True, drop=False)
-
-        self.hashtable_df = self.hashtable_df.append(df)
+            self.hashtable_df = df
+        else:
+            self.hashtable_df = self.hashtable_df.append(df, ignore_index=True)
 
         self.op_metrics.rows_processed += len(df)
 
@@ -124,6 +121,7 @@ class HashJoinBuild(Operator):
                     self.hashtable_df))
 
             if self.hashtable_df is not None:
+                self.hashtable_df = self.hashtable_df.set_index(self.key)
                 self.send(HashTableMessage(self.hashtable_df), self.consumers)
                 del self.hashtable_df
             elif self.hashtable is not None:

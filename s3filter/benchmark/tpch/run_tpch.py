@@ -2,7 +2,10 @@
 """Run TPCH Benchmarks
 
 """
+import os
+import subprocess
 
+from s3filter import ROOT_DIR
 from s3filter.benchmark.tpch import tpch_q14_baseline_join
 from s3filter.benchmark.tpch import tpch_q14_filtered_join
 from s3filter.benchmark.tpch import tpch_q14_bloom_join
@@ -14,9 +17,24 @@ from s3filter.benchmark.tpch import tpch_q19_filtered_join
 from s3filter.benchmark.tpch import tpch_q19_bloom_join
 import sys
 
-def get_config(query, alg): 
+from s3filter.util import filesystem_util
+
+
+def get_config(query, alg):
     exec("config = tpch_{}_{}_join".format(query, alg))
     return config
+
+def end_capture(out_file, path):
+    sys.stdout.close()
+    subprocess.call(['cat', os.path.join(path, out_file)])
+
+
+def start_capture(query, sf, approach, trial):
+    path = os.path.join(ROOT_DIR, "../aws-exps/tpch")
+    filesystem_util.create_dirs(path)
+    out_file = "{}_sf{}_{}_trial{}.txt".format(query, sf, approach, trial)
+    sys.stdout = open(os.path.join(path, out_file), "w+")
+    return out_file, path
     
 def main():
     for query in ['q14', 'q17', 'q19']:

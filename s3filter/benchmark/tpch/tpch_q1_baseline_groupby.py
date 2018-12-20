@@ -16,16 +16,17 @@ from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
 
 
-def main():
-    if s3filter.util.constants.TPCH_SF == 10:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
-            sharded=True)
-    elif s3filter.util.constants.TPCH_SF == 1:
-        run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=4,
-            sharded=True)
+def main(sf, lineitem_parts, sharded):
+    # if s3filter.util.constants.TPCH_SF == 10:
+    #     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
+    #         sharded=True)
+    # elif s3filter.util.constants.TPCH_SF == 1:
+    #     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=4,
+    #         sharded=True)
+    run(sf, True, True, False, False, 0, lineitem_parts, sharded)
 
 
-def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded):
+def run(sf, parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded):
     """
 
     :return: None
@@ -43,6 +44,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, s
                             tpch_q1.sql_scan_lineitem_operator_def(
                                 sharded,
                                 p,
+                                sf,
                                 use_pandas,
                                 secure,
                                 use_native,
@@ -83,14 +85,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, s
         tpch_q1.groupby_reduce_returnflag_linestatus_operator_def(
             'groupby_reduce',
             query_plan, use_pandas))
-    lineitem_scan[0].set_profiled(True,
-                                  os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_scan_0" + ".prof"))
-    lineitem_project[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
-                                                        gen_test_id() + "_project_0" + ".prof"))
-    groupby[0].set_profiled(True,
-                            os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_groupby_0" + ".prof"))
-    groupby_reduce.set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
-                                                   gen_test_id() + "_groupby_reduce" + ".prof"))
+    # lineitem_scan[0].set_profiled(True,
+    #                               os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_scan_0" + ".prof"))
+    # lineitem_project[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
+    #                                                     gen_test_id() + "_project_0" + ".prof"))
+    # groupby[0].set_profiled(True,
+    #                         os.path.join(ROOT_DIR, "../benchmark-output/", gen_test_id() + "_groupby_0" + ".prof"))
+    # groupby_reduce.set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
+    #                                                gen_test_id() + "_groupby_reduce" + ".prof"))
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))

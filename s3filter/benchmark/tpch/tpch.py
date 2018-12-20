@@ -2,7 +2,7 @@
 """TPCH Benchmarks
 
 """
-from s3filter.benchmark.tpch import tpch_q14, tpch_q17, tpch_q19, tpch_results, tpch_q3
+from s3filter.benchmark.tpch import tpch_q14, tpch_q17, tpch_q19, tpch_results, tpch_q3, tpch_q1
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
     customer_sharded = True
     order_sharded = True
     other_parts = 32
-    fp_rate = 0.01
+    fp_rate = 0.001
     q3_expected_result = tpch_results.q3_sf10_testing_expected_result
     q14_expected_result = tpch_results.q14_sf10_expected_result
     q17_expected_result = tpch_results.q17_sf10_expected_result
@@ -40,19 +40,35 @@ def main():
 
     print("--- TPCH START ---")
 
-    # tpch_q3.main(sf,
-    #              customer_parts, customer_sharded,
-    #              order_parts, order_sharded,
-    #              lineitem_parts, lineitem_sharded,
-    #              other_parts,
-    #              fp_rate,
-    #              q3_expected_result)
-    # tpch_q14.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate,
-    #               q14_expected_result)
-    # tpch_q17.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate,
-    #               q17_expected_result)
-    tpch_q19.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate,
-                  q19_expected_result)
+    trials = [1, 2, 3]
+
+    # for trial in trials:
+    #     tpch_q1.main(sf,
+    #                  lineitem_parts, lineitem_sharded,
+    #                  None, trial)
+    for trial in trials:
+        tpch_q3.main(sf,
+                     customer_parts, customer_sharded,
+                     order_parts, order_sharded,
+                     lineitem_parts, lineitem_sharded,
+                     other_parts,
+                     fp_rate,
+                     q3_expected_result, trial)
+    # for trial in trials:
+    #     tpch_q14.main(sf,
+    #                   lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
+    #                   fp_rate,
+    #                   q14_expected_result, trial)
+    # for trial in trials:
+    #     tpch_q17.main(sf,
+    #                   lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
+    #                   fp_rate,
+    #                   q17_expected_result, trial)
+    # for trial in trials:
+    #     tpch_q19.main(sf,
+    #                   lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
+    #                   fp_rate,
+    #                   q19_expected_result, trial)
 
     print("--- TPCH END ---")
 

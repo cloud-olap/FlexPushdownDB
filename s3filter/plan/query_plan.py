@@ -17,6 +17,7 @@ from typing import TypeVar
 
 from s3filter.multiprocessing.message import DataFrameMessage, MessageBase, StopMessage
 from s3filter.multiprocessing.worker_system import WorkerSystem
+from s3filter.op.sql_table_scan_bloom_use import SQLTableScanBloomUse
 from s3filter.util.constants import *
 from boto3.session import Session
 from botocore.config import Config
@@ -261,6 +262,10 @@ class QueryPlan(object):
                 self.returned_bytes += op.op_metrics.bytes_returned
                 self.num_http_get_requests += op.op_metrics.num_http_get_requests
             elif type(op) is SQLTableScan:
+                self.sql_returned_bytes += op.op_metrics.bytes_returned
+                self.sql_scanned_bytes += op.op_metrics.bytes_scanned
+                self.num_http_get_requests += op.op_metrics.num_http_get_requests
+            elif type(op) is SQLTableScanBloomUse:
                 self.sql_returned_bytes += op.op_metrics.bytes_returned
                 self.sql_scanned_bytes += op.op_metrics.bytes_scanned
                 self.num_http_get_requests += op.op_metrics.num_http_get_requests

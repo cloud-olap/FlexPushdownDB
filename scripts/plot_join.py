@@ -1,6 +1,8 @@
 import os
 
 import matplotlib
+from matplotlib import ticker
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import csv
@@ -72,6 +74,14 @@ def calculate_cost(res):
     total_cost = transfer_cost + scan_cost + request_cost + comp_cost
     return total_cost, transfer_cost, scan_cost, request_cost, comp_cost
 
+def calculate_download_cost(res):
+    transfer_cost = 0
+    scan_cost = 0
+    request_cost = res[6] * 0.0000004
+    comp_cost = res[0] / 3600.0 * 2.128
+    total_cost = transfer_cost + scan_cost + request_cost + comp_cost
+    return total_cost, transfer_cost, scan_cost, request_cost, comp_cost
+
 sf =10
 width = 0.3
 path = os.path.join(ROOT_DIR, "../aws-exps/join/sf{}".format(sf))
@@ -124,7 +134,7 @@ ax.set_xticks([x + width for x in range(len(avals))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.15, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
 for aval in avals:
@@ -145,7 +155,7 @@ aval = avals[FIXED_A_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-bval-rt'
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
 width = 0.2
 for cid, name in enumerate(names):
     data = []
@@ -167,8 +177,8 @@ for cid, name in enumerate(names):
 ax.set_xticks([x + width for x in range(len(bvals))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
-ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.17], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.27, top=0.90)
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.35, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
 for bval in bvals:
@@ -220,11 +230,11 @@ ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.20], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.25, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.25, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
-ticklabels.append('N/A')
-ticklabels.append('N/A')
+ticklabels.append('')
+ticklabels.append('')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, rotation='45', fontsize=14)
@@ -261,7 +271,10 @@ for cid, name in enumerate(names):
             else:
                 t = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))
             rts.append(t)
-            val = calculate_cost(t)
+            if name == 'baseline':
+                val = calculate_download_cost(t)
+            else:
+                val = calculate_cost(t)
             vals.append(val)
         total_cost = [x[0] for x in vals]
         min_index = rts.index(min(rts))
@@ -294,7 +307,7 @@ for cid, name in enumerate(names):
     bars[cid] = b[0]
 
 ax.set_xticks([x + width for x in range(6)])
-ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
+# ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
 lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
@@ -329,7 +342,7 @@ aval = avals[FIXED_A_VAL_IDX]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 fig_name = 'join-bval-cost'
 
-fig, ax = plt.subplots(figsize=(8, 5))
+fig, ax = plt.subplots(figsize=(8, 4))
 width = 0.2
 bars = [0] * len(names)
 for cid, name in enumerate(names):
@@ -346,7 +359,10 @@ for cid, name in enumerate(names):
             else:
                 t = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))
             rts.append(t)
-            val = calculate_cost(t)
+            if name == 'baseline':
+                val = calculate_download_cost(t)
+            else:
+                val = calculate_cost(t)
             vals.append(val)
         total_cost = [x[0] for x in vals]
         min_index = rts.index(min(rts))
@@ -379,17 +395,17 @@ for cid, name in enumerate(names):
     bars[cid] = b[0]
 
 ax.set_xticks([x + width for x in range(6)])
-ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
+# ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.20], fontsize=14)
+lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
 lg2 = ax.legend([b_compute[0], b_request[0], b_scan[0], b_transfer[0]],
                 ['Compute Cost', 'Request Cost', 'Scan Cost', 'Transfer Cost'],
                 ncol=2, bbox_to_anchor=[0.99, 0.99], fontsize=14)
 plt.gca().add_artist(lg1)
 plt.gca().add_artist(lg2)
 # plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
-plt.subplots_adjust(left=0.15, right=0.99, bottom=0.27, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.35, top=0.88)
 
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'], fontsize=16)
 ticklabels = []
@@ -428,7 +444,10 @@ for cid, name in enumerate(names):
             t = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_trial{}.txt'
                       .format(path, name, sf, aval, bval, trial))
             rts.append(t)
-            val = calculate_cost(t)
+            if name == 'baseline':
+                val = calculate_download_cost(t)
+            else:
+                val = calculate_cost(t)
             vals.append(val)
         total_cost = [x[0] for x in vals]
         min_index = rts.index(min(rts))
@@ -524,8 +543,8 @@ plt.subplots_adjust(left=0.15, right=0.99, bottom=0.25, top=0.88)
 
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'], fontsize=16)
 ticklabels = []
-ticklabels.append('N/A')
-ticklabels.append('N/A')
+ticklabels.append('')
+ticklabels.append('')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
@@ -564,7 +583,7 @@ for cid, name in enumerate(names):
     # ax.semilogx(avals, data, label=name, color=colors[cid])
 ax.set_xticks([x + width for x in range(len(avals))])
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.15, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.15, top=0.88)
 ticklabels = []
 for aval in avals:
     ticklabels.append("{}".format(aval))
@@ -599,7 +618,7 @@ for cid, name in enumerate(names):
     # ax.semilogx(avals, data, label=name, color=colors[cid])
 ax.set_xticks([x + width for x in range(len(bvals))])
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.35, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.35, top=0.88)
 ticklabels = []
 for bval in bvals:
     ticklabels.append("{}".format(bval))
@@ -638,10 +657,10 @@ for cid, name in enumerate(names):
         # ax.semilogx(avals, data, label=name, color=colors[cid])
 ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.21], fontsize=14)
-plt.subplots_adjust(left=0.12, right=0.99, bottom=0.25, top=0.88)
+plt.subplots_adjust(left=0.15, right=0.99, bottom=0.25, top=0.88)
 ticklabels = []
-ticklabels.append('N/A')
-ticklabels.append('N/A')
+ticklabels.append('')
+ticklabels.append('')
 for fp_rate in fp_rates:
     ticklabels.append("{}".format(fp_rate))
 ax.set_xticklabels(ticklabels, fontsize=14, rotation=45)
