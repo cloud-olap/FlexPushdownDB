@@ -49,7 +49,8 @@ class MemoryIndexHandler:
         s3_dir = os.path.dirname(self.s3key)
         s3_name = os.path.basename(self.s3key)
         self.s3_index_path = '{}/index/seq_index_{}.indx'.format(s3_dir, s3_name)
-        if self.s3_index_exists(self.s3_index_path):
+
+        if os.path.exists(index_local_path) or self.s3_index_exists(self.s3_index_path):
             self.get_table_size()
             self.load_index()
             return self.s3_index_path

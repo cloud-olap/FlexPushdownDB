@@ -75,6 +75,29 @@ class SQLTableScanMetrics(OpMetrics):
         """
         return self.cost_estimator.estimate_data_cost(ec2_region) + self.cost_estimator.estimate_request_cost()
 
+    def data_scan_cost(self):
+        """
+        Estimate the cost of S3 data scanning
+        :return: the estimated data scanning costin USD
+        """
+        return self.cost_estimator.estimate_data_scan_cost()
+
+    def data_transfer_cost(self, ec2_region=None, s3_region=None):
+        """
+        Estimate the cost of transferring data either by s3 select or normal data transfer fees
+        :param ec2_region: the region where the computing node resides
+        :param s3_region: the region where the s3 data is stored in
+        :return: the estimated data transfer cost in USD
+        """
+        return self.cost_estimator.estimate_data_transfer_cost(ec2_region, s3_region)
+
+    def requests_cost(self):
+        """
+        Estimate the cost of the http GET requests
+        :return: the estimated http GET request cost for this particular operation
+        """
+        return self.cost_estimator.estimate_request_cost()
+
     def __repr__(self):
         return {
             'elapsed_time': round(self.elapsed_time(), 5),

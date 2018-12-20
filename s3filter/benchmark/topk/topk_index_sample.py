@@ -11,6 +11,7 @@ from s3filter.op.top_filter_build import TopKFilterBuild
 from s3filter.op.table_sampler import TableRandomSampleGenerator
 from s3filter.op.random_sample_byte_range_builder import ByteRangeBuilder
 from s3filter.op.table_range_access import TableRangeAccess
+from s3filter.util.constants import *
 
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.op.sort import SortExpression
@@ -229,7 +230,7 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
     # Generate SQL command for second scan
     sql_gen = query_plan.add_operator(
                    TopKFilterBuild(sort_order, 'float', 'select * from S3object ',
-                                   ' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False ))
+                                   ' CAST({} as float) '.format(sort_field), 'sample_sql_gen', query_plan, False ))
 
     if not sampling_only:
         # Scan
@@ -292,23 +293,46 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
     query_plan.print_metrics()
 
     # Shut everything down
-    query_plan.stop()
+    # query_plan.stop()
 
-    sampling_time = query_plan.total_elapsed_time
-    cost, bytes_scanned, bytes_returned, rows = query_plan.cost()
-    computation_cost = query_plan.computation_cost()
-    data_cost = query_plan.data_cost()[0]
+    sampling_threshold = query_plan.retrieve_sampling_threshold()
+    sampling_runtime = query_plan.get_phase_runtime('sampl')
+    sampling_num_http_requests, sampling_requests_cost = query_plan.requests_cost('sampl')
+    sampling_returned_bytes, sampling_returned_rows, sampling_transfer_cost = query_plan.data_transfer_cost(phase_keyword='sampl')
+    sampling_scanned_bytes, sampling_scan_cost = query_plan.data_scanning_cost('sampl')
 
-    stats += [sql_gen.threshold,
-              sampling_time,
-              0,
-              sampling_time,
-              rows,
-              bytes_scanned,
-              bytes_returned,
-              data_cost,
-              computation_cost,
-              cost
+    total_runtime = query_plan.total_elapsed_time
+    total_http_requests, total_requests_cost = query_plan.requests_cost()
+    total_returned_bytes, total_returned_rows, total_transfer_cost = query_plan.data_transfer_cost()
+    total_scanned_bytes, total_scan_cost = query_plan.data_scanning_cost()
+
+    total_data_cost = query_plan.data_cost()[0]
+    total_computation_cost = query_plan.computation_cost()
+    total_cost = query_plan.cost()[0]
+
+
+
+    stats += [sampling_threshold,
+              sampling_runtime,
+              total_runtime - sampling_runtime,
+              total_runtime,
+              sampling_returned_rows,
+              sampling_scanned_bytes * BYTE_TO_MB,
+              sampling_returned_bytes * BYTE_TO_MB,
+              sampling_num_http_requests,
+              sampling_requests_cost,
+              sampling_transfer_cost,
+              sampling_scan_cost,
+              total_returned_rows,
+              total_scanned_bytes * BYTE_TO_MB,
+              total_returned_bytes * BYTE_TO_MB,
+              total_http_requests,
+              total_requests_cost,
+              total_transfer_cost,
+              total_scan_cost,
+              total_data_cost,
+              total_computation_cost,
+              total_cost
               ]
 
 
@@ -879,11 +903,22 @@ if __name__ == "__main__":
         'Sampling time (Sec)',
         'Query time (Sec)',
         'Total query time (Sec)',
-        'Returned Rows',
-        'Bytes Scanned MB',
-        'Bytes Returned MB',
-        'Data Cost $',
-        'Computation Cost $',
+        'Sampling Returned Rows',
+        'Sampling Bytes Scanned MB',
+        'Sampling Bytes Returned MB',
+        'Sampling Number of Requests',
+        'Sampling Requests Cost',
+        'Sampling Transfer Cost',
+        'Sampling Scan Cost',
+        'Total Returned Rows',
+        'Total Bytes Scanned MB',
+        'Total Bytes Returned MB',
+        'Total Number of Requests',
+        'Total Requests Cost',
+        'Total Transfer Cost',
+        'Total Scan Cost',
+        'Total Data Cost $',
+        'Total Computation Cost $',
         'Total Cost $',
     ]
 

@@ -195,6 +195,26 @@ class CostEstimator:
         Estimate the cost of: S3 data scan and return + the data transfer cost if exists
         :return: the estimated data handling cost
         """
+
+        data_transfer_cost = self.estimate_data_transfer_cost(ec2_region, s3_region)
+        s3_data_scan_cost = self.estimate_data_scan_cost()
+
+        return data_transfer_cost + s3_data_scan_cost
+
+    def estimate_data_scan_cost(self):
+        """
+        Estimate the cost of S3 data scanning
+        :return: the estimated data scanning costin USD
+        """
+        return self.table_scan_metrics.bytes_scanned * BYTE_TO_GB * CostEstimator.COST_S3_DATA_SCANNED_PER_GB
+
+    def estimate_data_transfer_cost(self, ec2_region=None, s3_region=None):
+        """
+        Estimate the cost of transferring data either by s3 select or normal data transfer fees
+        :param ec2_region: the region where the computing node resides
+        :param s3_region: the region where the s3 data is stored in
+        :return: the estimated data transfer cost in USD
+        """
         if ec2_region is None:
             ec2_region = self.ec2_instance.region
 
@@ -212,11 +232,10 @@ class CostEstimator:
             data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
                                  CostEstimator.DATA_TRANSFER_PRICE_OTHER_REGION_PER_GB
 
-        s3_select_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
-                         CostEstimator.COST_S3_DATA_RETURNED_PER_GB + \
-                         self.table_scan_metrics.bytes_scanned * BYTE_TO_GB * CostEstimator.COST_S3_DATA_SCANNED_PER_GB
+        s3_data_transfer_cost = self.table_scan_metrics.bytes_returned * BYTE_TO_GB * \
+                         CostEstimator.COST_S3_DATA_RETURNED_PER_GB
 
-        return data_transfer_cost + s3_select_cost
+        return data_transfer_cost + s3_data_transfer_cost
 
     def estimate_request_cost(self):
         """

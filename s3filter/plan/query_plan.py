@@ -29,6 +29,7 @@ from s3filter.plan.graph import Graph
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.plan.cost_estimator import CostEstimator
 from s3filter.util.timer import Timer
+from s3filter.op.top_filter_build import TopKFilterBuild
 
 
 class QueryPlan(object):
@@ -273,11 +274,12 @@ class QueryPlan(object):
         print("num_http_get_requests: {}".format(self.num_http_get_requests))
         print("")
 
-        cost, bytes_scanned, bytes_returned, rows = self.cost()
+        cost, bytes_scanned, bytes_returned, http_requests, rows = self.cost()
         computation_cost = self.computation_cost()
         data_cost = self.data_cost()[0]
         print("total_scanned_bytes: {} MB".format(bytes_scanned * BYTE_TO_MB))
         print("total_returned_bytes: {} MB".format(bytes_returned * BYTE_TO_MB))
+        print("total_http_get_requests: {}".format(http_requests))
         print("total_returned_rows: {}".format(rows))
         print("computation_cost: ${0:.10f}".format(computation_cost))
         print("data_cost: ${0:.10f}".format(data_cost))
@@ -410,27 +412,41 @@ class QueryPlan(object):
     def join(self):
         return map(lambda o: o.join(), self.operators.values())
 
+    def get_phase_runtime(self, phase_keyword=None):
+        phase_operators = [op for op in self.operators.values() if phase_keyword in op.name]
+
+        op_start_times = [op.op_metrics.start_time() for op in phase_operators]
+        op_end_times = [op.op_metrics.elapsed_time() + op.op_metrics.start_time() for op in phase_operators]
+
+        return max(op_end_times) - min(op_start_times)
+
     def cost(self):
         """
         calculates the overall query cost when runs on S3 by combining the cost of all scan operators in the query
         plus the computation cost based on the EC2 instance type and the query running time
         :return: the estimated cost of the whole query
         """
-        total_data_cost, total_scanned_bytes, total_returned_bytes, total_rows = self.data_cost()
+        total_data_cost, total_scanned_bytes, total_returned_bytes, total_http_requests, total_rows = self.data_cost()
         total_compute_cost = self.computation_cost()
 
-        return total_compute_cost + total_data_cost, total_scanned_bytes, total_returned_bytes, total_rows
+        return total_compute_cost + total_data_cost, total_scanned_bytes, total_returned_bytes, total_http_requests,\
+               total_rows
 
-    def data_cost(self, ec2_region=None):
+    def data_cost(self, ec2_region=None, phase_keyword=None):
         """
         calculates the estimated query cost when runs on S3 by combining the cost of all scan operators in the query
         :return: the estimated cost of the whole query
         """
-        scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
+        if phase_keyword is None:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
+        else:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost") and \
+                              phase_keyword in op.name]
 
         total_data_cost = 0.0
         total_scanned_bytes = 0
         total_returned_bytes = 0
+        total_http_requests = 0
         total_rows = 0
 
         for op in scan_operators:
@@ -438,12 +454,75 @@ class QueryPlan(object):
                 total_data_cost += op.op_metrics.data_cost(ec2_region)
                 total_returned_bytes += op.op_metrics.bytes_returned
                 total_scanned_bytes += op.op_metrics.bytes_scanned
+                total_http_requests += op.op_metrics.num_http_get_requests
                 total_rows += op.op_metrics.rows_returned
             else:
                 raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
                                 .format(op.name))
 
-        return total_data_cost, total_scanned_bytes, total_returned_bytes, total_rows
+        return total_data_cost, total_scanned_bytes, total_returned_bytes, total_http_requests, total_rows
+
+    def data_transfer_cost(self, ec2_region=None, phase_keyword=None):
+        if phase_keyword is None:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
+        else:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost") and \
+                              phase_keyword in op.name]
+
+        total_data_transfer_cost = 0.0
+        total_bytes_returned = 0
+        total_returned_rows = 0
+
+        for op in scan_operators:
+            if op.is_completed():
+                total_data_transfer_cost += op.op_metrics.data_transfer_cost()
+                total_bytes_returned += op.op_metrics.bytes_returned
+                total_returned_rows += op.op_metrics.rows_returned
+            else:
+                raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
+                                .format(op.name))
+
+        return total_bytes_returned, total_returned_rows, total_data_transfer_cost
+
+    def data_scanning_cost(self, phase_keyword=None):
+        if phase_keyword is None:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
+        else:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost") and \
+                              phase_keyword in op.name]
+
+        total_data_scanning_cost = 0.0
+        total_bytes_scanned = 0
+
+        for op in scan_operators:
+            if op.is_completed():
+                total_data_scanning_cost += op.op_metrics.data_scan_cost()
+                total_bytes_scanned += op.op_metrics.bytes_scanned
+            else:
+                raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
+                                .format(op.name))
+
+        return total_bytes_scanned, total_data_scanning_cost
+
+    def requests_cost(self, phase_keyword=None):
+        if phase_keyword is None:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost")]
+        else:
+            scan_operators = [op for op in self.operators.values() if hasattr(op.op_metrics, "cost") and \
+                              phase_keyword in op.name]
+
+        total_http_requests_cost = 0.0
+        total_http_requests = 0
+
+        for op in scan_operators:
+            if op.is_completed():
+                total_http_requests_cost += op.op_metrics.requests_cost()
+                total_http_requests += op.op_metrics.num_http_get_requests
+            else:
+                raise Exception("Can't calculate query cost while one or more scan operators {} are still executing"
+                                .format(op.name))
+
+        return total_http_requests, total_http_requests_cost
 
     def computation_cost(self, ec2_instance_type=None, os_type=None):
         """
@@ -471,3 +550,19 @@ class QueryPlan(object):
 
     def debug_time(self, name):
         self.__debug_timer[name] = self.__timer.elapsed()
+
+    def retrieve_sampling_threshold(self):
+        sampling_filter_builder = [op for op in self.operators.values() if type(op) == TopKFilterBuild]
+        if len(sampling_filter_builder) > 0:
+            filter_builder = sampling_filter_builder[0]
+            if filter_builder.async_:
+                if self.use_shared_mem:
+                    self.system.send(filter_builder.name, EvalMessage("self.threshold"), None)
+                else:
+                    p_message = pickle.dumps(EvalMessage("self.threshold"))
+                    filter_builder.queue.put(p_message)
+
+                evaluated_msg = self.listen(EvaluatedMessage)  # type: EvaluatedMessage
+                filter_builder.threshold = evaluated_msg.val
+
+                return filter_builder.threshold
