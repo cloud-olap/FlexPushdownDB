@@ -126,11 +126,11 @@ for cid, name in enumerate(names):
                           .format(path, name, sf, aval, bval, fp_rate, trial))[0]
             rts.append(t)
         data.append(min(rts))
-    pos = [x + width * cid for x in range(len(avals))]
+    pos = [x + width + width * cid for x in range(len(avals))]
     ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
     # ax.bar(pos, data, width=width)
     # ax.semilogx(sels, data, label=name, color=colors[cid])
-ax.set_xticks([x + width for x in range(len(avals))])
+ax.set_xticks([x + width + width / 2.0 + width for x in range(len(avals))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
@@ -144,11 +144,6 @@ ax.set_xlabel('Customer Filter Selectivity (c_acctbal <= ?)')
 ax.set_ylabel('Runtime (sec)')
 plt.savefig(os.path.join(path, 'figs/{}.png'.format(fig_name)))
 plt.savefig(os.path.join(path, 'figs/pdf/{}.pdf'.format(fig_name)))
-
-
-
-
-
 
 fp_rate = fp_rates[FIXED_FP_RATE_IDX]
 aval = avals[FIXED_A_VAL_IDX]
@@ -170,11 +165,11 @@ for cid, name in enumerate(names):
                           .format(path, name, sf, aval, bval, fp_rate, trial))[0]
             rts.append(t)
         data.append(min(rts))
-    pos = [x + width * cid for x in range(len(bvals))]
+    pos = [x + width + width * cid for x in range(len(bvals))]
     ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
     # ax.bar(pos, data, width=width)
     # ax.semilogx(sels, data, label=name, color=colors[cid])
-ax.set_xticks([x + width for x in range(len(bvals))])
+ax.set_xticks([x + width + width / 2.0 + width for x in range(len(bvals))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
 # ax.legend(loc='best')
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
@@ -208,7 +203,7 @@ for cid, name in enumerate(names):
                       .format(path, name, sf, aval, bval, trial))[0]
             rts.append(t)
         data.append(min(rts))
-        pos = [cid]
+        pos = [cid + width]
         ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
     else:
         for fp_rate in fp_rates:
@@ -222,14 +217,14 @@ for cid, name in enumerate(names):
                               .format(path, name, sf, aval, bval, fp_rate, trial))[0]
                 rts.append(t)
             data.append(min(rts))
-        pos = [2.0 + x for x in range(len(fp_rates))]
+        pos = [width + x for x in range(2, len(fp_rates) + 2)]
         ax.bar(pos, data, width=width, color=colors[cid], label=labels[cid])
     # ax.bar(pos, data, width=width)
     # ax.semilogx(sels, data, label=name, color=colors[cid])
-ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
-# ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
+ax.set_xticks([x + width + width / 2.0 for x in range(len(fp_rates) + 2)])
+ax.set_xlim([-0.1* width, 8 + width -0.2])
 # ax.legend(loc='best')
-ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.20], fontsize=14)
+ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.21], fontsize=14)
 plt.subplots_adjust(left=0.15, right=0.99, bottom=0.25, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
 ticklabels = []
@@ -284,29 +279,30 @@ for cid, name in enumerate(names):
         comp_cost.append(vals[min_index][4])
     bottom = [0] * len(comp_cost)
     # plot legend
-    b_compute = ax.bar([x + cid * width for x in range(len(avals))], bottom, width=width, color='w',
+    pos = [x + width + width * cid for x in range(len(avals))]
+    b_compute = ax.bar(pos, bottom, width=width, color='w',
                        label='Compute Cost')
-    b_request = ax.bar([x + cid * width for x in range(len(avals))], bottom, width=width, color='w', hatch='xxx',
+    b_request = ax.bar(pos, bottom, width=width, color='w', hatch='xxx',
                        label='Request Cost')
-    b_scan = ax.bar([x + cid * width for x in range(len(avals))], bottom, width=width, color='w', hatch='\\\\\\',
+    b_scan = ax.bar(pos, bottom, width=width, color='w', hatch='\\\\\\',
                     label='Scan Cost')
-    b_transfer = ax.bar([x + cid * width for x in range(len(avals))], bottom, width=width, color='w', hatch='////',
+    b_transfer = ax.bar(pos, bottom, width=width, color='w', hatch='////',
                         label='Transfer Cost')
 
     # plot bars
-    ax.bar([x + cid * width for x in range(len(avals))], transfer_cost, width=width, color=colors[cid], hatch='////')
+    ax.bar(pos, transfer_cost, width=width, color=colors[cid], hatch='////')
     bottom = [x + y for x, y in zip(bottom, transfer_cost)]
-    ax.bar([x + cid * width for x in range(len(avals))], scan_cost, bottom=bottom, width=width, color=colors[cid],
+    ax.bar(pos, scan_cost, bottom=bottom, width=width, color=colors[cid],
            hatch='\\\\\\')
     bottom = [x + y for x, y in zip(bottom, scan_cost)]
-    ax.bar([x + cid * width for x in range(len(avals))], request_cost, bottom=bottom, width=width, color=colors[cid],
+    ax.bar(pos, request_cost, bottom=bottom, width=width, color=colors[cid],
            hatch='xxx')
     bottom = [x + y for x, y in zip(bottom, request_cost)]
-    b = ax.bar([x + cid * width for x in range(len(avals))], comp_cost, bottom=bottom, label=labels[cid], width=width,
+    b = ax.bar(pos, comp_cost, bottom=bottom, label=labels[cid], width=width,
                color=colors[cid])
     bars[cid] = b[0]
 
-ax.set_xticks([x + width for x in range(6)])
+ax.set_xticks([x + width + width / 2.0 + width for x in range(len(avals))])
 # ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
@@ -372,29 +368,30 @@ for cid, name in enumerate(names):
         comp_cost.append(vals[min_index][4])
     bottom = [0] * len(comp_cost)
     # plot legend
-    b_compute = ax.bar([x + cid * width for x in range(len(bvals))], bottom, width=width, color='w',
+    pos = [x + width + width * cid for x in range(len(bvals))]
+    b_compute = ax.bar(pos, bottom, width=width, color='w',
                        label='Compute Cost')
-    b_request = ax.bar([x + cid * width for x in range(len(bvals))], bottom, width=width, color='w', hatch='xxx',
+    b_request = ax.bar(pos, bottom, width=width, color='w', hatch='xxx',
                        label='Request Cost')
-    b_scan = ax.bar([x + cid * width for x in range(len(bvals))], bottom, width=width, color='w', hatch='\\\\\\',
+    b_scan = ax.bar(pos, bottom, width=width, color='w', hatch='\\\\\\',
                     label='Scan Cost')
-    b_transfer = ax.bar([x + cid * width for x in range(len(bvals))], bottom, width=width, color='w', hatch='////',
+    b_transfer = ax.bar(pos, bottom, width=width, color='w', hatch='////',
                         label='Transfer Cost')
 
     # plot bars
-    ax.bar([x + cid * width for x in range(len(bvals))], transfer_cost, width=width, color=colors[cid], hatch='////')
+    ax.bar(pos, transfer_cost, width=width, color=colors[cid], hatch='////')
     bottom = [x + y for x, y in zip(bottom, transfer_cost)]
-    ax.bar([x + cid * width for x in range(len(bvals))], scan_cost, bottom=bottom, width=width, color=colors[cid],
+    ax.bar(pos, scan_cost, bottom=bottom, width=width, color=colors[cid],
            hatch='\\\\\\')
     bottom = [x + y for x, y in zip(bottom, scan_cost)]
-    ax.bar([x + cid * width for x in range(len(bvals))], request_cost, bottom=bottom, width=width, color=colors[cid],
+    ax.bar(pos, request_cost, bottom=bottom, width=width, color=colors[cid],
            hatch='xxx')
     bottom = [x + y for x, y in zip(bottom, request_cost)]
-    b = ax.bar([x + cid * width for x in range(len(bvals))], comp_cost, bottom=bottom, label=labels[cid], width=width,
+    b = ax.bar(pos, comp_cost, bottom=bottom, label=labels[cid], width=width,
                color=colors[cid])
     bars[cid] = b[0]
 
-ax.set_xticks([x + width for x in range(6)])
+ax.set_xticks([x + width + width / 2.0 + width for x in range(len(bvals))])
 # ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
@@ -457,7 +454,7 @@ for cid, name in enumerate(names):
         comp_cost.append(vals[min_index][4])
 
         bottom = [0] * len(comp_cost)
-        pos = [cid]
+        pos = [cid + width]
         # plot legend
         b_compute = ax.bar(pos, bottom, width=width, color='w',
                            label='Compute Cost')
@@ -505,7 +502,7 @@ for cid, name in enumerate(names):
             comp_cost.append(vals[min_index][4])
         bottom = [0] * len(comp_cost)
         # plot legend
-        pos = [1.20 + x + cid * width for x in range(len(fp_rates))]
+        pos = [width * 4.0 + x + cid * width for x in range(len(fp_rates))]
         b_compute = ax.bar(pos, bottom, width=width, color='w',
                            label='Compute Cost')
         b_request = ax.bar(pos, bottom, width=width, color='w', hatch='xxx',
@@ -528,8 +525,8 @@ for cid, name in enumerate(names):
                    color=colors[cid])
         bars[cid] = b[0]
 
-ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
-# ax.set_xlim([-1.5 * width, 6 - 1.5 * width])
+ax.set_xticks([x + width + width / 2.0 for x in range(len(fp_rates) + 2)])
+ax.set_xlim([-0.1* width, 8 + width -0.2])
 
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
 lg1 = ax.legend(bars, labels, ncol=3, bbox_to_anchor=[0.99, 1.21], fontsize=14)
@@ -577,11 +574,11 @@ for cid, name in enumerate(names):
         else:
             res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
             data.append(res2)
-    pos = [x + width * cid for x in range(len(avals))]
+    pos = [x + width + width * cid for x in range(len(avals))]
     gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
     ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
     # ax.semilogx(avals, data, label=name, color=colors[cid])
-ax.set_xticks([x + width for x in range(len(avals))])
+ax.set_xticks([x + width + width / 2.0 + width for x in range(len(avals))])
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
 plt.subplots_adjust(left=0.15, right=0.99, bottom=0.15, top=0.88)
 ticklabels = []
@@ -612,11 +609,11 @@ for cid, name in enumerate(names):
         else:
             res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
             data.append(res2)
-    pos = [x + width * cid for x in range(len(bvals))]
+    pos = [x + width + width * cid for x in range(len(bvals))]
     gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
     ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
     # ax.semilogx(avals, data, label=name, color=colors[cid])
-ax.set_xticks([x + width for x in range(len(bvals))])
+ax.set_xticks([x + width + width / 2.0 + width for x in range(len(bvals))])
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.25], fontsize=14)
 plt.subplots_adjust(left=0.15, right=0.99, bottom=0.35, top=0.88)
 ticklabels = []
@@ -644,18 +641,19 @@ for cid, name in enumerate(names):
     if name != 'bloom':
         res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_trial{}.txt'.format(path, name, sf, aval, bval, trial))[1]
         data.append(res2)
-        pos = [cid]
+        pos = [cid + width]
         gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
         ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
     else:
         for fp_rate in fp_rates:
             res2 = parse('{}/synthetic_join_2_{}_sf{}_aval{}_bval{}_fp{}_trial{}.txt'.format(path, name, sf, aval, bval, fp_rate, trial))[1]
             data.append(res2)
-        pos = [2.0 + x for x in range(len(fp_rates))]
+            pos = [width * 4.0 + x + cid * width for x in range(len(fp_rates))]
         gb = map(lambda x: x / 1024.0 / 1024.0 / 1024.0, data)
         ax.bar(pos, gb, width=width, color=colors[cid], label=labels[cid])
         # ax.semilogx(avals, data, label=name, color=colors[cid])
-ax.set_xticks([x + width for x in range(2 + len(fp_rates))])
+ax.set_xticks([x + width + width / 2.0 for x in range(len(fp_rates) + 2)])
+ax.set_xlim([-0.1* width, 8 + width -0.2])
 ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.21], fontsize=14)
 plt.subplots_adjust(left=0.15, right=0.99, bottom=0.25, top=0.88)
 ticklabels = []
