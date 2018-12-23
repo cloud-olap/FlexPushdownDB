@@ -84,7 +84,7 @@ def calculate_download_cost(res):
 
 sf =10
 width = 0.3
-path = os.path.join(ROOT_DIR, "../aws-exps/join/sf{}".format(sf))
+path = os.path.join(ROOT_DIR, "../aws-exps/join/sf{}/bench-03".format(sf))
 filesystem_util.create_dirs(os.path.join(path, "figs"))
 filesystem_util.create_dirs(os.path.join(path, "figs/pdf"))
 

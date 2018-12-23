@@ -22,13 +22,13 @@ class UniversalSQLHashFunction(object):
         # Pick a random integer between m and 2m
         i = random.randint(m, 2 * m)
         # Get the nth prime greater than i
-        self.p = primesieve.nth_prime(i)
+        self.p = primesieve.nth_prime(1, i)
 
-        # Set a = random int (less than p) mod p (where a != 0)
-        self.a = random.randint(1, self.p - 1) % self.p
+        # Set a = random int (less than p) (where a != 0)
+        self.a = random.randint(1, self.p - 1)
 
-        # Set b = random int (less than p) mod p
-        self.b = random.randint(0, self.p - 1) % self.p
+        # Set b = random int (less than p)
+        self.b = random.randint(0, self.p - 1)
 
     def __call__(self, *args, **kwargs):
         return self.__eval(args[0])

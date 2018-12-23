@@ -54,21 +54,21 @@ def main():
                      other_parts,
                      fp_rate,
                      q3_expected_result, trial)
-    # for trial in trials:
-    #     tpch_q14.main(sf,
-    #                   lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
-    #                   fp_rate,
-    #                   q14_expected_result, trial)
-    # for trial in trials:
-    #     tpch_q17.main(sf,
-    #                   lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
-    #                   fp_rate,
-    #                   q17_expected_result, trial)
-    # for trial in trials:
-    #     tpch_q19.main(sf,
-    #                   lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
-    #                   fp_rate,
-    #                   q19_expected_result, trial)
+    for trial in trials:
+        tpch_q14.main(sf,
+                      lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
+                      fp_rate,
+                      q14_expected_result, trial)
+    for trial in trials:
+        tpch_q17.main(sf,
+                      lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
+                      fp_rate,
+                      q17_expected_result, trial)
+    for trial in trials:
+        tpch_q19.main(sf,
+                      lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
+                      fp_rate,
+                      q19_expected_result, trial)
 
     print("--- TPCH END ---")
 

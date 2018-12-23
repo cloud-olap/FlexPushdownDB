@@ -84,7 +84,7 @@ def calculate_download_cost(res):
 
 sf =10
 width = 0.3
-path = os.path.join(ROOT_DIR, "../aws-exps/tpch/sf{}/bench-05".format(sf))
+path = os.path.join(ROOT_DIR, "../aws-exps/tpch/sf{}/bench-06".format(sf))
 filesystem_util.create_dirs(os.path.join(path, "figs"))
 filesystem_util.create_dirs(os.path.join(path, "figs/pdf"))
 
@@ -95,7 +95,6 @@ filesystem_util.create_dirs(os.path.join(path, "figs/pdf"))
 # actual_sel = [ x / 60000000.0 for x in [7, 95, 309, 1245, 8431, 32893, 130260] ]
 qs = ['1', '3', '14', '17', '19']
 names = ['baseline', 'filtered', 'bloom']
-fp_rates = [0.0001, 0.001, 0.01, 0.1, 0.3, 0.5]
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 trials = [1, 2, 3]
 # sfs = [1, 10, 100]
