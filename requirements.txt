@@ -16,3 +16,4 @@ pytest>=3.6
 requests
 enum34>=1.1
 typing>3.6
+pyarrow>=0.11.1
