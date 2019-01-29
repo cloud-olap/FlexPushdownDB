@@ -17,3 +17,4 @@ requests
 enum34>=1.1
 typing>3.6
 pyarrow>=0.11.1
+pytest-benchmark==3.2.2
