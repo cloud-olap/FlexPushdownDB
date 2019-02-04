@@ -392,9 +392,11 @@ def test_write_large_parquet_file():
     assert row['s_suppkey'] == "1"
 
 
-def convert_csv_file_to_parquet_file(csv_file, parquet_file, compression, ntimes=1):
+def convert_csv_file_to_parquet_file(csv_file, parquet_file, compression='none', ntimes=1, use_dictionary=False,
+                                     version='1.0'):
     table = read_parquet_from_csv_file(csv_file)
-    pqwriter = pq.ParquetWriter(parquet_file, schema=table.schema, compression=compression)
+    pqwriter = pq.ParquetWriter(parquet_file, version=version, schema=table.schema, compression=compression,
+                                use_dictionary=use_dictionary)
     for i in range(0, ntimes):
         pqwriter.write_table(table)
     pqwriter.close()
@@ -670,3 +672,77 @@ def test_s3_select_from_csv():
     assert len(df) == 1
 
     assert pd.to_numeric(df.iloc[0]['_0']) == pytest.approx(45103548.64999)
+
+def test_write_small_parquet_files():
+    test_path = tests_path + "/{}".format(test_write_small_parquet_files.__name__)
+    ensure_dir(test_path)
+
+    schema = pa.schema([pa.field('c', pa.int32(), False)])
+
+    for i in range(0, 10000):
+        vals = [x for x in range(0, i + 1)]
+
+        parquet_file = "{}/small.{}.parquet".format(test_path, i)
+
+        df = pd.DataFrame({'c': vals})
+        table = pa.Table.from_pandas(df, schema=schema, preserve_index=False)
+        pq.write_table(table, parquet_file, version='2.0', compression='none', use_dictionary=False,
+                       flavor='spark')
+
+def test_write_small_parquet_file_to_s3():
+    test_path = tests_path + "/{}".format(test_write_small_parquet_file_to_s3.__name__)
+    test_path2 = tests_path + "/{}".format(test_write_small_parquet_files.__name__)
+    ensure_dir(test_path)
+
+    upload_parquet_file = "{}/small.9999.parquet".format(test_path2)
+    download_parquet_file = "{}/small.9999.download.parquet".format(test_path)
+
+    table1 = pq.read_table(upload_parquet_file)
+
+    cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
+    session = Session()
+    s3 = session.client('s3', config=cfg)
+
+    s3.upload_file(upload_parquet_file, 's3filter', 'parquet/small.9999.parquet')
+
+    s3.download_file('s3filter', 'parquet/small.9999.parquet', download_parquet_file)
+
+    table = pq.read_table(download_parquet_file)
+    df = arrow_to_pandas(table)
+
+    assert len(df) == 10000
+
+def test_s3_select_from_small_parquet():
+    cfg = Config(region_name="us-east-1", parameter_validation=False, max_pool_connections=10)
+    session = Session()
+    s3 = session.client('s3', config=cfg)
+
+    response = s3.select_object_content(Bucket='s3filter', Key='parquet/small.9999.parquet',
+                                        Expression='select * from s3Object', ExpressionType='SQL',
+                                        InputSerialization={
+                                            'CompressionType': 'NONE',
+                                            'Parquet': {}
+
+                                        },
+                                        OutputSerialization={
+                                            'CSV': {}
+                                        })
+
+    df = None
+
+    cursor = PandasCursor(None)
+    cursor.event_stream = response['Payload']
+    dfs = cursor.parse_event_stream()
+
+    for partial_df in dfs:
+        if df is None:
+            df = partial_df
+        else:
+            df = pd.concat(df, partial_df)
+
+    assert len(df) == 10000
+
+    print()
+    print("{} | {}".format(test_s3_select_from_small_parquet.__name__, cursor.bytes_scanned))
+    print("{} | {}".format(test_s3_select_from_small_parquet.__name__, cursor.bytes_processed))
+    print("{} | {}".format(test_s3_select_from_small_parquet.__name__, cursor.bytes_returned))
