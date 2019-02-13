@@ -8,12 +8,18 @@ import math
 
 import numpy
 import pandas as pd
+import pyarrow.parquet as pq
+from boto3.s3.transfer import TransferConfig, MB
+from enum import Enum
 
 from s3filter.util.constants import *
-from s3filter.util.timer import Timer
 from s3filter.util.filesystem_util import *
+from s3filter.util.timer import Timer
 
-from boto3.s3.transfer import TransferConfig, MB
+
+class CursorInput(Enum):
+    CSV = 1
+    PARQUET = 2
 
 
 class PandasCursor(object):
@@ -50,6 +56,12 @@ class PandasCursor(object):
         self.num_http_get_requests = 0
         self.table_data = None
 
+        self.input = CursorInput.CSV
+
+    def parquet(self):
+        self.input = CursorInput.PARQUET
+        return self
+
     def select(self, s3key, s3sql):
         """Creates a select cursor
 
@@ -62,7 +74,7 @@ class PandasCursor(object):
         self.s3sql = s3sql
 
         # TODO:only simple SQL queries are considered. Nested and complex queries will need a lot of work to handle
-        self.need_s3select = True #not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
+        self.need_s3select = not (s3sql.lower().replace(';', '').strip() == 'select * from s3object')
 
         # There doesn't seem to be a way to capture the bytes sent to s3, but we can use this for comparison purposes
         self.query_bytes = len(self.s3key.encode('utf-8')) + len(self.s3sql.encode('utf-8'))
@@ -114,14 +126,29 @@ class PandasCursor(object):
             # We ignore them for now just because its simpler. It does mean the records are returned as a list
             #  instead of a dict though (can change in future).
             #
-            response = self.s3.select_object_content(
-                Bucket=S3_BUCKET_NAME,
-                Key=self.s3key,
-                ExpressionType='SQL',
-                Expression=self.s3sql,
-                InputSerialization={'CSV': {'FileHeaderInfo': 'Use', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
-                OutputSerialization={'CSV': {}}
-            )
+            if self.input is CursorInput.CSV:
+                response = self.s3.select_object_content(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=self.s3key,
+                    ExpressionType='SQL',
+                    Expression=self.s3sql,
+                    InputSerialization={
+                        'CSV': {'FileHeaderInfo': 'Use', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
+                    OutputSerialization={'CSV': {}}
+                )
+            elif self.input is CursorInput.PARQUET:
+                response = self.s3.select_object_content(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=self.s3key,
+                    ExpressionType='SQL',
+                    Expression=self.s3sql,
+                    InputSerialization={
+                        'CompressionType': 'NONE',
+                        'Parquet': {}},
+                    OutputSerialization={'CSV': {}}
+                )
+            else:
+                raise Exception("Unrecognised InputType {}".format(self.input))
 
             self.num_http_get_requests += 1
 
@@ -221,30 +248,40 @@ class PandasCursor(object):
 
     def parse_file(self):
         try:
-            if self.table_data and len(self.table_data.getvalue()) > 0:
-                ip_stream = cStringIO.StringIO(self.table_data.getvalue().decode('utf-8'))
-            elif os.path.exists(self.table_local_file_path):
-                ip_stream = self.table_local_file_path
+            if self.input is CursorInput.CSV:
+                if self.table_data and len(self.table_data.getvalue()) > 0:
+                    ip_stream = cStringIO.StringIO(self.table_data.getvalue().decode('utf-8'))
+                elif os.path.exists(self.table_local_file_path):
+                    ip_stream = self.table_local_file_path
+                else:
+                    return
+
+                self.time_to_first_record_response = self.time_to_last_record_response = self.timer.elapsed()
+
+                for df in pd.read_csv(ip_stream, delimiter='|',
+                                      header=None,
+                                      prefix='_', dtype=numpy.str,
+                                      engine='c', quotechar='"', na_filter=False, compression=None, low_memory=False,
+                                      skiprows=1,
+                                      chunksize=10 ** 7):
+                    # Get read bytes
+                    self.bytes_returned += ip_stream.tell()
+
+                    # drop last column since the line separator | creates a new empty column at the end of every record
+                    df_col_names = list(df)
+                    last_col = df_col_names[-1]
+                    df.drop(last_col, axis=1, inplace=True)
+
+                    yield df
+            elif self.input is CursorInput.PARQUET:
+
+                table = pq.read_table(self.table_data)
+                self.table_data = None
+
+                yield table.to_pandas()
             else:
-                return
+                raise Exception("Unrecognized input type '{}'".format(self.input))
 
-            self.time_to_first_record_response = self.time_to_last_record_response = self.timer.elapsed()
-
-            for df in pd.read_csv(ip_stream, delimiter='|',
-                                  header=None,
-                                  prefix='_', dtype=numpy.str,
-                                  engine='c', quotechar='"', na_filter=False, compression=None, low_memory=False,
-                                  skiprows=1,
-                                  chunksize=10 ** 7):
-                # Get read bytes
-                self.bytes_returned += ip_stream.tell()
-
-                # drop last column since the line separator | creates a new empty column at the end of every record
-                df_col_names = list(df)
-                last_col = df_col_names[-1]
-                df.drop(last_col, axis=1, inplace=True)
-
-                yield df
         except Exception as e:
             print("can not read table data at with error {}".format(e.message))
             raise e
