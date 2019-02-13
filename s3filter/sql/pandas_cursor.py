@@ -62,6 +62,10 @@ class PandasCursor(object):
         self.input = CursorInput.PARQUET
         return self
 
+    def csv(self):
+        self.input = CursorInput.CSV
+        return self
+
     def select(self, s3key, s3sql):
         """Creates a select cursor
 
