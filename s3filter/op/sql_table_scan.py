@@ -141,7 +141,7 @@ class SQLTableScan(Operator):
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None):
+    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None, read_parquet=False):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
         :param s3key: The object key to select against
         :param s3sql: The s3 select sql
@@ -171,6 +171,7 @@ class SQLTableScan(Operator):
         self.use_native = use_native
 
         #self.filter_fn = fn
+	self.read_parquet = read_parquet
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -281,8 +282,9 @@ class SQLTableScan(Operator):
             #
             # return cur
         else:
-
             cur = PandasCursor(op.s3).select(op.s3key, op.s3sql)
+	    if op.read_parquet:
+		cur = PandasCursor(op.s3).parquet().select(op.s3key, op.s3sql)
             dfs = cur.execute()
             op.op_metrics.query_bytes = cur.query_bytes
             op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
