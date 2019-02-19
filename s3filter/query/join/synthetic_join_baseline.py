@@ -51,7 +51,7 @@ def query_plan(settings):
                              "{}"
                              .format(
                                  get_sql_suffix(settings.table_A_key, settings.table_A_parts, p,
-                                                settings.table_A_sharded, add_where=True)),
+                                                settings.table_A_sharded, add_where=True)), settings.format_,
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -94,7 +94,7 @@ def query_plan(settings):
                              "{}"
                              .format(
                                  get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
-                                                settings.table_B_sharded, add_where=True)),
+                                                settings.table_B_sharded, add_where=True)), settings.format_,
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -138,7 +138,7 @@ def query_plan(settings):
                                  "{}"
                                  .format(
                                      get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
-                                                    settings.table_C_sharded, add_where=True)),
+                                                    settings.table_C_sharded, add_where=True)), settings.format_,
                                  settings.use_pandas,
                                  settings.secure,
                                  settings.use_native,

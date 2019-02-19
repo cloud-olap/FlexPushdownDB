@@ -4,13 +4,12 @@
 """
 
 import os
-import pstats
 
 from s3filter import ROOT_DIR
-from s3filter.op.collate import Collate
 from s3filter.op.null import Null
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
+from s3filter.sql.format import Format
 from s3filter.util.test_util import gen_test_id
 
 
@@ -19,10 +18,10 @@ def main():
     # run(use_pandas=False, secure=False, use_native=False)
     # run(use_pandas=True, secure=True, use_native=False)
     # run(use_pandas=True, secure=False, use_native=False)
-    run(use_pandas=True, secure=True, use_native=True)
+    run(use_pandas=True, secure=True, use_native=True, format_=Format.CSV)
 
 
-def run(use_pandas, secure, use_native):
+def run(use_pandas, secure, use_native, format_):
     profile_file_name = os.path.join(ROOT_DIR, "../benchmark-output/" + gen_test_id() + ".prof")
     os.remove(profile_file_name) if os.path.exists(profile_file_name) else None
 
@@ -36,7 +35,7 @@ def run(use_pandas, secure, use_native):
                      "select "
                      "  * "
                      "from "
-                     "  S3Object limit 100000",
+                     "  S3Object limit 100000", format_,
                      use_pandas,
                      secure,
                      use_native,

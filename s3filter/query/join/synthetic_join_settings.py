@@ -7,6 +7,7 @@ class SyntheticJoinSettings(object):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 format_,
                  sf,
                  table_A_key,
                  table_A_parts,
@@ -34,6 +35,7 @@ class SyntheticJoinSettings(object):
         self.buffer_size = buffer_size
         self.use_shared_mem = use_shared_mem
         self.shared_memory_size = shared_memory_size
+        self.format_ = format_
         self.sf = sf
         self.table_A_key = table_A_key
         self.table_A_parts = table_A_parts
@@ -65,6 +67,7 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 format_,
                  sf,
                  table_A_key,
                  table_A_parts,
@@ -95,6 +98,7 @@ class SyntheticBaselineJoinSettings(SyntheticJoinSettings):
                                                             buffer_size,
                                                             use_shared_mem,
                                                             shared_memory_size,
+                                                            format_,
                                                             sf,
                                                             table_A_key,
                                                             table_A_parts,
@@ -130,6 +134,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 format_,
                  sf,
                  table_A_key,
                  table_A_parts,
@@ -160,6 +165,7 @@ class SyntheticFilteredJoinSettings(SyntheticJoinSettings):
                                                             buffer_size,
                                                             use_shared_mem,
                                                             shared_memory_size,
+                                                            format_,
                                                             sf,
                                                             table_A_key,
                                                             table_A_parts,
@@ -195,6 +201,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 format_,
                  sf,
                  fp_rate,
                  table_A_key,
@@ -226,6 +233,7 @@ class SyntheticBloomJoinSettings(SyntheticJoinSettings):
                                                          buffer_size,
                                                          use_shared_mem,
                                                          shared_memory_size,
+                                                         format_,
                                                          sf,
                                                          table_A_key,
                                                          table_A_parts,
@@ -262,6 +270,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                  buffer_size,
                  use_shared_mem,
                  shared_memory_size,
+                 format_,
                  sf,
                  fp_rate,
                  table_A_key,
@@ -295,6 +304,7 @@ class SyntheticSemiJoinSettings(SyntheticJoinSettings):
                                                         buffer_size,
                                                         use_shared_mem,
                                                         shared_memory_size,
+                                                        format_,
                                                         sf,
                                                         table_A_key,
                                                         table_A_parts,

@@ -3,10 +3,6 @@
 
 """
 
-from s3filter.benchmark.access_method import tpch_scan_ipc
-from s3filter.benchmark.cursor import cursor
-from s3filter.benchmark.join import join
-from s3filter.benchmark.sql_table_scan import sql_table_scan
 from s3filter.benchmark.tpch import tpch
 
 

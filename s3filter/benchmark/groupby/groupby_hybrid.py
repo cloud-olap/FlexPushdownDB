@@ -4,30 +4,28 @@
 """
 
 import os
-from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
 
 from s3filter import ROOT_DIR
-from s3filter.op.aggregate import Aggregate
-from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
-from s3filter.plan.query_plan import QueryPlan
-from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.group import Group
-from s3filter.util.test_util import gen_test_id
-from s3filter.op.groupby_filter_build import GroupbyFilterBuild
 from s3filter.op.groupby_decoder import GroupbyDecoder
-import s3filter.util.constants
-import pandas as pd
-import numpy as np
-import sys
+from s3filter.op.groupby_filter_build import GroupbyFilterBuild
+from s3filter.op.project import Project, ProjectExpression
+from s3filter.op.sql_table_scan import SQLTableScan
+from s3filter.plan.query_plan import QueryPlan
+from s3filter.sql.format import Format
+from s3filter.util.test_util import gen_test_id
+
 
 def main():
     file_format = 'groupby_benchmark/shards-zipf-10GB/groupby_powerlaw_data_{}.csv'
     run(['G2'], ['F0', 'F1'], parallel=True, use_pandas=True, buffer_size=0, table_parts=2, files=file_format)
 
 
-def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts, files, nlargest=6):
+def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts, files, nlargest=6, format_=Format.CSV):
     """
     
     :return: None
@@ -49,7 +47,7 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
     scan_phase1 = map(lambda p: 
                query_plan.add_operator(
                     SQLTableScan(files.format(p),
-                        "select {} from S3Object;".format(','.join(group_fields)), use_pandas, secure, use_native,
+                        "select {} from S3Object;".format(','.join(group_fields)), format_, use_pandas, secure, use_native,
                         'scan_phase1_{}'.format(p), query_plan,
                         False)),
                range(0, table_parts))
@@ -103,7 +101,7 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
     scan_phase2_remote = map(lambda p: 
                query_plan.add_operator(
                     SQLTableScan(files.format(p),
-                        "", use_pandas, secure, use_native,
+                        "", format_, use_pandas, secure, use_native,
                         'scan_phase2_remote_{}'.format(p), query_plan,
                         False)),
                range(0, table_parts))
@@ -132,7 +130,7 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
     scan_phase2_local = map(lambda p: 
                query_plan.add_operator(
                     SQLTableScan(files.format(p),
-                        "", use_pandas, secure, use_native,
+                        "", format_, use_pandas, secure, use_native,
                         'scan_phase2_local_{}'.format(p), query_plan,
                         False)),
                range(0, table_parts))

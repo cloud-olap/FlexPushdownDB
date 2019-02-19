@@ -2,13 +2,14 @@
 
 """
 
+import multiprocessing
+
 from s3filter.op.collate import Collate
+from s3filter.op.sort import SortExpression
 from s3filter.op.sql_sharded_table_scan import SQLShardedTableScan
 from s3filter.op.top import TopKTableScan, Top
-from s3filter.plan.query_plan import QueryPlan
 from s3filter.plan.op_metrics import OpMetrics
-from s3filter.op.sort import SortExpression
-import multiprocessing
+from s3filter.plan.query_plan import QueryPlan
 
 
 def topk_baseline(stats, k, sort_index='_5', col_type=float, col_name='l_extendedprice', sort_order='DESC', use_pandas=True,
@@ -124,7 +125,7 @@ def topk_with_sampling(stats, k, k_scale=1, sort_index='_5', col_type=float, sor
     print("\n\nSampling params:")
     print("Scale: {}, Sort Field: {}, Sort Order: {}\n".format(k_scale, sort_field, sort_order))
 
-    query_plan = QueryPlan(None, is_async=True)
+    query_plan = QueryPlan(is_async=True)
 
     # Query plan
     ts = query_plan.add_operator(
@@ -223,7 +224,8 @@ def run_all():
 if __name__ == "__main__":
     run_all()
 
-    import sys,os
+    import sys
+
     sys.exit(0)
     stats_header = [
         'Method',

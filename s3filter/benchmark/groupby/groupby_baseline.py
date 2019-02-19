@@ -4,22 +4,18 @@
 """
 
 import os
-from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
 
 from s3filter import ROOT_DIR
-from s3filter.op.operator_connector import connect_many_to_many, connect_many_to_one, connect_one_to_one
-from s3filter.op.aggregate import Aggregate
-from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
-from s3filter.plan.query_plan import QueryPlan
-from s3filter.op.table_scan import TableScan
-from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.project import Project, ProjectExpression
 from s3filter.op.group import Group
+from s3filter.op.operator_connector import connect_many_to_many, connect_many_to_one, connect_one_to_one
+from s3filter.op.table_scan import TableScan
+from s3filter.plan.query_plan import QueryPlan
 from s3filter.util.test_util import gen_test_id
-import s3filter.util.constants
-import pandas as pd
-import numpy as np
+
 
 def main():
     #file_format = 'groupby_benchmark/shards-zipf-10GB/groupby_powerlaw_data_{}.csv'
@@ -39,7 +35,7 @@ def run(group_fields, agg_fields, parallel, use_pandas, buffer_size, table_parts
     print("----------------------")
 
     # Query plan
-    query_plan = QueryPlan(None, is_async=parallel, buffer_size=buffer_size)
+    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
     
     def fn(df):
         df.columns = ['G0', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9',

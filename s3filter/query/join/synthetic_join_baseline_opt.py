@@ -1,25 +1,22 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
+import pandas as pd
 
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
-from s3filter.op.filter import Filter
 from s3filter.op.hash_join_build import HashJoinBuild
 from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.map import Map
 from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
     connect_one_to_one
-from s3filter.op.predicate_expression import PredicateExpression
-from s3filter.op.project import ProjectExpression, Project
 from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query.join.synthetic_join_settings import SyntheticBaselineJoinSettings
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
-import pandas as pd
+
 
 def query_plan(settings):
     # type: (SyntheticBaselineJoinSettings) -> QueryPlan
@@ -50,7 +47,7 @@ def query_plan(settings):
                              "{}"
                              .format(
                                  get_sql_suffix(settings.table_A_key, settings.table_A_parts, p,
-                                                settings.table_A_sharded, add_where=True)),
+                                                settings.table_A_sharded, add_where=True)), settings.format_,
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -76,7 +73,7 @@ def query_plan(settings):
                              "{}"
                              .format(
                                  get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
-                                                settings.table_B_sharded, add_where=True)),
+                                                settings.table_B_sharded, add_where=True)), settings.format_,
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -124,7 +121,7 @@ def query_plan(settings):
                              "{}"
                              .format(
                                  get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
-                                                settings.table_C_sharded, add_where=True)),
+                                                settings.table_C_sharded, add_where=True)), settings.format_,
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,

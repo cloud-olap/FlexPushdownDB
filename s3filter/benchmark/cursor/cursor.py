@@ -3,26 +3,16 @@
 
 """
 import logging
-import os
-import pstats
-import scan
 
 import boto3
-import botocore
+import pandas as pd
+import scan
 from boto3 import Session
 from botocore.config import Config
 
-from s3filter import ROOT_DIR
-from s3filter.op.collate import Collate
-from s3filter.op.null import Null
-from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.plan.query_plan import QueryPlan
 from s3filter.sql.cursor import Cursor
 from s3filter.sql.native_cursor import NativeCursor
 from s3filter.sql.pandas_cursor import PandasCursor
-from s3filter.util.test_util import gen_test_id
-import pandas as pd
-
 from s3filter.util.timer import Timer
 
 

@@ -3,11 +3,11 @@
 
 """
 
+import sys
+
 import s3filter.benchmark.groupby.groupby_baseline as groupby_baseline
 import s3filter.benchmark.groupby.groupby_filtered as groupby_filtered
-import s3filter.benchmark.groupby.groupby_2phase as groupby_2phase
 import s3filter.benchmark.groupby.groupby_hybrid as groupby_hybrid
-import sys
 
 names = ['Baseline', 'Filtered', 'TwoPhase', 'Hybrid']
 trials = ['1']

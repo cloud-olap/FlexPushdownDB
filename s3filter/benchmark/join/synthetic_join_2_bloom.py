@@ -11,16 +11,17 @@ from s3filter.benchmark.join import runner
 from s3filter.benchmark.join.join_result import SF1_JOIN_2_RESULT
 from s3filter.query.join import synthetic_join_bloom
 from s3filter.query.join.synthetic_join_settings import SyntheticBloomJoinSettings
+from s3filter.sql.format import Format
 from s3filter.util import filesystem_util
 from s3filter.util.test_util import gen_test_id
 
 
-def main(sf, parts, sharded, other_parts, fp_rate, table_a_filter_val, table_b_filter_val, expected_result, trial):
+def main(sf, format_, parts, sharded, other_parts, fp_rate, table_a_filter_val, table_b_filter_val, expected_result, trial):
     table_a_filter_sql, _, table_b_filter_sql, _ = runner.build_filters(table_a_filter_val, table_b_filter_val)
 
     settings = SyntheticBloomJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
-        use_shared_mem=False, shared_memory_size=-1, sf=sf, fp_rate=fp_rate,
+        use_shared_mem=False, shared_memory_size=-1, format_=format_, sf=sf, fp_rate=fp_rate,
         table_A_key='customer',
         table_A_parts=parts,
         table_A_sharded=sharded,
@@ -53,6 +54,7 @@ def main(sf, parts, sharded, other_parts, fp_rate, table_a_filter_val, table_b_f
 
     print("--- TEST: {} ---".format(gen_test_id()))
     print("--- SCALE FACTOR: {} ---".format(sf))
+    print("--- FORMAT: {} ---".format(format_))
     print("--- FALSE POSITIVE RATE: {} ---".format(fp_rate))
     print("--- CUSTOMER FILTER: {} ---".format(table_a_filter_sql))
     print("--- ORDER FILTER: {} ---".format(table_b_filter_sql))
@@ -69,7 +71,7 @@ def main(sf, parts, sharded, other_parts, fp_rate, table_a_filter_val, table_b_f
 if __name__ == "__main__":
     # main(1, 1, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
-    main(1, 4, False, 2, 0.01, -990, '1992-03-01', SF1_JOIN_2_RESULT, 1)
+    main(1, Format.CSV, 4, False, 2, 0.01, -990, '1992-03-01', SF1_JOIN_2_RESULT, 1)
     # main(1, 4, False, 0.001, 'cast(c_acctbal as float) <= -999.0',
     #      'cast(o_orderdate as timestamp) < cast(\'1998-01-01\' as timestamp)', SF1_JOIN_2_RESULT)
     # main(1, 8, False, 0.001, 'cast(c_acctbal as float) <= -999.0',

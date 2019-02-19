@@ -195,7 +195,7 @@ def separate_query_plan(shared_mem_buffer_size, parallel, use_pandas, buffer_siz
     def filter_fn(df):
         return (df['_5'].astype(np.float) >= lower) & (df['_5'].astype(np.float) <= upper)
 
-    filter = map(lambda p:
+    filter_ = map(lambda p:
                  query_plan.add_operator(
                      Filter(PredicateExpression(None, filter_fn),
                             'filter_{}'.format(p), query_plan,
@@ -212,17 +212,17 @@ def separate_query_plan(shared_mem_buffer_size, parallel, use_pandas, buffer_siz
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
 
-    map(lambda p: p.set_async(not inline_ops), filter)
+    map(lambda p: p.set_async(not inline_ops), filter_)
 
-    connect_many_to_many(scan, filter)
-    connect_many_to_one(filter, aggregate)
+    connect_many_to_many(scan, filter_)
+    connect_many_to_one(filter_, aggregate)
     connect_one_to_one(aggregate, collate)
 
     profile_file_suffix = get_profile_file_suffix(inline_ops, merge_ops, use_shared_mem)
 
     scan[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
                                             gen_test_id() + "_scan_0" + profile_file_suffix + ".prof"))
-    filter[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
+    filter_[0].set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
                                               gen_test_id() + "_filter_0" + profile_file_suffix + ".prof"))
     aggregate.set_profiled(True, os.path.join(ROOT_DIR, "../benchmark-output/",
                                               gen_test_id() + "_aggregate" + profile_file_suffix + ".prof"))

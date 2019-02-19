@@ -6,26 +6,23 @@ import inspect
 import os
 import subprocess
 import sys
-from datetime import datetime
 
 from s3filter import ROOT_DIR
 from s3filter.benchmark.join import runner
 from s3filter.benchmark.join.join_result import SF1_JOIN_2_RESULT
 from s3filter.query.join import synthetic_join_baseline
 from s3filter.query.join.synthetic_join_settings import SyntheticBaselineJoinSettings
-import pandas as pd
-
+from s3filter.sql.format import Format
 from s3filter.util import filesystem_util
 from s3filter.util.test_util import gen_test_id
-import numpy as np
 
 
-def main(sf, parts, sharded, other_parts, table_a_filter_val, table_b_filter_val, expected_result, trial):
+def main(sf, format_, parts, sharded, other_parts, table_a_filter_val, table_b_filter_val, expected_result, trial):
     _, table_a_filter_fn, _, table_b_filter_fn = runner.build_filters(table_a_filter_val, table_b_filter_val)
 
     settings = SyntheticBaselineJoinSettings(
         parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0,
-        use_shared_mem=False, shared_memory_size=-1, sf=sf,
+        use_shared_mem=False, shared_memory_size=-1, format_=format_, sf=sf,
         table_A_key='customer',
         table_A_parts=parts,
         table_A_sharded=sharded,
@@ -60,6 +57,7 @@ def main(sf, parts, sharded, other_parts, table_a_filter_val, table_b_filter_val
 
     print("--- TEST: {} ---".format(gen_test_id()))
     print("--- SCALE FACTOR: {} ---".format(sf))
+    print("--- FORMAT: {} ---".format(format_))
     print("--- CUSTOMER FILTER: {} table_a_filter_val: {} ---".format(inspect.getsource(table_a_filter_fn) if table_a_filter_fn is not None else None, table_a_filter_val))
     print("--- ORDER FILTER: {} table_b_filter_val: {} ---".format(inspect.getsource(table_b_filter_fn) if table_b_filter_fn is not None else None, table_b_filter_val))
 
@@ -73,4 +71,4 @@ def main(sf, parts, sharded, other_parts, table_a_filter_val, table_b_filter_val
 
 
 if __name__ == "__main__":
-    main(1, 4, False, 2, -990, '1992-03-01', SF1_JOIN_2_RESULT, 1)
+    main(1, Format.CSV, 4, False, 2, -990, '1992-03-01', SF1_JOIN_2_RESULT, 1)

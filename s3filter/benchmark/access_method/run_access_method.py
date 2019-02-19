@@ -3,9 +3,10 @@
 
 """
 
-import s3filter.benchmark.access_method.index as index
-import s3filter.benchmark.access_method.filtered_scan as scan
 import sys
+
+import s3filter.benchmark.access_method.filtered_scan as scan
+import s3filter.benchmark.access_method.index as index
 
 trials = [1]
 nshards = 100
@@ -31,14 +32,15 @@ for trial in trials:
             sys.stdout.close()
     """
     for npart in [1, 10, 100]:
-        for name, config in [ ['index', index], ['scan', scan] ]:
+        for name, config in [['index', index], ['scan', scan]]:
             selectivity = 0.00001
-            sys.stdout = open("benchmark-output/access_method/{}_perc{}_npart{}_trial{}.txt".format(name, selectivity, npart, trial), "w+")
+            sys.stdout = open(
+                "benchmark-output/access_method/{}_perc{}_npart{}_trial{}.txt".format(name, selectivity, npart, trial),
+                "w+")
             if npart == 100:
                 fname = 'shards-10GB'
-            else: 
+            else:
                 fname = '{}-shards-10GB'.format(npart)
             path = 'access_method_benchmark/{}'.format(fname)
-            config.run(True, True, 0, nshards, selectivity, path) 
+            config.run(True, True, 0, nshards, selectivity, path)
             sys.stdout.close()
-

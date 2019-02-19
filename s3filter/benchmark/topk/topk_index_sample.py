@@ -1,26 +1,26 @@
 """Top K baseline
 
 """
-from s3filter import ROOT_DIR
 
-from s3filter.op.collate import Collate
-from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.project import Project, ProjectExpression
-from s3filter.op.top import Top
-from s3filter.op.top_filter_build import TopKFilterBuild
-from s3filter.op.table_sampler import TableRandomSampleGenerator
-from s3filter.op.random_sample_byte_range_builder import ByteRangeBuilder
-from s3filter.op.table_range_access import TableRangeAccess
-from s3filter.util.constants import *
-
-from s3filter.plan.query_plan import QueryPlan
-from s3filter.op.sort import SortExpression
+import math
+import multiprocessing
+import os
+import sys
 
 import numpy as np
-import math
-import os, sys
-import pandas as pd
-import multiprocessing
+
+from s3filter.op.collate import Collate
+from s3filter.op.project import Project, ProjectExpression
+from s3filter.op.random_sample_byte_range_builder import ByteRangeBuilder
+from s3filter.op.sort import SortExpression
+from s3filter.op.sql_table_scan import SQLTableScan
+from s3filter.op.table_range_access import TableRangeAccess
+from s3filter.op.table_sampler import TableRandomSampleGenerator
+from s3filter.op.top import Top
+from s3filter.op.top_filter_build import TopKFilterBuild
+from s3filter.plan.query_plan import QueryPlan
+from s3filter.sql.format import Format
+from s3filter.util.constants import *
 
 
 def main():
@@ -56,9 +56,9 @@ def main():
     stats_dir = os.path.join(proj_dir, '..')
     stats_dir = os.path.join(stats_dir, stats_file_name)
 
-    def write_stats(file, stats):
-        file.write(",".join([str(x) if type(x) is not str else x for x in stats]) + "\n")
-        file.flush()
+    def write_stats(file_, stats):
+        file_.write(",".join([str(x) if type(x) is not str else x for x in stats]) + "\n")
+        file_.flush()
 
     if os.path.exists(stats_dir):
         mode = 'a'
@@ -87,7 +87,8 @@ def main():
                                         table_parts_start=parts_start,
                                         table_parts_end=parts_end,
                                         tbl_s3key=tbl_s3key,
-                                        shards_path=shards_path)
+                                        shards_path=shards_path,
+                                        format_=format_)
             write_stats(stats_file, run_stats)
 
         for sample_size in sample_sizes:
@@ -102,7 +103,8 @@ def main():
                                     table_parts_start=parts_start,
                                     table_parts_end=parts_end,
                                     tbl_s3key=tbl_s3key,
-                                    shards_path=shards_path)
+                                    shards_path=shards_path,
+                                        format_=format_)
             write_stats(stats_file, run_stats)
 
         #Check the batch size effect on sampling time. Using the optimal sample size calculated by the formula
@@ -122,7 +124,8 @@ def main():
                                         table_parts_start=parts_start,
                                         table_parts_end=parts_end,
                                         tbl_s3key=tbl_s3key,
-                                        shards_path=shards_path)
+                                        shards_path=shards_path,
+                                    format_=Format.CSV)
             write_stats(stats_file, run_stats)
 
         #Finally, generally compare the indexed sampling topk vs head table sampling topk
@@ -140,6 +143,7 @@ def main():
                                         table_parts_end=parts_end,
                                         tbl_s3key=tbl_s3key,
                                         shards_path=shards_path,
+                                    format_=Format.CSV,
                                         sampling_only=False)
             write_stats(stats_file, run_stats)
 
@@ -156,6 +160,7 @@ def main():
                                     table_parts_end=parts_end,
                                     tbl_s3key=tbl_s3key,
                                     shards_path=shards_path,
+                                    format_=Format.CSV,
                                     sampling_only=False)
             write_stats(stats_file, run_stats)
 
@@ -163,7 +168,7 @@ def main():
 
 
 def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size, batch_size, parallel, use_pandas, sort_order, buffer_size,
-                               table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
+                               table_parts_start, table_parts_end, tbl_s3key, shards_path, format_, sampling_only=True):
     """
     Executes the randomly sampled topk query by firstly building a random sample, then extracting the filtering threshold
     Finally scanning the table to retrieve only the records beyond the threshold
@@ -183,7 +188,7 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
               sample_size, batch_size]
 
     # Query plan
-    query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
+    query_plan = QueryPlan( is_async=parallel, buffer_size=buffer_size)
 
     # Sampling
     tbl_smpler = query_plan.add_operator(
@@ -237,7 +242,7 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
         scan = map(lambda p:
                    query_plan.add_operator(
                         SQLTableScan("{}.{}".format(shards_path, p),
-                            "", use_pandas, secure, use_native,
+                            "", format_, use_pandas, secure, use_native,
                             'scan_{}'.format(p), query_plan,
                             False)),
                    range(table_parts_start, table_parts_end + 1))
@@ -337,7 +342,8 @@ def run_memory_indexed_sampling(stats, sort_field_index, sort_field, k, sample_s
 
 
 def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size, batch_size, parallel, use_pandas, sort_order, buffer_size,
-                               table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
+                               table_parts_start, table_parts_end, tbl_s3key, shards_path,
+                                    format_, sampling_only=True):
     """
     Executes the randomly sampled topk query by firstly building a random sample, then extracting the filtering threshold
     Finally scanning the table to retrieve only the records beyond the threshold
@@ -356,7 +362,7 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
              batch_size]
 
     # Query plan
-    query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
+    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Sampling
     tbl_smpler = query_plan.add_operator(
@@ -364,7 +370,7 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
                                                             False))
 
     tbl_sample_range_scanners = map(lambda p: query_plan.add_operator(
-                                    SQLTableScan(tbl_smpler.index_mng.get_s3_index_path(), "", use_pandas, secure, use_native,
+                                    SQLTableScan(tbl_smpler.index_mng.get_s3_index_path(), "", format_, use_pandas, secure, use_native,
                                     'scan_sample_index_{}'.format(p), query_plan, False)), range(5))
 
     sample_byte_ranges_builder = query_plan.add_operator(
@@ -417,7 +423,7 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
         scan = map(lambda p:
                    query_plan.add_operator(
                         SQLTableScan("{}.{}".format(shards_path, p),
-                            "", use_pandas, secure, use_native,
+                            "", format_, use_pandas, secure, use_native,
                             'scan_{}'.format(p), query_plan,
                             False)),
                    range(table_parts_start, table_parts_end + 1))
@@ -506,7 +512,7 @@ def run_s3_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size,
 
 
 def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_size, batch_size, parallel, use_pandas, sort_order, buffer_size,
-                               table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
+                               table_parts_start, table_parts_end, tbl_s3key, shards_path, format_, sampling_only=True):
     """
     Executes the randomly sampled topk query by firstly building a random sample, then extracting the filtering threshold
     Finally scanning the table to retrieve only the records beyond the threshold
@@ -525,7 +531,7 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
              batch_size]
 
     # Query plan
-    query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
+    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Sampling
     tbl_smpler = query_plan.add_operator(
@@ -576,7 +582,7 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
         scan = map(lambda p:
                    query_plan.add_operator(
                         SQLTableScan("{}.{}".format(shards_path, p),
-                            "", use_pandas, secure, use_native,
+                            "", format_, use_pandas, secure, use_native,
                             'scan_{}'.format(p), query_plan,
                             False)),
                    range(table_parts_start, table_parts_end + 1))
@@ -665,7 +671,7 @@ def run_local_indexed_sampling(stats, sort_field_index, sort_field, k, sample_si
 
 
 def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size,
-        table_parts_start, table_parts_end, tbl_s3key, shards_path, sampling_only=True):
+        table_parts_start, table_parts_end, tbl_s3key, shards_path, format_, sampling_only=True):
 
     secure = False
     use_native = False
@@ -678,7 +684,7 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
               sample_size, 1]
 
     # Query plan
-    query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
+    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Sampling
     table_parts = table_parts_end - table_parts_start + 1
@@ -687,7 +693,7 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
     sample_scan = map(lambda p:
                       query_plan.add_operator(
                           SQLTableScan("{}.{}".format(shards_path, p),
-                                       'select {} from S3Object limit {};'.format(sort_field, per_part_samples),
+                                       'select {} from S3Object limit {};'.format(sort_field, per_part_samples),format_,
                                        use_pandas, secure, use_native,
                                        'sample_scan_{}'.format(p), query_plan, False)),
                       range(table_parts_start, table_parts_end + 1))
@@ -726,7 +732,7 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
         scan = map(lambda p:
                    query_plan.add_operator(
                         SQLTableScan("{}.{}".format(shards_path, p),
-                            "", use_pandas, secure, use_native,
+                            "", format_, use_pandas, secure, use_native,
                             'scan_{}'.format(p), query_plan,
                             False)),
                    range(table_parts_start, table_parts_end + 1))
@@ -800,7 +806,7 @@ def run_head_table_sampling(stats, sort_field_index, sort_field, k, sample_size,
 
 
 def run_baseline_topk(stats, sort_field_index, sort_field, k, parallel, use_pandas, sort_order, buffer_size,
-        table_parts_start, table_parts_end, tbl_s3key, shards_path):
+        table_parts_start, table_parts_end, tbl_s3key, format_, shards_path):
 
     secure = False
     use_native = False
@@ -812,7 +818,7 @@ def run_baseline_topk(stats, sort_field_index, sort_field, k, parallel, use_pand
     stats += ['baseline', shards_path, sort_field, sort_order, k, 0, 0]
 
     # Query plan
-    query_plan = QueryPlan(system=None, is_async=parallel, buffer_size=buffer_size)
+    query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
     # Sampling
     table_parts = table_parts_end - table_parts_start + 1
@@ -823,7 +829,7 @@ def run_baseline_topk(stats, sort_field_index, sort_field, k, parallel, use_pand
     scan = map(lambda p:
                query_plan.add_operator(
                    SQLTableScan("{}.{}".format(shards_path, p),
-                                "select * from S3Object;", use_pandas, secure, use_native,
+                                "select * from S3Object;", format_, use_pandas, secure, use_native,
                                 'scan_{}'.format(p), query_plan,
                                 False)),
                range(table_parts_start, table_parts_end + 1))
@@ -938,6 +944,8 @@ if __name__ == "__main__":
         else:
             stats_file_name = 'indexed_sampling_topk_stats.txt'
 
+        format_ = Format.CSV
+
         run_stats = []
 
         if sampling_type == 'indexed':
@@ -955,6 +963,7 @@ if __name__ == "__main__":
                                         table_parts_end=shards_end,
                                         tbl_s3key=table_name,
                                         shards_path=shards_prefix,
+                                        format_=format_,
                                         sampling_only=sampling_only)
         elif sampling_type == 'head':
             run_head_table_sampling(
@@ -971,6 +980,7 @@ if __name__ == "__main__":
                 table_parts_end=shards_end,
                 tbl_s3key=table_name,
                 shards_path=shards_prefix,
+                                        format_=format_,
                 sampling_only=sampling_only)
         elif sampling_type == 'baseline':
             run_baseline_topk(
@@ -985,7 +995,8 @@ if __name__ == "__main__":
                 table_parts_start=shards_start,
                 table_parts_end=shards_end,
                 tbl_s3key=table_name,
-                shards_path=shards_prefix)
+                shards_path=shards_prefix,
+                                        format_=format_)
 
         proj_dir = os.environ['PYTHONPATH'].split(":")[0]
         stats_dir = os.path.join(proj_dir, '..')

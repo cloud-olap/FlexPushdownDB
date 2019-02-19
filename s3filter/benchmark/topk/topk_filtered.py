@@ -1,25 +1,26 @@
 """Top K baseline
 
 """
-from s3filter import ROOT_DIR
-
-from s3filter.op.collate import Collate
-from s3filter.op.sql_table_scan import SQLTableScan
-from s3filter.op.project import Project, ProjectExpression
-from s3filter.op.top import TopKTableScan, Top
-from s3filter.plan.query_plan import QueryPlan
-from s3filter.plan.op_metrics import OpMetrics
-from s3filter.op.sort import SortExpression
-from s3filter.util.test_util import gen_test_id
-import multiprocessing
 import os
+
 import numpy as np
+
+from s3filter import ROOT_DIR
+from s3filter.op.collate import Collate
+from s3filter.op.project import Project, ProjectExpression
+from s3filter.op.sort import SortExpression
+from s3filter.op.sql_table_scan import SQLTableScan
+from s3filter.op.top import Top
+from s3filter.plan.query_plan import QueryPlan
+from s3filter.sql.format import Format
+from s3filter.util.test_util import gen_test_id
+
 
 def main():
     path = 'topk_benchmark/10GB-100shards' 
-    run('F0', 100, True, True, 'ASC', buffer_size=0, table_parts=1, path=path)
+    run('F0', 100, True, True, 'ASC', buffer_size=0, table_parts=1, path=path, format_=Format.CSV)
 
-def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_parts, path):
+def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_parts, path, format_):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -38,7 +39,7 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_part
     scan = map(lambda p: 
                query_plan.add_operator(
                     SQLTableScan("{}/topk_data_{}.csv".format(path, p),
-                        "select * from S3Object;", use_pandas, secure, use_native,
+                        "select * from S3Object;", format_, use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
                range(0, table_parts))

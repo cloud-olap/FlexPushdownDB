@@ -1,4 +1,5 @@
-from collections import OrderedDict
+import numpy as np
+import pandas as pd
 
 from s3filter.op.aggregate import Aggregate
 from s3filter.op.aggregate_expression import AggregateExpression
@@ -18,8 +19,6 @@ from s3filter.query.join.synthetic_join_settings import SyntheticBloomJoinSettin
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
 
-import numpy as np
-import pandas as pd
 
 def query_plan(settings):
     # type: (SyntheticBloomJoinSettings) -> QueryPlan
@@ -49,7 +48,7 @@ def query_plan(settings):
                              .format(','.join(settings.table_A_field_names),
                                      settings.table_A_filter_sql,
                                      get_sql_suffix(settings.table_A_key, settings.table_A_parts, p,
-                                                    settings.table_A_sharded)),
+                                                    settings.table_A_sharded)), settings.format_,
                              settings.use_pandas,
                              settings.secure,
                              settings.use_native,
@@ -101,7 +100,7 @@ def query_plan(settings):
                                              settings.table_B_filter_sql,
                                              get_sql_suffix(settings.table_B_key, settings.table_B_parts, p,
                                                             settings.table_B_sharded, add_where=False)),
-                                     settings.table_B_AB_join_key,
+                                     settings.table_B_AB_join_key, settings.format_,
                                      settings.use_pandas,
                                      settings.secure,
                                      settings.use_native,
@@ -147,7 +146,7 @@ def query_plan(settings):
                                              settings.table_C_filter_sql,
                                              get_sql_suffix(settings.table_C_key, settings.table_C_parts, p,
                                                             settings.table_C_sharded, add_where=False)),
-                                     settings.table_C_BC_join_key,
+                                     settings.table_C_BC_join_key, settings.format_,
                                      settings.use_pandas,
                                      settings.secure,
                                      settings.use_native,

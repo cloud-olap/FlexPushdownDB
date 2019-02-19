@@ -1,29 +1,28 @@
 """Top K baseline
 
 """
+import os
+
+import numpy as np
+
 from s3filter import ROOT_DIR
-
 from s3filter.op.collate import Collate
-from s3filter.op.sql_table_scan import SQLTableScan
 from s3filter.op.project import Project, ProjectExpression
-from s3filter.op.top import TopKTableScan, Top
-from s3filter.op.top_filter_build import TopKFilterBuild
-
-from s3filter.plan.query_plan import QueryPlan
-from s3filter.plan.op_metrics import OpMetrics
 from s3filter.op.sort import SortExpression
+from s3filter.op.sql_table_scan import SQLTableScan
+from s3filter.op.top import Top
+from s3filter.op.top_filter_build import TopKFilterBuild
+from s3filter.plan.query_plan import QueryPlan
+from s3filter.sql.format import Format
 from s3filter.util.test_util import gen_test_id
 
-import multiprocessing
-import os
-import numpy as np
 
 def main():
     path = 'topk_benchmark/10GB-100shards' 
-    run('F0', 100, sample_size=10000, parallel=True, use_pandas=True,\
-        sort_order='ASC', buffer_size=0, table_parts=2, path=path)
+    run('F0', 100, sample_size=10000, parallel=True, use_pandas=True,
+        sort_order='ASC', buffer_size=0, table_parts=2, path=path, format_= Format.CSV)
 
-def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size, table_parts, path):
+def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size, table_parts, path, format_):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -43,12 +42,12 @@ def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_siz
     sample_scan = map(lambda p:
                       query_plan.add_operator(
                         SQLTableScan("{}/topk_data_{}.csv".format(path, p),
-                            'select {} from S3Object limit {};'.format(sort_field, per_part_samples),
+                            'select {} from S3Object limit {};'.format(sort_field, per_part_samples),format_,
                             use_pandas, secure, use_native, 
                             'sample_scan_{}'.format(p), query_plan, False)),
                       range(0, table_parts))
     # Sampling project
-    def project_fn(df):
+    def project_fn1(df):
         df.columns = [sort_field]
         df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
@@ -57,7 +56,7 @@ def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_siz
     
     sample_project = map(lambda p: 
                   query_plan.add_operator( 
-                      Project(project_exprs, 'sample_project_{}'.format(p), query_plan, False, project_fn)),
+                      Project(project_exprs, 'sample_project_{}'.format(p), query_plan, False, project_fn1)),
                   range(0, table_parts))
 
     # TopK samples
@@ -74,13 +73,13 @@ def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_siz
     scan = map(lambda p: 
                query_plan.add_operator(
                     SQLTableScan("{}/topk_data_{}.csv".format(path, p),
-                        "", use_pandas, secure, use_native,
+                        "", format_, use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
                range(0, table_parts))
  
     # Project
-    def project_fn(df):
+    def project_fn2(df):
         df.columns = ['F0', 'F1', 'F2']
         df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
@@ -89,7 +88,7 @@ def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_siz
     
     project = map(lambda p: 
                   query_plan.add_operator( 
-                      Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
+                      Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn2)),
                   range(0, table_parts))
 
     # TopK
