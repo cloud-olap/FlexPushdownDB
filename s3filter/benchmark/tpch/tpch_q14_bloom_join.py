@@ -20,13 +20,14 @@ from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_
     connect_one_to_one, connect_one_to_many
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
+from s3filter.sql.format import Format
 from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
 import pandas as pd
 import numpy as np
 
 
-def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate, expected_result):
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate, expected_result, format_):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
         part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts,
         sf=sf, fp_rate=fp_rate,
@@ -124,7 +125,6 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     part_aggregate = map(lambda p:
                          query_plan.add_operator(
                              tpch_q14.aggregate_promo_revenue_operator_def(
-                                 use_pandas,
                                  'part_aggregate' + '_' + str(p),
                                  query_plan)),
                          range(0, other_parts))
@@ -218,4 +218,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q14_sf1_expected_result)
+    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q14_sf1_expected_result, Format.CSV)

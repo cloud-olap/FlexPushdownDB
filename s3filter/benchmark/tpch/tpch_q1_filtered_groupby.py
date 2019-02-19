@@ -7,16 +7,14 @@ import os
 from datetime import datetime, timedelta
 
 from s3filter import ROOT_DIR
-from s3filter.op.aggregate import Aggregate
-from s3filter.op.aggregate_expression import AggregateExpression
 from s3filter.op.collate import Collate
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q1
+from s3filter.sql.format import Format
 from s3filter.util.test_util import gen_test_id
-import s3filter.util.constants
 
 
-def main(sf, lineitem_parts, sharded):
+def main(sf, lineitem_parts, sharded, format_):
     # if s3filter.util.constants.TPCH_SF == 10:
     #     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=96,
     #         sharded=True)
@@ -24,6 +22,7 @@ def main(sf, lineitem_parts, sharded):
     #     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
     #         sharded=True)
     run(sf, True, True, False, False, 0, lineitem_parts, sharded)
+
 
 def run(sf, parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded):
     """
@@ -118,4 +117,4 @@ def run(sf, parallel, use_pandas, secure, use_native, buffer_size, lineitem_part
 
 
 if __name__ == "__main__":
-    main()
+    main(sf=1, lineitem_parts=2, sharded=False, format_=Format.CSV)

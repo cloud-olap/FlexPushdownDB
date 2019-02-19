@@ -2,11 +2,9 @@
 """TPCH Q3 Bloom Benchmark
 
 """
-import itertools
 import os
-from datetime import date, datetime
+from datetime import date
 
-import numpy
 import numpy as np
 
 from s3filter import ROOT_DIR
@@ -34,7 +32,7 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded, fp_rate,
-         other_parts, expected_result, customer_filter_sql=None,
+         other_parts, format_, expected_result, customer_filter_sql=None,
          order_filter_sql=None, lineitem_filter_sql=None):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, customer_parts=customer_parts,
         order_parts=order_parts, lineitem_parts=lineitem_parts, customer_sharded=customer_sharded,

@@ -10,16 +10,11 @@ import numpy
 import pandas as pd
 import pyarrow.parquet as pq
 from boto3.s3.transfer import TransferConfig, MB
-from enum import Enum
 
+from s3filter.sql.format import Format
 from s3filter.util.constants import *
 from s3filter.util.filesystem_util import *
 from s3filter.util.timer import Timer
-
-
-class CursorInput(Enum):
-    CSV = 1
-    PARQUET = 2
 
 
 class PandasCursor(object):
@@ -56,14 +51,14 @@ class PandasCursor(object):
         self.num_http_get_requests = 0
         self.table_data = None
 
-        self.input = CursorInput.CSV
+        self.input = Format.CSV
 
     def parquet(self):
-        self.input = CursorInput.PARQUET
+        self.input = Format.PARQUET
         return self
 
     def csv(self):
-        self.input = CursorInput.CSV
+        self.input = Format.CSV
         return self
 
     def select(self, s3key, s3sql):
@@ -130,7 +125,7 @@ class PandasCursor(object):
             # We ignore them for now just because its simpler. It does mean the records are returned as a list
             #  instead of a dict though (can change in future).
             #
-            if self.input is CursorInput.CSV:
+            if self.input is Format.CSV:
                 response = self.s3.select_object_content(
                     Bucket=S3_BUCKET_NAME,
                     Key=self.s3key,
@@ -140,7 +135,7 @@ class PandasCursor(object):
                         'CSV': {'FileHeaderInfo': 'Use', 'RecordDelimiter': '|\n', 'FieldDelimiter': '|'}},
                     OutputSerialization={'CSV': {}}
                 )
-            elif self.input is CursorInput.PARQUET:
+            elif self.input is Format.PARQUET:
                 response = self.s3.select_object_content(
                     Bucket=S3_BUCKET_NAME,
                     Key=self.s3key,
@@ -252,7 +247,7 @@ class PandasCursor(object):
 
     def parse_file(self):
         try:
-            if self.input is CursorInput.CSV:
+            if self.input is Format.CSV:
                 if self.table_data and len(self.table_data.getvalue()) > 0:
                     ip_stream = cStringIO.StringIO(self.table_data.getvalue().decode('utf-8'))
                 elif os.path.exists(self.table_local_file_path):
@@ -277,7 +272,7 @@ class PandasCursor(object):
                     df.drop(last_col, axis=1, inplace=True)
 
                     yield df
-            elif self.input is CursorInput.PARQUET:
+            elif self.input is Format.PARQUET:
 
                 table = pq.read_table(self.table_data)
                 self.table_data = None

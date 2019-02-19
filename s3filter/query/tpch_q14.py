@@ -51,8 +51,8 @@ def join_part_lineitem_operator_def(name, query_plan):
         False)
 
 
-def aggregate_promo_revenue_operator_def(use_pandas, name, query_plan):
-    # type: (bool, str, QueryPlan) -> Aggregate
+def aggregate_promo_revenue_operator_def(name, query_plan):
+    # type: (str, QueryPlan) -> Aggregate
     def ex1(t_):
 
         v1 = float(t_['l_extendedprice']) * (1.0 - float(t_['l_discount']))
