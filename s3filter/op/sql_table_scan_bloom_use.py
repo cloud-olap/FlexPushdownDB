@@ -21,7 +21,7 @@ class SQLTableScanBloomUse(Operator):
 
     """
 
-    def __init__(self, s3key, s3sql, bloom_filter_field_name, use_pandas, secure, use_native, name, query_plan,
+    def __init__(self, s3key, s3sql, bloom_filter_field_name, format_, use_pandas, secure, use_native, name, query_plan,
                  log_enabled, fn=None):
         """
 
@@ -60,6 +60,8 @@ class SQLTableScanBloomUse(Operator):
         self.__bloom_filters = []
 
         self.filter_fn = fn
+
+        self.format_ = format_
 
         if type(bloom_filter_field_name) is str:
             self.__bloom_filter_field_name = bloom_filter_field_name

@@ -14,19 +14,19 @@ def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, linei
     out_file, path = start_capture('tpch_q3', sf, 'baseline', trial)
 
     tpch_q3_baseline_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts,
-                               lineitem_sharded, other_parts, expected_result, format)
+                               lineitem_sharded, other_parts, expected_result, format_)
 
     end_capture(out_file, path)
     out_file, path = start_capture('tpch_q3', sf, 'filtered', trial)
 
     tpch_q3_filtered_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts,
-                               lineitem_sharded, other_parts, expected_result, format)
+                               lineitem_sharded, other_parts, expected_result, format_)
 
     end_capture(out_file, path)
     out_file, path = start_capture('tpch_q3', sf, 'bloom', trial)
 
     tpch_q3_bloom_join.main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts,
-                            lineitem_sharded, fp_rate, other_parts, expected_result, format)
+                            lineitem_sharded, fp_rate, other_parts, expected_result, format_)
 
     end_capture(out_file, path)
 

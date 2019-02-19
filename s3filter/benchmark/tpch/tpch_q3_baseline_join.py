@@ -35,14 +35,14 @@ from s3filter.util.test_util import gen_test_id
 def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded,
          other_parts,  format_, expected_result, customer_filter_sql=None,
          order_filter_sql=None, lineitem_filter_sql=None):
-    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, customer_parts=customer_parts,
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, format_=format_, customer_parts=customer_parts,
         order_parts=order_parts, lineitem_parts=lineitem_parts, customer_sharded=customer_sharded,
         order_sharded=order_sharded, lineitem_sharded=lineitem_sharded, other_parts=other_parts, sf=sf,
         expected_result=expected_result, customer_filter_sql=customer_filter_sql,
         order_filter_sql=order_filter_sql, lineitem_filter_sql=lineitem_filter_sql)
 
 
-def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, order_parts, lineitem_parts,
+def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer_parts, order_parts, lineitem_parts,
         customer_sharded,
         order_sharded, lineitem_sharded, other_parts, sf, expected_result, customer_filter_sql=None,
         order_filter_sql=None, lineitem_filter_sql=None):
@@ -71,6 +71,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                              get_sql_suffix('customer', customer_parts, p,
                                                             customer_sharded,
                                                             add_where=customer_filter_sql is None)),
+                                         format_,
                                          use_pandas, secure, use_native,
                                          'customer_scan' + '_{}'.format(p),
                                          query_plan,
@@ -122,6 +123,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                           get_sql_suffix('orders', order_parts, p,
                                                          order_sharded,
                                                          add_where=order_filter_sql is None)),
+                                         format_,
                                       use_pandas, secure, use_native,
                                       'order_scan' + '_{}'.format(p),
                                       query_plan,
@@ -186,6 +188,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                              ' where ' + lineitem_filter_sql if lineitem_filter_sql is not None else "",
                                              get_sql_suffix('lineitem', lineitem_parts, p, lineitem_sharded,
                                                             add_where=lineitem_filter_sql is None)),
+                                         format_,
                                          use_pandas, secure, use_native,
                                          'lineitem_scan' + '_{}'.format(p),
                                          query_plan,

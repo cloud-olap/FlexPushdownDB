@@ -293,27 +293,27 @@ def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, us
                         query_plan, False)
 
 
-def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf):
+def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf, format_):
     return SQLTableScan(get_file_key('part', sharded, shard, sf),
                         "select "
                         "  * "
                         "from "
                         "  S3Object "
                         "{} "
-                        .format(get_sql_suffix('part', num_shards, shard, sharded, add_where=True)),
+                        .format(get_sql_suffix('part', num_shards, shard, sharded, add_where=True)), format_,
                         use_pandas, secure, use_native,
                         name,
                         query_plan, False)
 
 
-def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf):
+def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf, format_):
     return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
                         "select "
                         "  * "
                         "from "
                         "  S3Object "
                         "{} "
-                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded, add_where=True)),
+                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded, add_where=True)), format_,
                         use_pandas, secure, use_native,
                         name,
                         query_plan, False)
@@ -378,7 +378,7 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
         num_shards,
         use_pandas, secure, use_native,
         name,
-        query_plan, sf):
+        query_plan, sf, format_):
     return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf),
                                 "select "
                                 "  l_partkey, "
@@ -413,7 +413,7 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
                                 "      ) "
                                 "  ) {}"
                                 .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
-                                'l_partkey',
+                                'l_partkey', format_,
                                 use_pandas, secure, use_native,
                                 name,
                                 query_plan,
@@ -480,7 +480,7 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
         use_pandas, secure, use_native,
         name,
         query_plan,
-        sf):
+        sf, format_):
     return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
                         "select "
                         "  l_partkey, "
@@ -511,7 +511,7 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
                         "          and l_shipinstruct = 'DELIVER IN PERSON' "
                         "      ) "
                         "  ) {}"
-                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded)),
+                        .format(get_sql_suffix('lineitem', num_shards, shard, sharded)), format_,
                         use_pandas, secure, use_native,
                         name,
                         query_plan,
@@ -576,7 +576,7 @@ def sql_scan_part_partkey_brand_size_container_where_filtered_op(sharded,
                                                                  secure,
                                                                  use_native,
                                                                  name,
-                                                                 query_plan, sf):
+                                                                 query_plan, sf, format_):
     return SQLTableScan(get_file_key('part', sharded, shard, sf),
                         "select "
                         "  p_partkey, "
@@ -620,7 +620,7 @@ def sql_scan_part_partkey_brand_size_container_where_filtered_op(sharded,
                         "          and cast(p_size as integer) between 1 and 15 "
                         "      ) "
                         "  ) {}"
-                        .format(get_sql_suffix('part', num_shards, shard, sharded)),
+                        .format(get_sql_suffix('part', num_shards, shard, sharded)), format_,
                         use_pandas, secure, use_native,
                         name,
                         query_plan,

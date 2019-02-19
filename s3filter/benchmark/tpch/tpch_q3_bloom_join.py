@@ -27,6 +27,7 @@ from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q19
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
+from s3filter.sql.format import Format
 from s3filter.util import test_util
 from s3filter.util.test_util import gen_test_id
 
@@ -34,14 +35,15 @@ from s3filter.util.test_util import gen_test_id
 def main(sf, customer_parts, customer_sharded, order_parts, order_sharded, lineitem_parts, lineitem_sharded, fp_rate,
          other_parts, format_, expected_result, customer_filter_sql=None,
          order_filter_sql=None, lineitem_filter_sql=None):
-    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, customer_parts=customer_parts,
+    run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, format_=format_,
+        customer_parts=customer_parts,
         order_parts=order_parts, lineitem_parts=lineitem_parts, customer_sharded=customer_sharded,
         order_sharded=order_sharded, lineitem_sharded=lineitem_sharded, other_parts=other_parts, fp_rate=fp_rate, sf=sf,
         expected_result=expected_result, customer_filter_sql=customer_filter_sql,
         order_filter_sql=order_filter_sql, lineitem_filter_sql=lineitem_filter_sql)
 
 
-def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, order_parts, lineitem_parts,
+def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer_parts, order_parts, lineitem_parts,
         customer_sharded,
         order_sharded, lineitem_sharded, other_parts, fp_rate, sf, expected_result, customer_filter_sql=None,
         order_filter_sql=None, lineitem_filter_sql=None):
@@ -71,6 +73,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                              ' and ' + customer_filter_sql if customer_filter_sql is not None else '',
                                              get_sql_suffix('customer', customer_parts, p, customer_sharded,
                                                             add_where=False)),
+                                         format_,
                                          use_pandas, secure, use_native,
                                          'customer_scan' + '_{}'.format(p),
                                          query_plan,
@@ -116,7 +119,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                   ' and ' + order_filter_sql if order_filter_sql is not None else '',
                                                   get_sql_suffix('orders', order_parts, p, order_sharded,
                                                                  add_where=False)),
-                                              'o_custkey',
+                                              'o_custkey',format_,
                                               use_pandas, secure, use_native,
                                               'order_scan' + '_{}'.format(p),
                                               query_plan,
@@ -176,7 +179,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
                                                      ' and ' + lineitem_filter_sql if lineitem_filter_sql is not None else '',
                                                      get_sql_suffix('lineitem', lineitem_parts, p, lineitem_sharded,
                                                                     add_where=False)),
-                                                 'l_orderkey',
+                                                 'l_orderkey', format_,
                                                  use_pandas, secure, use_native,
                                                  'lineitem_scan' + '_{}'.format(p),
                                                  query_plan,
@@ -354,9 +357,14 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, customer_parts, o
 
 
 if __name__ == "__main__":
-    main(1,
-         4, False, 4, False, 4, False, 0.1, 2,
-         tpch_results.q3_sf1_testing_expected_result,
-         tpch_results.q3_sf1_testing_params['customer_filter'],
-         tpch_results.q3_sf1_testing_params['order_filter'],
-         tpch_results.q3_sf1_testing_params['lineitem_filter'])
+    main(sf=1,
+         customer_parts=4, customer_sharded=False,
+         order_parts=4, order_sharded=False,
+         lineitem_parts=4, lineitem_sharded=False,
+         fp_rate=0.1,
+         other_parts=2,
+         expected_result=tpch_results.q3_sf1_testing_expected_result,
+         format_=Format.CSV,
+         customer_filter_sql=tpch_results.q3_sf1_testing_params['customer_filter'],
+         order_filter_sql=tpch_results.q3_sf1_testing_params['order_filter'],
+         lineitem_filter_sql=tpch_results.q3_sf1_testing_params['lineitem_filter'])

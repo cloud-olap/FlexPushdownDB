@@ -29,11 +29,11 @@ def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_p
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
         part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts,
         sf=sf, fp_rate=fp_rate,
-        expected_result=expected_result)
+        expected_result=expected_result, format_=format_)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, other_parts, sf, fp_rate, expected_result):
+        part_sharded, other_parts, sf, fp_rate, expected_result, format_):
     """
 
     :return: None
@@ -56,7 +56,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                     use_pandas,
                     secure,
                     use_native,
-                    'lineitem_bloom_use' + '_' + str(p), query_plan, sf)),
+                    'lineitem_bloom_use' + '_' + str(p), query_plan, sf, format_)),
             range(0, lineitem_parts))
 
     part_bloom_create = query_plan.add_operator(
@@ -74,7 +74,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                             secure,
                             use_native,
                             'part_scan' + '_' + str(p),
-                            query_plan, sf)),
+                            query_plan, sf, format_)),
                     range(0, part_parts))
 
     lineitem_project = \

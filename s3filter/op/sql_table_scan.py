@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 """
-import cProfile
 import sys
 import time
 
+import pandas as pd
 from boto3 import Session
 from botocore.config import Config
 
@@ -12,18 +12,16 @@ from s3filter.multiprocessing.message import DataFrameMessage, StartMessage
 from s3filter.op.message import TupleMessage, StringMessage
 from s3filter.op.operator_base import Operator
 from s3filter.op.tuple import Tuple, IndexedTuple
+from s3filter.plan.cost_estimator import CostEstimator
 from s3filter.plan.op_metrics import OpMetrics
 from s3filter.sql.cursor import Cursor
-from s3filter.sql.native_cursor import NativeCursor
-from s3filter.plan.cost_estimator import CostEstimator
-from s3filter.util.constants import *
-# noinspection PyCompatibility,PyPep8Naming
-import cPickle as pickle
-
+from s3filter.sql.format import Format
 from s3filter.sql.pandas_cursor import PandasCursor
-import pandas as pd
-from ctypes import *
-import imp
+
+
+# noinspection PyCompatibility,PyPep8Naming
+
+
 # import scan
 
 
@@ -120,8 +118,8 @@ class SQLTableScanMetrics(OpMetrics):
             'time_to_last_record_response':
                 None if self.time_to_last_record_response is None
                 else round(self.time_to_last_record_response, 5),
-            #'cost': "${0:.8f}".format(self.cost()),
-            #'cost_for_instance': self.cost_estimator.ec2_instance
+            # 'cost': "${0:.8f}".format(self.cost()),
+            # 'cost_for_instance': self.cost_estimator.ec2_instance
         }.__repr__()
 
 
@@ -141,7 +139,7 @@ class SQLTableScan(Operator):
             else:
                 raise Exception("Unrecognized message {}".format(m))
 
-    def __init__(self, s3key, s3sql, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None, read_parquet=False):
+    def __init__(self, s3key, s3sql, format_, use_pandas, secure, use_native, name, query_plan, log_enabled, fn=None):
         """Creates a new Table Scan operator using the given s3 object key and s3 select sql
         :param s3key: The object key to select against
         :param s3sql: The s3 select sql
@@ -170,8 +168,8 @@ class SQLTableScan(Operator):
 
         self.use_native = use_native
 
-        #self.filter_fn = fn
-	self.read_parquet = read_parquet
+        # self.filter_fn = fn
+        self.format_ = format_
 
     def run(self):
         """Executes the query and begins emitting tuples.
@@ -250,7 +248,7 @@ class SQLTableScan(Operator):
 
         if op.use_native:
 
-            closure = {'first_tuple' : True }
+            closure = {'first_tuple': True}
 
             def on_numpy_array(np_array):
 
@@ -282,9 +280,13 @@ class SQLTableScan(Operator):
             #
             # return cur
         else:
-            cur = PandasCursor(op.s3).select(op.s3key, op.s3sql)
-	    if op.read_parquet:
-		cur = PandasCursor(op.s3).parquet().select(op.s3key, op.s3sql)
+            if op.format_ is Format.CSV:
+                cur = PandasCursor(op.s3).csv().select(op.s3key, op.s3sql)
+            elif op.format_ is Format.PARQUET:
+                cur = PandasCursor(op.s3).parquet().select(op.s3key, op.s3sql)
+            else:
+                raise Exception("Unrecognized format {}", op.format_)
+
             dfs = cur.execute()
             op.op_metrics.query_bytes = cur.query_bytes
             op.op_metrics.time_to_first_response = op.op_metrics.elapsed_time()
@@ -299,7 +301,7 @@ class SQLTableScan(Operator):
 
                 if first_tuple:
                     assert (len(df.columns.values) > 0)
-                    #op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
+                    # op.send(TupleMessage(Tuple(df.columns.values)), op.consumers)
                     first_tuple = False
 
                     if op.log_enabled:
@@ -309,7 +311,7 @@ class SQLTableScan(Operator):
                 op.op_metrics.rows_returned += len(df)
 
                 # Apply filter if there is one
-                #if op.filter_fn is not None:
+                # if op.filter_fn is not None:
                 #    df = df[op.filter_fn(df)]
 
                 # if op.log_enabled:

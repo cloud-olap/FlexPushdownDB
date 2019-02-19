@@ -21,10 +21,10 @@ def main(sf, lineitem_parts, sharded, format_):
     # elif s3filter.util.constants.TPCH_SF == 1:
     #     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=32,
     #         sharded=True)
-    run(sf, True, True, False, False, 0, lineitem_parts, sharded)
+    run(sf, True, True, False, False, 0, lineitem_parts, sharded, format_)
 
 
-def run(sf, parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded):
+def run(sf, parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, sharded, format_):
     """
 
     :return: None
@@ -50,7 +50,7 @@ def run(sf, parallel, use_pandas, secure, use_native, buffer_size, lineitem_part
                                 secure,
                                 use_native,
                                 'lineitem_scan' + '_' + str(p),
-                                query_plan)),
+                                query_plan, format_)),
                         range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:

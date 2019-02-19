@@ -27,11 +27,11 @@ from s3filter.util.test_util import gen_test_id
 def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, expected_result, format_):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
         part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts,
-        sf=sf, expected_result=expected_result)
+        sf=sf, expected_result=expected_result, format_=format_)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, other_parts, sf, expected_result):
+        part_sharded, other_parts, sf, expected_result, format_):
     """The baseline tst uses nested loop joins with no projection and no filtering pushed down to s3.
 
     This works by:
@@ -67,7 +67,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                             use_native,
                             'part_scan' + '_' + str(p),
                             query_plan,
-                            sf)),
+                            sf, format_)),
                     range(0, part_parts))
 
     lineitem_scan = map(lambda p:
@@ -81,7 +81,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
                                 use_native,
                                 'lineitem_scan' + '_' + str(p),
                                 query_plan,
-                                sf)),
+                                sf, format_)),
                         range(0, lineitem_parts))
 
     part_project = map(lambda p:

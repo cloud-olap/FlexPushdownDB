@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""TPCH Q14 Bloom Join Benchmark
+"""TPCH Q14 Baseline Join Benchmark
 
 """
 
@@ -17,33 +17,31 @@ from s3filter.op.hash_join_probe import HashJoinProbe
 from s3filter.op.join_expression import JoinExpression
 from s3filter.op.map import Map
 from s3filter.op.operator_connector import connect_many_to_many, connect_all_to_all, connect_many_to_one, \
-    connect_one_to_one, connect_one_to_many
+    connect_one_to_one
 from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q14
-from s3filter.sql.format import Format
 from s3filter.util.test_util import gen_test_id
 import s3filter.util.constants
 import pandas as pd
 import numpy as np
 
 
-def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate, expected_result, format_):
+def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, expected_result):
     run(parallel=True, use_pandas=True, secure=False, use_native=False, buffer_size=0, lineitem_parts=lineitem_parts,
-        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts,
-        sf=sf, fp_rate=fp_rate,
-        expected_result=expected_result, format_=format_)
+        part_parts=part_parts, lineitem_sharded=lineitem_sharded, part_sharded=part_sharded, other_parts=other_parts, sf=sf,
+        expected_result=expected_result)
 
 
 def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, part_parts, lineitem_sharded,
-        part_sharded, other_parts, sf, fp_rate, expected_result, format_):
+        part_sharded, other_parts, sf, expected_result):
     """
 
     :return: None
     """
 
     print('')
-    print("TPCH Q14 Bloom Join")
-    print("-------------------")
+    print("TPCH Q14 Baseline Join")
+    print("----------------------")
 
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
@@ -53,63 +51,68 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     min_shipped_date = datetime.strptime(date, '%Y-%m-%d')
     max_shipped_date = datetime.strptime(date, '%Y-%m-%d') + timedelta(days=30)
 
-    part_scan = map(lambda p:
-                    query_plan.add_operator(
-                        tpch_q14.sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(
-                            part_sharded,
-                            p,
-                            part_parts,
-                            sf,
-                            use_pandas,
-                            secure,
-                            use_native,
-                            'part_scan' + '_' + str(p),
-                            query_plan, format_)),
-                    range(0, part_parts))
-
-    part_project = map(lambda p:
-                       query_plan.add_operator(
-                           tpch_q14.project_partkey_type_operator_def(
-                               'part_project' + '_' + str(p),
-                               query_plan)),
-                       range(0, part_parts))
-
-    part_map = map(lambda p:
-                   query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
-                   range(0, part_parts))
-
-    part_bloom_create = query_plan.add_operator(
-        tpch_q14.bloom_create_p_partkey_operator_def(fp_rate,
-                                                     'part_bloom_create',
-                                                     query_plan))
-
-    lineitem_scan = \
-        map(lambda p:
-            query_plan.add_operator(
-                tpch_q14.bloom_scan_lineitem_where_shipdate_operator_def(
-                    min_shipped_date,
-                    max_shipped_date,
-                    lineitem_parts,
-                    lineitem_sharded,
-                    p,
-                    use_pandas,
-                    secure,
-                    use_native,
-                    'lineitem_scan' + '_' + str(p),
-                    query_plan,
-                    sf, format_)),
-            range(0, lineitem_parts))
+    lineitem_scan = map(lambda p:
+                        query_plan.add_operator(
+                            tpch_q14.sql_scan_lineitem_operator_def(
+                                lineitem_sharded,
+                                p,
+                                lineitem_parts,
+                                use_pandas,
+                                secure,
+                                use_native,
+                                'lineitem_scan' + '_' + str(p),
+                                query_plan, sf)),
+                        range(0, lineitem_parts))
 
     lineitem_project = map(lambda p:
                            query_plan.add_operator(
-                               tpch_q14.project_partkey_extendedprice_discount_operator_def(
+                               tpch_q14.project_partkey_extendedprice_discount_shipdate_operator_def(
                                    'lineitem_project' + '_' + str(p),
                                    query_plan)),
                            range(0, lineitem_parts))
 
+    part_scan = map(lambda p:
+                    query_plan.add_operator(
+                        tpch_q14.sql_scan_part_operator_def(
+                            part_sharded,
+                            p,
+                            part_parts,
+                            use_pandas,
+                            secure,
+                            use_native,
+                            'part_scan' + '_' + str(p),
+                            query_plan,
+                            sf)),
+                    range(0, part_parts))
+
+    part_project = map(lambda p:
+                       query_plan.add_operator(
+                           tpch_q14.project_partkey_brand_type_operator_def(
+                               'part_project' + '_' + str(p),
+                               query_plan)),
+                       range(0, part_parts))
+
+    lineitem_filter = map(lambda p:
+                          query_plan.add_operator(
+                              tpch_q14.filter_shipdate_operator_def(
+                                  min_shipped_date,
+                                  max_shipped_date,
+                                  'lineitem_filter' + '_' + str(p),
+                                  query_plan)),
+                          range(0, lineitem_parts))
+
     lineitem_map = map(lambda p:
                        query_plan.add_operator(Map('l_partkey', 'lineitem_map' + '_' + str(p), query_plan, False)),
                        range(0, lineitem_parts))
+
+    part_map = map(lambda p:
+                       query_plan.add_operator(Map('p_partkey', 'part_map' + '_' + str(p), query_plan, False)),
+                       range(0, part_parts))
+
+    # part_filter = map(lambda p:
+    #                   query_plan.add_operator(
+    #                       tpch_q14.filter_brand12_operator_def('part_filter' + '_' + str(p), query_plan)),
+    #                   range(0, part_parts))
 
     join_build = map(lambda p:
                      query_plan.add_operator(
@@ -125,6 +128,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     part_aggregate = map(lambda p:
                          query_plan.add_operator(
                              tpch_q14.aggregate_promo_revenue_operator_def(
+                                 use_pandas,
                                  'part_aggregate' + '_' + str(p),
                                  query_plan)),
                          range(0, other_parts))
@@ -153,20 +157,20 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     # Inline what we can
     map(lambda o: o.set_async(False), lineitem_project)
     map(lambda o: o.set_async(False), part_project)
+    map(lambda o: o.set_async(False), lineitem_filter)
     map(lambda o: o.set_async(False), part_map)
     map(lambda o: o.set_async(False), lineitem_map)
     map(lambda o: o.set_async(False), part_aggregate)
     aggregate_project.set_async(False)
 
     # Connect the operators
+    connect_many_to_many(lineitem_scan, lineitem_project)
+    connect_many_to_many(lineitem_project, lineitem_filter)
     connect_many_to_many(part_scan, part_project)
-    connect_many_to_one(part_project, part_bloom_create)
-    connect_one_to_many(part_bloom_create, lineitem_scan)
     connect_many_to_many(part_project, part_map)
     connect_all_to_all(part_map, join_build)
-    connect_many_to_many(lineitem_scan, lineitem_project)
     connect_many_to_many(join_build, join_probe)
-    connect_many_to_many(lineitem_project, lineitem_map)
+    connect_many_to_many(lineitem_filter, lineitem_map)
     connect_all_to_all(lineitem_map, join_probe)
     connect_many_to_many(join_probe, part_aggregate)
     connect_many_to_one(part_aggregate, aggregate_reduce)
@@ -186,10 +190,10 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("part_sharded: {}".format(part_sharded))
     print("other_parts: {}".format(other_parts))
-    print("fp_rate: {}".format(fp_rate))
     print('')
 
-    query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id())
+    # Write the plan graph
+    query_plan.write_graph(os.path.join(ROOT_DIR, "../benchmark-output"), gen_test_id() + "-" + str(lineitem_parts))
 
     # Start the query
     query_plan.execute()
@@ -218,4 +222,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q14_sf1_expected_result, Format.CSV)
+    main(1, 2, False, 2, False, 2, tpch_results.q14_sf1_expected_result)
