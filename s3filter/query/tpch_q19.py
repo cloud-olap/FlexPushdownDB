@@ -294,7 +294,7 @@ def sql_scan_lineitem_select_all_where_partkey_op(sharded, shard, num_shards, us
 
 
 def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf, format_):
-    return SQLTableScan(get_file_key('part', sharded, shard, sf),
+    return SQLTableScan(get_file_key('part', sharded, shard, sf, format_),
                         "select "
                         "  * "
                         "from "
@@ -307,7 +307,7 @@ def sql_scan_part_select_all_op(sharded, shard, num_shards, use_pandas, secure, 
 
 
 def sql_scan_lineitem_select_all_op(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf, format_):
-    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf, format_),
                         "select "
                         "  * "
                         "from "
@@ -379,7 +379,7 @@ def bloom_scan_partkey_quantity_extendedprice_discount_shipinstruct_shipmode_whe
         use_pandas, secure, use_native,
         name,
         query_plan, sf, format_):
-    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf),
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf, format_),
                                 "select "
                                 "  l_partkey, "
                                 "  l_quantity, "
@@ -481,7 +481,7 @@ def sql_scan_lineitem_select_partkey_quantity_extendedprice_discount_shipinstruc
         name,
         query_plan,
         sf, format_):
-    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf, format_),
                         "select "
                         "  l_partkey, "
                         "  l_quantity, "
@@ -577,7 +577,7 @@ def sql_scan_part_partkey_brand_size_container_where_filtered_op(sharded,
                                                                  use_native,
                                                                  name,
                                                                  query_plan, sf, format_):
-    return SQLTableScan(get_file_key('part', sharded, shard, sf),
+    return SQLTableScan(get_file_key('part', sharded, shard, sf, format_),
                         "select "
                         "  p_partkey, "
                         "  p_brand, "

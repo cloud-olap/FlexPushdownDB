@@ -208,6 +208,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
     print("part_sharded: {}".format(part_sharded))
     print("other_parts: {}".format(other_parts))
     print("fp_rate: {}".format(fp_rate))
+    print("format: {}".format(format_))
     print('')
 
     # Write the plan graph
@@ -237,4 +238,4 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, lineitem_parts, p
 
 
 if __name__ == "__main__":
-    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q19_sf1_expected_result, Format.CSV)
+    main(1, 4, False, 4, False, 2, 0.01, tpch_results.q19_sf1_expected_result, Format.PARQUET)

@@ -20,10 +20,10 @@ def end_capture(out_file, path):
     subprocess.call(['cat', os.path.join(path, out_file)])
 
 
-def start_capture(query, sf, approach, trial):
+def start_capture(query, sf, approach, format_, trial):
     path = os.path.join(ROOT_DIR, "../aws-exps/tpch")
     filesystem_util.create_dirs(path)
-    out_file = "{}_sf{}_{}_trial{}.txt".format(query, sf, approach, trial)
+    out_file = "{}_sf{}_{}_{}_trial{}.txt".format(query, sf, approach, format_, trial)
     sys.stdout = open(os.path.join(path, out_file), "w+")
     return out_file, path
 

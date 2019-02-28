@@ -28,6 +28,10 @@
       synchronize:
         src: "{{ local_package_dir }}/scripts"
         dest: "{{ remote_package_dir }}"
+    - name: Copy tools
+      synchronize:
+        src: "{{ local_package_dir }}/tools"
+        dest: "{{ remote_package_dir }}"
     - name: Copy setup
       synchronize:
         src: "{{ local_package_dir }}/setup.py"

@@ -28,6 +28,7 @@ from s3filter.plan.query_plan import QueryPlan
 from s3filter.query import tpch_q19
 from s3filter.query.tpch import get_file_key
 from s3filter.query.tpch_q19 import get_sql_suffix
+from s3filter.sql.format import Format
 from s3filter.util import test_util
 from s3filter.util.test_util import gen_test_id
 
@@ -59,7 +60,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
 
     customer_scan = map(lambda p:
                         query_plan.add_operator(
-                            SQLTableScan(get_file_key('customer', customer_sharded, p, sf),
+                            SQLTableScan(get_file_key('customer', customer_sharded, p, sf, format_),
                                          "select "
                                          " * "
                                          "from "
@@ -111,7 +112,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
 
     order_scan = map(lambda p:
                      query_plan.add_operator(
-                         SQLTableScan(get_file_key('orders', order_sharded, p, sf),
+                         SQLTableScan(get_file_key('orders', order_sharded, p, sf, format_),
                                       "select "
                                       "  * "
                                       "from "
@@ -177,7 +178,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
 
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
-                            SQLTableScan(get_file_key('lineitem', lineitem_sharded, p, sf),
+                            SQLTableScan(get_file_key('lineitem', lineitem_sharded, p, sf, format_),
                                          "select "
                                          "  * "
                                          "from "
@@ -346,6 +347,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
     print("order_sharded: {}".format(order_sharded))
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("other_parts: {}".format(other_parts))
+    print("format: {}".format(format_))
     print('')
 
     # Write the plan graph
@@ -376,7 +378,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
 
 if __name__ == "__main__":
     main(1,
-         4, False, 4, False, 4, False, 2,
+         4, False, 4, False, 4, False, 2, Format.CSV,
          tpch_results.q3_sf1_testing_expected_result,
          tpch_results.q3_sf1_testing_params['customer_filter'],
          tpch_results.q3_sf1_testing_params['order_filter'],

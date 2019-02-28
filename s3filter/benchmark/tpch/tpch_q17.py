@@ -10,19 +10,19 @@ from s3filter.sql.format import Format
 
 def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate, expected_result, trial,
          format_):
-    out_file, path = start_capture('tpch_q17', sf, 'baseline', trial)
+    out_file, path = start_capture('tpch_q17', sf, 'baseline', format_, trial)
 
     tpch_q17_baseline_join.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
                                 expected_result, format_)
 
     end_capture(out_file, path)
-    out_file, path = start_capture('tpch_q17', sf, 'filtered', trial)
+    out_file, path = start_capture('tpch_q17', sf, 'filtered', format_, trial)
 
     tpch_q17_filtered_join.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
                                 expected_result, format_)
 
     end_capture(out_file, path)
-    out_file, path = start_capture('tpch_q17', sf, 'bloom', trial)
+    out_file, path = start_capture('tpch_q17', sf, 'bloom', format_, trial)
 
     tpch_q17_bloom_join.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts, fp_rate,
                              expected_result, format_)

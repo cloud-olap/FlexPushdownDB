@@ -60,7 +60,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
 
     customer_scan = map(lambda p:
                         query_plan.add_operator(
-                            SQLTableScan(get_file_key('customer', customer_sharded, p, sf),
+                            SQLTableScan(get_file_key('customer', customer_sharded, p, sf, format_),
                                          "select "
                                          "  c_custkey "
                                          "from "
@@ -106,7 +106,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
 
     order_scan = map(lambda p:
                      query_plan.add_operator(
-                         SQLTableScanBloomUse(get_file_key('orders', order_sharded, p, sf),
+                         SQLTableScanBloomUse(get_file_key('orders', order_sharded, p, sf, format_),
                                               "select "
                                               "  o_custkey, o_orderkey, o_orderdate, o_shippriority "
                                               "from "
@@ -119,7 +119,8 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
                                                   ' and ' + order_filter_sql if order_filter_sql is not None else '',
                                                   get_sql_suffix('orders', order_parts, p, order_sharded,
                                                                  add_where=False)),
-                                              'o_custkey',format_,
+                                              'o_custkey',
+                                              format_,
                                               use_pandas, secure, use_native,
                                               'order_scan' + '_{}'.format(p),
                                               query_plan,
@@ -166,7 +167,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
 
     lineitem_scan = map(lambda p:
                         query_plan.add_operator(
-                            SQLTableScanBloomUse(get_file_key('lineitem', lineitem_sharded, p, sf),
+                            SQLTableScanBloomUse(get_file_key('lineitem', lineitem_sharded, p, sf, format_),
                                                  "select "
                                                  "  l_orderkey, l_extendedprice, l_discount "
                                                  "from "
@@ -328,6 +329,7 @@ def run(parallel, use_pandas, secure, use_native, buffer_size, format_, customer
     print("lineitem_sharded: {}".format(lineitem_sharded))
     print("other_parts: {}".format(other_parts))
     print("fp_rate: {}".format(fp_rate))
+    print("format: {}".format(format_))
     print('')
 
     # Write the plan graph
@@ -364,7 +366,7 @@ if __name__ == "__main__":
          fp_rate=0.1,
          other_parts=2,
          expected_result=tpch_results.q3_sf1_testing_expected_result,
-         format_=Format.CSV,
+         format_=Format.PARQUET,
          customer_filter_sql=tpch_results.q3_sf1_testing_params['customer_filter'],
          order_filter_sql=tpch_results.q3_sf1_testing_params['order_filter'],
          lineitem_filter_sql=tpch_results.q3_sf1_testing_params['lineitem_filter'])

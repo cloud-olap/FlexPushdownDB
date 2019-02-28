@@ -167,7 +167,7 @@ def sql_scan_part_partkey_type_part_where_brand12_partitioned_operator_def(shard
     # key_lower = math.ceil((200000.0 / float(parts)) * part)
     # key_upper = math.ceil((200000.0 / float(parts)) * (part + 1))
 
-    return SQLTableScan(get_file_key('part', sharded, part, sf),
+    return SQLTableScan(get_file_key('part', sharded, part, sf, format_),
                         "select "
                         "  p_partkey, p_type "
                         "from "
@@ -201,7 +201,7 @@ def sql_scan_part_partkey_where_brand12_operator_def(sharded, shard, num_shards,
 
 
 def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, use_native, name, query_plan, sf, format_):
-    return SQLTableScan(get_file_key('part', sharded, shard, sf),
+    return SQLTableScan(get_file_key('part', sharded, shard, sf, format_),
                         "select "
                         "  * "
                         "from "
@@ -247,7 +247,7 @@ def sql_scan_part_operator_def(sharded, shard, num_shards, use_pandas, secure, u
 
 
 def sql_scan_lineitem_operator_def(sharded, shard, parts, use_pandas, secure, use_native, name, query_plan, sf, format_):
-    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf, format_),
                         "select "
                         "  * "
                         "from "
@@ -316,7 +316,7 @@ def sql_scan_lineitem_partkey_extendedprice_discount_where_shipdate_sharded_oper
                                                                                          use_native,
                                                                                          name,
                                                                                          query_plan, format_):
-    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf),
+    return SQLTableScan(get_file_key('lineitem', sharded, shard, sf, format_),
                         "select "
                         "  l_partkey, l_extendedprice, l_discount "
                         "from "
@@ -464,7 +464,7 @@ def bloom_scan_lineitem_where_shipdate_operator_def(min_shipped_date, max_shippe
                                                     use_pandas,
                                                     secure, use_native,
                                                     name, query_plan, sf, format_):
-    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf),
+    return SQLTableScanBloomUse(get_file_key('lineitem', sharded, shard, sf, format_),
                                 "select "
                                 "  l_partkey, l_extendedprice, l_discount "
                                 "from "
