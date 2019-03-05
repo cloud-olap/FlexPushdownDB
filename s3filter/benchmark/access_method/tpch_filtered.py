@@ -36,7 +36,7 @@ def run(parallel, use_pandas, buffer_size, table_parts, lower, upper, sf, format
     # SQL scan the file
     scan = map(lambda p:
                query_plan.add_operator(
-                   SQLTableScan(get_file_key('lineitem', True, p, sf=sf),
+                   SQLTableScan(get_file_key('lineitem', True, p, sf=sf, format_=format_),
                                 "select * from S3Object "
                                 "where cast(l_extendedprice as float) >= {} and cast(l_extendedprice as float) <= {};".format(
                                     lower, upper), format_,
