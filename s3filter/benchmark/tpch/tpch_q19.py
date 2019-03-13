@@ -14,13 +14,13 @@ def main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_p
     out_file, path = start_capture('tpch_q19', sf, 'baseline', format_, trial)
 
     tpch_q19_baseline_join.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
-                                expected_result)
+                                expected_result, format_)
 
     end_capture(out_file, path)
     out_file, path = start_capture('tpch_q19', sf, 'filtered', format_, trial)
 
     tpch_q19_filtered_join.main(sf, lineitem_parts, lineitem_sharded, part_parts, part_sharded, other_parts,
-                                expected_result)
+                                expected_result, format_)
 
     end_capture(out_file, path)
     out_file, path = start_capture('tpch_q19', sf, 'bloom', format_, trial)
