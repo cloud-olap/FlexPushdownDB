@@ -15,26 +15,39 @@ names = ['Baseline', 'Sample', 'Columnscan']
 trials = ['1']
 
 # sweep
-#sample_sizes = [ x * 1000 for x in [5, 10, 50, 100, 200, 500, 1000, 2000] ]
-path = 'tpch-parquet/tpch-sf1/lineitem_sharded'
-num_parts = 32
-k = 1000
+
+path = 'parquet/tpch-sf10/lineitem_sharded1RG'
+#path = 'parquet/lineitem.610000RGS.TPCH-sf1.uncompressed.parquet'
+#path = 'parquet/lineitemSF10/lineitemSF10.typed.100MBRowGroup.parquet'
+#path = 'parquet/lineitemSF1.typed.100MBRowGroup.parquet'
+outputDir = "typed1RG"
+first_part = 1
+num_parts = 97 # off by one error as really 96, but starting at 1
+#         1  10^1 10^2  10^3   10^4    10^5
+k_vals = [1,   10, 100, 1000, 10000, 100000 ]
+# sample_sizes = [ k**.5 * 2000 for k in k_vals ]
 
 for trial in trials:
-   # for k in [10, 100, 1000]:
+    for k in k_vals:
         # Baseline
-        #sys.stdout = open("benchmark-output/topk/Baseline_k{}_trial{}.txt".format(k, trial), "w+")
-        topk_baseline.run('l_extendedprice', k, True, True, 'ASC', buffer_size=0, table_parts=num_parts, path=path, format_=Format.PARQUET)
-        #sys.stdout.close()
+	#print("On baseline k = " + str(k))
+        sys.stdout = open("benchmark-output/" + outputDir + "/Baseline_k{}_trial{}.txt".format(k, trial), "w+")
+        topk_baseline.run('l_extendedprice', k, True, True, 'ASC', buffer_size=0, table_first_part=first_part, table_parts=num_parts, path=path, format_=Format.PARQUET)
+        sys.stdout.close()
 
-        #for sample_size in sample_sizes:
-            #sys.stdout = open("benchmark-output/topk/Sample_k{}_s{}k_trial{}.txt".format(k, sample_size/1000, trial), "w+")
-        topk_sample.run('l_extendedprice', 100, sample_size=10000, parallel=True, use_pandas=True,
-                        sort_order='ASC', buffer_size=0, table_parts=num_parts, path=path, format_= Format.PARQUET)
-            #sys.stdout.close()
+        sample_sizes = [int(k**.5 * 2000 / 10),int(k**.5 * 2000), int(k**.5 * 2000 * 10)]
+        for sample_size in sample_sizes:
+            #print("On sample k = " + str(k) + " s=" + str(sample_size))
+            sys.stdout = open("benchmark-output/" + outputDir + "/Sample_k{}_s{}k_trial{}.txt".format(k,int(sample_size), trial), "w+")
+            topk_sample.run('l_extendedprice', k, sample_size=sample_size, parallel=True, use_pandas=True,
+                        sort_order='ASC', buffer_size=0, table_first_part=first_part, table_parts=num_parts, path=path, format_= Format.PARQUET)
+            sys.stdout.close()
 
         # Columnscan
-        #sys.stdout = open("benchmark-output/topk/Columnscan_k{}_trial{}.txt".format(k, trial), "w+")
+        #print("On columnscan k = " + str(k))
+        sys.stdout = open("benchmark-output/" + outputDir + "/Columnscan_k{}_trial{}.txt".format(k, trial), "w+")
         topk_columnscan.run('l_extendedprice', k, parallel=True, use_pandas=True,
-                            sort_order='ASC', buffer_size=0, table_parts=num_parts, path=path, format_= Format.PARQUET)
-        #sys.stdout.close()
+                            sort_order='ASC', buffer_size=0, table_first_part=first_part, table_parts=num_parts, path=path, format_= Format.PARQUET)
+        sys.stdout.close()
+
+        

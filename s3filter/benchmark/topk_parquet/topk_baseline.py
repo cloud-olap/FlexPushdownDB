@@ -17,10 +17,10 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    path = 'tpch-parquet/tpch-sf1/lineitem_sharded' 
-    run('l_extendedprice', 100, True, True, 'ASC', buffer_size=0, table_parts=32, path=path, format_=Format.PARQUET)
+    path = 'tpch-parquet/tpch-sf1/lineitem_sharded'
+    run('l_extendedprice', 100, True, True, 'ASC', buffer_size=0, table_first_part= 0, table_parts=32, path=path, format_=Format.PARQUET)
 
-def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_parts, path, format_):
+def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_first_part, table_parts, path, format_):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -38,11 +38,11 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_part
     # Scan
     scan = map(lambda p: 
                query_plan.add_operator(
-                    SQLTableScan("{}/lineitem.snappy.parquet.{}".format(path, p),
+                    SQLTableScan("{}/lineitem.typed.1RowGroup.parquet.{}".format(path, p),
                         "select * from S3Object;", format_, use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
-               range(0, table_parts))
+               range(table_first_part, table_parts))
   
     # Project
     def project_fn(df):
@@ -50,7 +50,7 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_part
        'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax',
        'l_returnflag', 'l_linestatus', 'l_shipdate', 'l_commitdate',
        'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment']
-        df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
+        #df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
    
     project_exprs = [ProjectExpression(lambda t_: t_['_{}'.format(x)], 'F{}'.format(x)) for x in range(3)] 
@@ -58,14 +58,14 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_part
     project = map(lambda p: 
                   query_plan.add_operator( 
                       Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn)),
-                  range(0, table_parts))
+                  range(table_first_part, table_parts))
 
     # TopK
     sort_expr = SortExpression(sort_field, float, sort_order)
     topk = map(lambda p: 
                query_plan.add_operator(
                     Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
-               range(0, table_parts))
+               range(table_first_part, table_parts))
 
     # TopK reduce
     topk_reduce = query_plan.add_operator(

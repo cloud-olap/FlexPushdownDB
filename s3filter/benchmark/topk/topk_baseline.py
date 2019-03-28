@@ -58,7 +58,7 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_part
                   range(0, table_parts))
 
     # TopK
-    sort_expr = SortExpression(sort_field, 'float', sort_order)
+    sort_expr = SortExpression(sort_field, float, sort_order)
     topk = map(lambda p: 
                query_plan.add_operator(
                     Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
