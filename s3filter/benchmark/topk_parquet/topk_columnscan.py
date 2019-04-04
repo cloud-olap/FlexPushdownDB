@@ -19,9 +19,8 @@ from s3filter.util.test_util import gen_test_id
 
 def main():
     path = 'parquet/tpch-sf10/lineitem_sharded1RG'
-    # s3://s3filter/parquet/tpch-sf10/lineitem_sharded1RG/lineitem.typed.1RowGroup.parquet.1
     run('l_extendedprice', 100, parallel=True, use_pandas=True,
-        sort_order='ASC', buffer_size=0, table_first_part=1, table_parts=97, path=path, format_= Format.PARQUET)
+        sort_order='ASC', buffer_size=0, table_first_part=1, table_parts=2, path=path, format_= Format.PARQUET)
 
 def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_first_part, table_parts, path, format_):
     """
@@ -46,24 +45,28 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_firs
                             'select {} from S3Object;'.format(sort_field),format_,
                             use_pandas, secure, use_native, 
                             'column_scan_{}'.format(p), query_plan, False)),
-                      range(table_first_part, table_parts))
+                      range(table_first_part, table_first_part + table_parts))
     # Sampling project
     def project_fn1(df):
         df.columns = [sort_field]
-        #df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
+        df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
-   
+    
     project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)] 
     
     sample_project = map(lambda p: 
-                  query_plan.add_operator( 
-                      Project(project_exprs, 'sample_project_{}'.format(p), query_plan, False, project_fn1)),
-                  range(table_first_part, table_parts))
+                      query_plan.add_operator( 
+                           Project(project_exprs, 'sample_project_{}'.format(p), query_plan, False, project_fn1)),
+                      range(table_first_part, table_first_part + table_parts))
 
     # TopK samples
     sort_expr = SortExpression(sort_field, float, sort_order)
+    #if project:
     sample_topk = query_plan.add_operator(
-                    Top(k, sort_expr, use_pandas, 'sample_topk', query_plan, False)) 
+                        Top(k, sort_expr, use_pandas, 'sample_topk', query_plan, False)) 
+    #else:
+    #    sample_topk = query_plan.add_operator(
+    #                    Top(k, "_0", use_pandas, 'sample_topk', query_plan, False))
 
     # Generate SQL command for second scan 
     sql_gen = query_plan.add_operator(
@@ -78,7 +81,7 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_firs
                         "", format_, use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
-               range(table_first_part, table_parts))
+               range(table_first_part, table_first_part + table_parts))
  
     # Project
     def project_fn2(df):
@@ -88,19 +91,19 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_firs
        'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment']
         #df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
-   
+
     project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)] 
     
     project = map(lambda p: 
-                  query_plan.add_operator( 
-                      Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn2)),
-                  range(table_first_part, table_parts))
+                      query_plan.add_operator( 
+                          Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn2)),
+                      range(table_first_part, table_first_part + table_parts))
 
     # TopK
     topk = map(lambda p: 
                query_plan.add_operator(
                     Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
-               range(table_first_part, table_parts))
+               range(table_first_part, table_first_part + table_parts))
 
     # TopK reduce
     topk_reduce = query_plan.add_operator(
