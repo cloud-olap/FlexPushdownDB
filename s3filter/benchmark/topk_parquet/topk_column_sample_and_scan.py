@@ -19,10 +19,10 @@ from s3filter.util.test_util import gen_test_id
 
 def main():
     path = 'parquet/tpch-sf10/lineitem_sharded1RG'
-    run('l_extendedprice', 100, parallel=True, use_pandas=True,
+    run('l_extendedprice', 100, sample_size=5000, parallel=True, use_pandas=True,
         sort_order='ASC', buffer_size=0, table_first_part=1, table_parts=2, path=path, format_= Format.PARQUET)
 
-def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_first_part, table_parts, path, format_):
+def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size, table_first_part, table_parts, path, format_):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -31,52 +31,80 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_firs
     secure = False
     use_native = False
     print('')
-    print("Top K Benchmark, ColumnScan. Sort Field: {}, Order: {}".format(sort_field, sort_order))
+    print("Top K Benchmark, Column Sampling and Scan. Sort Field: {}, Order: {}".format(sort_field, sort_order))
     print("----------------------")
 
     # Query plan
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
    
     # Sampling
+    per_part_samples = int(sample_size / table_parts)
     sample_scan = map(lambda p:
                       query_plan.add_operator(
-                        #SQLTableScan("{}/lineitem.snappy.parquet.{}".format(path, p),
                         SQLTableScan("{}/lineitem.typed.1RowGroup.parquet.{}".format(path, p),
-                            'select {} from S3Object;'.format(sort_field),format_,
+                            'select {} from S3Object limit {};'.format(sort_field, per_part_samples),format_,
                             use_pandas, secure, use_native, 
-                            'column_scan_{}'.format(p), query_plan, False)),
+                            'sample_column_scan_{}'.format(p), query_plan, False)),
                       range(table_first_part, table_first_part + table_parts))
-    # Sampling project
+    # Column project
     def project_fn1(df):
         df.columns = [sort_field]
         df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
-    
-    project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)] 
-    
+
+    project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)]
+
     sample_project = map(lambda p: 
                       query_plan.add_operator( 
-                           Project(project_exprs, 'sample_project_{}'.format(p), query_plan, False, project_fn1)),
+                          Project(project_exprs, 'column_sample_project_{}'.format(p), query_plan, False, project_fn1)),
                       range(table_first_part, table_first_part + table_parts))
 
     # TopK samples
-    sort_expr = SortExpression(sort_field, float, sort_order)
-
+    sort_expr1 = SortExpression(sort_field, float, sort_order)
     sample_topk = query_plan.add_operator(
-                        Top(k, sort_expr, use_pandas, 'sample_topk', query_plan, False)) 
+                    Top(k, sort_expr1, use_pandas, 'column_sample_topk', query_plan, False)) 
+
+
 
     # Generate SQL command for second scan 
-    sql_gen = query_plan.add_operator(
-                   TopKFilterBuild( sort_order, 'float', 'select * from S3object ', 
-                                    #' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False ))
-                                    ' {} '.format(sort_field), 'sql_gen', query_plan, False ))
+    sql_gen1 = query_plan.add_operator(
+                   TopKFilterBuild( sort_order, 'float', 'select {} from S3object '.format(sort_field), 
+                                    #' CAST({} as float) '.format(sort_field), 'sql_gen1', query_plan, False ))
+                                    ' {} '.format(sort_field), 'sql_gen1', query_plan, False ))
+
+    # Scanning entire column
+    column_scan = map(lambda p:
+                      query_plan.add_operator(
+                        #SQLTableScan("{}/lineitem.snappy.parquet.{}".format(path, p),
+                        SQLTableScan("{}/lineitem.typed.1RowGroup.parquet.{}".format(path, p),
+                            "",format_,
+                            use_pandas, secure, use_native, 
+                            'column_scan_{}'.format(p), query_plan, False)),
+                      range(table_first_part, table_first_part + table_parts))
     
+    column_project = map(lambda p: 
+                      query_plan.add_operator( 
+                           Project(project_exprs, 'column_project_{}'.format(p), query_plan, False, project_fn1)),
+                      range(table_first_part, table_first_part + table_parts))
+
+    # TopK samples
+    sort_expr2 = SortExpression(sort_field, float, sort_order)
+
+    column_topk = query_plan.add_operator(
+                        Top(k, sort_expr2, use_pandas, 'sample_topk', query_plan, False)) 
+
+    # Generate SQL command for second scan 
+    sql_gen2 = query_plan.add_operator(
+                   TopKFilterBuild( sort_order, 'float', 'select * from S3object ', 
+                                    #' CAST({} as float) '.format(sort_field), 'sql_gen2', query_plan, False ))
+                                    ' {} '.format(sort_field), 'sql_gen2', query_plan, False ))
+
     # Scan
     scan = map(lambda p: 
                query_plan.add_operator(
                     #SQLTableScan("{}/lineitem.snappy.parquet.{}".format(path, p),
                     SQLTableScan("{}/lineitem.typed.1RowGroup.parquet.{}".format(path, p),
-                        "", format_, use_pandas, secure, use_native,
+                    "", format_, use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
                range(table_first_part, table_first_part + table_parts))
@@ -87,25 +115,25 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_firs
        'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax',
        'l_returnflag', 'l_linestatus', 'l_shipdate', 'l_commitdate',
        'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment']
-        #df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
+        df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
 
     project_exprs = [ProjectExpression(lambda t_: t_['_0'], sort_field)] 
     
     project = map(lambda p: 
-                      query_plan.add_operator( 
-                          Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn2)),
-                      range(table_first_part, table_first_part + table_parts))
+                  query_plan.add_operator( 
+                      Project(project_exprs, 'project_{}'.format(p), query_plan, False, project_fn2)),
+                  range(table_first_part, table_first_part + table_parts))
 
     # TopK
     topk = map(lambda p: 
                query_plan.add_operator(
-                    Top(k, sort_expr, use_pandas, 'topk_{}'.format(p), query_plan, False)),
+                    Top(k, sort_expr2, use_pandas, 'topk_{}'.format(p), query_plan, False)),
                range(table_first_part, table_first_part + table_parts))
 
     # TopK reduce
     topk_reduce = query_plan.add_operator(
-                    Top(k, sort_expr, use_pandas, 'topk_reduce', query_plan, False)) 
+                    Top(k, sort_expr2, use_pandas, 'topk_reduce', query_plan, False)) 
 
     collate = query_plan.add_operator(
         Collate('collate', query_plan, False))
@@ -119,9 +147,14 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_firs
     
     map(lambda (p, o): o.connect(sample_project[p]), enumerate(sample_scan))
     map(lambda (p, o): o.connect(sample_topk), enumerate(sample_project))
-    sample_topk.connect(sql_gen)
+    sample_topk.connect(sql_gen1)
+
+    map(lambda (p, o): sql_gen1.connect(o), enumerate(column_scan))
+    map(lambda (p, o): o.connect(column_project[p]), enumerate(column_scan))
+    map(lambda (p, o): o.connect(column_topk), enumerate(column_project))
+    column_topk.connect(sql_gen2)
     
-    map(lambda (p, o): sql_gen.connect(o), enumerate(scan))
+    map(lambda (p, o): sql_gen2.connect(o), enumerate(scan))
     map(lambda (p, o): o.connect(project[p]), enumerate(scan))
     map(lambda (p, o): o.connect(topk[p]), enumerate(project))
     map(lambda (p, o): o.connect(topk_reduce), enumerate(topk))
