@@ -19,10 +19,20 @@ from s3filter.util.test_util import gen_test_id
 
 def main():
     path = 'parquet/tpch-sf10/lineitem_sharded1RG'
-    run('l_extendedprice', 100, sample_size=5000, parallel=True, use_pandas=True,
-        sort_order='ASC', buffer_size=0, table_first_part=1, table_parts=2, path=path, format_= Format.PARQUET)
+    #queried_columns = ['l_orderkey', 'l_partkey', 'l_suppkey', 'l_linenumber',
+    #                  'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax',
+    #                 'l_returnflag', 'l_linestatus', 'l_shipdate', 'l_commitdate',
+    #                 'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment']
+    queried_columns = ['l_orderkey', 'l_extendedprice']
+    select_columns = ", ".join(queried_columns)
+    if len(queried_columns) == 16:
+        select_columns = "*"
 
-def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size, table_first_part, table_parts, path, format_):
+    run('l_extendedprice', 100, sample_size=5000, parallel=True, use_pandas=True,
+        sort_order='ASC', buffer_size=0, table_first_part=1, table_parts=2, queried_columns=queried_columns,
+        select_columns=select_columns, path=path, format_= Format.PARQUET)
+
+def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_size, table_first_part, table_parts,queried_columns, select_columns, path, format_):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -66,9 +76,9 @@ def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_siz
 
     # Generate SQL command for second scan 
     sql_gen = query_plan.add_operator(
-                   TopKFilterBuild( sort_order, 'float', 'select * from S3object ', 
-                                    ' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False ))
-    
+                   TopKFilterBuild( sort_order, 'float', 'select {} from S3object '.format(select_columns), 
+                                    #' CAST({} as float) '.format(sort_field), 'sql_gen', query_plan, False ))
+                                    ' {} '.format(sort_field), 'sql_gen', query_plan, False ))
     # Scan
     scan = map(lambda p: 
                query_plan.add_operator(
@@ -81,10 +91,7 @@ def run(sort_field, k, sample_size, parallel, use_pandas, sort_order, buffer_siz
  
     # Project
     def project_fn2(df):
-        df.columns = ['l_orderkey', 'l_partkey', 'l_suppkey', 'l_linenumber',
-       'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax',
-       'l_returnflag', 'l_linestatus', 'l_shipdate', 'l_commitdate',
-       'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment']
+        df.columns = queried_columns
         df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
 
