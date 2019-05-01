@@ -17,10 +17,21 @@ from s3filter.util.test_util import gen_test_id
 
 
 def main():
-    path = 'topk_benchmark/10GB-100shards' 
-    run('F0', 100, True, True, 'ASC', buffer_size=0, table_parts=2, path=path, format_=Format.CSV)
+    path = 'tpch-sf10/lineitem_sharded'
+    k = 100
+    #queried_columns = ['l_orderkey', 'l_partkey', 'l_suppkey', 'l_linenumber',
+    #                  'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax',
+    #                 'l_returnflag', 'l_linestatus', 'l_shipdate', 'l_commitdate',
+    #                 'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment']
+    queried_columns = ['l_orderkey', 'l_extendedprice']
+    select_columns = ", ".join(queried_columns)
+    if len(queried_columns) == 16:
+        select_columns = "*"
+ 
+    run('l_extendedprice', k, True, True, 'ASC', buffer_size=0, table_first_part=1, table_parts=2, queried_columns=queried_columns,
+           select_columns=select_columns, path=path, format_=Format.CSV)
 
-def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_parts, path, format_):
+def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_first_part, table_parts, queried_columns, select_columns, path, format_):
     """
     Executes the baseline topk query by scanning a table and keeping track of the max/min records in a heap
     :return:
@@ -38,15 +49,16 @@ def run(sort_field, k, parallel, use_pandas, sort_order, buffer_size, table_part
     # Scan
     scan = map(lambda p: 
                query_plan.add_operator(
-                    SQLTableScan("{}/topk_data_{}.csv".format(path, p),
-                        "select * from S3Object;", format_, use_pandas, secure, use_native,
+                    SQLTableScan("{}/lineitem.tbl.{}".format(path, p),
+                        "select {} from S3Object;".format(select_columns),
+                        format_, use_pandas, secure, use_native,
                         'scan_{}'.format(p), query_plan,
                         False)),
-               range(0, table_parts))
+               range(table_first_part, table_first_part + table_parts))
   
     # Project
     def project_fn(df):
-        df.columns = ['F0', 'F1', 'F2']
+        df.columns = queried_columns
         df[ [sort_field] ] = df[ [sort_field] ].astype(np.float)
         return df
    

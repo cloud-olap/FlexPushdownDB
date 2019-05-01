@@ -4,9 +4,8 @@
 """
 import os
 
-import s3filter.benchmark.topk.topk_baseline as topk_baseline
-import s3filter.benchmark.topk.topk_filtered as topk_filtered
-import s3filter.benchmark.topk.topk_sample as topk_sample
+import s3filter.benchmark.topk_csv_compare.topk_baseline as topk_baseline
+import s3filter.benchmark.topk_csv_compare.topk_sample as topk_sample
 import sys
 
 from s3filter.sql.format import Format
@@ -14,27 +13,49 @@ from s3filter.sql.format import Format
 names = ['Baseline', 'Filtered', 'Sample']
 trials = ['1']
 
-# sweep    
-sample_sizes = [ x * 1000 for x in [5, 10, 50, 100, 200, 500, 1000, 2000] ]
-path = 'topk_benchmark/10GB-100shards'
-num_parts = 1
+outputDir = "csv16Col"
+path = 'tpch-sf10/lineitem_sharded'
+first_part = 1
+num_parts = 96
+#         1  10^1 10^2  10^3   10^4    10^5
+k_vals = [1,   10, 100, 1000, 10000, 100000 ]
+
+queried_columns = ['l_orderkey', 'l_partkey', 'l_suppkey', 'l_linenumber',
+                  'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax',
+                 'l_returnflag', 'l_linestatus', 'l_shipdate', 'l_commitdate',
+                 'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment']
+
+# two columns
+#queried_columns = ['l_orderkey', 'l_extendedprice']
+# five columns
+#queried_columns = ['l_orderkey', 'l_partkey', 'l_suppkey', 'l_linenumber', 'l_extendedprice']
+# eight columns
+#queried_columns = ['l_orderkey', 'l_partkey', 'l_suppkey', 'l_linenumber', 'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax']
+
+if len(queried_columns) == 16:
+    select_columns = "*"
+else:
+    select_columns = ", ".join(queried_columns)
+fields_queried = len(queried_columns)
+alpha = 1.0 / fields_queried # approximating alpha as 1/num fields
+N = 59986052
+# getting these values as optimal sample size is sqrt(KN/alpha)
+
 
 for trial in trials:
-    for k in [10, 100, 1000]:
+    for k in k_vals:
         # Baseline
-        sys.stdout = open("benchmark-output/topk/Baseline_k{}_trial{}.txt".format(k, trial), "w+")
-        topk_baseline.run('F0', k, True, True, 'ASC', 0, num_parts, path, format_=Format.CSV)
+        sys.stdout = open("benchmark-output/{}/Baseline_k{}_trial{}.txt".format(outputDir, k, trial), "w+")
+        topk_baseline.run('l_extendedprice', k, True, True, 'ASC', buffer_size=0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns,
+           select_columns=select_columns, path=path, format_=Format.CSV)
         sys.stdout.close()
         
-        # Filtered
-        sys.stdout = open("benchmark-output/topk/Filtered_k{}_trial{}.txt".format(k, trial), "w+")
-        topk_filtered.run('F0', k, True, True, 'ASC', 0, num_parts, path, format_=Format.CSV)
-        sys.stdout.close()
-        
-        # Sample
+	opt_sample_size = (float(k*N)/(alpha))**0.5
+	sample_sizes = [int(opt_sample_size / 10.),int(opt_sample_size), int(opt_sample_size * 10.)]
+	# Sample
         for sample_size in sample_sizes:
-            sys.stdout = open("benchmark-output/topk/Sample_k{}_s{}k_trial{}.txt".format(k, sample_size/1000, trial), "w+")
-            topk_sample.run('F0', k, sample_size, True, True, 'ASC', 0, num_parts, path, format_=Format.CSV)
+            sys.stdout = open("benchmark-output/{}/Sample_k{}_s{}_trial{}.txt".format(outputDir, k, sample_size, trial), "w+")
+            topk_sample.run('l_extendedprice', k, sample_size=sample_size, parallel=True, use_pandas=True,
+                            sort_order='ASC', buffer_size=0, table_first_part=first_part, queried_columns=queried_columns,
+                            select_columns=select_columns, table_parts=num_parts, path=path, format_= Format.CSV)
             sys.stdout.close()
-
-os.system('aws ses send-email --from yxy@mit.edu --to yxy@mit.edu --subject "setup core done" --text "EOM"')            
