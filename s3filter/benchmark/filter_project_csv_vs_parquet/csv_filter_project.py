@@ -31,7 +31,7 @@ def main():
         select_columns = "*"
 
     run(True, True, 0, table_first_part=1, table_parts=2, queried_columns=queried_columns, 
-        select_columns=select_columns, lower=0, upper=910, path, Format.CSV)
+        select_columns=select_columns, lower=0, upper=910, path=path, format_=Format.CSV)
 
 
 def run(parallel, use_pandas, buffer_size, table_first_part, table_parts, queried_columns, select_columns, lower, upper, path, format_=Format.CSV):
@@ -48,9 +48,9 @@ def run(parallel, use_pandas, buffer_size, table_first_part, table_parts, querie
     scan = map(lambda p:
                query_plan.add_operator(
                    SQLTableScan("{}/lineitem.tbl.{}".format(path, p),
-                                "select {} from S3Object ".format{select_columns} +
-                                "where cast(l_orderkey as bigint) >= {} and cast(l_orderkey as bigint) <= {};".format(
-                                    lower, upper), format_,
+                                "select {} from S3Object "
+                                "where cast(l_orderkey as int) >= {} and cast(l_orderkey as int) <= {};".format(
+                                    select_columns, lower, upper), format_,
                                 use_pandas, secure, use_native,
                                 'scan_{}'.format(p), query_plan,
                                 False)),

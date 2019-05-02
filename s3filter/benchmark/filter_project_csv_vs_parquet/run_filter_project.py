@@ -48,13 +48,13 @@ for trial in trials:
             # CSV Filter + Project
             sys.stdout = open("benchmark-output/{}/csv_{}_{}_trial{}.txt".format(outputDir, num_cols, selectivity, trial), "w+")
             csv_filter_project.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns, 
-                                   select_columns=select_columns, lower=lower, upper=upper, csv_path, Format.CSV)
+                                   select_columns=select_columns, lower=lower, upper=upper, path=csv_path, format_=Format.CSV)
             sys.stdout.close()
 
             # Parquet Filter + Project
             sys.stdout = open("benchmark-output/{}/parquet_{}_{}_trial{}.txt".format(outputDir, num_cols, selectivity, trial), "w+")
             parquet_filter_project.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns, 
-                                       select_columns=select_columns, lower=lower, upper=upper, parquet_path, Format.PARQUET)
+                                       select_columns=select_columns, lower=lower, upper=upper, path=parquet_path, format_=Format.PARQUET)
             sys.stdout.close()
 
 
