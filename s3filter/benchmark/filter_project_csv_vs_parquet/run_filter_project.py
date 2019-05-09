@@ -14,7 +14,7 @@ trials = ['1']
 
 outputDir = "csv_vs_parquet_filter_project_1"
 csv_path = 'tpch-sf10/lineitem_sharded'
-parquet_path = 'parquet/tpch-sf10/lineitem_sharded1RG'
+parquet_path = 'parquet/tpch-sf10/lineitem_sharded_rg-256m'
 first_part = 1
 num_parts = 96
 
@@ -39,6 +39,11 @@ selectivity_to_lower_upper_vals = {"0.00001": (0, 600),
                                    "0.01"   : (0, 600000),
                                    "0.1"    : (0, 6000000)}
 
+# num_cols_to_scan = ["2col"]
+# selectivities = ["0.00001"]
+
+
+
 for trial in trials:
     for num_cols in num_cols_to_scan:
         queried_columns = columns_to_fields[num_cols]
@@ -46,8 +51,10 @@ for trial in trials:
         for selectivity in selectivities:
             lower, upper = selectivity_to_lower_upper_vals[selectivity]
             # CSV Filter + Project
+            if not os.path.exists("benchmark-output/{}".format(outputDir)):
+                os.makedirs("benchmark-output/{}".format(outputDir))
             sys.stdout = open("benchmark-output/{}/csv_{}_{}_trial{}.txt".format(outputDir, num_cols, selectivity, trial), "w+")
-            csv_filter_project.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns, 
+            csv_filter_project.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns,
                                    select_columns=select_columns, lower=lower, upper=upper, path=csv_path, format_=Format.CSV)
             sys.stdout.close()
 

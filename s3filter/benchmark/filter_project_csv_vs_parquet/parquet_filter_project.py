@@ -42,7 +42,7 @@ def run(parallel, use_pandas, buffer_size, table_first_part, table_parts, querie
     # SQL scan the file
     scan = map(lambda p:
                query_plan.add_operator(
-                   SQLTableScan("{}/lineitem.typed.1RowGroup.parquet.{}".format(path, p),
+                   SQLTableScan("{}/lineitem.{}.parquet".format(path, p),
                                 "select {} from S3Object "
                                 "where l_orderkey >= {} and l_orderkey <= {};".format(select_columns, lower, upper), format_,
                                 use_pandas, secure, use_native,
