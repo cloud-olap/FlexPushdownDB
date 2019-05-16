@@ -30,30 +30,31 @@ for trial in trials:
         select_columns = ", ".join(queried_columns)
         if len(queried_columns) == 16:
             select_columns = "*"
+	col_file_name = str(num_cols) + "col"
         # CSV Filter Out Nothing
         if not os.path.exists("benchmark-output/{}".format(outputDir)):
             os.makedirs("benchmark-output/{}".format(outputDir))
-        sys.stdout = open("benchmark-output/{}/csv_{}_FilterOutNothing_trial{}.txt".format(num_cols + "col", trial), "w+")
+        sys.stdout = open("benchmark-output/{}/csv_{}_FilterOutNothing_trial{}.txt".format(outputDir, col_file_name, trial), "w+")
         csv_filter_all_or_none.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns,
-                                   select_columns=select_columns, filterOutNothing=True, csv_path, format_=Format.CSV):
+                                   select_columns=select_columns, filterOutNothing=True, path=csv_path, format_=Format.CSV)
         sys.stdout.close()
 
         # CSV Filter Out Everything
-        sys.stdout = open("benchmark-output/{}/csv_{}_FilterOutEverything_trial{}.txt".format(num_cols + "col", trial), "w+")
+        sys.stdout = open("benchmark-output/{}/csv_{}_FilterOutEverything_trial{}.txt".format(outputDir, col_file_name, trial), "w+")
         csv_filter_all_or_none.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns,
-                                   select_columns=select_columns, filterOutNothing=False, csv_path, format_=Format.CSV):
+                                   select_columns=select_columns, filterOutNothing=False, path=csv_path, format_=Format.CSV)
         sys.stdout.close()
 
         # Parquet Filter Out Nothing
-        sys.stdout = open("benchmark-output/{}/parquet_{}_FilterOutNothing_trial{}.txt".format(num_cols + "col", trial), "w+")
+        sys.stdout = open("benchmark-output/{}/parquet_{}_FilterOutNothing_trial{}.txt".format(outputDir, col_file_name, trial), "w+")
         parquet_filter_all_or_none.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns,
-                                   select_columns=select_columns, filterOutNothing=True, parquet_path, format_=Format.PARQUET):
+                                   select_columns=select_columns, filterOutNothing=True, path=parquet_path, format_=Format.PARQUET)
         sys.stdout.close()
 
         # Parquet Filter Out Everything
-        sys.stdout = open("benchmark-output/{}/parquet_{}_FilterOutNothing_trial{}.txt".format(num_cols + "col", trial), "w+")
+        sys.stdout = open("benchmark-output/{}/parquet_{}_FilterOutEverything_trial{}.txt".format(outputDir, col_file_name, trial), "w+")
         parquet_filter_all_or_none.run(True, True, 0, table_first_part=first_part, table_parts=num_parts, queried_columns=queried_columns,
-                                   select_columns=select_columns, filterOutNothing=False, parquet_path, format_=Format.PARQUET):
+                                   select_columns=select_columns, filterOutNothing=False, path=parquet_path, format_=Format.PARQUET)
         sys.stdout.close()
 
 

@@ -26,7 +26,7 @@ def main():
         select_columns = "*"
 
     run(True, True, 0, table_first_part=1, table_parts=2, queried_columns=queried_columns, 
-        select_columns=select_columns, filterOutNothing=True, path=path, format_=Format.CSV)
+        select_columns=select_columns, filterOutNothing=False, path=path, format_=Format.PARQUET)
 
 
 def run(parallel, use_pandas, buffer_size, table_first_part, table_parts, queried_columns, select_columns, filterOutNothing, path, format_=Format.PARQUET):
@@ -53,7 +53,7 @@ def run(parallel, use_pandas, buffer_size, table_first_part, table_parts, querie
         scan = map(lambda p:
                    query_plan.add_operator(
                        SQLTableScan("{}/lineitem.{}.parquet".format(path, p),
-                                    "select {} from S3Object where 1 != 1;".format(select_columns),
+                                    "select {} from S3Object where l_orderkey < 1;".format(select_columns),
                                     format_, use_pandas, secure, use_native,
                                     'scan_{}'.format(p), query_plan,
                                     False)),
