@@ -15,12 +15,13 @@ from s3filter.sql.format import Format
 
 
 def main():
-    path = 'parquet/csv_vs_parquet_10MB/10_column_10MB.csv'
+    #path = 'parquet/csv_vs_parquet_10MB/10_column_10MB.csv'
+    path = 'parquet/csv_vs_parquet_10MB/1_column_10MB.csv'
+    #path = 'parquet/csv_vs_parquet_10MB/10_column_10MB_uncompressed_untyped.parquet'
+    run(True, True, 0, selectivity1not0=True, typed=False, path=path, format_=Format.CSV)
 
-    run(True, True, 0, selectivity1not0=True, path=path, format_=Format.PARQUET)
 
-
-def run(parallel, use_pandas, buffer_size, selectivity1not0, path, format_):
+def run(parallel, use_pandas, buffer_size, selectivity1not0, typed, path, format_):
     secure = False
     use_native = False
     print('')
@@ -30,27 +31,52 @@ def run(parallel, use_pandas, buffer_size, selectivity1not0, path, format_):
     # Query plan
     query_plan = QueryPlan(is_async=parallel, buffer_size=buffer_size)
 
-    if (selectivity1not0):
-        # SQL scan the file
-        scan = map(lambda p:
-                   query_plan.add_operator(
-                       SQLTableScan(path,
-                                    "select F0 from S3Object "
-                                    "where cast(F0 as int) >= 0;", format_,
-                                    use_pandas, secure, use_native,
-                                    'scan_{}'.format(p), query_plan,
-                                    False)),
-                   range(0, 1))
+    if selectivity1not0:
+        if typed:
+            # SQL scan the file
+            scan = map(lambda p:
+                       query_plan.add_operator(
+                           SQLTableScan(path,
+                                        "select F0 from S3Object "
+                                        "where F0 >= 0;", format_,
+                                        use_pandas, secure, use_native,
+                                        'scan_{}'.format(p), query_plan,
+                                        False)),
+                       range(0, 1))
+
+	else:
+            # SQL scan the file
+            scan = map(lambda p:
+                       query_plan.add_operator(
+                           SQLTableScan(path,
+                                        "select F0 from S3Object "
+                                        "where cast(F0 as int) >= 0;", format_,
+                                        use_pandas, secure, use_native,
+                                        'scan_{}'.format(p), query_plan,
+                                        False)),
+                       range(0, 1))
     else: # selectivity = 0
-        scan = map(lambda p:
-                   query_plan.add_operator(
-                       SQLTableScan(path,
-                                    "select F0 from S3Object "
-                                    "where cast(F0 as int) < 0;", format_,
-                                    use_pandas, secure, use_native,
-                                    'scan_{}'.format(p), query_plan,
-                                    False)),
-                   range(0, 1))
+	if typed:
+	    scan = map(lambda p:
+                       query_plan.add_operator(
+                           SQLTableScan(path,
+                                        "select F0 from S3Object "
+                                        "where F0 < 0;", format_,
+                                        use_pandas, secure, use_native,
+                                        'scan_{}'.format(p), query_plan,
+                                        False)),
+                       range(0, 1))
+
+	else:
+            scan = map(lambda p:
+                       query_plan.add_operator(
+                           SQLTableScan(path,
+                                        "select F0 from S3Object "
+                                        "where cast(F0 as int) < 0;", format_,
+                                        use_pandas, secure, use_native,
+                                        'scan_{}'.format(p), query_plan,
+                                        False)),
+                       range(0, 1))
 
     # project
     def fn(df):
@@ -82,7 +108,7 @@ def run(parallel, use_pandas, buffer_size, selectivity1not0, path, format_):
     print("--------")
     print('')
     print('use_pandas: {}'.format(use_pandas))
-    print("table parts: {}".format(table_parts))
+    print("table parts: {}".format(1))
     print('')
 
     # Write the plan graph
