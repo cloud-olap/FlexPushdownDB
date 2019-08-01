@@ -58,7 +58,7 @@ class Map(Operator):
         :return: None
         """
 
-        # print("Map | {}".format(t))
+        # print("Map | {}".format(ms))
         if self.use_shared_mem:
             m = ms
             self.on_receive_message(m, producer_name)
@@ -81,16 +81,17 @@ class Map(Operator):
         :return: None
         """
 
-        consumer_indexes = pd.to_numeric(df[self.map_field_name]) % len(self.consumers)
-        grouped = df.groupby(consumer_indexes)
-        for idx, df in grouped:
-            operator = self.consumers[idx]
-            self.op_metrics.rows_mapped += len(df)
-            self.send(DataFrameMessage(df), [operator])
+        if len(df) > 0:
+            consumer_indexes = pd.to_numeric(df[self.map_field_name]) % len(self.consumers)
+            grouped = df.groupby(consumer_indexes)
+            for idx, df in grouped:
+                operator = self.consumers[idx]
+                self.op_metrics.rows_mapped += len(df)
+                self.send(DataFrameMessage(df), [operator])
 
-            # if self.log_enabled:
-            #     print("{}('{}') | Mapped dataframe to operator {}. Dataframe was: \n{}"
-            #           .format(self.__class__.__name__, self.name, operator, df.values))
+                # if self.log_enabled:
+                #     print("{}('{}') | Mapped dataframe to operator {}. Dataframe was: \n{}"
+                #           .format(self.__class__.__name__, self.name, operator, df.values))
 
     def __on_receive_tuple(self, tuple_, producer_name):
         """Event handler for a received tuple
