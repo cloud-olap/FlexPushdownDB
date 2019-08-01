@@ -84,7 +84,7 @@ def calculate_download_cost(res):
 
 sf =10
 width = 0.3
-path = os.path.join(ROOT_DIR, "../aws-exps/tpch/sf{}/bench-06".format(sf))
+path = os.path.join(ROOT_DIR, "../aws-exps/tpch/sf{}-csv-vs-parquet/bench-01".format(sf))
 filesystem_util.create_dirs(os.path.join(path, "figs"))
 filesystem_util.create_dirs(os.path.join(path, "figs/pdf"))
 
@@ -93,10 +93,11 @@ filesystem_util.create_dirs(os.path.join(path, "figs/pdf"))
 # for SF=1
 # actual_sel = [ x / 6001216.0 for x in [1, 13, 35, 140, 866, 3375, 13122] ]
 # actual_sel = [ x / 60000000.0 for x in [7, 95, 309, 1245, 8431, 32893, 130260] ]
-qs = ['1', '3', '14', '17', '19']
+qs = ['3', '14', '17', '19']
 names = ['baseline', 'filtered', 'bloom']
 labels = ['Baseline Join', 'Filtered Join', 'Bloom Join']
 trials = [1, 2, 3]
+formats = ['CSV', 'PARQUET']
 # sfs = [1, 10, 100]
 
 # FIXED_A_VAL_IDX = 0
@@ -117,20 +118,23 @@ for cid, name in enumerate(names):
     data = []
     for q in qs:
         rts = []
-        for trial in trials:
-            if q == '1' and name == 'bloom':
-                t = 0
-            else:
-                t = parse('{}/tpch_q{}_sf{}_{}_trial{}.txt'.format(path, q, sf, name, trial))[0]
-            rts.append(t)
-        data.append(min(rts))
-    pos = [x + width * cid for x in range(len(qs))]
-    ax.bar(pos, data, width=width, label=name)
+        for format in formats:
+            rts = []
+            for trial in trials:
+                if q == '1' and name == 'bloom':
+                    t = 0
+                else:
+                    t = parse('{}/tpch_q{}_sf{}_{}_Format.{}_trial{}.txt'.format(path, q, sf, name, format, trial))[0]
+                rts.append(t)
+            data.append(min(rts))
+            print(name, q, format, min(rts))
+        # pos = [x + width * cid for x in range(len(qs))]
+        # ax.bar(pos, data, width=width, label=name)
     # ax.bar(pos, data, width=width)
     # ax.semilogx(sels, data, label=name, color=colors[cid])
-ax.set_xticks([x + width for x in range(len(qs))])
+# ax.set_xticks([x + width for x in range(len(qs))])
 # ax.set_xlim([-1.5 * width, 12 - 1.5 * width])
-ax.legend(loc='best')
+# ax.legend(loc='best')
 # ax.legend(ncol=3, bbox_to_anchor=[0.99, 1.18], fontsize=14)
 # plt.subplots_adjust(left=0.15, right=0.99, bottom=0.15, top=0.88)
 # ax.set_xticklabels(['$10^{-7}$', '$10^{-6}$', '$10^{-5}$', '$10^{-4}$', '$10^{-3}$', '$10^{-2}$'])
