@@ -1,54 +1,33 @@
 cmake_minimum_required(VERSION 3.15)
-project(normal)
+project("normal" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# External dependencies
+#-----------------------------------------------------------------------------------------------------------------------
 
 include(ExternalProject)
-
-set(CMAKE_CXX_STANDARD 17)
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Dependencies
-#-----------------------------------------------------------------------------------------------------------------------
-
-file(GLOB HEADERS
-        "include/*.h"
-        )
-
-file(GLOB SOURCE
-        "src/*.cpp"
-        )
-
-file(GLOB ALL
-        ${HEADERS}
-        ${SOURCE}
-        )
-
-add_executable(${PROJECT_NAME} ${ALL})
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Dependencies
-#-----------------------------------------------------------------------------------------------------------------------
+find_package(Git REQUIRED)
 
 set(DEPENDENCIES_BASE_DIR "${CMAKE_BINARY_DIR}/contrib")
 
-# AWS SDK
-set(AWS_CPP_SDK_VERSION "1.7.227")
-set(AWS_CPP_SDK_GIT_URL "https://github.com/aws/aws-sdk-cpp.git")
+ExternalProject_Add(
+        spdlog
+        PREFIX ${DEPENDENCIES_BASE_DIR}/spdlog
+        INSTALL_DIR ${DEPENDENCIES_BASE_DIR}/spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG v1.4.2
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${DEPENDENCIES_BASE_DIR}/spdlog
+        GIT_PROGRESS TRUE
+        LOG_DOWNLOAD ON
+        LOG_CONFIGURE ON
+        LOG_BUILD ON
+)
 
-ExternalProject_Add(awscppsdk
-        GIT_REPOSITORY ${AWS_CPP_SDK_GIT_URL}
-        GIT_TAG ${AWS_CPP_SDK_VERSION}
-        PREFIX ${DEPENDENCIES_BASE_DIR}/awscppsdk
-        CMAKE_ARGS -DBUILD_ONLY=s3 -DCMAKE_INSTALL_PREFIX=${DEPENDENCIES_BASE_DIR}/awscppsdk
-        )
-add_dependencies(normal awscppsdk)
+ExternalProject_Get_Property(spdlog INSTALL_DIR)
+include_directories(${INSTALL_DIR}/include)
 
-ExternalProject_get_property(awscppsdk INSTALL_DIR)
-MESSAGE("AWS SDK installation directory: '${INSTALL_DIR}'")
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-        ${INSTALL_DIR}/include)
-target_link_directories(${PROJECT_NAME} PRIVATE
-        ${INSTALL_DIR}/lib/)
-target_link_libraries(${PROJECT_NAME} PRIVATE
-        aws-cpp-sdk-core
-        aws-cpp-sdk-s3)
+add_subdirectory("normal-core")
+add_subdirectory("normal-pushdown")
+add_subdirectory("normal-test")
