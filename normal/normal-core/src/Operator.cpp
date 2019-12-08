@@ -2,10 +2,10 @@
 // Created by matt on 5/12/19.
 //
 
+#include "normal/core/Operator.h"
+#include <spdlog/spdlog.h>
 #include <iostream>
 #include <utility>
-#include <spdlog/spdlog.h>
-#include "normal/core/Operator.h"
 
 void Operator::start(std::shared_ptr<OperatorContext> ctx) {
   spdlog::info("{}  |  Starting", this->m_name);
@@ -29,15 +29,19 @@ bool Operator::running() {
 std::string &Operator::name() {
   return m_name;
 }
+
 Operator::Operator(std::string name) {
   m_name = std::move(name);
 }
-void Operator::produce(const std::shared_ptr<Operator>& op) {
+
+void Operator::produce(const std::shared_ptr<Operator> &op) {
   m_consumers.emplace_back(op);
 }
-void Operator::consume(const std::shared_ptr<Operator>& op) {
+
+void Operator::consume(const std::shared_ptr<Operator> &op) {
   m_producers.emplace_back(op);
 }
+
 std::vector<std::shared_ptr<Operator>> Operator::consumers() {
   return m_consumers;
 }

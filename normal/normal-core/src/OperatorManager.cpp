@@ -21,7 +21,7 @@ void OperatorManager::stop() {
   }
 }
 
-void OperatorManager::tell(const std::string& msg, const std::shared_ptr<Operator>& fromOp) {
+void OperatorManager::tell(const std::string &msg, const std::shared_ptr<Operator> &fromOp) {
   const std::vector<std::shared_ptr<Operator>> &consumers = fromOp->consumers();
   for (const auto &op: consumers) {
     op->onReceive(msg);

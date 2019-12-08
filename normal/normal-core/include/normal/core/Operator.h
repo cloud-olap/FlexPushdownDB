@@ -5,10 +5,10 @@
 #ifndef NORMAL_NORMAL_CORE_SRC_OPERATOR_H
 #define NORMAL_NORMAL_CORE_SRC_OPERATOR_H
 
+#include "normal/core/OperatorContext.h"
 #include <string>
 #include <vector>
 #include <memory>
-#include "OperatorContext.h"
 
 class OperatorContext;
 
@@ -22,7 +22,8 @@ private:
 public:
 
   explicit Operator(std::string name);
-  std::string& name();
+
+  std::string &name();
   std::vector<std::shared_ptr<Operator>> consumers();
   std::shared_ptr<OperatorContext> ctx();
 
@@ -30,8 +31,8 @@ public:
   void stop();
   bool running();
 
-  void produce(const std::shared_ptr<Operator>& op);
-  void consume(const std::shared_ptr<Operator>& op);
+  void produce(const std::shared_ptr<Operator> &op);
+  void consume(const std::shared_ptr<Operator> &op);
 
   virtual void onStart() = 0;
   virtual void onStop() = 0;

@@ -19,9 +19,11 @@ private:
   std::map<std::string, std::shared_ptr<OperatorContext>> m_operatorMap;
 public:
   void put(const std::shared_ptr<Operator> &op);
+
   void start();
   void stop();
-  void tell(const std::string& msg, const std::shared_ptr<Operator>& Ptr);
+
+  void tell(const std::string &msg, const std::shared_ptr<Operator> &Ptr);
 };
 
 #endif //NORMAL_NORMAL_CORE_OPERATORMANAGER_H
