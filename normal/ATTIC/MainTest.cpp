@@ -2,35 +2,19 @@
 // Created by matt on 4/12/19.
 //
 
-#include <string>
-#include <memory>
-#include <vector>
-
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 #include <spdlog/spdlog.h>
-
-#include <arrow/array/builder_binary.h>           // for StringBuilder
-#include <arrow/table.h>                          // for Table
-#include <arrow/type.h>                           // for field, schema, Schema
-#include <arrow/type_fwd.h>                       // for default_memory_pool
-#include <bits/shared_ptr.h>                      // for shared_ptr, make_sh...
-#include <cstdio>                                // for FILENAME_MAX
-#include <unistd.h>                               // for getcwd
-#include <iostream>                               // for cout
-
 #include "normal/pushdown/S3SelectScan.h"
 #include "normal/pushdown/Collate.h"
 #include "normal/core/OperatorContext.h"
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/FileScan.h>
-#include "normal/core/TupleSet.h"                 // for TupleSet
-#include "normal/pushdown/AggregateExpression.h"  // for AggregateExpression
+#include <string>
+#include <memory>
+#include <vector>
 
-namespace arrow { class Array; }
-namespace arrow { class MemoryPool; }
-namespace arrow { class StringArray; }
 
 //TEST_CASE ("Operator lifecycle") {
 //
@@ -180,7 +164,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
 
     long sum = 0;
 
-    auto fieldIndex = tupleSet->getTable()->schema()->GetFieldIndex("f0");
+    auto fieldIndex = tupleSet->getTable()->schema()->GetFieldIndex("A");
 
     for (int r = 0; r < tupleSet->numRows(); ++r) {
       auto s = tupleSet->getValue(fieldIndex, r);
@@ -194,7 +178,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
     std::shared_ptr<arrow::Schema> schema;
 
     std::shared_ptr<arrow::Field> field;
-    field = arrow::field("sum(f0)", arrow::utf8());
+    field = arrow::field("sum(A)", arrow::utf8());
 
     schema = arrow::schema({field});
 

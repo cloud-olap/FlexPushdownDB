@@ -3,6 +3,7 @@ project("normal-test" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
 include(ExternalProject)
 find_package(Git REQUIRED)
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Dependencies
 #-----------------------------------------------------------------------------------------------------------------------
@@ -16,6 +17,8 @@ ExternalProject_Add(doctest-project
         GIT_REPOSITORY ${DOCTEST_GIT_URL}
         GIT_TAG ${DOCTEST_VERSION}
         CMAKE_ARGS
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_INSTALL_PREFIX=${DEPENDENCIES_BASE_DIR}/doctest
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
@@ -39,6 +42,7 @@ target_sources("normal-test" PRIVATE
         src/MainTest.cpp)
 
 target_compile_features("normal-test" PRIVATE cxx_std_17)
+target_compile_options("normal-test" PRIVATE -Wall -Wextra -pedantic)
 set_target_properties("normal-test" PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories("normal-test" PRIVATE include)
@@ -47,6 +51,9 @@ target_link_libraries(normal-test PRIVATE normal-core)
 target_link_libraries("normal-test" PRIVATE "normal-pushdown")
 target_link_libraries("normal-test" PRIVATE spdlog)
 target_link_libraries("normal-test" PRIVATE doctest)
+
+# Test data
+configure_file(data/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/test.csv COPYONLY)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

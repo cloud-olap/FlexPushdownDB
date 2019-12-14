@@ -5,14 +5,13 @@
 #ifndef NORMAL_NORMAL_CORE_OPERATORMANAGER_H
 #define NORMAL_NORMAL_CORE_OPERATORMANAGER_H
 
-#include "normal/core/Operator.h"
-#include "normal/core/OperatorContext.h"
 #include <map>
 #include <memory>
 #include <string>
 
-class Operator;
-class OperatorContext;
+class Message;
+class Operator;  // lines 16-16
+class OperatorContext;  // lines 17-17
 
 class OperatorManager {
 private:
@@ -23,7 +22,7 @@ public:
   void start();
   void stop();
 
-  void tell(const std::string &msg, const std::shared_ptr<Operator> &Ptr);
+  void tell(std::unique_ptr<Message> msg, const std::shared_ptr<Operator> &op);
 };
 
 #endif //NORMAL_NORMAL_CORE_OPERATORMANAGER_H
