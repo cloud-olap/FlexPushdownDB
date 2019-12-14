@@ -17,7 +17,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # Install development requirements
     apt-get install \
       build-essential \
+      libssl-dev \
       curl \
-      libcurl4-openssl-dev
+      libcurl4-openssl-dev \
+      qmake \
+      flex \
+      bison
   fi
 fi

@@ -4,18 +4,48 @@
 
 
 #include "normal/pushdown/S3SelectScan.h"
+
+#include <iostream>
+#include <utility>
+#include <memory>
+#include <cstdlib>                                         // for abort
+
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
 #include <aws/core/utils/threading/Executor.h>
-#include <aws/core/utils/crypto/Factories.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
 #include <aws/core/Aws.h>
 #include <aws/s3/model/SelectObjectContentRequest.h>
 #include <aws/core/client/ClientConfiguration.h>
-#include <iostream>
-#include <utility>
-#include <memory>
+#include <spdlog/spdlog.h>
+#include <arrow/csv/options.h>                              // for ReadOptions
+#include <arrow/csv/reader.h>                               // for TableReader
+#include <arrow/io/buffered.h>                              // for BufferedI...
+#include <arrow/io/memory.h>                                // for BufferReader
+#include <arrow/type_fwd.h>                                 // for default_m...
+#include <aws/core/Region.h>                                // for US_EAST_1
+#include <aws/core/auth/AWSAuthSigner.h>                    // for AWSAuthV4...
+#include <aws/core/http/Scheme.h>                           // for Scheme
+#include <aws/core/utils/logging/LogLevel.h>                // for LogLevel
+#include <aws/core/utils/memory/stl/AWSAllocator.h>         // for MakeShared
+#include <aws/s3/model/CSVInput.h>                          // for CSVInput
+#include <aws/s3/model/CSVOutput.h>                         // for CSVOutput
+#include <aws/s3/model/ExpressionType.h>                    // for Expressio...
+#include <aws/s3/model/FileHeaderInfo.h>                    // for FileHeade...
+#include <aws/s3/model/InputSerialization.h>                // for InputSeri...
+#include <aws/s3/model/OutputSerialization.h>               // for OutputSer...
+#include <aws/s3/model/RecordsEvent.h>                      // for RecordsEvent
+#include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
+#include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
+
+#include "normal/core/Message.h"                            // for Message
+#include "normal/core/TupleSet.h"                           // for TupleSet
+#include "s3/S3SelectExecutor.h"
+#include <normal/core/TupleMessage.h>
+
+namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
+namespace arrow { class MemoryPool; }
 
 using namespace Aws;
 using namespace Aws::Auth;
@@ -26,9 +56,7 @@ using namespace Aws::S3::Model;
 
 void S3SelectScan::onStart() {
 
-  static std::string BUCKET_NAME = "s3filter";
   static const char *ALLOCATION_TAG = "Normal";
-  static const char *OBJECT_KEY = "tpch-sf1/customer.csv";
 
   Aws::SDKOptions options;
   options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
@@ -54,18 +82,20 @@ void S3SelectScan::onStart() {
                                      AWSAuthV4Signer::PayloadSigningPolicy::Never,
                                      true);
 
-  Aws::String bucketName = Aws::String(BUCKET_NAME);
+  Aws::String bucketName = Aws::String(m_s3Bucket);
 
   SelectObjectContentRequest selectObjectContentRequest;
   selectObjectContentRequest.SetBucket(bucketName);
-  selectObjectContentRequest.SetKey(Aws::String(OBJECT_KEY));
+  selectObjectContentRequest.SetKey(Aws::String(m_s3Object));
 
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
   selectObjectContentRequest.SetExpression("select * from S3Object s limit 100");
 
   CSVInput csvInput;
-  csvInput.SetFileHeaderInfo(FileHeaderInfo::NONE);
+  csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
+  csvInput.SetFieldDelimiter("|");
+  csvInput.SetRecordDelimiter("|\n");
   InputSerialization inputSerialization;
   inputSerialization.SetCSV(csvInput);
   selectObjectContentRequest.SetInputSerialization(inputSerialization);
@@ -80,6 +110,14 @@ void S3SelectScan::onStart() {
     auto recordsVector = recordsEvent.GetPayload();
     Aws::String records(recordsVector.begin(), recordsVector.end());
     std::cout << "Records event: " << records << std::endl;
+
+    std::shared_ptr<TupleSet> tupleSet = S3SelectExecutor::parsePayload(records);
+
+    spdlog::info("{}  |  Show:\n{}", this->name(), tupleSet->toString());
+
+    std::unique_ptr<Message> message = std::make_unique<TupleMessage>(tupleSet);
+    ctx()->tell(std::move(message));
+
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
     std::cout << "Bytes scanned: " << statsEvent.GetDetails().GetBytesScanned() << std::endl;
@@ -93,15 +131,16 @@ void S3SelectScan::onStart() {
 
   Aws::ShutdownAPI(options);
 
-  std::string data = "A,B,C\n1,2,3\n4,5,6\n";
-  ctx()->tell(data);
 }
+
+
 
 void S3SelectScan::onStop() {
 }
 
-S3SelectScan::S3SelectScan(std::string name) : Operator(std::move(name)) {}
-
-void S3SelectScan::onReceive(std::string msg) {
-  ctx()->tell(msg);
+S3SelectScan::S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql)
+    : Operator(std::move(name)) {
+  m_s3Bucket = std::move(s3Bucket);
+  m_s3Object = std::move(s3Object);
+  m_sql = std::move(sql);
 }
