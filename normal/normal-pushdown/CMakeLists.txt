@@ -54,7 +54,7 @@ target_sources("normal-pushdown" PRIVATE
         src/FileScan.cpp include/normal/pushdown/FileScan.h
         src/Aggregate.cpp include/normal/pushdown/Aggregate.h
         src/AggregateExpression.cpp include/normal/pushdown/AggregateExpression.h
-        src/s3/S3SelectExecutor.cpp src/s3/S3SelectExecutor.h)
+        src/s3/S3SelectParser.cpp src/s3/S3SelectParser.h)
 
 target_compile_features("normal-pushdown" PRIVATE cxx_std_17)
 target_compile_options("normal-pushdown" PRIVATE -Wall -Wextra -pedantic)

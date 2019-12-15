@@ -8,6 +8,8 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
+
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #include <spdlog/spdlog.h>
 
 #include <arrow/array/builder_binary.h>           // for StringBuilder
@@ -225,7 +227,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
   auto s3selectScan = std::make_shared<S3SelectScan>("s3SelectScan",
                                                      "s3filter",
                                                      "tpch-sf1/customer.csv",
-                                                     "select * from S3Object s limit 100");
+                                                     "select * from S3Object limit 10000");
   auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
   auto collate = std::make_shared<Collate>("collate");
 
