@@ -178,46 +178,66 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
 
   std::cout << current_working_dir;
 
-  auto fn = [](std::shared_ptr<TupleSet> tupleSet) -> std::shared_ptr<TupleSet> {
+  auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
 
+    // Compute sum for current data
     long sum = 0;
 
-    auto fieldIndex = tupleSet->getTable()->schema()->GetFieldIndex("f0");
+    spdlog::info("Data:\n{}", dataTupleSet->toString());
 
-    for (int r = 0; r < tupleSet->numRows(); ++r) {
-      auto s = tupleSet->getValue(fieldIndex, r);
-      sum += std::stol(s);
+    auto fieldIndex = dataTupleSet->getTable()->schema()->GetFieldIndex("f0");
+
+    for (int r = 0; r < dataTupleSet->numRows(); ++r) {
+      auto s = dataTupleSet->getValue(fieldIndex, r);
+
+      spdlog::info("Row:\n{}", s);
+
+      long l = std::stol(s);
+      sum += l;
     }
 
-    auto s = std::to_string(sum);
-    std::vector<std::shared_ptr<std::string>> data;
-    data.push_back(std::make_shared<std::string>(s));
+    // Get current sum
+    long currentSum = 0;
 
-    std::shared_ptr<arrow::Schema> schema;
+    if(aggregateTupleSet->getTable()->num_rows() > 0) {
+      auto sumFieldIndex = aggregateTupleSet->getTable()->schema()->GetFieldIndex("sum(f0)");
+      auto currentSumString = aggregateTupleSet->getValue(sumFieldIndex, 0);
+      currentSum = std::stol(currentSumString);
+    }
 
-    std::shared_ptr<arrow::Field> field;
-    field = arrow::field("sum(f0)", arrow::utf8());
+    long newCurrentSum = currentSum + sum;
 
-    schema = arrow::schema({field});
+    if(aggregateTupleSet->getTable()->num_rows() == 0) {
 
-    spdlog::info("\n" + schema->ToString());
+      std::vector<std::shared_ptr<long>> data;
+      data.push_back(std::make_shared<long>(newCurrentSum));
 
-    arrow::MemoryPool *pool = arrow::default_memory_pool();
-    arrow::StringBuilder colBuilder(pool);
+      std::shared_ptr<arrow::Schema> schema;
 
-    colBuilder.Append(s);
+      std::shared_ptr<arrow::Field> field;
+      field = arrow::field("sum(f0)", arrow::int64());
 
-    std::shared_ptr<arrow::StringArray> col;
-    colBuilder.Finish(&col);
+      schema = arrow::schema({field});
 
-    auto columns = std::vector<std::shared_ptr<arrow::Array>>{col};
+      spdlog::info("\n" + schema->ToString());
 
-    std::shared_ptr<arrow::Table> table;
-    table = arrow::Table::Make(schema, columns);
+      arrow::MemoryPool *pool = arrow::default_memory_pool();
+      arrow::Int64Builder colBuilder(pool);
 
-    std::shared_ptr<TupleSet> outTupleSet = TupleSet::make(table);
+      colBuilder.Append(sum);
 
-    return outTupleSet;
+      std::shared_ptr<arrow::Int64Array> col;
+      colBuilder.Finish(&col);
+
+      auto columns = std::vector<std::shared_ptr<arrow::Array>>{col};
+
+      std::shared_ptr<arrow::Table> table;
+      table = arrow::Table::Make(schema, columns);
+
+      std::shared_ptr<TupleSet> aggregateTupleSet = TupleSet::make(table);
+    }
+
+    return aggregateTupleSet;
   };
 
   auto aggregateExpression = std::make_unique<AggregateExpression>(fn);
@@ -227,7 +247,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
   auto s3selectScan = std::make_shared<S3SelectScan>("s3SelectScan",
                                                      "s3filter",
                                                      "tpch-sf1/customer.csv",
-                                                     "select * from S3Object limit 10000");
+                                                     "select * from S3Object limit 1000");
   auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
   auto collate = std::make_shared<Collate>("collate");
 
@@ -247,4 +267,6 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
   mgr->stop();
 
   collate->show();
+
+//  11250075000
 }

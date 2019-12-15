@@ -9,10 +9,10 @@
 
 class AggregateExpression {
 private:
-  std::shared_ptr<TupleSet> (*m_fn)(std::shared_ptr<TupleSet>);
+  std::shared_ptr<TupleSet> (*m_fn)(std::shared_ptr<TupleSet>, std::shared_ptr<TupleSet>);
 public:
-  explicit AggregateExpression(std::shared_ptr<TupleSet> (*fn)(std::shared_ptr<TupleSet>));
-  std::shared_ptr<TupleSet> apply(std::shared_ptr<TupleSet> tupleSet);
+  explicit AggregateExpression(std::shared_ptr<TupleSet> (*fn)(std::shared_ptr<TupleSet>, std::shared_ptr<TupleSet> aggregateTupleSet));
+  std::shared_ptr<TupleSet> apply(std::shared_ptr<TupleSet> tupleSet, std::shared_ptr<TupleSet> aggregateTupleSet);
 };
 
 #endif //NORMAL_NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATEEXPRESSION_H

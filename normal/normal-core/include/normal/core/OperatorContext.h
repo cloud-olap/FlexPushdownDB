@@ -21,6 +21,7 @@ public:
   std::shared_ptr<Operator> op();
 
   void tell(std::unique_ptr<Message> msg);
+  void complete();
 };
 
 #endif //NORMAL_NORMAL_CORE_SRC_OPERATORCONTEXT_H

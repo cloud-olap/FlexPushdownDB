@@ -27,6 +27,8 @@ public:
   void onStop() override;
   void onReceive(std::unique_ptr<Message> msg) override;
   void show();
+protected:
+  void onComplete(const Operator &op) override;
 
 };
 

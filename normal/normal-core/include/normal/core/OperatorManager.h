@@ -23,6 +23,7 @@ public:
   void stop();
 
   void tell(std::unique_ptr<Message> msg, const std::shared_ptr<Operator> &op);
+  void complete(Operator &op);
 };
 
 #endif //NORMAL_NORMAL_CORE_OPERATORMANAGER_H

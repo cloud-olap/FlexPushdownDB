@@ -18,12 +18,16 @@ class Message;
 class Aggregate : public Operator {
 private:
   std::vector<std::unique_ptr<AggregateExpression>> m_expressions;
+  std::shared_ptr<TupleSet> inputTupleSet;
+  std::shared_ptr<TupleSet> resultTupleSet;
 public:
   Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> m_expressions);
   ~Aggregate() override = default;
   void onStart() override;
   void onStop() override;
   void onReceive(std::unique_ptr<Message> msg) override;
+protected:
+  void onComplete(const Operator &op) override;
 };
 
 #endif //NORMAL_NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_H

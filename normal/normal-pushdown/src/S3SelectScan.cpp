@@ -120,6 +120,9 @@ void S3SelectScan::onStart() {
     std::cout << "Bytes processed: " << statsEvent.GetDetails().GetBytesProcessed() << std::endl;
     std::cout << "Bytes returned: " << statsEvent.GetDetails().GetBytesReturned() << std::endl;
   });
+  handler.SetEndEventCallback([&](){
+    ctx()->complete();
+  });
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
 

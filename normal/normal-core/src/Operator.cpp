@@ -43,6 +43,8 @@ Operator::Operator(std::string name) {
   m_name = std::move(name);
 }
 
+Operator::~Operator() = default;
+
 void Operator::produce(const std::shared_ptr<Operator> &op) {
   m_consumers.emplace_back(op);
 }
@@ -89,4 +91,13 @@ void Operator::onReceive(std::unique_ptr<Message> msg) {
       this->m_name, typeid(msg).name());
 }
 
-Operator::~Operator() = default;
+void Operator::onComplete(const Operator &op) {
+  spdlog::warn("{}  |  Ignoring message, Operator does not implement onComplete (Completed operator: {})",
+               this->m_name, typeid(op).name());
+}
+
+void Operator::complete(const Operator &consumer) {
+  onComplete(consumer);
+}
+
+

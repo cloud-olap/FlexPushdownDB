@@ -49,3 +49,12 @@ void OperatorManager::tell(std::unique_ptr<Message> msg, const std::shared_ptr<O
     op->receive(std::move(msg));
   }
 }
+
+void OperatorManager::complete(Operator &op) {
+
+  const std::vector<std::shared_ptr<Operator>> &consumers = op.consumers();
+
+  for (const auto &consumer : consumers) {
+    consumer->complete(op);
+  }
+}
