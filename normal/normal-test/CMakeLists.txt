@@ -8,28 +8,7 @@ find_package(Git REQUIRED)
 # Dependencies
 #-----------------------------------------------------------------------------------------------------------------------
 
-# Doctest
-set(DOCTEST_VERSION "2.3.5")
-set(DOCTEST_GIT_URL "https://github.com/onqtam/doctest.git")
 
-ExternalProject_Add(doctest-project
-        PREFIX ${DEPENDENCIES_BASE_DIR}/doctest
-        GIT_REPOSITORY ${DOCTEST_GIT_URL}
-        GIT_TAG ${DOCTEST_VERSION}
-        CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_INSTALL_PREFIX=${DEPENDENCIES_BASE_DIR}/doctest
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-        )
-
-ExternalProject_Get_Property(doctest-project SOURCE_DIR)
-set(DOCTEST_INCLUDE_DIR ${SOURCE_DIR} CACHE INTERNAL "Doctest include dir")
-
-add_library("doctest" INTERFACE IMPORTED)
-set_target_properties("doctest" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${DOCTEST_INCLUDE_DIR})
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -60,8 +39,8 @@ configure_file(data/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/test.csv COPYONLY)
 # Dependency graph
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_dependencies("normal-test" "spdlog-project")
-add_dependencies("normal-test" "doctest-project")
+add_dependencies("normal-test" "spdlog")
+add_dependencies("normal-test" "doctest")
 add_dependencies("normal-test" "normal-core")
 add_dependencies("normal-test" "normal-pushdown")
 
