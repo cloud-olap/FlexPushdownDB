@@ -17,6 +17,9 @@ find_package(Git REQUIRED)
 set(DEPENDENCIES_BASE_DIR "${CMAKE_BINARY_DIR}/contrib")
 
 
+include(cmake/CAF.cmake)
+
+
 # SPDLog
 set(SPDLOG_VERSION "v1.4.2")
 set(SPDLOG_GIT_URL "https://github.com/gabime/spdlog.git")
