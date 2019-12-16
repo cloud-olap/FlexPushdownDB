@@ -180,62 +180,81 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
 
   auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
 
-    // Compute sum for current data
-    long sum = 0;
-
     spdlog::info("Data:\n{}", dataTupleSet->toString());
 
-    auto fieldIndex = dataTupleSet->getTable()->schema()->GetFieldIndex("f0");
+    std::string sum = dataTupleSet->visit([](std::string accum, arrow::RecordBatch &batch) -> std::string {
+      auto fieldIndex = batch.schema()->GetFieldIndex("f5");
+      std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
 
-    for (int r = 0; r < dataTupleSet->numRows(); ++r) {
-      auto s = dataTupleSet->getValue(fieldIndex, r);
+      double sum = 0;
+      if(accum.empty()){
+        sum = 0;
+      }
+      else{
+        sum = std::stod(accum);
+      }
 
-      spdlog::info("Row:\n{}", s);
+      std::shared_ptr<arrow::DataType> colType = array->type();
+      if(colType->Equals(arrow::Int64Type())) {
+        std::shared_ptr<arrow::Int64Array>
+            typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          long val = typedArray->Value(i);
+          sum += val;
+        }
+      }
+      else if(colType->Equals(arrow::StringType())){
+        std::shared_ptr<arrow::StringArray>
+            typedArray = std::static_pointer_cast<arrow::StringArray>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          std::string val = typedArray->GetString(i);
+          sum += std::stod(val);
+        }
+      }
+      else if(colType->Equals(arrow::DoubleType())){
+        std::shared_ptr<arrow::DoubleArray>
+            typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          double val = typedArray->Value(i);
+          sum += val;
+        }
+      }
+      else{
+        abort();
+      }
 
-      long l = std::stol(s);
-      sum += l;
-    }
+      std::stringstream ss;
+      ss << sum;
+      return std::string(ss.str());
+    });
 
-    // Get current sum
-    long currentSum = 0;
+    // Create new aggregate tuple set
+    std::vector<std::shared_ptr<std::string>> data;
+    data.push_back(std::make_shared<std::string>(sum));
 
-    if(aggregateTupleSet->getTable()->num_rows() > 0) {
-      auto sumFieldIndex = aggregateTupleSet->getTable()->schema()->GetFieldIndex("sum(f0)");
-      auto currentSumString = aggregateTupleSet->getValue(sumFieldIndex, 0);
-      currentSum = std::stol(currentSumString);
-    }
+    std::shared_ptr<arrow::Schema> schema;
 
-    long newCurrentSum = currentSum + sum;
+    std::shared_ptr<arrow::Field> field;
+    field = arrow::field("sum(f5)", arrow::utf8());
 
-    if(aggregateTupleSet->getTable()->num_rows() == 0) {
+    schema = arrow::schema({field});
 
-      std::vector<std::shared_ptr<long>> data;
-      data.push_back(std::make_shared<long>(newCurrentSum));
+    spdlog::info("\n" + schema->ToString());
 
-      std::shared_ptr<arrow::Schema> schema;
+    arrow::MemoryPool *pool = arrow::default_memory_pool();
+    arrow::StringBuilder colBuilder(pool);
 
-      std::shared_ptr<arrow::Field> field;
-      field = arrow::field("sum(f0)", arrow::int64());
+    colBuilder.Append(sum);
 
-      schema = arrow::schema({field});
+    std::shared_ptr<arrow::StringArray> col;
+    colBuilder.Finish(&col);
 
-      spdlog::info("\n" + schema->ToString());
+    auto columns = std::vector<std::shared_ptr<arrow::Array>>{col};
 
-      arrow::MemoryPool *pool = arrow::default_memory_pool();
-      arrow::Int64Builder colBuilder(pool);
+    std::shared_ptr<arrow::Table> table;
+    table = arrow::Table::Make(schema, columns);
 
-      colBuilder.Append(sum);
-
-      std::shared_ptr<arrow::Int64Array> col;
-      colBuilder.Finish(&col);
-
-      auto columns = std::vector<std::shared_ptr<arrow::Array>>{col};
-
-      std::shared_ptr<arrow::Table> table;
-      table = arrow::Table::Make(schema, columns);
-
-      std::shared_ptr<TupleSet> aggregateTupleSet = TupleSet::make(table);
-    }
+    aggregateTupleSet = TupleSet::make(table);
 
     return aggregateTupleSet;
   };

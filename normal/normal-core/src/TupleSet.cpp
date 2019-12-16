@@ -85,7 +85,7 @@ int TupleSet::numRows() {
   return m_table->num_rows();
 }
 
-std::string TupleSet::getValue(int column, int row) {
+std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch&)) {
 
   arrow::Status arrowStatus;
 
@@ -94,32 +94,40 @@ std::string TupleSet::getValue(int column, int row) {
   reader.set_chunksize(10);
   arrowStatus = reader.ReadNext(&batch);
 
-  assert(batch->ValidateFull().ok());
-
-  if(!arrowStatus.ok()){
-
+  std::string result;
+  while(arrowStatus.ok() && batch) {
+    result = fn(result, *batch);
+    arrowStatus = reader.ReadNext(&batch);
   }
 
-  std::shared_ptr<arrow::Array> array = batch->column(column);
+  return result;
 
-  std::shared_ptr<arrow::DataType> colType = array->type();
-  if(colType->Equals(arrow::Int64Type())) {
-    std::shared_ptr<arrow::Int64Array >
-        typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
-    auto v = typedArray->Value(row);
-    return std::to_string(v);
-  }
-  else if(colType->Equals(arrow::StringType())){
-    std::shared_ptr<arrow::StringArray>
-        typedArray = std::static_pointer_cast<arrow::StringArray>(array);
-    auto v = typedArray->GetString(row);
-    return v;
-  }
-  else{
-    abort();
-  }
-
-
+//    std::shared_ptr<arrow::Array> array = batch->column(column);
+//
+//    std::shared_ptr<arrow::DataType> colType = array->type();
+//    if(colType->Equals(arrow::Int64Type())) {
+//      std::shared_ptr<arrow::Int64Array >
+//          typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
+//      auto v = typedArray->Value(row);
+//      return std::to_string(v);
+//    }
+//    else if(colType->Equals(arrow::StringType())){
+//      std::shared_ptr<arrow::StringArray>
+//          typedArray = std::static_pointer_cast<arrow::StringArray>(array);
+//      auto v = typedArray->GetString(row);
+//      return v;
+//    }
+//    else if(colType->Equals(arrow::DoubleType())){
+//      std::shared_ptr<arrow::DoubleArray>
+//          typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+//      auto v = typedArray->Value(row);
+//      return std::to_string(v);
+//    }
+//    else{
+//      abort();
+//    }
+//
+//    arrowStatus = reader.ReadNext(&batch);
 }
 
 /**
