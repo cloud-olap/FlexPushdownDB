@@ -30,3 +30,7 @@ OperatorContext::OperatorContext(std::shared_ptr<Operator> op, std::shared_ptr<O
 std::shared_ptr<Operator> OperatorContext::op() {
   return m_op;
 }
+
+void OperatorContext::complete() {
+  this->m_mgr->complete(*this->m_op);
+}

@@ -8,6 +8,8 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
+
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #include <spdlog/spdlog.h>
 
 #include <arrow/array/builder_binary.h>           // for StringBuilder
@@ -176,25 +178,64 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
 
   std::cout << current_working_dir;
 
-  auto fn = [](std::shared_ptr<TupleSet> tupleSet) -> std::shared_ptr<TupleSet> {
+  auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
 
-    long sum = 0;
+    spdlog::info("Data:\n{}", dataTupleSet->toString());
 
-    auto fieldIndex = tupleSet->getTable()->schema()->GetFieldIndex("f0");
+    std::string sum = dataTupleSet->visit([](std::string accum, arrow::RecordBatch &batch) -> std::string {
+      auto fieldIndex = batch.schema()->GetFieldIndex("f5");
+      std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
 
-    for (int r = 0; r < tupleSet->numRows(); ++r) {
-      auto s = tupleSet->getValue(fieldIndex, r);
-      sum += std::stol(s);
-    }
+      double sum = 0;
+      if(accum.empty()){
+        sum = 0;
+      }
+      else{
+        sum = std::stod(accum);
+      }
 
-    auto s = std::to_string(sum);
+      std::shared_ptr<arrow::DataType> colType = array->type();
+      if(colType->Equals(arrow::Int64Type())) {
+        std::shared_ptr<arrow::Int64Array>
+            typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          long val = typedArray->Value(i);
+          sum += val;
+        }
+      }
+      else if(colType->Equals(arrow::StringType())){
+        std::shared_ptr<arrow::StringArray>
+            typedArray = std::static_pointer_cast<arrow::StringArray>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          std::string val = typedArray->GetString(i);
+          sum += std::stod(val);
+        }
+      }
+      else if(colType->Equals(arrow::DoubleType())){
+        std::shared_ptr<arrow::DoubleArray>
+            typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          double val = typedArray->Value(i);
+          sum += val;
+        }
+      }
+      else{
+        abort();
+      }
+
+      std::stringstream ss;
+      ss << sum;
+      return std::string(ss.str());
+    });
+
+    // Create new aggregate tuple set
     std::vector<std::shared_ptr<std::string>> data;
-    data.push_back(std::make_shared<std::string>(s));
+    data.push_back(std::make_shared<std::string>(sum));
 
     std::shared_ptr<arrow::Schema> schema;
 
     std::shared_ptr<arrow::Field> field;
-    field = arrow::field("sum(f0)", arrow::utf8());
+    field = arrow::field("sum(f5)", arrow::utf8());
 
     schema = arrow::schema({field});
 
@@ -203,7 +244,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
     arrow::MemoryPool *pool = arrow::default_memory_pool();
     arrow::StringBuilder colBuilder(pool);
 
-    colBuilder.Append(s);
+    colBuilder.Append(sum);
 
     std::shared_ptr<arrow::StringArray> col;
     colBuilder.Finish(&col);
@@ -213,9 +254,9 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
     std::shared_ptr<arrow::Table> table;
     table = arrow::Table::Make(schema, columns);
 
-    std::shared_ptr<TupleSet> outTupleSet = TupleSet::make(table);
+    aggregateTupleSet = TupleSet::make(table);
 
-    return outTupleSet;
+    return aggregateTupleSet;
   };
 
   auto aggregateExpression = std::make_unique<AggregateExpression>(fn);
@@ -225,7 +266,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
   auto s3selectScan = std::make_shared<S3SelectScan>("s3SelectScan",
                                                      "s3filter",
                                                      "tpch-sf1/customer.csv",
-                                                     "select * from S3Object s limit 100");
+                                                     "select * from S3Object limit 1000");
   auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
   auto collate = std::make_shared<Collate>("collate");
 
@@ -245,4 +286,6 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
   mgr->stop();
 
   collate->show();
+
+//  11250075000
 }

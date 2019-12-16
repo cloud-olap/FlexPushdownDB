@@ -22,7 +22,7 @@ public:
   static std::shared_ptr<TupleSet> make(std::shared_ptr<arrow::Table> table);
 
   int numRows();
-  std::string getValue(int column, int row);
+  std::string visit(std::string (*fn)(std::string, arrow::RecordBatch&));
   void addColumn(std::string name, int position, std::vector<std::shared_ptr<std::string>> data);
 
   std::string toString();

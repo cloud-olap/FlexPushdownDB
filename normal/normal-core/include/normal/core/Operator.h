@@ -14,6 +14,7 @@
 class Message;
 
 class Operator {
+
 private:
   std::string m_name;
   bool m_created = false;
@@ -21,10 +22,13 @@ private:
   std::shared_ptr<OperatorContext> m_operatorContext;
   std::vector<std::shared_ptr<Operator>> m_producers;
   std::vector<std::shared_ptr<Operator>> m_consumers;
+
 protected:
   virtual void onStart() = 0;
   virtual void onStop() = 0;
   virtual void onReceive(std::unique_ptr<Message> msg);
+  virtual void onComplete(const Operator &op);
+
 public:
 
   explicit Operator(std::string name);
@@ -38,6 +42,7 @@ public:
   void start();
   void stop();
   void receive(std::unique_ptr<Message> msg);
+  void complete(const Operator &consumer);
   bool running();
 
   void produce(const std::shared_ptr<Operator> &op);

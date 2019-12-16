@@ -27,8 +27,9 @@ void Collate::onReceive(std::unique_ptr<Message> msg) {
   spdlog::info("{}  |  Received", this->name());
 
   std::unique_ptr<TupleMessage>
-      tupleMessage = std::unique_ptr<TupleMessage>{static_cast<TupleMessage *>(msg.release())};
+      tupleMessage = std::unique_ptr<TupleMessage>{dynamic_cast<TupleMessage *>(msg.release())};
   if (!m_tupleSet) {
+    assert(tupleMessage->data());
     m_tupleSet = tupleMessage->data();
   } else {
     auto tables = std::vector<std::shared_ptr<arrow::Table>>();
@@ -39,7 +40,12 @@ void Collate::onReceive(std::unique_ptr<Message> msg) {
     m_tupleSet->setTable(table);
   }
 }
-
+void Collate::onComplete(const Operator &op) {
+  ctx()->complete();
+}
 void Collate::show() {
+
+  assert(m_tupleSet);
+
   spdlog::info("{}  |  Show:\n{}", this->name(), m_tupleSet->toString());
 }

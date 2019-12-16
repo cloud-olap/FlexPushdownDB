@@ -41,7 +41,7 @@
 
 #include "normal/core/Message.h"                            // for Message
 #include "normal/core/TupleSet.h"                           // for TupleSet
-#include "s3/S3SelectExecutor.h"
+#include "s3/S3SelectParser.h"
 #include <normal/core/TupleMessage.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
@@ -90,7 +90,7 @@ void S3SelectScan::onStart() {
 
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
-  selectObjectContentRequest.SetExpression("select * from S3Object s limit 100");
+  selectObjectContentRequest.SetExpression(m_sql.c_str());
 
   CSVInput csvInput;
   csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
@@ -105,24 +105,23 @@ void S3SelectScan::onStart() {
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
+  std::vector<unsigned char> partial{};
+  S3SelectParser s3SelectParser{};
+
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
-    auto recordsVector = recordsEvent.GetPayload();
-    Aws::String records(recordsVector.begin(), recordsVector.end());
-    std::cout << "Records event: " << records << std::endl;
-
-    std::shared_ptr<TupleSet> tupleSet = S3SelectExecutor::parsePayload(records);
-
-    spdlog::info("{}  |  Show:\n{}", this->name(), tupleSet->toString());
-
+    auto payload = recordsEvent.GetPayload();
+    std::shared_ptr<TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
     std::unique_ptr<Message> message = std::make_unique<TupleMessage>(tupleSet);
     ctx()->tell(std::move(message));
-
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
     std::cout << "Bytes scanned: " << statsEvent.GetDetails().GetBytesScanned() << std::endl;
     std::cout << "Bytes processed: " << statsEvent.GetDetails().GetBytesProcessed() << std::endl;
     std::cout << "Bytes returned: " << statsEvent.GetDetails().GetBytesReturned() << std::endl;
+  });
+  handler.SetEndEventCallback([&](){
+    ctx()->complete();
   });
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
@@ -132,8 +131,6 @@ void S3SelectScan::onStart() {
   Aws::ShutdownAPI(options);
 
 }
-
-
 
 void S3SelectScan::onStop() {
 }
