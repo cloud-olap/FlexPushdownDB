@@ -8,6 +8,7 @@
 #include <arrow/io/api.h>                              // for BufferedI...
 #include <arrow/api.h>                                 // for default_m...
 #include <spdlog/spdlog.h>
+#include <arrow/csv/parser.h>
 
 /**
  *
@@ -19,10 +20,36 @@ std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
     const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &from,
     const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &to) {
 
+  auto parse_options = arrow::csv::ParseOptions::Defaults();
+  auto read_options = arrow::csv::ReadOptions::Defaults();
+  read_options.use_threads = false;
+  read_options.autogenerate_column_names = true;
+  auto convert_options = arrow::csv::ConvertOptions::Defaults();
+
   // FIXME: Can arrow read the vector directly?
   Aws::String records(from, to);
 
-  std::shared_ptr<arrow::io::BufferReader> reader = std::make_shared<arrow::io::BufferReader>(records);
+  auto newLineIt = std::find(from, to, '\n');
+  std::basic_string_view<unsigned char> firstRow(from.base(), newLineIt - from);
+  arrow::util::string_view sv = reinterpret_cast<const char *>(firstRow.data());
+
+  arrow::csv::BlockParser p{parse_options, -1, 1};
+  uint32_t out_size;
+  arrow::Status status = p.Parse(sv, &out_size);
+  if(!status.ok())
+    abort();
+
+  int numFields = p.num_cols();
+  std::unordered_map<std::string, std::shared_ptr<arrow::DataType>> column_types{};
+  for (int i = 0; i < numFields; ++i) {
+    std::stringstream ss;
+    ss << "f" << i;
+    column_types[ss.str()] = arrow::utf8();
+  }
+
+  convert_options.column_types = column_types;
+
+  std::shared_ptr<arrow::io::BufferReader> reader = std::make_shared<arrow::io::BufferReader>(from.base(), std::distance(from, to));
   arrow::MemoryPool *pool = arrow::default_memory_pool();
 
   // FIXME: How to size the buffer?
@@ -35,11 +62,7 @@ std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
 
   auto input = createResult.ValueOrDie();
 
-  auto read_options = arrow::csv::ReadOptions::Defaults();
-  read_options.use_threads = false;
-  read_options.autogenerate_column_names = true;
-  auto parse_options = arrow::csv::ParseOptions::Defaults();
-  auto convert_options = arrow::csv::ConvertOptions::Defaults();
+
 
   // Instantiate TableReader from input stream and options
   auto makeReaderResult = arrow::csv::TableReader::Make(pool, input, read_options,

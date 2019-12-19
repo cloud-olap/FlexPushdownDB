@@ -171,129 +171,128 @@ namespace arrow { class StringArray; }
 //  collate->show();
 //}
 
-//TEST_CASE ("S3SelectScan -> Sum -> Collate") {
-//
-//  char buff[FILENAME_MAX];
-//  getcwd(buff, FILENAME_MAX);
-//  std::string current_working_dir(buff);
-//
-//  std::cout << current_working_dir;
-//
-//  auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
-//
-//    spdlog::info("Data:\n{}", dataTupleSet->toString());
-//
-//    std::string sum = dataTupleSet->visit([](std::string accum, arrow::RecordBatch &batch) -> std::string {
-//      auto fieldIndex = batch.schema()->GetFieldIndex("f5");
-//      std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
-//
-//      double sum = 0;
-//      if(accum.empty()){
-//        sum = 0;
-//      }
-//      else{
-//        sum = std::stod(accum);
-//      }
-//
-//      std::shared_ptr<arrow::DataType> colType = array->type();
-//      if(colType->Equals(arrow::Int64Type())) {
-//        std::shared_ptr<arrow::Int64Array>
-//            typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
-//        for (int i = 0; i < batch.num_rows(); ++i) {
-//          long val = typedArray->Value(i);
-//          sum += val;
-//        }
-//      }
-//      else if(colType->Equals(arrow::StringType())){
-//        std::shared_ptr<arrow::StringArray>
-//            typedArray = std::static_pointer_cast<arrow::StringArray>(array);
-//        for (int i = 0; i < batch.num_rows(); ++i) {
-//          std::string val = typedArray->GetString(i);
-//          sum += std::stod(val);
-//        }
-//      }
-//      else if(colType->Equals(arrow::DoubleType())){
-//        std::shared_ptr<arrow::DoubleArray>
-//            typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
-//        for (int i = 0; i < batch.num_rows(); ++i) {
-//          double val = typedArray->Value(i);
-//          sum += val;
-//        }
-//      }
-//      else{
-//        abort();
-//      }
-//
-//      std::stringstream ss;
-//      ss << sum;
-//      return std::string(ss.str());
-//    });
-//
-//    // Create new aggregate tuple set
-//    std::vector<std::shared_ptr<std::string>> data;
-//    data.push_back(std::make_shared<std::string>(sum));
-//
-//    std::shared_ptr<arrow::Schema> schema;
-//
-//    std::shared_ptr<arrow::Field> field;
-//    field = arrow::field("sum(f5)", arrow::utf8());
-//
-//    schema = arrow::schema({field});
-//
-//    spdlog::info("\n" + schema->ToString());
-//
-//    arrow::MemoryPool *pool = arrow::default_memory_pool();
-//    arrow::StringBuilder colBuilder(pool);
-//
-//    colBuilder.Append(sum);
-//
-//    std::shared_ptr<arrow::StringArray> col;
-//    colBuilder.Finish(&col);
-//
-//    auto columns = std::vector<std::shared_ptr<arrow::Array>>{col};
-//
-//    std::shared_ptr<arrow::Table> table;
-//    table = arrow::Table::Make(schema, columns);
-//
-//    aggregateTupleSet = TupleSet::make(table);
-//
-//    return aggregateTupleSet;
-//  };
-//
-//  auto aggregateExpression = std::make_unique<AggregateExpression>(fn);
-//  auto aggregateExpressions = std::vector<std::unique_ptr<AggregateExpression>>();
-//  aggregateExpressions.push_back(std::move(aggregateExpression));
-//
-//  auto s3selectScan = std::make_shared<S3SelectScan>("s3SelectScan",
-//                                                     "s3filter",
-//                                                     "tpch-sf1/customer.csv",
-//                                                     "select * from S3Object limit 1000");
-//  auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
-//  auto collate = std::make_shared<Collate>("collate");
-//
-//  s3selectScan->produce(aggregate);
-//  aggregate->consume(s3selectScan);
-//
-//  aggregate->produce(collate);
-//  collate->consume(aggregate);
-//
-//  auto mgr = std::make_shared<OperatorManager>();
-//
-//  mgr->put(s3selectScan);
-//  mgr->put(aggregate);
-//  mgr->put(collate);
-//
-//  mgr->start();
-//  mgr->stop();
-//
-//  collate->show();
-//
-////  11250075000
-//}
+TEST_CASE ("S3SelectScan -> Sum -> Collate") {
 
+  char buff[FILENAME_MAX];
+  getcwd(buff, FILENAME_MAX);
+  std::string current_working_dir(buff);
 
-TEST_CASE ("Actors") {
-  auto normal = normal::Normal::create();
+  std::cout << current_working_dir;
 
-  normal.start();
+  auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
+
+    spdlog::info("Data:\n{}", dataTupleSet->toString());
+
+    std::string sum = dataTupleSet->visit([](std::string accum, arrow::RecordBatch &batch) -> std::string {
+      auto fieldIndex = batch.schema()->GetFieldIndex("f5");
+      std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
+
+      double sum = 0;
+      if(accum.empty()){
+        sum = 0;
+      }
+      else{
+        sum = std::stod(accum);
+      }
+
+      std::shared_ptr<arrow::DataType> colType = array->type();
+      if(colType->Equals(arrow::Int64Type())) {
+        std::shared_ptr<arrow::Int64Array>
+            typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          long val = typedArray->Value(i);
+          sum += val;
+        }
+      }
+      else if(colType->Equals(arrow::StringType())){
+        std::shared_ptr<arrow::StringArray>
+            typedArray = std::static_pointer_cast<arrow::StringArray>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          std::string val = typedArray->GetString(i);
+          sum += std::stod(val);
+        }
+      }
+      else if(colType->Equals(arrow::DoubleType())){
+        std::shared_ptr<arrow::DoubleArray>
+            typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+        for (int i = 0; i < batch.num_rows(); ++i) {
+          double val = typedArray->Value(i);
+          sum += val;
+        }
+      }
+      else{
+        abort();
+      }
+
+      std::stringstream ss;
+      ss << sum;
+      return std::string(ss.str());
+    });
+
+    // Create new aggregate tuple set
+    std::vector<std::shared_ptr<std::string>> data;
+    data.push_back(std::make_shared<std::string>(sum));
+
+    std::shared_ptr<arrow::Schema> schema;
+
+    std::shared_ptr<arrow::Field> field;
+    field = arrow::field("sum(f5)", arrow::utf8());
+
+    schema = arrow::schema({field});
+
+    spdlog::info("\n" + schema->ToString());
+
+    arrow::MemoryPool *pool = arrow::default_memory_pool();
+    arrow::StringBuilder colBuilder(pool);
+
+    colBuilder.Append(sum);
+
+    std::shared_ptr<arrow::StringArray> col;
+    colBuilder.Finish(&col);
+
+    auto columns = std::vector<std::shared_ptr<arrow::Array>>{col};
+
+    std::shared_ptr<arrow::Table> table;
+    table = arrow::Table::Make(schema, columns);
+
+    aggregateTupleSet = TupleSet::make(table);
+
+    return aggregateTupleSet;
+  };
+
+  auto aggregateExpression = std::make_unique<AggregateExpression>(fn);
+  auto aggregateExpressions = std::vector<std::unique_ptr<AggregateExpression>>();
+  aggregateExpressions.push_back(std::move(aggregateExpression));
+
+  auto s3selectScan = std::make_shared<S3SelectScan>("s3SelectScan",
+                                                     "s3filter",
+                                                     "tpch-sf1/customer.csv",
+                                                     "select * from S3Object limit 1000");
+  auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
+  auto collate = std::make_shared<Collate>("collate");
+
+  s3selectScan->produce(aggregate);
+  aggregate->consume(s3selectScan);
+
+  aggregate->produce(collate);
+  collate->consume(aggregate);
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  mgr->put(s3selectScan);
+  mgr->put(aggregate);
+  mgr->put(collate);
+
+  mgr->start();
+  mgr->stop();
+
+  collate->show();
+
 }
+
+
+//TEST_CASE ("Actors") {
+//  auto normal = normal::Normal::create();
+//
+//  normal.start();
+//}

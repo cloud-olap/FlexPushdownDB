@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/arrow/src/arrow-project" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/arrow/src/arrow-project/cpp/submodules/parquet-testing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/arrow/src/arrow-project/testing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/aws-cpp-sdk/src/aws-cpp-sdk-project" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/aws-cpp-sdk/src/aws-cpp-sdk-project-build/.deps/build/src/AwsCCommon" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/aws-cpp-sdk/src/aws-cpp-sdk-project-build/.deps/build/src/AwsCEventStream" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/aws-cpp-sdk/src/aws-cpp-sdk-project-build/.deps/build/src/AwsChecksums" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/doctest/src/doctest-project" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug-llvm-9/contrib/spdlog/src/spdlog-project" vcs="Git" />
+  </component>
+</project>
