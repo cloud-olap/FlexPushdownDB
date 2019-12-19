@@ -100,7 +100,7 @@ auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> a
   spdlog::info("Data:\n{}", dataTupleSet->toString());
 
   std::string sum = dataTupleSet->visit([](std::string accum, arrow::RecordBatch &batch) -> std::string {
-    auto fieldIndex = batch.schema()->GetFieldIndex("f5");
+    auto fieldIndex = batch.schema()->GetFieldIndex("A");
     std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
 
     double sum = 0;
@@ -152,7 +152,7 @@ auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> a
   std::shared_ptr<arrow::Schema> schema;
 
   std::shared_ptr<arrow::Field> field;
-  field = arrow::field("sum(f5)", arrow::utf8());
+  field = arrow::field("sum(A)", arrow::utf8());
 
   schema = arrow::schema({field});
 
