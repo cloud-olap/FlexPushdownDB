@@ -18,8 +18,12 @@
 
 #include <normal/core/TupleMessage.h>
 #include <normal/core/TupleSet.h>
+#include <arrow/csv/parser.h>
+#include <sstream>
+#include <iostream>
 #include "normal/core/Message.h"       // for Message
 #include "normal/core/Operator.h"      // for Operator
+#include "io/CSVParser.h"
 
 namespace arrow { class MemoryPool; }
 namespace arrow::io { class InputStream; }
@@ -31,36 +35,34 @@ FileScan::~FileScan() = default;
 
 void FileScan::onStart() {
 
-  const arrow::Result<std::shared_ptr<arrow::io::ReadableFile>> &result = arrow::io::ReadableFile::Open(m_filePath);
-  if (!result.ok()) {
-    abort();
-  }
-
-  const std::shared_ptr<arrow::io::ReadableFile> &f = result.ValueOrDie();
-  std::shared_ptr<arrow::io::InputStream> input = arrow::io::BufferReader::GetStream(f, 0, f->GetSize().ValueOrDie());
-
   arrow::Status st;
-  arrow::MemoryPool *pool = arrow::default_memory_pool();
+  auto pool = arrow::default_memory_pool();
 
-  auto read_options = arrow::csv::ReadOptions::Defaults();
-  read_options.use_threads = false;
-  auto parse_options = arrow::csv::ParseOptions::Defaults();
-  auto convert_options = arrow::csv::ConvertOptions::Defaults();
+  auto input = arrow::io::ReadableFile::Open(m_filePath).ValueOrDie();
 
-  // Instantiate TableReader from input stream and options
-  auto makeReaderResult = arrow::csv::TableReader::Make(pool, input, read_options,
-                                                        parse_options, convert_options);
-  if (!makeReaderResult.ok()) {
-    // Handle TableReader instantiation error...
-  }
+  auto fields = CSVParser::readFields(input);
 
-  std::shared_ptr<arrow::csv::TableReader> reader = makeReaderResult.ValueOrDie();
-  std::shared_ptr<TupleSet> tupleSet = TupleSet::make(reader);
+  st = input->Seek(0);
+  if (!st.ok())
+    abort();
+
+  auto parseOptions = arrow::csv::ParseOptions::Defaults();
+  auto readOptions = arrow::csv::ReadOptions::Defaults();
+  readOptions.use_threads = false;
+  auto convertOptions = arrow::csv::ConvertOptions::Defaults();
+
+  auto reader = arrow::csv::TableReader::Make(pool,
+                                              input,
+                                              readOptions, parseOptions, convertOptions).ValueOrDie();
+
+  auto tupleSet = TupleSet::make(reader);
 
   std::unique_ptr<Message> message = std::make_unique<TupleMessage>(tupleSet);
   ctx()->tell(std::move(message));
+
+  ctx()->complete();
 }
 
 void FileScan::onStop() {
-
+  // NOOP
 }

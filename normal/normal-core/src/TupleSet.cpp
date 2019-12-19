@@ -16,11 +16,12 @@
 namespace arrow { class MemoryPool; }
 
 
-std::shared_ptr<TupleSet> TupleSet::make(std::shared_ptr<arrow::csv::TableReader> tableReader) {
+std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::TableReader>& tableReader) {
 
   auto result = tableReader->Read();
   if (!result.ok()) {
-    // Handle CSV read error
+    // FIXME
+    abort();
   }
 
   auto tupleSet = std::make_shared<TupleSet>();

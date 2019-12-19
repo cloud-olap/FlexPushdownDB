@@ -15,7 +15,7 @@ find_package(Git REQUIRED)
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-pushdown" STATIC)
+add_library("normal-pushdown" STATIC src/io/CSVParser.cpp src/io/CSVParser.h)
 
 target_sources("normal-pushdown" PRIVATE
          src/Collate.cpp include/normal/pushdown/Collate.h

@@ -18,7 +18,7 @@ class TupleSet {
 private:
   std::shared_ptr<arrow::Table> m_table;
 public:
-  static std::shared_ptr<TupleSet> make(std::shared_ptr<arrow::csv::TableReader> tableReader);
+  static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::csv::TableReader>& tableReader);
   static std::shared_ptr<TupleSet> make(std::shared_ptr<arrow::Table> table);
 
   int numRows();
