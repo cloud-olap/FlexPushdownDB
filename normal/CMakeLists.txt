@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
-project("normal" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
+project("normal" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_LIST_DIR}/cmake")
-
-message("${CMAKE_MODULE_PATH}")
 
 #set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "/usr/bin/iwyu;")
 

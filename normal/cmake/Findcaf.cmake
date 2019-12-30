@@ -27,41 +27,41 @@ set(CAF_INSTALL_DIR ${INSTALL_DIR})
 
 file(MAKE_DIRECTORY ${CAF_INSTALL_DIR}/include) # Include directory needs to exist to run configure step
 
-
+MESSAGE("")
 add_library("caf-core" SHARED IMPORTED)
-set_target_properties("caf-core" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_core.so)
+set_target_properties("caf-core" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_core${CMAKE_SHARED_LIBRARY_SUFFIX})
 set_target_properties("caf-core" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
 add_dependencies("caf-core" "caf-project")
 showTargetProps("caf-core")
 
 add_library("caf-core-static" STATIC IMPORTED)
-set_target_properties("caf-core-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_core_static.a)
+set_target_properties("caf-core-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_core_static${CMAKE_STATIC_LIBRARY_SUFFIX})
 set_target_properties("caf-core-static" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
 add_dependencies("caf-core-static" "caf-project")
 showTargetProps("caf-core-static")
 
 
 add_library("caf-io" SHARED IMPORTED)
-set_target_properties("caf-io" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_io.so)
+set_target_properties("caf-io" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_io${CMAKE_SHARED_LIBRARY_SUFFIX})
 set_target_properties("caf-io" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
 add_dependencies("caf-io" "caf-project")
 showTargetProps("caf-io")
 
 add_library("caf-io-static" STATIC IMPORTED)
-set_target_properties("caf-io-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_io_static.a)
+set_target_properties("caf-io-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_io_static${CMAKE_STATIC_LIBRARY_SUFFIX})
 set_target_properties("caf-io-static" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
 add_dependencies("caf-io-static" "caf-project")
 showTargetProps("caf-io-static")
 
 
-add_library("caf-openssl" STATIC IMPORTED)
-set_target_properties("caf-openssl" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_openssl.so)
-set_target_properties("caf-openssl" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
-add_dependencies("caf-openssl" "caf-project")
-showTargetProps("caf-openssl")
+add_library("caf-opencl" STATIC IMPORTED)
+set_target_properties("caf-opencl" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_opencl${CMAKE_SHARED_LIBRARY_SUFFIX})
+set_target_properties("caf-opencl" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
+add_dependencies("caf-opencl" "caf-project")
+showTargetProps("caf-opencl")
 
-add_library("caf-openssl-static" STATIC IMPORTED)
-set_target_properties("caf-openssl-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_openssl_static.a)
-set_target_properties("caf-openssl-static" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
-add_dependencies("caf-openssl-static" "caf-project")
-showTargetProps("caf-openssl-static")
+add_library("caf-opencl-static" STATIC IMPORTED)
+set_target_properties("caf-opencl-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_opencl_static${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_target_properties("caf-opencl-static" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
+add_dependencies("caf-opencl-static" "caf-project")
+showTargetProps("caf-opencl-static")

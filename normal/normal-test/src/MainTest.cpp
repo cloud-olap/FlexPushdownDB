@@ -16,7 +16,7 @@
 #include <arrow/table.h>                          // for Table
 #include <arrow/type.h>                           // for field, schema, Schema
 #include <arrow/type_fwd.h>                       // for default_memory_pool
-#include <bits/shared_ptr.h>                      // for shared_ptr, make_sh...
+#include <memory.h>                      // for shared_ptr, make_sh...
 #include <cstdio>                                // for FILENAME_MAX
 #include <unistd.h>                               // for getcwd
 #include <iostream>                               // for cout

@@ -22,14 +22,14 @@ set(AWS_SDK_INSTALL_DIR ${INSTALL_DIR})
 file(MAKE_DIRECTORY ${AWS_SDK_INSTALL_DIR}/include) # Include directory needs to exist to run configure step
 
 add_library("aws-cpp-sdk-core" SHARED IMPORTED)
-set_target_properties("aws-cpp-sdk-core" PROPERTIES IMPORTED_LOCATION ${AWS_SDK_INSTALL_DIR}/lib/libaws-cpp-sdk-core.so)
+set_target_properties("aws-cpp-sdk-core" PROPERTIES IMPORTED_LOCATION ${AWS_SDK_INSTALL_DIR}/lib/libaws-cpp-sdk-core${CMAKE_SHARED_LIBRARY_SUFFIX})
 set_target_properties("aws-cpp-sdk-core" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${AWS_SDK_INSTALL_DIR}/include)
 add_dependencies("aws-cpp-sdk-core" "aws-cpp-sdk-project")
 showTargetProps("aws-cpp-sdk-core")
 
 
 add_library("aws-cpp-sdk-s3" SHARED IMPORTED)
-set_target_properties("aws-cpp-sdk-s3" PROPERTIES IMPORTED_LOCATION ${AWS_SDK_INSTALL_DIR}/lib/libaws-cpp-sdk-s3.so)
+set_target_properties("aws-cpp-sdk-s3" PROPERTIES IMPORTED_LOCATION ${AWS_SDK_INSTALL_DIR}/lib/libaws-cpp-sdk-s3${CMAKE_SHARED_LIBRARY_SUFFIX})
 set_target_properties("aws-cpp-sdk-s3" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${AWS_SDK_INSTALL_DIR}/include)
 add_dependencies("aws-cpp-sdk-s3" "aws-cpp-sdk-project")
 showTargetProps("aws-cpp-sdk-s3")
