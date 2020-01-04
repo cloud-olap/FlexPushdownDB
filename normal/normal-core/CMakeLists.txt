@@ -5,7 +5,7 @@ project("normal-core" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-core" STATIC src/Normal.cpp include/normal/core/Normal.h)
+add_library("normal-core" STATIC src/Normal.cpp include/normal/core/Normal.h src/kernel/Kernel.cpp src/kernel/Kernel.h src/kernel/OperatorActor.cpp src/kernel/OperatorActor.h)
 
 target_sources("normal-core" PRIVATE
         src/Operator.cpp include/normal/core/Operator.h
