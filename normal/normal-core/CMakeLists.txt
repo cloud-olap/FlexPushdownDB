@@ -27,7 +27,6 @@ target_link_libraries("normal-core" PRIVATE arrow)
 target_link_libraries("normal-core" PRIVATE arrow-dataset)
 target_link_libraries("normal-core" PRIVATE caf-core)
 target_link_libraries("normal-core" PRIVATE caf-io)
-target_link_libraries("normal-core" PRIVATE caf-opencl)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -39,7 +38,6 @@ add_dependencies("normal-core" "arrow")
 add_dependencies("normal-core" "arrow-dataset")
 add_dependencies("normal-core" "caf-core")
 add_dependencies("normal-core" "caf-io")
-add_dependencies("normal-core" "caf-opencl")
 
 
 #-----------------------------------------------------------------------------------------------------------------------
