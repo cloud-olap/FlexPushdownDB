@@ -188,19 +188,19 @@ TEST_CASE ("File Scan -> Sum -> Collate") {
   auto aggregateExpressions = std::vector<std::unique_ptr<AggregateExpression>>();
   aggregateExpressions.push_back(std::move(aggregateExpression));
 
-  auto s3selectScan = std::make_shared<FileScan>(std::string("fileScan"), std::string("data/test.csv"));
+  auto fileScan = std::make_shared<FileScan>(std::string("fileScan"), std::string("data/test.csv"));
   auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
   auto collate = std::make_shared<Collate>("collate");
 
-  s3selectScan->produce(aggregate);
-  aggregate->consume(s3selectScan);
+  fileScan->produce(aggregate);
+  aggregate->consume(fileScan);
 
   aggregate->produce(collate);
   collate->consume(aggregate);
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  mgr->put(s3selectScan);
+  mgr->put(fileScan);
   mgr->put(aggregate);
   mgr->put(collate);
 

@@ -10,7 +10,6 @@ ExternalProject_Add("aws-cpp-sdk-project"
         -DBUILD_ONLY=s3
         -DCPP_STANDARD=17
         -DENABLE_TESTING=OFF
-        -DUSE_IMPORT_EXPORT=ON
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_INSTALL_PREFIX=${DEPENDENCIES_BASE_DIR}/aws-cpp-sdk

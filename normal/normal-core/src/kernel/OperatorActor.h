@@ -5,31 +5,23 @@
 #ifndef NORMAL_OPERATORACTOR_H
 #define NORMAL_OPERATORACTOR_H
 
-
-#include <caf/event_based_actor.hpp>
+#include <normal/core/Message.h>
+#include "caf/all.hpp"
+#include "caf/io/all.hpp"
 #include "normal/core/Operator.h"
+#include "StartMessage.h"
 
-//class Operator;
+using OperatorActorType = caf::typed_actor<
+    caf::replies_to<StartMessage>::with<void>
+>;
 
-class OperatorActor : public caf::event_based_actor {
-private:
-    std::shared_ptr<Operator> _operator;
+class OperatorActor : public OperatorActorType::base {
+
 public:
-    explicit OperatorActor(const std::shared_ptr<Operator>& _operator, caf::actor_config &cfg) : event_based_actor(cfg) {
-        _operator = operator;
-    }
+  explicit OperatorActor(caf::actor_config &cfg, const std::shared_ptr<Operator> &_operator);
 
-    caf::behavior make_behavior() override {
-        return {
-                [](int a, int b) {
-                    return a + b;
-                },
-                [](int a, int b) {
-                    return a - b;
-                }
-        };
-    }
+  behavior_type make_behavior() override;
+  std::shared_ptr<Operator> _operator;
 };
-
 
 #endif //NORMAL_OPERATORACTOR_H

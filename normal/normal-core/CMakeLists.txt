@@ -5,9 +5,11 @@ project("normal-core" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-core" STATIC src/Normal.cpp include/normal/core/Normal.h src/kernel/Kernel.cpp src/kernel/Kernel.h src/kernel/OperatorActor.cpp src/kernel/OperatorActor.h)
+add_library("normal-core" STATIC src/kernel/StartMessage.cpp src/kernel/StartMessage.h)
 
 target_sources("normal-core" PRIVATE
+        src/Normal.cpp include/normal/core/Normal.h
+        src/kernel/OperatorActor.cpp src/kernel/OperatorActor.h
         src/Operator.cpp include/normal/core/Operator.h
         src/OperatorContext.cpp include/normal/core/OperatorContext.h
         src/OperatorManager.cpp include/normal/core/OperatorManager.h
@@ -25,8 +27,8 @@ target_include_directories("normal-core" PUBLIC include)
 target_link_libraries("normal-core" PRIVATE spdlog)
 target_link_libraries("normal-core" PRIVATE arrow)
 target_link_libraries("normal-core" PRIVATE arrow-dataset)
-target_link_libraries("normal-core" PRIVATE caf-core)
-target_link_libraries("normal-core" PRIVATE caf-io)
+target_link_libraries("normal-core" PUBLIC caf-core)
+target_link_libraries("normal-core" PUBLIC caf-io)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

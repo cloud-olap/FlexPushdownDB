@@ -9,10 +9,7 @@ ExternalProject_Add(caf-project
         GIT_TAG ${CAF_VERSION}
         CMAKE_ARGS
         -DCAF_BUILD_STATIC:BOOL=yes
-        -DCAF_NO_CURL_EXAMPLES:BOOL=yes
         -DCAF_NO_EXAMPLES:BOOL=yes
-        -DCAF_NO_PROTOBUF_EXAMPLES:BOOL=yes
-        -DCAF_NO_QT_EXAMPLES:BOOL=yes
         -DCAF_NO_UNIT_TESTS:BOOL=yes
         -DCMAKE_C_COMPILER:STRING=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER:STRING=${CMAKE_CXX_COMPILER}
@@ -60,17 +57,17 @@ showTargetProps("caf-io-static")
 # OpenSSL development packages is required to be installed to use this
 #-----------------------------------------------------------------------------------------------------------------------
 
-#add_library("caf-openssl" STATIC IMPORTED)
-#set_target_properties("caf-openssl" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_openssl${CMAKE_SHARED_LIBRARY_SUFFIX})
-#set_target_properties("caf-openssl" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
-#add_dependencies("caf-openssl" "caf-project")
-#showTargetProps("caf-openssl")
-#
-#add_library("caf-openssl-static" STATIC IMPORTED)
-#set_target_properties("caf-openssl-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_openssl_static${CMAKE_STATIC_LIBRARY_SUFFIX})
-#set_target_properties("caf-openssl-static" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
-#add_dependencies("caf-openssl-static" "caf-project")
-#showTargetProps("caf-openssl-static")
+add_library("caf-openssl" STATIC IMPORTED)
+set_target_properties("caf-openssl" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_openssl${CMAKE_SHARED_LIBRARY_SUFFIX})
+set_target_properties("caf-openssl" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
+add_dependencies("caf-openssl" "caf-project")
+showTargetProps("caf-openssl")
+
+add_library("caf-openssl-static" STATIC IMPORTED)
+set_target_properties("caf-openssl-static" PROPERTIES IMPORTED_LOCATION ${CAF_INSTALL_DIR}/lib/libcaf_openssl_static${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_target_properties("caf-openssl-static" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INSTALL_DIR}/include)
+add_dependencies("caf-openssl-static" "caf-project")
+showTargetProps("caf-openssl-static")
 
 
 #-----------------------------------------------------------------------------------------------------------------------
