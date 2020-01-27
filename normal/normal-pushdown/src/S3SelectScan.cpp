@@ -42,6 +42,7 @@
 #include "normal/core/Message.h"                            // for Message
 #include "normal/core/TupleSet.h"                           // for TupleSet
 #include "s3/S3SelectParser.h"
+#include "../include/normal/pushdown/S3SelectScan.h"
 #include <normal/core/TupleMessage.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
@@ -57,87 +58,108 @@ using namespace Aws::S3::Model;
 void S3SelectScan::onStart() {
 
   static const char *ALLOCATION_TAG = "Normal";
+  //get tbl and col info
+  std::string colName = m_col;
+  std::string tblName = m_tbl;
 
-  Aws::SDKOptions options;
-  options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
-  Aws::InitAPI(options);
+  std::string cacheID = tblName + "." + colName;
+  std::unordered_map<std::string, std::shared_ptr<TupleSet>> cacheMap = m_cache->m_cacheData;
+  //no found
+  if (cacheMap.empty() || cacheMap.find(cacheID)!=cacheMap.end()) {
 
-  std::shared_ptr<S3Client> client;
-  std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
+    Aws::SDKOptions options;
+    options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
+    Aws::InitAPI(options);
 
-  limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 50000000);
+    std::shared_ptr<S3Client> client;
+    std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
 
-  ClientConfiguration config;
-  config.region = Aws::Region::US_EAST_1;
-  config.scheme = Scheme::HTTPS;
-  config.connectTimeoutMs = 30000;
-  config.requestTimeoutMs = 30000;
-  config.readRateLimiter = limiter;
-  config.writeRateLimiter = limiter;
-  config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 4);
+    limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 50000000);
 
-  client = Aws::MakeShared<S3Client>(ALLOCATION_TAG,
-                                     Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
-                                     config,
-                                     AWSAuthV4Signer::PayloadSigningPolicy::Never,
-                                     true);
+    ClientConfiguration config;
+    config.region = Aws::Region::US_EAST_1;
+    config.scheme = Scheme::HTTPS;
+    config.connectTimeoutMs = 30000;
+    config.requestTimeoutMs = 30000;
+    config.readRateLimiter = limiter;
+    config.writeRateLimiter = limiter;
+    config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 4);
 
-  Aws::String bucketName = Aws::String(m_s3Bucket);
+    client = Aws::MakeShared<S3Client>(ALLOCATION_TAG,
+                                       Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+                                       config,
+                                       AWSAuthV4Signer::PayloadSigningPolicy::Never,
+                                       true);
 
-  SelectObjectContentRequest selectObjectContentRequest;
-  selectObjectContentRequest.SetBucket(bucketName);
-  selectObjectContentRequest.SetKey(Aws::String(m_s3Object));
+    Aws::String bucketName = Aws::String(m_s3Bucket);
 
-  selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
+    SelectObjectContentRequest selectObjectContentRequest;
+    selectObjectContentRequest.SetBucket(bucketName);
+    selectObjectContentRequest.SetKey(Aws::String(m_s3Object));
 
-  selectObjectContentRequest.SetExpression(m_sql.c_str());
+    selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
-  CSVInput csvInput;
-  csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
-  csvInput.SetFieldDelimiter("|");
-  csvInput.SetRecordDelimiter("|\n");
-  InputSerialization inputSerialization;
-  inputSerialization.SetCSV(csvInput);
-  selectObjectContentRequest.SetInputSerialization(inputSerialization);
+    selectObjectContentRequest.SetExpression(m_sql.c_str());
 
-  CSVOutput csvOutput;
-  OutputSerialization outputSerialization;
-  outputSerialization.SetCSV(csvOutput);
-  selectObjectContentRequest.SetOutputSerialization(outputSerialization);
+    CSVInput csvInput;
+    csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
+    csvInput.SetFieldDelimiter("|");
+    csvInput.SetRecordDelimiter("|\n");
+    InputSerialization inputSerialization;
+    inputSerialization.SetCSV(csvInput);
+    selectObjectContentRequest.SetInputSerialization(inputSerialization);
 
-  std::vector<unsigned char> partial{};
-  S3SelectParser s3SelectParser{};
+    CSVOutput csvOutput;
+    OutputSerialization outputSerialization;
+    outputSerialization.SetCSV(csvOutput);
+    selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  SelectObjectContentHandler handler;
-  handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
-    auto payload = recordsEvent.GetPayload();
-    std::shared_ptr<TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
+    std::vector<unsigned char> partial{};
+    S3SelectParser s3SelectParser{};
+
+    SelectObjectContentHandler handler;
+    handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
+      auto payload = recordsEvent.GetPayload();
+      std::shared_ptr<TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
+      std::unique_ptr<Message> message = std::make_unique<TupleMessage>(tupleSet);
+      ctx()->tell(std::move(message));
+      //add to cache
+      m_cache->m_cacheData[cacheID] = tupleSet;
+    });
+    handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
+      std::cout << "Bytes scanned: " << statsEvent.GetDetails().GetBytesScanned() << std::endl;
+      std::cout << "Bytes processed: " << statsEvent.GetDetails().GetBytesProcessed() << std::endl;
+      std::cout << "Bytes returned: " << statsEvent.GetDetails().GetBytesReturned() << std::endl;
+    });
+    handler.SetEndEventCallback([&](){
+      ctx()->complete();
+    });
+
+    selectObjectContentRequest.SetEventStreamHandler(handler);
+
+    auto selectObjectContentOutcome = client->SelectObjectContent(selectObjectContentRequest);
+
+    Aws::ShutdownAPI(options);
+  }
+  else {
+
+
+    std::shared_ptr<TupleSet> tupleSet = cacheMap[cacheID];
     std::unique_ptr<Message> message = std::make_unique<TupleMessage>(tupleSet);
     ctx()->tell(std::move(message));
-  });
-  handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
-    std::cout << "Bytes scanned: " << statsEvent.GetDetails().GetBytesScanned() << std::endl;
-    std::cout << "Bytes processed: " << statsEvent.GetDetails().GetBytesProcessed() << std::endl;
-    std::cout << "Bytes returned: " << statsEvent.GetDetails().GetBytesReturned() << std::endl;
-  });
-  handler.SetEndEventCallback([&](){
-    ctx()->complete();
-  });
-
-  selectObjectContentRequest.SetEventStreamHandler(handler);
-
-  auto selectObjectContentOutcome = client->SelectObjectContent(selectObjectContentRequest);
-
-  Aws::ShutdownAPI(options);
+  }
 
 }
 
 void S3SelectScan::onStop() {
 }
 
-S3SelectScan::S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql)
+S3SelectScan::S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql, std::string tbl, std::string col)
     : Operator(std::move(name)) {
   m_s3Bucket = std::move(s3Bucket);
   m_s3Object = std::move(s3Object);
   m_sql = std::move(sql);
+  m_tbl = std::move(tbl);
+  m_col = std::move(col);
+  m_cache = std::make_shared<Cache>();
 }

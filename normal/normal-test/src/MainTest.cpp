@@ -264,9 +264,9 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
   aggregateExpressions.push_back(std::move(aggregateExpression));
 
   auto s3selectScan = std::make_shared<S3SelectScan>("s3SelectScan",
-                                                     "s3filter",
-                                                     "tpch-sf1/customer.csv",
-                                                     "select * from S3Object limit 1000");
+                                                     "mit-caching",
+                                                     "test/a.tbl",
+                                                     "select  * from S3Object","a","all");
   auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
   auto collate = std::make_shared<Collate>("collate");
 

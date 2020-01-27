@@ -10,18 +10,22 @@
 
 #include "normal/core/Operator.h"
 #include "normal/core/TupleSet.h"
+#include "normal/core/Cache.h"
 
 class S3SelectScan : public Operator {
 private:
   std::string m_s3Bucket;
   std::string m_s3Object;
   std::string m_sql;
+  std::shared_ptr<Cache> m_cache;
+  std::string m_col;
+  std::string m_tbl;
 //  std::shared_ptr<TupleSet> parsePayload(const Aws::String& payload);
 protected:
   void onStart() override;
   void onStop() override;
 public:
-  S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql);
+  S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql,std::string m_tbl, std::string m_col);
   ~S3SelectScan() override = default;
 };
 
