@@ -11,17 +11,13 @@
 #include "normal/core/Operator.h"
 #include "StartMessage.h"
 
-using OperatorActorType = caf::typed_actor<
-    caf::replies_to<StartMessage>::with<void>
->;
-
-class OperatorActor : public OperatorActorType::base {
+class OperatorActor : public caf::event_based_actor {
 
 public:
-  explicit OperatorActor(caf::actor_config &cfg, const std::shared_ptr<Operator> &_operator);
+  OperatorActor(caf::actor_config &cfg, const std::shared_ptr<normal::core::Operator> &_operator);
 
-  behavior_type make_behavior() override;
-  std::shared_ptr<Operator> _operator;
+  caf::behavior make_behavior() override;
+  std::shared_ptr<normal::core::Operator> _operator;
 };
 
 #endif //NORMAL_OPERATORACTOR_H

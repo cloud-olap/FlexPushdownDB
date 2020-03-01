@@ -112,8 +112,8 @@ void S3SelectScan::onStart() {
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
     auto payload = recordsEvent.GetPayload();
     std::shared_ptr<TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
-    std::unique_ptr<Message> message = std::make_unique<TupleMessage>(tupleSet);
-    ctx()->tell(std::move(message));
+    TupleMessage message(tupleSet);
+    ctx()->tell(message);
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
     std::cout << "Bytes scanned: " << statsEvent.GetDetails().GetBytesScanned() << std::endl;

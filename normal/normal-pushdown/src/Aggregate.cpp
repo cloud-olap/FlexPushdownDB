@@ -28,19 +28,18 @@ void Aggregate::onStop() {
 
 }
 
-void Aggregate::onReceive(std::unique_ptr<Message> msg) {
+void Aggregate::onReceive(const Message& msg) {
 
-  std::unique_ptr<TupleMessage>
-      tupleMessage = std::unique_ptr<TupleMessage>{dynamic_cast<TupleMessage *>(msg.release())};
-  auto tupleSet = tupleMessage->data();
+  auto tupleMessage =dynamic_cast<const TupleMessage&>(msg);
+  auto tupleSet = tupleMessage.data();
 
   if(inputTupleSet == nullptr){
-    inputTupleSet = tupleMessage->data();
+    inputTupleSet = tupleMessage.data();
   }
   else{
     auto tables = std::vector<std::shared_ptr<arrow::Table>>();
     std::shared_ptr<arrow::Table> table;
-    tables.push_back(tupleMessage->data()->getTable());
+    tables.push_back(tupleMessage.data()->getTable());
     tables.push_back(inputTupleSet->getTable());
     arrow::ConcatenateTables(tables, &table);
     inputTupleSet->setTable(table);
@@ -56,8 +55,8 @@ void Aggregate::onComplete(const Operator &op) {
     aggregateTupleSet = expr->apply(inputTupleSet, aggregateTupleSet);
   }
 
-  auto outMessage = std::make_unique<TupleMessage>(aggregateTupleSet);
-  ctx()->tell(std::move(outMessage));
+  TupleMessage outMessage(aggregateTupleSet);
+  ctx()->tell(outMessage);
 
   ctx()->complete();
 }

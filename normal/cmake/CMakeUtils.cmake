@@ -17,3 +17,10 @@ function(showTargetProps target)
     message("")
 
 endfunction()
+
+function(setDefaults)
+
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+
+endfunction()

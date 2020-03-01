@@ -23,29 +23,37 @@ void Collate::onStop() {
 Collate::Collate(std::string name) : Operator(std::move(name)) {
 }
 
-void Collate::onReceive(std::unique_ptr<Message> msg) {
+void Collate::onReceive(const Message& msg) {
   spdlog::info("{}  |  Received", this->name());
 
-  std::unique_ptr<TupleMessage>
-      tupleMessage = std::unique_ptr<TupleMessage>{dynamic_cast<TupleMessage *>(msg.release())};
+  auto tupleMessage = dynamic_cast<const TupleMessage&>(msg);
   if (!m_tupleSet) {
-    assert(tupleMessage->data());
-    m_tupleSet = tupleMessage->data();
+    assert(tupleMessage.data());
+    m_tupleSet = tupleMessage.data();
   } else {
     auto tables = std::vector<std::shared_ptr<arrow::Table>>();
     std::shared_ptr<arrow::Table> table;
-    tables.push_back(tupleMessage->data()->getTable());
+    tables.push_back(tupleMessage.data()->getTable());
     tables.push_back(m_tupleSet->getTable());
     arrow::ConcatenateTables(tables, &table);
     m_tupleSet->setTable(table);
   }
 }
+
 void Collate::onComplete(const Operator &op) {
   ctx()->complete();
 }
+
 void Collate::show() {
 
   assert(m_tupleSet);
 
   spdlog::info("{}  |  Show:\n{}", this->name(), m_tupleSet->toString());
+}
+
+std::shared_ptr<TupleSet> Collate::tuples() {
+
+  assert(m_tupleSet);
+
+  return m_tupleSet;
 }

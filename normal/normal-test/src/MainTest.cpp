@@ -43,10 +43,10 @@ namespace arrow { class StringArray; }
 //
 //  s3selectScan->create(ctx);
 //  s3selectScan->start();
-//      CHECK(s3selectScan->running());
+//      CHECK(s3selectScan->isRunning());
 //
 //  s3selectScan->stop();
-//      CHECK(!s3selectScan->running());
+//      CHECK(!s3selectScan->isRunning());
 //}
 //
 //TEST_CASE ("OperatorManager lifecycle") {
@@ -95,7 +95,8 @@ namespace arrow { class StringArray; }
 //  collate->show();
 //}
 
-auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
+auto fn = [](std::shared_ptr<TupleSet> dataTupleSet,
+             std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
 
   spdlog::info("Data:\n{}", dataTupleSet->toString());
 
@@ -104,39 +105,35 @@ auto fn = [](std::shared_ptr<TupleSet> dataTupleSet, std::shared_ptr<TupleSet> a
     std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
 
     double sum = 0;
-    if(accum.empty()){
+    if (accum.empty()) {
       sum = 0;
-    }
-    else{
+    } else {
       sum = std::stod(accum);
     }
 
     std::shared_ptr<arrow::DataType> colType = array->type();
-    if(colType->Equals(arrow::Int64Type())) {
+    if (colType->Equals(arrow::Int64Type())) {
       std::shared_ptr<arrow::Int64Array>
           typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
       for (int i = 0; i < batch.num_rows(); ++i) {
         long val = typedArray->Value(i);
         sum += val;
       }
-    }
-    else if(colType->Equals(arrow::StringType())){
+    } else if (colType->Equals(arrow::StringType())) {
       std::shared_ptr<arrow::StringArray>
           typedArray = std::static_pointer_cast<arrow::StringArray>(array);
       for (int i = 0; i < batch.num_rows(); ++i) {
         std::string val = typedArray->GetString(i);
         sum += std::stod(val);
       }
-    }
-    else if(colType->Equals(arrow::DoubleType())){
+    } else if (colType->Equals(arrow::DoubleType())) {
       std::shared_ptr<arrow::DoubleArray>
           typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
       for (int i = 0; i < batch.num_rows(); ++i) {
         double val = typedArray->Value(i);
         sum += val;
       }
-    }
-    else{
+    } else {
       abort();
     }
 
@@ -205,9 +202,16 @@ TEST_CASE ("File Scan -> Sum -> Collate") {
   mgr->put(collate);
 
   mgr->start();
-  mgr->stop();
 
-  collate->show();
+  auto tuples = collate->tuples();
+
+  auto val = tuples->getValue("sum(A)", 0);
+
+      CHECK(tuples->numRows() == 1);
+      CHECK(tuples->numColumns() == 1);
+      CHECK(val == "12");
+
+  mgr->stop();
 }
 
 //TEST_CASE ("S3SelectScan -> Sum -> Collate") {

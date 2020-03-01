@@ -14,9 +14,12 @@
 #include "normal/core/OperatorContext.h"  // for OperatorContext
 #include "kernel/OperatorActor.h"
 #include "kernel/StartMessage.h"
-#include "caf/make_type_erased_tuple_view.hpp"
+#include "caf/all.hpp"
+#include "caf/io/all.hpp"
 
-void OperatorManager::put(const std::shared_ptr<Operator> &op) {
+
+
+void OperatorManager::put(const std::shared_ptr<normal::core::Operator> &op) {
 
   assert(op);
 
@@ -25,17 +28,36 @@ void OperatorManager::put(const std::shared_ptr<Operator> &op) {
 }
 
 void OperatorManager::start() {
-  for (const auto &element: m_operatorMap) {
 
+  // Create the operators
+  for (const auto &element: m_operatorMap) {
     auto ctx = element.second;
     auto op = ctx->op();
     op->create(ctx);
+  }
 
-    auto actorRef = actorSystem->spawn<OperatorActor>(op);
+  // Create the operator actors
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+    caf::actor actorRef = actorSystem->spawn<OperatorActor>(op);
+    op->setActorId(actorRef->id());
+    actorSystem->registry().put(actorRef.id(), actorRef);
+  }
 
-    caf::scoped_actor self{*actorSystem};
-    StartMessage sm;
+  caf::scoped_actor self{*actorSystem};
 
+//   Send start messages to the actors
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+
+    std::vector<caf::actor_id> actorIds;
+    for(const auto &consumer: op->consumers())
+      actorIds.emplace_back(consumer.second->getActorId());
+
+    auto actorRef = actorSystem->registry().get<caf::actor>(op->getActorId());
+    StartMessage sm(actorIds);
     self->send(actorRef, sm);
   }
 
@@ -50,22 +72,25 @@ void OperatorManager::stop() {
   }
 }
 
-void OperatorManager::tell(std::unique_ptr<Message> msg, const std::shared_ptr<Operator> &op) {
+void OperatorManager::tell(Message& msg, const std::shared_ptr<normal::core::Operator> &op) {
 
   assert(op);
 
-  const std::vector<std::shared_ptr<Operator>> &consumers = op->consumers();
+  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op->consumers();
   for (const auto &c: consumers) {
-    c->receive(std::move(msg));
+    c.second->receive(msg);
+
+//    caf::scoped_actor self{*actorSystem};
+//    self->send(op->getActorId(), msg);
   }
 }
 
-void OperatorManager::complete(Operator &op) {
+void OperatorManager::complete(normal::core::Operator &op) {
 
-  const std::vector<std::shared_ptr<Operator>> &consumers = op.consumers();
+  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op.consumers();
 
   for (const auto &consumer : consumers) {
-    consumer->complete(op);
+    consumer.second->complete(op);
   }
 }
 

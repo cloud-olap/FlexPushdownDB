@@ -9,7 +9,7 @@
 
 #include <normal/core/Operator.h>
 
-class FileScan : public Operator {
+class FileScan : public normal::core::Operator {
 private:
   std::string m_filePath;
 protected:

@@ -3,6 +3,7 @@ project("normal-test" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
 include(ExternalProject)
 find_package(Git REQUIRED)
 
+setDefaults()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Dependencies

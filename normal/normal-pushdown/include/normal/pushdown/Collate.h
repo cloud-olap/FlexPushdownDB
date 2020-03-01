@@ -17,7 +17,7 @@
 class Message;
 class TupleSet;
 
-class Collate : public Operator {
+class Collate : public normal::core::Operator {
 private:
   std::shared_ptr<TupleSet> m_tupleSet;
 public:
@@ -25,10 +25,11 @@ public:
   ~Collate() override = default;
   void onStart() override;
   void onStop() override;
-  void onReceive(std::unique_ptr<Message> msg) override;
+  void onReceive(const Message& msg) override;
   void show();
+  std::shared_ptr<TupleSet> tuples();
 protected:
-  void onComplete(const Operator &op) override;
+  void onComplete(const normal::core::Operator &op) override;
 
 };
 

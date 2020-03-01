@@ -7,7 +7,14 @@
 
 #include <normal/core/Message.h>
 
-class StartMessage {
+class StartMessage : public Message {
+
+private:
+  std::vector<caf::actor_id> consumers;
+
+public:
+  explicit StartMessage(std::vector<caf::actor_id> Consumers);
+  const std::vector<caf::actor_id> &getConsumers() const;
 
 };
 

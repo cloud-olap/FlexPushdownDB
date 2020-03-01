@@ -15,7 +15,7 @@
 
 class Message;
 
-class Aggregate : public Operator {
+class Aggregate : public normal::core::Operator {
 private:
   std::vector<std::unique_ptr<AggregateExpression>> m_expressions;
   std::shared_ptr<TupleSet> inputTupleSet;
@@ -25,9 +25,9 @@ public:
   ~Aggregate() override = default;
   void onStart() override;
   void onStop() override;
-  void onReceive(std::unique_ptr<Message> msg) override;
+  void onReceive(const Message& msg) override;
 protected:
-  void onComplete(const Operator &op) override;
+  void onComplete(const normal::core::Operator &op) override;
 };
 
 #endif //NORMAL_NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_H

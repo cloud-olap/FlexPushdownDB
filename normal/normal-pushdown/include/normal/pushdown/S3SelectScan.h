@@ -11,7 +11,7 @@
 #include "normal/core/Operator.h"
 #include "normal/core/TupleSet.h"
 
-class S3SelectScan : public Operator {
+class S3SelectScan : public normal::core::Operator {
 private:
   std::string m_s3Bucket;
   std::string m_s3Object;

@@ -7,6 +7,9 @@
 
 #include <caf/all.hpp>
 
+/**
+ * Base class for messages
+ */
 class Message {
 public:
   Message() = default;

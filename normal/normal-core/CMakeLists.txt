@@ -1,5 +1,6 @@
 project("normal-core" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
 
+setDefaults()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Target

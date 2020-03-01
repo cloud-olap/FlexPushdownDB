@@ -5,21 +5,20 @@
 #include <spdlog/spdlog.h>
 #include "OperatorActor.h"
 
-OperatorActor::OperatorActor(caf::actor_config &cfg, const std::shared_ptr<Operator> &_operator) :
-    OperatorActorType::base(cfg) {
+OperatorActor::OperatorActor(caf::actor_config &cfg, const std::shared_ptr<normal::core::Operator> &_operator) :
+ caf::event_based_actor(cfg) {
   this->_operator = _operator;
 }
 
-// function-based, statically typed, event-based API
-OperatorActor::behavior_type typed_calculator_fun(OperatorActor &self) {
+caf::behavior behaviour(OperatorActor &self) {
   return {
-      [&](const StartMessage &msg) {
+      [&](const Message &msg) {
         spdlog::info("Actor Received");
-        self._operator->receive(nullptr);
+        self._operator->receive(msg);
       }
   };
 }
 
-OperatorActor::behavior_type OperatorActor::make_behavior() {
-  return typed_calculator_fun(*this);
+caf::behavior OperatorActor::make_behavior() {
+  return behaviour(*this);
 }

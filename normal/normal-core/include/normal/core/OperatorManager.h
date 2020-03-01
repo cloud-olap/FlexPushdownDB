@@ -10,6 +10,7 @@
 #include <string>
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
+#include "Operator.h"
 
 class Message;
 class Operator;  // lines 16-16
@@ -20,14 +21,15 @@ private:
   std::map<std::string, std::shared_ptr<OperatorContext>> m_operatorMap;
   caf::actor_system_config actorSystemConfig;
   std::unique_ptr<caf::actor_system> actorSystem;
+  std::map<std::string, caf::actor_id> actorMap;
 public:
-  void put(const std::shared_ptr<Operator> &op);
+  void put(const std::shared_ptr<normal::core::Operator> &op);
 
   void start();
   void stop();
 
-  void tell(std::unique_ptr<Message> msg, const std::shared_ptr<Operator> &op);
-  void complete(Operator &op);
+  void tell(Message& msg, const std::shared_ptr<normal::core::Operator> &op);
+  void complete(normal::core::Operator &op);
   OperatorManager();
 };
 

@@ -57,8 +57,8 @@ void FileScan::onStart() {
 
   auto tupleSet = TupleSet::make(reader);
 
-  std::unique_ptr<Message> message = std::make_unique<TupleMessage>(tupleSet);
-  ctx()->tell(std::move(message));
+  TupleMessage message(tupleSet);
+  ctx()->tell(message);
 
   ctx()->complete();
 }

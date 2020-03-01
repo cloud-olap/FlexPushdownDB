@@ -15,8 +15,7 @@
 
 namespace arrow { class MemoryPool; }
 
-
-std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::TableReader>& tableReader) {
+std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::TableReader> &tableReader) {
 
   auto result = tableReader->Read();
   if (!result.ok()) {
@@ -61,14 +60,14 @@ void TupleSet::addColumn(const std::string name, int position, std::vector<std::
     std::shared_ptr<std::string> s = data.at(r);
     arrowStatus = colBuilder.Append(s->c_str()); // FIXME: Not sure if this is safe
 
-    if(!arrowStatus.ok())
+    if (!arrowStatus.ok())
       abort();
   }
 
   std::shared_ptr<arrow::StringArray> col;
   arrowStatus = colBuilder.Finish(&col);
 
-  if(!arrowStatus.ok())
+  if (!arrowStatus.ok())
     abort();
 
   auto chunked_col = std::make_shared<arrow::ChunkedArray>(col);
@@ -78,15 +77,19 @@ void TupleSet::addColumn(const std::string name, int position, std::vector<std::
 
   arrowStatus = m_table->AddColumn(position, field, chunked_col, &m_table);
 
-  if(!arrowStatus.ok())
+  if (!arrowStatus.ok())
     abort();
 }
 
-int TupleSet::numRows() {
+int64_t TupleSet::numRows() {
   return m_table->num_rows();
 }
 
-std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch&)) {
+int64_t TupleSet::numColumns() {
+  return m_table->num_columns();
+}
+
+std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch &)) {
 
   arrow::Status arrowStatus;
 
@@ -96,7 +99,7 @@ std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch&))
   arrowStatus = reader.ReadNext(&batch);
 
   std::string result;
-  while(arrowStatus.ok() && batch) {
+  while (arrowStatus.ok() && batch) {
     result = fn(result, *batch);
     arrowStatus = reader.ReadNext(&batch);
   }
@@ -140,10 +143,27 @@ std::string TupleSet::toString() {
   auto ss = std::stringstream();
   arrow::Status arrowStatus = arrow::PrettyPrint(*m_table, 0, &ss);
 
-  if(!arrowStatus.ok()) {
+  if (!arrowStatus.ok()) {
     // FIXME
     abort();
   }
 
   return ss.str();
+}
+
+std::string TupleSet::getValue(const std::string &columnName, int row) {
+
+  assert(row >= 0);
+
+  auto chunkedArray = m_table->GetColumnByName(columnName);
+
+  // FIXME: Only support strings at the moment
+  assert(chunkedArray->type()->id() == arrow::Type::type::STRING);
+
+  // TODO: Not sure if this is the best way to access a particular row
+  auto slicedArray = chunkedArray->Slice(row, row + 1);
+  auto array = std::static_pointer_cast<arrow::StringArray>(slicedArray->chunk(0));
+  auto value = array->GetString(row);
+
+  return value;
 }
