@@ -4,4 +4,8 @@
 
 #include "normal/core/Message.h"
 
+namespace normal::core {
+
 Message::~Message() = default;
+
+} // namespace

@@ -23,7 +23,7 @@ void OperatorManager::put(const std::shared_ptr<normal::core::Operator> &op) {
 
   assert(op);
 
-  auto ctx = std::make_shared<OperatorContext>(op, shared_from_this());
+  auto ctx = std::make_shared<normal::core::OperatorContext>(op, shared_from_this());
   m_operatorMap.insert(std::pair(op->name(), ctx));
 }
 
@@ -43,6 +43,17 @@ void OperatorManager::start() {
     caf::actor actorRef = actorSystem->spawn<OperatorActor>(op);
     op->setActorId(actorRef->id());
     actorSystem->registry().put(actorRef.id(), actorRef);
+  }
+
+  // Tell the actors who their consumers are
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+    for(const auto& consumerEntry: op->consumers()) {
+      auto consumer = consumerEntry.second;
+      auto actorDef = normal::core::OperatorMeta(consumer->name(), consumer->getActorId());
+      ctx->operatorMap().emplace(consumer->name(), actorDef);
+    }
   }
 
   caf::scoped_actor self{*actorSystem};
@@ -72,7 +83,7 @@ void OperatorManager::stop() {
   }
 }
 
-void OperatorManager::tell(Message& msg, const std::shared_ptr<normal::core::Operator> &op) {
+void OperatorManager::tell(normal::core::Message& msg, const std::shared_ptr<normal::core::Operator> &op) {
 
   assert(op);
 
@@ -81,7 +92,7 @@ void OperatorManager::tell(Message& msg, const std::shared_ptr<normal::core::Ope
     c.second->receive(msg);
 
 //    caf::scoped_actor self{*actorSystem};
-//    self->send(op->getActorId(), msg);
+//    self->send(op->actorId(), msg);
   }
 }
 

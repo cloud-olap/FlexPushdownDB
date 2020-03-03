@@ -10,7 +10,7 @@
 #include "Message.h"
 #include "TupleSet.h"
 
-class TupleMessage : public Message {
+class TupleMessage : public normal::core::Message {
 private:
   std::shared_ptr<TupleSet> m_tupleSet;
 

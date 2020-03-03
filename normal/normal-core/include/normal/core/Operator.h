@@ -12,10 +12,11 @@
 #include <caf/all.hpp>
 #include "OperatorContext.h"
 
-class Message;
-class OperatorContext;
 
 namespace normal::core {
+
+class Message;
+class OperatorContext;
 
 /**
  * Base class for operators
@@ -31,7 +32,7 @@ private:
   std::map<std::string, std::shared_ptr<Operator>> m_consumers;
   caf::actor_id actorId;
 public:
-  caf::actor_id getActorId() const;
+  [[nodiscard]] caf::actor_id getActorId() const;
   void setActorId(caf::actor_id actorId);
 
 protected:

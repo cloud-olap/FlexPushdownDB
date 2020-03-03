@@ -28,7 +28,7 @@ void Aggregate::onStop() {
 
 }
 
-void Aggregate::onReceive(const Message& msg) {
+void Aggregate::onReceive(const normal::core::Message& msg) {
 
   auto tupleMessage =dynamic_cast<const TupleMessage&>(msg);
   auto tupleSet = tupleMessage.data();

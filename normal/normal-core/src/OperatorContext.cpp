@@ -10,11 +10,13 @@
 #include "normal/core/Message.h"          // for Message
 #include "normal/core/OperatorManager.h"  // for OperatorManager
 
-void OperatorContext::tell(Message& msg) {
+namespace normal::core {
+
+void OperatorContext::tell(Message &msg) {
 
   assert(this);
 
-  m_mgr->tell(msg, m_op);
+  operatorManager_->tell(msg, operator_);
 }
 
 OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op, std::shared_ptr<OperatorManager> mgr) {
@@ -22,14 +24,20 @@ OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op, std
   assert(op);
   assert(mgr);
 
-  m_op = std::move(op);
-  m_mgr = std::move(mgr);
+  operator_ = std::move(op);
+  operatorManager_ = std::move(mgr);
 }
 
 std::shared_ptr<normal::core::Operator> OperatorContext::op() {
-  return m_op;
+  return operator_;
 }
 
 void OperatorContext::complete() {
-  this->m_mgr->complete(*this->m_op);
+  this->operatorManager_->complete(*this->operator_);
 }
+
+std::map<std::string, OperatorMeta> &OperatorContext::operatorMap() {
+  return operatorMap_;
+}
+
+} // namespace

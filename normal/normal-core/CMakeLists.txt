@@ -6,7 +6,7 @@ setDefaults()
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-core" STATIC src/kernel/StartMessage.cpp src/kernel/StartMessage.h)
+add_library("normal-core" STATIC src/kernel/StartMessage.cpp src/kernel/StartMessage.h src/OperatorMeta.cpp include/normal/core/OperatorMeta.h)
 
 target_sources("normal-core" PRIVATE
         src/Normal.cpp include/normal/core/Normal.h

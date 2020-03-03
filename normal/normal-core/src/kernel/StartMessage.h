@@ -7,7 +7,7 @@
 
 #include <normal/core/Message.h>
 
-class StartMessage : public Message {
+class StartMessage : public normal::core::Message {
 
 private:
   std::vector<caf::actor_id> consumers;

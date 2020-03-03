@@ -25,7 +25,7 @@ public:
   ~Collate() override = default;
   void onStart() override;
   void onStop() override;
-  void onReceive(const Message& msg) override;
+  void onReceive(const normal::core::Message& msg) override;
   void show();
   std::shared_ptr<TupleSet> tuples();
 protected:

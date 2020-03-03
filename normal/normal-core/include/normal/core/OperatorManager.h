@@ -12,13 +12,15 @@
 #include <caf/io/all.hpp>
 #include "Operator.h"
 
+namespace normal::core {
+class Operator;
 class Message;
-class Operator;  // lines 16-16
-class OperatorContext;  // lines 17-17
+class OperatorContext;
+}
 
-class OperatorManager : public std::enable_shared_from_this<OperatorManager>{
+class OperatorManager : public std::enable_shared_from_this<OperatorManager> {
 private:
-  std::map<std::string, std::shared_ptr<OperatorContext>> m_operatorMap;
+  std::map<std::string, std::shared_ptr<normal::core::OperatorContext>> m_operatorMap;
   caf::actor_system_config actorSystemConfig;
   std::unique_ptr<caf::actor_system> actorSystem;
   std::map<std::string, caf::actor_id> actorMap;
@@ -28,7 +30,7 @@ public:
   void start();
   void stop();
 
-  void tell(Message& msg, const std::shared_ptr<normal::core::Operator> &op);
+  void tell(normal::core::Message &msg, const std::shared_ptr<normal::core::Operator> &op);
   void complete(normal::core::Operator &op);
   OperatorManager();
 };

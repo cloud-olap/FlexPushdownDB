@@ -12,7 +12,7 @@ OperatorActor::OperatorActor(caf::actor_config &cfg, const std::shared_ptr<norma
 
 caf::behavior behaviour(OperatorActor &self) {
   return {
-      [&](const Message &msg) {
+      [&](const StartMessage &msg) {
         spdlog::info("Actor Received");
         self._operator->receive(msg);
       }
