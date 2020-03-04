@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include <caf/all.hpp>
+
 #include "Message.h"
 #include "TupleSet.h"
 
@@ -20,5 +22,7 @@ public:
 
   std::shared_ptr<TupleSet> data();
 };
+
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TupleMessage)
 
 #endif //NORMAL_NORMAL_NORMAL_CORE_SRC_TUPLEMESSAGE_H

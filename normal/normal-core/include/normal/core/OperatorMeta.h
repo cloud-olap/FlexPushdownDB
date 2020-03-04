@@ -5,8 +5,12 @@
 #ifndef NORMAL_NORMAL_CORE_SRC_KERNEL_ACTORDEF_H
 #define NORMAL_NORMAL_CORE_SRC_KERNEL_ACTORDEF_H
 
+//#include <string>
+//#include <caf/all.hpp>
+//#include <caf/io/all.hpp>
+
 #include <string>
-#include <caf/abstract_actor.hpp>
+#include <caf/all.hpp>
 
 namespace normal::core {
 

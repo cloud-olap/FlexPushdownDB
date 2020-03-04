@@ -2,8 +2,11 @@
 // Created by Matt Youill on 31/12/19.
 //
 
-#include <spdlog/spdlog.h>
 #include "OperatorActor.h"
+
+#include <spdlog/spdlog.h>
+
+#include <normal/core/Envelope.h>
 
 OperatorActor::OperatorActor(caf::actor_config &cfg, const std::shared_ptr<normal::core::Operator> &_operator) :
  caf::event_based_actor(cfg) {
@@ -12,7 +15,7 @@ OperatorActor::OperatorActor(caf::actor_config &cfg, const std::shared_ptr<norma
 
 caf::behavior behaviour(OperatorActor &self) {
   return {
-      [&](const StartMessage &msg) {
+      [&](const normal::core::Envelope &msg) {
         spdlog::info("Actor Received");
         self._operator->receive(msg);
       }

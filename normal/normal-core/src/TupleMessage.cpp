@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-TupleMessage::TupleMessage(std::shared_ptr<TupleSet> tupleSet) {
+TupleMessage::TupleMessage(std::shared_ptr<TupleSet> tupleSet) : normal::core::Message() {
   m_tupleSet = std::move(tupleSet);
 }
 

@@ -5,10 +5,14 @@
 #ifndef NORMAL_OPERATORACTOR_H
 #define NORMAL_OPERATORACTOR_H
 
-#include <normal/core/Message.h>
-#include "caf/all.hpp"
-#include "caf/io/all.hpp"
+#include <memory>
+
+#include <caf/all.hpp>
+//#include <caf/io/all.hpp>
+
+#include "normal/core/Message.h"
 #include "normal/core/Operator.h"
+
 #include "StartMessage.h"
 
 class OperatorActor : public caf::event_based_actor {

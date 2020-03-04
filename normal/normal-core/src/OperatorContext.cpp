@@ -16,16 +16,16 @@ void OperatorContext::tell(Message &msg) {
 
   assert(this);
 
-  operatorManager_->tell(msg, operator_);
+//  operatorManager_->tell(msg, operator_);
 }
 
-OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op, std::shared_ptr<OperatorManager> mgr) {
+OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op) {
 
   assert(op);
-  assert(mgr);
+//  assert(mgr);
 
   operator_ = std::move(op);
-  operatorManager_ = std::move(mgr);
+//  operatorManager_ = std::move(mgr);
 }
 
 std::shared_ptr<normal::core::Operator> OperatorContext::op() {
@@ -33,10 +33,10 @@ std::shared_ptr<normal::core::Operator> OperatorContext::op() {
 }
 
 void OperatorContext::complete() {
-  this->operatorManager_->complete(*this->operator_);
+//  this->operatorManager_->complete(*this->operator_);
 }
 
-std::map<std::string, OperatorMeta> &OperatorContext::operatorMap() {
+std::map<std::string, normal::core::OperatorMeta> &OperatorContext::operatorMap() {
   return operatorMap_;
 }
 

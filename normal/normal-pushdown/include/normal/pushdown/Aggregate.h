@@ -25,7 +25,7 @@ public:
   ~Aggregate() override = default;
   void onStart() override;
   void onStop() override;
-  void onReceive(const normal::core::Message& msg) override;
+  void onReceive(const normal::core::Envelope& msg) override;
 protected:
   void onComplete(const normal::core::Operator &op) override;
 };

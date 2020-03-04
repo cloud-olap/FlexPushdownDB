@@ -6,7 +6,9 @@
 
 #include <utility>
 
-StartMessage::StartMessage(std::vector<caf::actor_id> consumers) : consumers(std::move(consumers)) {}
+StartMessage::StartMessage(std::vector<caf::actor_id> consumers) :
+    normal::core::Message(),
+    consumers(std::move(consumers)) {}
 
 const std::vector<caf::actor_id> &StartMessage::getConsumers() const {
   return consumers;

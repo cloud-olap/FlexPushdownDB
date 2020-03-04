@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_NORMAL_CORE_SRC_TUPLESET_H
 #define NORMAL_NORMAL_NORMAL_CORE_SRC_TUPLESET_H
 
-#include <string>
+#include <memory>
 #include <vector>
 
 #include <arrow/api.h>

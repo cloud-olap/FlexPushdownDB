@@ -5,20 +5,31 @@
 #ifndef NORMAL_NORMAL_CORE_OPERATORMANAGER_H
 #define NORMAL_NORMAL_CORE_OPERATORMANAGER_H
 
+//#include <map>
+//#include <string>
+//
+////#include <caf/all.hpp>
+////#include <caf/io/all.hpp>
+//
+//#include "normal/core/Operator.h"
+//#include "normal/core/Message.h"
+//#include "normal/core/OperatorContext.h"
+
 #include <map>
-#include <memory>
 #include <string>
+#include <memory>
+
 #include <caf/all.hpp>
-#include <caf/io/all.hpp>
-#include "Operator.h"
+
+#include "OperatorContext.h"
 
 namespace normal::core {
-class Operator;
-class Message;
-class OperatorContext;
+//class Operator;
+//class Message;
+//class OperatorContext;
 }
 
-class OperatorManager : public std::enable_shared_from_this<OperatorManager> {
+class OperatorManager {
 private:
   std::map<std::string, std::shared_ptr<normal::core::OperatorContext>> m_operatorMap;
   caf::actor_system_config actorSystemConfig;

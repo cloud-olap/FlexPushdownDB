@@ -6,6 +6,7 @@
 
 #include <cassert>               // for assert
 #include <utility>                // for move
+#include <normal/core/Envelope.h>
 
 #include "spdlog/spdlog.h"        // for info, error, warn
 
@@ -67,7 +68,7 @@ std::shared_ptr<OperatorContext> Operator::ctx() {
 
   return m_operatorContext;
 }
-void Operator::receive(const Message &msg) {
+void Operator::receive(const normal::core::Envelope &msg) {
   spdlog::info("{}  |  Receiving", this->m_name);
 
   if (!m_created)
@@ -91,7 +92,7 @@ void Operator::create(std::shared_ptr<OperatorContext> ctx) {
   assert (m_operatorContext);
 }
 
-void Operator::onReceive(const Message &msg) {
+void Operator::onReceive(const  normal::core::Envelope &msg) {
   spdlog::warn("{}  |  Ignoring message, Operator is not a reactive operator (msg: {})",
                this->m_name,
                typeid(msg).name());

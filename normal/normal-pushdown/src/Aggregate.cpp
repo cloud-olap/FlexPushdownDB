@@ -28,9 +28,9 @@ void Aggregate::onStop() {
 
 }
 
-void Aggregate::onReceive(const normal::core::Message& msg) {
+void Aggregate::onReceive(const normal::core::Envelope& msg) {
 
-  auto tupleMessage =dynamic_cast<const TupleMessage&>(msg);
+  auto tupleMessage =dynamic_cast<const TupleMessage&>(msg.message());
   auto tupleSet = tupleMessage.data();
 
   if(inputTupleSet == nullptr){

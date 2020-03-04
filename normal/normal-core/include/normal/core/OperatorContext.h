@@ -6,27 +6,28 @@
 #define NORMAL_NORMAL_CORE_SRC_OPERATORCONTEXT_H
 
 #include <memory>
-#include "Operator.h"
-#include "normal/core/OperatorMeta.h"
+#include <string>
 
-class OperatorManager;
+#include "Operator.h"
+#include "OperatorMeta.h"
+
+//class OperatorManager;
 
 namespace normal::core {
 
-class Message;
+//class Message;
 class Operator;
 
 class OperatorContext {
 private:
-  std::shared_ptr<OperatorManager> operatorManager_;
-  std::shared_ptr<Operator> operator_;
-  std::map<std::string, OperatorMeta> operatorMap_;
+  std::shared_ptr<normal::core::Operator> operator_;
+  std::map<std::string, normal::core::OperatorMeta> operatorMap_;
 
 public:
-  OperatorContext(std::shared_ptr<Operator> op, std::shared_ptr<OperatorManager> mgr);
+  OperatorContext(std::shared_ptr<normal::core::Operator> op);
   std::shared_ptr<normal::core::Operator> op();
-  std::map<std::string, OperatorMeta> &operatorMap();
-  void tell(Message &msg);
+  std::map<std::string, normal::core::OperatorMeta> &operatorMap();
+  void tell(normal::core::Message &msg);
   void complete();
 
 };

@@ -3,19 +3,24 @@
 //
 
 #include "normal/core/OperatorManager.h"
+
+
 #include <cassert>
 
 #include <cassert>
 #include <utility>                        // for pair, move
 #include <vector>                         // for vector
 
+#include <caf/all.hpp>
+#include <caf/io/all.hpp>
+
+#include "normal/core/Envelope.h"
 #include "normal/core/Message.h"          // for Message
 #include "normal/core/Operator.h"         // for Operator
 #include "normal/core/OperatorContext.h"  // for OperatorContext
 #include "kernel/OperatorActor.h"
 #include "kernel/StartMessage.h"
-#include "caf/all.hpp"
-#include "caf/io/all.hpp"
+
 
 
 
@@ -23,7 +28,7 @@ void OperatorManager::put(const std::shared_ptr<normal::core::Operator> &op) {
 
   assert(op);
 
-  auto ctx = std::make_shared<normal::core::OperatorContext>(op, shared_from_this());
+  auto ctx = std::make_shared<normal::core::OperatorContext>(op);
   m_operatorMap.insert(std::pair(op->name(), ctx));
 }
 
@@ -68,8 +73,8 @@ void OperatorManager::start() {
       actorIds.emplace_back(consumer.second->getActorId());
 
     auto actorRef = actorSystem->registry().get<caf::actor>(op->getActorId());
-    StartMessage sm(actorIds);
-    self->send(actorRef, sm);
+    auto sm = std::make_shared<StartMessage>(actorIds);
+    self->send(actorRef, normal::core::Envelope(sm));
   }
 
   for (const auto &op: m_operatorMap) {
@@ -83,18 +88,18 @@ void OperatorManager::stop() {
   }
 }
 
-void OperatorManager::tell(normal::core::Message& msg, const std::shared_ptr<normal::core::Operator> &op) {
-
-  assert(op);
-
-  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op->consumers();
-  for (const auto &c: consumers) {
-    c.second->receive(msg);
-
-//    caf::scoped_actor self{*actorSystem};
-//    self->send(op->actorId(), msg);
-  }
-}
+//void OperatorManager::tell(normal::core::Message& msg, const std::shared_ptr<normal::core::Operator> &op) {
+//
+//  assert(op);
+//
+//  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op->consumers();
+//  for (const auto &c: consumers) {
+//    c.second->receive(msg);
+//
+////    caf::scoped_actor self{*actorSystem};
+////    self->send(op->actorId(), msg);
+//  }
+//}
 
 void OperatorManager::complete(normal::core::Operator &op) {
 

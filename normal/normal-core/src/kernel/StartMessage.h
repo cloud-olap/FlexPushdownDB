@@ -5,7 +5,12 @@
 #ifndef NORMAL_NORMAL_CORE_SRC_KERNEL_STARTMESSAGE_H
 #define NORMAL_NORMAL_CORE_SRC_KERNEL_STARTMESSAGE_H
 
-#include <normal/core/Message.h>
+#include <vector>
+
+#include <caf/all.hpp>
+
+#include "normal/core/Message.h"
+
 
 class StartMessage : public normal::core::Message {
 
@@ -14,7 +19,7 @@ private:
 
 public:
   explicit StartMessage(std::vector<caf::actor_id> Consumers);
-  const std::vector<caf::actor_id> &getConsumers() const;
+  [[nodiscard]] const std::vector<caf::actor_id> &getConsumers() const;
 
 };
 

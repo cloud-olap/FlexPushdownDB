@@ -23,10 +23,10 @@ void Collate::onStop() {
 Collate::Collate(std::string name) : Operator(std::move(name)) {
 }
 
-void Collate::onReceive(const normal::core::Message& msg) {
+void Collate::onReceive(const normal::core::Envelope& msg) {
   spdlog::info("{}  |  Received", this->name());
 
-  auto tupleMessage = dynamic_cast<const TupleMessage&>(msg);
+  auto tupleMessage = dynamic_cast<const TupleMessage&>(msg.message());
   if (!m_tupleSet) {
     assert(tupleMessage.data());
     m_tupleSet = tupleMessage.data();
