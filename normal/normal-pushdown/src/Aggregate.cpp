@@ -20,33 +20,33 @@ namespace normal::pushdown {
 
 Aggregate::Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> expressions)
     : Operator(std::move(name)),
-      m_expressions(std::move(expressions)) {}
+      expressions_(std::move(expressions)) {}
 
 void Aggregate::onStart() {
   SPDLOG_DEBUG("Starting");
 }
 
-void Aggregate::onReceive(const normal::core::Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
+void Aggregate::onReceive(const normal::core::Envelope &message) {
+  if (message.message().type() == "StartMessage") {
     this->onStart();
-  } else if (msg.message().type() == "TupleMessage") {
-    auto tupleMessage = dynamic_cast<const normal::core::TupleMessage &>(msg.message());
+  } else if (message.message().type() == "TupleMessage") {
+    auto tupleMessage = dynamic_cast<const normal::core::TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "CompleteMessage") {
-    auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
+  } else if (message.message().type() == "CompleteMessage") {
+    auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    Operator::onReceive(msg);
+    Operator::onReceive(message);
   }
 }
 
-void Aggregate::onComplete(const normal::core::CompleteMessage &msg) {
+void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
 
   std::shared_ptr<normal::core::TupleSet> aggregateTupleSet = nullptr;
 
   // FIXME: Only supports one expression at mo
-  for (auto &expr : m_expressions) {
-    aggregateTupleSet = expr->apply(inputTupleSet, aggregateTupleSet);
+  for (auto &expr : expressions_) {
+    aggregateTupleSet = expr->apply(inputTuples, aggregateTupleSet);
   }
 
   std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(aggregateTupleSet);
@@ -56,22 +56,22 @@ void Aggregate::onComplete(const normal::core::CompleteMessage &msg) {
   std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
   ctx()->tell(cm);
 
-  ctx()->getOperatorActor()->quit();
+  ctx()->operatorActor()->quit();
 }
 
-void Aggregate::onTuple(normal::core::TupleMessage msg) {
+void Aggregate::onTuple(normal::core::TupleMessage message) {
 
   SPDLOG_DEBUG("Received tuple message");
 
-  if (inputTupleSet == nullptr) {
-    inputTupleSet = msg.data();
+  if (inputTuples == nullptr) {
+    inputTuples = message.tuples();
   } else {
     auto tables = std::vector<std::shared_ptr<arrow::Table>>();
     std::shared_ptr<arrow::Table> table;
-    tables.push_back(msg.data()->getTable());
-    tables.push_back(inputTupleSet->getTable());
+    tables.push_back(message.tuples()->table());
+    tables.push_back(inputTuples->table());
     arrow::ConcatenateTables(tables, &table);
-    inputTupleSet->setTable(table);
+    inputTuples->table(table);
   }
 }
 

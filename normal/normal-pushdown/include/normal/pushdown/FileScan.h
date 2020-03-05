@@ -14,9 +14,9 @@ namespace normal::pushdown {
 class FileScan : public normal::core::Operator {
 
 private:
-  std::string m_filePath;
+  std::string filePath_;
   void onStart();
-  void onReceive(const normal::core::Envelope &msg) override;
+  void onReceive(const normal::core::Envelope &message) override;
 
 public:
   FileScan(std::string name, std::string filePath);

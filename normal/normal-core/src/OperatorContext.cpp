@@ -17,7 +17,7 @@ void OperatorContext::tell(std::shared_ptr<normal::core::Message> &msg) {
 
   assert(this);
 
-  OperatorActor* oa = this->getOperatorActor();
+  OperatorActor* oa = this->operatorActor();
 
   for(const auto& consumer: this->operator_->consumers()){
     normal::core::Envelope e(msg);
@@ -40,17 +40,13 @@ std::shared_ptr<normal::core::Operator> OperatorContext::op() {
   return operator_;
 }
 
-void OperatorContext::complete() {
-//  this->operatorManager_->complete(*this->operator_);
-}
-
 std::map<std::string, normal::core::OperatorMeta> &OperatorContext::operatorMap() {
   return operatorMap_;
 }
-OperatorActor* OperatorContext::getOperatorActor() {
+OperatorActor* OperatorContext::operatorActor() {
   return operatorActor_;
 }
-void OperatorContext::setOperatorActor(OperatorActor *operatorActor) {
+void OperatorContext::operatorActor(OperatorActor *operatorActor) {
   operatorActor_ = operatorActor;
 }
 

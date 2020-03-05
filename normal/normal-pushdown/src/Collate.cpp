@@ -23,51 +23,51 @@ void Collate::onStart() {
 Collate::Collate(std::string name) : Operator(std::move(name)) {
 }
 
-void Collate::onReceive(const normal::core::Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
+void Collate::onReceive(const normal::core::Envelope &message) {
+  if (message.message().type() == "StartMessage") {
     this->onStart();
-  } else if (msg.message().type() == "TupleMessage") {
-    auto tupleMessage = dynamic_cast<const normal::core::TupleMessage &>(msg.message());
+  } else if (message.message().type() == "TupleMessage") {
+    auto tupleMessage = dynamic_cast<const normal::core::TupleMessage &>(message.message());
     this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "CompleteMessage") {
-    auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
+  } else if (message.message().type() == "CompleteMessage") {
+    auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    Operator::onReceive(msg);
+    Operator::onReceive(message);
   }
 }
 
 void Collate::onComplete(const normal::core::CompleteMessage &msg) {
-  ctx()->getOperatorActor()->quit();
+  ctx()->operatorActor()->quit();
 }
 
 void Collate::show() {
 
-  assert(m_tupleSet);
+  assert(tuples_);
 
-  SPDLOG_DEBUG("{}  |  Show:\n{}", this->name(), m_tupleSet->toString());
+  SPDLOG_DEBUG("{}  |  Show:\n{}", this->name(), tuples_->toString());
 }
 
 std::shared_ptr<normal::core::TupleSet> Collate::tuples() {
 
-  assert(m_tupleSet);
+  assert(tuples_);
 
-  return m_tupleSet;
+  return tuples_;
 }
-void Collate::onTuple(normal::core::TupleMessage tupleMessage) {
+void Collate::onTuple(normal::core::TupleMessage message) {
 
   SPDLOG_DEBUG("Received tuples");
 
-  if (!m_tupleSet) {
-    assert(tupleMessage.data());
-    m_tupleSet = tupleMessage.data();
+  if (!tuples_) {
+    assert(message.tuples());
+    tuples_ = message.tuples();
   } else {
     auto tables = std::vector<std::shared_ptr<arrow::Table>>();
     std::shared_ptr<arrow::Table> table;
-    tables.push_back(tupleMessage.data()->getTable());
-    tables.push_back(m_tupleSet->getTable());
+    tables.push_back(message.tuples()->table());
+    tables.push_back(tuples_->table());
     arrow::ConcatenateTables(tables, &table);
-    m_tupleSet->setTable(table);
+    tuples_->table(table);
   }
 }
 

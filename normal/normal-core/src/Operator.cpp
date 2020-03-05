@@ -16,52 +16,52 @@
 namespace normal::core {
 
 Operator::Operator(std::string name) {
-  m_name = std::move(name);
+  name_ = std::move(name);
 }
 
 Operator::~Operator() = default;
 
 std::string &Operator::name() {
-  return m_name;
+  return name_;
 }
 
 void Operator::produce(const std::shared_ptr<Operator> &op) {
-  m_consumers.emplace(op->name(), op);
+  consumers_.emplace(op->name(), op);
 }
 
 void Operator::consume(const std::shared_ptr<Operator> &op) {
-  m_producers.emplace(op->name(), op);
+  producers_.emplace(op->name(), op);
 }
 
 std::map<std::string, std::shared_ptr<Operator>> Operator::consumers() {
-  return m_consumers;
+  return consumers_;
 }
 
 std::map<std::string, std::shared_ptr<Operator>> Operator::producers() {
-  return m_producers;
+  return producers_;
 }
 
 std::shared_ptr<OperatorContext> Operator::ctx() {
-  assert(m_operatorContext);
+  assert(opContext_);
 
-  return m_operatorContext;
+  return opContext_;
 }
 
 void Operator::create(std::shared_ptr<OperatorContext> ctx) {
   assert (ctx);
 
-  SPDLOG_DEBUG("Creating operator '{}'", this->m_name);
+  SPDLOG_DEBUG("Creating operator '{}'", this->name_);
 
-  m_operatorContext = std::move(ctx);
+  opContext_ = std::move(ctx);
 
-  SPDLOG_DEBUG("Created operator '{}'", this->m_name);
+  SPDLOG_DEBUG("Created operator '{}'", this->name_);
 
-  assert (m_operatorContext);
+  assert (opContext_);
 }
 
 void Operator::onReceive(const  normal::core::Envelope &msg) {
   SPDLOG_WARN("{}  |  Ignoring message, Operator is not a reactive operator (msg: {})",
-               this->m_name,
+               this->name_,
                typeid(msg).name());
 }
 

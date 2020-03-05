@@ -43,6 +43,7 @@
 #include "normal/core/TupleSet.h"                           // for TupleSet
 #include "s3/S3SelectParser.h"
 #include <normal/core/TupleMessage.h>
+#include <normal/core/CompleteMessage.h>
 
 #include "normal/pushdown/Globals.h"
 
@@ -86,15 +87,15 @@ void S3SelectScan::onStart() {
                                      AWSAuthV4Signer::PayloadSigningPolicy::Never,
                                      true);
 
-  Aws::String bucketName = Aws::String(m_s3Bucket);
+  Aws::String bucketName = Aws::String(s3Bucket_);
 
   SelectObjectContentRequest selectObjectContentRequest;
   selectObjectContentRequest.SetBucket(bucketName);
-  selectObjectContentRequest.SetKey(Aws::String(m_s3Object));
+  selectObjectContentRequest.SetKey(Aws::String(s3Object_));
 
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
-  selectObjectContentRequest.SetExpression(m_sql.c_str());
+  selectObjectContentRequest.SetExpression(sql_.c_str());
 
   CSVInput csvInput;
   csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
@@ -126,7 +127,10 @@ void S3SelectScan::onStart() {
     SPDLOG_DEBUG("Bytes returned: {}", statsEvent.GetDetails().GetBytesReturned());
   });
   handler.SetEndEventCallback([&]() {
-    ctx()->complete();
+    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::CompleteMessage>();
+    ctx()->tell(message);
+
+    this->ctx()->operatorActor()->quit();
   });
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
@@ -139,9 +143,9 @@ void S3SelectScan::onStart() {
 
 S3SelectScan::S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql)
     : Operator(std::move(name)) {
-  m_s3Bucket = std::move(s3Bucket);
-  m_s3Object = std::move(s3Object);
-  m_sql = std::move(sql);
+  s3Bucket_ = std::move(s3Bucket);
+  s3Object_ = std::move(s3Object);
+  sql_ = std::move(sql);
 }
 
 }

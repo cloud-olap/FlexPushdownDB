@@ -29,15 +29,15 @@ namespace arrow { class MemoryPool; }
 namespace normal::pushdown {
 
 FileScan::FileScan(std::string name, std::string filePath)
-    : Operator(std::move(name)), m_filePath(std::move(filePath)) {}
+    : Operator(std::move(name)), filePath_(std::move(filePath)) {}
 
 FileScan::~FileScan() = default;
 
-void FileScan::onReceive(const normal::core::Envelope &msg) {
-  if (msg.message().type() == "StartMessage") {
+void FileScan::onReceive(const normal::core::Envelope &message) {
+  if (message.message().type() == "StartMessage") {
     this->onStart();
   } else {
-    Operator::onReceive(msg);
+    Operator::onReceive(message);
   }
 }
 
@@ -48,7 +48,7 @@ void FileScan::onStart() {
   arrow::Status st;
   auto pool = arrow::default_memory_pool();
 
-  auto input = arrow::io::ReadableFile::Open(m_filePath).ValueOrDie();
+  auto input = arrow::io::ReadableFile::Open(filePath_).ValueOrDie();
 
   auto fields = CSVParser::readFields(input);
 
@@ -74,7 +74,7 @@ void FileScan::onStart() {
   std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
   ctx()->tell(cm);
 
-  ctx()->getOperatorActor()->quit();
+  ctx()->operatorActor()->quit();
 }
 
 }

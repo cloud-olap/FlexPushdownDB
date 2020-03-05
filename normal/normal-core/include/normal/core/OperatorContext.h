@@ -23,19 +23,20 @@ class Operator;
 class OperatorContext {
 private:
   std::shared_ptr<normal::core::Operator> operator_;
-  OperatorActor* operatorActor_{};
-public:
-  normal::core::OperatorActor* getOperatorActor();
-  void setOperatorActor(normal::core::OperatorActor *operatorActor);
-private:
+  OperatorActor* operatorActor_;
   std::map<std::string, normal::core::OperatorMeta> operatorMap_;
 
 public:
   explicit OperatorContext(std::shared_ptr<normal::core::Operator> op);
+
   std::shared_ptr<normal::core::Operator> op();
+
+  normal::core::OperatorActor* operatorActor();
+  void operatorActor(normal::core::OperatorActor *operatorActor);
+
   std::map<std::string, normal::core::OperatorMeta> &operatorMap();
+
   void tell(std::shared_ptr<normal::core::Message> &msg);
-  void complete();
 
 };
 

@@ -15,9 +15,10 @@ namespace normal::pushdown {
 
 class S3SelectScan : public normal::core::Operator {
 private:
-  std::string m_s3Bucket;
-  std::string m_s3Object;
-  std::string m_sql;
+  std::string s3Bucket_;
+  std::string s3Object_;
+  std::string sql_;
+
   void onStart();
 
 public:

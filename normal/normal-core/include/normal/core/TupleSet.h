@@ -18,7 +18,7 @@ namespace normal::core {
 
 class TupleSet {
 private:
-  std::shared_ptr<arrow::Table> m_table;
+  std::shared_ptr<arrow::Table> table_;
 
 public:
   static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::csv::TableReader> &tableReader);
@@ -30,8 +30,8 @@ public:
 
   std::string toString();
 
-  [[nodiscard]] std::shared_ptr<arrow::Table> getTable() const;
-  void setTable(const std::shared_ptr<arrow::Table> &table);
+  [[nodiscard]] std::shared_ptr<arrow::Table> table() const;
+  void table(const std::shared_ptr<arrow::Table> &table);
   std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
 

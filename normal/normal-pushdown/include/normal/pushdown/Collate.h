@@ -24,12 +24,12 @@ namespace normal::pushdown {
 class Collate : public normal::core::Operator {
 
 private:
-  std::shared_ptr<normal::core::TupleSet> m_tupleSet;
+  std::shared_ptr<normal::core::TupleSet> tuples_;
   void onStart();
 
   void onComplete(const normal::core::CompleteMessage &message);
-  void onTuple(normal::core::TupleMessage Message);
-  void onReceive(const normal::core::Envelope &msg) override;
+  void onTuple(normal::core::TupleMessage message);
+  void onReceive(const normal::core::Envelope &message) override;
 
 public:
   explicit Collate(std::string name);

@@ -26,28 +26,30 @@ class OperatorContext;
 class Operator {
 
 private:
-  std::string m_name;
-  std::shared_ptr<normal::core::OperatorContext> m_operatorContext;
-  std::map<std::string, std::shared_ptr<normal::core::Operator>> m_producers;
-  std::map<std::string, std::shared_ptr<normal::core::Operator>> m_consumers;
+  std::string name_;
+  std::shared_ptr<normal::core::OperatorContext> opContext_;
+  std::map<std::string, std::shared_ptr<normal::core::Operator>> producers_;
+  std::map<std::string, std::shared_ptr<normal::core::Operator>> consumers_;
   caf::actor actorHandle_;
 
 public:
   explicit Operator(std::string name);
   virtual ~Operator() = 0;
 
+  std::string &name();
   [[nodiscard]] caf::actor actorHandle() const;
   void actorHandle(caf::actor actorId);
+  std::shared_ptr<normal::core::OperatorContext> ctx();
 
   virtual void onReceive(const normal::core::Envelope &msg);
 
-  std::string &name();
   std::map<std::string, std::shared_ptr<normal::core::Operator>> producers();
   std::map<std::string, std::shared_ptr<normal::core::Operator>> consumers();
-  std::shared_ptr<normal::core::OperatorContext> ctx();
+
   void create(std::shared_ptr<normal::core::OperatorContext> ctx);
   void produce(const std::shared_ptr<normal::core::Operator> &op);
   void consume(const std::shared_ptr<normal::core::Operator> &op);
+
 };
 
 } // namespace

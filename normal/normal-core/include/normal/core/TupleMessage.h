@@ -16,13 +16,13 @@ namespace normal::core {
 
 class TupleMessage : public normal::core::Message {
 private:
-  std::shared_ptr<normal::core::TupleSet> m_tupleSet;
+  std::shared_ptr<normal::core::TupleSet> tuples_;
 
 public:
-  explicit TupleMessage(std::shared_ptr<normal::core::TupleSet> tupleSet);
+  explicit TupleMessage(std::shared_ptr<normal::core::TupleSet> tuples);
   ~TupleMessage() override = default;
 
-  std::shared_ptr<normal::core::TupleSet> data();
+  std::shared_ptr<normal::core::TupleSet> tuples();
 };
 
 }

@@ -20,17 +20,17 @@ namespace normal::pushdown {
 class Aggregate : public normal::core::Operator {
 
 private:
-  std::vector<std::unique_ptr<AggregateExpression>> m_expressions;
-  std::shared_ptr<normal::core::TupleSet> inputTupleSet;
-  std::shared_ptr<normal::core::TupleSet> resultTupleSet;
+  std::vector<std::unique_ptr<AggregateExpression>> expressions_;
+  std::shared_ptr<normal::core::TupleSet> inputTuples;
+  std::shared_ptr<normal::core::TupleSet> outputTuples;
 
-  void onReceive(const normal::core::Envelope &msg) override;
-  void onTuple(normal::core::TupleMessage Message);
-  void onComplete(const normal::core::CompleteMessage &msg);
+  void onReceive(const normal::core::Envelope &message) override;
+  void onTuple(normal::core::TupleMessage message);
+  void onComplete(const normal::core::CompleteMessage &message);
   void onStart();
 
 public:
-  Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> m_expressions);
+  Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> expressions);
   ~Aggregate() override = default;
 
 };

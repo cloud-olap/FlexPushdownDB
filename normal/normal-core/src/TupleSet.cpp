@@ -27,11 +27,11 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::Table
 
   auto tupleSet = std::make_shared<TupleSet>();
   auto table = result.ValueOrDie();
-  tupleSet->m_table = table;
+  tupleSet->table_ = table;
 
   assert(tupleSet);
-  assert(tupleSet->m_table);
-  assert(tupleSet->m_table->ValidateFull().ok());
+  assert(tupleSet->table_);
+  assert(tupleSet->table_->ValidateFull().ok());
 
   return tupleSet;
 }
@@ -39,17 +39,17 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::Table
 std::shared_ptr<TupleSet> TupleSet::make(std::shared_ptr<arrow::Table> table) {
 
   auto tupleSet = std::make_shared<TupleSet>();
-  tupleSet->m_table = std::move(table);
+  tupleSet->table_ = std::move(table);
 
   return tupleSet;
 }
 
-std::shared_ptr<arrow::Table> TupleSet::getTable() const {
-  return m_table;
+std::shared_ptr<arrow::Table> TupleSet::table() const {
+  return table_;
 }
 
-void TupleSet::setTable(const std::shared_ptr<arrow::Table> &table) {
-  m_table = table;
+void TupleSet::table(const std::shared_ptr<arrow::Table> &table) {
+  table_ = table;
 }
 
 void TupleSet::addColumn(const std::string &name, int position, std::vector<std::shared_ptr<std::string>> data) {
@@ -58,7 +58,7 @@ void TupleSet::addColumn(const std::string &name, int position, std::vector<std:
   arrow::MemoryPool *pool = arrow::default_memory_pool();
   arrow::StringBuilder colBuilder(pool);
 
-  for (int64_t r = 0; r < m_table->num_rows(); ++r) {
+  for (int64_t r = 0; r < table_->num_rows(); ++r) {
     std::shared_ptr<std::string> s = data.at(r);
     arrowStatus = colBuilder.Append(s->c_str()); // FIXME: Not sure if this is safe
 
@@ -77,18 +77,18 @@ void TupleSet::addColumn(const std::string &name, int position, std::vector<std:
   std::shared_ptr<arrow::Field> field;
   field = arrow::field(name, arrow::utf8());
 
-  arrowStatus = m_table->AddColumn(position, field, chunked_col, &m_table);
+  arrowStatus = table_->AddColumn(position, field, chunked_col, &table_);
 
   if (!arrowStatus.ok())
     abort();
 }
 
 int64_t TupleSet::numRows() {
-  return m_table->num_rows();
+  return table_->num_rows();
 }
 
 int64_t TupleSet::numColumns() {
-  return m_table->num_columns();
+  return table_->num_columns();
 }
 
 std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch &)) {
@@ -96,7 +96,7 @@ std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch &)
   arrow::Status arrowStatus;
 
   std::shared_ptr<arrow::RecordBatch> batch;
-  arrow::TableBatchReader reader(*m_table);
+  arrow::TableBatchReader reader(*table_);
   reader.set_chunksize(10);
   arrowStatus = reader.ReadNext(&batch);
 
@@ -143,7 +143,7 @@ std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch &)
 std::string TupleSet::toString() {
 
   auto ss = std::stringstream();
-  arrow::Status arrowStatus = arrow::PrettyPrint(*m_table, 0, &ss);
+  arrow::Status arrowStatus = arrow::PrettyPrint(*table_, 0, &ss);
 
   if (!arrowStatus.ok()) {
     // FIXME
@@ -157,7 +157,7 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
 
   assert(row >= 0);
 
-  auto chunkedArray = m_table->GetColumnByName(columnName);
+  auto chunkedArray = table_->GetColumnByName(columnName);
 
   // FIXME: Only support strings at the moment
   assert(chunkedArray->type()->id() == arrow::Type::type::STRING);
