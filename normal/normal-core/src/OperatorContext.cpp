@@ -7,16 +7,24 @@
 #include <utility>
 #include <cassert>
 
+#include "normal/core/Globals.h"
 #include "normal/core/Message.h"          // for Message
 #include "normal/core/OperatorManager.h"  // for OperatorManager
 
 namespace normal::core {
 
-void OperatorContext::tell(Message &msg) {
+void OperatorContext::tell(std::shared_ptr<normal::core::Message> &msg) {
 
   assert(this);
 
-//  operatorManager_->tell(msg, operator_);
+  OperatorActor* oa = this->getOperatorActor();
+
+  for(const auto& consumer: this->operator_->consumers()){
+    normal::core::Envelope e(msg);
+    caf::actor actorHandle = consumer.second->actorHandle();
+    auto* otherActor = caf::actor_cast<OperatorActor*>(actorHandle);
+    oa->send(otherActor, e);
+  }
 }
 
 OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op) {
@@ -38,6 +46,12 @@ void OperatorContext::complete() {
 
 std::map<std::string, normal::core::OperatorMeta> &OperatorContext::operatorMap() {
   return operatorMap_;
+}
+OperatorActor* OperatorContext::getOperatorActor() {
+  return operatorActor_;
+}
+void OperatorContext::setOperatorActor(OperatorActor *operatorActor) {
+  operatorActor_ = operatorActor;
 }
 
 } // namespace

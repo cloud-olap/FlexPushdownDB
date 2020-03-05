@@ -6,11 +6,11 @@ setDefaults()
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-core" STATIC src/kernel/StartMessage.cpp src/kernel/StartMessage.h src/OperatorMeta.cpp include/normal/core/OperatorMeta.h src/Envelope.cpp include/normal/core/Envelope.h)
+add_library("normal-core" STATIC src/StartMessage.cpp include/normal/core/StartMessage.h src/OperatorMeta.cpp include/normal/core/OperatorMeta.h src/Envelope.cpp include/normal/core/Envelope.h include/normal/core/Globals.h src/CompleteMessage.cpp include/normal/core/CompleteMessage.h)
 
 target_sources("normal-core" PRIVATE
         src/Normal.cpp include/normal/core/Normal.h
-        src/kernel/OperatorActor.cpp src/kernel/OperatorActor.h
+        src/OperatorActor.cpp include/normal/core/OperatorActor.h
         src/Operator.cpp include/normal/core/Operator.h
         src/OperatorContext.cpp include/normal/core/OperatorContext.h
         src/OperatorManager.cpp include/normal/core/OperatorManager.h

@@ -16,7 +16,7 @@ setDefaults()
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_executable("normal-test")
+add_executable("normal-test" src/Globals.h)
 
 target_sources("normal-test" PRIVATE
         src/MainTest.cpp)

@@ -17,12 +17,10 @@ private:
   std::string m_s3Object;
   std::string m_sql;
 //  std::shared_ptr<TupleSet> parsePayload(const Aws::String& payload);
-protected:
-  void onStart() override;
-  void onStop() override;
 public:
   S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql);
   ~S3SelectScan() override = default;
+  void onStart();
 };
 
 #endif //NORMAL_NORMAL_CORE_SRC_S3SELECTSCAN_H

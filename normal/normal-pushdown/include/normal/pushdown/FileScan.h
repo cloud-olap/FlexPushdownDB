@@ -13,8 +13,8 @@ class FileScan : public normal::core::Operator {
 private:
   std::string m_filePath;
 protected:
-  void onStart() override;
-  void onStop() override;
+  void onStart();
+  void onReceive(const normal::core::Envelope &msg) override;
 public:
   FileScan(std::string name, std::string filePath);
   ~FileScan() override;

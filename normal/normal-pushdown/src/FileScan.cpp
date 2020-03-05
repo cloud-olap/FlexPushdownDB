@@ -21,9 +21,13 @@
 #include <arrow/csv/parser.h>
 #include <sstream>
 #include <iostream>
+#include <normal/core/CompleteMessage.h>
+
 #include "normal/core/Message.h"       // for Message
 #include "normal/core/Operator.h"      // for Operator
 #include "io/CSVParser.h"
+
+#include "normal/pushdown/Globals.h"
 
 namespace arrow { class MemoryPool; }
 namespace arrow::io { class InputStream; }
@@ -33,7 +37,17 @@ FileScan::FileScan(std::string name, std::string filePath)
 
 FileScan::~FileScan() = default;
 
+void FileScan::onReceive(const normal::core::Envelope &msg) {
+  if (msg.message().type() == "StartMessage") {
+    this->onStart();
+  } else {
+    Operator::onReceive(msg);
+  }
+}
+
 void FileScan::onStart() {
+
+  SPDLOG_DEBUG("Starting");
 
   arrow::Status st;
   auto pool = arrow::default_memory_pool();
@@ -57,12 +71,12 @@ void FileScan::onStart() {
 
   auto tupleSet = TupleSet::make(reader);
 
-  TupleMessage message(tupleSet);
+  std::shared_ptr<normal::core::Message> message = std::make_shared<TupleMessage> (tupleSet);
   ctx()->tell(message);
 
-  ctx()->complete();
-}
+  SPDLOG_DEBUG("Completing");
+  std::shared_ptr<normal::core::Message> cm = std::make_shared<CompleteMessage> ();
+  ctx()->tell(cm);
 
-void FileScan::onStop() {
-  // NOOP
+  ctx()->getOperatorActor()->quit();
 }

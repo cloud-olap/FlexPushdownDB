@@ -6,11 +6,8 @@
 #include <memory>
 #include <vector>
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT
 #include <doctest/doctest.h>
-
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#include <spdlog/spdlog.h>
 
 #include <arrow/array/builder_binary.h>           // for StringBuilder
 #include <arrow/table.h>                          // for Table
@@ -30,6 +27,8 @@
 #include <normal/core/Normal.h>
 #include "normal/core/TupleSet.h"                 // for TupleSet
 #include "normal/pushdown/AggregateExpression.h"  // for AggregateExpression
+
+#include "Globals.h"
 
 namespace arrow { class Array; }
 namespace arrow { class MemoryPool; }
@@ -98,7 +97,7 @@ namespace arrow { class StringArray; }
 auto fn = [](std::shared_ptr<TupleSet> dataTupleSet,
              std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
 
-  spdlog::info("Data:\n{}", dataTupleSet->toString());
+  SPDLOG_DEBUG("Data:\n{}", dataTupleSet->toString());
 
   std::string sum = dataTupleSet->visit([](std::string accum, arrow::RecordBatch &batch) -> std::string {
     auto fieldIndex = batch.schema()->GetFieldIndex("A");
@@ -153,7 +152,7 @@ auto fn = [](std::shared_ptr<TupleSet> dataTupleSet,
 
   schema = arrow::schema({field});
 
-  spdlog::info("\n" + schema->ToString());
+  SPDLOG_DEBUG("\n" + schema->ToString());
 
   arrow::MemoryPool *pool = arrow::default_memory_pool();
   arrow::StringBuilder colBuilder(pool);
@@ -179,7 +178,7 @@ TEST_CASE ("File Scan -> Sum -> Collate") {
   getcwd(buff, FILENAME_MAX);
   std::string current_working_dir(buff);
 
-  std::cout << current_working_dir;
+  SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
 
   auto aggregateExpression = std::make_unique<AggregateExpression>(fn);
   auto aggregateExpressions = std::vector<std::unique_ptr<AggregateExpression>>();
@@ -202,6 +201,7 @@ TEST_CASE ("File Scan -> Sum -> Collate") {
   mgr->put(collate);
 
   mgr->start();
+  mgr->join();
 
   auto tuples = collate->tuples();
 
@@ -339,3 +339,11 @@ TEST_CASE ("File Scan -> Sum -> Collate") {
 //
 //  normal.start();
 //}
+
+int main(int argc, char** argv) {
+
+  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_pattern("[%H:%M:%S.%e] [thread %t] [%! (%s:%#)] [%l]  %v");
+
+  return doctest::Context(argc, argv).run();
+}

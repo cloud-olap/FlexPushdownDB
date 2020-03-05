@@ -15,11 +15,11 @@
 class StartMessage : public normal::core::Message {
 
 private:
-  std::vector<caf::actor_id> consumers;
+  std::vector<caf::actor> consumers;
 
 public:
-  explicit StartMessage(std::vector<caf::actor_id> Consumers);
-  [[nodiscard]] const std::vector<caf::actor_id> &getConsumers() const;
+  explicit StartMessage(std::vector<caf::actor> Consumers);
+  [[nodiscard]] const std::vector<caf::actor> &getConsumers() const;
 
 };
 

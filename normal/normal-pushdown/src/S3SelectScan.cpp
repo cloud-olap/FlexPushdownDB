@@ -18,7 +18,7 @@
 #include <aws/core/Aws.h>
 #include <aws/s3/model/SelectObjectContentRequest.h>
 #include <aws/core/client/ClientConfiguration.h>
-#include <spdlog/spdlog.h>
+
 #include <arrow/csv/options.h>                              // for ReadOptions
 #include <arrow/csv/reader.h>                               // for TableReader
 #include <arrow/io/buffered.h>                              // for BufferedI...
@@ -43,6 +43,8 @@
 #include "normal/core/TupleSet.h"                           // for TupleSet
 #include "s3/S3SelectParser.h"
 #include <normal/core/TupleMessage.h>
+
+#include "normal/pushdown/Globals.h"
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
 namespace arrow { class MemoryPool; }
@@ -112,13 +114,14 @@ void S3SelectScan::onStart() {
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
     auto payload = recordsEvent.GetPayload();
     std::shared_ptr<TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
-    TupleMessage message(tupleSet);
+
+    std::shared_ptr<normal::core::Message> message = std::make_shared<TupleMessage> (tupleSet);
     ctx()->tell(message);
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
-    std::cout << "Bytes scanned: " << statsEvent.GetDetails().GetBytesScanned() << std::endl;
-    std::cout << "Bytes processed: " << statsEvent.GetDetails().GetBytesProcessed() << std::endl;
-    std::cout << "Bytes returned: " << statsEvent.GetDetails().GetBytesReturned() << std::endl;
+    SPDLOG_DEBUG("Bytes scanned: {} ", statsEvent.GetDetails().GetBytesScanned());
+    SPDLOG_DEBUG("Bytes processed: {}", statsEvent.GetDetails().GetBytesProcessed());
+    SPDLOG_DEBUG("Bytes returned: {}", statsEvent.GetDetails().GetBytesReturned());
   });
   handler.SetEndEventCallback([&](){
     ctx()->complete();
@@ -130,9 +133,6 @@ void S3SelectScan::onStart() {
 
   Aws::ShutdownAPI(options);
 
-}
-
-void S3SelectScan::onStop() {
 }
 
 S3SelectScan::S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql)

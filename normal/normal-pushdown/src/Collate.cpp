@@ -6,27 +6,58 @@
 
 #include <vector>                      // for vector
 
-#include <spdlog/spdlog.h>
+
 #include <arrow/table.h>               // for ConcatenateTables, Table (ptr ...
 #include <arrow/pretty_print.h>
 
 #include <normal/core/TupleMessage.h>
+#include <normal/core/CompleteMessage.h>
 
-class Message;
+#include "normal/pushdown/Globals.h"
 
 void Collate::onStart() {
-}
-
-void Collate::onStop() {
+  SPDLOG_DEBUG("Starting");
 }
 
 Collate::Collate(std::string name) : Operator(std::move(name)) {
 }
 
 void Collate::onReceive(const normal::core::Envelope& msg) {
-  spdlog::info("{}  |  Received", this->name());
+  if (msg.message().type() == "StartMessage") {
+    this->onStart();
+  } else if (msg.message().type() == "TupleMessage") {
+    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
+    this->onTuple(tupleMessage);
+  }
+  else if (msg.message().type() == "CompleteMessage") {
+    auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
+    this->onComplete(completeMessage);
+  } else {
+    Operator::onReceive(msg);
+  }
+}
 
-  auto tupleMessage = dynamic_cast<const TupleMessage&>(msg.message());
+void Collate::onComplete(const CompleteMessage& msg) {
+  ctx()->getOperatorActor()->quit();
+}
+
+void Collate::show() {
+
+  assert(m_tupleSet);
+
+  SPDLOG_DEBUG("{}  |  Show:\n{}", this->name(), m_tupleSet->toString());
+}
+
+std::shared_ptr<TupleSet> Collate::tuples() {
+
+  assert(m_tupleSet);
+
+  return m_tupleSet;
+}
+void Collate::onTuple(TupleMessage tupleMessage) {
+
+  SPDLOG_DEBUG("Received tuples");
+
   if (!m_tupleSet) {
     assert(tupleMessage.data());
     m_tupleSet = tupleMessage.data();
@@ -38,22 +69,4 @@ void Collate::onReceive(const normal::core::Envelope& msg) {
     arrow::ConcatenateTables(tables, &table);
     m_tupleSet->setTable(table);
   }
-}
-
-void Collate::onComplete(const Operator &op) {
-  ctx()->complete();
-}
-
-void Collate::show() {
-
-  assert(m_tupleSet);
-
-  spdlog::info("{}  |  Show:\n{}", this->name(), m_tupleSet->toString());
-}
-
-std::shared_ptr<TupleSet> Collate::tuples() {
-
-  assert(m_tupleSet);
-
-  return m_tupleSet;
 }

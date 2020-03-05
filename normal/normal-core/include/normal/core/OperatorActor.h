@@ -15,10 +15,13 @@
 
 #include "StartMessage.h"
 
-class OperatorActor : public caf::event_based_actor {
+namespace normal::core {
+  class Operator;
+}
 
+class OperatorActor : public caf::event_based_actor {
 public:
-  OperatorActor(caf::actor_config &cfg, const std::shared_ptr<normal::core::Operator> &_operator);
+  OperatorActor(caf::actor_config &cfg, std::shared_ptr<normal::core::Operator> _operator);
 
   caf::behavior make_behavior() override;
   std::shared_ptr<normal::core::Operator> _operator;

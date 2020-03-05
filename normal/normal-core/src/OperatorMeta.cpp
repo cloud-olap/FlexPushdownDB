@@ -8,14 +8,14 @@
 
 namespace normal::core {
 
-OperatorMeta::OperatorMeta(std::string name, caf::actor_id actorId) : name_(std::move(name)), actorId_(actorId) {}
+OperatorMeta::OperatorMeta(std::string name, caf::actor actorHandle) : name_(std::move(name)), actorHandle_(std::move(actorHandle)) {}
 
 const std::string &OperatorMeta::name() const {
   return name_;
 }
 
-const caf::actor_id &OperatorMeta::actorId() const {
-  return actorId_;
+const caf::actor &OperatorMeta::actorHandle() const {
+  return actorHandle_;
 }
 
 }

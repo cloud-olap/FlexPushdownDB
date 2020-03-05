@@ -2,11 +2,12 @@
 // Created by matt on 16/12/19.
 //
 
-#include <spdlog/spdlog.h>
 #include "normal/core/Normal.h"
 
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
+
+#include "normal/core/Globals.h"
 
 namespace normal {
 
@@ -35,8 +36,7 @@ void hello_world(caf::event_based_actor* self, const caf::actor& buddy) {
   );
 }
 
-Normal::Normal() {
-}
+Normal::Normal() = default;
 
 Normal Normal::create() {
   return Normal();

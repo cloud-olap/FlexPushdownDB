@@ -20,11 +20,11 @@ namespace normal::core {
 class OperatorMeta {
 private:
   std::string name_;
-  caf::actor_id actorId_;
+  caf::actor actorHandle_;
 
 public:
-  OperatorMeta(std::string name, caf::actor_id actorId);
-  [[nodiscard]] const caf::actor_id &actorId() const;
+  OperatorMeta(std::string name, caf::actor actorHandle);
+  [[nodiscard]] const caf::actor &actorHandle() const;
   [[nodiscard]] const std::string &name() const;
 
 };

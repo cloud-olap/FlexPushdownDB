@@ -15,14 +15,14 @@ namespace normal::core {
  * FIXME: CAF doesn't appear to support abstract classes as messages
  */
 class Message {
+
 private:
   std::string type_;
+
 public:
-  [[nodiscard]] std::string type() const;
-public:
-//  explicit Message(std::string type);
-  Message() = default;
+  explicit Message(std::string type);
   virtual ~Message() = 0;
+  [[nodiscard]] std::string type() const;
 
 };
 

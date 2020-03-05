@@ -14,12 +14,13 @@
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
 
+#include "normal/core/Globals.h"
 #include "normal/core/Envelope.h"
 #include "normal/core/Message.h"          // for Message
 #include "normal/core/Operator.h"         // for Operator
 #include "normal/core/OperatorContext.h"  // for OperatorContext
-#include "kernel/OperatorActor.h"
-#include "kernel/StartMessage.h"
+#include "normal/core/OperatorActor.h"
+#include "normal/core/StartMessage.h"
 
 
 
@@ -45,9 +46,8 @@ void OperatorManager::start() {
   for (const auto &element: m_operatorMap) {
     auto ctx = element.second;
     auto op = ctx->op();
-    caf::actor actorRef = actorSystem->spawn<OperatorActor>(op);
-    op->setActorId(actorRef->id());
-    actorSystem->registry().put(actorRef.id(), actorRef);
+    caf::actor actorHandle = actorSystem->spawn<OperatorActor>(op);
+    op->actorHandle(actorHandle);
   }
 
   // Tell the actors who their consumers are
@@ -56,7 +56,7 @@ void OperatorManager::start() {
     auto op = ctx->op();
     for(const auto& consumerEntry: op->consumers()) {
       auto consumer = consumerEntry.second;
-      auto actorDef = normal::core::OperatorMeta(consumer->name(), consumer->getActorId());
+      auto actorDef = normal::core::OperatorMeta(consumer->name(), consumer->actorHandle());
       ctx->operatorMap().emplace(consumer->name(), actorDef);
     }
   }
@@ -68,23 +68,22 @@ void OperatorManager::start() {
     auto ctx = element.second;
     auto op = ctx->op();
 
-    std::vector<caf::actor_id> actorIds;
+    std::vector<caf::actor> actorHandles;
     for(const auto &consumer: op->consumers())
-      actorIds.emplace_back(consumer.second->getActorId());
+      actorHandles.emplace_back(consumer.second->actorHandle());
 
-    auto actorRef = actorSystem->registry().get<caf::actor>(op->getActorId());
-    auto sm = std::make_shared<StartMessage>(actorIds);
-    self->send(actorRef, normal::core::Envelope(sm));
+    auto sm = std::make_shared<StartMessage>(actorHandles);
+    self->send(op->actorHandle(), normal::core::Envelope(sm));
   }
 
-  for (const auto &op: m_operatorMap) {
-    op.second->op()->start();
-  }
+//  for (const auto &op: m_operatorMap) {
+//    op.second->op()->start();
+//  }
 }
 
 void OperatorManager::stop() {
   for (const auto &op: m_operatorMap) {
-    op.second->op()->stop();
+//    op.second->op()->stop();
   }
 }
 
@@ -101,16 +100,20 @@ void OperatorManager::stop() {
 //  }
 //}
 
-void OperatorManager::complete(normal::core::Operator &op) {
-
-  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op.consumers();
-
-  for (const auto &consumer : consumers) {
-    consumer.second->complete(op);
-  }
-}
+//void OperatorManager::complete(normal::core::Operator &op) {
+//
+//  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op.consumers();
+//
+//  for (const auto &consumer : consumers) {
+//    consumer.second->complete(op);
+//  }
+//}
 
 OperatorManager::OperatorManager(){
   actorSystemConfig.load<caf::io::middleman>();
   actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
+}
+
+void OperatorManager::join() {
+  actorSystem->await_all_actors_done();
 }

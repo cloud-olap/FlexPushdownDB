@@ -16,7 +16,7 @@ setDefaults()
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-pushdown" STATIC src/io/CSVParser.cpp src/io/CSVParser.h)
+add_library("normal-pushdown" STATIC src/io/CSVParser.cpp src/io/CSVParser.h include/normal/pushdown/Globals.h)
 
 target_sources("normal-pushdown" PRIVATE
          src/Collate.cpp include/normal/pushdown/Collate.h

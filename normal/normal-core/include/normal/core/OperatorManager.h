@@ -40,9 +40,8 @@ public:
 
   void start();
   void stop();
+  void join();
 
-  void tell(normal::core::Message &msg, const std::shared_ptr<normal::core::Operator> &op);
-  void complete(normal::core::Operator &op);
   OperatorManager();
 };
 

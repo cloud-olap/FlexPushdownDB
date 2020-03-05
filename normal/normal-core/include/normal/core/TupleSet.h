@@ -23,7 +23,7 @@ public:
 
   int64_t numRows();
   std::string visit(std::string (*fn)(std::string, arrow::RecordBatch&));
-  void addColumn(std::string name, int position, std::vector<std::shared_ptr<std::string>> data);
+  void addColumn(const std::string& name, int position, std::vector<std::shared_ptr<std::string>> data);
 
   std::string toString();
 

@@ -10,9 +10,11 @@
 
 #include "Operator.h"
 #include "OperatorMeta.h"
+#include "OperatorActor.h"
 
 //class OperatorManager;
 
+class OperatorActor;
 namespace normal::core {
 
 //class Message;
@@ -21,13 +23,18 @@ class Operator;
 class OperatorContext {
 private:
   std::shared_ptr<normal::core::Operator> operator_;
+  OperatorActor* operatorActor_{};
+public:
+  OperatorActor* getOperatorActor();
+  void setOperatorActor(OperatorActor *operatorActor);
+private:
   std::map<std::string, normal::core::OperatorMeta> operatorMap_;
 
 public:
-  OperatorContext(std::shared_ptr<normal::core::Operator> op);
+  explicit OperatorContext(std::shared_ptr<normal::core::Operator> op);
   std::shared_ptr<normal::core::Operator> op();
   std::map<std::string, normal::core::OperatorMeta> &operatorMap();
-  void tell(normal::core::Message &msg);
+  void tell(std::shared_ptr<normal::core::Message> &msg);
   void complete();
 
 };

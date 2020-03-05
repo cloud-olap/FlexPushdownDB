@@ -9,6 +9,8 @@
 #include <memory>                  // for unique_ptr
 
 #include <arrow/api.h>
+#include <normal/core/TupleMessage.h>
+#include <normal/core/CompleteMessage.h>
 
 #include "normal/core/Operator.h"
 #include "normal/core/OperatorContext.h"
@@ -23,14 +25,13 @@ private:
 public:
   explicit Collate(std::string name);
   ~Collate() override = default;
-  void onStart() override;
-  void onStop() override;
+  void onStart();
   void onReceive(const normal::core::Envelope& msg) override;
   void show();
   std::shared_ptr<TupleSet> tuples();
-protected:
-  void onComplete(const normal::core::Operator &op) override;
 
+  void onComplete(const CompleteMessage& message);
+  void onTuple(TupleMessage Message);
 };
 
 #endif //NORMAL_NORMAL_S3_SRC_COLLATE_H

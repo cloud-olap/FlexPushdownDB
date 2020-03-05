@@ -10,10 +10,10 @@
 #include <vector>                                 // for vector
 
 #include <normal/core/Operator.h>
+#include <normal/core/TupleMessage.h>
+#include <normal/core/CompleteMessage.h>
 
 #include "AggregateExpression.h"
-
-class Message;
 
 class Aggregate : public normal::core::Operator {
 private:
@@ -23,11 +23,11 @@ private:
 public:
   Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> m_expressions);
   ~Aggregate() override = default;
-  void onStart() override;
-  void onStop() override;
+  void onStart();
   void onReceive(const normal::core::Envelope& msg) override;
 protected:
-  void onComplete(const normal::core::Operator &op) override;
+  void onTuple(TupleMessage Message);
+  void onComplete(const CompleteMessage &msg);
 };
 
 #endif //NORMAL_NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_H
