@@ -6,7 +6,6 @@
 
 #include <vector>                      // for vector
 
-
 #include <arrow/table.h>               // for ConcatenateTables, Table (ptr ...
 #include <arrow/pretty_print.h>
 
@@ -15,6 +14,8 @@
 
 #include "normal/pushdown/Globals.h"
 
+namespace normal::pushdown {
+
 void Collate::onStart() {
   SPDLOG_DEBUG("Starting");
 }
@@ -22,14 +23,13 @@ void Collate::onStart() {
 Collate::Collate(std::string name) : Operator(std::move(name)) {
 }
 
-void Collate::onReceive(const normal::core::Envelope& msg) {
+void Collate::onReceive(const normal::core::Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
     this->onStart();
   } else if (msg.message().type() == "TupleMessage") {
     auto tupleMessage = dynamic_cast<const normal::core::TupleMessage &>(msg.message());
     this->onTuple(tupleMessage);
-  }
-  else if (msg.message().type() == "CompleteMessage") {
+  } else if (msg.message().type() == "CompleteMessage") {
     auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
   } else {
@@ -37,7 +37,7 @@ void Collate::onReceive(const normal::core::Envelope& msg) {
   }
 }
 
-void Collate::onComplete(const normal::core::CompleteMessage& msg) {
+void Collate::onComplete(const normal::core::CompleteMessage &msg) {
   ctx()->getOperatorActor()->quit();
 }
 
@@ -69,4 +69,6 @@ void Collate::onTuple(normal::core::TupleMessage tupleMessage) {
     arrow::ConcatenateTables(tables, &table);
     m_tupleSet->setTable(table);
   }
+}
+
 }

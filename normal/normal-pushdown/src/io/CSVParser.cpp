@@ -22,6 +22,8 @@
 #include "normal/pushdown/FileScan.h"
 #include "CSVParser.h"
 
+namespace normal::pushdown {
+
 arrow::util::string_view CSVParser::asStringView(const arrow::Buffer &buffer) {
   const char *s = reinterpret_cast<const char *>(buffer.data());
   size_t length = buffer.size();
@@ -90,4 +92,6 @@ CSVParser::readFields(const std::shared_ptr<arrow::io::ReadableFile> &inputStrea
   }
 
   return fields;
+}
+
 }

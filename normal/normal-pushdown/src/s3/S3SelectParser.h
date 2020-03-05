@@ -16,6 +16,8 @@
 #include <aws/core/client/ClientConfiguration.h>
 #include <normal/core/TupleSet.h>
 
+namespace normal::pushdown {
+
 class S3SelectParser {
 
 private:
@@ -33,5 +35,7 @@ public:
   std::shared_ptr<normal::core::TupleSet> parsePayload(Aws::Vector<unsigned char> &Vector);
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_SRC_S3_S3SELECTPARSER_H

@@ -11,16 +11,11 @@
 #include <arrow/csv/options.h>         // for ReadOptions, ConvertOptions
 #include <arrow/csv/reader.h>          // for TableReader
 #include <arrow/io/file.h>             // for ReadableFile
-#include <arrow/io/memory.h>           // for BufferReader
-#include <arrow/result.h>              // for Result
 #include <arrow/status.h>              // for Status
 #include <arrow/type_fwd.h>            // for default_memory_pool
 
 #include <normal/core/TupleMessage.h>
 #include <normal/core/TupleSet.h>
-#include <arrow/csv/parser.h>
-#include <sstream>
-#include <iostream>
 #include <normal/core/CompleteMessage.h>
 
 #include "normal/core/Message.h"       // for Message
@@ -30,7 +25,8 @@
 #include "normal/pushdown/Globals.h"
 
 namespace arrow { class MemoryPool; }
-namespace arrow::io { class InputStream; }
+
+namespace normal::pushdown {
 
 FileScan::FileScan(std::string name, std::string filePath)
     : Operator(std::move(name)), m_filePath(std::move(filePath)) {}
@@ -71,12 +67,14 @@ void FileScan::onStart() {
 
   auto tupleSet = normal::core::TupleSet::make(reader);
 
-  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage> (tupleSet);
+  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
   ctx()->tell(message);
 
   SPDLOG_DEBUG("Completing");
-  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage> ();
+  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
   ctx()->tell(cm);
 
   ctx()->getOperatorActor()->quit();
+}
+
 }

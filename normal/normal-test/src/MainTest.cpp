@@ -34,6 +34,8 @@ namespace arrow { class Array; }
 namespace arrow { class MemoryPool; }
 namespace arrow { class StringArray; }
 
+namespace normal::test {
+
 //TEST_CASE ("Operator lifecycle") {
 //
 //  auto mgr = std::make_shared<OperatorManager>();
@@ -180,13 +182,13 @@ TEST_CASE ("File Scan -> Sum -> Collate") {
 
   SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
 
-  auto aggregateExpression = std::make_unique<AggregateExpression>(fn);
-  auto aggregateExpressions = std::vector<std::unique_ptr<AggregateExpression>>();
+  auto aggregateExpression = std::make_unique<normal::pushdown::AggregateExpression>(fn);
+  auto aggregateExpressions = std::vector<std::unique_ptr<normal::pushdown::AggregateExpression>>();
   aggregateExpressions.push_back(std::move(aggregateExpression));
 
-  auto fileScan = std::make_shared<FileScan>(std::string("fileScan"), std::string("data/test.csv"));
-  auto aggregate = std::make_shared<Aggregate>("aggregate", std::move(aggregateExpressions));
-  auto collate = std::make_shared<Collate>("collate");
+  auto fileScan = std::make_shared<normal::pushdown::FileScan>(std::string("fileScan"), std::string("data/test.csv"));
+  auto aggregate = std::make_shared<normal::pushdown::Aggregate>("aggregate", std::move(aggregateExpressions));
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate");
 
   fileScan->produce(aggregate);
   aggregate->consume(fileScan);
@@ -340,7 +342,9 @@ TEST_CASE ("File Scan -> Sum -> Collate") {
 //  normal.start();
 //}
 
-int main(int argc, char** argv) {
+}
+
+int main(int argc, char **argv) {
 
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S.%e] [thread %t] [%! (%s:%#)] [%l]  %v");

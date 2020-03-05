@@ -56,6 +56,8 @@ using namespace Aws::Client;
 using namespace Aws::S3;
 using namespace Aws::S3::Model;
 
+namespace normal::pushdown {
+
 void S3SelectScan::onStart() {
 
   static const char *ALLOCATION_TAG = "Normal";
@@ -115,7 +117,7 @@ void S3SelectScan::onStart() {
     auto payload = recordsEvent.GetPayload();
     std::shared_ptr<normal::core::TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
 
-    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage> (tupleSet);
+    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
     ctx()->tell(message);
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
@@ -123,7 +125,7 @@ void S3SelectScan::onStart() {
     SPDLOG_DEBUG("Bytes processed: {}", statsEvent.GetDetails().GetBytesProcessed());
     SPDLOG_DEBUG("Bytes returned: {}", statsEvent.GetDetails().GetBytesReturned());
   });
-  handler.SetEndEventCallback([&](){
+  handler.SetEndEventCallback([&]() {
     ctx()->complete();
   });
 
@@ -140,4 +142,6 @@ S3SelectScan::S3SelectScan(std::string name, std::string s3Bucket, std::string s
   m_s3Bucket = std::move(s3Bucket);
   m_s3Object = std::move(s3Object);
   m_sql = std::move(sql);
+}
+
 }

@@ -10,6 +10,8 @@
 #include <spdlog/spdlog.h>
 #include <arrow/csv/parser.h>
 
+namespace normal::pushdown {
+
 /**
  *
  * @param from
@@ -36,7 +38,7 @@ std::shared_ptr<normal::core::TupleSet> S3SelectParser::parseCompletePayload(
   arrow::csv::BlockParser p{parse_options, -1, 1};
   uint32_t out_size;
   arrow::Status status = p.Parse(sv, &out_size);
-  if(!status.ok())
+  if (!status.ok())
     abort();
 
   int numFields = p.num_cols();
@@ -49,7 +51,8 @@ std::shared_ptr<normal::core::TupleSet> S3SelectParser::parseCompletePayload(
 
   convert_options.column_types = column_types;
 
-  std::shared_ptr<arrow::io::BufferReader> reader = std::make_shared<arrow::io::BufferReader>(from.base(), std::distance(from, to));
+  std::shared_ptr<arrow::io::BufferReader>
+      reader = std::make_shared<arrow::io::BufferReader>(from.base(), std::distance(from, to));
   arrow::MemoryPool *pool = arrow::default_memory_pool();
 
   // FIXME: How to size the buffer?
@@ -125,8 +128,11 @@ std::shared_ptr<normal::core::TupleSet> S3SelectParser::parsePayload(Aws::Vector
                  spdlog::trace("Complete payload: \n{}", records3);
                });
 
-  std::shared_ptr<normal::core::TupleSet> tupleSet = S3SelectParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
+  std::shared_ptr<normal::core::TupleSet>
+      tupleSet = S3SelectParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
 
   return tupleSet;
+}
+
 }
 
