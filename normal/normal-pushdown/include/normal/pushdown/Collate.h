@@ -21,17 +21,17 @@ class TupleSet;
 
 class Collate : public normal::core::Operator {
 private:
-  std::shared_ptr<TupleSet> m_tupleSet;
+  std::shared_ptr<normal::core::TupleSet> m_tupleSet;
 public:
   explicit Collate(std::string name);
   ~Collate() override = default;
   void onStart();
   void onReceive(const normal::core::Envelope& msg) override;
   void show();
-  std::shared_ptr<TupleSet> tuples();
+  std::shared_ptr<normal::core::TupleSet> tuples();
 
-  void onComplete(const CompleteMessage& message);
-  void onTuple(TupleMessage Message);
+  void onComplete(const normal::core::CompleteMessage& message);
+  void onTuple(normal::core::TupleMessage Message);
 };
 
 #endif //NORMAL_NORMAL_S3_SRC_COLLATE_H

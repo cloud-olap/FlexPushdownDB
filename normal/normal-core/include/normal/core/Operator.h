@@ -31,16 +31,15 @@ private:
   std::map<std::string, std::shared_ptr<normal::core::Operator>> m_producers;
   std::map<std::string, std::shared_ptr<normal::core::Operator>> m_consumers;
   caf::actor actorHandle_;
+
 public:
+  explicit Operator(std::string name);
+  virtual ~Operator() = 0;
+
   [[nodiscard]] caf::actor actorHandle() const;
   void actorHandle(caf::actor actorId);
 
-  virtual void onReceive(const  normal::core::Envelope &msg);
-
-public:
-
-  explicit Operator(std::string name);
-  virtual ~Operator() = 0;
+  virtual void onReceive(const normal::core::Envelope &msg);
 
   std::string &name();
   std::map<std::string, std::shared_ptr<normal::core::Operator>> producers();

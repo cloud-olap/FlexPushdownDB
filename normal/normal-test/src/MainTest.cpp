@@ -94,8 +94,8 @@ namespace arrow { class StringArray; }
 //  collate->show();
 //}
 
-auto fn = [](std::shared_ptr<TupleSet> dataTupleSet,
-             std::shared_ptr<TupleSet> aggregateTupleSet) -> std::shared_ptr<TupleSet> {
+auto fn = [](std::shared_ptr<normal::core::TupleSet> dataTupleSet,
+             std::shared_ptr<normal::core::TupleSet> aggregateTupleSet) -> std::shared_ptr<normal::core::TupleSet> {
 
   SPDLOG_DEBUG("Data:\n{}", dataTupleSet->toString());
 
@@ -167,7 +167,7 @@ auto fn = [](std::shared_ptr<TupleSet> dataTupleSet,
   std::shared_ptr<arrow::Table> table;
   table = arrow::Table::Make(schema, columns);
 
-  aggregateTupleSet = TupleSet::make(table);
+  aggregateTupleSet = normal::core::TupleSet::make(table);
 
   return aggregateTupleSet;
 };

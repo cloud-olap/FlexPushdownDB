@@ -15,6 +15,8 @@
 
 namespace arrow { class MemoryPool; }
 
+namespace normal::core {
+
 std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::TableReader> &tableReader) {
 
   auto result = tableReader->Read();
@@ -50,7 +52,7 @@ void TupleSet::setTable(const std::shared_ptr<arrow::Table> &table) {
   m_table = table;
 }
 
-void TupleSet::addColumn(const std::string& name, int position, std::vector<std::shared_ptr<std::string>> data) {
+void TupleSet::addColumn(const std::string &name, int position, std::vector<std::shared_ptr<std::string>> data) {
   arrow::Status arrowStatus;
 
   arrow::MemoryPool *pool = arrow::default_memory_pool();
@@ -166,4 +168,6 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
   auto value = array->GetString(row);
 
   return value;
+}
+
 }

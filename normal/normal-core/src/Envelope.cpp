@@ -9,7 +9,8 @@
 
 namespace normal::core {
 
-Envelope::Envelope(std::shared_ptr<Message> message) : message_(std::move(message)) {}
+Envelope::Envelope(std::shared_ptr<Message> message) :
+    message_(std::move(message)) {}
 
 const Message &Envelope::message() const {
   return *message_;

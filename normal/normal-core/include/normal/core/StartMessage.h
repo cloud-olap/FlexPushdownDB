@@ -11,18 +11,21 @@
 
 #include "normal/core/Message.h"
 
+namespace normal::core {
 
 class StartMessage : public normal::core::Message {
 
 private:
-  std::vector<caf::actor> consumers;
+  std::vector<caf::actor> consumers_;
 
 public:
-  explicit StartMessage(std::vector<caf::actor> Consumers);
-  [[nodiscard]] const std::vector<caf::actor> &getConsumers() const;
+  explicit StartMessage(std::vector<caf::actor> consumers);
+  [[nodiscard]] const std::vector<caf::actor> &consumers() const;
 
 };
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(StartMessage)
+}
+
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::StartMessage)
 
 #endif //NORMAL_NORMAL_CORE_SRC_KERNEL_STARTMESSAGE_H

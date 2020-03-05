@@ -6,11 +6,11 @@
 
 #include <utility>
 
-AggregateExpression::AggregateExpression(std::shared_ptr<TupleSet> (*fn)(std::shared_ptr<TupleSet>, std::shared_ptr<TupleSet>)) {
+AggregateExpression::AggregateExpression(std::shared_ptr<normal::core::TupleSet> (*fn)(std::shared_ptr<normal::core::TupleSet>, std::shared_ptr<normal::core::TupleSet>)) {
   m_fn = fn;
 }
 
-std::shared_ptr<TupleSet> AggregateExpression::apply(std::shared_ptr<TupleSet> tupleSet, std::shared_ptr<TupleSet> aggregateTupleSet) {
-  return m_fn(std::move(tupleSet), std::move(aggregateTupleSet));
+std::shared_ptr<normal::core::TupleSet> AggregateExpression::apply(std::shared_ptr<normal::core::TupleSet> tupleSet, std::shared_ptr<normal::core::TupleSet> aggregatedTupleSet) {
+  return m_fn(std::move(tupleSet), std::move(aggregatedTupleSet));
 }
 

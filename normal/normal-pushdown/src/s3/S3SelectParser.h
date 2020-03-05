@@ -24,13 +24,13 @@ private:
 
   std::vector<unsigned char> partial{};
 
-  static std::shared_ptr<TupleSet> parseCompletePayload(
+  static std::shared_ptr<normal::core::TupleSet> parseCompletePayload(
       const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &from,
       const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &to);
 
 public:
 
-  std::shared_ptr<TupleSet> parsePayload(Aws::Vector<unsigned char> &Vector);
+  std::shared_ptr<normal::core::TupleSet> parsePayload(Aws::Vector<unsigned char> &Vector);
 
 };
 

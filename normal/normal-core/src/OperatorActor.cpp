@@ -4,24 +4,29 @@
 
 #include "normal/core/OperatorActor.h"
 
-#include "normal/core/Globals.h"
-#include <normal/core/Envelope.h>
-
 #include <utility>
 
-OperatorActor::OperatorActor(caf::actor_config &cfg, std::shared_ptr<normal::core::Operator> _operator) :
-    caf::event_based_actor(cfg), _operator(std::move(_operator)) {
-  std::shared_ptr Ptr = this->_operator;
-  Ptr->ctx()->setOperatorActor(this);
+#include "normal/core/Globals.h"
+#include "normal/core/Envelope.h"
+
+namespace normal::core {
+
+OperatorActor::OperatorActor(caf::actor_config &cfg, std::shared_ptr<normal::core::Operator> opBehaviour) :
+    caf::event_based_actor(cfg),
+    opBehaviour_(std::move(opBehaviour)) {
+
+  this->opBehaviour_->ctx()->setOperatorActor(this);
 }
 
 caf::behavior behaviour(OperatorActor *self) {
   return {
       [=](const normal::core::Envelope &msg) {
+
         SPDLOG_DEBUG("Message received  |  actor: '{}', messageKind: '{}'",
-                     self->_operator->name(),
+                     self->operator_()->name(),
                      msg.message().type());
-        self->_operator->onReceive(msg);
+
+        self->operator_()->onReceive(msg);
       }
   };
 }
@@ -30,3 +35,8 @@ caf::behavior OperatorActor::make_behavior() {
   return behaviour(this);
 }
 
+std::shared_ptr<normal::core::Operator> OperatorActor::operator_() const {
+  return opBehaviour_;
+}
+
+}

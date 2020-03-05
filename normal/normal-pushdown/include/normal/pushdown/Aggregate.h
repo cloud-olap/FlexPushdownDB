@@ -18,16 +18,16 @@
 class Aggregate : public normal::core::Operator {
 private:
   std::vector<std::unique_ptr<AggregateExpression>> m_expressions;
-  std::shared_ptr<TupleSet> inputTupleSet;
-  std::shared_ptr<TupleSet> resultTupleSet;
+  std::shared_ptr<normal::core::TupleSet> inputTupleSet;
+  std::shared_ptr<normal::core::TupleSet> resultTupleSet;
 public:
   Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> m_expressions);
   ~Aggregate() override = default;
   void onStart();
   void onReceive(const normal::core::Envelope& msg) override;
 protected:
-  void onTuple(TupleMessage Message);
-  void onComplete(const CompleteMessage &msg);
+  void onTuple(normal::core::TupleMessage Message);
+  void onComplete(const normal::core::CompleteMessage &msg);
 };
 
 #endif //NORMAL_NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_H

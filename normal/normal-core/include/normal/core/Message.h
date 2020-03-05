@@ -11,8 +11,6 @@ namespace normal::core {
 
 /**
  * Base class for messages
- *
- * FIXME: CAF doesn't appear to support abstract classes as messages
  */
 class Message {
 

@@ -8,10 +8,10 @@
 
 namespace normal::core {
 
+Message::Message(std::string type) :
+    type_(std::move(type)) {}
+
 Message::~Message() = default;
-
-Message::Message(std::string type) : type_(std::move(type)) {}
-
 
 std::string Message::type() const {
   return type_;

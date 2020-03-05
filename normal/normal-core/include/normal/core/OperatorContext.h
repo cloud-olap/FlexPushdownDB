@@ -14,10 +14,10 @@
 
 //class OperatorManager;
 
-class OperatorActor;
+
 namespace normal::core {
 
-//class Message;
+class OperatorActor;
 class Operator;
 
 class OperatorContext {
@@ -25,8 +25,8 @@ private:
   std::shared_ptr<normal::core::Operator> operator_;
   OperatorActor* operatorActor_{};
 public:
-  OperatorActor* getOperatorActor();
-  void setOperatorActor(OperatorActor *operatorActor);
+  normal::core::OperatorActor* getOperatorActor();
+  void setOperatorActor(normal::core::OperatorActor *operatorActor);
 private:
   std::map<std::string, normal::core::OperatorMeta> operatorMap_;
 

@@ -113,9 +113,9 @@ void S3SelectScan::onStart() {
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
     auto payload = recordsEvent.GetPayload();
-    std::shared_ptr<TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
+    std::shared_ptr<normal::core::TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
 
-    std::shared_ptr<normal::core::Message> message = std::make_shared<TupleMessage> (tupleSet);
+    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage> (tupleSet);
     ctx()->tell(message);
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {

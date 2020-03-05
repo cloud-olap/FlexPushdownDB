@@ -3,4 +3,9 @@
 //
 
 #include "normal/core/CompleteMessage.h"
+
+namespace normal::core {
+
 CompleteMessage::CompleteMessage() : Message("CompleteMessage") {}
+
+}

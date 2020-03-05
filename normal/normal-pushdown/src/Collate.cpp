@@ -26,18 +26,18 @@ void Collate::onReceive(const normal::core::Envelope& msg) {
   if (msg.message().type() == "StartMessage") {
     this->onStart();
   } else if (msg.message().type() == "TupleMessage") {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
+    auto tupleMessage = dynamic_cast<const normal::core::TupleMessage &>(msg.message());
     this->onTuple(tupleMessage);
   }
   else if (msg.message().type() == "CompleteMessage") {
-    auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
+    auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
   } else {
     Operator::onReceive(msg);
   }
 }
 
-void Collate::onComplete(const CompleteMessage& msg) {
+void Collate::onComplete(const normal::core::CompleteMessage& msg) {
   ctx()->getOperatorActor()->quit();
 }
 
@@ -48,13 +48,13 @@ void Collate::show() {
   SPDLOG_DEBUG("{}  |  Show:\n{}", this->name(), m_tupleSet->toString());
 }
 
-std::shared_ptr<TupleSet> Collate::tuples() {
+std::shared_ptr<normal::core::TupleSet> Collate::tuples() {
 
   assert(m_tupleSet);
 
   return m_tupleSet;
 }
-void Collate::onTuple(TupleMessage tupleMessage) {
+void Collate::onTuple(normal::core::TupleMessage tupleMessage) {
 
   SPDLOG_DEBUG("Received tuples");
 

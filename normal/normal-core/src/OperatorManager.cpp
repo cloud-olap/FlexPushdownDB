@@ -46,7 +46,7 @@ void OperatorManager::start() {
   for (const auto &element: m_operatorMap) {
     auto ctx = element.second;
     auto op = ctx->op();
-    caf::actor actorHandle = actorSystem->spawn<OperatorActor>(op);
+    caf::actor actorHandle = actorSystem->spawn<normal::core::OperatorActor>(op);
     op->actorHandle(actorHandle);
   }
 
@@ -72,7 +72,7 @@ void OperatorManager::start() {
     for(const auto &consumer: op->consumers())
       actorHandles.emplace_back(consumer.second->actorHandle());
 
-    auto sm = std::make_shared<StartMessage>(actorHandles);
+    auto sm = std::make_shared<normal::core::StartMessage>(actorHandles);
     self->send(op->actorHandle(), normal::core::Envelope(sm));
   }
 

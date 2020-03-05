@@ -6,10 +6,14 @@
 
 #include <utility>
 
+namespace normal::core {
+
 StartMessage::StartMessage(std::vector<caf::actor> consumers) :
     normal::core::Message("StartMessage"),
-    consumers(std::move(consumers)) {}
+    consumers_(std::move(consumers)) {}
 
-const std::vector<caf::actor> &StartMessage::getConsumers() const {
-  return consumers;
+const std::vector<caf::actor> &StartMessage::consumers() const {
+  return consumers_;
+}
+
 }

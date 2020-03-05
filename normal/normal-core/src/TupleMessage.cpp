@@ -4,13 +4,15 @@
 
 #include "normal/core/TupleMessage.h"
 
-#include <algorithm>
+namespace normal::core {
 
-TupleMessage::TupleMessage(std::shared_ptr<TupleSet> tupleSet) :
+TupleMessage::TupleMessage(std::shared_ptr<normal::core::TupleSet> tupleSet) :
     normal::core::Message("TupleMessage"),
     m_tupleSet(std::move(tupleSet)) {
 }
 
-std::shared_ptr<TupleSet> TupleMessage::data() {
+std::shared_ptr<normal::core::TupleSet> TupleMessage::data() {
   return m_tupleSet;
+}
+
 }

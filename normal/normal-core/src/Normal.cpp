@@ -9,7 +9,7 @@
 
 #include "normal/core/Globals.h"
 
-namespace normal {
+namespace normal::core {
 
 caf::behavior mirror(caf::event_based_actor* self) {
   // return the (initial) actor behavior

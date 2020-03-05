@@ -13,16 +13,17 @@
 namespace normal::core {
 
 class Envelope {
-public:
-  explicit Envelope(std::shared_ptr<Message> message);
 private:
   std::shared_ptr<Message> message_;
+
 public:
+  explicit Envelope(std::shared_ptr<Message> message);
   [[nodiscard]] const Message &message() const;
+
 };
 
 }
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE( normal::core::Envelope)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::Envelope)
 
 #endif //NORMAL_NORMAL_CORE_SRC_ENVELOPE_H

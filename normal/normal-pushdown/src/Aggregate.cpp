@@ -30,37 +30,37 @@ void Aggregate::onReceive(const normal::core::Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
     this->onStart();
   } else if (msg.message().type() == "TupleMessage") {
-    auto tupleMessage = dynamic_cast<const TupleMessage &>(msg.message());
+    auto tupleMessage = dynamic_cast<const normal::core::TupleMessage &>(msg.message());
     this->onTuple(tupleMessage);
   }
   else if (msg.message().type() == "CompleteMessage") {
-    auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
+    auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
   } else {
     Operator::onReceive(msg);
   }
 }
 
-void Aggregate::onComplete(const CompleteMessage &msg) {
+void Aggregate::onComplete(const normal::core::CompleteMessage &msg) {
 
-  std::shared_ptr<TupleSet> aggregateTupleSet = nullptr;
+  std::shared_ptr<normal::core::TupleSet> aggregateTupleSet = nullptr;
 
   // FIXME: Only supports one expression at mo
   for (auto &expr : m_expressions) {
     aggregateTupleSet = expr->apply(inputTupleSet, aggregateTupleSet);
   }
 
-  std::shared_ptr<normal::core::Message> message = std::make_shared<TupleMessage>(aggregateTupleSet);
+  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(aggregateTupleSet);
   ctx()->tell(message);
 
   SPDLOG_DEBUG("Completing");
-  std::shared_ptr<normal::core::Message> cm = std::make_shared<CompleteMessage> ();
+  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage> ();
   ctx()->tell(cm);
 
   ctx()->getOperatorActor()->quit();
 }
 
-void Aggregate::onTuple(TupleMessage msg) {
+void Aggregate::onTuple(normal::core::TupleMessage msg) {
 
   SPDLOG_DEBUG("Received tuple message");
 

@@ -69,13 +69,13 @@ void FileScan::onStart() {
                                               input,
                                               readOptions, parseOptions, convertOptions).ValueOrDie();
 
-  auto tupleSet = TupleSet::make(reader);
+  auto tupleSet = normal::core::TupleSet::make(reader);
 
-  std::shared_ptr<normal::core::Message> message = std::make_shared<TupleMessage> (tupleSet);
+  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage> (tupleSet);
   ctx()->tell(message);
 
   SPDLOG_DEBUG("Completing");
-  std::shared_ptr<normal::core::Message> cm = std::make_shared<CompleteMessage> ();
+  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage> ();
   ctx()->tell(cm);
 
   ctx()->getOperatorActor()->quit();

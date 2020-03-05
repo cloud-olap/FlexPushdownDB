@@ -11,11 +11,15 @@
 
 #include "Message.h"
 
+namespace normal::core {
+
 class CompleteMessage : public normal::core::Message {
 public:
   CompleteMessage();
 };
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CompleteMessage)
+}
+
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::CompleteMessage)
 
 #endif //NORMAL_NORMAL_CORE_SRC_COMPLETEMESSAGE_H

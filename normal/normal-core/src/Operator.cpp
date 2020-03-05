@@ -15,38 +15,15 @@
 
 namespace normal::core {
 
-//void Operator::start() {
-//
-//  SPDLOG_DEBUG("{}  |  Starting", this->m_name);
-//
-//  m_running = true;
-//  this->onStart();
-//
-//  SPDLOG_DEBUG("{}  |  Started", this->m_name);
-//}
-//
-//void Operator::stop() {
-//  SPDLOG_DEBUG("{}  |  Stopping", this->m_name);
-//
-//  this->onStop();
-//  m_running = false;
-//
-//  SPDLOG_DEBUG("{}  |  Stopped", this->m_name);
-//}
-
-//bool Operator::isRunning() {
-//  return m_running;
-//}
-
-std::string &Operator::name() {
-  return m_name;
-}
-
 Operator::Operator(std::string name) {
   m_name = std::move(name);
 }
 
 Operator::~Operator() = default;
+
+std::string &Operator::name() {
+  return m_name;
+}
 
 void Operator::produce(const std::shared_ptr<Operator> &op) {
   m_consumers.emplace(op->name(), op);
@@ -93,7 +70,7 @@ caf::actor Operator::actorHandle() const {
 }
 
 void Operator::actorHandle(caf::actor actorHandle) {
-  this->actorHandle_ = actorHandle;
+  this->actorHandle_ = std::move(actorHandle);
 }
 
 } // namespace
