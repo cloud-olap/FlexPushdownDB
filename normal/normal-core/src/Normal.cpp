@@ -44,7 +44,7 @@ Normal Normal::create() {
 
 void Normal::start() {
 
-  spdlog::info("Normal  |  starting");
+  SPDLOG_DEBUG("Normal  |  starting");
 
   caf::actor_system_config cfg;
   cfg.load<caf::io::middleman>();
@@ -53,7 +53,7 @@ void Normal::start() {
   auto mirror_actor = system.spawn(mirror);
   system.spawn(hello_world, mirror_actor);
 
-  spdlog::info("Normal  |  started");
+  SPDLOG_DEBUG("Normal  |  started");
 }
 
 }

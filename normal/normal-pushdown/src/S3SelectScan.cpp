@@ -61,31 +61,7 @@ namespace normal::pushdown {
 
 void S3SelectScan::onStart() {
 
-  static const char *ALLOCATION_TAG = "Normal";
 
-  Aws::SDKOptions options;
-  options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Trace;
-  Aws::InitAPI(options);
-
-  std::shared_ptr<S3Client> client;
-  std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
-
-  limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 50000000);
-
-  ClientConfiguration config;
-  config.region = Aws::Region::US_EAST_1;
-  config.scheme = Scheme::HTTPS;
-  config.connectTimeoutMs = 30000;
-  config.requestTimeoutMs = 30000;
-  config.readRateLimiter = limiter;
-  config.writeRateLimiter = limiter;
-  config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 4);
-
-  client = Aws::MakeShared<S3Client>(ALLOCATION_TAG,
-                                     Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
-                                     config,
-                                     AWSAuthV4Signer::PayloadSigningPolicy::Never,
-                                     true);
 
   Aws::String bucketName = Aws::String(s3Bucket_);
 
@@ -135,17 +111,30 @@ void S3SelectScan::onStart() {
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
-  auto selectObjectContentOutcome = client->SelectObjectContent(selectObjectContentRequest);
+  auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
 
-  Aws::ShutdownAPI(options);
+
 
 }
 
-S3SelectScan::S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql)
-    : Operator(std::move(name)) {
-  s3Bucket_ = std::move(s3Bucket);
-  s3Object_ = std::move(s3Object);
-  sql_ = std::move(sql);
+S3SelectScan::S3SelectScan(std::string name,
+                           std::string s3Bucket,
+                           std::string s3Object,
+                           std::string sql,
+                           std::shared_ptr<Aws::S3::S3Client> s3Client)
+    : Operator(std::move(name)),
+      s3Bucket_(std::move(s3Bucket)),
+      s3Object_(std::move(s3Object)),
+      sql_(std::move(sql)),
+      s3Client_(std::move(s3Client)){
+}
+
+void S3SelectScan::onReceive(const normal::core::Envelope &message) {
+  if (message.message().type() == "StartMessage") {
+    this->onStart();
+  } else {
+    throw;
+  }
 }
 
 }

@@ -33,7 +33,7 @@ void Collate::onReceive(const normal::core::Envelope &message) {
     auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    Operator::onReceive(message);
+    throw;
   }
 }
 

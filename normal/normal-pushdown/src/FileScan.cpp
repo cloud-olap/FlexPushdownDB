@@ -37,7 +37,7 @@ void FileScan::onReceive(const normal::core::Envelope &message) {
   if (message.message().type() == "StartMessage") {
     this->onStart();
   } else {
-    Operator::onReceive(message);
+    throw;
   }
 }
 

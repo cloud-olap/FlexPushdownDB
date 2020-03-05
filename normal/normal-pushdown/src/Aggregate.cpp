@@ -36,7 +36,7 @@ void Aggregate::onReceive(const normal::core::Envelope &message) {
     auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    Operator::onReceive(message);
+    throw;
   }
 }
 
@@ -49,8 +49,8 @@ void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
     aggregateTupleSet = expr->apply(inputTuples, aggregateTupleSet);
   }
 
-  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(aggregateTupleSet);
-  ctx()->tell(message);
+  std::shared_ptr<normal::core::Message> tupleMessage = std::make_shared<normal::core::TupleMessage>(aggregateTupleSet);
+  ctx()->tell(tupleMessage);
 
   SPDLOG_DEBUG("Completing");
   std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();

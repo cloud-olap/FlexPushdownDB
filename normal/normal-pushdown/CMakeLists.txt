@@ -16,7 +16,7 @@ setDefaults()
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-pushdown" STATIC src/io/CSVParser.cpp src/io/CSVParser.h include/normal/pushdown/Globals.h)
+add_library("normal-pushdown" STATIC src/io/CSVParser.cpp src/io/CSVParser.h include/normal/pushdown/Globals.h src/AWSClient.cpp include/normal/pushdown/AWSClient.h)
 
 target_sources("normal-pushdown" PRIVATE
          src/Collate.cpp include/normal/pushdown/Collate.h
@@ -34,8 +34,8 @@ target_include_directories("normal-pushdown" PUBLIC include)
 
 target_link_libraries("normal-pushdown" PUBLIC "normal-core")
 target_link_libraries("normal-pushdown" PRIVATE spdlog)
-target_link_libraries("normal-pushdown" PRIVATE aws-cpp-sdk-core)
-target_link_libraries("normal-pushdown" PRIVATE aws-cpp-sdk-s3)
+target_link_libraries("normal-pushdown" PUBLIC aws-cpp-sdk-core)
+target_link_libraries("normal-pushdown" PUBLIC aws-cpp-sdk-s3)
 target_link_libraries("normal-pushdown" PUBLIC arrow)
 target_link_libraries("normal-pushdown" PUBLIC arrow-dataset)
 target_link_libraries("normal-pushdown" PUBLIC jemalloc)

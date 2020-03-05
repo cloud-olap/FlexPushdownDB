@@ -15,7 +15,7 @@ OperatorActor::OperatorActor(caf::actor_config &cfg, std::shared_ptr<normal::cor
     caf::event_based_actor(cfg),
     opBehaviour_(std::move(opBehaviour)) {
 
-  this->opBehaviour_->ctx()->setOperatorActor(this);
+  this->opBehaviour_->ctx()->operatorActor(this);
 }
 
 caf::behavior behaviour(OperatorActor *self) {

@@ -5,7 +5,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 #include <spdlog/spdlog.h>
-#include "normal/pushdown/S3SelectScan.h"
+#include "normal/pushdown/S3SelectScanTest.h"
 #include "normal/pushdown/Collate.h"
 #include "normal/core/OperatorContext.h"
 #include <normal/core/OperatorManager.h>
@@ -182,7 +182,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
 
     schema = arrow::schema({field});
 
-    spdlog::info("\n" + schema->ToString());
+    SPDLOG_DEBUG("\n" + schema->ToString());
 
     arrow::MemoryPool *pool = arrow::default_memory_pool();
     arrow::StringBuilder colBuilder(pool);

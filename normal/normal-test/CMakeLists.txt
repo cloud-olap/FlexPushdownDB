@@ -19,7 +19,7 @@ setDefaults()
 add_executable("normal-test" src/Globals.h)
 
 target_sources("normal-test" PRIVATE
-        src/MainTest.cpp)
+        src/MainTest.cpp src/FileScanTest.cpp src/S3SelectScanTest.cpp)
 
 target_compile_features("normal-test" PRIVATE cxx_std_17)
 target_compile_options("normal-test" PRIVATE -Wall -Wextra -pedantic)

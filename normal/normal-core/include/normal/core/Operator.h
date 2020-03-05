@@ -41,7 +41,7 @@ public:
   void actorHandle(caf::actor actorId);
   std::shared_ptr<normal::core::OperatorContext> ctx();
 
-  virtual void onReceive(const normal::core::Envelope &msg);
+  virtual void onReceive(const normal::core::Envelope &msg) = 0;
 
   std::map<std::string, std::shared_ptr<normal::core::Operator>> producers();
   std::map<std::string, std::shared_ptr<normal::core::Operator>> consumers();

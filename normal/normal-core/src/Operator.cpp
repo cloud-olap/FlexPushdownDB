@@ -59,12 +59,6 @@ void Operator::create(std::shared_ptr<OperatorContext> ctx) {
   assert (opContext_);
 }
 
-void Operator::onReceive(const  normal::core::Envelope &msg) {
-  SPDLOG_WARN("{}  |  Ignoring message, Operator is not a reactive operator (msg: {})",
-               this->name_,
-               typeid(msg).name());
-}
-
 caf::actor Operator::actorHandle() const {
   return actorHandle_;
 }
