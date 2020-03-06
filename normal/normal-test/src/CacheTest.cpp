@@ -1,5 +1,5 @@
 //
-// Created by matt on 5/3/20.
+// Created by matt on 7/3/20.
 //
 
 #include <string>
@@ -116,7 +116,11 @@ auto fn = [](std::shared_ptr<normal::core::TupleSet> dataTupleSet,
   return aggregateTupleSet;
 };
 
-TEST_CASE ("S3SelectScan -> Sum -> Collate") {
+/**
+ * TODO: Throwing errors when issuing AWS requests, reported as a CRC error but suspect an auth issue. Skip for now.
+ */
+TEST_CASE ("S3SelectScan -> Sum -> Collate"
+               * doctest::skip(true)) {
 
   normal::pushdown::AWSClient client;
   client.init();
@@ -132,11 +136,11 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate") {
   aggregateExpressions.push_back(std::move(aggregateExpression));
 
   auto s3selectScan = std::make_shared<normal::pushdown::S3SelectScan>("s3SelectScan",
-                                                                       "s3filter",
-                                                                       "tpch-sf1/customer.csv",
-                                                                       "select * from S3Object limit 1000",
-                                                                       "NA",
-                                                                       "NA",
+                                                                       "mit-caching",
+                                                                       "test/a.tbl",
+                                                                       "select  * from S3Object",
+                                                                       "a",
+                                                                       "all",
                                                                        client.defaultS3Client());
   auto aggregate = std::make_shared<normal::pushdown::Aggregate>("aggregate", std::move(aggregateExpressions));
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");

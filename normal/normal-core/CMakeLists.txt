@@ -16,7 +16,8 @@ target_sources("normal-core" PRIVATE
         src/OperatorManager.cpp include/normal/core/OperatorManager.h
         src/Message.cpp include/normal/core/Message.h
         src/TupleMessage.cpp include/normal/core/TupleMessage.h
-        src/TupleSet.cpp include/normal/core/TupleSet.h)
+        src/TupleSet.cpp include/normal/core/TupleSet.h
+        src/Cache.cpp include/normal/core/Cache.h)
 
 target_compile_features("normal-core" PRIVATE cxx_std_17)
 target_compile_options("normal-core" PRIVATE -Wall -Wextra -pedantic)

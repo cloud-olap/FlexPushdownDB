@@ -62,58 +62,82 @@ namespace normal::pushdown {
 void S3SelectScan::onStart() {
 
 
+  //get tbl and col info
+  std::string colName = m_col;
+  std::string tblName = m_tbl;
 
-  Aws::String bucketName = Aws::String(s3Bucket_);
+  std::string cacheID = tblName + "." + colName;
+  std::unordered_map<std::string, std::shared_ptr<normal::core::TupleSet>> cacheMap = m_cache->m_cacheData;
+  //no found
+  if (cacheMap.empty() || cacheMap.find(cacheID)!=cacheMap.end()) {
+    Aws::String bucketName = Aws::String(s3Bucket_);
 
-  SelectObjectContentRequest selectObjectContentRequest;
-  selectObjectContentRequest.SetBucket(bucketName);
-  selectObjectContentRequest.SetKey(Aws::String(s3Object_));
+    SelectObjectContentRequest selectObjectContentRequest;
+    selectObjectContentRequest.SetBucket(bucketName);
+    selectObjectContentRequest.SetKey(Aws::String(s3Object_));
 
-  selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
+    selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
-  selectObjectContentRequest.SetExpression(sql_.c_str());
+    selectObjectContentRequest.SetExpression(sql_.c_str());
 
-  CSVInput csvInput;
-  csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
-  csvInput.SetFieldDelimiter("|");
-  csvInput.SetRecordDelimiter("|\n");
-  InputSerialization inputSerialization;
-  inputSerialization.SetCSV(csvInput);
-  selectObjectContentRequest.SetInputSerialization(inputSerialization);
+    CSVInput csvInput;
+    csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
+    csvInput.SetFieldDelimiter("|");
+    csvInput.SetRecordDelimiter("|\n");
+    InputSerialization inputSerialization;
+    inputSerialization.SetCSV(csvInput);
+    selectObjectContentRequest.SetInputSerialization(inputSerialization);
 
-  CSVOutput csvOutput;
-  OutputSerialization outputSerialization;
-  outputSerialization.SetCSV(csvOutput);
-  selectObjectContentRequest.SetOutputSerialization(outputSerialization);
+    CSVOutput csvOutput;
+    OutputSerialization outputSerialization;
+    outputSerialization.SetCSV(csvOutput);
+    selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  std::vector<unsigned char> partial{};
-  S3SelectParser s3SelectParser{};
+    std::vector<unsigned char> partial{};
+    S3SelectParser s3SelectParser{};
 
-  SelectObjectContentHandler handler;
-  handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
-    auto payload = recordsEvent.GetPayload();
-    std::shared_ptr<normal::core::TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
+    SelectObjectContentHandler handler;
+    handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
+      auto payload = recordsEvent.GetPayload();
+      std::shared_ptr<normal::core::TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
 
+      std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
+      ctx()->tell(message);
+
+      //add to cache
+      m_cache->m_cacheData[cacheID] = tupleSet;
+    });
+    handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
+      SPDLOG_DEBUG("Bytes scanned: {} ", statsEvent.GetDetails().GetBytesScanned());
+      SPDLOG_DEBUG("Bytes processed: {}", statsEvent.GetDetails().GetBytesProcessed());
+      SPDLOG_DEBUG("Bytes returned: {}", statsEvent.GetDetails().GetBytesReturned());
+    });
+    handler.SetEndEventCallback([&]() {
+      SPDLOG_DEBUG("EndEvent:");
+
+      std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::CompleteMessage>();
+      ctx()->tell(message);
+
+      this->ctx()->operatorActor()->quit();
+    });
+    handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
+      SPDLOG_DEBUG("Error: {}", errors.GetMessage());
+
+      // FIXME: Propagate errors here
+
+      this->ctx()->operatorActor()->quit();
+    });
+
+    selectObjectContentRequest.SetEventStreamHandler(handler);
+
+    auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
+
+  }
+  else {
+    std::shared_ptr<normal::core::TupleSet> tupleSet = cacheMap[cacheID];
     std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
     ctx()->tell(message);
-  });
-  handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
-    SPDLOG_DEBUG("Bytes scanned: {} ", statsEvent.GetDetails().GetBytesScanned());
-    SPDLOG_DEBUG("Bytes processed: {}", statsEvent.GetDetails().GetBytesProcessed());
-    SPDLOG_DEBUG("Bytes returned: {}", statsEvent.GetDetails().GetBytesReturned());
-  });
-  handler.SetEndEventCallback([&]() {
-    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::CompleteMessage>();
-    ctx()->tell(message);
-
-    this->ctx()->operatorActor()->quit();
-  });
-
-  selectObjectContentRequest.SetEventStreamHandler(handler);
-
-  auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
-
-
+  }
 
 }
 
@@ -121,11 +145,16 @@ S3SelectScan::S3SelectScan(std::string name,
                            std::string s3Bucket,
                            std::string s3Object,
                            std::string sql,
+                           std::string m_tbl,
+                           std::string m_col,
                            std::shared_ptr<Aws::S3::S3Client> s3Client)
     : Operator(std::move(name)),
       s3Bucket_(std::move(s3Bucket)),
       s3Object_(std::move(s3Object)),
       sql_(std::move(sql)),
+      m_cache(std::make_shared<Cache>()),
+      m_col(std::move(m_col)),
+      m_tbl(std::move(m_tbl)),
       s3Client_(std::move(s3Client)){
 }
 

@@ -9,6 +9,7 @@
 #include <string>
 
 #include <aws/s3/S3Client.h>
+#include <normal/core/Cache.h>
 
 #include "normal/core/Operator.h"
 #include "normal/core/TupleSet.h"
@@ -21,12 +22,15 @@ private:
   std::string s3Bucket_;
   std::string s3Object_;
   std::string sql_;
+  std::shared_ptr<Cache> m_cache;
+  std::string m_col;
+  std::string m_tbl;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
 
   void onStart();
 
 public:
-  S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql, std::shared_ptr<Aws::S3::S3Client> s3Client);
+  S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql, std::string m_tbl, std::string m_col, std::shared_ptr<Aws::S3::S3Client> s3Client);
   ~S3SelectScan() override = default;
 
   void onReceive(const core::Envelope &message) override;
