@@ -5,33 +5,36 @@
 #ifndef NORMAL_NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_H
 #define NORMAL_NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_H
 
-#include <memory>                                 // for unique_ptr
-#include <string>                                 // for string
-#include <vector>                                 // for vector
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <normal/core/Operator.h>
 #include <normal/core/TupleMessage.h>
 #include <normal/core/CompleteMessage.h>
-
-#include "AggregateExpression.h"
+#include <normal/pushdown/aggregate/AggregationResult.h>
+#include <normal/pushdown/aggregate/AggregationFunction.h>
 
 namespace normal::pushdown {
 
 class Aggregate : public normal::core::Operator {
 
 private:
-  std::vector<std::unique_ptr<AggregateExpression>> expressions_;
-  std::shared_ptr<normal::core::TupleSet> inputTuples;
-  std::shared_ptr<normal::core::TupleSet> outputTuples;
+  std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions_;
+  std::shared_ptr<aggregate::AggregationResult> result_;
 
   void onReceive(const normal::core::Envelope &message) override;
-  void onTuple(normal::core::TupleMessage message);
+
+  void onTuple(const core::TupleMessage &message);
   void onComplete(const normal::core::CompleteMessage &message);
   void onStart();
 
 public:
-  Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> expressions);
+  Aggregate(std::string name,
+            std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions);
   ~Aggregate() override = default;
+
+  void compute(const std::shared_ptr<normal::core::TupleSet> &tuples);
 
 };
 

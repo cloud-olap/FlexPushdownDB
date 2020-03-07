@@ -2,32 +2,10 @@
 // Created by matt on 4/12/19.
 //
 
-#include <string>
-#include <memory>
-#include <vector>
-
 #define DOCTEST_CONFIG_IMPLEMENT
 #include <doctest/doctest.h>
 
-#include <arrow/array/builder_binary.h>           // for StringBuilder
-#include <arrow/table.h>                          // for Table
-#include <arrow/type.h>                           // for field, schema, Schema
-#include <arrow/type_fwd.h>                       // for default_memory_pool
-#include <memory.h>                      // for shared_ptr, make_sh...
-#include <cstdio>                                // for FILENAME_MAX
-#include <unistd.h>                               // for getcwd
-#include <iostream>                               // for cout
-
-#include "normal/pushdown/S3SelectScan.h"
-#include "normal/pushdown/Collate.h"
-#include "normal/core/OperatorContext.h"
-#include <normal/core/OperatorManager.h>
-#include <normal/pushdown/Aggregate.h>
-#include <normal/pushdown/FileScan.h>
-#include <normal/core/Normal.h>
-#include "normal/core/TupleSet.h"                 // for TupleSet
-#include "normal/pushdown/AggregateExpression.h"  // for AggregateExpression
-
+#include "normal/core/TupleSet.h"
 #include "Globals.h"
 
 namespace arrow { class Array; }
@@ -47,7 +25,7 @@ int main(int argc, char **argv) {
 
   int rc = context.run();
 
-  if(context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
+  if (context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
     return rc;
 
   return rc;

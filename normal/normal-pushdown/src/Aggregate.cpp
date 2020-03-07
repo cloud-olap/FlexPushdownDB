@@ -7,23 +7,28 @@
 #include <string>
 #include <utility>
 #include <memory>
-#include <normal/core/CompleteMessage.h>
 
+#include <normal/core/CompleteMessage.h>
 #include "normal/core/Operator.h"
 #include "normal/core/TupleMessage.h"
 #include "normal/core/Message.h"
-
+#include <normal/pushdown/aggregate/AggregationResult.h>
 #include "normal/pushdown/Globals.h"
-#include "normal/pushdown/AggregateExpression.h"
 
 namespace normal::pushdown {
 
-Aggregate::Aggregate(std::string name, std::vector<std::unique_ptr<AggregateExpression>> expressions)
+Aggregate::Aggregate(std::string name,
+                     std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions)
     : Operator(std::move(name)),
-      expressions_(std::move(expressions)) {}
+      functions_(std::move(functions)),
+      result_(std::make_shared<aggregate::AggregationResult>()) {}
 
 void Aggregate::onStart() {
   SPDLOG_DEBUG("Starting");
+
+  for (const auto& expression: *functions_) {
+    expression->init(this->result_);
+  }
 }
 
 void Aggregate::onReceive(const normal::core::Envelope &message) {
@@ -42,36 +47,53 @@ void Aggregate::onReceive(const normal::core::Envelope &message) {
 
 void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
 
-  std::shared_ptr<normal::core::TupleSet> aggregateTupleSet = nullptr;
+  SPDLOG_DEBUG("Completing");
 
-  // FIXME: Only supports one expression at mo
-  for (auto &expr : expressions_) {
-    aggregateTupleSet = expr->apply(inputTuples, aggregateTupleSet);
+  std::shared_ptr<arrow::Schema> schema;
+  std::vector<std::shared_ptr<arrow::Field>> fields;
+  for (const auto& expression: *functions_) {
+    std::shared_ptr<arrow::Field> field = arrow::field(expression->columnName(), arrow::utf8());
+    fields.emplace_back(field);
+  }
+  schema = arrow::schema(fields);
+
+  SPDLOG_DEBUG("Aggregation output schema: {}\n", schema->ToString());
+
+  arrow::MemoryPool *pool = arrow::default_memory_pool();
+
+  std::vector<std::shared_ptr<arrow::Array>> columns;
+  for (const auto& expression: *functions_) {
+    arrow::StringBuilder colBuilder(pool);
+    colBuilder.Append(this->result_->get(expression->columnName()));
+    std::shared_ptr<arrow::StringArray> col;
+    colBuilder.Finish(&col);
+    columns.emplace_back(col);
   }
 
-  std::shared_ptr<normal::core::Message> tupleMessage = std::make_shared<normal::core::TupleMessage>(aggregateTupleSet);
+  std::shared_ptr<arrow::Table> table;
+  table = arrow::Table::Make(schema, columns);
+
+  const std::shared_ptr<core::TupleSet> &aggregatedTuples = core::TupleSet::make(table);
+
+  SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}",  aggregatedTuples->toString());
+
+  std::shared_ptr<normal::core::Message> tupleMessage = std::make_shared<normal::core::TupleMessage>(aggregatedTuples);
   ctx()->tell(tupleMessage);
 
-  SPDLOG_DEBUG("Completing");
   std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
   ctx()->tell(cm);
 
   ctx()->operatorActor()->quit();
 }
 
-void Aggregate::onTuple(normal::core::TupleMessage message) {
-
+void Aggregate::onTuple(const core::TupleMessage& message) {
   SPDLOG_DEBUG("Received tuple message");
+  compute(message.tuples());
+}
 
-  if (inputTuples == nullptr) {
-    inputTuples = message.tuples();
-  } else {
-    auto tables = std::vector<std::shared_ptr<arrow::Table>>();
-    std::shared_ptr<arrow::Table> table;
-    tables.push_back(message.tuples()->table());
-    tables.push_back(inputTuples->table());
-    arrow::ConcatenateTables(tables, &table);
-    inputTuples->table(table);
+void Aggregate::compute(const std::shared_ptr<normal::core::TupleSet>& tuples) {
+  for (const auto& expression: *functions_) {
+    expression->apply(tuples);
   }
 }
 

@@ -11,7 +11,7 @@ TupleMessage::TupleMessage(std::shared_ptr<normal::core::TupleSet> tuples) :
     tuples_(std::move(tuples)) {
 }
 
-std::shared_ptr<normal::core::TupleSet> TupleMessage::tuples() {
+std::shared_ptr<normal::core::TupleSet> TupleMessage::tuples() const {
   return tuples_;
 }
 

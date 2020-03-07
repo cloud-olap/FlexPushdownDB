@@ -22,7 +22,7 @@ public:
   explicit TupleMessage(std::shared_ptr<normal::core::TupleSet> tuples);
   ~TupleMessage() override = default;
 
-  std::shared_ptr<normal::core::TupleSet> tuples();
+  std::shared_ptr<normal::core::TupleSet> tuples() const;
 };
 
 }

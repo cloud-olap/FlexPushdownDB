@@ -16,8 +16,10 @@
 #include "normal/core/OperatorContext.h"
 #include "normal/core/TupleSet.h"
 
-class Message;
-class TupleSet;
+namespace normal::core {
+  class Message;
+  class TupleSet;
+}
 
 namespace normal::pushdown {
 
@@ -28,7 +30,7 @@ private:
   void onStart();
 
   void onComplete(const normal::core::CompleteMessage &message);
-  void onTuple(normal::core::TupleMessage message);
+  void onTuple(const normal::core::TupleMessage& message);
   void onReceive(const normal::core::Envelope &message) override;
 
 public:

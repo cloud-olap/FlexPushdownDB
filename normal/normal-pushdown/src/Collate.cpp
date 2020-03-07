@@ -54,7 +54,7 @@ std::shared_ptr<normal::core::TupleSet> Collate::tuples() {
 
   return tuples_;
 }
-void Collate::onTuple(normal::core::TupleMessage message) {
+void Collate::onTuple(const normal::core::TupleMessage& message) {
 
   SPDLOG_DEBUG("Received tuples");
 

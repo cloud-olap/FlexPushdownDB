@@ -10,7 +10,6 @@ namespace normal::pushdown {
 class CSVParser {
 
   static arrow::util::string_view asStringView(const arrow::Buffer &buffer);
-  static nonstd::string_view asStringView(const arrow::Buffer &&buffer);
   static nonstd::string_view asStringView(const std::shared_ptr<arrow::Buffer> &buffer);
   static nonstd::string_view asStringView(const arrow::Buffer *buffer);
 public:

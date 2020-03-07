@@ -25,7 +25,7 @@ public:
   static std::shared_ptr<TupleSet> make(std::shared_ptr<arrow::Table> table);
 
   int64_t numRows();
-  std::string visit(std::string (*fn)(std::string, arrow::RecordBatch &));
+  std::string visit(const std::function<std::string(std::string, arrow::RecordBatch &)>& fn);
   void addColumn(const std::string &name, int position, std::vector<std::shared_ptr<std::string>> data);
 
   std::string toString();

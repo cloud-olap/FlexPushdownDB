@@ -19,8 +19,13 @@ OperatorActor::OperatorActor(caf::actor_config &cfg, std::shared_ptr<normal::cor
 }
 
 caf::behavior behaviour(OperatorActor *self) {
+
+  auto functionName = __FUNCTION__;
+
   return {
       [=](const normal::core::Envelope &msg) {
+
+#define __FUNCTION__ functionName
 
         SPDLOG_DEBUG("Message received  |  actor: '{}', messageKind: '{}'",
                      self->operator_()->name(),

@@ -91,7 +91,7 @@ int64_t TupleSet::numColumns() {
   return table_->num_columns();
 }
 
-std::string TupleSet::visit(std::string (*fn)(std::string, arrow::RecordBatch &)) {
+std::string TupleSet::visit(const std::function<std::string(std::string, arrow::RecordBatch &)>& fn) {
 
   arrow::Status arrowStatus;
 

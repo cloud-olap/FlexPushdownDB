@@ -113,7 +113,7 @@ std::shared_ptr<normal::core::TupleSet> S3SelectParser::parsePayload(Aws::Vector
 
   // Find the last newline
   auto newLineIt = std::find(payload.rbegin(), payload.rend(), '\n');
-  int pos = (payload.rend() - newLineIt);
+  long pos = (payload.rend() - newLineIt);
 
   // Store anything following the last newline as partial data
   partial = std::vector<unsigned char>(payload.begin() + pos, payload.end());

@@ -10,21 +10,27 @@ setDefaults()
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-
-
 #-----------------------------------------------------------------------------------------------------------------------
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_library("normal-pushdown" STATIC src/io/CSVParser.cpp src/io/CSVParser.h include/normal/pushdown/Globals.h src/AWSClient.cpp include/normal/pushdown/AWSClient.h)
+add_library("normal-pushdown" STATIC
+        src/io/CSVParser.cpp
+        src/io/CSVParser.h
+        include/normal/pushdown/Globals.h
+        )
 
 target_sources("normal-pushdown" PRIVATE
-         src/Collate.cpp include/normal/pushdown/Collate.h
+        src/Collate.cpp include/normal/pushdown/Collate.h
         src/S3SelectScan.cpp include/normal/pushdown/S3SelectScan.h
         src/FileScan.cpp include/normal/pushdown/FileScan.h
         src/Aggregate.cpp include/normal/pushdown/Aggregate.h
-        src/AggregateExpression.cpp include/normal/pushdown/AggregateExpression.h
-        src/s3/S3SelectParser.cpp src/s3/S3SelectParser.h)
+        src/s3/S3SelectParser.cpp src/s3/S3SelectParser.h
+        src/aggregate/AggregationResult.cpp include/normal/pushdown/aggregate/AggregationResult.h
+        src/aggregate/Sum.cpp include/normal/pushdown/aggregate/Sum.h
+        src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h
+        src/AWSClient.cpp include/normal/pushdown/AWSClient.h
+        )
 
 target_compile_features("normal-pushdown" PRIVATE cxx_std_17)
 target_compile_options("normal-pushdown" PRIVATE -Wall -Wextra -pedantic)

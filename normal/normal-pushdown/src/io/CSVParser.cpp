@@ -26,7 +26,7 @@ namespace normal::pushdown {
 
 arrow::util::string_view CSVParser::asStringView(const arrow::Buffer &buffer) {
   const char *s = reinterpret_cast<const char *>(buffer.data());
-  size_t length = buffer.size();
+  int64_t length = buffer.size();
   arrow::util::string_view view(s, length);
   return view;
 }
