@@ -56,8 +56,6 @@ void OperatorManager::start() {
     }
   }
 
-  caf::scoped_actor self{*actorSystem};
-
 //   Send start messages to the actors
   for (const auto &element: m_operatorMap) {
     auto ctx = element.second;
@@ -68,7 +66,7 @@ void OperatorManager::start() {
       actorHandles.emplace_back(consumer.second->actorHandle());
 
     auto sm = std::make_shared<normal::core::StartMessage>(actorHandles);
-    self->send(op->actorHandle(), normal::core::Envelope(sm));
+    (*actor_)->send(op->actorHandle(), normal::core::Envelope(sm));
   }
 
 //  for (const auto &op: m_operatorMap) {
@@ -104,11 +102,24 @@ void OperatorManager::stop() {
 //  }
 //}
 
+void behaviour(caf::blocking_actor *self) {
+  bool running = true;
+  self->receive_while(running)( //
+    [](const normal::core::Envelope &msg) {
+      SPDLOG_DEBUG("Message received  |  actor: 'OperatorManager', messageKind: '{}'",
+                   msg.message().type());
+    });
+}
+
 OperatorManager::OperatorManager(){
   actorSystemConfig.load<caf::io::middleman>();
   actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
+  actor_ = std::make_unique<caf::scoped_actor>(*actorSystem);
 }
 
 void OperatorManager::join() {
+
+  (*actor_)->receive(behaviour);
+
   actorSystem->await_all_actors_done();
 }

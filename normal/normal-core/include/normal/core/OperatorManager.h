@@ -35,6 +35,7 @@ private:
   caf::actor_system_config actorSystemConfig;
   std::unique_ptr<caf::actor_system> actorSystem;
   std::map<std::string, caf::actor_id> actorMap;
+  std::unique_ptr<caf::scoped_actor> actor_;
 public:
   void put(const std::shared_ptr<normal::core::Operator> &op);
 
