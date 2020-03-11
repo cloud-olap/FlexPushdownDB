@@ -25,7 +25,7 @@ find_package(doctest REQUIRED)
 find_package(AWSCPPSDK REQUIRED)
 find_package(arrow REQUIRED)
 find_package(caf REQUIRED)
-
+find_package(ANTLR REQUIRED)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
@@ -33,4 +33,5 @@ find_package(caf REQUIRED)
 
 add_subdirectory("normal-core")
 add_subdirectory("normal-pushdown")
+add_subdirectory("normal-sql")
 add_subdirectory("normal-test")

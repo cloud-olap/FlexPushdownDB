@@ -4,21 +4,16 @@
 
 #include "normal/core/OperatorManager.h"
 
-
 #include <cassert>
-
-#include <cassert>
-#include <utility>                        // for pair, move
-#include <vector>                         // for vector
+#include <vector>
 
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
 
 #include "normal/core/Globals.h"
 #include "normal/core/Envelope.h"
-#include "normal/core/Message.h"          // for Message
-#include "normal/core/Operator.h"         // for Operator
-#include "normal/core/OperatorContext.h"  // for OperatorContext
+#include "normal/core/Operator.h"
+#include "normal/core/OperatorContext.h"
 #include "normal/core/OperatorActor.h"
 #include "normal/core/StartMessage.h"
 

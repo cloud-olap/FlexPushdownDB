@@ -29,6 +29,7 @@ target_include_directories("normal-test" PRIVATE include)
 
 target_link_libraries(normal-test PRIVATE normal-core)
 target_link_libraries("normal-test" PRIVATE "normal-pushdown")
+target_link_libraries("normal-test" PRIVATE "normal-sql")
 target_link_libraries("normal-test" PRIVATE spdlog)
 target_link_libraries("normal-test" PRIVATE doctest)
 
@@ -44,7 +45,7 @@ add_dependencies("normal-test" "spdlog")
 add_dependencies("normal-test" "doctest")
 add_dependencies("normal-test" "normal-core")
 add_dependencies("normal-test" "normal-pushdown")
-
+add_dependencies("normal-test" "normal-sql")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
