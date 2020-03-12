@@ -69,7 +69,7 @@ void S3SelectScan::onStart() {
   std::string cacheID = tblName + "." + colName;
   std::unordered_map<std::string, std::shared_ptr<normal::core::TupleSet>> cacheMap = m_cache->m_cacheData;
   //no found
-  if (cacheMap.empty() || cacheMap.find(cacheID)!=cacheMap.end()) {
+  if (cacheMap.empty() || cacheMap.find(cacheID)==cacheMap.end()) {
     Aws::String bucketName = Aws::String(s3Bucket_);
 
     SelectObjectContentRequest selectObjectContentRequest;
@@ -105,7 +105,12 @@ void S3SelectScan::onStart() {
       ctx()->tell(message);
 
       //add to cache
-      m_cache->m_cacheData[cacheID] = tupleSet;
+      if (m_cache->m_cacheData.empty() ||  m_cache->m_cacheData.find(cacheID)==cacheMap.end()){
+          m_cache->m_cacheData[cacheID] = tupleSet;
+      }
+      else {
+          m_cache->m_cacheData[cacheID] = normal::core::TupleSet::concatenate(tupleSet, m_cache->m_cacheData[cacheID]);
+      }
     });
     handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
       SPDLOG_DEBUG("Bytes scanned: {} ", statsEvent.GetDetails().GetBytesScanned());
@@ -137,6 +142,9 @@ void S3SelectScan::onStart() {
     std::shared_ptr<normal::core::TupleSet> tupleSet = cacheMap[cacheID];
     std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
     ctx()->tell(message);
+    message = std::make_shared<normal::core::CompleteMessage>();
+    ctx()->tell(message);
+    this->ctx()->operatorActor()->quit();
   }
 
 }

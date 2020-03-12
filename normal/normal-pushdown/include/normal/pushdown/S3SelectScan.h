@@ -32,7 +32,9 @@ private:
 public:
   S3SelectScan(std::string name, std::string s3Bucket, std::string s3Object, std::string sql, std::string m_tbl, std::string m_col, std::shared_ptr<Aws::S3::S3Client> s3Client);
   ~S3SelectScan() override = default;
-
+  std::shared_ptr<Cache> getCache(){
+      return m_cache;
+  }
   void onReceive(const core::Envelope &message) override;
 };
 
