@@ -57,8 +57,10 @@ std::shared_ptr<TupleSet> TupleSet::concatenate(std::shared_ptr<TupleSet> tp1, s
     std::shared_ptr<arrow::Table> tb2 = tp2->table_;
     std::vector<std::shared_ptr<arrow::Table>> tblVector= {tb1,tb2};
 
-    auto concatTbl = arrow::ConcatenateTablesWithPromotion(tblVector);
-    auto resTupleSet = make(*concatTbl);
+    auto res = arrow::ConcatenateTables(tblVector);
+    if(!res.ok())
+      abort();
+    auto resTupleSet = make(*res);
     return resTupleSet;
 }
 void TupleSet::addColumn(const std::string &name, int position, std::vector<std::shared_ptr<std::string>> data) {
