@@ -1,54 +1,37 @@
-project("normal-test" VERSION "${PROJECT_VERSION}" LANGUAGES CXX)
-
-include(ExternalProject)
-find_package(Git REQUIRED)
+project(normal-test VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 setDefaults()
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Dependencies
-#-----------------------------------------------------------------------------------------------------------------------
-
-
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_executable("normal-test" src/Globals.h)
+add_executable(normal-test
+        src/Globals.h
+        src/MainTest.cpp
+        src/FileScanTest.cpp
+        src/S3SelectScanTest.cpp
+        src/CacheTest.cpp)
 
-target_sources("normal-test" PRIVATE
-        src/MainTest.cpp src/FileScanTest.cpp src/S3SelectScanTest.cpp  src/CacheTest.cpp)
+target_compile_features(normal-test PRIVATE cxx_std_17)
+target_compile_options(normal-test PRIVATE -Wall -Wextra -pedantic)
+set_target_properties(normal-test PROPERTIES LINKER_LANGUAGE CXX)
 
-target_compile_features("normal-test" PRIVATE cxx_std_17)
-target_compile_options("normal-test" PRIVATE -Wall -Wextra -pedantic)
-set_target_properties("normal-test" PROPERTIES LINKER_LANGUAGE CXX)
+target_include_directories(normal-test PRIVATE include)
 
-target_include_directories("normal-test" PRIVATE include)
-
-target_link_libraries(normal-test PRIVATE normal-core)
-target_link_libraries("normal-test" PRIVATE "normal-pushdown")
-target_link_libraries("normal-test" PRIVATE "normal-sql")
-target_link_libraries("normal-test" PRIVATE spdlog)
-target_link_libraries("normal-test" PRIVATE doctest)
+target_link_libraries(normal-test PUBLIC normal-core)
+target_link_libraries(normal-test PUBLIC normal-pushdown)
+target_link_libraries(normal-test PUBLIC normal-sql)
+target_link_libraries(normal-test PRIVATE spdlog::spdlog)
+target_link_libraries(normal-test PRIVATE doctest::doctest)
 
 # Test data
 configure_file(data/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/test.csv COPYONLY)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Dependency graph
-#-----------------------------------------------------------------------------------------------------------------------
-
-add_dependencies("normal-test" "spdlog")
-add_dependencies("normal-test" "doctest")
-add_dependencies("normal-test" "normal-core")
-add_dependencies("normal-test" "normal-pushdown")
-add_dependencies("normal-test" "normal-sql")
-
-#-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-showTargetProps("normal-test")
+#showTargetProps(normal-test)

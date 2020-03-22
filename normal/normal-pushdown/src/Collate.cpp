@@ -66,8 +66,10 @@ void Collate::onTuple(const normal::core::TupleMessage& message) {
     std::shared_ptr<arrow::Table> table;
     tables.push_back(message.tuples()->table());
     tables.push_back(tuples_->table());
-    arrow::ConcatenateTables(tables, &table);
-    tuples_->table(table);
+    const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables);
+    if(!res.ok())
+      abort();
+    tuples_->table(*res);
   }
 }
 
