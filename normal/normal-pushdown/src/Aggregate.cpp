@@ -26,6 +26,8 @@ Aggregate::Aggregate(std::string name,
 void Aggregate::onStart() {
   SPDLOG_DEBUG("Starting");
 
+  this->result_->reset();
+
   for (const auto& expression: *functions_) {
     expression->init(this->result_);
   }

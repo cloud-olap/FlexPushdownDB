@@ -17,7 +17,11 @@
 #include <normal/pushdown/aggregate/Sum.h>
 #include "Globals.h"
 
-TEST_CASE ("FileScan -> Sum -> Collate"
+/**
+ * Test to make sure a query can be run and then re run (useful for instances such as
+ * warming up a cache on the first run)
+ */
+TEST_CASE ("FileScan -> Collate"
                * doctest::skip(false)) {
 
   char buff[FILENAME_MAX];
@@ -29,23 +33,12 @@ TEST_CASE ("FileScan -> Sum -> Collate"
   auto mgr = std::make_shared<OperatorManager>();
 
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/test.csv");
-
-  auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("Sum", "A");
-  auto
-      expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  expressions->emplace_back(sumExpr);
-
-  auto aggregate = std::make_shared<normal::pushdown::Aggregate>("aggregate", expressions);
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");
 
-  fileScan->produce(aggregate);
-  aggregate->consume(fileScan);
-
-  aggregate->produce(collate);
-  collate->consume(aggregate);
+  fileScan->produce(collate);
+  collate->consume(fileScan);
 
   mgr->put(fileScan);
-  mgr->put(aggregate);
   mgr->put(collate);
 
   mgr->boot();
@@ -53,13 +46,13 @@ TEST_CASE ("FileScan -> Sum -> Collate"
   mgr->start();
   mgr->join();
 
+  mgr->start();
+  mgr->join();
+
   auto tuples = collate->tuples();
 
-  auto val = std::stod(tuples->getValue("Sum", 0));
-
-      CHECK(tuples->numRows() == 1);
-      CHECK(tuples->numColumns() == 1);
-      CHECK(val == 12);
+      CHECK(tuples->numRows() == 3);
+      CHECK(tuples->numColumns() == 3);
 
   mgr->stop();
 }

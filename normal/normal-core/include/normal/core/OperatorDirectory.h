@@ -25,6 +25,7 @@ public:
   void setComplete(std::string name);
   bool allComplete();
   std::string showString() const;
+  void setIncomplete();
 };
 
 }

@@ -33,6 +33,8 @@ TEST_CASE ("CacheTest"
 
   SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
 
+  auto mgr = std::make_shared<OperatorManager>();
+
   auto s3selectScan = std::make_shared<normal::pushdown::S3SelectScan>("s3SelectScan",
                                                                        "mit-caching",
                                                                        "test/a.tbl",
@@ -57,11 +59,11 @@ TEST_CASE ("CacheTest"
   aggregate->produce(collate);
   collate->consume(aggregate);
 
-  auto mgr = std::make_shared<OperatorManager>();
-
   mgr->put(s3selectScan);
   mgr->put(aggregate);
   mgr->put(collate);
+
+  mgr->boot();
 
   mgr->start();
   mgr->join();

@@ -31,4 +31,10 @@ std::string OperatorDirectory::showString() const {
   return ss.str();
 }
 
+void OperatorDirectory::setIncomplete() {
+  for(auto& entry : entries_){
+    entry.second.complete(false);
+  }
+}
+
 }

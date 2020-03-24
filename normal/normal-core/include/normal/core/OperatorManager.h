@@ -40,7 +40,7 @@ private:
   normal::core::OperatorDirectory operatorDirectory_;
 public:
   void put(const std::shared_ptr<normal::core::Operator> &op);
-
+  void boot();
   void start();
   void stop();
   void join();

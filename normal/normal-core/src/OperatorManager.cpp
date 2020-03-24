@@ -32,31 +32,9 @@ void OperatorManager::put(const std::shared_ptr<normal::core::Operator> &op) {
 
 void OperatorManager::start() {
 
-  // Create the operators
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
-    op->create(ctx);
-  }
+  // Mark all the operators as incomplete
+  operatorDirectory_.setIncomplete();
 
-  // Create the operator actors
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
-    caf::actor actorHandle = actorSystem->spawn<normal::core::OperatorActor>(op);
-    op->actorHandle(actorHandle);
-  }
-
-  // Tell the actors who their consumers are
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
-    for (const auto &consumerEntry: op->consumers()) {
-      auto consumer = consumerEntry.second;
-      auto actorDef = normal::core::OperatorMeta(consumer->name(), consumer->actorHandle());
-      ctx->operatorMap().emplace(consumer->name(), actorDef);
-    }
-  }
 
 //   Send start messages to the actors
   for (const auto &element: m_operatorMap) {
@@ -159,4 +137,31 @@ void OperatorManager::join() {
   SPDLOG_DEBUG("All actors are complete");
 
 //  actorSystem->await_all_actors_done();
+}
+void OperatorManager::boot() {
+  // Create the operators
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+    op->create(ctx);
+  }
+
+  // Create the operator actors
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+    caf::actor actorHandle = actorSystem->spawn<normal::core::OperatorActor>(op);
+    op->actorHandle(actorHandle);
+  }
+
+  // Tell the actors who their consumers are
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+    for (const auto &consumerEntry: op->consumers()) {
+      auto consumer = consumerEntry.second;
+      auto actorDef = normal::core::OperatorMeta(consumer->name(), consumer->actorHandle());
+      ctx->operatorMap().emplace(consumer->name(), actorDef);
+    }
+  }
 }

@@ -12,7 +12,8 @@ add_executable(normal-test
         src/MainTest.cpp
         src/FileScanTest.cpp
         src/S3SelectScanTest.cpp
-        src/CacheTest.cpp)
+        src/CacheTest.cpp
+        src/MultiQueryTest.cpp)
 
 target_compile_features(normal-test PRIVATE cxx_std_17)
 target_compile_options(normal-test PRIVATE -Wall -Wextra -pedantic)

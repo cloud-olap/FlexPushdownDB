@@ -26,6 +26,7 @@ public:
   std::string get(const std::string& columnName);
   std::string get(const std::string& columnName, std::string defaultValue);
   void put(const std::string& columnName, std::string value);
+  void reset();
 
 };
 

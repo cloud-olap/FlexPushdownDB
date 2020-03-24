@@ -18,6 +18,9 @@ namespace normal::pushdown {
 
 void Collate::onStart() {
   SPDLOG_DEBUG("Starting");
+
+  // FIXME: Not the best way to reset the tuples structure
+  this->tuples_ = nullptr;
 }
 
 Collate::Collate(std::string name) : Operator(std::move(name)) {

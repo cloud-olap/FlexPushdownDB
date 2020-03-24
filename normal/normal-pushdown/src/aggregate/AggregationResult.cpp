@@ -25,4 +25,8 @@ void AggregationResult::put(const std::string& columnName, std::string value) {
   this->result_->insert_or_assign(columnName, value);
 }
 
+void AggregationResult::reset() {
+  this->result_->clear();
+}
+
 }
