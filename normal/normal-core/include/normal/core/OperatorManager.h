@@ -22,6 +22,7 @@
 #include <caf/all.hpp>
 
 #include "OperatorContext.h"
+#include "OperatorDirectory.h"
 
 namespace normal::core {
 //class Operator;
@@ -35,7 +36,8 @@ private:
   caf::actor_system_config actorSystemConfig;
   std::unique_ptr<caf::actor_system> actorSystem;
   std::map<std::string, caf::actor_id> actorMap;
-  std::unique_ptr<caf::scoped_actor> actor_;
+  std::shared_ptr<caf::scoped_actor> rootActor_;
+  normal::core::OperatorDirectory operatorDirectory_;
 public:
   void put(const std::shared_ptr<normal::core::Operator> &op);
 

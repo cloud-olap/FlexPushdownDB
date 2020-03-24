@@ -67,14 +67,12 @@ void FileScan::onStart() {
 
   auto tupleSet = normal::core::TupleSet::make(reader);
 
-  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
+  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet, this->name());
   ctx()->tell(message);
 
-  SPDLOG_DEBUG("Completing");
-  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
-  ctx()->tell(cm);
+  ctx()->notifyComplete();
 
-  ctx()->operatorActor()->quit();
+//  ctx()->operatorActor()->quit();
 }
 
 }

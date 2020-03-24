@@ -18,7 +18,7 @@
 #include <normal/pushdown/aggregate/Sum.h>
 #include "Globals.h"
 
-TEST_CASE ("S3SelectScan -> Sum -> Collate") {
+TEST_CASE ("S3SelectScan -> Sum -> Collate" * doctest::skip(true)) {
 
   normal::pushdown::AWSClient client;
   client.init();

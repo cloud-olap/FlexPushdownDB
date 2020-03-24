@@ -16,11 +16,13 @@ class Message {
 
 private:
   std::string type_;
+  std::string from_;
 
 public:
-  explicit Message(std::string type);
+  explicit Message(std::string type, std::string from);
   virtual ~Message() = 0;
   [[nodiscard]] std::string type() const;
+  [[nodiscard]] std::string from() const;
 
 };
 

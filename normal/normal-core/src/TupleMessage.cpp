@@ -6,8 +6,8 @@
 
 namespace normal::core {
 
-TupleMessage::TupleMessage(std::shared_ptr<normal::core::TupleSet> tuples) :
-    normal::core::Message("TupleMessage"),
+TupleMessage::TupleMessage(std::shared_ptr<normal::core::TupleSet> tuples, std::string from) :
+    normal::core::Message("TupleMessage", from),
     tuples_(std::move(tuples)) {
 }
 

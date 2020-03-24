@@ -101,7 +101,7 @@ void S3SelectScan::onStart() {
       auto payload = recordsEvent.GetPayload();
       std::shared_ptr<normal::core::TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
 
-      std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
+      std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet, this->name());
       ctx()->tell(message);
 
       //add to cache
@@ -120,10 +120,12 @@ void S3SelectScan::onStart() {
     handler.SetEndEventCallback([&]() {
       SPDLOG_DEBUG("EndEvent:");
 
-      std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::CompleteMessage>();
-      ctx()->tell(message);
+//      std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::CompleteMessage>();
+//      ctx()->tell(message);
+//
+//      this->ctx()->operatorActor()->quit();
 
-      this->ctx()->operatorActor()->quit();
+      ctx()->notifyComplete();
     });
     handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
       SPDLOG_DEBUG("Error: {}", errors.GetMessage());
@@ -140,11 +142,13 @@ void S3SelectScan::onStart() {
   }
   else {
     std::shared_ptr<normal::core::TupleSet> tupleSet = cacheMap[cacheID];
-    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet);
+    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet, this->name());
     ctx()->tell(message);
-    message = std::make_shared<normal::core::CompleteMessage>();
-    ctx()->tell(message);
-    this->ctx()->operatorActor()->quit();
+//    message = std::make_shared<normal::core::CompleteMessage>();
+//    ctx()->tell(message);
+//    this->ctx()->operatorActor()->quit();
+
+    ctx()->notifyComplete();
   }
 
 }

@@ -22,7 +22,9 @@ add_library(normal-core STATIC
         src/Message.cpp include/normal/core/Message.h
         src/TupleMessage.cpp include/normal/core/TupleMessage.h
         src/TupleSet.cpp include/normal/core/TupleSet.h
-        src/Cache.cpp include/normal/core/Cache.h)
+        src/Cache.cpp include/normal/core/Cache.h
+        src/Actors.cpp include/normal/core/Actors.h
+        src/OperatorDirectory.cpp include/normal/core/OperatorDirectory.h src/OperatorDirectoryEntry.cpp include/normal/core/OperatorDirectoryEntry.h)
 
 
 target_compile_features(normal-core PRIVATE cxx_std_17)

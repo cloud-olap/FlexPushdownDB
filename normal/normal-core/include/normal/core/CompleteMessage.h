@@ -15,7 +15,7 @@ namespace normal::core {
 
 class CompleteMessage : public normal::core::Message {
 public:
-  CompleteMessage();
+  explicit CompleteMessage(std::string from);
 
 };
 

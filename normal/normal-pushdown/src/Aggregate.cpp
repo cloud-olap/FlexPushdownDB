@@ -77,13 +77,15 @@ void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
 
   SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}",  aggregatedTuples->toString());
 
-  std::shared_ptr<normal::core::Message> tupleMessage = std::make_shared<normal::core::TupleMessage>(aggregatedTuples);
+  std::shared_ptr<normal::core::Message> tupleMessage = std::make_shared<normal::core::TupleMessage>(aggregatedTuples, this->name());
   ctx()->tell(tupleMessage);
 
-  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
-  ctx()->tell(cm);
+  ctx()->notifyComplete();
 
-  ctx()->operatorActor()->quit();
+//  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
+//  ctx()->tell(cm);
+//
+//  ctx()->operatorActor()->quit();
 }
 
 void Aggregate::onTuple(const core::TupleMessage& message) {

@@ -19,7 +19,7 @@ private:
   std::vector<caf::actor> consumers_;
 
 public:
-  explicit StartMessage(std::vector<caf::actor> consumers);
+  explicit StartMessage(std::vector<caf::actor> consumers, std::string from);
   [[nodiscard]] const std::vector<caf::actor> &consumers() const;
 
 };

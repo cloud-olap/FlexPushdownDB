@@ -6,6 +6,6 @@
 
 namespace normal::core {
 
-CompleteMessage::CompleteMessage() : Message("CompleteMessage") {}
+CompleteMessage::CompleteMessage(std::string from) : Message("CompleteMessage", from) {}
 
 }

@@ -25,9 +25,10 @@ private:
   std::shared_ptr<normal::core::Operator> operator_;
   OperatorActor* operatorActor_;
   std::map<std::string, normal::core::OperatorMeta> operatorMap_;
+  caf::actor rootActor_;
 
 public:
-  explicit OperatorContext(std::shared_ptr<normal::core::Operator> op);
+  OperatorContext(std::shared_ptr<normal::core::Operator> op, caf::actor& rootActor);
 
   std::shared_ptr<normal::core::Operator> op();
 
@@ -37,6 +38,8 @@ public:
   std::map<std::string, normal::core::OperatorMeta> &operatorMap();
 
   void tell(std::shared_ptr<normal::core::Message> &msg);
+
+  void notifyComplete();
 
 };
 
