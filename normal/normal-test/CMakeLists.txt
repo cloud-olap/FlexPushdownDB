@@ -28,7 +28,10 @@ target_link_libraries(normal-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-test PRIVATE doctest::doctest)
 
 # Test data
-configure_file(data/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/test.csv COPYONLY)
+configure_file(data/data-file-simple/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/data-file-simple/test.csv COPYONLY)
+configure_file(data/data-file-sharded/test01.csv ${CMAKE_CURRENT_BINARY_DIR}/data/data-file-sharded/test01.csv COPYONLY)
+configure_file(data/data-file-sharded/test02.csv ${CMAKE_CURRENT_BINARY_DIR}/data/data-file-sharded/test02.csv COPYONLY)
+configure_file(data/data-file-sharded/test03.csv ${CMAKE_CURRENT_BINARY_DIR}/data/data-file-sharded/test03.csv COPYONLY)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -28,7 +28,7 @@ TEST_CASE ("FileScan -> Sum -> Collate"
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/test.csv");
+  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
 
   auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("Sum", "A");
   auto
@@ -75,9 +75,9 @@ TEST_CASE ("Sharded FileScan -> Sum -> Collate"
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto fileScan01 = std::make_shared<normal::pushdown::FileScan>("fileScan01", "data/test.csv");
-  auto fileScan02 = std::make_shared<normal::pushdown::FileScan>("fileScan02", "data/test.csv");
-  auto fileScan03 = std::make_shared<normal::pushdown::FileScan>("fileScan03", "data/test.csv");
+  auto fileScan01 = std::make_shared<normal::pushdown::FileScan>("fileScan01", "data/data-file-sharded/test01.csv");
+  auto fileScan02 = std::make_shared<normal::pushdown::FileScan>("fileScan02", "data/data-file-sharded/test02.csv");
+  auto fileScan03 = std::make_shared<normal::pushdown::FileScan>("fileScan03", "data/data-file-sharded/test03.csv");
 
   auto sumExpr01 = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", "A");
   auto
