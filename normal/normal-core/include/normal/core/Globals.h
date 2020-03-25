@@ -7,6 +7,9 @@
 
 #define LOG_LEVEL SPDLOG_LEVEL_DEBUG
 
+/**
+ * Setting the log level here will disable macros for levels below it
+ */
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
 #include "spdlog/spdlog.h"
 

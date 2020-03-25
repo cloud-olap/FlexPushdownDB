@@ -12,7 +12,17 @@
 
 namespace normal::core {
 
+/**
+ * Class encapsulating a message sent between actors
+ *
+ * CAF seems to want its messages to be declared as temporaries which it then copies. To make sure CAF doesn't copy
+ * any big messages the actual message is kept only as a pointer in this Envelope class.
+ *
+ * FIXME: Is Envelope the best name? Does it imply this class does more than it actually does? This will need to be
+ * reworked when moving to tuped actors so probably not super important
+ */
 class Envelope {
+
 private:
   std::shared_ptr<Message> message_;
 

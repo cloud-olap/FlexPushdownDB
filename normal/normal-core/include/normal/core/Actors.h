@@ -10,12 +10,14 @@
 namespace normal::core {
 
 /**
- * Utility functions for working with actors
+ * Utility functions for working with actors. A work in progress.
  */
 class Actors {
+
 public:
   static caf::actor toActorHandle(const std::shared_ptr<caf::scoped_actor> &a);
   static std::shared_ptr<caf::actor> toActorHandleShared(const std::shared_ptr<caf::scoped_actor> &a);
+
 };
 
 }

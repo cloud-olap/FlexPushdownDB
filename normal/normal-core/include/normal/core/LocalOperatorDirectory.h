@@ -7,20 +7,24 @@
 
 #include <unordered_map>
 #include <string>
+
 #include "LocalOperatorDirectoryEntry.h"
 
 namespace normal::core {
 
+/**
+ * A directory that operators use to store information about other operators
+ */
 class LocalOperatorDirectory {
 
 private:
-  std::unordered_map <std::string, normal::core::LocalOperatorDirectoryEntry> entries_;
+  std::unordered_map <std::string, LocalOperatorDirectoryEntry> entries_;
 
 public:
   void insert(const LocalOperatorDirectoryEntry &entry);
   void setComplete(const std::string &name);
   bool allComplete();
-  bool allComplete(OperatorRelationshipType operatorRelationshipType);
+  bool allComplete(const OperatorRelationshipType &operatorRelationshipType);
   std::string showString() const;
   void setIncomplete();
 

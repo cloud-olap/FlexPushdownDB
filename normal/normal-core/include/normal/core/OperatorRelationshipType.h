@@ -7,6 +7,9 @@
 
 namespace normal::core {
 
+/**
+ * Represents the relationships operators can have with each other, that is either producing or consuming
+ */
 enum class OperatorRelationshipType {
   Producer, Consumer
 };

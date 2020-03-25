@@ -13,7 +13,10 @@
 
 namespace normal::core {
 
-class StartMessage : public normal::core::Message {
+/**
+ * Message sent to operators to tell them to start doing their "thing"
+ */
+class StartMessage : public Message {
 
 private:
   std::vector<caf::actor> consumers_;
@@ -25,7 +28,5 @@ public:
 };
 
 }
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::StartMessage)
 
 #endif //NORMAL_NORMAL_CORE_SRC_KERNEL_STARTMESSAGE_H

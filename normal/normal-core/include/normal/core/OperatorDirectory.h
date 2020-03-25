@@ -12,13 +12,13 @@
 namespace normal::core {
 
 /**
- * Class for tracking operators
+ * Class for tracking operators from outside the actor system
  */
 class OperatorDirectoryEntry;
 
 class OperatorDirectory {
 private:
-  std::unordered_map<std::string, normal::core::OperatorDirectoryEntry> entries_;
+  std::unordered_map<std::string, OperatorDirectoryEntry> entries_;
 
 public:
   void insert(const OperatorDirectoryEntry& entry);

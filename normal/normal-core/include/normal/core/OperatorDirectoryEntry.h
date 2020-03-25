@@ -10,6 +10,9 @@
 
 namespace normal::core {
 
+/**
+ * Entry in the operator directory
+ */
 class OperatorDirectoryEntry {
 
 private:

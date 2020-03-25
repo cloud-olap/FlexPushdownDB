@@ -52,7 +52,7 @@ void TupleSet::table(const std::shared_ptr<arrow::Table> &table) {
   table_ = table;
 }
 
-std::shared_ptr<TupleSet> TupleSet::concatenate(std::shared_ptr<TupleSet> tp1, std::shared_ptr<TupleSet> tp2) {
+std::shared_ptr<TupleSet> TupleSet::concatenate(const std::shared_ptr<TupleSet>& tp1, const std::shared_ptr<TupleSet>& tp2) {
     std::shared_ptr<arrow::Table> tb1 = tp1->table_;
     std::shared_ptr<arrow::Table> tb2 = tp2->table_;
     std::vector<std::shared_ptr<arrow::Table>> tblVector= {tb1,tb2};

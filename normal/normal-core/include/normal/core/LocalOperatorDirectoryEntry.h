@@ -11,6 +11,9 @@
 
 namespace normal::core {
 
+/**
+ * An entry in the local operator directory
+ */
 class LocalOperatorDirectoryEntry {
 
 private:
@@ -25,10 +28,12 @@ public:
                               OperatorRelationshipType relationshipType,
                               bool complete);
 
+
   [[nodiscard]] bool complete() const;
   void complete(bool complete);
 
   [[nodiscard]] const std::string &name() const;
+  void name(const std::string &name);
 
   [[nodiscard]] OperatorRelationshipType relationshipType() const;
   void relationshipType(OperatorRelationshipType relationshipType);

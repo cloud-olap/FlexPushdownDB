@@ -8,17 +8,18 @@
 
 namespace normal::core {
 
-Message::Message(std::string type, std::string from) :
+Message::Message(std::string type, std::string sender) :
     type_(std::move(type)),
-    from_(std::move(from)) {}
+    sender_(std::move(sender)) {}
 
 Message::~Message() = default;
 
 std::string Message::type() const {
   return type_;
 }
-std::string Message::from() const {
-  return from_;
+
+std::string Message::sender() const {
+  return sender_;
 }
 
 } // namespace

@@ -20,24 +20,27 @@ namespace normal::core {
 class OperatorActor;
 class Operator;
 
+/**
+ * The API operators use to interact with their environment, e.g. sending messages
+ */
 class OperatorContext {
 private:
-  std::shared_ptr<normal::core::Operator> operator_;
+  std::shared_ptr<Operator> operator_;
   OperatorActor* operatorActor_;
   LocalOperatorDirectory operatorMap_;
   caf::actor rootActor_;
 
 public:
-  OperatorContext(std::shared_ptr<normal::core::Operator> op, caf::actor& rootActor);
+  OperatorContext(std::shared_ptr<Operator> op, caf::actor& rootActor);
 
-  std::shared_ptr<normal::core::Operator> op();
+  std::shared_ptr<Operator> op();
 
-  normal::core::OperatorActor* operatorActor();
-  void operatorActor(normal::core::OperatorActor *operatorActor);
+  OperatorActor* operatorActor();
+  void operatorActor(OperatorActor *operatorActor);
 
   LocalOperatorDirectory &operatorMap();
 
-  void tell(std::shared_ptr<normal::core::Message> &msg);
+  void tell(std::shared_ptr<Message> &msg);
 
   void notifyComplete();
 

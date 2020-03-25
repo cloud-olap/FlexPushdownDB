@@ -28,14 +28,14 @@ caf::behavior behaviour(OperatorActor *self) {
 
 #define __FUNCTION__ functionName
 
-        SPDLOG_DEBUG("Message received  |  recipient: '{}', sender: '{}', messageKind: '{}'",
+        SPDLOG_DEBUG("Message received  |  recipient: '{}', sender: '{}', type: '{}'",
                      self->operator_()->name(),
-                     msg.message().from(),
+                     msg.message().sender(),
                      msg.message().type());
 
         if (msg.message().type() == "CompleteMessage") {
           auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
-          self->operator_()->ctx()->operatorMap().setComplete(msg.message().from());
+          self->operator_()->ctx()->operatorMap().setComplete(msg.message().sender());
         }
 
         self->operator_()->onReceive(msg);

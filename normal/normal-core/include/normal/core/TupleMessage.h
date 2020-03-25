@@ -14,19 +14,22 @@
 
 namespace normal::core {
 
-class TupleMessage : public normal::core::Message {
+/**
+ * Message containing a list of tuples
+ */
+class TupleMessage : public Message {
+
 private:
-  std::shared_ptr<normal::core::TupleSet> tuples_;
+  std::shared_ptr<TupleSet> tuples_;
 
 public:
-  explicit TupleMessage(std::shared_ptr<normal::core::TupleSet> tuples, std::string from);
+  explicit TupleMessage(std::shared_ptr<TupleSet> tuples, std::string sender);
   ~TupleMessage() override = default;
 
-  std::shared_ptr<normal::core::TupleSet> tuples() const;
+  [[nodiscard]] std::shared_ptr<TupleSet> tuples() const;
+
 };
 
 }
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::TupleMessage)
 
 #endif //NORMAL_NORMAL_NORMAL_CORE_SRC_TUPLEMESSAGE_H

@@ -16,14 +16,19 @@ namespace arrow::csv { class TableReader; }
 
 namespace normal::core {
 
+/**
+ * A list of tuples/rows/records. Really just encapsulates Arrow tables and record batches. Hiding
+ * some of the rough edges.
+ */
 class TupleSet {
+
 private:
   std::shared_ptr<arrow::Table> table_;
 
 public:
   static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::csv::TableReader> &tableReader);
   static std::shared_ptr<TupleSet> make(std::shared_ptr<arrow::Table> table);
-  static std::shared_ptr<TupleSet> concatenate(std::shared_ptr<TupleSet>,std::shared_ptr<TupleSet>);
+  static std::shared_ptr<TupleSet> concatenate(const std::shared_ptr<TupleSet>&,const std::shared_ptr<TupleSet>&);
   int64_t numRows();
   std::string visit(const std::function<std::string(std::string, arrow::RecordBatch &)>& fn);
   void addColumn(const std::string &name, int position, std::vector<std::shared_ptr<std::string>> data);
@@ -34,7 +39,6 @@ public:
   void table(const std::shared_ptr<arrow::Table> &table);
   std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
-
 
 };
 

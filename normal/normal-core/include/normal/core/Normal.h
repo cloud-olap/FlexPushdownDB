@@ -7,13 +7,17 @@
 
 namespace normal::core {
 
+/**
+ * Placeholder for an eventual API
+ */
 class Normal {
+
 private:
   Normal();
 
 public:
   static Normal create();
-  void start();
+  static void start();
 
 };
 

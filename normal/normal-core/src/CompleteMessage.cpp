@@ -4,8 +4,10 @@
 
 #include "normal/core/CompleteMessage.h"
 
+#include <utility>
+
 namespace normal::core {
 
-CompleteMessage::CompleteMessage(std::string from) : Message("CompleteMessage", from) {}
+CompleteMessage::CompleteMessage(std::string sender) : Message("CompleteMessage", std::move(sender)) {}
 
 }

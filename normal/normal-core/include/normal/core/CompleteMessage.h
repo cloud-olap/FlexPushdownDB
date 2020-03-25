@@ -13,14 +13,16 @@
 
 namespace normal::core {
 
-class CompleteMessage : public normal::core::Message {
+/**
+ * Message fired when an operator completes its work
+ */
+class CompleteMessage : public Message {
+
 public:
-  explicit CompleteMessage(std::string from);
+  explicit CompleteMessage(std::string sender);
 
 };
 
 }
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::CompleteMessage)
 
 #endif //NORMAL_NORMAL_CORE_SRC_COMPLETEMESSAGE_H

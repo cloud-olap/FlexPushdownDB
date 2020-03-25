@@ -41,7 +41,7 @@ void LocalOperatorDirectory::setIncomplete() {
   }
 }
 
-bool LocalOperatorDirectory::allComplete(OperatorRelationshipType operatorRelationshipType) {
+bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operatorRelationshipType) {
   for(const auto& entry : entries_){
     if(entry.second.relationshipType() == operatorRelationshipType && !entry.second.complete())
       return false;

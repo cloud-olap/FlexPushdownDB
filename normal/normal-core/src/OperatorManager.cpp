@@ -51,10 +51,6 @@ void OperatorManager::start() {
 
     (*rootActor_)->send(op->actorHandle(), normal::core::Envelope(sm));
   }
-
-//  for (const auto &op: m_operatorMap) {
-//    op.second->op()->start();
-//  }
 }
 
 void OperatorManager::stop() {
@@ -64,28 +60,6 @@ void OperatorManager::stop() {
 
   this->actorSystem->await_actors_before_shutdown(false);
 }
-
-//void OperatorManager::tell(normal::core::Message& msg, const std::shared_ptr<normal::core::Operator> &op) {
-//
-//  assert(op);
-//
-//  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op->consumers();
-//  for (const auto &c: consumers) {
-//    c.second->receive(msg);
-//
-////    caf::scoped_actor self{*actorSystem};
-////    self->send(op->actorId(), msg);
-//  }
-//}
-
-//void OperatorManager::complete(normal::core::Operator &op) {
-//
-//  const std::map<std::string, std::shared_ptr<normal::core::Operator>> &consumers = op.consumers();
-//
-//  for (const auto &consumer : consumers) {
-//    consumer.second->complete(op);
-//  }
-//}
 
 OperatorManager::OperatorManager() {
   actorSystemConfig.load<caf::io::middleman>();
@@ -106,9 +80,9 @@ void OperatorManager::join() {
   (*rootActor_)->receive_while([&] { return !allComplete; })(
       [&](const normal::core::Envelope &msg) {
         SPDLOG_DEBUG("Message received  |  actor: 'OperatorManager', messageKind: '{}', from: '{}'",
-                     msg.message().type(), msg.message().from());
+                     msg.message().type(), msg.message().sender());
 
-        this->operatorDirectory_.setComplete(msg.message().from());
+        this->operatorDirectory_.setComplete(msg.message().sender());
 
         allComplete = this->operatorDirectory_.allComplete();
 
@@ -116,30 +90,8 @@ void OperatorManager::join() {
         SPDLOG_DEBUG(allComplete);
       },
       handle_err);
-
-
-
-//  bool allComplete = false;
-//  (*rootActor_)->receive_while(!allComplete)(
-//      [&](const normal::core::Envelope &msg) {
-//        SPDLOG_DEBUG("Message received  |  actor: 'OperatorManager', messageKind: '{}', from: '{}'",
-//                     msg.message().type(), msg.message().from());
-//
-//        this->operatorDirectory_.setComplete(msg.message().from());
-//
-//        allComplete = this->operatorDirectory_.allComplete();
-//
-//        SPDLOG_DEBUG(this->operatorDirectory_.showString());
-//        SPDLOG_DEBUG(allComplete);
-//
-//        return !allComplete;
-//      },
-//      handle_err);
-
-  SPDLOG_DEBUG("All actors are complete");
-
-//  actorSystem->await_all_actors_done();
 }
+
 void OperatorManager::boot() {
   // Create the operators
   for (const auto &element: m_operatorMap) {

@@ -38,4 +38,8 @@ void LocalOperatorDirectoryEntry::relationshipType(OperatorRelationshipType rela
   relationshipType_ = relationshipType;
 }
 
+void LocalOperatorDirectoryEntry::name(const std::string &name) {
+  name_ = name;
+}
+
 }
