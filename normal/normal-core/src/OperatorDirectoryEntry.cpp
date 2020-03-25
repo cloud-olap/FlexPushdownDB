@@ -5,12 +5,15 @@
 #include "normal/core/OperatorDirectoryEntry.h"
 
 #include <utility>
+#include <caf/all.hpp>
 
 namespace normal::core {
 
 OperatorDirectoryEntry::OperatorDirectoryEntry(std::string name,
+                                               std::optional<caf::actor> actor,
                                                bool complete) :
     name_(std::move(name)),
+    actor_(std::move(actor)),
     complete_(complete) {}
 
 const std::string &OperatorDirectoryEntry::name() const {

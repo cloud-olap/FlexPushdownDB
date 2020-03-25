@@ -39,7 +39,7 @@ std::shared_ptr<normal::core::Operator> OperatorContext::op() {
   return operator_;
 }
 
-std::map<std::string, normal::core::OperatorMeta> &OperatorContext::operatorMap() {
+LocalOperatorDirectory &OperatorContext::operatorMap() {
   return operatorMap_;
 }
 OperatorActor* OperatorContext::operatorActor() {

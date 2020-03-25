@@ -19,7 +19,13 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
   SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
   std::string sumString = tuples->visit([&](std::string accum, arrow::RecordBatch &batch) -> std::string {
+
     auto fieldIndex = batch.schema()->GetFieldIndex(this->inputColumnName());
+
+    if (fieldIndex < 0) {
+      throw std::runtime_error("Field '" + this->inputColumnName() + "' not found");
+    }
+
     std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
 
     double sum = 0;
@@ -37,8 +43,7 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
         int val = typedArray->Value(i);
         sum += val;
       }
-    }
-    else if (colType->Equals(arrow::Int64Type())) {
+    } else if (colType->Equals(arrow::Int64Type())) {
       std::shared_ptr<arrow::Int64Array>
           typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
       for (int i = 0; i < batch.num_rows(); ++i) {
@@ -47,7 +52,7 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
         // FIXME: This isn't correct
         sum += val;
       }
-    }else if (colType->Equals(arrow::StringType())) {
+    } else if (colType->Equals(arrow::StringType())) {
       std::shared_ptr<arrow::StringArray>
           typedArray = std::static_pointer_cast<arrow::StringArray>(array);
       for (int i = 0; i < batch.num_rows(); ++i) {

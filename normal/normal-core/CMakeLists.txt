@@ -10,7 +10,6 @@ setDefaults()
 
 add_library(normal-core STATIC
         src/StartMessage.cpp include/normal/core/StartMessage.h
-        src/OperatorMeta.cpp include/normal/core/OperatorMeta.h
         src/Envelope.cpp include/normal/core/Envelope.h
         include/normal/core/Globals.h
         src/CompleteMessage.cpp include/normal/core/CompleteMessage.h
@@ -24,7 +23,11 @@ add_library(normal-core STATIC
         src/TupleSet.cpp include/normal/core/TupleSet.h
         src/Cache.cpp include/normal/core/Cache.h
         src/Actors.cpp include/normal/core/Actors.h
-        src/OperatorDirectory.cpp include/normal/core/OperatorDirectory.h src/OperatorDirectoryEntry.cpp include/normal/core/OperatorDirectoryEntry.h)
+        src/OperatorDirectory.cpp include/normal/core/OperatorDirectory.h
+        src/OperatorDirectoryEntry.cpp include/normal/core/OperatorDirectoryEntry.h
+        src/OperatorRelationshipType.cpp include/normal/core/OperatorRelationshipType.h
+        src/LocalOperatorDirectory.cpp include/normal/core/LocalOperatorDirectory.h
+        src/LocalOperatorDirectoryEntry.cpp include/normal/core/LocalOperatorDirectoryEntry.h)
 
 
 target_compile_features(normal-core PRIVATE cxx_std_17)

@@ -22,10 +22,11 @@ private:
 
 public:
   void insert(const OperatorDirectoryEntry& entry);
-  void setComplete(std::string name);
+  void setComplete(const std::string& name);
   bool allComplete();
   std::string showString() const;
   void setIncomplete();
+
 };
 
 }

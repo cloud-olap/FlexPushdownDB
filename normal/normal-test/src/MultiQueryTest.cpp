@@ -30,7 +30,7 @@ TEST_CASE ("FileScan -> Collate"
 
   SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
 
-  auto mgr = std::make_shared<OperatorManager>();
+  auto mgr = std::make_shared<normal::core::OperatorManager>();
 
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/test.csv");
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");

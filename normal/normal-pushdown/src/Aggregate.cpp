@@ -49,45 +49,53 @@ void Aggregate::onReceive(const normal::core::Envelope &message) {
 
 void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
 
-  SPDLOG_DEBUG("Completing");
+  SPDLOG_DEBUG("Producer complete");
 
-  std::shared_ptr<arrow::Schema> schema;
-  std::vector<std::shared_ptr<arrow::Field>> fields;
-  for (const auto& expression: *functions_) {
-    std::shared_ptr<arrow::Field> field = arrow::field(expression->columnName(), arrow::utf8());
-    fields.emplace_back(field);
+  if(this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
+
+    SPDLOG_DEBUG("All producers complete, completing");
+
+    // Create output schema
+    std::shared_ptr<arrow::Schema> schema;
+    std::vector<std::shared_ptr<arrow::Field>> fields;
+    for (const auto &expression: *functions_) {
+      std::shared_ptr<arrow::Field> field = arrow::field(expression->columnName(), arrow::utf8());
+      fields.emplace_back(field);
+    }
+    schema = arrow::schema(fields);
+
+    SPDLOG_DEBUG("Aggregation output schema: {}\n", schema->ToString());
+
+    arrow::MemoryPool *pool = arrow::default_memory_pool();
+
+    // Create output tuples
+    std::vector<std::shared_ptr<arrow::Array>> columns;
+    for (const auto &expression: *functions_) {
+      arrow::StringBuilder colBuilder(pool);
+      colBuilder.Append(this->result_->get(expression->columnName()));
+      std::shared_ptr<arrow::StringArray> col;
+      colBuilder.Finish(&col);
+      columns.emplace_back(col);
+    }
+
+    std::shared_ptr<arrow::Table> table;
+    table = arrow::Table::Make(schema, columns);
+
+    const std::shared_ptr<core::TupleSet> &aggregatedTuples = core::TupleSet::make(table);
+
+    SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
+
+    std::shared_ptr<normal::core::Message>
+        tupleMessage = std::make_shared<normal::core::TupleMessage>(aggregatedTuples, this->name());
+    ctx()->tell(tupleMessage);
+
+    ctx()->notifyComplete();
+
+    //  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
+    //  ctx()->tell(cm);
+    //
+    //  ctx()->operatorActor()->quit();
   }
-  schema = arrow::schema(fields);
-
-  SPDLOG_DEBUG("Aggregation output schema: {}\n", schema->ToString());
-
-  arrow::MemoryPool *pool = arrow::default_memory_pool();
-
-  std::vector<std::shared_ptr<arrow::Array>> columns;
-  for (const auto& expression: *functions_) {
-    arrow::StringBuilder colBuilder(pool);
-    colBuilder.Append(this->result_->get(expression->columnName()));
-    std::shared_ptr<arrow::StringArray> col;
-    colBuilder.Finish(&col);
-    columns.emplace_back(col);
-  }
-
-  std::shared_ptr<arrow::Table> table;
-  table = arrow::Table::Make(schema, columns);
-
-  const std::shared_ptr<core::TupleSet> &aggregatedTuples = core::TupleSet::make(table);
-
-  SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}",  aggregatedTuples->toString());
-
-  std::shared_ptr<normal::core::Message> tupleMessage = std::make_shared<normal::core::TupleMessage>(aggregatedTuples, this->name());
-  ctx()->tell(tupleMessage);
-
-  ctx()->notifyComplete();
-
-//  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
-//  ctx()->tell(cm);
-//
-//  ctx()->operatorActor()->quit();
 }
 
 void Aggregate::onTuple(const core::TupleMessage& message) {

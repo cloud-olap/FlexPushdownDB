@@ -5,6 +5,7 @@
 #include "normal/core/OperatorActor.h"
 
 #include <utility>
+#include <normal/core/CompleteMessage.h>
 
 #include "normal/core/Globals.h"
 #include "normal/core/Envelope.h"
@@ -27,9 +28,15 @@ caf::behavior behaviour(OperatorActor *self) {
 
 #define __FUNCTION__ functionName
 
-        SPDLOG_DEBUG("Message received  |  actor: '{}', messageKind: '{}'",
+        SPDLOG_DEBUG("Message received  |  recipient: '{}', sender: '{}', messageKind: '{}'",
                      self->operator_()->name(),
+                     msg.message().from(),
                      msg.message().type());
+
+        if (msg.message().type() == "CompleteMessage") {
+          auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
+          self->operator_()->ctx()->operatorMap().setComplete(msg.message().from());
+        }
 
         self->operator_()->onReceive(msg);
       }

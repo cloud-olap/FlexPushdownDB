@@ -29,7 +29,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate" * doctest::skip(true)) {
 
   SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
 
-  auto mgr = std::make_shared<OperatorManager>();
+  auto mgr = std::make_shared<normal::core::OperatorManager>();
 
   auto s3selectScan = std::make_shared<normal::pushdown::S3SelectScan>("s3SelectScan",
                                                                        "s3filter",

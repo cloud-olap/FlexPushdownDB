@@ -11,8 +11,12 @@ void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
   entries_.emplace(entry.name(), entry);
 }
 
-void OperatorDirectory::setComplete(std::string name) {
-  entries_.find(name)->second.complete(true);
+void OperatorDirectory::setComplete(const std::string& name) {
+  auto entry = entries_.find(name);
+  if(entry == entries_.end())
+    throw std::runtime_error("No entry for actor '" + name + "'");
+  else
+    entry->second.complete(true);
 }
 
 bool OperatorDirectory::allComplete() {

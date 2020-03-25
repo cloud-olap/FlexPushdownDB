@@ -9,8 +9,8 @@
 #include <string>
 
 #include "Operator.h"
-#include "OperatorMeta.h"
 #include "OperatorActor.h"
+#include "LocalOperatorDirectory.h"
 
 //class OperatorManager;
 
@@ -24,7 +24,7 @@ class OperatorContext {
 private:
   std::shared_ptr<normal::core::Operator> operator_;
   OperatorActor* operatorActor_;
-  std::map<std::string, normal::core::OperatorMeta> operatorMap_;
+  LocalOperatorDirectory operatorMap_;
   caf::actor rootActor_;
 
 public:
@@ -35,7 +35,7 @@ public:
   normal::core::OperatorActor* operatorActor();
   void operatorActor(normal::core::OperatorActor *operatorActor);
 
-  std::map<std::string, normal::core::OperatorMeta> &operatorMap();
+  LocalOperatorDirectory &operatorMap();
 
   void tell(std::shared_ptr<normal::core::Message> &msg);
 

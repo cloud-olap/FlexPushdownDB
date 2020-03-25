@@ -25,10 +25,6 @@
 #include "OperatorDirectory.h"
 
 namespace normal::core {
-//class Operator;
-//class Message;
-//class OperatorContext;
-}
 
 class OperatorManager {
 private:
@@ -47,5 +43,7 @@ public:
 
   OperatorManager();
 };
+
+}
 
 #endif //NORMAL_NORMAL_CORE_OPERATORMANAGER_H
