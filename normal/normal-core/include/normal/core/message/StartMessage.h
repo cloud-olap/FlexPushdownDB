@@ -9,9 +9,9 @@
 
 #include <caf/all.hpp>
 
-#include "Message.h"
+#include "normal/core/message/Message.h"
 
-namespace normal::core {
+namespace normal::core::message {
 
 /**
  * Message sent to operators to tell them to start doing their "thing"

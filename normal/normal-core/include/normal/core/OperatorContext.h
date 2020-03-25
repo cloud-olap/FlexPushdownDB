@@ -8,12 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "Operator.h"
-#include "OperatorActor.h"
-#include "LocalOperatorDirectory.h"
-
-//class OperatorManager;
-
+#include "normal/core/Operator.h"
+#include "normal/core/OperatorActor.h"
+#include "normal/core/LocalOperatorDirectory.h"
+#include "normal/core/message/Message.h"
 
 namespace normal::core {
 
@@ -40,7 +38,7 @@ public:
 
   LocalOperatorDirectory &operatorMap();
 
-  void tell(std::shared_ptr<Message> &msg);
+  void tell(std::shared_ptr<message::Message> &msg);
 
   void notifyComplete();
 

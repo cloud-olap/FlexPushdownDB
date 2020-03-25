@@ -40,8 +40,8 @@ target_include_directories(normal-core PUBLIC include)
 target_link_libraries(normal-core PRIVATE spdlog::spdlog)
 target_link_libraries(normal-core PUBLIC caf::libcaf_core_shared)
 target_link_libraries(normal-core PUBLIC caf::libcaf_io_shared)
-target_link_libraries(normal-core PRIVATE arrow_static)
-target_link_libraries(normal-core PRIVATE arrow_dataset_static)
+target_link_libraries(normal-core PUBLIC arrow_static)
+target_link_libraries(normal-core PUBLIC arrow_dataset_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace normal::core {
+namespace normal::core::message {
 
 /**
  * Base class for messages

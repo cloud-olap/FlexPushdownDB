@@ -9,10 +9,9 @@
 
 #include <caf/all.hpp>
 
-#include "Message.h"
+#include "normal/core/message/Message.h"
 
-namespace normal::core {
-
+namespace normal::core::message {
 /**
  * Message fired when an operator completes its work
  */

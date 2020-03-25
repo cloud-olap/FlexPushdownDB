@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-namespace normal::core {
+namespace normal::core::message {
 
 Envelope::Envelope(std::shared_ptr<Message> message) :
     message_(std::move(message)) {}

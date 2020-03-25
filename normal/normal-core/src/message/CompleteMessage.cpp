@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace normal::core {
+namespace normal::core::message {
 
 CompleteMessage::CompleteMessage(std::string sender) : Message("CompleteMessage", std::move(sender)) {}
 

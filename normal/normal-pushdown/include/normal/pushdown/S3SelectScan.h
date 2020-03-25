@@ -14,7 +14,6 @@
 #include "normal/core/Operator.h"
 #include "normal/core/TupleSet.h"
 
-
 namespace normal::pushdown {
 
 class S3SelectScan : public normal::core::Operator {
@@ -35,7 +34,7 @@ public:
   std::shared_ptr<Cache> getCache(){
       return m_cache;
   }
-  void onReceive(const core::Envelope &message) override;
+  void onReceive(const normal::core::message::Envelope &message) override;
 };
 
 }

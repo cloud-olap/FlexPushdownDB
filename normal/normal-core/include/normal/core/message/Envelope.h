@@ -6,12 +6,12 @@
 #define NORMAL_NORMAL_CORE_SRC_ENVELOPE_H
 
 #include <memory>
+
 #include <caf/all.hpp>
 
 #include "normal/core/message/Message.h"
 
-namespace normal::core {
-
+namespace normal::core::message {
 /**
  * Class encapsulating a message sent between actors
  *
@@ -34,6 +34,6 @@ public:
 
 }
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::Envelope)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::message::Envelope)
 
 #endif //NORMAL_NORMAL_CORE_SRC_ENVELOPE_H

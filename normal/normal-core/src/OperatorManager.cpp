@@ -9,8 +9,8 @@
 
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
-#include <normal/core/Actors.h>
 
+#include <normal/core/Actors.h>
 #include "normal/core/Globals.h"
 #include "normal/core/message/Envelope.h"
 #include "normal/core/Operator.h"
@@ -47,9 +47,9 @@ void OperatorManager::start() {
     for (const auto &consumer: op->consumers())
       actorHandles.emplace_back(consumer.second->actorHandle());
 
-    auto sm = std::make_shared<normal::core::StartMessage>(actorHandles, "root");
+    auto sm = std::make_shared<message::StartMessage>(actorHandles, "root");
 
-    (*rootActor_)->send(op->actorHandle(), normal::core::Envelope(sm));
+    (*rootActor_)->send(op->actorHandle(), normal::core::message::Envelope(sm));
   }
 }
 
@@ -75,7 +75,7 @@ void OperatorManager::join() {
 
   bool allComplete = false;
   (*rootActor_)->receive_while([&] { return !allComplete; })(
-      [&](const normal::core::Envelope &msg) {
+      [&](const normal::core::message::Envelope &msg) {
         SPDLOG_DEBUG("Message received  |  actor: 'OperatorManager', messageKind: '{}', from: '{}'",
                      msg.message().type(), msg.message().sender());
 

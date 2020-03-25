@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace normal::core {
+namespace normal::core::message {
 
 Message::Message(std::string type, std::string sender) :
     type_(std::move(type)),

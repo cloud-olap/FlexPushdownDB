@@ -12,7 +12,7 @@
 #include <caf/all.hpp>
 
 #include "normal/core/message/Message.h"
-#include "OperatorContext.h"
+#include "normal/core/OperatorContext.h"
 #include "normal/core/message/Envelope.h"
 
 namespace normal::core {
@@ -40,7 +40,7 @@ public:
   void actorHandle(caf::actor actorId);
   std::shared_ptr<OperatorContext> ctx();
 
-  virtual void onReceive(const Envelope &msg) = 0;
+  virtual void onReceive(const normal::core::message::Envelope &msg) = 0;
 
   std::map<std::string, std::shared_ptr<Operator>> producers();
   std::map<std::string, std::shared_ptr<Operator>> consumers();

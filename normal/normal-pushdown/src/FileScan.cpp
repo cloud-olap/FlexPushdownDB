@@ -33,7 +33,7 @@ FileScan::FileScan(std::string name, std::string filePath)
 
 FileScan::~FileScan() = default;
 
-void FileScan::onReceive(const normal::core::Envelope &message) {
+void FileScan::onReceive(const normal::core::message::Envelope &message) {
   if (message.message().type() == "StartMessage") {
     this->onStart();
   } else {
@@ -67,7 +67,7 @@ void FileScan::onStart() {
 
   auto tupleSet = normal::core::TupleSet::make(reader);
 
-  std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet, this->name());
+  std::shared_ptr<normal::core::message::Message> message = std::make_shared<normal::core::message::TupleMessage>(tupleSet, this->name());
   ctx()->tell(message);
 
   ctx()->notifyComplete();

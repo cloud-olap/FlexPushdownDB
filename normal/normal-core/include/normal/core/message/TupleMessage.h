@@ -9,10 +9,10 @@
 
 #include <caf/all.hpp>
 
-#include "Message.h"
+#include "normal/core/message/Message.h"
 #include "normal/core/TupleSet.h"
 
-namespace normal::core {
+namespace normal::core::message {
 
 /**
  * Message containing a list of tuples

@@ -9,18 +9,17 @@
 #include <normal/core/message/CompleteMessage.h>
 
 #include "normal/core/Globals.h"
-#include "normal/core/message/Message.h"          // for Message
-#include "normal/core/OperatorManager.h"  // for OperatorManager
-#include "normal/core/Actors.h"  // for OperatorManager
+#include "normal/core/message/Message.h"
+#include "normal/core/Actors.h"
 
 namespace normal::core {
 
-void OperatorContext::tell(std::shared_ptr<normal::core::Message> &msg) {
+void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
 
   assert(this);
 
   OperatorActor* oa = this->operatorActor();
-  normal::core::Envelope e(msg);
+  message::Envelope e(msg);
 
   // Send message to consumers
   for(const auto& consumer: this->operator_->consumers()){
@@ -56,8 +55,8 @@ void OperatorContext::notifyComplete() {
 
   OperatorActor* operatorActor = this->operatorActor();
 
-  std::shared_ptr<normal::core::Message> msg = std::make_shared<normal::core::CompleteMessage>(operatorActor->operator_()->name());
-  normal::core::Envelope e(msg);
+  std::shared_ptr<message::Message> msg = std::make_shared<message::CompleteMessage>(operatorActor->operator_()->name());
+  message::Envelope e(msg);
 
   // Send message to consumers
   for(const auto& consumer: this->operator_->consumers()){

@@ -101,7 +101,7 @@ void S3SelectScan::onStart() {
       auto payload = recordsEvent.GetPayload();
       std::shared_ptr<normal::core::TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
 
-      std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet, this->name());
+      std::shared_ptr<normal::core::message::Message> message = std::make_shared<normal::core::message::TupleMessage>(tupleSet, this->name());
       ctx()->tell(message);
 
       //add to cache
@@ -142,7 +142,7 @@ void S3SelectScan::onStart() {
   }
   else {
     std::shared_ptr<normal::core::TupleSet> tupleSet = cacheMap[cacheID];
-    std::shared_ptr<normal::core::Message> message = std::make_shared<normal::core::TupleMessage>(tupleSet, this->name());
+    std::shared_ptr<normal::core::message::Message> message = std::make_shared<normal::core::message::TupleMessage>(tupleSet, this->name());
     ctx()->tell(message);
 //    message = std::make_shared<normal::core::CompleteMessage>();
 //    ctx()->tell(message);
@@ -170,7 +170,7 @@ S3SelectScan::S3SelectScan(std::string name,
       s3Client_(std::move(s3Client)){
 }
 
-void S3SelectScan::onReceive(const normal::core::Envelope &message) {
+void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
   if (message.message().type() == "StartMessage") {
     this->onStart();
   } else {

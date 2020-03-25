@@ -16,7 +16,7 @@ class FileScan : public normal::core::Operator {
 private:
   std::string filePath_;
   void onStart();
-  void onReceive(const normal::core::Envelope &message) override;
+  void onReceive(const normal::core::message::Envelope &message) override;
 
 public:
   FileScan(std::string name, std::string filePath);

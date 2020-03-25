@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace normal::core {
+namespace normal::core::message {
 
 StartMessage::StartMessage(std::vector<caf::actor> consumers,
                            std::string from) :

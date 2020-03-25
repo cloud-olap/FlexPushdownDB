@@ -12,7 +12,7 @@
 
 namespace normal::core {
 
-OperatorActor::OperatorActor(caf::actor_config &cfg, std::shared_ptr<normal::core::Operator> opBehaviour) :
+OperatorActor::OperatorActor(caf::actor_config &cfg, std::shared_ptr<Operator> opBehaviour) :
     caf::event_based_actor(cfg),
     opBehaviour_(std::move(opBehaviour)) {
 
@@ -24,7 +24,7 @@ caf::behavior behaviour(OperatorActor *self) {
   auto functionName = __FUNCTION__;
 
   return {
-      [=](const normal::core::Envelope &msg) {
+      [=](const normal::core::message::Envelope &msg) {
 
 #define __FUNCTION__ functionName
 
@@ -34,7 +34,7 @@ caf::behavior behaviour(OperatorActor *self) {
                      msg.message().type());
 
         if (msg.message().type() == "CompleteMessage") {
-          auto completeMessage = dynamic_cast<const normal::core::CompleteMessage &>(msg.message());
+          auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());
           self->operator_()->ctx()->operatorMap().setComplete(msg.message().sender());
         }
 
