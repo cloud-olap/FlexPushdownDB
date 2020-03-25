@@ -5,10 +5,10 @@
 #include "normal/core/OperatorActor.h"
 
 #include <utility>
-#include <normal/core/CompleteMessage.h>
+#include <normal/core/message/CompleteMessage.h>
 
 #include "normal/core/Globals.h"
-#include "normal/core/Envelope.h"
+#include "normal/core/message/Envelope.h"
 
 namespace normal::core {
 

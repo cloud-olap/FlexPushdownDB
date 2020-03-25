@@ -6,10 +6,10 @@
 
 #include <utility>
 #include <cassert>
-#include <normal/core/CompleteMessage.h>
+#include <normal/core/message/CompleteMessage.h>
 
 #include "normal/core/Globals.h"
-#include "normal/core/Message.h"          // for Message
+#include "normal/core/message/Message.h"          // for Message
 #include "normal/core/OperatorManager.h"  // for OperatorManager
 #include "normal/core/Actors.h"  // for OperatorManager
 

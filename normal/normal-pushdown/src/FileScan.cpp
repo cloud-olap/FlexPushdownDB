@@ -14,11 +14,11 @@
 #include <arrow/status.h>              // for Status
 #include <arrow/type_fwd.h>            // for default_memory_pool
 
-#include <normal/core/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/TupleSet.h>
-#include <normal/core/CompleteMessage.h>
+#include <normal/core/message/CompleteMessage.h>
 
-#include "normal/core/Message.h"       // for Message
+#include "normal/core/message/Message.h"       // for Message
 #include "normal/core/Operator.h"      // for Operator
 #include "io/CSVParser.h"
 

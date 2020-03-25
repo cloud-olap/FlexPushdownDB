@@ -9,7 +9,7 @@
 
 #include <caf/all.hpp>
 
-#include "normal/core/Message.h"
+#include "Message.h"
 
 namespace normal::core {
 

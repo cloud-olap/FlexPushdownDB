@@ -12,11 +12,11 @@
 #include <normal/core/Actors.h>
 
 #include "normal/core/Globals.h"
-#include "normal/core/Envelope.h"
+#include "normal/core/message/Envelope.h"
 #include "normal/core/Operator.h"
 #include "normal/core/OperatorContext.h"
 #include "normal/core/OperatorActor.h"
-#include "normal/core/StartMessage.h"
+#include "normal/core/message/StartMessage.h"
 
 namespace normal::core {
 
@@ -54,10 +54,7 @@ void OperatorManager::start() {
 }
 
 void OperatorManager::stop() {
-  for (const auto &op: m_operatorMap) {
-//    op.second->op()->stop();
-  }
-
+  // TODO: Send actors a shutdown message
   this->actorSystem->await_actors_before_shutdown(false);
 }
 

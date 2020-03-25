@@ -11,9 +11,9 @@
 
 #include <caf/all.hpp>
 
-#include "Message.h"
+#include "normal/core/message/Message.h"
 #include "OperatorContext.h"
-#include "Envelope.h"
+#include "normal/core/message/Envelope.h"
 
 namespace normal::core {
 

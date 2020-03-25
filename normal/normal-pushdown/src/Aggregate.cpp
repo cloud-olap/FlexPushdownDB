@@ -8,10 +8,10 @@
 #include <utility>
 #include <memory>
 
-#include <normal/core/CompleteMessage.h>
+#include <normal/core/message/CompleteMessage.h>
 #include "normal/core/Operator.h"
-#include "normal/core/TupleMessage.h"
-#include "normal/core/Message.h"
+#include "normal/core/message/TupleMessage.h"
+#include "normal/core/message/Message.h"
 #include <normal/pushdown/aggregate/AggregationResult.h>
 #include "normal/pushdown/Globals.h"
 
@@ -28,7 +28,7 @@ void Aggregate::onStart() {
 
   this->result_->reset();
 
-  for (const auto& expression: *functions_) {
+  for (const auto &expression: *functions_) {
     expression->init(this->result_);
   }
 }
@@ -47,11 +47,11 @@ void Aggregate::onReceive(const normal::core::Envelope &message) {
   }
 }
 
-void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
+void Aggregate::onComplete(const normal::core::CompleteMessage &) {
 
   SPDLOG_DEBUG("Producer complete");
 
-  if(this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
+  if (this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
 
     SPDLOG_DEBUG("All producers complete, completing");
 
@@ -72,9 +72,13 @@ void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
     std::vector<std::shared_ptr<arrow::Array>> columns;
     for (const auto &expression: *functions_) {
       arrow::StringBuilder colBuilder(pool);
-      colBuilder.Append(this->result_->get(expression->columnName()));
+      auto res = colBuilder.Append(this->result_->get(expression->columnName()));
+      if(!res.ok())
+        abort();
       std::shared_ptr<arrow::StringArray> col;
-      colBuilder.Finish(&col);
+      res = colBuilder.Finish(&col);
+      if(!res.ok())
+        abort();
       columns.emplace_back(col);
     }
 
@@ -98,13 +102,13 @@ void Aggregate::onComplete(const normal::core::CompleteMessage &message) {
   }
 }
 
-void Aggregate::onTuple(const core::TupleMessage& message) {
+void Aggregate::onTuple(const core::TupleMessage &message) {
   SPDLOG_DEBUG("Received tuple message");
   compute(message.tuples());
 }
 
-void Aggregate::compute(const std::shared_ptr<normal::core::TupleSet>& tuples) {
-  for (const auto& expression: *functions_) {
+void Aggregate::compute(const std::shared_ptr<normal::core::TupleSet> &tuples) {
+  for (const auto &expression: *functions_) {
     expression->apply(tuples);
   }
 }

@@ -2,7 +2,7 @@
 // Created by matt on 9/12/19.
 //
 
-#include "normal/core/Message.h"
+#include "normal/core/message/Message.h"
 
 #include <utility>
 

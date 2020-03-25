@@ -2,7 +2,7 @@
 // Created by matt on 11/12/19.
 //
 
-#include "normal/core/TupleMessage.h"
+#include "normal/core/message/TupleMessage.h"
 
 #include <utility>
 

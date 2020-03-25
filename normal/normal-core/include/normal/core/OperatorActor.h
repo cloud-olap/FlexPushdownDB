@@ -9,9 +9,9 @@
 
 #include <caf/all.hpp>
 
-#include "normal/core/Message.h"
+#include "normal/core/message/Message.h"
 #include "normal/core/Operator.h"
-#include "normal/core/StartMessage.h"
+#include "normal/core/message/StartMessage.h"
 
 namespace normal::core {
 

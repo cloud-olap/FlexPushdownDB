@@ -9,8 +9,8 @@
 #include <arrow/table.h>               // for ConcatenateTables, Table (ptr ...
 #include <arrow/pretty_print.h>
 
-#include <normal/core/TupleMessage.h>
-#include <normal/core/CompleteMessage.h>
+#include <normal/core/message/TupleMessage.h>
+#include <normal/core/message/CompleteMessage.h>
 
 #include "normal/pushdown/Globals.h"
 
@@ -40,7 +40,7 @@ void Collate::onReceive(const normal::core::Envelope &message) {
   }
 }
 
-void Collate::onComplete(const normal::core::CompleteMessage &msg) {
+void Collate::onComplete(const normal::core::CompleteMessage &) {
 
   ctx()->notifyComplete();
 
@@ -60,7 +60,7 @@ std::shared_ptr<normal::core::TupleSet> Collate::tuples() {
 
   return tuples_;
 }
-void Collate::onTuple(const normal::core::TupleMessage& message) {
+void Collate::onTuple(const normal::core::TupleMessage &message) {
 
   SPDLOG_DEBUG("Received tuples");
 
@@ -73,7 +73,7 @@ void Collate::onTuple(const normal::core::TupleMessage& message) {
     tables.push_back(message.tuples()->table());
     tables.push_back(tuples_->table());
     const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables);
-    if(!res.ok())
+    if (!res.ok())
       abort();
     tuples_->table(*res);
   }

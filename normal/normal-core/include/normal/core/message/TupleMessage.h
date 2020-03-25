@@ -10,7 +10,7 @@
 #include <caf/all.hpp>
 
 #include "Message.h"
-#include "TupleSet.h"
+#include "normal/core/TupleSet.h"
 
 namespace normal::core {
 

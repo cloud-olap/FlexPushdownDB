@@ -8,7 +8,7 @@
 #include <memory>
 #include <caf/all.hpp>
 
-#include "Message.h"
+#include "normal/core/message/Message.h"
 
 namespace normal::core {
 

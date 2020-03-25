@@ -2,7 +2,7 @@
 // Created by matt on 4/3/20.
 //
 
-#include "normal/core/Envelope.h"
+#include "normal/core/message/Envelope.h"
 
 #include <memory>
 #include <utility>

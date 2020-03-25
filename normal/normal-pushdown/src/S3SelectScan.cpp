@@ -39,11 +39,11 @@
 #include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
 #include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
 
-#include "normal/core/Message.h"                            // for Message
+#include "normal/core/message/Message.h"                            // for Message
 #include "normal/core/TupleSet.h"                           // for TupleSet
 #include "s3/S3SelectParser.h"
-#include <normal/core/TupleMessage.h>
-#include <normal/core/CompleteMessage.h>
+#include <normal/core/message/TupleMessage.h>
+#include <normal/core/message/CompleteMessage.h>
 
 #include "normal/pushdown/Globals.h"
 

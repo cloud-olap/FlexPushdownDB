@@ -9,17 +9,17 @@ setDefaults()
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-core STATIC
-        src/StartMessage.cpp include/normal/core/StartMessage.h
-        src/Envelope.cpp include/normal/core/Envelope.h
+        src/message/StartMessage.cpp include/normal/core/message/StartMessage.h
+        src/message/Envelope.cpp include/normal/core/message/Envelope.h
         include/normal/core/Globals.h
-        src/CompleteMessage.cpp include/normal/core/CompleteMessage.h
+        src/message/CompleteMessage.cpp include/normal/core/message/CompleteMessage.h
         src/Normal.cpp include/normal/core/Normal.h
         src/OperatorActor.cpp include/normal/core/OperatorActor.h
         src/Operator.cpp include/normal/core/Operator.h
         src/OperatorContext.cpp include/normal/core/OperatorContext.h
         src/OperatorManager.cpp include/normal/core/OperatorManager.h
-        src/Message.cpp include/normal/core/Message.h
-        src/TupleMessage.cpp include/normal/core/TupleMessage.h
+        src/message/Message.cpp include/normal/core/message/Message.h
+        src/message/TupleMessage.cpp include/normal/core/message/TupleMessage.h
         src/TupleSet.cpp include/normal/core/TupleSet.h
         src/Cache.cpp include/normal/core/Cache.h
         src/Actors.cpp include/normal/core/Actors.h

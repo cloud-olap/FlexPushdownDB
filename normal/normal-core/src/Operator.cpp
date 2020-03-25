@@ -8,8 +8,8 @@
 #include <utility>                // for move
 
 #include "normal/core/Globals.h"
-#include <normal/core/Envelope.h>
-#include "normal/core/Message.h"  // for Message
+#include <normal/core/message/Envelope.h>
+#include "normal/core/message/Message.h"  // for Message
 
 
 
