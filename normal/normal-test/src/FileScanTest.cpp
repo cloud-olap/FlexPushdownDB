@@ -65,7 +65,7 @@ TEST_CASE ("FileScan -> Sum -> Collate"
 }
 
 TEST_CASE ("Sharded FileScan -> Sum -> Collate"
-               * doctest::skip(false)) {
+               * doctest::skip(true)) {
 
   char buff[FILENAME_MAX];
   getcwd(buff, FILENAME_MAX);

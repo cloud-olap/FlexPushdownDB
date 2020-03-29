@@ -25,6 +25,7 @@ ExternalProject_Add(${ANTLR_BASE}
         INSTALL_DIR ${ANTLR_INSTALL_DIR}
         BUILD_BYPRODUCTS ${ANTLR_RUNTIME_SHARED_LIB} ${ANTLR_RUNTIME_STATIC_LIB}
         CMAKE_ARGS
+        -DWITH_LIBCXX:BOOL=OFF
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -46,5 +47,5 @@ set_target_properties(antlr4_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${A
 add_dependencies(antlr4_static antlr_ep)
 
 
-#showTargetProps(antlr4_shared)
-#showTargetProps(antlr4_static)
+showTargetProps(antlr4_shared)
+showTargetProps(antlr4_static)

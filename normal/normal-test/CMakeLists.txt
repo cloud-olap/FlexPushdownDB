@@ -13,7 +13,8 @@ add_executable(normal-test
         src/FileScanTest.cpp
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
-        src/MultiQueryTest.cpp)
+        src/MultiQueryTest.cpp
+        src/SQLTest.cpp)
 
 target_compile_features(normal-test PRIVATE cxx_std_17)
 target_compile_options(normal-test PRIVATE -Wall -Wextra -pedantic)
@@ -26,6 +27,7 @@ target_link_libraries(normal-test PUBLIC normal-pushdown)
 target_link_libraries(normal-test PUBLIC normal-sql)
 target_link_libraries(normal-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-test PRIVATE doctest::doctest)
+target_link_libraries(normal-test PRIVATE antlr4_static)
 
 # Test data
 configure_file(data/data-file-simple/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/data-file-simple/test.csv COPYONLY)
@@ -38,4 +40,4 @@ configure_file(data/data-file-sharded/test03.csv ${CMAKE_CURRENT_BINARY_DIR}/dat
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-#showTargetProps(normal-test)
+showTargetProps(normal-test)
