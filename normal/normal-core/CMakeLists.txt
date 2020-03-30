@@ -36,6 +36,7 @@ set_target_properties(normal-core PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(normal-core PUBLIC include)
 
+target_link_libraries(normal-core PRIVATE stdc++fs)
 target_link_libraries(normal-core PRIVATE spdlog::spdlog)
 target_link_libraries(normal-core PUBLIC caf::libcaf_core_shared)
 target_link_libraries(normal-core PUBLIC caf::libcaf_io_shared)

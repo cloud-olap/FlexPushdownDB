@@ -6,6 +6,8 @@
 
 #include <cassert>
 #include <vector>
+//#include <filesystem>
+#include <experimental/filesystem>
 
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
@@ -140,29 +142,34 @@ void OperatorManager::write_graph(const std::string &file) {
 
   auto gvc = gvContext();
 
-  auto graph = agopen(const_cast<char *>(std::string("Physical Plan").c_str()), Agdirected, NULL);
+  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
 
   for (const auto &op: this->m_operatorMap) {
-    auto node = agnode(graph, (char *) (op.second->op()->name().c_str()), TRUE);
+    auto opNode = agnode(graph, (char *) (op.second->op()->name().c_str()), true);
     for (const auto &c: op.second->op()->consumers()) {
-      auto cNode = agnode(graph, (char *) (c.second->name().c_str()), TRUE);
-      agedge(graph, node, cNode, const_cast<char *>(std::string("Edge").c_str()), 1);
+      auto consumerOpNode = agnode(graph, (char *) (c.second->name().c_str()), true);
+      agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
     }
   }
 
-  FILE *outFile = fopen(file.c_str(), "w");
-  if (outFile == nullptr) {
-    throw std::runtime_error("Error" + std::to_string(errno));
+  const std::experimental::filesystem::path &path = std::experimental::filesystem::path(file);
+  if (!std::experimental::filesystem::exists(path.parent_path())) {
+    throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
+  } else {
+    FILE *outFile = fopen(file.c_str(), "w");
+    if (outFile == nullptr) {
+      throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
+    }
+
+    gvLayout(gvc, graph, "dot");
+    gvRender(gvc, graph, "svg", outFile);
+
+    fclose(outFile);
+
+    gvFreeLayout(gvc, graph);
+    agclose(graph);
+    gvFreeContext(gvc);
   }
-
-  gvLayout(gvc, graph, "dot");
-  gvRender(gvc, graph, "svg", outFile);
-
-  fclose(outFile);
-
-  gvFreeLayout(gvc, graph);
-  agclose(graph);
-  gvFreeContext(gvc);
 }
 
 }
