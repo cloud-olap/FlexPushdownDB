@@ -30,4 +30,4 @@ ExternalProject_Add(${DOCTEST_BASE}
 
 add_library(doctest::doctest INTERFACE IMPORTED)
 set_target_properties(doctest::doctest PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${DOCTEST_INCLUDE_DIR})
-add_dependencies(doctest::doctest doctest_ep)
+add_dependencies(doctest::doctest ${DOCTEST_BASE})

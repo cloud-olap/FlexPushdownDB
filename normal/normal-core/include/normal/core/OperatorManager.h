@@ -40,6 +40,8 @@ public:
   void stop();
   void join();
 
+  void write_graph(const std::string& file);
+
 };
 
 }

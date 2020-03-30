@@ -9,6 +9,7 @@
 
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
+#include <graphviz/gvc.h>
 
 #include <normal/core/Actors.h>
 #include "normal/core/Globals.h"
@@ -17,6 +18,7 @@
 #include "normal/core/OperatorContext.h"
 #include "normal/core/OperatorActor.h"
 #include "normal/core/message/StartMessage.h"
+#include "normal/core/OperatorDirectory.h"
 
 namespace normal::core {
 
@@ -111,7 +113,10 @@ void OperatorManager::boot() {
     auto op = ctx->op();
     for (const auto &producerEntry: op->producers()) {
       auto producer = producerEntry.second;
-      auto entry = LocalOperatorDirectoryEntry(producer->name(), producer->actorHandle(), OperatorRelationshipType::Producer, false);
+      auto entry = LocalOperatorDirectoryEntry(producer->name(),
+                                               producer->actorHandle(),
+                                               OperatorRelationshipType::Producer,
+                                               false);
       ctx->operatorMap().insert(entry);
     }
   }
@@ -122,10 +127,42 @@ void OperatorManager::boot() {
     auto op = ctx->op();
     for (const auto &consumerEntry: op->consumers()) {
       auto consumer = consumerEntry.second;
-      auto entry = LocalOperatorDirectoryEntry(consumer->name(), consumer->actorHandle(), OperatorRelationshipType::Consumer, false);
+      auto entry = LocalOperatorDirectoryEntry(consumer->name(),
+                                               consumer->actorHandle(),
+                                               OperatorRelationshipType::Consumer,
+                                               false);
       ctx->operatorMap().insert(entry);
     }
   }
+}
+
+void OperatorManager::write_graph(const std::string &file) {
+
+  auto gvc = gvContext();
+
+  auto graph = agopen(const_cast<char *>(std::string("Physical Plan").c_str()), Agdirected, NULL);
+
+  for (const auto &op: this->m_operatorMap) {
+    auto node = agnode(graph, (char *) (op.second->op()->name().c_str()), TRUE);
+    for (const auto &c: op.second->op()->consumers()) {
+      auto cNode = agnode(graph, (char *) (c.second->name().c_str()), TRUE);
+      agedge(graph, node, cNode, const_cast<char *>(std::string("Edge").c_str()), 1);
+    }
+  }
+
+  FILE *outFile = fopen(file.c_str(), "w");
+  if (outFile == nullptr) {
+    throw std::runtime_error("Error" + std::to_string(errno));
+  }
+
+  gvLayout(gvc, graph, "dot");
+  gvRender(gvc, graph, "svg", outFile);
+
+  fclose(outFile);
+
+  gvFreeLayout(gvc, graph);
+  agclose(graph);
+  gvFreeContext(gvc);
 }
 
 }

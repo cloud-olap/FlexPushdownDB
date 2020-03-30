@@ -31,6 +31,7 @@ ExternalProject_Add(${SPDLOG_BASE}
         -DSPDLOG_BUILD_EXAMPLE:BOOL=OFF
         -DSPDLOG_BUILD_TESTS:BOOL=OFF
         -DSPDLOG_BUILD_BENCH:BOOL=OFF
+        -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${SPDLOG_INSTALL_DIR}
@@ -43,7 +44,7 @@ file(MAKE_DIRECTORY ${SPDLOG_INCLUDE_DIR}) # Include directory needs to exist to
 add_library(spdlog::spdlog STATIC IMPORTED)
 set_target_properties(spdlog::spdlog PROPERTIES IMPORTED_LOCATION ${SPDLOG_STATIC_LIB})
 set_target_properties(spdlog::spdlog PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${SPDLOG_INCLUDE_DIR})
-add_dependencies(spdlog::spdlog spdlog_ep)
+add_dependencies(spdlog::spdlog ${SPDLOG_BASE})
 
 
 #showTargetProps(spdlog::spdlog)

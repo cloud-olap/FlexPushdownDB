@@ -34,7 +34,6 @@ target_compile_features(normal-core PRIVATE cxx_std_17)
 target_compile_options(normal-core PRIVATE -Wall -Wextra -pedantic)
 set_target_properties(normal-core PROPERTIES LINKER_LANGUAGE CXX)
 
-
 target_include_directories(normal-core PUBLIC include)
 
 target_link_libraries(normal-core PRIVATE spdlog::spdlog)
@@ -43,9 +42,12 @@ target_link_libraries(normal-core PUBLIC caf::libcaf_io_shared)
 target_link_libraries(normal-core PUBLIC arrow_static)
 target_link_libraries(normal-core PUBLIC arrow_dataset_static)
 
+target_link_libraries(normal-core PUBLIC graphviz_gvc_shared)
+target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)
+target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-#showTargetProps(normal-core)
+showTargetProps(normal-core)

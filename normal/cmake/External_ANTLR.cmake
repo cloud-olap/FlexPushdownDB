@@ -25,6 +25,7 @@ ExternalProject_Add(${ANTLR_BASE}
         INSTALL_DIR ${ANTLR_INSTALL_DIR}
         BUILD_BYPRODUCTS ${ANTLR_RUNTIME_SHARED_LIB} ${ANTLR_RUNTIME_STATIC_LIB}
         CMAKE_ARGS
+        -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -38,12 +39,12 @@ file(MAKE_DIRECTORY ${ANTLR_INCLUDE_DIR}) # Include directory needs to exist to 
 add_library(antlr4_shared SHARED IMPORTED)
 set_target_properties(antlr4_shared PROPERTIES IMPORTED_LOCATION ${ANTLR_RUNTIME_SHARED_LIB})
 set_target_properties(antlr4_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ANTLR_INCLUDE_DIR})
-add_dependencies(antlr4_shared antlr_ep)
+add_dependencies(antlr4_shared ${ANTLR_BASE})
 
 add_library(antlr4_static STATIC IMPORTED)
 set_target_properties(antlr4_static PROPERTIES IMPORTED_LOCATION ${ANTLR_RUNTIME_STATIC_LIB})
 set_target_properties(antlr4_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ANTLR_INCLUDE_DIR})
-add_dependencies(antlr4_static antlr_ep)
+add_dependencies(antlr4_static ${ANTLR_BASE})
 
 
 #showTargetProps(antlr4_shared)

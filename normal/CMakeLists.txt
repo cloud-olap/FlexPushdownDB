@@ -4,7 +4,6 @@ project("normal" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 #SET(CMAKE_C_COMPILER /usr/bin/gcc)
 #SET(CMAKE_CXX_COMPILER /usr/bin/g++)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "/usr/bin/iwyu;")
@@ -24,7 +23,7 @@ include(External_caf)
 include(External_arrow)
 include(External_AWSCPPSDK)
 include(External_ANTLR)
-
+include(External_graphviz)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
