@@ -2,8 +2,10 @@
 // Created by matt on 24/3/20.
 //
 
-#include <sstream>
 #include "normal/core/OperatorDirectory.h"
+
+#include "normal/core/Globals.h"
+#include <sstream>
 
 namespace normal::core {
 

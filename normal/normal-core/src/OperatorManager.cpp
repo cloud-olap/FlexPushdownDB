@@ -6,9 +6,12 @@
 
 #include <cassert>
 #include <vector>
+//#include <filesystem>
+#include <experimental/filesystem>
 
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
+#include <graphviz/gvc.h>
 
 #include <normal/core/Actors.h>
 #include "normal/core/Globals.h"
@@ -17,6 +20,7 @@
 #include "normal/core/OperatorContext.h"
 #include "normal/core/OperatorActor.h"
 #include "normal/core/message/StartMessage.h"
+#include "normal/core/OperatorDirectory.h"
 
 namespace normal::core {
 
@@ -111,7 +115,10 @@ void OperatorManager::boot() {
     auto op = ctx->op();
     for (const auto &producerEntry: op->producers()) {
       auto producer = producerEntry.second;
-      auto entry = LocalOperatorDirectoryEntry(producer->name(), producer->actorHandle(), OperatorRelationshipType::Producer, false);
+      auto entry = LocalOperatorDirectoryEntry(producer->name(),
+                                               producer->actorHandle(),
+                                               OperatorRelationshipType::Producer,
+                                               false);
       ctx->operatorMap().insert(entry);
     }
   }
@@ -122,9 +129,46 @@ void OperatorManager::boot() {
     auto op = ctx->op();
     for (const auto &consumerEntry: op->consumers()) {
       auto consumer = consumerEntry.second;
-      auto entry = LocalOperatorDirectoryEntry(consumer->name(), consumer->actorHandle(), OperatorRelationshipType::Consumer, false);
+      auto entry = LocalOperatorDirectoryEntry(consumer->name(),
+                                               consumer->actorHandle(),
+                                               OperatorRelationshipType::Consumer,
+                                               false);
       ctx->operatorMap().insert(entry);
     }
+  }
+}
+
+void OperatorManager::write_graph(const std::string &file) {
+
+  auto gvc = gvContext();
+
+  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
+
+  for (const auto &op: this->m_operatorMap) {
+    auto opNode = agnode(graph, (char *) (op.second->op()->name().c_str()), true);
+    for (const auto &c: op.second->op()->consumers()) {
+      auto consumerOpNode = agnode(graph, (char *) (c.second->name().c_str()), true);
+      agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
+    }
+  }
+
+  const std::experimental::filesystem::path &path = std::experimental::filesystem::path(file);
+  if (!std::experimental::filesystem::exists(path.parent_path())) {
+    throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
+  } else {
+    FILE *outFile = fopen(file.c_str(), "w");
+    if (outFile == nullptr) {
+      throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
+    }
+
+    gvLayout(gvc, graph, "dot");
+    gvRender(gvc, graph, "svg", outFile);
+
+    fclose(outFile);
+
+    gvFreeLayout(gvc, graph);
+    agclose(graph);
+    gvFreeContext(gvc);
   }
 }
 

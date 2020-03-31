@@ -44,6 +44,7 @@ ExternalProject_Add(${ARROW_BASE}
         -DARROW_PARQUET:BOOL=OFF
         -DARROW_WITH_SNAPPY:BOOL=ON
         -DARROW_JEMALLOC:BOOL=ON
+        -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -56,14 +57,20 @@ file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to 
 
 add_library(arrow_static STATIC IMPORTED)
 set_target_properties(arrow_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
-set_target_properties(arrow_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ARROW_INCLUDE_DIR})
-set_target_properties(arrow_static PROPERTIES INTERFACE_LINK_LIBRARIES "${ARROW_JEMALLOC_STATIC_LIBS}")
-add_dependencies(arrow_static arrow_ep)
+target_include_directories(arrow_static INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_static INTERFACE ${ARROW_JEMALLOC_STATIC_LIBS})
+add_dependencies(arrow_static ${ARROW_BASE})
+
+add_library(arrow_shared STATIC IMPORTED)
+set_target_properties(arrow_shared PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_SHARED_LIBS})
+target_include_directories(arrow_shared INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_shared INTERFACE ${ARROW_JEMALLOC_SHARED_LIBS})
+add_dependencies(arrow_shared ${ARROW_BASE})
 
 add_library(arrow_dataset_static STATIC IMPORTED)
 set_target_properties(arrow_dataset_static PROPERTIES IMPORTED_LOCATION ${ARROW_DATASET_STATIC_LIBS})
-set_target_properties(arrow_dataset_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ARROW_INCLUDE_DIR})
-add_dependencies(arrow_dataset_static arrow_ep)
+target_include_directories(arrow_dataset_static INTERFACE ${ARROW_INCLUDE_DIR})
+add_dependencies(arrow_dataset_static ${ARROW_BASE})
 
 
 #showTargetProps(arrow_static)

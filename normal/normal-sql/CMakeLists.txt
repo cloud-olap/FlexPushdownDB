@@ -1,7 +1,5 @@
 project(normal-sql VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
-setDefaults()
-
 
 #-------------------------------------------------------------------------------------------------------------
 # Target
@@ -26,12 +24,7 @@ add_library(normal-sql STATIC
         src/connector/local-fs/LocalFileSystemConnector.cpp include/connector/local-fs/LocalFileSystemConnector.h
         )
 
-target_compile_features(normal-sql PRIVATE cxx_std_17)
-target_compile_options(normal-sql PRIVATE -Wall -Wextra -pedantic)
-set_target_properties(normal-sql PROPERTIES LINKER_LANGUAGE CXX)
-
-target_include_directories(normal-sql PRIVATE gen-src)
-target_include_directories(normal-sql PUBLIC include)
+target_include_directories(normal-sql PUBLIC gen-src)
 
 target_link_libraries(normal-sql PRIVATE normal-core)
 target_link_libraries(normal-sql PRIVATE normal-pushdown)

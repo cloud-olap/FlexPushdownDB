@@ -35,6 +35,7 @@ ExternalProject_Add(${CAF_BASE}
         -DCAF_NO_OPENCL:BOOL=ON
         -DCAF_NO_TOOLS:BOOL=ON
         -DCAF_NO_AUTO_LIBCPP:BOOL=ON
+        -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_C_COMPILER:STRING=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER:STRING=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -47,33 +48,33 @@ file(MAKE_DIRECTORY ${CAF_INCLUDE_DIR}) # Include directory needs to exist to ru
 
 add_library(caf::libcaf_core_shared SHARED IMPORTED)
 set_target_properties(caf::libcaf_core_shared PROPERTIES IMPORTED_LOCATION ${CAF_CORE_SHARED_LIBS})
-set_target_properties(caf::libcaf_core_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
-add_dependencies(caf::libcaf_core_shared caf_ep)
+target_include_directories(caf::libcaf_core_shared INTERFACE ${CAF_INCLUDE_DIR})
+add_dependencies(caf::libcaf_core_shared ${CAF_BASE})
 
 add_library(caf::libcaf_core_static STATIC IMPORTED)
 set_target_properties(caf::libcaf_core_static PROPERTIES IMPORTED_LOCATION ${CAF_CORE_STATIC_LIBS})
-set_target_properties(caf::libcaf_core_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
-add_dependencies(caf::libcaf_core_static caf_ep)
+target_include_directories(caf::libcaf_core_static INTERFACE ${CAF_INCLUDE_DIR})
+add_dependencies(caf::libcaf_core_static ${CAF_BASE})
 
 add_library(caf::libcaf_io_shared SHARED IMPORTED)
 set_target_properties(caf::libcaf_io_shared PROPERTIES IMPORTED_LOCATION ${CAF_IO_SHARED_LIBS})
-set_target_properties(caf::libcaf_io_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
-add_dependencies(caf::libcaf_io_shared caf_ep)
+target_include_directories(caf::libcaf_io_shared INTERFACE ${CAF_INCLUDE_DIR})
+add_dependencies(caf::libcaf_io_shared ${CAF_BASE})
 
 add_library(caf::libcaf_io_static STATIC IMPORTED)
 set_target_properties(caf::libcaf_io_static PROPERTIES IMPORTED_LOCATION ${CAF_IO_STATIC_LIBS})
-set_target_properties(caf::libcaf_io_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
-add_dependencies(caf::libcaf_io_static caf_ep)
+target_include_directories(caf::libcaf_io_static INTERFACE ${CAF_INCLUDE_DIR})
+add_dependencies(caf::libcaf_io_static ${CAF_BASE})
 
 add_library(caf::libcaf_openssl_static STATIC IMPORTED)
 set_target_properties(caf::libcaf_openssl_static PROPERTIES IMPORTED_LOCATION ${CAF_OPENSSL_STATIC_LIBS})
-set_target_properties(caf::libcaf_openssl_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
-add_dependencies(caf::libcaf_openssl_static caf_ep)
+target_include_directories(caf::libcaf_openssl_static INTERFACE ${CAF_INCLUDE_DIR})
+add_dependencies(caf::libcaf_openssl_static ${CAF_BASE})
 
 add_library(caf::libcaf_openssl_shared SHARED IMPORTED)
 set_target_properties(caf::libcaf_openssl_shared PROPERTIES IMPORTED_LOCATION ${CAF_OPENSSL_SHARED_LIBS})
-set_target_properties(caf::libcaf_openssl_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
-add_dependencies(caf::libcaf_openssl_shared caf_ep)
+target_include_directories(caf::libcaf_openssl_shared INTERFACE ${CAF_INCLUDE_DIR})
+add_dependencies(caf::libcaf_openssl_shared ${CAF_BASE})
 
 
 #showTargetProps(caf::libcaf_core_shared)

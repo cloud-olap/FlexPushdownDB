@@ -139,6 +139,10 @@ TEST_CASE ("Sharded FileScan -> Sum -> Collate"
   mgr->put(reduceAggregate);
   mgr->put(collate);
 
+  SPDLOG_DEBUG("Writing plan to: {}", current_working_dir + "/test/plan.svg");
+
+  mgr->write_graph(current_working_dir + "/test/plan.svg");
+
   mgr->boot();
 
   mgr->start();
