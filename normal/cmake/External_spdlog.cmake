@@ -43,7 +43,7 @@ file(MAKE_DIRECTORY ${SPDLOG_INCLUDE_DIR}) # Include directory needs to exist to
 
 add_library(spdlog::spdlog STATIC IMPORTED)
 set_target_properties(spdlog::spdlog PROPERTIES IMPORTED_LOCATION ${SPDLOG_STATIC_LIB})
-set_target_properties(spdlog::spdlog PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${SPDLOG_INCLUDE_DIR})
+target_include_directories(spdlog::spdlog INTERFACE ${SPDLOG_INCLUDE_DIR})
 add_dependencies(spdlog::spdlog ${SPDLOG_BASE})
 
 

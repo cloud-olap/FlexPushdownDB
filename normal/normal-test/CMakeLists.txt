@@ -1,7 +1,5 @@
 project(normal-test VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
-setDefaults()
-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Target
@@ -14,10 +12,6 @@ add_executable(normal-test
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
         src/MultiQueryTest.cpp)
-
-target_compile_features(normal-test PRIVATE cxx_std_17)
-target_compile_options(normal-test PRIVATE -Wall -Wextra -pedantic)
-set_target_properties(normal-test PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(normal-test PRIVATE include)
 

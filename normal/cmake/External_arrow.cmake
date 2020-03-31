@@ -57,19 +57,19 @@ file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to 
 
 add_library(arrow_static STATIC IMPORTED)
 set_target_properties(arrow_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
-set_target_properties(arrow_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ARROW_INCLUDE_DIR})
-set_target_properties(arrow_static PROPERTIES INTERFACE_LINK_LIBRARIES "${ARROW_JEMALLOC_STATIC_LIBS}")
+target_include_directories(arrow_static INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_static INTERFACE ${ARROW_JEMALLOC_STATIC_LIBS})
 add_dependencies(arrow_static ${ARROW_BASE})
 
 add_library(arrow_shared STATIC IMPORTED)
 set_target_properties(arrow_shared PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_SHARED_LIBS})
-set_target_properties(arrow_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ARROW_INCLUDE_DIR})
-set_target_properties(arrow_shared PROPERTIES INTERFACE_LINK_LIBRARIES "${ARROW_JEMALLOC_SHARED_LIBS}")
+target_include_directories(arrow_shared INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_shared INTERFACE ${ARROW_JEMALLOC_SHARED_LIBS})
 add_dependencies(arrow_shared ${ARROW_BASE})
 
 add_library(arrow_dataset_static STATIC IMPORTED)
 set_target_properties(arrow_dataset_static PROPERTIES IMPORTED_LOCATION ${ARROW_DATASET_STATIC_LIBS})
-set_target_properties(arrow_dataset_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ARROW_INCLUDE_DIR})
+target_include_directories(arrow_dataset_static INTERFACE ${ARROW_INCLUDE_DIR})
 add_dependencies(arrow_dataset_static ${ARROW_BASE})
 
 

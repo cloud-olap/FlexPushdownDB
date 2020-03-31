@@ -41,12 +41,12 @@ file(MAKE_DIRECTORY ${AWSCPPSDK_INCLUDE_DIR}) # Include directory needs to exist
 
 add_library("aws-cpp-sdk-core" SHARED IMPORTED)
 set_target_properties("aws-cpp-sdk-core" PROPERTIES IMPORTED_LOCATION ${AWSCPPSDK_CORE_SHARED_LIBS})
-set_target_properties("aws-cpp-sdk-core" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${AWSCPPSDK_INCLUDE_DIR})
+target_include_directories("aws-cpp-sdk-core" INTERFACE ${AWSCPPSDK_INCLUDE_DIR})
 add_dependencies("aws-cpp-sdk-core" ${AWSCPPSDK_BASE})
 
 add_library("aws-cpp-sdk-s3" SHARED IMPORTED)
 set_target_properties("aws-cpp-sdk-s3" PROPERTIES IMPORTED_LOCATION ${AWSCPPSDK_S3_SHARED_LIBS})
-set_target_properties("aws-cpp-sdk-s3" PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${AWSCPPSDK_INCLUDE_DIR})
+target_include_directories("aws-cpp-sdk-s3" INTERFACE ${AWSCPPSDK_INCLUDE_DIR})
 add_dependencies("aws-cpp-sdk-s3" ${AWSCPPSDK_BASE})
 
 

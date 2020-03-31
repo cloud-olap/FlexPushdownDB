@@ -1,9 +1,6 @@
 project("normal-pushdown" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 
-setDefaults()
-
-
 #-----------------------------------------------------------------------------------------------------------------------
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
@@ -22,10 +19,6 @@ add_library(normal-pushdown STATIC
         src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h
         src/AWSClient.cpp include/normal/pushdown/AWSClient.h
         )
-
-target_compile_features(normal-pushdown PRIVATE cxx_std_17)
-target_compile_options(normal-pushdown PRIVATE -Wall -Wextra -pedantic)
-set_target_properties(normal-pushdown PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

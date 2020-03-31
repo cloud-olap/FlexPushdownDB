@@ -48,32 +48,32 @@ file(MAKE_DIRECTORY ${CAF_INCLUDE_DIR}) # Include directory needs to exist to ru
 
 add_library(caf::libcaf_core_shared SHARED IMPORTED)
 set_target_properties(caf::libcaf_core_shared PROPERTIES IMPORTED_LOCATION ${CAF_CORE_SHARED_LIBS})
-set_target_properties(caf::libcaf_core_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
+target_include_directories(caf::libcaf_core_shared INTERFACE ${CAF_INCLUDE_DIR})
 add_dependencies(caf::libcaf_core_shared ${CAF_BASE})
 
 add_library(caf::libcaf_core_static STATIC IMPORTED)
 set_target_properties(caf::libcaf_core_static PROPERTIES IMPORTED_LOCATION ${CAF_CORE_STATIC_LIBS})
-set_target_properties(caf::libcaf_core_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
+target_include_directories(caf::libcaf_core_static INTERFACE ${CAF_INCLUDE_DIR})
 add_dependencies(caf::libcaf_core_static ${CAF_BASE})
 
 add_library(caf::libcaf_io_shared SHARED IMPORTED)
 set_target_properties(caf::libcaf_io_shared PROPERTIES IMPORTED_LOCATION ${CAF_IO_SHARED_LIBS})
-set_target_properties(caf::libcaf_io_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
+target_include_directories(caf::libcaf_io_shared INTERFACE ${CAF_INCLUDE_DIR})
 add_dependencies(caf::libcaf_io_shared ${CAF_BASE})
 
 add_library(caf::libcaf_io_static STATIC IMPORTED)
 set_target_properties(caf::libcaf_io_static PROPERTIES IMPORTED_LOCATION ${CAF_IO_STATIC_LIBS})
-set_target_properties(caf::libcaf_io_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
+target_include_directories(caf::libcaf_io_static INTERFACE ${CAF_INCLUDE_DIR})
 add_dependencies(caf::libcaf_io_static ${CAF_BASE})
 
 add_library(caf::libcaf_openssl_static STATIC IMPORTED)
 set_target_properties(caf::libcaf_openssl_static PROPERTIES IMPORTED_LOCATION ${CAF_OPENSSL_STATIC_LIBS})
-set_target_properties(caf::libcaf_openssl_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
+target_include_directories(caf::libcaf_openssl_static INTERFACE ${CAF_INCLUDE_DIR})
 add_dependencies(caf::libcaf_openssl_static ${CAF_BASE})
 
 add_library(caf::libcaf_openssl_shared SHARED IMPORTED)
 set_target_properties(caf::libcaf_openssl_shared PROPERTIES IMPORTED_LOCATION ${CAF_OPENSSL_SHARED_LIBS})
-set_target_properties(caf::libcaf_openssl_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CAF_INCLUDE_DIR})
+target_include_directories(caf::libcaf_openssl_shared INTERFACE ${CAF_INCLUDE_DIR})
 add_dependencies(caf::libcaf_openssl_shared ${CAF_BASE})
 
 

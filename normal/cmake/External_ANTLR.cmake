@@ -1,4 +1,5 @@
 # ANTLR
+
 set(ANTLR_VERSION "4.8")
 set(ANTLR_GIT_URL "https://github.com/antlr/antlr4.git")
 
@@ -38,12 +39,12 @@ file(MAKE_DIRECTORY ${ANTLR_INCLUDE_DIR}) # Include directory needs to exist to 
 
 add_library(antlr4_shared SHARED IMPORTED)
 set_target_properties(antlr4_shared PROPERTIES IMPORTED_LOCATION ${ANTLR_RUNTIME_SHARED_LIB})
-set_target_properties(antlr4_shared PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ANTLR_INCLUDE_DIR})
+target_include_directories(antlr4_shared INTERFACE ${ANTLR_INCLUDE_DIR})
 add_dependencies(antlr4_shared ${ANTLR_BASE})
 
 add_library(antlr4_static STATIC IMPORTED)
 set_target_properties(antlr4_static PROPERTIES IMPORTED_LOCATION ${ANTLR_RUNTIME_STATIC_LIB})
-set_target_properties(antlr4_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${ANTLR_INCLUDE_DIR})
+target_include_directories(antlr4_static INTERFACE ${ANTLR_INCLUDE_DIR})
 add_dependencies(antlr4_static ${ANTLR_BASE})
 
 
