@@ -29,7 +29,7 @@ namespace arrow { class MemoryPool; }
 namespace normal::pushdown {
 
 FileScan::FileScan(std::string name, std::string filePath)
-    : Operator(std::move(name)), filePath_(std::move(filePath)) {}
+    : Operator(std::move(name), "FileScan"), filePath_(std::move(filePath)) {}
 
 FileScan::~FileScan() = default;
 

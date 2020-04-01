@@ -160,7 +160,7 @@ S3SelectScan::S3SelectScan(std::string name,
                            std::string m_tbl,
                            std::string m_col,
                            std::shared_ptr<Aws::S3::S3Client> s3Client)
-    : Operator(std::move(name)),
+    : Operator(std::move(name), "S3SelectScan"),
       s3Bucket_(std::move(s3Bucket)),
       s3Object_(std::move(s3Object)),
       sql_(std::move(sql)),

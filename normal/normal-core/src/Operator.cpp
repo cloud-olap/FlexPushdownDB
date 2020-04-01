@@ -11,15 +11,18 @@
 #include <normal/core/message/Envelope.h>
 #include "normal/core/message/Message.h"  // for Message
 
-
-
 namespace normal::core {
 
-Operator::Operator(std::string name) {
-  name_ = std::move(name);
+Operator::Operator(std::string name, std::string type) :
+    name_(std::move(name)),
+    type_(std::move(type)) {
 }
 
 Operator::~Operator() = default;
+
+const std::string &Operator::getType() const {
+  return type_;
+}
 
 std::string &Operator::name() {
   return name_;

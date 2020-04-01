@@ -23,7 +23,7 @@ void Collate::onStart() {
   this->tuples_ = nullptr;
 }
 
-Collate::Collate(std::string name) : Operator(std::move(name)) {
+Collate::Collate(std::string name) : Operator(std::move(name), "Collate") {
 }
 
 void Collate::onReceive(const normal::core::message::Envelope &message) {

@@ -26,13 +26,14 @@ class Operator {
 
 private:
   std::string name_;
+  std::string type_;
   std::shared_ptr<OperatorContext> opContext_;
   std::map<std::string, std::shared_ptr<Operator>> producers_;
   std::map<std::string, std::shared_ptr<Operator>> consumers_;
   caf::actor actorHandle_;
 
 public:
-  explicit Operator(std::string name);
+  explicit Operator(std::string name, std::string type);
   virtual ~Operator() = 0;
 
   std::string &name();
@@ -48,6 +49,7 @@ public:
   void create(std::shared_ptr<OperatorContext> ctx);
   void produce(const std::shared_ptr<Operator> &operator_);
   void consume(const std::shared_ptr<Operator> &operator_);
+  const std::string &getType() const;
 
 };
 

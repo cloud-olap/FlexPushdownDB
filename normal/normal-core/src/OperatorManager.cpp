@@ -144,10 +144,34 @@ void OperatorManager::write_graph(const std::string &file) {
 
   auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
 
+  // Init attributes
+  agattr(graph, AGNODE, const_cast<char *>("fixedsize"), const_cast<char *>("false"));
+  agattr(graph, AGNODE, const_cast<char *>("shape"), const_cast<char *>("ellipse"));
+  agattr(graph, AGNODE, const_cast<char *>("label"), const_cast<char *>("<not set>"));
+  agattr(graph, AGNODE, const_cast<char *>("fontname"), const_cast<char *>("Arial"));
+  agattr(graph, AGNODE, const_cast<char *>("fontsize"), const_cast<char *>("8"));
+
+  // Add all the nodes
   for (const auto &op: this->m_operatorMap) {
-    auto opNode = agnode(graph, (char *) (op.second->op()->name().c_str()), true);
+    std::string nodeName = op.second->op()->name();
+    auto node = agnode(graph, const_cast<char *>(nodeName.c_str()), true);
+
+    agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
+
+    std::string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
+                            "<tr><td align='left'><b>" + op.second->op()->getType() + "</b></td></tr>"
+                            "<tr><td align='left'>" + op.second->op()->name() + "</td></tr>"
+                            "</table>";
+    char *htmlNodeLabel = agstrdup_html(graph, const_cast<char *>(nodeLabel.c_str()));
+    agset(node, const_cast<char *>("label"), htmlNodeLabel);
+    agstrfree(graph, htmlNodeLabel);
+  }
+
+  // Add all the edges
+  for (const auto &op: this->m_operatorMap) {
+    auto opNode = agfindnode(graph, (char *) (op.second->op()->name().c_str()));
     for (const auto &c: op.second->op()->consumers()) {
-      auto consumerOpNode = agnode(graph, (char *) (c.second->name().c_str()), true);
+      auto consumerOpNode = agfindnode(graph, (char *) (c.second->name().c_str()));
       agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
     }
   }
@@ -170,6 +194,10 @@ void OperatorManager::write_graph(const std::string &file) {
     agclose(graph);
     gvFreeContext(gvc);
   }
+}
+
+std::shared_ptr<Operator> OperatorManager::getOperator(const std::string &name) {
+  return this->m_operatorMap.find(name)->second->op();
 }
 
 }

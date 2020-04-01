@@ -6,6 +6,7 @@
 
 #include <normal/sql/NormalSQLLexer.h>
 #include <normal/sql/NormalSQLParser.h>
+#include <normal/pushdown/Collate.h>
 #include "Listener.h"
 #include "Globals.h"
 
@@ -30,11 +31,27 @@ void Interpreter::parse(const std::string &sql) {
   Listener listener(this->catalogues_, this->operatorManager_);
   antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
 
+  for(const auto& astNode: listener.symbolTable.table){
+    operatorManager_->put(astNode.second->toOperator());
+  }
+
+  for(const auto& astNode: listener.symbolTable.table){
+    auto op = operatorManager_->getOperator(astNode.second->name);
+    if(astNode.second->consumer != nullptr){
+      auto consumerOp = operatorManager_->getOperator(astNode.second->consumer->name);
+      op->produce(consumerOp);
+      consumerOp->consume(op);
+    }
+  }
+
   SPDLOG_DEBUG("Finished");
 }
 
 void Interpreter::put(const std::shared_ptr<Catalogue> &catalogue) {
   catalogues_->insert(std::pair(catalogue->getName(), catalogue));
+}
+const std::shared_ptr<normal::core::OperatorManager> &Interpreter::getOperatorManager() const {
+  return operatorManager_;
 }
 
 

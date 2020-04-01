@@ -8,6 +8,7 @@
 #include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/core/OperatorManager.h>
 #include <connector/Catalogue.h>
+#include "ast/Symbols.h"
 
 class Listener : public normal::sql::NormalSQLBaseListener {
 
@@ -24,6 +25,7 @@ public:
       std::shared_ptr<normal::core::OperatorManager> OperatorManager);
   ~Listener() override = default;
 
+  Symbols symbolTable;
 };
 
 #endif //NORMAL_NORMAL_SQL_SRC_LISTENER_H

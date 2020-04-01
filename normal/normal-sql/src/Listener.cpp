@@ -7,7 +7,10 @@
 #include <utility>
 #include <normal/pushdown/FileScan.h>
 #include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
+#include <normal/pushdown/Collate.h>
 #include "Globals.h"
+#include "ast/ScanNode.h"
+#include "ast/CollateNode.h"
 
 Listener::Listener(
     std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<Catalogue>>> catalogues,
@@ -16,25 +19,28 @@ Listener::Listener(
     operatorManager_(std::move(OperatorManager)) {}
 
 void Listener::enterSelect_core(normal::sql::NormalSQLParser::Select_coreContext *Context) {
-  SPDLOG_DEBUG(Context->toString());
 
-  std::string databaseName = Context->table_or_subquery()[0]->database_name()->any_name()->IDENTIFIER()->toString();
-  std::string tableName = Context->table_or_subquery()[0]->table_name()->any_name()->IDENTIFIER()->toString();
+  auto scan = std::make_shared<ScanNode>();
+  auto collate = std::make_shared<CollateNode>();
 
-  auto catalogue = this->catalogues_->find(databaseName);
+  auto catalogueName = Context->table_or_subquery(0)->database_name()->any_name()->IDENTIFIER()->getText();
+  auto tableName = Context->table_or_subquery(0)->table_name()->any_name()->IDENTIFIER()->getText();
 
+  auto catalogue = this->catalogues_->find(catalogueName);
   if (catalogue == this->catalogues_->end())
-    throw std::runtime_error("Catalogue '" + databaseName + "' not found.");
+    throw std::runtime_error("Catalogue '" + catalogueName + "' not found.");
 
-  std::shared_ptr<CatalogueEntry> catalogueEntry = catalogue->second->getEntry(tableName);
+  auto localFS = std::static_pointer_cast<LocalFileSystemCatalogueEntry>(catalogue->second->getEntry(tableName));
 
-  std::shared_ptr<LocalFileSystemCatalogueEntry>
-      entry = std::dynamic_pointer_cast<LocalFileSystemCatalogueEntry>(catalogueEntry);
+  scan->name = catalogueName + "." + tableName;
+  scan->tableName = localFS;
 
-  auto fileScan =
-      std::make_shared<normal::pushdown::FileScan>("FileScan." + databaseName + "." + tableName, entry->getPath());
+  collate->name = "collate";
 
-  NormalSQLBaseListener::enterSelect_core(Context);
+  scan->consumer = collate;
+
+  symbolTable.table.insert(std::pair(0, scan));
+  symbolTable.table.insert(std::pair(1, collate));
 }
 
 

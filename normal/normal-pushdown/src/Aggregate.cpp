@@ -19,7 +19,7 @@ namespace normal::pushdown {
 
 Aggregate::Aggregate(std::string name,
                      std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions)
-    : Operator(std::move(name)),
+    : Operator(std::move(name), "Aggregate"),
       functions_(std::move(functions)),
       result_(std::make_shared<aggregate::AggregationResult>()) {}
 

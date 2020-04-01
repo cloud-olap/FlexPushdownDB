@@ -21,7 +21,7 @@ private:
 
 public:
   Interpreter();
-
+  const std::shared_ptr<normal::core::OperatorManager> &getOperatorManager() const;
   void parse(const std::string& sql);
   void put(const std::shared_ptr<Catalogue> &catalogue);
 

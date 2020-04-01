@@ -44,4 +44,4 @@ target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-showTargetProps(normal-core)
+#showTargetProps(normal-core)

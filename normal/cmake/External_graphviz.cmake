@@ -33,12 +33,10 @@ set(GRAPHVIZ_NEATO_LAYOUT_SHARED_LIB ${GRAPHVIZ_LIB_DIR}/graphviz/${CMAKE_SHARED
 ExternalProject_Add(${GRAPHVIZ_BASE}
         PREFIX ${GRAPHVIZ_PREFIX}
         URL ${GRAPHVIZ_SOURCE_URL}
-        GIT_PROGRESS ON
-        GIT_SHALLOW ON
         INSTALL_DIR ${GRAPHVIZ_INSTALL_DIR}
         CONFIGURE_COMMAND
             cd ${GRAPHVIZ_BUILD_DIR} &&
-            ${GRAPHVIZ_SOURCE_DIR}/configure --enable-perl=no --prefix=${GRAPHVIZ_INSTALL_DIR}
+            CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${GRAPHVIZ_SOURCE_DIR}/configure --enable-perl=no --prefix=${GRAPHVIZ_INSTALL_DIR}
         BUILD_COMMAND
             cd ${GRAPHVIZ_BUILD_DIR} &&
             make
