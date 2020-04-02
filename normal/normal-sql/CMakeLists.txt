@@ -22,7 +22,7 @@ add_library(normal-sql STATIC
         src/connector/s3/S3SelectCatalogueEntry.cpp include/connector/s3/S3SelectCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemCatalogueEntry.cpp include/connector/local-fs/LocalFileSystemCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemConnector.cpp include/connector/local-fs/LocalFileSystemConnector.h
-        src/ast/ScanNode.cpp src/ast/ScanNode.h src/ast/Symbols.cpp src/ast/Symbols.h src/ast/ASTNode.cpp src/ast/ASTNode.h src/ast/CollateNode.cpp src/ast/CollateNode.h)
+        src/ast/ScanNode.cpp src/ast/ScanNode.h src/ast/Symbols.cpp src/ast/Symbols.h src/ast/ASTNode.cpp src/ast/ASTNode.h src/ast/CollateNode.cpp src/ast/CollateNode.h src/ast/AggregateNode.cpp src/ast/AggregateNode.h src/ast/AggregateExpression.cpp src/ast/AggregateExpression.h src/ast/AggregateFunction.cpp src/ast/AggregateFunction.h)
 
 target_include_directories(normal-sql PUBLIC include)
 target_include_directories(normal-sql PUBLIC gen-src)

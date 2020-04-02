@@ -15,22 +15,46 @@
 #include <normal/pushdown/Collate.h>
 #include "Globals.h"
 
-TEST_CASE ("SQL (S3SelectScan -> Sum -> Collate)"
+TEST_CASE ("SQL (select * from s3_select.customer)"
                * doctest::skip(true)) {
 
   Interpreter i;
 
-  auto conn =  std::make_shared<S3SelectConnector>("s3-select");
+  auto conn =  std::make_shared<S3SelectConnector>("s3_select");
 
-  auto cat = std::make_shared<Catalogue>("s3-select-catalogue");
+  auto cat = std::make_shared<Catalogue>("s3_select");
   cat->put(std::make_shared<S3SelectCatalogueEntry>("customer", "s3Filter", "tpch-sf1/customer.csv"));
   i.put(cat);
 
-  i.parse("select * from customer");
+  i.parse("select * from s3_select.customer");
 }
 
-TEST_CASE ("SQL (FileScan -> Sum -> Collate)"
+TEST_CASE ("SQL (select sum(A) from local_fs.test)"
                * doctest::skip(false)) {
+
+  SPDLOG_DEBUG("Started");
+
+  Interpreter i;
+
+  auto conn = std::make_shared<LocalFileSystemConnector>("local_fs");
+
+  auto cat = std::make_shared<Catalogue>("local_fs");
+  cat->put(std::make_shared<LocalFileSystemCatalogueEntry>("test", "data/data-file-simple/test.csv"));
+  i.put(cat);
+
+  i.parse("select sum(A) from local_fs.test");
+
+  auto currentPath = std::experimental::filesystem::current_path();
+  auto graphFile = currentPath.append("plan.svg");
+
+  i.getOperatorManager()->write_graph(graphFile);
+
+  SPDLOG_DEBUG("Finished");
+}
+
+
+TEST_CASE ("SQL (select * from local_fs.test)"
+               * doctest::skip(true)) {
 
   SPDLOG_DEBUG("Started");
 

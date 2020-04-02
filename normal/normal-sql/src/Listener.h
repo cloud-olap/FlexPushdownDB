@@ -17,7 +17,7 @@ private:
   std::shared_ptr<normal::core::OperatorManager> operatorManager_;
 
 protected:
-  void enterSelect_core(normal::sql::NormalSQLParser::Select_coreContext *Context) override;
+  void exitSelect_core(normal::sql::NormalSQLParser::Select_coreContext *Context) override;
 
 public:
   explicit Listener(
