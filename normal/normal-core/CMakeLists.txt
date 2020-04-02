@@ -24,7 +24,12 @@ add_library(normal-core STATIC
         src/OperatorDirectoryEntry.cpp include/normal/core/OperatorDirectoryEntry.h
         src/OperatorRelationshipType.cpp include/normal/core/OperatorRelationshipType.h
         src/LocalOperatorDirectory.cpp include/normal/core/LocalOperatorDirectory.h
-        src/LocalOperatorDirectoryEntry.cpp include/normal/core/LocalOperatorDirectoryEntry.h)
+        src/LocalOperatorDirectoryEntry.cpp include/normal/core/LocalOperatorDirectoryEntry.h
+        include/normal/core/expression/Expression.h
+        include/normal/core/expression/Add.h
+        include/normal/core/expression/Literal.h
+        include/normal/core/expression/Multiply.h
+        include/normal/core/expression/ExpressionFactory.h)
 
 
 target_include_directories(normal-core PUBLIC include)

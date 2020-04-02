@@ -16,6 +16,7 @@
 #include <normal/pushdown/FileScan.h>
 #include <normal/pushdown/aggregate/Sum.h>
 #include "Globals.h"
+#include "normal/core/expression/Expression.h"
 
 TEST_CASE ("FileScan -> Sum -> Collate"
                * doctest::skip(true)) {
@@ -29,6 +30,10 @@ TEST_CASE ("FileScan -> Sum -> Collate"
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
+
+  auto expression = Expression("A").plus(Expression("B"))
+
+
 
   auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("Sum", "A");
   auto
