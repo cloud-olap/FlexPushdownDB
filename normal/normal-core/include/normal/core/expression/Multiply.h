@@ -9,14 +9,17 @@
 
 #include <memory>
 
+namespace normal::core::expression {
+
 template<class T>
-class Multiply : public Expression<T> {
+class Multiply : public normal::core::expression::Expression<T> {
 private:
-  std::unique_ptr<Expression<T>> left_;
-  std::unique_ptr<Expression<T>> right_;
+  std::unique_ptr<normal::core::expression::Expression<T>> left_;
+  std::unique_ptr<normal::core::expression::Expression<T>> right_;
 
 public:
-  Multiply(std::unique_ptr<Expression<T>> left, std::unique_ptr<Expression<T>> right)
+  Multiply(std::unique_ptr<normal::core::expression::Expression<T>> left,
+           std::unique_ptr<normal::core::expression::Expression<T>> right)
       : left_(std::move(left)), right_(std::move(right)) {}
 
   T eval() override {
@@ -26,8 +29,12 @@ public:
 };
 
 template<class T>
-static std::unique_ptr<Expression<T>> times(std::unique_ptr<Expression<T>> left, std::unique_ptr<Expression<T>> right){
+static std::unique_ptr<normal::core::expression::Expression<T>>
+times(std::unique_ptr<normal::core::expression::Expression<T>> left,
+      std::unique_ptr<normal::core::expression::Expression<T>> right) {
   return std::make_unique<Multiply<T>>(std::move(left), std::move(right));
+}
+
 }
 
 #endif //NORMAL_NORMAL_CORE_SRC_EXPRESSION_MULTIPLY_H

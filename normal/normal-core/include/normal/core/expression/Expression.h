@@ -5,13 +5,17 @@
 #ifndef NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
 #define NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
 
-#include <string>
+namespace normal::core::expression {
 
-template<class T>
+template<typename T>
 class Expression {
 public:
+  virtual ~Expression() = default;
+
   virtual T eval() = 0;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_CORE_SRC_EXPRESSION_H

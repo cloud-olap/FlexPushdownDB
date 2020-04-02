@@ -11,6 +11,8 @@
 
 #include "Globals.h"
 
+using namespace normal::core::expression;
+
 TEST_CASE ("Literal" * doctest::skip(false)) {
   auto value = lit(10)->eval();
       CHECK_EQ(value, 10);
