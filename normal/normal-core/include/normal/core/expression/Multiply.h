@@ -25,4 +25,9 @@ public:
 
 };
 
+template<class T>
+static std::unique_ptr<Expression<T>> times(std::unique_ptr<Expression<T>> left, std::unique_ptr<Expression<T>> right){
+  return std::make_unique<Multiply<T>>(std::move(left), std::move(right));
+}
+
 #endif //NORMAL_NORMAL_CORE_SRC_EXPRESSION_MULTIPLY_H

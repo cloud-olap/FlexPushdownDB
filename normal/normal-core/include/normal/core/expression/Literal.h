@@ -5,6 +5,7 @@
 #ifndef NORMAL_NORMAL_CORE_SRC_EXPRESSION_LITERAL_H
 #define NORMAL_NORMAL_CORE_SRC_EXPRESSION_LITERAL_H
 
+#include <memory>
 #include "Expression.h"
 
 template<class T>
@@ -17,5 +18,10 @@ public:
   T eval() { return value_; }
 
 };
+
+template<class T>
+static std::unique_ptr<Expression<T>> lit(T value){
+  return std::make_unique<Literal<T>>(value);
+}
 
 #endif //NORMAL_NORMAL_CORE_SRC_EXPRESSION_LITERAL_H

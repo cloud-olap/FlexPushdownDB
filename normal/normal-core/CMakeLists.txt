@@ -29,7 +29,7 @@ add_library(normal-core STATIC
         include/normal/core/expression/Add.h
         include/normal/core/expression/Literal.h
         include/normal/core/expression/Multiply.h
-        include/normal/core/expression/ExpressionFactory.h)
+        include/normal/core/expression/Subtract.h include/normal/core/expression/Divide.h)
 
 
 target_include_directories(normal-core PUBLIC include)
