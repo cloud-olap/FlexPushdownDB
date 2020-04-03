@@ -27,7 +27,6 @@ target_link_libraries(normal-pushdown PRIVATE spdlog::spdlog)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-core)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-pushdown PUBLIC arrow_static)
-target_link_libraries(normal-pushdown PUBLIC arrow_dataset_static)
 target_link_libraries(normal-pushdown PUBLIC pthread)
 
 

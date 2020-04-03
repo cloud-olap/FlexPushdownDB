@@ -62,6 +62,7 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
     } else if (colType->Equals(arrow::DoubleType())) {
       std::shared_ptr<arrow::DoubleArray>
           typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+
       for (int i = 0; i < batch.num_rows(); ++i) {
         double val = typedArray->Value(i);
         sum += val;

@@ -15,12 +15,10 @@ set(ARROW_INCLUDE_DIR ${ARROW_INSTALL_DIR}/include)
 set(ARROW_LIB_DIR ${ARROW_INSTALL_DIR}/lib)
 set(ARROW_CORE_SHARED_LIBS ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}arrow${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(ARROW_CORE_STATIC_LIBS ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}arrow${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(ARROW_DATASET_SHARED_LIBS ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}arrow_dataset${CMAKE_SHARED_LIBRARY_SUFFIX})
-set(ARROW_DATASET_STATIC_LIBS ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}arrow_dataset${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(ARROW_JEMALLOC_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/jemalloc_ep-prefix/src/jemalloc_ep/dist)
-set(ARROW_JEMALLOC_SHARED_LIBS ${ARROW_JEMALLOC_BASE_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}jemalloc${CMAKE_SHARED_LIBRARY_SUFFIX})
-set(ARROW_JEMALLOC_STATIC_LIBS ${ARROW_JEMALLOC_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc${CMAKE_STATIC_LIBRARY_SUFFIX})
-
+set(ARROW_RE2_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/re2_ep-install)
+set(ARROW_RE2_STATIC_LIB ${ARROW_RE2_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}re2${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_GANDIVA_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}gandiva${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(ARROW_GANDIVA_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gandiva${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 ExternalProject_Add(${ARROW_BASE}
         PREFIX ${ARROW_PREFIX}
@@ -40,12 +38,13 @@ ExternalProject_Add(${ARROW_BASE}
         CMAKE_ARGS
         -DARROW_USE_CCACHE:BOOL=ON
         -DARROW_CSV:BOOL=ON
-        -DARROW_DATASET:BOOL=ON
+        -DARROW_DATASET:BOOL=OFF
         -DARROW_FLIGHT:BOOL=OFF
         -DARROW_IPC:BOOL=OFF
         -DARROW_PARQUET:BOOL=OFF
-        -DARROW_WITH_SNAPPY:BOOL=ON
-        -DARROW_JEMALLOC:BOOL=ON
+        -DARROW_WITH_SNAPPY:BOOL=OFF
+        -DARROW_JEMALLOC:BOOL=OFF
+        -DARROW_GANDIVA:BOOL=ON
         -DCMAKE_INSTALL_MESSAGE=NEVER
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -57,22 +56,37 @@ ExternalProject_Add(${ARROW_BASE}
 file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 
 
+add_library(re2_static STATIC IMPORTED)
+set_target_properties(re2_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
+target_include_directories(re2_static INTERFACE ${ARROW_INCLUDE_DIR})
+add_dependencies(re2_static ${ARROW_BASE})
+
 add_library(arrow_static STATIC IMPORTED)
 set_target_properties(arrow_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
 target_include_directories(arrow_static INTERFACE ${ARROW_INCLUDE_DIR})
-target_link_libraries(arrow_static INTERFACE ${ARROW_JEMALLOC_STATIC_LIBS})
+target_link_libraries(arrow_static INTERFACE ${ARROW_RE2_STATIC_LIB})
 add_dependencies(arrow_static ${ARROW_BASE})
 
 add_library(arrow_shared STATIC IMPORTED)
 set_target_properties(arrow_shared PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_SHARED_LIBS})
 target_include_directories(arrow_shared INTERFACE ${ARROW_INCLUDE_DIR})
-target_link_libraries(arrow_shared INTERFACE ${ARROW_JEMALLOC_SHARED_LIBS})
+target_link_libraries(arrow_shared INTERFACE ${ARROW_RE2_STATIC_LIB})
 add_dependencies(arrow_shared ${ARROW_BASE})
 
-add_library(arrow_dataset_static STATIC IMPORTED)
-set_target_properties(arrow_dataset_static PROPERTIES IMPORTED_LOCATION ${ARROW_DATASET_STATIC_LIBS})
-target_include_directories(arrow_dataset_static INTERFACE ${ARROW_INCLUDE_DIR})
-add_dependencies(arrow_dataset_static ${ARROW_BASE})
+# Gandiva needs LLVM version 7
+find_package(LLVM 7 REQUIRED)
+
+add_library(gandiva_static STATIC IMPORTED)
+set_target_properties(gandiva_static PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_STATIC_LIB})
+target_include_directories(gandiva_static INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(gandiva_static INTERFACE LLVM)
+add_dependencies(gandiva_static ${ARROW_BASE})
+
+add_library(gandiva_shared SHARED IMPORTED)
+set_target_properties(gandiva_shared PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_SHARED_LIB})
+target_include_directories(gandiva_shared INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(gandiva_static INTERFACE LLVM)
+add_dependencies(gandiva_shared ${ARROW_BASE})
 
 
 #showTargetProps(arrow_static)

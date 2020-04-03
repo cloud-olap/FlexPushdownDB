@@ -63,15 +63,15 @@ std::shared_ptr<TupleSet> TupleSet::concatenate(const std::shared_ptr<TupleSet>&
     auto resTupleSet = make(*res);
     return resTupleSet;
 }
-void TupleSet::addColumn(const std::string &name, int position, std::vector<std::shared_ptr<std::string>> data) {
+void TupleSet::addColumn(const std::string &name, int position, std::vector<std::string> data) {
   arrow::Status arrowStatus;
 
   arrow::MemoryPool *pool = arrow::default_memory_pool();
   arrow::StringBuilder colBuilder(pool);
 
   for (int64_t r = 0; r < table_->num_rows(); ++r) {
-    std::shared_ptr<std::string> s = data.at(r);
-    arrowStatus = colBuilder.Append(s->c_str()); // FIXME: Not sure if this is safe
+    std::string s = data.at(r);
+    arrowStatus = colBuilder.Append(s.c_str()); // FIXME: Not sure if this is safe
 
     if (!arrowStatus.ok())
       abort();

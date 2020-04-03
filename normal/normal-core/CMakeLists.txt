@@ -29,7 +29,10 @@ add_library(normal-core STATIC
         include/normal/core/expression/Add.h
         include/normal/core/expression/Literal.h
         include/normal/core/expression/Multiply.h
-        include/normal/core/expression/Subtract.h include/normal/core/expression/Divide.h)
+        include/normal/core/expression/Subtract.h
+        include/normal/core/expression/Divide.h
+        include/normal/core/expression/Column.h
+        src/arrow/Arrays.cpp include/normal/core/arrow/Arrays.h)
 
 
 target_include_directories(normal-core PUBLIC include)
@@ -39,7 +42,8 @@ target_link_libraries(normal-core PRIVATE spdlog::spdlog)
 target_link_libraries(normal-core PUBLIC caf::libcaf_core_shared)
 target_link_libraries(normal-core PUBLIC caf::libcaf_io_shared)
 target_link_libraries(normal-core PUBLIC arrow_static)
-target_link_libraries(normal-core PUBLIC arrow_dataset_static)
+#target_link_libraries(normal-core PUBLIC arrow_dataset_static)
+target_link_libraries(normal-core PUBLIC gandiva_static)
 target_link_libraries(normal-core PUBLIC graphviz_gvc_shared)
 target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)

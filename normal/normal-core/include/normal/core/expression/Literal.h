@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CORE_SRC_EXPRESSION_LITERAL_H
 
 #include <memory>
+
 #include "Expression.h"
 
 namespace normal::core::expression {

@@ -26,12 +26,18 @@ private:
   std::shared_ptr<arrow::Table> table_;
 
 public:
+  static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::Schema>& schema, const std::vector<std::shared_ptr<arrow::Array>>& values){
+    auto tuples = std::make_shared<TupleSet>();
+    tuples->table_ = arrow::Table::Make(schema, values);
+    return tuples;
+  }
+
   static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::csv::TableReader> &tableReader);
   static std::shared_ptr<TupleSet> make(std::shared_ptr<arrow::Table> table);
   static std::shared_ptr<TupleSet> concatenate(const std::shared_ptr<TupleSet>&,const std::shared_ptr<TupleSet>&);
   int64_t numRows();
   std::string visit(const std::function<std::string(std::string, arrow::RecordBatch &)>& fn);
-  void addColumn(const std::string &name, int position, std::vector<std::shared_ptr<std::string>> data);
+  void addColumn(const std::string &name, int position, std::vector<std::string> data);
 
   std::string toString();
 

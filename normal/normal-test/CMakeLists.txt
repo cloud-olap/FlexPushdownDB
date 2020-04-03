@@ -3,12 +3,14 @@ project(normal-test VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 function(link_target target)
     target_include_directories(${target} PRIVATE include)
 
-    target_link_libraries(${target} PUBLIC normal-core)
-    target_link_libraries(${target} PUBLIC normal-pushdown)
-    target_link_libraries(${target} PUBLIC normal-sql)
+    target_link_libraries(${target} PRIVATE normal-core)
+    target_link_libraries(${target} PRIVATE normal-pushdown)
+    target_link_libraries(${target} PRIVATE normal-sql)
     target_link_libraries(${target} PRIVATE spdlog::spdlog)
     target_link_libraries(${target} PRIVATE doctest::doctest)
     target_link_libraries(${target} PRIVATE antlr4_static)
+    target_link_libraries(${target} PRIVATE arrow_static)
+    target_link_libraries(${target} PRIVATE gandiva_static)
 endfunction()
 
 
@@ -23,7 +25,8 @@ add_executable(normal-test
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
         src/MultiQueryTest.cpp
-        src/SQLTest.cpp src/ExpressionTest.cpp)
+        src/SQLTest.cpp src/ExpressionTest.cpp
+        src/TupleTest.cpp)
 
 link_target(normal-test)
 
@@ -66,6 +69,12 @@ add_executable(normal-test-expression
 
 link_target(normal-test-expression)
 
+add_executable(normal-test-tuple
+        src/Globals.h
+        src/MainTest.cpp
+        src/TupleTest.cpp)
+
+link_target(normal-test-tuple)
 
 # Test data
 configure_file(data/data-file-simple/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/data-file-simple/test.csv COPYONLY)
