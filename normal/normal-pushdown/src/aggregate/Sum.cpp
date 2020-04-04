@@ -4,15 +4,16 @@
 
 #include <sstream>
 #include <utility>
+#include <normal/core/expression/Expressions.h>
 
 #include "normal/pushdown/aggregate/Sum.h"
 #include "normal/pushdown/Globals.h"
 
 namespace normal::pushdown::aggregate {
 
-Sum::Sum(std::string columnName, std::string inputColumnName) :
+Sum::Sum(std::string columnName, std::shared_ptr<normal::core::expression::Expression> expression) :
     AggregationFunction(std::move(columnName)),
-    inputColumnName_(std::move(inputColumnName)) {}
+    expression_(std::move(expression)) {}
 
 void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::TupleSet> tuples) {
 
@@ -20,13 +21,8 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
 
   std::string sumString = tuples->visit([&](std::string accum, arrow::RecordBatch &batch) -> std::string {
 
-    auto fieldIndex = batch.schema()->GetFieldIndex(this->inputColumnName());
-
-    if (fieldIndex < 0) {
-      throw std::runtime_error("Field '" + this->inputColumnName() + "' not found");
-    }
-
-    std::shared_ptr<arrow::Array> array = batch.column(fieldIndex);
+    auto arrayVector = Expressions::evaluate({this->expression_}, batch);
+    auto array = arrayVector->at(0);
 
     double sum = 0;
     if (accum.empty()) {
@@ -34,6 +30,8 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
     } else {
       sum = std::stod(accum);
     }
+
+    // FIXME: Dont think this if/then else against arrow types is necessary
 
     std::shared_ptr<arrow::DataType> colType = array->type();
     if (colType->Equals(arrow::Int32Type())) {
@@ -82,7 +80,7 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
 }
 
 const std::string &Sum::inputColumnName() const {
-  return inputColumnName_;
+  return "";
 }
 
 }

@@ -12,17 +12,14 @@
 #include <normal/core/type/Type.h>
 #include <normal/core/type/DecimalType.h>
 
-#include "gandiva/projector.h"
-#include "gandiva/tree_expr_builder.h"
 #include "gandiva/arrow.h"
-#include "gandiva/configuration.h"
 
 #include "Globals.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
 
-TEST_CASE ("Make" * doctest::skip(false)) {
+TEST_CASE ("Make" * doctest::skip(true)) {
 
   auto column1 = std::vector{"1", "2", "3"};
   auto column2 = std::vector{"4", "5", "6"};

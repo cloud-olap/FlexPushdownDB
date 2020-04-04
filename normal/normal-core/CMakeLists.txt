@@ -33,7 +33,7 @@ add_library(normal-core STATIC
         include/normal/core/expression/Divide.h
         include/normal/core/expression/Column.h
         src/arrow/Arrays.cpp include/normal/core/arrow/Arrays.h
-        include/normal/core/expression/Cast.h include/normal/core/type/Type.h include/normal/core/type/DecimalType.h include/normal/core/type/Types.cpp include/normal/core/type/Types.h include/normal/core/type/Float64Type.h)
+        include/normal/core/expression/Cast.h include/normal/core/type/Type.h include/normal/core/type/DecimalType.h include/normal/core/type/Types.cpp include/normal/core/type/Types.h include/normal/core/type/Float64Type.h include/normal/core/expression/Expressions.cpp include/normal/core/expression/Expressions.h)
 
 
 target_include_directories(normal-core PUBLIC include)
@@ -43,7 +43,6 @@ target_link_libraries(normal-core PRIVATE spdlog::spdlog)
 target_link_libraries(normal-core PUBLIC caf::libcaf_core_shared)
 target_link_libraries(normal-core PUBLIC caf::libcaf_io_shared)
 target_link_libraries(normal-core PUBLIC arrow_static)
-#target_link_libraries(normal-core PUBLIC arrow_dataset_static)
 target_link_libraries(normal-core PUBLIC gandiva_static)
 target_link_libraries(normal-core PUBLIC graphviz_gvc_shared)
 target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)

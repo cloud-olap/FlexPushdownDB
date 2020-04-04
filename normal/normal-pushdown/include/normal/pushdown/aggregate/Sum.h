@@ -12,10 +12,10 @@ namespace normal::pushdown::aggregate {
 class Sum : public AggregationFunction {
 
 private:
-  std::string inputColumnName_;
+  std::shared_ptr<normal::core::expression::Expression> expression_;
 
 public:
-  Sum(std::string columnName, std::string inputColumnName);
+  Sum(std::string columnName, std::shared_ptr<normal::core::expression::Expression> expression);
   ~Sum() override = default;
 
   [[nodiscard]] const std::string &inputColumnName() const;

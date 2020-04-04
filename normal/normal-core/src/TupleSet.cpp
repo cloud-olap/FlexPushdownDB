@@ -14,6 +14,7 @@
 #include <arrow/csv/api.h>            // for TableReader
 #include <gandiva/tree_expr_builder.h>
 #include <gandiva/projector.h>
+#include <normal/core/expression/Expressions.h>
 
 namespace arrow { class MemoryPool; }
 
@@ -121,33 +122,6 @@ std::string TupleSet::visit(const std::function<std::string(std::string, arrow::
   }
 
   return result;
-
-//    std::shared_ptr<arrow::Array> array = batch->column(column);
-//
-//    std::shared_ptr<arrow::DataType> colType = array->type();
-//    if(colType->Equals(arrow::Int64Type())) {
-//      std::shared_ptr<arrow::Int64Array >
-//          typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
-//      auto v = typedArray->Value(row);
-//      return std::to_string(v);
-//    }
-//    else if(colType->Equals(arrow::StringType())){
-//      std::shared_ptr<arrow::StringArray>
-//          typedArray = std::static_pointer_cast<arrow::StringArray>(array);
-//      auto v = typedArray->GetString(row);
-//      return v;
-//    }
-//    else if(colType->Equals(arrow::DoubleType())){
-//      std::shared_ptr<arrow::DoubleArray>
-//          typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
-//      auto v = typedArray->Value(row);
-//      return std::to_string(v);
-//    }
-//    else{
-//      abort();
-//    }
-//
-//    arrowStatus = reader.ReadNext(&batch);
 }
 
 /**
@@ -183,6 +157,7 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
 
   return value;
 }
+
 std::shared_ptr<TupleSet> TupleSet::evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>& expressions) {
 
   // Prepare a schema for the results
@@ -192,39 +167,24 @@ std::shared_ptr<TupleSet> TupleSet::evaluate(const std::vector<std::shared_ptr<n
   }
   auto resultSchema = arrow::schema(resultFields);
 
-  // Create gandiva expressions
-  std::vector<gandiva::ExpressionPtr> gandivaExpressions;
-  gandivaExpressions.reserve(expressions.size());
-  for (const auto &e: expressions) {
-    gandivaExpressions.emplace_back(gandiva::TreeExprBuilder::MakeExpression(e->buildGandivaExpression(table_->schema()),
-                                                                             field(e->name(),
-                                                                                   e->resultType(table_->schema()))));
-  }
-
-  // Build a projector for the expression.
-  std::shared_ptr<gandiva::Projector> projector;
-  auto status = gandiva::Projector::Make(table_->schema(),
-                                         gandivaExpressions,
-                                         gandiva::ConfigurationBuilder::DefaultConfiguration(),
-                                         &projector);
-  assert(status.ok());
-
-  // Evaluate the expressions
+  // Read the table in batches
   std::shared_ptr<arrow::RecordBatch> batch;
   arrow::TableBatchReader reader(*table_);
   reader.set_chunksize(10000);
   auto res = reader.ReadNext(&batch);
-
   std::shared_ptr<TupleSet> resultTuples = nullptr;
   while(res.ok() && batch) {
-    arrow::ArrayVector outputs;
-    status = projector->Evaluate(*batch, arrow::default_memory_pool(), &outputs);
-    assert(status.ok());
-    auto batchResultTuples = normal::core::TupleSet::make(resultSchema, outputs);
+
+    // Evaluate expressions against a batch
+    std::shared_ptr<arrow::ArrayVector> outputs = Expressions::evaluate(expressions, *batch);;
+    auto batchResultTuples = normal::core::TupleSet::make(resultSchema, *outputs);
+
+    // Concatenate the batch result to the full results
     if(resultTuples)
       resultTuples = concatenate(batchResultTuples, resultTuples);
     else
       resultTuples = batchResultTuples;
+
     res = reader.ReadNext(&batch);
   }
 

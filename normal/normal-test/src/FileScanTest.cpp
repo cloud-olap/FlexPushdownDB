@@ -16,17 +16,16 @@
 #include <normal/pushdown/FileScan.h>
 #include <normal/pushdown/aggregate/Sum.h>
 #include "Globals.h"
-#include "normal/core/expression/Expression.h"
 #include "normal/core/expression/Cast.h"
 #include "normal/core/expression/Column.h"
 #include "normal/core/type/Float64Type.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
-
+using namespace normal::pushdown::aggregate;
 
 TEST_CASE ("FileScan -> Sum -> Collate"
-               * doctest::skip(true)) {
+               * doctest::skip(false)) {
 
   char buff[FILENAME_MAX];
   getcwd(buff, FILENAME_MAX);
@@ -38,14 +37,10 @@ TEST_CASE ("FileScan -> Sum -> Collate"
 
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
 
-//  auto sumExpr2 = cast(col("A"), float64Type());
+  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  aggregateFunctions->emplace_back(std::make_shared<Sum>("Sum", cast(col("A"), float64Type())));
 
-  auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("Sum", "A");
-  auto
-      expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  expressions->emplace_back(sumExpr);
-
-  auto aggregate = std::make_shared<normal::pushdown::Aggregate>("aggregate", expressions);
+  auto aggregate = std::make_shared<normal::pushdown::Aggregate>("aggregate", aggregateFunctions);
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");
 
   fileScan->produce(aggregate);
@@ -75,7 +70,7 @@ TEST_CASE ("FileScan -> Sum -> Collate"
 }
 
 TEST_CASE ("Sharded FileScan -> Sum -> Collate"
-               * doctest::skip(true)) {
+               * doctest::skip(false)) {
 
   char buff[FILENAME_MAX];
   getcwd(buff, FILENAME_MAX);
@@ -89,32 +84,23 @@ TEST_CASE ("Sharded FileScan -> Sum -> Collate"
   auto fileScan02 = std::make_shared<normal::pushdown::FileScan>("fileScan02", "data/data-file-sharded/test02.csv");
   auto fileScan03 = std::make_shared<normal::pushdown::FileScan>("fileScan03", "data/data-file-sharded/test03.csv");
 
-  auto sumExpr01 = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", "A");
-  auto
-      expressions01 =
-      std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  expressions01->emplace_back(sumExpr01);
+  auto expressions01 = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  expressions01->emplace_back(std::make_shared<Sum>("sum(A)",
+                                                    cast(col("A"), float64Type())));
   auto aggregate01 = std::make_shared<normal::pushdown::Aggregate>("aggregate01", expressions01);
 
-  auto sumExpr02 = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", "A");
-  auto
-      expressions02 =
-      std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  expressions02->emplace_back(sumExpr02);
+  auto expressions02 = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  expressions02->emplace_back(std::make_shared<Sum>("sum(A)",
+                                                    cast(col("A"), float64Type())));
   auto aggregate02 = std::make_shared<normal::pushdown::Aggregate>("aggregate02", expressions02);
 
-  auto sumExpr03 = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", "A");
-  auto
-      expressions03 =
-      std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  expressions03->emplace_back(sumExpr03);
+  auto expressions03 = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  expressions03->emplace_back(std::make_shared<Sum>("sum(A)",
+                                                    cast(col("A"), float64Type())));
   auto aggregate03 = std::make_shared<normal::pushdown::Aggregate>("aggregate03", expressions03);
 
-  auto reduceSumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", "sum(A)");
-  auto
-      reduceAggregateExpressions =
-      std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  reduceAggregateExpressions->emplace_back(reduceSumExpr);
+  auto reduceAggregateExpressions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  reduceAggregateExpressions->emplace_back(std::make_shared<Sum>("sum(A)", col("sum(A)")));
   auto reduceAggregate = std::make_shared<normal::pushdown::Aggregate>("reduceAggregate", reduceAggregateExpressions);
 
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");

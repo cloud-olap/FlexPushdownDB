@@ -9,6 +9,7 @@
 #include <memory>
 #include <utility>
 #include <normal/core/TupleSet.h>
+#include "gandiva/tree_expr_builder.h"
 
 #include "Expression.h"
 

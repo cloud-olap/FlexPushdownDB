@@ -5,10 +5,16 @@
 #include "AggregateNode.h"
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/aggregate/Sum.h>
+#include <normal/core/expression/Column.h>
+#include <normal/core/type/Float64Type.h>
+#include <normal/core/expression/Cast.h>
+
+using namespace normal::core::type;
+using namespace normal::core::expression;
 
 std::shared_ptr<normal::core::Operator> AggregateNode::toOperator() {
 
-  auto sum = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", "A");
+  auto sum = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", cast(col("A"), float64Type()));
   auto
       expressions02 =
       std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
