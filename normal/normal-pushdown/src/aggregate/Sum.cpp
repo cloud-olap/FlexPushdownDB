@@ -79,8 +79,4 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
   this->result()->put(columnName(), std::to_string(newSum));
 }
 
-const std::string &Sum::inputColumnName() const {
-  return "";
-}
-
 }

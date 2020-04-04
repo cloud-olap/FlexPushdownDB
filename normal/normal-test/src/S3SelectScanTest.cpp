@@ -16,7 +16,13 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/aggregate/Sum.h>
+#include <normal/core/expression/Column.h>
+#include <normal/core/type/Float64Type.h>
+#include <normal/core/expression/Cast.h>
 #include "Globals.h"
+
+using namespace normal::core::type;
+using namespace normal::core::expression;
 
 TEST_CASE ("S3SelectScan -> Sum -> Collate"
 * doctest::skip(true)) {
@@ -40,7 +46,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate"
                                                                        "N/A",
                                                                        client.defaultS3Client());
 
-  auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum", "f5");
+  auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum", cast(col("f5"), float64Type()));
   auto expressions2 =
       std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
   expressions2->push_back(sumExpr);

@@ -18,8 +18,6 @@ public:
   Sum(std::string columnName, std::shared_ptr<normal::core::expression::Expression> expression);
   ~Sum() override = default;
 
-  [[nodiscard]] const std::string &inputColumnName() const;
-
   void apply(std::shared_ptr<normal::core::TupleSet> tuples) override;
 
 };

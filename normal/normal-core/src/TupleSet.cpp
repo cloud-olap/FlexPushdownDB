@@ -3,6 +3,7 @@
 //
 
 #include "normal/core/TupleSet.h"
+#include "Globals.h"
 
 #include <utility>
 #include <sstream>
@@ -12,9 +13,8 @@
 
 #include <arrow/api.h>                 // for Array, NumericArray, StringA...
 #include <arrow/csv/api.h>            // for TableReader
-#include <gandiva/tree_expr_builder.h>
-#include <gandiva/projector.h>
 #include <normal/core/expression/Expressions.h>
+#include <tl/expected.hpp>
 
 namespace arrow { class MemoryPool; }
 
@@ -112,7 +112,7 @@ std::string TupleSet::visit(const std::function<std::string(std::string, arrow::
 
   std::shared_ptr<arrow::RecordBatch> batch;
   arrow::TableBatchReader reader(*table_);
-  reader.set_chunksize(10);
+  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
   arrowStatus = reader.ReadNext(&batch);
 
   std::string result;
@@ -158,29 +158,30 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
   return value;
 }
 
-std::shared_ptr<TupleSet> TupleSet::evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>& expressions) {
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>> &expressions) {
 
   // Prepare a schema for the results
   auto resultFields = std::vector<std::shared_ptr<arrow::Field>>();
   for (const auto &e: expressions) {
-    resultFields.emplace_back(arrow::field(e->name(),e->resultType(table_->schema())));
+    resultFields.emplace_back(arrow::field(e->name(), e->resultType(table_->schema())));
   }
   auto resultSchema = arrow::schema(resultFields);
 
   // Read the table in batches
   std::shared_ptr<arrow::RecordBatch> batch;
   arrow::TableBatchReader reader(*table_);
-  reader.set_chunksize(10000);
+  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
   auto res = reader.ReadNext(&batch);
   std::shared_ptr<TupleSet> resultTuples = nullptr;
-  while(res.ok() && batch) {
+  while (res.ok() && batch) {
 
     // Evaluate expressions against a batch
     std::shared_ptr<arrow::ArrayVector> outputs = Expressions::evaluate(expressions, *batch);;
     auto batchResultTuples = normal::core::TupleSet::make(resultSchema, *outputs);
 
     // Concatenate the batch result to the full results
-    if(resultTuples)
+    if (resultTuples)
       resultTuples = concatenate(batchResultTuples, resultTuples);
     else
       resultTuples = batchResultTuples;

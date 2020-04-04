@@ -16,7 +16,13 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/aggregate/Sum.h>
+#include <normal/core/expression/Cast.h>
+#include <normal/core/expression/Column.h>
+#include <normal/core/type/Float64Type.h>
 #include "Globals.h"
+
+using namespace normal::core::type;
+using namespace normal::core::expression;
 
 /**
  * TODO: Throwing errors when issuing AWS requests, reported as a CRC error but suspect an auth issue. Skip for now.
@@ -44,7 +50,7 @@ TEST_CASE ("CacheTest"
                                                                        client.defaultS3Client());
   auto cache = s3selectScan->getCache();
 
-  auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum", "f5");
+  auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum", cast(col("f5"), float64Type()));
   auto expressions2 =
       std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
   expressions2->push_back(sumExpr);

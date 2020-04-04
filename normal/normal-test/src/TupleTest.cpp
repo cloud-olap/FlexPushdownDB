@@ -70,5 +70,5 @@ TEST_CASE ("Expression" * doctest::skip(false)) {
 
   auto evaluated = tuples->evaluate(expressions);
 
-  SPDLOG_DEBUG("Output:\n{}", evaluated->toString());
+  SPDLOG_DEBUG("Output:\n{}", evaluated.value()->toString());
 }

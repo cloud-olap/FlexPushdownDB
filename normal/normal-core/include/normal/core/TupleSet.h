@@ -11,6 +11,7 @@
 #include <arrow/api.h>
 #include <arrow/csv/api.h>
 #include <normal/core/expression/Expression.h>
+#include <tl/expected.hpp>
 
 namespace arrow { class Table; }
 namespace arrow::csv { class TableReader; }
@@ -47,7 +48,8 @@ public:
   std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
 
-  std::shared_ptr<TupleSet> evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>&);
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+  evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>&);
 
 };
 
