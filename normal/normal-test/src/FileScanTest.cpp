@@ -31,10 +31,6 @@ TEST_CASE ("FileScan -> Sum -> Collate"
 
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
 
-  auto expression = Expression("A").plus(Expression("B"))
-
-
-
   auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("Sum", "A");
   auto
       expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();

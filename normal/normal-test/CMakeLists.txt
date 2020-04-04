@@ -25,7 +25,7 @@ add_executable(normal-test
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
         src/MultiQueryTest.cpp
-        src/SQLTest.cpp src/ExpressionTest.cpp
+        src/SQLTest.cpp
         src/TupleTest.cpp)
 
 link_target(normal-test)
@@ -61,13 +61,6 @@ add_executable(normal-test-sql
         src/SQLTest.cpp)
 
 link_target(normal-test-sql)
-
-add_executable(normal-test-expression
-        src/Globals.h
-        src/MainTest.cpp
-        src/ExpressionTest.cpp)
-
-link_target(normal-test-expression)
 
 add_executable(normal-test-tuple
         src/Globals.h

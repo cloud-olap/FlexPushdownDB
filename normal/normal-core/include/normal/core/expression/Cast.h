@@ -34,7 +34,7 @@ public:
     return value_->name();
   }
 
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override {
+  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) override {
     return resultType_->asArrowType();
   }
 
