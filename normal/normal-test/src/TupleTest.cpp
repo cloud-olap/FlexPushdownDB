@@ -27,9 +27,9 @@ TEST_CASE ("Make" * doctest::skip(false)) {
   auto fieldC = field("c", stringType);
   auto schema = arrow::schema({fieldA, fieldB, fieldC});
 
-  auto arrowColumn1 = Arrays::make<arrow::StringType>(column1);
-  auto arrowColumn2 = Arrays::make<arrow::StringType>(column2);
-  auto arrowColumn3 = Arrays::make<arrow::StringType>(column3);
+  auto arrowColumn1 = Arrays::make<arrow::StringType>(column1).value();
+  auto arrowColumn2 = Arrays::make<arrow::StringType>(column2).value();
+  auto arrowColumn3 = Arrays::make<arrow::StringType>(column3).value();
 
   auto tuples = normal::core::TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
 
@@ -49,9 +49,9 @@ TEST_CASE ("Expression" * doctest::skip(false)) {
   auto fieldC = field("c", stringType);
   auto schema = arrow::schema({fieldA, fieldB, fieldC});
 
-  auto arrowColumn1 = Arrays::make<arrow::StringType>(column1);
-  auto arrowColumn2 = Arrays::make<arrow::StringType>(column2);
-  auto arrowColumn3 = Arrays::make<arrow::StringType>(column3);
+  auto arrowColumn1 = Arrays::make<arrow::StringType>(column1).value();
+  auto arrowColumn2 = Arrays::make<arrow::StringType>(column2).value();
+  auto arrowColumn3 = Arrays::make<arrow::StringType>(column3).value();
 
   auto tuples = normal::core::TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
 
