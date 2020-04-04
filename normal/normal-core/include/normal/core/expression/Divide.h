@@ -22,10 +22,6 @@ public:
          std::unique_ptr<normal::core::expression::Expression<T>> right)
       : left_(std::move(left)), right_(std::move(right)) {}
 
-  T eval() override {
-    return left_->eval() / right_->eval();
-  }
-
 };
 
 template<class T>

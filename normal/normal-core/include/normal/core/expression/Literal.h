@@ -18,7 +18,6 @@ private:
 
 public:
   explicit Literal(T value) : value_(value) {}
-  T eval() { return value_; }
 
 };
 

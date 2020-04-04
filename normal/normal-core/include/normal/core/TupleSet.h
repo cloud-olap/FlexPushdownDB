@@ -10,6 +10,7 @@
 
 #include <arrow/api.h>
 #include <arrow/csv/api.h>
+#include <normal/core/expression/Expression.h>
 
 namespace arrow { class Table; }
 namespace arrow::csv { class TableReader; }
@@ -45,6 +46,8 @@ public:
   void table(const std::shared_ptr<arrow::Table> &table);
   std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
+
+  std::shared_ptr<TupleSet> evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>&);
 
 };
 

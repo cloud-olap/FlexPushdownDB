@@ -5,7 +5,12 @@
 #include <doctest/doctest.h>
 
 #include <normal/core/arrow/Arrays.h>
+#include <normal/core/expression/Expression.h>
+#include <normal/core/expression/Cast.h>
+#include <normal/core/expression/Column.h>
 #include <normal/core/TupleSet.h>
+#include <normal/core/type/Type.h>
+#include <normal/core/type/DecimalType.h>
 
 #include "gandiva/projector.h"
 #include "gandiva/tree_expr_builder.h"
@@ -13,6 +18,9 @@
 #include "gandiva/configuration.h"
 
 #include "Globals.h"
+
+using namespace normal::core::type;
+using namespace normal::core::expression;
 
 TEST_CASE ("Make" * doctest::skip(false)) {
 
@@ -57,40 +65,13 @@ TEST_CASE ("Expression" * doctest::skip(false)) {
 
   SPDLOG_DEBUG("Input:\n{}", tuples->toString());
 
-  auto exprs = std::vector<gandiva::ExpressionPtr>{
-      gandiva::TreeExprBuilder::MakeExpression("castDECIMAL", {fieldA},
-                                               field("a",
-                                                     arrow::decimal(5, 2))),
-      gandiva::TreeExprBuilder::MakeExpression("castDECIMAL", {fieldB},
-                                               field("b",
-                                                     arrow::decimal(5, 2))),
-      gandiva::TreeExprBuilder::MakeExpression("castDECIMAL", {fieldC},
-                                               field("c",
-                                                     arrow::decimal(5, 2)))
+  auto expressions = std::vector<std::shared_ptr<normal::core::expression::Expression>>{
+      cast(col("a"), decimalType(5, 2)),
+      cast(col("b"), decimalType(5, 2)),
+      cast(col("c"), decimalType(5, 2))
   };
 
-  // Build a projector for the expression.
-  std::shared_ptr<gandiva::Projector> projector;
-  auto status = gandiva::Projector::Make(schema,
-                                         exprs,
-                                         gandiva::ConfigurationBuilder::DefaultConfiguration(),
-                                         &projector);
-  assert(status.ok());
+  auto evaluated = tuples->evaluate(expressions);
 
-  std::shared_ptr<arrow::RecordBatch> batch;
-  arrow::TableBatchReader reader(*tuples->table());
-  reader.set_chunksize(10);
-  auto res = reader.ReadNext(&batch);
-
-  arrow::ArrayVector outputs;
-  status = projector->Evaluate(*batch, arrow::default_memory_pool(), &outputs);
-  assert(status.ok());
-
-  auto resultFieldA = field("a", outputs[0]->type());
-  auto resultFieldB = field("b", outputs[1]->type());
-  auto resultFieldC = field("c", outputs[2]->type());
-  auto resultSchema = arrow::schema({resultFieldA, resultFieldB, resultFieldC});
-
-  auto result = normal::core::TupleSet::make(resultSchema, outputs);
-  SPDLOG_DEBUG("Output:\n{}", result->toString());
+  SPDLOG_DEBUG("Output:\n{}", evaluated->toString());
 }

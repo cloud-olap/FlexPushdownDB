@@ -14,20 +14,28 @@
 
 namespace normal::core::expression {
 
-template<typename T>
-class Column : public Expression<T> {
+class Column : public Expression {
 private:
   std::string name_;
 
 public:
   explicit Column(std::string name) : name_(std::move(name)) {}
-  T eval() { return 0; }
 
+  [[nodiscard]] const std::string &name() const override {
+    return name_;
+  }
+
+  gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override {
+    return gandiva::TreeExprBuilder::MakeField(schema->GetFieldByName(name_));
+  }
+
+  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override {
+    return schema->GetFieldByName(name_)->type();
+  }
 };
 
-template<typename T>
-static std::unique_ptr<Expression<T>> col(std::string name){
-  return std::make_unique<Column<T>>(name);
+static std::unique_ptr<Expression> col(std::string name){
+  return std::make_unique<Column>(std::move(name));
 }
 
 }
