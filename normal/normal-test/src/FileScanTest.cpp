@@ -17,6 +17,13 @@
 #include <normal/pushdown/aggregate/Sum.h>
 #include "Globals.h"
 #include "normal/core/expression/Expression.h"
+#include "normal/core/expression/Cast.h"
+#include "normal/core/expression/Column.h"
+#include "normal/core/type/Float64Type.h"
+
+using namespace normal::core::type;
+using namespace normal::core::expression;
+
 
 TEST_CASE ("FileScan -> Sum -> Collate"
                * doctest::skip(true)) {
@@ -30,6 +37,8 @@ TEST_CASE ("FileScan -> Sum -> Collate"
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
+
+//  auto sumExpr2 = cast(col("A"), float64Type());
 
   auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("Sum", "A");
   auto
