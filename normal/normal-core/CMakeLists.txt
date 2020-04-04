@@ -47,7 +47,7 @@ target_link_libraries(normal-core PUBLIC gandiva_static)
 target_link_libraries(normal-core PUBLIC graphviz_gvc_shared)
 target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)
-
+target_link_libraries(normal-core PUBLIC expected)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

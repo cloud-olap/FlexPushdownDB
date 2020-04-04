@@ -39,10 +39,10 @@ ExternalProject_Add(${GRAPHVIZ_BASE}
             CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${GRAPHVIZ_SOURCE_DIR}/configure --enable-perl=no --prefix=${GRAPHVIZ_INSTALL_DIR}
         BUILD_COMMAND
             cd ${GRAPHVIZ_BUILD_DIR} &&
-            make
+            make --silent
         INSTALL_COMMAND
             cd ${GRAPHVIZ_BUILD_DIR} &&
-            make install
+            make --silent install
         BUILD_BYPRODUCTS
         ${GRAPHVIZ_CORE_SHARED_LIBS}
         ${GRAPHVIZ_CORE_STATIC_LIBS}

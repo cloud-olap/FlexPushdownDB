@@ -74,7 +74,7 @@ target_link_libraries(arrow_shared INTERFACE ${ARROW_RE2_STATIC_LIB})
 add_dependencies(arrow_shared ${ARROW_BASE})
 
 # Gandiva needs LLVM version 7
-find_package(LLVM 7 REQUIRED)
+#find_package(LLVM 7 REQUIRED)
 
 add_library(gandiva_static STATIC IMPORTED)
 set_target_properties(gandiva_static PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_STATIC_LIB})
