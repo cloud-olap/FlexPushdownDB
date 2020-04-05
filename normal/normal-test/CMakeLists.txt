@@ -11,6 +11,7 @@ function(link_target target)
     target_link_libraries(${target} PRIVATE antlr4_static)
     target_link_libraries(${target} PRIVATE arrow_static)
     target_link_libraries(${target} PRIVATE gandiva_static)
+    target_link_libraries(${target} PRIVATE LLVM::fs)
 endfunction()
 
 
