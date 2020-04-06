@@ -38,7 +38,7 @@ add_library(normal-core STATIC
 
 target_include_directories(normal-core PUBLIC include)
 
-target_link_libraries(normal-core PRIVATE LLVM::fs)
+target_link_libraries(normal-core PRIVATE LLVM-filesystem)
 target_link_libraries(normal-core PRIVATE spdlog::spdlog)
 target_link_libraries(normal-core PUBLIC caf::libcaf_core_shared)
 target_link_libraries(normal-core PUBLIC caf::libcaf_io_shared)
