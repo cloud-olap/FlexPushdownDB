@@ -14,6 +14,20 @@ namespace arrow { class StringArray; }
 
 namespace normal::test {}
 
+/**
+ * Returns the name of the current test case
+ *
+ * @return
+ */
+const char* getCurrentTestName() { return doctest::detail::g_cs->currentTest->m_name; }
+
+/**
+ * Tests entry point
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv) {
 
   spdlog::set_level(spdlog::level::debug);
@@ -22,7 +36,6 @@ int main(int argc, char **argv) {
   doctest::Context context;
 
   context.applyCommandLine(argc, argv);
-
   int rc = context.run();
 
   if (context.shouldExit()) // important - query flags (and --exit) rely on the user doing this

@@ -8,6 +8,9 @@
 #include <connector/Connector.h>
 
 class LocalFileSystemConnector : public Connector {
+
+private:
+
 public:
   explicit LocalFileSystemConnector(const std::string &Name);
   ~LocalFileSystemConnector() override = default;

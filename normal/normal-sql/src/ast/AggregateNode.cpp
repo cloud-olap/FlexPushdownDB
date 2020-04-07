@@ -9,17 +9,28 @@
 #include <normal/core/type/Float64Type.h>
 #include <normal/core/expression/Cast.h>
 
+#include <utility>
+
 using namespace normal::core::type;
 using namespace normal::core::expression;
 
+AggregateNode::AggregateNode(std::vector<std::shared_ptr<AggregateFunction>> Functions)
+    : functions_(std::move(Functions)) {}
+
+const std::vector<std::shared_ptr<AggregateFunction>> &AggregateNode::functions() const {
+  return functions_;
+}
+
 std::shared_ptr<normal::core::Operator> AggregateNode::toOperator() {
 
-  auto sum = std::make_shared<normal::pushdown::aggregate::Sum>("sum(A)", cast(col("A"), float64Type()));
-  auto
-      expressions02 =
-      std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  expressions02->emplace_back(sum);
-  auto aggregate02 = std::make_shared<normal::pushdown::Aggregate>("sum(A)", expressions02);
+  auto expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
 
-  return aggregate02;
+  for (const auto &function: functions_) {
+    expressions->push_back(function->toExecutorFunction());
+  }
+
+  // FIXME: Defaulting to name -> agg
+  auto aggregateExecutor = std::make_shared<normal::pushdown::Aggregate>("agg", expressions);
+
+  return aggregateExecutor;
 }

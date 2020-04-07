@@ -6,6 +6,8 @@
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_EXPRESSION_CAST_H
 
 #include "Expression.h"
+
+#include <arrow/api.h>
 #include "normal/core/type/Type.h"
 
 #include <memory>
@@ -21,17 +23,13 @@ namespace normal::core::expression {
 class Cast : public normal::core::expression::Expression {
 
 private:
-  std::unique_ptr<normal::core::expression::Expression> value_;
-  std::unique_ptr<normal::core::type::Type> resultType_;
+  std::shared_ptr<normal::core::expression::Expression> value_;
+  std::shared_ptr<normal::core::type::Type> resultType_;
 
 public:
-  Cast(std::unique_ptr<normal::core::expression::Expression> value,
-      std::unique_ptr<normal::core::type::Type> resultType)
+  Cast(std::shared_ptr<normal::core::expression::Expression> value,
+      std::shared_ptr<normal::core::type::Type> resultType)
       : value_(std::move(value)), resultType_(std::move(resultType)) {
-  }
-
-  [[nodiscard]] const std::string &name() const override {
-    return value_->name();
   }
 
   std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) override {
@@ -49,10 +47,10 @@ public:
 
 };
 
-static std::unique_ptr<normal::core::expression::Expression> cast(
-    std::unique_ptr<normal::core::expression::Expression> value,
-    std::unique_ptr<normal::core::type::Type> type) {
-  return std::make_unique<Cast>(std::move(value), std::move(type));
+static std::shared_ptr<normal::core::expression::Expression> cast(
+    std::shared_ptr<normal::core::expression::Expression> value,
+    std::shared_ptr<normal::core::type::Type> type) {
+  return std::make_shared<Cast>(std::move(value), std::move(type));
 }
 
 }

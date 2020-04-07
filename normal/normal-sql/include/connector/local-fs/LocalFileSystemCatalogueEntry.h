@@ -7,6 +7,8 @@
 
 #include <string>
 #include <connector/CatalogueEntry.h>
+#include <memory>
+#include "logical/ScanNode.h"
 
 class LocalFileSystemCatalogueEntry: public CatalogueEntry {
 
@@ -15,8 +17,10 @@ private:
 public:
   const std::string &getPath() const;
 public:
-  LocalFileSystemCatalogueEntry(const std::string &Alias, std::string Path);
+  LocalFileSystemCatalogueEntry(const std::string &Alias, std::string Path, std::shared_ptr<Catalogue>);
   ~LocalFileSystemCatalogueEntry() override = default;
+
+  std::shared_ptr<ScanNode> toLogicalOperator() override ;
 
 };
 

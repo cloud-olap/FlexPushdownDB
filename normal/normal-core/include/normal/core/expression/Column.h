@@ -8,7 +8,7 @@
 
 #include <memory>
 #include <utility>
-#include <normal/core/TupleSet.h>
+#include <arrow/api.h>
 #include "gandiva/tree_expr_builder.h"
 
 #include "Expression.h"
@@ -17,26 +17,26 @@ namespace normal::core::expression {
 
 class Column : public Expression {
 private:
-  std::string name_;
+  std::string columnName_;
 
 public:
-  explicit Column(std::string name) : name_(std::move(name)) {}
+  explicit Column(std::string columnName) : columnName_(std::move(columnName)) {}
 
-  [[nodiscard]] const std::string &name() const override {
-    return name_;
+  [[nodiscard]] const std::string &columnName() const {
+    return columnName_;
   }
 
   gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override {
-    return gandiva::TreeExprBuilder::MakeField(schema->GetFieldByName(name_));
+    return gandiva::TreeExprBuilder::MakeField(schema->GetFieldByName(columnName_));
   }
 
   std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override {
-    return schema->GetFieldByName(name_)->type();
+    return schema->GetFieldByName(columnName_)->type();
   }
 };
 
-static std::unique_ptr<Expression> col(std::string name){
-  return std::make_unique<Column>(std::move(name));
+static std::shared_ptr<Expression> col(std::string columnName){
+  return std::make_shared<Column>(std::move(columnName));
 }
 
 }

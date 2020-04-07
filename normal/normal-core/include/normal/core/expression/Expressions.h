@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_EXPRESSION_EXPRESSIONS_H
 
 #include <memory>
-#include <arrow/array.h>
+#include <arrow/api.h>
 #include <gandiva/tree_expr_builder.h>
 #include <gandiva/configuration.h>
 #include <gandiva/projector.h>

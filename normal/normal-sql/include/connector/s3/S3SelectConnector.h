@@ -6,14 +6,18 @@
 #define NORMAL_NORMAL_SQL_SRC_S3SELECTCONNECTOR_H
 
 #include "connector/Connector.h"
+#include "normal/pushdown/AWSClient.h"
 
 class S3SelectConnector : public Connector {
 
 private:
+  std::shared_ptr<normal::pushdown::AWSClient> awsClient_;
 
 public:
   explicit S3SelectConnector(const std::string &name);
   ~S3SelectConnector() override = default;
+
+  const std::shared_ptr<normal::pushdown::AWSClient> &getAwsClient() const;
 
 };
 

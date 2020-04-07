@@ -6,13 +6,14 @@
 #define NORMAL_NORMAL_SQL_SRC_AST_SCANNODE_H
 
 #include <string>
-#include <connector/Catalogue.h>
-#include "ASTNode.h"
-class ScanNode : public ASTNode {
-public:
-  std::shared_ptr<LocalFileSystemCatalogueEntry> tableName;
+#include "../../src/ast/ASTNode.h"
 
-  std::shared_ptr<normal::core::Operator> toOperator() override;
+class ScanNode : public ASTNode {
+
+public:
+  virtual ~ScanNode() = default;
+
+  virtual std::shared_ptr<normal::core::Operator> toOperator() = 0;
 };
 
 #endif //NORMAL_NORMAL_SQL_SRC_AST_SCANNODE_H

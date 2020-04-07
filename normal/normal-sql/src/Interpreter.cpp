@@ -28,17 +28,25 @@ void Interpreter::parse(const std::string &sql) {
   normal::sql::NormalSQLParser parser(&tokens);
 
   antlr4::tree::ParseTree *tree = parser.parse();
-  Listener listener(this->catalogues_, this->operatorManager_);
-  antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
+  SPDLOG_DEBUG("Parse Tree:\n{}", tree->toStringTree(true));
 
-  for(const auto& astNode: listener.symbolTable.table){
-    operatorManager_->put(astNode.second->toOperator());
+  Listener listener(this->catalogues_, this->operatorManager_);
+//  antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
+  auto sqlStatements = tree->accept(&listener);
+
+  auto typedSqlStatements = sqlStatements.as<std::shared_ptr<std::vector<std::shared_ptr<std::vector<std::shared_ptr<ASTNode>>>>>>();
+
+  // TODO: Perhaps support multiple statements in future
+  auto firstSQLStatement = typedSqlStatements->at(0);
+
+  for(const auto& astNode: *firstSQLStatement){
+    operatorManager_->put(astNode->toOperator());
   }
 
-  for(const auto& astNode: listener.symbolTable.table){
-    auto op = operatorManager_->getOperator(astNode.second->name);
-    if(astNode.second->consumer != nullptr){
-      auto consumerOp = operatorManager_->getOperator(astNode.second->consumer->name);
+  for(const auto& astNode: *firstSQLStatement){
+    auto op = operatorManager_->getOperator(astNode->name);
+    if(astNode->consumer != nullptr){
+      auto consumerOp = operatorManager_->getOperator(astNode->consumer->name);
       op->produce(consumerOp);
       consumerOp->consume(op);
     }

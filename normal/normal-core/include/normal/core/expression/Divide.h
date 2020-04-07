@@ -6,29 +6,34 @@
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_EXPRESSION_DIVIDE_H
 
 #include "Expression.h"
-
+#include <arrow/api.h>
 #include <memory>
 
 namespace normal::core::expression {
 
-template<class T>
-class Divide : public normal::core::expression::Expression<T> {
+class Divide : public normal::core::expression::Expression {
 private:
-  std::unique_ptr<normal::core::expression::Expression<T>> left_;
-  std::unique_ptr<normal::core::expression::Expression<T>> right_;
+  std::shared_ptr<normal::core::expression::Expression> left_;
+  std::shared_ptr<normal::core::expression::Expression> right_;
 
 public:
-  Divide(std::unique_ptr<normal::core::expression::Expression<T>> left,
-         std::unique_ptr<normal::core::expression::Expression<T>> right)
+  Divide(std::shared_ptr<normal::core::expression::Expression> left,
+         std::shared_ptr<normal::core::expression::Expression> right)
       : left_(std::move(left)), right_(std::move(right)) {}
 
+  gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> Ptr) override {
+    return gandiva::NodePtr();
+  }
+
+  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> Ptr) override {
+    return std::shared_ptr<arrow::DataType>();
+  }
 };
 
-template<class T>
-static std::unique_ptr<normal::core::expression::Expression<T>>
-divide(std::unique_ptr<normal::core::expression::Expression<T>> left,
-       std::unique_ptr<normal::core::expression::Expression<T>> right) {
-  return std::make_unique<Divide<T>>(std::move(left), std::move(right));
+static std::shared_ptr<normal::core::expression::Expression>
+divide(std::shared_ptr<normal::core::expression::Expression> left,
+       std::shared_ptr<normal::core::expression::Expression> right) {
+  return std::make_shared<Divide>(std::move(left), std::move(right));
 }
 
 }

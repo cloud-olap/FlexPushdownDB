@@ -7,6 +7,7 @@
 
 #include "Expression.h"
 
+#include <arrow/api.h>
 #include <memory>
 
 namespace normal::core::expression {
@@ -16,26 +17,32 @@ namespace normal::core::expression {
  *
  * @tparam T
  */
-template<typename T>
-class Add : public normal::core::expression::Expression<T> {
+
+class Add : public normal::core::expression::Expression {
 
 private:
-  std::unique_ptr<normal::core::expression::Expression<T>> left_;
-  std::unique_ptr<normal::core::expression::Expression<T>> right_;
+  std::shared_ptr<normal::core::expression::Expression> left_;
+  std::shared_ptr<normal::core::expression::Expression> right_;
 
 public:
-  Add(std::unique_ptr<normal::core::expression::Expression<T>> left,
-      std::unique_ptr<normal::core::expression::Expression<T>> right)
+  Add(std::shared_ptr<normal::core::expression::Expression> left,
+      std::shared_ptr<normal::core::expression::Expression> right)
       : left_(std::move(left)), right_(std::move(right)) {
   }
 
+  gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> Ptr) override {
+    return gandiva::NodePtr();
+  }
+
+  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> Ptr) override {
+    return std::shared_ptr<arrow::DataType>();
+  }
 };
 
-template<typename T>
-static std::unique_ptr<normal::core::expression::Expression<T>> plus(
-    std::unique_ptr<normal::core::expression::Expression<T>> left,
-    std::unique_ptr<normal::core::expression::Expression<T>> right) {
-  return std::make_unique<Add<T>>(std::move(left), std::move(right));
+static std::shared_ptr<normal::core::expression::Expression> plus(
+    std::shared_ptr<normal::core::expression::Expression> left,
+    std::shared_ptr<normal::core::expression::Expression> right) {
+  return std::make_shared<Add>(std::move(left), std::move(right));
 }
 
 }

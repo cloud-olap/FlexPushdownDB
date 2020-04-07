@@ -6,13 +6,13 @@
 #define NORMAL_NORMAL_CORE_SRC_EXPRESSION_LITERAL_H
 
 #include <memory>
-
+#include <arrow/api.h>
 #include "Expression.h"
 
 namespace normal::core::expression {
 
-template<class T>
-class Literal : public Expression<T> {
+template <typename T>
+class Literal : public Expression {
 private:
   T value_;
 
@@ -21,9 +21,9 @@ public:
 
 };
 
-template<class T>
-static std::unique_ptr<Expression<T>> lit(T value){
-  return std::make_unique<Literal<T>>(value);
+template <typename T>
+static std::shared_ptr<Expression> lit(T value){
+  return std::make_shared<Literal<T>>(value);
 }
 
 }

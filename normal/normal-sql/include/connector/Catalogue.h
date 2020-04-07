@@ -9,16 +9,21 @@
 #include <unordered_map>
 #include <memory>
 
-#include "CatalogueEntry.h"
+#include "connector/Connector.h"
+#include "connector/CatalogueEntry.h"
+
+class CatalogueEntry;
 
 class Catalogue {
 
 private:
   std::string name_;
   std::unordered_map<std::string, std::shared_ptr<CatalogueEntry>> entries_;
-
+  std::shared_ptr<Connector> connector_;
 public:
-  explicit Catalogue(std::string Name);
+  const std::shared_ptr<Connector> &getConnector() const;
+public:
+  explicit Catalogue(std::string Name, std::shared_ptr<Connector> Connector);
   virtual ~Catalogue() = default;
 
   [[nodiscard]] const std::string &getName() const;

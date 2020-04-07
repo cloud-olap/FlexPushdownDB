@@ -8,16 +8,20 @@
 #include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/core/OperatorManager.h>
 #include <connector/Catalogue.h>
+#include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
+#include <normal/sql/NormalSQLBaseVisitor.h>
 #include "ast/Symbols.h"
+#include "logical/ScanNode.h"
+#include "normal/core/expression/Column.h"
 
-class Listener : public normal::sql::NormalSQLBaseListener {
+using namespace normal::core::type;
+using namespace normal::core::expression;
+
+class Listener : public normal::sql::NormalSQLBaseVisitor {
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<Catalogue>>> catalogues_;
   std::shared_ptr<normal::core::OperatorManager> operatorManager_;
-
-protected:
-  void exitSelect_core(normal::sql::NormalSQLParser::Select_coreContext *Context) override;
 
 public:
   explicit Listener(
@@ -26,6 +30,19 @@ public:
   ~Listener() override = default;
 
   Symbols symbolTable;
+
+  antlrcpp::Any visitColumn_name(normal::sql::NormalSQLParser::Column_nameContext *Context) override;
+  antlrcpp::Any visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context) override;
+  antlrcpp::Any visitExpr(normal::sql::NormalSQLParser::ExprContext *ctx) override;
+  antlrcpp::Any visitSelect_core(normal::sql::NormalSQLParser::Select_coreContext *ctx) override;
+  antlrcpp::Any visitTable_or_subquery(normal::sql::NormalSQLParser::Table_or_subqueryContext *ctx) override;
+  antlrcpp::Any visitResult_column(normal::sql::NormalSQLParser::Result_columnContext *ctx) override;
+  antlrcpp::Any visitParse(normal::sql::NormalSQLParser::ParseContext *ctx) override;
+  antlrcpp::Any visitSql_stmt_list(normal::sql::NormalSQLParser::Sql_stmt_listContext *ctx) override;
+  antlrcpp::Any visitSql_stmt(normal::sql::NormalSQLParser::Sql_stmtContext *ctx) override;
+  antlrcpp::Any visitFactored_select_stmt(normal::sql::NormalSQLParser::Factored_select_stmtContext *ctx) override;
+  antlrcpp::Any visitFunction_name(normal::sql::NormalSQLParser::Function_nameContext *ctx) override;
+
 };
 
 #endif //NORMAL_NORMAL_SQL_SRC_LISTENER_H

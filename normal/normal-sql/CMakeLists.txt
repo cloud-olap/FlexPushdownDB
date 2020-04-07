@@ -22,15 +22,15 @@ add_library(normal-sql STATIC
         src/connector/s3/S3SelectCatalogueEntry.cpp include/connector/s3/S3SelectCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemCatalogueEntry.cpp include/connector/local-fs/LocalFileSystemCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemConnector.cpp include/connector/local-fs/LocalFileSystemConnector.h
-        src/ast/ScanNode.cpp src/ast/ScanNode.h src/ast/Symbols.cpp src/ast/Symbols.h src/ast/ASTNode.cpp src/ast/ASTNode.h src/ast/CollateNode.cpp src/ast/CollateNode.h src/ast/AggregateNode.cpp src/ast/AggregateNode.h src/ast/AggregateExpression.cpp src/ast/AggregateExpression.h src/ast/AggregateFunction.cpp src/ast/AggregateFunction.h)
+        src/ast/ScanNode.cpp include/logical/ScanNode.h src/ast/Symbols.cpp src/ast/Symbols.h src/ast/ASTNode.cpp src/ast/ASTNode.h src/ast/CollateNode.cpp src/ast/CollateNode.h src/ast/AggregateNode.cpp src/ast/AggregateNode.h src/ast/AggregateExpression.cpp src/ast/AggregateExpression.h src/ast/AggregateFunction.cpp src/ast/AggregateFunction.h src/ast/SumASTFunction.cpp src/ast/SumASTFunction.h src/ast/FileScanLogicalOperator.cpp src/ast/FileScanLogicalOperator.h src/ast/S3SelectScanLogicalOperator.cpp src/ast/S3SelectScanLogicalOperator.h)
 
 target_include_directories(normal-sql PUBLIC include)
 target_include_directories(normal-sql PUBLIC gen-src)
 
-target_link_libraries(normal-sql PRIVATE normal-core)
-target_link_libraries(normal-sql PRIVATE normal-pushdown)
+target_link_libraries(normal-sql PUBLIC normal-core)
+target_link_libraries(normal-sql PUBLIC normal-pushdown)
 target_link_libraries(normal-sql PRIVATE spdlog::spdlog)
-target_link_libraries(normal-sql PUBLIC antlr4_static)
+target_link_libraries(normal-sql PRIVATE antlr4_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

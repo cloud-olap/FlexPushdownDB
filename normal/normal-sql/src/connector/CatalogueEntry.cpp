@@ -5,7 +5,14 @@
 #include "connector/CatalogueEntry.h"
 
 #include <utility>
-CatalogueEntry::CatalogueEntry(std::string Alias) : alias_(std::move(Alias)) {}
+
+CatalogueEntry::CatalogueEntry(std::string Alias,
+                               std::shared_ptr<Catalogue> Catalogue) : alias_(std::move(Alias)), catalogue_(Catalogue) {}
+
 const std::string &CatalogueEntry::getAlias() const {
   return alias_;
+}
+
+const std::shared_ptr<Catalogue> &CatalogueEntry::getCatalogue() const {
+  return catalogue_;
 }

@@ -7,7 +7,8 @@
 #include <utility>
 #include <sstream>
 
-Catalogue::Catalogue(std::string Name) : name_(std::move(Name)) {}
+Catalogue::Catalogue(std::string Name, std::shared_ptr<Connector> Connector)
+    : name_(std::move(Name)), connector_(Connector) {}
 
 const std::string &Catalogue::getName() const {
   return name_;
@@ -27,4 +28,8 @@ std::string Catalogue::toString() {
     ss << entry.second->getAlias() << std::endl;
   }
   return ss.str();
+}
+
+const std::shared_ptr<Connector> &Catalogue::getConnector() const {
+  return connector_;
 }

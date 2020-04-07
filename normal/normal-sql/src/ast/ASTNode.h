@@ -9,6 +9,7 @@
 
 class ASTNode {
 public:
+  virtual ~ASTNode() = default;
   std::string name;
   std::shared_ptr<ASTNode> consumer;
   virtual std::shared_ptr<normal::core::Operator> toOperator() = 0;

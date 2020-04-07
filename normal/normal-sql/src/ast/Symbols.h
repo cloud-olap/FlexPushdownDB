@@ -11,7 +11,7 @@
 #include "ASTNode.h"
 class Symbols {
 public:
-  std::unordered_map <size_t, std::shared_ptr<ASTNode>> table;
+  std::unordered_map <std::string, std::shared_ptr<ASTNode>> table;
 };
 
 #endif //NORMAL_NORMAL_SQL_SRC_AST_SYMBOLS_H
