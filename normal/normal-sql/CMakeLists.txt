@@ -14,7 +14,7 @@ add_library(normal-sql STATIC
         gen-src/normal/sql/NormalSQLVisitor.cpp gen-src/normal/sql/NormalSQLVisitor.h
         src/Globals.h
         src/Interpreter.cpp include/Interpreter.h
-        src/Listener.cpp src/Listener.h
+        src/visitor/Visitor.cpp src/visitor/Visitor.h
         src/connector/Connector.cpp include/connector/Connector.h
         src/connector/CatalogueEntry.cpp include/connector/CatalogueEntry.h
         src/connector/Catalogue.cpp include/connector/Catalogue.h
@@ -22,7 +22,7 @@ add_library(normal-sql STATIC
         src/connector/s3/S3SelectCatalogueEntry.cpp include/connector/s3/S3SelectCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemCatalogueEntry.cpp include/connector/local-fs/LocalFileSystemCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemConnector.cpp include/connector/local-fs/LocalFileSystemConnector.h
-        src/ast/ScanNode.cpp include/logical/ScanNode.h src/ast/Symbols.cpp src/ast/Symbols.h src/ast/ASTNode.cpp src/ast/ASTNode.h src/ast/CollateNode.cpp src/ast/CollateNode.h src/ast/AggregateNode.cpp src/ast/AggregateNode.h src/ast/AggregateExpression.cpp src/ast/AggregateExpression.h src/ast/AggregateFunction.cpp src/ast/AggregateFunction.h src/ast/SumASTFunction.cpp src/ast/SumASTFunction.h src/ast/FileScanLogicalOperator.cpp src/ast/FileScanLogicalOperator.h src/ast/S3SelectScanLogicalOperator.cpp src/ast/S3SelectScanLogicalOperator.h)
+        src/logical/ScanLogicalOperator.cpp include/logical/ScanLogicalOperator.h src/logical/LogicalOperator.cpp include/logical/LogicalOperator.h src/logical/CollateLogicalOperator.cpp include/logical/CollateLogicalOperator.h src/logical/AggregateLogicalOperator.cpp include/logical/AggregateLogicalOperator.h src/logical/AggregateLogicalFunction.cpp include/logical/AggregateLogicalFunction.h src/logical/SumLogicalFunction.cpp include/logical/SumLogicalFunction.h src/logical/FileScanLogicalOperator.cpp include/logical/FileScanLogicalOperator.h src/logical/S3SelectScanLogicalOperator.cpp include/logical/S3SelectScanLogicalOperator.h)
 
 target_include_directories(normal-sql PUBLIC include)
 target_include_directories(normal-sql PUBLIC gen-src)

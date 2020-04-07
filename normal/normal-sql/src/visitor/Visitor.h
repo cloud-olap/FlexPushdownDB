@@ -2,34 +2,31 @@
 // Created by matt on 26/3/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_LISTENER_H
-#define NORMAL_NORMAL_SQL_SRC_LISTENER_H
+#ifndef NORMAL_NORMAL_SQL_SRC_VISITOR_H
+#define NORMAL_NORMAL_SQL_SRC_VISITOR_H
 
 #include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/core/OperatorManager.h>
 #include <connector/Catalogue.h>
 #include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
 #include <normal/sql/NormalSQLBaseVisitor.h>
-#include "ast/Symbols.h"
-#include "logical/ScanNode.h"
+#include "logical/ScanLogicalOperator.h"
 #include "normal/core/expression/Column.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
 
-class Listener : public normal::sql::NormalSQLBaseVisitor {
+class Visitor : public normal::sql::NormalSQLBaseVisitor {
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<Catalogue>>> catalogues_;
   std::shared_ptr<normal::core::OperatorManager> operatorManager_;
 
 public:
-  explicit Listener(
+  explicit Visitor(
       std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<Catalogue>>> catalogues,
       std::shared_ptr<normal::core::OperatorManager> OperatorManager);
-  ~Listener() override = default;
-
-  Symbols symbolTable;
+  ~Visitor() override = default;
 
   antlrcpp::Any visitColumn_name(normal::sql::NormalSQLParser::Column_nameContext *Context) override;
   antlrcpp::Any visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context) override;
@@ -45,4 +42,4 @@ public:
 
 };
 
-#endif //NORMAL_NORMAL_SQL_SRC_LISTENER_H
+#endif //NORMAL_NORMAL_SQL_SRC_VISITOR_H

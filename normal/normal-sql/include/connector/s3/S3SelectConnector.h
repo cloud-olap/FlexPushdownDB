@@ -17,7 +17,7 @@ public:
   explicit S3SelectConnector(const std::string &name);
   ~S3SelectConnector() override = default;
 
-  const std::shared_ptr<normal::pushdown::AWSClient> &getAwsClient() const;
+  [[nodiscard]] const std::shared_ptr<normal::pushdown::AWSClient> &getAwsClient() const;
 
 };
 

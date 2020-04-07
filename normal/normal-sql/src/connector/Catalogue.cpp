@@ -8,17 +8,17 @@
 #include <sstream>
 
 Catalogue::Catalogue(std::string Name, std::shared_ptr<Connector> Connector)
-    : name_(std::move(Name)), connector_(Connector) {}
+    : name_(std::move(Name)), connector_(std::move(Connector)) {}
 
 const std::string &Catalogue::getName() const {
   return name_;
 }
 
-void Catalogue::put(std::shared_ptr<CatalogueEntry> entry) {
+void Catalogue::put(const std::shared_ptr<CatalogueEntry>& entry) {
   this->entries_.emplace(entry->getAlias(), entry);
 }
 
-std::shared_ptr<CatalogueEntry> Catalogue::getEntry(std::string alias) {
+std::shared_ptr<CatalogueEntry> Catalogue::getEntry(const std::string& alias) {
   return this->entries_.find(alias)->second;
 }
 

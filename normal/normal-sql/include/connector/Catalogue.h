@@ -27,8 +27,8 @@ public:
   virtual ~Catalogue() = default;
 
   [[nodiscard]] const std::string &getName() const;
-  void put(std::shared_ptr<CatalogueEntry> entry);
-  std::shared_ptr<CatalogueEntry> getEntry(std::string alias);
+  void put(const std::shared_ptr<CatalogueEntry>& entry);
+  std::shared_ptr<CatalogueEntry> getEntry(const std::string& alias);
   std::string toString();
 };
 

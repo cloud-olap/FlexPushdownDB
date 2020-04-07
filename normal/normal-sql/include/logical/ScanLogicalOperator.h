@@ -6,14 +6,14 @@
 #define NORMAL_NORMAL_SQL_SRC_AST_SCANNODE_H
 
 #include <string>
-#include "../../src/ast/ASTNode.h"
+#include "logical/LogicalOperator.h"
 
-class ScanNode : public ASTNode {
+class ScanLogicalOperator : public LogicalOperator {
 
 public:
-  virtual ~ScanNode() = default;
+  ~ScanLogicalOperator() override = default;
 
-  virtual std::shared_ptr<normal::core::Operator> toOperator() = 0;
+  std::shared_ptr<normal::core::Operator> toOperator() override = 0;
 };
 
 #endif //NORMAL_NORMAL_SQL_SRC_AST_SCANNODE_H

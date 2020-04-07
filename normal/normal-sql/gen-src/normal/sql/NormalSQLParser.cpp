@@ -7385,7 +7385,7 @@ bool NormalSQLParser::sempred(RuleContext *context, size_t ruleIndex, size_t pre
   return true;
 }
 
-bool NormalSQLParser::exprSempred(ExprContext *_localctx, size_t predicateIndex) {
+bool NormalSQLParser::exprSempred(ExprContext */*_localctx*/, size_t predicateIndex) {
   switch (predicateIndex) {
     case 0: return precpred(_ctx, 20);
     case 1: return precpred(_ctx, 19);

@@ -2,11 +2,13 @@
 // Created by matt on 7/4/20.
 //
 
-#include <normal/pushdown/FileScan.h>
-#include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
-#include "FileScanLogicalOperator.h"
+#include "logical/FileScanLogicalOperator.h"
 
-FileScanLogicalOperator::FileScanLogicalOperator(const std::string &path) : path_(path) {}
+#include <normal/pushdown/FileScan.h>
+
+#include <utility>
+
+FileScanLogicalOperator::FileScanLogicalOperator(std::string path) : path_(std::move(path)) {}
 
 const std::string &FileScanLogicalOperator::path() const {
   return path_;

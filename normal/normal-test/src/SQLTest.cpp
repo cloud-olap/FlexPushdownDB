@@ -31,15 +31,20 @@ void configureS3Connector(Interpreter &i) {
   i.put(cat);
 }
 
-void writeExecutionGraph(Interpreter &i) {
+std::experimental::filesystem::path getTestScratchDirectory() {
   auto testName = getCurrentTestName();
   auto currentPath = std::experimental::filesystem::current_path();
   auto baseTestScratchDir = currentPath.append("tests");
   std::experimental::filesystem::create_directories(baseTestScratchDir);
   auto testScratchDir = baseTestScratchDir.append(testName);
   std::experimental::filesystem::create_directories(testScratchDir);
-  auto graphFile = testScratchDir.append("execution-plan.svg");
-  i.getOperatorManager()->write_graph(graphFile);
+  return testScratchDir;
+}
+
+void writeLogicalExecutionPlan(Interpreter &i) {
+  auto testScratchDir = getTestScratchDirectory();
+  auto planFile = testScratchDir.append("logical-execution-plan.svg");
+  i.getOperatorManager()->write_graph(planFile);
 }
 
 auto execute(Interpreter &i) {
@@ -63,7 +68,7 @@ TEST_CASE ("sql-select-sum_a-from-s3"
   Interpreter i;
   configureS3Connector(i);
   i.parse("select * from s3_select.customer");
-  writeExecutionGraph(i);
+  writeLogicalExecutionPlan(i);
 //  auto tuples = execute(i);
 
   i.getOperatorManager()->stop();
@@ -76,8 +81,8 @@ TEST_CASE ("sql-select-sum_a-from-local"
 
   configureLocalConnector(i);
   i.parse("select sum(A) from local_fs.test");
-  writeExecutionGraph(i);
-//  auto tuples = execute(i);
+  writeLogicalExecutionPlan(i);
+  auto tuples = execute(i);
 
   i.getOperatorManager()->stop();
 }
@@ -89,11 +94,11 @@ TEST_CASE ("sql-select-all-from-local"
 
   configureLocalConnector(i);
   i.parse("select * from local_fs.test");
-  writeExecutionGraph(i);
-//  auto tuples = execute(i);
-//
-//      CHECK(tuples->numRows() == 3);
-//      CHECK(tuples->numColumns() == 3);
+  writeLogicalExecutionPlan(i);
+  auto tuples = execute(i);
+
+      CHECK(tuples->numRows() == 3);
+      CHECK(tuples->numColumns() == 3);
 
   i.getOperatorManager()->stop();
 }

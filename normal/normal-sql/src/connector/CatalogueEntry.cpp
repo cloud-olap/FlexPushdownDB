@@ -7,7 +7,7 @@
 #include <utility>
 
 CatalogueEntry::CatalogueEntry(std::string Alias,
-                               std::shared_ptr<Catalogue> Catalogue) : alias_(std::move(Alias)), catalogue_(Catalogue) {}
+                               std::shared_ptr<Catalogue> Catalogue) : alias_(std::move(Alias)), catalogue_(std::move(Catalogue)) {}
 
 const std::string &CatalogueEntry::getAlias() const {
   return alias_;

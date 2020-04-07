@@ -17,8 +17,9 @@
  */
 class Expressions {
 public:
+
   /**
-   * Evaluats the given expressions against an Arrow record batch
+   * Evaluates the given expressions against an Arrow record batch
    * @param expressions
    * @param recordBatch
    * @return

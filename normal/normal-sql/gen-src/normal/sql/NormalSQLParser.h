@@ -148,7 +148,7 @@ public:
 
   class  ErrorContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *unexpected_charToken = nullptr;;
+    antlr4::Token *unexpected_charToken = nullptr;
     ErrorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *UNEXPECTED_CHAR();
@@ -1310,7 +1310,7 @@ public:
 
 
   virtual bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
-  bool exprSempred(ExprContext *_localctx, size_t predicateIndex);
+  bool exprSempred(ExprContext */*_localctx*/, size_t predicateIndex);
 
 private:
   static std::vector<antlr4::dfa::DFA> _decisionToDFA;
