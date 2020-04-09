@@ -62,6 +62,18 @@ auto execute(Interpreter &i) {
   return tuples;
 }
 
+auto executeTest(const std::string& sql) {
+  Interpreter i;
+  configureLocalConnector(i);
+  configureS3Connector(i);
+  i.parse(sql);
+  writeLogicalExecutionPlan(i);
+  auto tuples = execute(i);
+  i.getOperatorManager()->stop();
+
+  return tuples;
+}
+
 TEST_CASE ("sql-select-sum_a-from-s3"
                * doctest::skip(true)) {
 
@@ -74,31 +86,23 @@ TEST_CASE ("sql-select-sum_a-from-s3"
   i.getOperatorManager()->stop();
 }
 
-TEST_CASE ("sql-select-sum_a-from-local"
-               * doctest::skip(false)) {
-
-  Interpreter i;
-
-  configureLocalConnector(i);
-  i.parse("select sum(A) from local_fs.test");
-  writeLogicalExecutionPlan(i);
-  auto tuples = execute(i);
-
-  i.getOperatorManager()->stop();
+TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
+  auto tuples = executeTest("select sum(A) from local_fs.test");
+      CHECK(tuples->numRows() == 1);
+      CHECK(tuples->numColumns() == 1);
+      CHECK(tuples->value<arrow::StringType, std::string>("sum", 0) == "12.000000");
 }
 
-TEST_CASE ("sql-select-all-from-local"
-               * doctest::skip(false)) {
-
-  Interpreter i;
-
-  configureLocalConnector(i);
-  i.parse("select * from local_fs.test");
-  writeLogicalExecutionPlan(i);
-  auto tuples = execute(i);
-
+TEST_CASE ("sql-select-all-from-local" * doctest::skip(false)) {
+  auto tuples = executeTest("select * from local_fs.test");
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 3);
+      CHECK(tuples->value<arrow::Int64Type, int>("A", 0) == 1.0);
+}
 
-  i.getOperatorManager()->stop();
+TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
+  auto tuples = executeTest("select cast(A as double) from local_fs.test");
+      CHECK(tuples->numRows() == 3);
+      CHECK(tuples->numColumns() == 3);
+      CHECK(tuples->value<arrow::DoubleType, double>("A", 0) == 1.0);
 }

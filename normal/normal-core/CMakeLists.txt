@@ -39,7 +39,9 @@ add_library(normal-core STATIC
         src/type/Types.cpp include/normal/core/type/Types.h
         include/normal/core/type/Float64Type.h
         src/expression/Expressions.cpp
-        include/normal/core/expression/Expressions.h src/Globals.h)
+        include/normal/core/expression/Expressions.h
+        include/normal/core/arrow/ArrayHelper.h
+        include/normal/core/arrow/TableHelper.h)
 
 
 target_include_directories(normal-core PUBLIC include)

@@ -21,7 +21,7 @@ public:
       return decimalType(t->precision(), t->scale());
     }
     else{
-      abort();
+      throw std::runtime_error("Unrecognized type " + arrowType->ToString());
     }
   }
 
@@ -30,7 +30,7 @@ public:
       return float64Type();
     }
     else{
-      abort();
+      throw std::runtime_error("Unrecognized type " + stringType);
     }
   }
 

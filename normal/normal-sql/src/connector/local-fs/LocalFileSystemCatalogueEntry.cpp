@@ -15,5 +15,7 @@ const std::string &LocalFileSystemCatalogueEntry::getPath() const {
 }
 
 std::shared_ptr<ScanLogicalOperator> LocalFileSystemCatalogueEntry::toLogicalOperator() {
-  return std::make_shared<FileScanLogicalOperator>(this->path_);
+  auto op = std::make_shared<FileScanLogicalOperator>(this->path_);
+  op->name = "fileScan";
+  return op;
 }

@@ -164,7 +164,9 @@ antlrcpp::Any Visitor::visitTable_or_subquery(normal::sql::NormalSQLParser::Tabl
  */
 antlrcpp::Any Visitor::visitExpr(normal::sql::NormalSQLParser::ExprContext *ctx) {
   if (ctx->K_CAST()) {
-    return cast(visitColumn_name(ctx->column_name()), visitType_name(ctx->type_name()));
+    auto expression = ctx->expr(0);
+    auto typeName = ctx->type_name();
+    return cast(visitExpr(expression), visitType_name(typeName));
   } else if (ctx->column_name()) {
     return visitColumn_name(ctx->column_name());
   } else if (ctx->function_name()) {
@@ -210,7 +212,7 @@ antlrcpp::Any Visitor::visitColumn_name(normal::sql::NormalSQLParser::Column_nam
  * @return
  */
 antlrcpp::Any Visitor::visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context) {
-  return Types::fromStringType(Context->toString());
+  return Types::fromStringType(Context->name(0)->any_name()->IDENTIFIER()->toString());
 }
 
 /**

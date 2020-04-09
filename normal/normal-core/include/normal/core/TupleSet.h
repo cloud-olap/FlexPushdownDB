@@ -12,6 +12,9 @@
 #include <arrow/csv/api.h>
 #include <normal/core/expression/Expression.h>
 #include <tl/expected.hpp>
+#include <normal/core/arrow/Arrays.h>
+#include <normal/core/arrow/TableHelper.h>
+#include "normal/core/Globals.h"
 
 namespace arrow { class Table; }
 namespace arrow::csv { class TableReader; }
@@ -45,12 +48,45 @@ public:
 
   [[nodiscard]] std::shared_ptr<arrow::Table> table() const;
   void table(const std::shared_ptr<arrow::Table> &table);
-  std::string getValue(const std::string &columnName, int row);
+
+  [[deprecated ("Use value")]] std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
 
   tl::expected<std::shared_ptr<TupleSet>, std::string>
   evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>&);
 
+  /**
+   * Returns an element from the tupleset given and column name and row.
+   *
+   * @tparam ARROW_TYPE
+   * @tparam C_TYPE
+   * @param columnName
+   * @param row
+   * @return
+   */
+  template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
+  tl::expected<C_TYPE, std::string> value(const std::string &columnName, int row){
+    return TableHelper::value<ARROW_TYPE, C_TYPE>(columnName, row, *table_);
+  }
+
+  template <typename ARROW_TYPE>
+  ARROW_TYPE visit2(const std::function<ARROW_TYPE(ARROW_TYPE, arrow::RecordBatch &)> &fn) {
+
+    arrow::Status arrowStatus;
+
+    std::shared_ptr<arrow::RecordBatch> batch;
+    arrow::TableBatchReader reader(*table_);
+    reader.set_chunksize(DEFAULT_CHUNK_SIZE);
+    arrowStatus = reader.ReadNext(&batch);
+
+    std::string result;
+    while (arrowStatus.ok() && batch) {
+      result = fn(result, *batch);
+      arrowStatus = reader.ReadNext(&batch);
+    }
+
+    return result;
+  }
 };
 
 }
