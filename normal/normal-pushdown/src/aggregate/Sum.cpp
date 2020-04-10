@@ -5,9 +5,13 @@
 #include <sstream>
 #include <utility>
 #include <normal/core/expression/Expressions.h>
+#include <normal/core/arrow/ScalarHelperImpl.h>
+#include <normal/core/arrow/ScalarHelperBuilder.h>
 
 #include "normal/pushdown/aggregate/Sum.h"
 #include "normal/pushdown/Globals.h"
+#include "arrow/api.h"
+#include "arrow/scalar.h"
 
 namespace normal::pushdown::aggregate {
 
@@ -18,6 +22,8 @@ Sum::Sum(std::string columnName, std::shared_ptr<normal::core::expression::Expre
 void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::TupleSet> tuples) {
 
   SPDLOG_DEBUG("Data:\n{}", tuples->toString());
+
+  auto resultType = this->expression_->resultType(tuples->table()->schema());
 
   std::string sumString = tuples->visit([&](std::string accum, arrow::RecordBatch &batch) -> std::string {
 
@@ -74,9 +80,31 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
 
 
   // FIXME: Too much casting :(
-  std::string currentSum = this->result()->get(columnName(), "0");
-  double newSum = std::stod(sumString) + std::stod(currentSum);
-  this->result()->put(columnName(), std::to_string(newSum));
+  auto currentSum = this->result()->get(columnName(), arrow::MakeScalar(0.0));
+
+  auto currentSumScalar = ScalarHelperBuilder::make(currentSum);
+
+  SPDLOG_DEBUG("Current Total Sum {}", currentSumScalar.value()->toString());
+
+  auto batchSum = arrow::MakeScalar(sumString)->CastTo(arrow::float64()).ValueOrDie();
+
+  auto batchSumScalar = ScalarHelperBuilder::make(batchSum);
+
+  SPDLOG_DEBUG("Batch Sum {}", batchSumScalar.value()->toString());
+
+  auto currentSum2 = currentSumScalar.value();
+  auto batchSum2 = batchSumScalar.value();
+
+  currentSum2->operator+=(batchSum2);
+
+//  auto newSum = std::stod(sumString) + std::stod(currentSum->CastTo(arrow::float64()).ValueOrDie()->ToString());
+  auto newSum = currentSum2->asScalar();
+
+  this->result()->put(columnName(), newSum);
+}
+
+std::shared_ptr<arrow::DataType> Sum::returnType() {
+  return expression_->getReturnType();
 }
 
 }

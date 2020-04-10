@@ -30,6 +30,7 @@ public:
 
   virtual ~AggregationFunction() = 0;
   virtual void apply(std::shared_ptr<normal::core::TupleSet> tuples) = 0;
+  virtual std::shared_ptr<arrow::DataType> returnType() = 0;
 
 };
 

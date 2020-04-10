@@ -164,9 +164,11 @@ antlrcpp::Any Visitor::visitTable_or_subquery(normal::sql::NormalSQLParser::Tabl
  */
 antlrcpp::Any Visitor::visitExpr(normal::sql::NormalSQLParser::ExprContext *ctx) {
   if (ctx->K_CAST()) {
-    auto expression = ctx->expr(0);
-    auto typeName = ctx->type_name();
-    return cast(visitExpr(expression), visitType_name(typeName));
+    auto expressionCtx = ctx->expr(0);
+    auto typeNameCtx = ctx->type_name();
+    std::shared_ptr<normal::core::expression::Expression> expression = visitExpr(expressionCtx);
+    auto type = typed_visitType_name(typeNameCtx);
+    return cast(expression, type);
   } else if (ctx->column_name()) {
     return visitColumn_name(ctx->column_name());
   } else if (ctx->function_name()) {
@@ -212,7 +214,12 @@ antlrcpp::Any Visitor::visitColumn_name(normal::sql::NormalSQLParser::Column_nam
  * @return
  */
 antlrcpp::Any Visitor::visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context) {
-  return Types::fromStringType(Context->name(0)->any_name()->IDENTIFIER()->toString());
+  return typed_visitType_name(Context);
+}
+
+std::shared_ptr<normal::core::type::Type> Visitor::typed_visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context) {
+  std::string typeName = Context->name(0)->any_name()->IDENTIFIER()->toString();
+  return Types::fromStringType(const_cast<std::string &&>(typeName));
 }
 
 /**

@@ -19,7 +19,7 @@ public:
   ~Sum() override = default;
 
   void apply(std::shared_ptr<normal::core::TupleSet> tuples) override;
-
+  std::shared_ptr<arrow::DataType> returnType() override;
 };
 
 }

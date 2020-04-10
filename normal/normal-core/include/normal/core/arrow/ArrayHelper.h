@@ -22,8 +22,24 @@ public:
   }
 };
 
+template <typename ARROW_TYPE, typename TRAITS = arrow::TypeTraits<ARROW_TYPE>,
+    typename ARROW_SCALAR_TYPE = typename TRAITS::ScalarType,
+    typename ARROW_BUILDER_TYPE = typename TRAITS::BuilderType,
+    typename ARROW_ARRAY_TYPE = typename TRAITS::ArrayType>
+static tl::expected<std::shared_ptr<ARROW_ARRAY_TYPE>, std::string> makeArgh(const ARROW_SCALAR_TYPE &scalar) {
+  ARROW_BUILDER_TYPE builder(arrow::default_memory_pool());
+  auto res = builder.Append(scalar->value);
+  if(!res.ok())
+    abort();
+  std::shared_ptr<ARROW_ARRAY_TYPE> col;
+  res = builder.Finish(&col);
+  if(!res.ok())
+    abort();
+  return col;
+}
+
 /**
- * Specialization on strings, Arrow treats them differently yo primitives
+ * Specialization on strings, Arrow treats them differently to primitives
  */
 template<>
 class ArrayHelper<arrow::StringArray, std::string> {

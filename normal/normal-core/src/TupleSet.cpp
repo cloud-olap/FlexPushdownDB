@@ -3,7 +3,7 @@
 //
 
 #include "normal/core/TupleSet.h"
-#include "Globals.h"
+#include "normal/core/Globals.h"
 
 #include <utility>
 #include <sstream>

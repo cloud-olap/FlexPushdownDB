@@ -31,7 +31,8 @@ public:
     // Prepare a schema for the results
     auto resultFields = std::vector<std::shared_ptr<arrow::Field>>();
     for (const auto &e: expressions) {
-      resultFields.emplace_back(arrow::field(e->name(),e->resultType(recordBatch.schema())));
+      e->setReturnType(e->resultType(recordBatch.schema()));
+      resultFields.emplace_back(arrow::field(e->name(),e->getReturnType()));
     }
     auto resultSchema = arrow::schema(resultFields);
 

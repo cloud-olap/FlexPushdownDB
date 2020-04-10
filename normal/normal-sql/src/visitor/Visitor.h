@@ -40,6 +40,7 @@ public:
   antlrcpp::Any visitFactored_select_stmt(normal::sql::NormalSQLParser::Factored_select_stmtContext *ctx) override;
   antlrcpp::Any visitFunction_name(normal::sql::NormalSQLParser::Function_nameContext *ctx) override;
 
+  std::shared_ptr<normal::core::type::Type> typed_visitType_name(normal::sql::NormalSQLParser::Type_nameContext *Context);
 };
 
 #endif //NORMAL_NORMAL_SQL_SRC_VISITOR_H

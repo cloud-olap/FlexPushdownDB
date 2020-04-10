@@ -41,7 +41,7 @@ add_library(normal-core STATIC
         src/expression/Expressions.cpp
         include/normal/core/expression/Expressions.h
         include/normal/core/arrow/ArrayHelper.h
-        include/normal/core/arrow/TableHelper.h)
+        include/normal/core/arrow/TableHelper.h include/normal/core/arrow/ScalarHelperImpl.h include/normal/core/arrow/ScalarHelperBuilder.h include/normal/core/arrow/ScalarHelper.h)
 
 
 target_include_directories(normal-core PUBLIC include)

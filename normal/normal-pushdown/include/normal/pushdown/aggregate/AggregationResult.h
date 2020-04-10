@@ -18,14 +18,14 @@ namespace normal::pushdown::aggregate {
 class AggregationResult {
 
 private:
-  std::shared_ptr<std::map<std::string,std::string>> result_;
+  std::shared_ptr<std::map<std::string,std::shared_ptr<arrow::Scalar>>> result_;
 
 public:
   AggregationResult();
 
-  std::string get(const std::string& columnName);
-  std::string get(const std::string& columnName, std::string defaultValue);
-  void put(const std::string& columnName, std::string value);
+  std::shared_ptr<arrow::Scalar> get(const std::string& columnName);
+  std::shared_ptr<arrow::Scalar> get(const std::string& columnName, std::shared_ptr<arrow::Scalar> defaultValue);
+  void put(const std::string& columnName, std::shared_ptr<arrow::Scalar> value);
   void reset();
 
 };
