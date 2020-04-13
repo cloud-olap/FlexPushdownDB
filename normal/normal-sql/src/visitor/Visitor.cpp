@@ -109,6 +109,9 @@ antlrcpp::Any Visitor::visitSelect_core(normal::sql::NormalSQLParser::Select_cor
       nodes->push_back(node);
       aggregateNodes->push_back(node);
     }
+    else{
+      throw std::runtime_error("Not yet implemented");
+    }
   }
 
   // Simple scan

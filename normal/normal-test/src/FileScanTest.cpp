@@ -19,6 +19,7 @@
 #include "normal/core/expression/Cast.h"
 #include "normal/core/expression/Column.h"
 #include "normal/core/type/Float64Type.h"
+#include "TestUtil.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
@@ -53,6 +54,8 @@ TEST_CASE ("FileScan -> Sum -> Collate"
   mgr->put(aggregate);
   mgr->put(collate);
 
+  TestUtil::writeLogicalExecutionPlan(*mgr);
+
   mgr->boot();
 
   mgr->start();
@@ -60,11 +63,11 @@ TEST_CASE ("FileScan -> Sum -> Collate"
 
   auto tuples = collate->tuples();
 
-  auto val = std::stod(tuples->getValue("Sum", 0));
+  auto val = tuples->value<arrow::DoubleType>("Sum", 0);
 
       CHECK(tuples->numRows() == 1);
       CHECK(tuples->numColumns() == 1);
-      CHECK(val == 12);
+      CHECK(val == 12.0);
 
   mgr->stop();
 }
@@ -135,9 +138,7 @@ TEST_CASE ("Sharded FileScan -> Sum -> Collate"
   mgr->put(reduceAggregate);
   mgr->put(collate);
 
-  SPDLOG_DEBUG("Writing plan to: {}", current_working_dir + "/test/plan.svg");
-
-  mgr->write_graph(current_working_dir + "/test/plan.svg");
+  TestUtil::writeLogicalExecutionPlan(*mgr);
 
   mgr->boot();
 
@@ -146,11 +147,11 @@ TEST_CASE ("Sharded FileScan -> Sum -> Collate"
 
   auto tuples = collate->tuples();
 
-  auto val = std::stod(tuples->getValue("sum(A)", 0));
+  auto val = tuples->value<arrow::DoubleType>("sum(A)", 0);
 
       CHECK(tuples->numRows() == 1);
       CHECK(tuples->numColumns() == 1);
-      CHECK(val == 36);
+      CHECK(val == 36.0);
 
   mgr->stop();
 

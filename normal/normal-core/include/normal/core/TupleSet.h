@@ -49,7 +49,7 @@ public:
   [[nodiscard]] std::shared_ptr<arrow::Table> table() const;
   void table(const std::shared_ptr<arrow::Table> &table);
 
-  [[deprecated ("Use value")]] std::string getValue(const std::string &columnName, int row);
+  [[deprecated ("getValue is a hack that returns everuythUse value")]] std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
 
   tl::expected<std::shared_ptr<TupleSet>, std::string>

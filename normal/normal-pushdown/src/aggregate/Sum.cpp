@@ -71,8 +71,9 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
         double val = typedArray->Value(i);
         sum += val;
       }
-    } else {
-      abort();
+    }
+    else {
+      throw std::runtime_error("Unrecognized type " + colType->name());
     }
 
     return std::to_string(sum);

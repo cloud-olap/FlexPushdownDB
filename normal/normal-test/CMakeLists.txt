@@ -27,7 +27,7 @@ add_executable(normal-test
         src/CacheTest.cpp
         src/MultiQueryTest.cpp
         src/SQLTest.cpp
-        src/TupleTest.cpp)
+        src/TupleTest.cpp src/TestUtil.cpp src/TestUtil.h)
 
 link_target(normal-test)
 

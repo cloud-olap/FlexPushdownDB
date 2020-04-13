@@ -22,7 +22,7 @@
  * warming up a cache on the first run)
  */
 TEST_CASE ("FileScan -> Collate"
-               * doctest::skip(true)) {
+               * doctest::skip(false)) {
 
   char buff[FILENAME_MAX];
   getcwd(buff, FILENAME_MAX);

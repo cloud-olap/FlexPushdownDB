@@ -25,14 +25,14 @@ public:
    * @return
    */
   static std::shared_ptr<arrow::ArrayVector> evaluate(
-      const std::vector<std::shared_ptr<normal::core::expression::Expression>>& expressions,
-      const arrow::RecordBatch& recordBatch) {
+      const std::vector<std::shared_ptr<normal::core::expression::Expression>> &expressions,
+      const arrow::RecordBatch &recordBatch) {
 
     // Prepare a schema for the results
     auto resultFields = std::vector<std::shared_ptr<arrow::Field>>();
     for (const auto &e: expressions) {
       e->setReturnType(e->resultType(recordBatch.schema()));
-      resultFields.emplace_back(arrow::field(e->name(),e->getReturnType()));
+      resultFields.emplace_back(arrow::field(e->name(), e->getReturnType()));
     }
     auto resultSchema = arrow::schema(resultFields);
 
@@ -51,12 +51,18 @@ public:
                                            gandivaExpressions,
                                            gandiva::ConfigurationBuilder::DefaultConfiguration(),
                                            &projector);
-    assert(status.ok());
+
+    if(!status.ok()){
+      throw std::runtime_error(status.message());
+    }
 
     // Evaluate the expressions
     auto outputs = std::make_shared<arrow::ArrayVector>();
     status = projector->Evaluate(recordBatch, arrow::default_memory_pool(), &*outputs);
-    assert(status.ok());
+
+    if(!status.ok()){
+      throw std::runtime_error(status.message());
+    }
 
     return outputs;
   }

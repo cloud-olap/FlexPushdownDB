@@ -20,11 +20,16 @@ private:
   std::string columnName_;
 
 public:
-  explicit Column(std::string columnName) : columnName_(std::move(columnName)) {}
+  explicit Column(std::string columnName) : columnName_(std::move(columnName)) {
+  }
 
   [[nodiscard]] const std::string &columnName() const {
     return columnName_;
   }
+
+  [[nodiscard]] std::string &name() override {
+    return columnName_;
+  };
 
   gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override {
     return gandiva::TreeExprBuilder::MakeField(schema->GetFieldByName(columnName_));

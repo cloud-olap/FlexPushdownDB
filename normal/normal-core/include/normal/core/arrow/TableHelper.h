@@ -8,6 +8,7 @@
 #include <tl/expected.hpp>
 #include <string>
 #include <arrow/api.h>
+#include <normal/core/Globals.h>
 
 #include "normal/core/arrow/ArrayHelper.h"
 
@@ -47,17 +48,19 @@ public:
       return tl::unexpected("Row '" + std::to_string(row) + "' not found");
 
     auto slice = column->Slice(row, 1);
-    auto chunk = column->chunk(0);
+    auto sliceChunk = slice->chunk(0);
 
     using ARROW_ARRAY_TYPE = typename arrow::TypeTraits<ARROW_TYPE>::ArrayType;
-    auto arrowType = arrow::TypeTraits<ARROW_TYPE>::type_singleton();
+
+    // FIXME: type_singleton is not available for all arrow types. What to use instead?
+//    auto arrowType = arrow::TypeTraits<ARROW_TYPE>::type_singleton();
 
     // Check types
-    if (chunk->type_id() != arrowType->id())
-      return tl::unexpected("Value type '" + chunk->type()->ToString() + "' does not match type template parameter "
-                                + arrowType->ToString());
+//    if (chunk->type_id() != arrowType->id())
+//      return tl::unexpected("Value type '" + chunk->type()->ToString() + "' does not match type template parameter "
+//                                + arrowType->ToString());
 
-    auto &typedArray = dynamic_cast<ARROW_ARRAY_TYPE &>(*chunk);
+    auto &typedArray = dynamic_cast<ARROW_ARRAY_TYPE &>(*sliceChunk);
     return ArrayHelper<ARROW_ARRAY_TYPE, C_TYPE>::at(typedArray, 0);
   }
 };

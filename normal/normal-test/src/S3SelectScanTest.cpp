@@ -19,22 +19,18 @@
 #include <normal/core/expression/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/core/expression/Cast.h>
+#include <normal/core/type/DecimalType.h>
 #include "Globals.h"
+#include "TestUtil.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
 
 TEST_CASE ("S3SelectScan -> Sum -> Collate"
-* doctest::skip(true)) {
+* doctest::skip(false)) {
 
   normal::pushdown::AWSClient client;
   client.init();
-
-  char buff[FILENAME_MAX];
-  getcwd(buff, FILENAME_MAX);
-  std::string current_working_dir(buff);
-
-  SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
@@ -64,6 +60,8 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate"
   mgr->put(aggregate);
   mgr->put(collate);
 
+  TestUtil::writeLogicalExecutionPlan(*mgr);
+
   mgr->boot();
 
   mgr->start();
@@ -71,11 +69,11 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate"
 
   auto tuples = collate->tuples();
 
-  auto val = std::stod(tuples->getValue("sum", 0));
+  auto val = tuples->value<arrow::DoubleType>("sum", 0);
 
       CHECK(tuples->numRows() == 1);
       CHECK(tuples->numColumns() == 1);
-      CHECK(val == 4400247.21);
+      CHECK(val.value() == 4400247.21);
 
   mgr->stop();
 

@@ -15,7 +15,6 @@ namespace normal::core::expression {
 
 class Expression {
 private:
-  std::string name_;
 
   /**
    * This is only know after the expression has been evaluated, e.g. a column expression can only know its return type once
@@ -26,9 +25,7 @@ private:
 public:
   virtual ~Expression() = default;
 
-  [[nodiscard]] const std::string &name() const {
-    return name_;
-  }
+  [[nodiscard]] virtual std::string &name() = 0;
 
   virtual gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema>) = 0;
   virtual std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) = 0;
