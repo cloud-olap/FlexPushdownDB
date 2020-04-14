@@ -8,6 +8,7 @@
 
 #include "../Globals.h"
 #include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
+#include <logical/ProjectLogicalOperator.h>
 #include "logical/ScanLogicalOperator.h"
 #include "logical/CollateLogicalOperator.h"
 #include "logical/AggregateLogicalOperator.h"
@@ -89,9 +90,11 @@ antlrcpp::Any Visitor::visitSelect_core(normal::sql::NormalSQLParser::Select_cor
   }
 
   bool simpleScan = false;
+  bool project = false;
   bool aggregate = false;
 
   auto aggregateNodes = std::make_shared<std::vector<std::shared_ptr<LogicalOperator>>>();
+  auto projectNodes = std::make_shared<std::vector<std::shared_ptr<LogicalOperator>>>();
 
   for (const auto &resultColumn: ctx->result_column()) {
     auto resultColumn_Result = visitResult_column(resultColumn);
@@ -108,6 +111,15 @@ antlrcpp::Any Visitor::visitSelect_core(normal::sql::NormalSQLParser::Select_cor
       node->name = "agg";
       nodes->push_back(node);
       aggregateNodes->push_back(node);
+    } else if (resultColumn_Result.is<std::shared_ptr<Expression>>()) {
+      project = true;
+
+      // FIXME: Only supporting 1 expr at mo
+      auto expressions = {resultColumn_Result.as<std::shared_ptr<Expression>>()};
+      auto node = std::make_shared<ProjectLogicalOperator>(expressions);
+      node->name = "proj";
+      nodes->push_back(node);
+      projectNodes->push_back(node);
     }
     else{
       throw std::runtime_error("Not yet implemented");
@@ -118,6 +130,18 @@ antlrcpp::Any Visitor::visitSelect_core(normal::sql::NormalSQLParser::Select_cor
   if(simpleScan){
     for(const auto &scanNode: *scanNodes){
       scanNode->consumer = collate;
+    }
+  }
+
+  // Projection
+  if(project){
+    for(const auto &scanNode: *scanNodes){
+      for(const auto &projectNode: *projectNodes){
+        scanNode->consumer = projectNode;
+      }
+    }
+    for(const auto &projectNode: *projectNodes){
+      projectNode->consumer = collate;
     }
   }
 

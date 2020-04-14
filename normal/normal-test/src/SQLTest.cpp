@@ -63,8 +63,7 @@ auto executeTest(const std::string &sql) {
 //
 //}
 
-TEST_CASE ("sql-select-sum_a-from-local"
-               * doctest::skip(false)) {
+TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
   auto tuples = executeTest("select sum(cast(A as double)) from local_fs.test");
       CHECK(tuples->numRows() == 1);
       CHECK(tuples->numColumns() == 1);
@@ -76,11 +75,15 @@ TEST_CASE ("sql-select-all-from-local" * doctest::skip(false)) {
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 3);
       CHECK(tuples->value<arrow::Int64Type, int>("A", 0) == 1.0);
+      CHECK(tuples->value<arrow::Int64Type, int>("B", 1) == 5.0);
+      CHECK(tuples->value<arrow::Int64Type, int>("C", 2) == 9.0);
 }
 
-//TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
-//  auto tuples = executeTest("select cast(A as double) from local_fs.test");
-//      CHECK(tuples->numRows() == 3);
-//      CHECK(tuples->numColumns() == 3);
-//      CHECK(tuples->value<arrow::DoubleType>("A", 0) == 1.0);
-//}
+TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
+  auto tuples = executeTest("select cast(A as double) from local_fs.test");
+      CHECK(tuples->numRows() == 3);
+      CHECK(tuples->numColumns() == 1);
+      CHECK(tuples->value<arrow::DoubleType>("A", 0) == 1.0);
+      CHECK(tuples->value<arrow::DoubleType>("A", 1) == 4.0);
+      CHECK(tuples->value<arrow::DoubleType>("A", 2) == 7.0);
+}
