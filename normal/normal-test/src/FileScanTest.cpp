@@ -15,6 +15,7 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/FileScan.h>
 #include <normal/pushdown/aggregate/Sum.h>
+#include <normal/pushdown/Project.h>
 #include "Globals.h"
 #include "normal/core/expression/Cast.h"
 #include "normal/core/expression/Column.h"
@@ -25,14 +26,8 @@ using namespace normal::core::type;
 using namespace normal::core::expression;
 using namespace normal::pushdown::aggregate;
 
-TEST_CASE ("FileScan -> Sum -> Collate"
-               * doctest::skip(false)) {
-
-  char buff[FILENAME_MAX];
-  getcwd(buff, FILENAME_MAX);
-  std::string current_working_dir(buff);
-
-  SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
+TEST_CASE ("filescan-sum-collate"
+               * doctest::skip(true)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
@@ -72,14 +67,62 @@ TEST_CASE ("FileScan -> Sum -> Collate"
   mgr->stop();
 }
 
-TEST_CASE ("Sharded FileScan -> Sum -> Collate"
+TEST_CASE ("filescan-project-collate"
                * doctest::skip(false)) {
 
-  char buff[FILENAME_MAX];
-  getcwd(buff, FILENAME_MAX);
-  std::string current_working_dir(buff);
+  auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
+  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
+  auto expressions = {
+      cast(col("A"), float64Type()),
+      col("B")
+  };
+  auto project = std::make_shared<normal::pushdown::Project>("project", expressions);
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate");
+
+  fileScan->produce(project);
+  project->consume(fileScan);
+
+  project->produce(collate);
+  collate->consume(project);
+
+  mgr->put(fileScan);
+  mgr->put(project);
+  mgr->put(collate);
+
+  TestUtil::writeLogicalExecutionPlan(*mgr);
+
+  mgr->boot();
+
+  mgr->start();
+  mgr->join();
+
+  auto tuples = collate->tuples();
+
+  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
+
+      CHECK(tuples->numRows() == 3);
+      CHECK(tuples->numColumns() == 2);
+
+  auto val_a_0 = tuples->value<arrow::DoubleType>("A", 0).value();
+      CHECK(val_a_0 == 1);
+  auto val_a_1 = tuples->value<arrow::DoubleType>("A", 1).value();
+      CHECK(val_a_1 == 4);
+  auto val_a_2 = tuples->value<arrow::DoubleType>("A", 2).value();
+      CHECK(val_a_2 == 7);
+
+  auto val_b_0 = tuples->value<arrow::Int64Type>("B", 0).value();
+      CHECK(val_b_0 == 2);
+  auto val_b_1 = tuples->value<arrow::Int64Type>("B", 1).value();
+      CHECK(val_b_1 == 5);
+  auto val_b_2 = tuples->value<arrow::Int64Type>("B", 2).value();
+      CHECK(val_b_2 == 8);
+
+  mgr->stop();
+}
+
+TEST_CASE ("filescan-sum-collate-parallel"
+               * doctest::skip(true)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 

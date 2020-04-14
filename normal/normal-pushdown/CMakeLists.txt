@@ -18,7 +18,7 @@ add_library(normal-pushdown STATIC
         src/aggregate/Sum.cpp include/normal/pushdown/aggregate/Sum.h
         src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h
         src/AWSClient.cpp include/normal/pushdown/AWSClient.h
-        )
+        src/Project.cpp include/normal/pushdown/Project.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

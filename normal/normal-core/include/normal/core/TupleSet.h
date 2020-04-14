@@ -69,17 +69,26 @@ public:
     return TableHelper::value<ARROW_TYPE, C_TYPE>(columnName, row, *table_);
   }
 
-  template <typename ARROW_TYPE>
-  ARROW_TYPE visit2(const std::function<ARROW_TYPE(ARROW_TYPE, arrow::RecordBatch &)> &fn) {
+  /**
+   * Templated visitor, visits record batches from the internal arrow table and applies the given
+   * function to each batch. Returns the result of the function.
+   *
+   * @tparam T
+   * @param fn
+   * @return
+   */
+  template <typename T>
+  T visit2(const std::function<T(arrow::RecordBatch &)> &fn) {
 
     arrow::Status arrowStatus;
 
     std::shared_ptr<arrow::RecordBatch> batch;
     arrow::TableBatchReader reader(*table_);
+
     reader.set_chunksize(DEFAULT_CHUNK_SIZE);
     arrowStatus = reader.ReadNext(&batch);
 
-    std::string result;
+    T result;
     while (arrowStatus.ok() && batch) {
       result = fn(result, *batch);
       arrowStatus = reader.ReadNext(&batch);
