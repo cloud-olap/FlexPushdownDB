@@ -11,6 +11,7 @@
 #include "normal/pushdown/aggregate/Sum.h"
 #include "normal/pushdown/Globals.h"
 #include "arrow/api.h"
+#include "arrow/visitor_inline.h"
 #include "arrow/scalar.h"
 
 namespace normal::pushdown::aggregate {
@@ -25,83 +26,70 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
 
   auto resultType = this->expression_->resultType(tuples->table()->schema());
 
-  std::string sumString = tuples->visit([&](std::string accum, arrow::RecordBatch &batch) -> std::string {
+  std::shared_ptr<arrow::Scalar> batchSum = tuples->visit([&](auto accum, auto &batch) -> auto{
 
     auto arrayVector = Expressions::evaluate({this->expression_}, batch);
     auto array = arrayVector->at(0);
 
-    double sum = 0;
-    if (accum.empty()) {
-      sum = 0;
-    } else {
-      sum = std::stod(accum);
+    // Initialise accumulator
+    if(accum == nullptr) {
+      if (resultType->id() == arrow::float64()->id()) {
+        accum = arrow::MakeScalar(arrow::float64(), 0.0).ValueOrDie();
+      } else if (resultType->id() == arrow::int32()->id()) {
+        accum = arrow::MakeScalar(arrow::int32(), 0).ValueOrDie();
+      } else if (resultType->id() == arrow::int64()->id()) {
+        accum = arrow::MakeScalar(arrow::int64(), 0).ValueOrDie();
+      } else {
+        throw std::runtime_error("Accumulator init for type " + accum->type->name() + " not implemented yet");
+      }
     }
 
     // FIXME: Dont think this if/then else against arrow types is necessary
 
-    std::shared_ptr<arrow::DataType> colType = array->type();
+    auto colType = array->type();
     if (colType->Equals(arrow::Int32Type())) {
-      std::shared_ptr<arrow::Int32Array>
-          typedArray = std::static_pointer_cast<arrow::Int32Array>(array);
+      auto typedArray = std::static_pointer_cast<arrow::Int32Array>(array);
+      auto typedAccum = std::static_pointer_cast<arrow::Int32Scalar>(accum);
       for (int i = 0; i < batch.num_rows(); ++i) {
         int val = typedArray->Value(i);
-        sum += val;
+        typedAccum->value += val;
       }
     } else if (colType->Equals(arrow::Int64Type())) {
-      std::shared_ptr<arrow::Int64Array>
-          typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
+      auto typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
+      auto typedAccum = std::static_pointer_cast<arrow::Int64Scalar>(accum);
       for (int i = 0; i < batch.num_rows(); ++i) {
         long val = typedArray->Value(i);
-
-        // FIXME: This isn't correct
-        sum += val;
+        typedAccum->value += val;
       }
     } else if (colType->Equals(arrow::StringType())) {
-      std::shared_ptr<arrow::StringArray>
-          typedArray = std::static_pointer_cast<arrow::StringArray>(array);
-      for (int i = 0; i < batch.num_rows(); ++i) {
-        std::string val = typedArray->GetString(i);
-        sum += std::stod(val);
-      }
+      throw std::runtime_error("Can't sum strings, cast first");
     } else if (colType->Equals(arrow::DoubleType())) {
-      std::shared_ptr<arrow::DoubleArray>
-          typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+      auto typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+      auto typedAccum = std::static_pointer_cast<arrow::DoubleScalar>(accum);
 
       for (int i = 0; i < batch.num_rows(); ++i) {
         double val = typedArray->Value(i);
-        sum += val;
+        typedAccum->value += val;
       }
     }
     else {
       throw std::runtime_error("Unrecognized type " + colType->name());
     }
 
-    return std::to_string(sum);
+    return accum;
   });
 
-
-  // FIXME: Too much casting :(
+  // Get the current running sum, initialising it if necessary
   auto currentSum = this->result()->get(columnName(), arrow::MakeScalar(0.0));
 
-  auto currentSumScalar = ScalarHelperBuilder::make(currentSum);
+  auto currentSumWrapped = ScalarHelperBuilder::make(currentSum).value();
+  auto batchSumWrapped = ScalarHelperBuilder::make(batchSum).value();
 
-  SPDLOG_DEBUG("Current Total Sum {}", currentSumScalar.value()->toString());
+  // FIXME: Implement this operator properly
+  currentSumWrapped->operator+=(batchSumWrapped);
 
-  auto batchSum = arrow::MakeScalar(sumString)->CastTo(arrow::float64()).ValueOrDie();
-
-  auto batchSumScalar = ScalarHelperBuilder::make(batchSum);
-
-  SPDLOG_DEBUG("Batch Sum {}", batchSumScalar.value()->toString());
-
-  auto currentSum2 = currentSumScalar.value();
-  auto batchSum2 = batchSumScalar.value();
-
-  currentSum2->operator+=(batchSum2);
-
-//  auto newSum = std::stod(sumString) + std::stod(currentSum->CastTo(arrow::float64()).ValueOrDie()->ToString());
-  auto newSum = currentSum2->asScalar();
-
-  this->result()->put(columnName(), newSum);
+  // Store the current running sum away again for the next batch of tuples
+  this->result()->put(columnName(), currentSumWrapped->asScalar());
 }
 
 std::shared_ptr<arrow::DataType> Sum::returnType() {

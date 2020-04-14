@@ -15,6 +15,7 @@
 #include <arrow/csv/api.h>            // for TableReader
 #include <normal/core/expression/Expressions.h>
 #include <tl/expected.hpp>
+#include <arrow/scalar.h>
 
 namespace arrow { class MemoryPool; }
 
@@ -106,7 +107,7 @@ int64_t TupleSet::numColumns() {
   return table_->num_columns();
 }
 
-std::string TupleSet::visit(const std::function<std::string(std::string, arrow::RecordBatch &)> &fn) {
+std::shared_ptr<arrow::Scalar> TupleSet::visit(const std::function<std::shared_ptr<arrow::Scalar>(std::shared_ptr<arrow::Scalar>, arrow::RecordBatch &)> &fn) {
 
   arrow::Status arrowStatus;
 
@@ -115,7 +116,7 @@ std::string TupleSet::visit(const std::function<std::string(std::string, arrow::
   reader.set_chunksize(DEFAULT_CHUNK_SIZE);
   arrowStatus = reader.ReadNext(&batch);
 
-  std::string result;
+  std::shared_ptr<arrow::Scalar> result;
   while (arrowStatus.ok() && batch) {
     result = fn(result, *batch);
     arrowStatus = reader.ReadNext(&batch);
