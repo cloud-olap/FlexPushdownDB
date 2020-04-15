@@ -17,9 +17,6 @@ namespace normal::connector::local_fs {
 
 class LocalFileSystemCatalogueEntry : public normal::connector::CatalogueEntry {
 
-private:
-  std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme_;
-
 public:
   LocalFileSystemCatalogueEntry(const std::string &Alias,
 								std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme,
@@ -27,6 +24,9 @@ public:
   ~LocalFileSystemCatalogueEntry() override = default;
 
   std::shared_ptr<sql::logical::ScanLogicalOperator> toLogicalOperator() override;
+
+private:
+  std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme_;
 
 };
 

@@ -10,22 +10,22 @@
 #include <normal/connector/CatalogueEntry.h>
 #include <normal/connector/Catalogue.h>
 #include <normal/sql/logical/ScanLogicalOperator.h>
-
+#include "S3SelectPartitioningScheme.h"
 
 namespace normal::connector::s3 {
 
-class S3SelectCatalogueEntry: public normal::connector::CatalogueEntry {
-private:
-  std::string s3Bucket_;
-  std::string s3Object_;
+class S3SelectCatalogueEntry : public normal::connector::CatalogueEntry {
+
 public:
-  [[nodiscard]] const std::string &s3Bucket() const;
-  [[nodiscard]] const std::string &s3Object() const;
-public:
-  S3SelectCatalogueEntry(const std::string& Alias, std::string S3Bucket, std::string S3Object, std::shared_ptr<Catalogue>);
+  S3SelectCatalogueEntry(const std::string &Alias,
+						 std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme,
+						 std::shared_ptr<Catalogue>);
   ~S3SelectCatalogueEntry() override = default;
 
-  std::shared_ptr<sql::logical::ScanLogicalOperator> toLogicalOperator() override ;
+  std::shared_ptr<sql::logical::ScanLogicalOperator> toLogicalOperator() override;
+
+private:
+  std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme_;
 
 };
 

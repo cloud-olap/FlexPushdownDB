@@ -6,20 +6,32 @@
 
 #include <normal/pushdown/S3SelectScan.h>
 
-normal::sql::logical::S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(std::string S3Bucket,
-                                                                               std::string S3Object,
-                                                                               std::shared_ptr<normal::pushdown::AWSClient> AwsClient)
-    : s3Bucket_(std::move(S3Bucket)),
-      s3Object_(std::move(S3Object)),
-      awsClient_(std::move(AwsClient)) {}
+normal::sql::logical::S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(std::shared_ptr<
+	S3SelectPartitioningScheme> partitioningScheme,
+																			   std::shared_ptr<normal::pushdown::AWSClient> AwsClient)
+	: partitioningScheme_(std::move(partitioningScheme)),
+	  awsClient_(std::move(AwsClient)) {}
 
 std::shared_ptr<normal::core::Operator> normal::sql::logical::S3SelectScanLogicalOperator::toOperator() {
-  return std::make_shared<normal::pushdown::S3SelectScan>("s3scan",
-                                                          this->s3Bucket_,
-                                                          this->s3Object_,
-                                                          "select * from S3Object",
-                                                          this->s3Object_,
-                                                          "A",
-                                                          this->awsClient_->defaultS3Client());
+
+  auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+  for (const auto &partition: partitioningScheme_->partitions()) {
+
+    // FIXME: Still unsure what to do with m_col? col could be an expression or an aggregate, or something else?
+
+	auto scanOp = std::make_shared<normal::pushdown::S3SelectScan>(
+		partition->getBucket() + "/" + partition->getObject(),
+		partition->getBucket(),
+		partition->getObject(),
+		"select * from S3Object",
+		partition->getObject(),
+		"A",
+		this->awsClient_->defaultS3Client());
+
+	operators->push_back(scanOp);
+  }
+
+  // FIXME: Should return multiple operators
+  return operators->at(0);
 }
 

@@ -12,10 +12,10 @@
 #include <normal/connector/local-fs/LocalFilePartitioningScheme.h>
 #include <normal/connector/local-fs/LocalFilePartition.h>
 
-class ExplicitLocalFilePartitioningScheme : public LocalFilePartitioningScheme {
+class LocalFileExplicitPartitioningScheme : public LocalFilePartitioningScheme {
 
 public:
-  explicit ExplicitLocalFilePartitioningScheme() = default;
+  explicit LocalFileExplicitPartitioningScheme() = default;
 
   void add(const std::shared_ptr<LocalFilePartition> &partition);
 

@@ -8,21 +8,13 @@
 #include <normal/connector/s3/S3SelectConnector.h>
 
 normal::connector::s3::S3SelectCatalogueEntry::S3SelectCatalogueEntry(const std::string& Alias,
-                                                                           std::string S3Bucket,
-                                                                           std::string S3Object,
+																	  std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme,
                                                                            std::shared_ptr<normal::connector::Catalogue> catalogue)
-    : normal::connector::CatalogueEntry(Alias, std::move(catalogue)), s3Bucket_(std::move(S3Bucket)), s3Object_(std::move(S3Object)) {}
-
-const std::string &normal::connector::s3::S3SelectCatalogueEntry::s3Bucket() const {
-  return s3Bucket_;
-}
-
-const std::string &normal::connector::s3::S3SelectCatalogueEntry::s3Object() const {
-  return s3Object_;
-}
+    : normal::connector::CatalogueEntry(Alias, std::move(catalogue)), partitioningScheme_(std::move(partitioningScheme)) {}
 
 std::shared_ptr<normal::sql::logical::ScanLogicalOperator> normal::connector::s3::S3SelectCatalogueEntry::toLogicalOperator() {
   auto connector = std::static_pointer_cast<S3SelectConnector>(this->getCatalogue()->getConnector());
-
-  return std::make_shared<normal::sql::logical::S3SelectScanLogicalOperator>(this->s3Object_, this->s3Bucket_, connector->getAwsClient());
+  auto op = std::make_shared<normal::sql::logical::S3SelectScanLogicalOperator>(partitioningScheme_, connector->getAwsClient());
+  op->name = "s3SelectScan";
+  return op;
 }

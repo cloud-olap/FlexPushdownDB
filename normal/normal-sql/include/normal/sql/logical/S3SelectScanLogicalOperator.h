@@ -12,18 +12,17 @@
 #include <normal/pushdown/AWSClient.h>
 
 #include <normal/sql/logical/ScanLogicalOperator.h>
+#include <normal/connector/s3/S3SelectPartitioningScheme.h>
 
 namespace normal::sql::logical {
 
 class S3SelectScanLogicalOperator: public ScanLogicalOperator {
 private:
-  std::string s3Bucket_;
-  std::string s3Object_;
+  std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme_;
   std::shared_ptr<pushdown::AWSClient> awsClient_;
 
 public:
-  S3SelectScanLogicalOperator(std::string S3Bucket,
-                              std::string S3Object,
+  S3SelectScanLogicalOperator(std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme,
                               std::shared_ptr<pushdown::AWSClient> AwsClient);
 
   std::shared_ptr<core::Operator> toOperator() override;
