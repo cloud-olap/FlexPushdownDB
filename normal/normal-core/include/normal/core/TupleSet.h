@@ -56,7 +56,7 @@ public:
   evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>&);
 
   /**
-   * Returns an element from the tupleset given and column name and row.
+   * Returns an element from the tupleset given and column name and row number.
    *
    * @tparam ARROW_TYPE
    * @tparam C_TYPE
@@ -67,6 +67,20 @@ public:
   template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
   tl::expected<C_TYPE, std::string> value(const std::string &columnName, int row){
     return TableHelper::value<ARROW_TYPE, C_TYPE>(columnName, row, *table_);
+  }
+
+  /**
+   * Returns an element from the tupleset given and column number and row number.
+   *
+   * @tparam ARROW_TYPE
+   * @tparam C_TYPE
+   * @param columnName
+   * @param row
+   * @return
+   */
+  template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
+  tl::expected<C_TYPE, std::string> value(int column, int row){
+	return TableHelper::value<ARROW_TYPE, C_TYPE>(column, row, *table_);
   }
 
   /**

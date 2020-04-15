@@ -22,15 +22,20 @@ Aggregate::Aggregate(std::string name,
                      std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions)
     : Operator(std::move(name), "Aggregate"),
       functions_(std::move(functions)),
-      result_(std::make_shared<aggregate::AggregationResult>()) {}
+      results_(std::make_shared<std::vector<std::shared_ptr<aggregate::AggregationResult>>>()) {}
 
 void Aggregate::onStart() {
   SPDLOG_DEBUG("Starting");
 
-  this->result_->reset();
-
-  for (const auto &expression: *functions_) {
-    expression->init(this->result_);
+  for (const auto &function: *functions_) {
+    if(function->buffer_ == nullptr){
+      auto result = std::make_shared<aggregate::AggregationResult>();
+	  results_->emplace_back(result);
+	  function->init(result);
+    }
+    else{
+	  function->buffer_->reset();
+    }
   }
 }
 
@@ -59,8 +64,8 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
     // Create output schema
     std::shared_ptr<arrow::Schema> schema;
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    for (const auto &expression: *functions_) {
-      std::shared_ptr<arrow::Field> field = arrow::field(expression->columnName(), expression->returnType());
+    for (const auto &function: *functions_) {
+      std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), function->returnType());
       fields.emplace_back(field);
     }
     schema = arrow::schema(fields);
@@ -71,23 +76,23 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
 
     // Create output tuples
     std::vector<std::shared_ptr<arrow::Array>> columns;
-    for (const auto &expression: *functions_) {
+    for (const auto &function: *functions_) {
 
-      if(expression->returnType() == arrow::float64()){
-        auto scalar = std::static_pointer_cast<arrow::DoubleScalar>(this->result_->get(expression->columnName()));
+	  function->finalize();
+
+      if(function->returnType() == arrow::float64()){
+        auto scalar = std::static_pointer_cast<arrow::DoubleScalar>(function->buffer_->evaluate());
         auto colArgh = makeArgh<arrow::DoubleType>(scalar);
         columns.emplace_back(colArgh.value());
       }
-
-//      arrow::StringBuilder colBuilder(pool);
-//      auto res = colBuilder.Append(this->result_->get(expression->columnName())->ToString());
-//      if(!res.ok())
-//        abort();
-//      std::shared_ptr<arrow::StringArray> col;
-//      res = colBuilder.Finish(&col);
-//      if(!res.ok())
-//        abort();
-//      columns.emplace_back(col);
+	  else if(function->returnType() == arrow::int32()){
+		auto scalar = std::static_pointer_cast<arrow::Int32Scalar>(function->buffer_->evaluate());
+		auto colArgh = makeArgh<arrow::Int32Type>(scalar);
+		columns.emplace_back(colArgh.value());
+	  }
+	  else{
+	    throw std::runtime_error("Unrecognized type " + function->returnType()->name());
+	  }
     }
 
     std::shared_ptr<arrow::Table> table;
@@ -116,8 +121,8 @@ void Aggregate::onTuple(const core::message::TupleMessage &message) {
 }
 
 void Aggregate::compute(const std::shared_ptr<normal::core::TupleSet> &tuples) {
-  for (const auto &expression: *functions_) {
-    expression->apply(tuples);
+  for (const auto &function: *functions_) {
+	function->apply(tuples);
   }
 }
 

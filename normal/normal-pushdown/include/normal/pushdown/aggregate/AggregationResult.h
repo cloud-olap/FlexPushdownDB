@@ -6,27 +6,36 @@
 #define NORMAL_NORMAL_PUSHDOWN_SRC_FUNCTION_SUM_H
 
 #include <string>
-#include <vector>
+#include <unordered_map>
+
 #include <normal/core/TupleSet.h>
-#include <map>
 
 namespace normal::pushdown::aggregate {
 
 /**
- * Structure for aggregation functions to store intermediate results
+ * Structure for aggregation functions to store intermediate results.
+ *
+ * It is intended for there to be one of these per aggregate function.
+ *
+ * This is roughly equivalent to a map, so aggregate functions can store multiple values, before
+ * computing the final result. E.g. Mean most accurately calculated by storing count and sum before computing
+ * the final result.
  */
 class AggregationResult {
-
-private:
-  std::shared_ptr<std::map<std::string,std::shared_ptr<arrow::Scalar>>> result_;
 
 public:
   AggregationResult();
 
-  std::shared_ptr<arrow::Scalar> get(const std::string& columnName);
-  std::shared_ptr<arrow::Scalar> get(const std::string& columnName, std::shared_ptr<arrow::Scalar> defaultValue);
-  void put(const std::string& columnName, std::shared_ptr<arrow::Scalar> value);
+  void put(const std::string &key, std::shared_ptr<arrow::Scalar> value);
+  std::shared_ptr<arrow::Scalar> get(const std::string &key);
+  std::shared_ptr<arrow::Scalar> get(const std::string &key, std::shared_ptr<arrow::Scalar> defaultValue);
+  void finalize(std::shared_ptr<arrow::Scalar> value);
+  std::shared_ptr<arrow::Scalar> evaluate();
   void reset();
+
+private:
+  std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<arrow::Scalar>>> result_;
+  std::shared_ptr<arrow::Scalar> resultFinal_;
 
 };
 

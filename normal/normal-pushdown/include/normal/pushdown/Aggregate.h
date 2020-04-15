@@ -21,7 +21,7 @@ class Aggregate : public normal::core::Operator {
 
 private:
   std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions_;
-  std::shared_ptr<aggregate::AggregationResult> result_;
+  std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationResult>>> results_;
 
   void onReceive(const normal::core::message::Envelope &message) override;
 

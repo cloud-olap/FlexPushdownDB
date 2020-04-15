@@ -2,31 +2,38 @@
 // Created by matt on 7/3/20.
 //
 
-#include "normal/pushdown/aggregate/AggregationResult.h"
+#include <normal/pushdown/aggregate/AggregationResult.h>
 
-namespace normal::pushdown::aggregate {
+using namespace normal::pushdown::aggregate;
 
 AggregationResult::AggregationResult() :
-    result_(std::make_shared<std::map<std::string, std::shared_ptr<arrow::Scalar>>>()) {}
+	result_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<arrow::Scalar>>>()) {}
 
-std::shared_ptr<arrow::Scalar> AggregationResult::get(const std::string& columnName) {
-  return this->result_->at(columnName);
+void AggregationResult::put(const std::string &key, std::shared_ptr<arrow::Scalar> value) {
+  this->result_->insert_or_assign(key, value);
 }
 
-std::shared_ptr<arrow::Scalar> AggregationResult::get(const std::string& columnName, std::shared_ptr<arrow::Scalar> defaultValue) {
-  const std::map<std::string, std::shared_ptr<arrow::Scalar>>::iterator &res = this->result_->find(columnName);
+std::shared_ptr<arrow::Scalar> AggregationResult::get(const std::string &key) {
+  return this->result_->at(key);
+}
+
+std::shared_ptr<arrow::Scalar> AggregationResult::get(const std::string &key,
+													  std::shared_ptr<arrow::Scalar> defaultValue) {
+  const auto &res = this->result_->find(key);
   if (res == this->result_->end())
-    return defaultValue;
+	return defaultValue;
   else
-    return res->second;
-}
-
-void AggregationResult::put(const std::string& columnName, std::shared_ptr<arrow::Scalar> value) {
-  this->result_->insert_or_assign(columnName, value);
+	return res->second;
 }
 
 void AggregationResult::reset() {
   this->result_->clear();
 }
 
+void AggregationResult::finalize(std::shared_ptr<arrow::Scalar> value) {
+  this->resultFinal_ = value;
+}
+
+std::shared_ptr<arrow::Scalar> AggregationResult::evaluate() {
+  return this->resultFinal_;
 }

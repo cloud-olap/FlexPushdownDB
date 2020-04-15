@@ -64,8 +64,11 @@ auto executeTest(const std::string &sql) {
 TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
   auto tuples = executeTest("select sum(cast(A as double)), sum(cast(B as double)) from local_fs.test");
       CHECK(tuples->numRows() == 1);
-      CHECK(tuples->numColumns() == 1);
-      CHECK(tuples->value<arrow::DoubleType>("sum", 0) == 12.0);
+      CHECK(tuples->numColumns() == 2);
+
+      // NOTE: Both columns have the same alias so need to access via column index
+      CHECK(tuples->value<arrow::DoubleType>(0, 0) == 12.0);
+	  CHECK(tuples->value<arrow::DoubleType>(1, 0) == 15.0);
 }
 
 TEST_CASE ("sql-select-all-from-local" * doctest::skip(true)) {
