@@ -10,7 +10,7 @@
 
 #include <normal/core/Operator.h>
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
 class LogicalOperator {
 public:

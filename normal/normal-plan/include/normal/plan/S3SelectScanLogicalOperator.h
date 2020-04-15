@@ -11,10 +11,10 @@
 #include <normal/core/Operator.h>
 #include <normal/pushdown/AWSClient.h>
 
-#include <normal/sql/logical/ScanLogicalOperator.h>
+#include "ScanLogicalOperator.h"
 #include <normal/connector/s3/S3SelectPartitioningScheme.h>
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
 class S3SelectScanLogicalOperator: public ScanLogicalOperator {
 private:

@@ -2,17 +2,17 @@
 // Created by matt on 7/4/20.
 //
 
-#include <normal/sql/logical/S3SelectScanLogicalOperator.h>
+#include "normal/plan/S3SelectScanLogicalOperator.h"
 
 #include <normal/pushdown/S3SelectScan.h>
 
-normal::sql::logical::S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(std::shared_ptr<
+normal::plan::S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(std::shared_ptr<
 	S3SelectPartitioningScheme> partitioningScheme,
 																			   std::shared_ptr<normal::pushdown::AWSClient> AwsClient)
 	: partitioningScheme_(std::move(partitioningScheme)),
 	  awsClient_(std::move(AwsClient)) {}
 
-std::shared_ptr<normal::core::Operator> normal::sql::logical::S3SelectScanLogicalOperator::toOperator() {
+std::shared_ptr<normal::core::Operator> normal::plan::S3SelectScanLogicalOperator::toOperator() {
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   for (const auto &partition: partitioningScheme_->partitions()) {

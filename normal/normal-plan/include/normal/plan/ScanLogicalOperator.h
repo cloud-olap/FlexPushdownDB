@@ -9,11 +9,11 @@
 
 #include <normal/core/Operator.h>
 
-#include <normal/sql/logical/LogicalOperator.h>
+#include "LogicalOperator.h"
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
-class ScanLogicalOperator : public normal::sql::logical::LogicalOperator {
+class ScanLogicalOperator : public normal::plan::LogicalOperator {
 
 public:
   ~ScanLogicalOperator() override = default;

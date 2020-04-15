@@ -62,4 +62,4 @@ target_link_libraries(normal-core PUBLIC expected)
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-showTargetProps(normal-core)
+#showTargetProps(normal-core)

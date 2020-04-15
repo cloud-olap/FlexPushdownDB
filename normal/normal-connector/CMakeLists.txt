@@ -27,7 +27,7 @@ target_include_directories(normal-connector PUBLIC include)
 
 target_link_libraries(normal-connector PUBLIC normal-core)
 target_link_libraries(normal-connector PUBLIC normal-pushdown)
-target_link_libraries(normal-connector PUBLIC normal-sql)
+target_link_libraries(normal-connector PUBLIC normal-plan)
 target_link_libraries(normal-connector PRIVATE spdlog::spdlog)
 
 

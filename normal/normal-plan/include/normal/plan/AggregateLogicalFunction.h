@@ -11,7 +11,7 @@
 #include <normal/core/expression/Expression.h>
 #include <normal/pushdown/aggregate/AggregationFunction.h>
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
 class AggregateLogicalFunction {
 private:

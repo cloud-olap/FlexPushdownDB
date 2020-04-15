@@ -11,11 +11,11 @@
 #include <normal/core/Operator.h>
 #include <normal/core/expression/Expression.h>
 
-#include <normal/sql/logical/LogicalOperator.h>
+#include "LogicalOperator.h"
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
-class ProjectLogicalOperator : public normal::sql::logical::LogicalOperator {
+class ProjectLogicalOperator : public normal::plan::LogicalOperator {
 
 public:
   explicit ProjectLogicalOperator(std::vector<std::shared_ptr<core::expression::Expression>> expressions);

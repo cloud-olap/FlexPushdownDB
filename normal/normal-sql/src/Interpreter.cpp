@@ -36,7 +36,7 @@ void Interpreter::parse(const std::string &sql) {
   auto sqlStatements = tree->accept(&visitor);
 
   auto typedSqlStatements = sqlStatements.as<std::shared_ptr<std::vector<std::shared_ptr<std::vector<std::shared_ptr<
-      logical::LogicalOperator>>>>>>();
+	  plan::LogicalOperator>>>>>>();
 
   // TODO: Perhaps support multiple statements in future
   auto firstSQLStatement = typedSqlStatements->at(0);

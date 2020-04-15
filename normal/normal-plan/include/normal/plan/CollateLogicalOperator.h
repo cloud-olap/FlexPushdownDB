@@ -8,9 +8,9 @@
 #include <memory>
 
 #include <normal/core/Operator.h>
-#include <normal/sql/logical/LogicalOperator.h>
+#include "LogicalOperator.h"
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
 class CollateLogicalOperator : public LogicalOperator {
 public:

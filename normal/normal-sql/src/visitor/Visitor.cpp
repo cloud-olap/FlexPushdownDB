@@ -8,10 +8,10 @@
 #include <normal/core/expression/Column.h>
 #include <normal/core/type/Types.h>
 
-#include <normal/sql/logical/ProjectLogicalOperator.h>
-#include <normal/sql/logical/CollateLogicalOperator.h>
-#include <normal/sql/logical/AggregateLogicalOperator.h>
-#include <normal/sql/logical/SumLogicalFunction.h>
+#include "normal/plan/ProjectLogicalOperator.h"
+#include "normal/plan/CollateLogicalOperator.h"
+#include "normal/plan/AggregateLogicalOperator.h"
+#include "normal/plan/SumLogicalFunction.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
@@ -37,7 +37,7 @@ normal::sql::visitor::Visitor::Visitor(
  */
 antlrcpp::Any normal::sql::visitor::Visitor::visitParse(normal::sql::NormalSQLParser::ParseContext *ctx) {
 
-  auto sqlStatements = std::make_shared<std::vector<std::shared_ptr<std::vector<std::shared_ptr<normal::sql::logical::LogicalOperator>>>>>();
+  auto sqlStatements = std::make_shared<std::vector<std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>>>();
 
   for (const auto &sql_stmt: ctx->sql_stmt_list()) {
     auto sqlStmt = visitSql_stmt_list(sql_stmt);
@@ -70,17 +70,17 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitFactored_select_stmt(normal::s
  */
 antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::NormalSQLParser::Select_coreContext *ctx) {
 
-  auto nodes = std::make_shared<std::vector<std::shared_ptr<normal::sql::logical::LogicalOperator>>>();
+  auto nodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
 
-  auto collate = std::make_shared<normal::sql::logical::CollateLogicalOperator>();
+  auto collate = std::make_shared<normal::plan::CollateLogicalOperator>();
   collate->name = "collate";
   nodes->emplace_back(collate);
 
-  auto scanNodes = std::make_shared<std::vector<std::shared_ptr<normal::sql::logical::LogicalOperator>>>();
+  auto scanNodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
 
   for (const auto &tableOrSubquery: ctx->table_or_subquery()) {
     antlrcpp::Any tableOrSubquery_Result = visitTable_or_subquery(tableOrSubquery);
-    std::shared_ptr<normal::sql::logical::LogicalOperator> node = tableOrSubquery_Result.as<std::shared_ptr<normal::sql::logical::LogicalOperator>>();
+    std::shared_ptr<normal::plan::LogicalOperator> node = tableOrSubquery_Result.as<std::shared_ptr<normal::plan::LogicalOperator>>();
     nodes->emplace_back(tableOrSubquery_Result);
     scanNodes->emplace_back(tableOrSubquery_Result);
   }
@@ -89,7 +89,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   bool project = false;
   bool aggregate = false;
 
-  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>>();
+  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<normal::plan::AggregateLogicalFunction>>>();
   auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::core::expression::Expression>>>();
 
   for (const auto &resultColumn: ctx->result_column()) {
@@ -97,9 +97,9 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     if (resultColumn_Result.is<std::string>()) {
       // FIXME: Need to project or push down possibly, we'll just connect scan to collate for now
       simpleScan = true;
-    } else if (resultColumn_Result.is<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>()) {
+    } else if (resultColumn_Result.is<std::shared_ptr<normal::plan::AggregateLogicalFunction>>()) {
       aggregate = true;
-	  auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>();
+	  auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::plan::AggregateLogicalFunction>>();
 	  aggregateFunctions->push_back(aggregateFunction);
     } else if (resultColumn_Result.is<std::shared_ptr<Expression>>()) {
       project = true;
@@ -121,7 +121,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   // Projection
   if(project){
 
-	auto projectNode = std::make_shared<normal::sql::logical::ProjectLogicalOperator>(*projectExpressions);
+	auto projectNode = std::make_shared<normal::plan::ProjectLogicalOperator>(*projectExpressions);
 	projectNode->name = "proj";
 	nodes->push_back(projectNode);
 
@@ -134,7 +134,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
 
   // Aggregate query
   if(aggregate){
-	auto aggregateNode = std::make_shared<normal::sql::logical::AggregateLogicalOperator>(*aggregateFunctions);
+	auto aggregateNode = std::make_shared<normal::plan::AggregateLogicalOperator>(*aggregateFunctions);
 	aggregateNode->name = "agg";
 	nodes->push_back(aggregateNode);
 
@@ -167,7 +167,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitTable_or_subquery(normal::sql:
 
   auto scanOp = catalogueEntry->toLogicalOperator();
 
-  return std::static_pointer_cast<normal::sql::logical::LogicalOperator>(scanOp);
+  return std::static_pointer_cast<normal::plan::LogicalOperator>(scanOp);
 }
 
 /**
@@ -188,7 +188,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr(normal::sql::NormalSQLPar
     return visitColumn_name(ctx->column_name());
   } else if (ctx->function_name()) {
     auto function = visitFunction_name(ctx->function_name());
-    auto typedFunction = function.as<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>();
+    auto typedFunction = function.as<std::shared_ptr<normal::plan::AggregateLogicalFunction>>();
     typedFunction->expression(visitExpr(ctx->expr(0)));
     return function;
   } else {
@@ -204,8 +204,8 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr(normal::sql::NormalSQLPar
  */
 antlrcpp::Any normal::sql::visitor::Visitor::visitFunction_name(normal::sql::NormalSQLParser::Function_nameContext *ctx) {
   if (ctx->any_name()->IDENTIFIER()->toString() == "sum") {
-    auto typedFunction = std::make_shared<normal::sql::logical::SumLogicalFunction>();
-    return std::static_pointer_cast<normal::sql::logical::AggregateLogicalFunction>(typedFunction);
+    auto typedFunction = std::make_shared<normal::plan::SumLogicalFunction>();
+    return std::static_pointer_cast<normal::plan::AggregateLogicalFunction>(typedFunction);
   }
   else{
     throw std::runtime_error("Unrecognized function " + ctx->any_name()->IDENTIFIER()->toString());

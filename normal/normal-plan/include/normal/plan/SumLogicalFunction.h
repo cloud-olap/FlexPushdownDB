@@ -9,11 +9,11 @@
 
 #include <normal/pushdown/aggregate/AggregationFunction.h>
 
-#include <normal/sql/logical/AggregateLogicalFunction.h>
+#include "AggregateLogicalFunction.h"
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
-class SumLogicalFunction : public normal::sql::logical::AggregateLogicalFunction {
+class SumLogicalFunction : public normal::plan::AggregateLogicalFunction {
 public:
   explicit SumLogicalFunction();
   std::shared_ptr<pushdown::aggregate::AggregationFunction> toExecutorFunction() override;

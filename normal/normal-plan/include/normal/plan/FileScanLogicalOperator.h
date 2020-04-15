@@ -9,10 +9,10 @@
 
 #include <normal/core/Operator.h>
 
-#include <normal/sql/logical/ScanLogicalOperator.h>
+#include "ScanLogicalOperator.h"
 #include <normal/connector/local-fs/LocalFilePartitioningScheme.h>
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
 class FileScanLogicalOperator: public ScanLogicalOperator {
 

@@ -3,7 +3,7 @@
 //
 
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/sql/logical/S3SelectScanLogicalOperator.h>
+#include "normal/plan/S3SelectScanLogicalOperator.h"
 
 #include <normal/connector/s3/S3SelectConnector.h>
 
@@ -12,9 +12,9 @@ normal::connector::s3::S3SelectCatalogueEntry::S3SelectCatalogueEntry(const std:
                                                                            std::shared_ptr<normal::connector::Catalogue> catalogue)
     : normal::connector::CatalogueEntry(Alias, std::move(catalogue)), partitioningScheme_(std::move(partitioningScheme)) {}
 
-std::shared_ptr<normal::sql::logical::ScanLogicalOperator> normal::connector::s3::S3SelectCatalogueEntry::toLogicalOperator() {
+std::shared_ptr<normal::plan::ScanLogicalOperator> normal::connector::s3::S3SelectCatalogueEntry::toLogicalOperator() {
   auto connector = std::static_pointer_cast<S3SelectConnector>(this->getCatalogue()->getConnector());
-  auto op = std::make_shared<normal::sql::logical::S3SelectScanLogicalOperator>(partitioningScheme_, connector->getAwsClient());
+  auto op = std::make_shared<normal::plan::S3SelectScanLogicalOperator>(partitioningScheme_, connector->getAwsClient());
   op->name = "s3SelectScan";
   return op;
 }

@@ -10,10 +10,10 @@
 
 #include <normal/core/Operator.h>
 
-#include <normal/sql/logical/AggregateLogicalFunction.h>
-#include <normal/sql/logical/LogicalOperator.h>
+#include "AggregateLogicalFunction.h"
+#include "LogicalOperator.h"
 
-namespace normal::sql::logical {
+namespace normal::plan {
 
 class AggregateLogicalOperator : public LogicalOperator {
 private:
