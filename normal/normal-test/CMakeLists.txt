@@ -32,8 +32,6 @@ add_executable(normal-test
 
 link_target(normal-test)
 
-include_directories("include")
-
 add_executable(normal-test-file
         include/normal/test/Globals.h
         src/MainTest.cpp

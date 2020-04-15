@@ -2,13 +2,16 @@
 // Created by matt on 2/4/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_AST_AGGREGATELOGICALOPERATOR_H
-#define NORMAL_NORMAL_SQL_SRC_AST_AGGREGATELOGICALOPERATOR_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_AGGREGATELOGICALOPERATOR_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_AGGREGATELOGICALOPERATOR_H
 
 #include <vector>
+#include <memory>
 
-#include "logical/AggregateLogicalFunction.h"
-#include "logical/LogicalOperator.h"
+#include "normal/core/Operator.h"
+
+#include "normal/sql/logical/AggregateLogicalFunction.h"
+#include "normal/sql/logical/LogicalOperator.h"
 
 class AggregateLogicalOperator : public LogicalOperator {
 private:
@@ -22,4 +25,4 @@ public:
   std::shared_ptr<normal::core::Operator> toOperator() override;
 };
 
-#endif //NORMAL_NORMAL_SQL_SRC_AST_AGGREGATELOGICALOPERATOR_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_AGGREGATELOGICALOPERATOR_H

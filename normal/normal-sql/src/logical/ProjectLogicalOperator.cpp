@@ -2,7 +2,7 @@
 // Created by matt on 14/4/20.
 //
 
-#include "logical/ProjectLogicalOperator.h"
+#include "normal/sql/logical/ProjectLogicalOperator.h"
 
 #include <utility>
 #include <normal/pushdown/Project.h>

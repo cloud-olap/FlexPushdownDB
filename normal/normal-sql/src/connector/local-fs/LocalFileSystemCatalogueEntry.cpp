@@ -2,8 +2,8 @@
 // Created by matt on 27/3/20.
 //
 
-#include "connector/local-fs/LocalFileSystemCatalogueEntry.h"
-#include "logical/FileScanLogicalOperator.h"
+#include "normal/sql/connector/local-fs/LocalFileSystemCatalogueEntry.h"
+#include "normal/sql/logical/FileScanLogicalOperator.h"
 
 #include <utility>
 LocalFileSystemCatalogueEntry::LocalFileSystemCatalogueEntry(const std::string &Alias, std::string Path,

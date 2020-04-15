@@ -2,11 +2,16 @@
 // Created by matt on 7/4/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_AST_S3SELECTSCANLOGICALOPERATOR_H
-#define NORMAL_NORMAL_SQL_SRC_AST_S3SELECTSCANLOGICALOPERATOR_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_S3SELECTSCANLOGICALOPERATOR_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_S3SELECTSCANLOGICALOPERATOR_H
 
+#include <memory>
+#include <string>
+
+#include <normal/core/Operator.h>
 #include <normal/pushdown/AWSClient.h>
-#include "logical/ScanLogicalOperator.h"
+
+#include "normal/sql/logical/ScanLogicalOperator.h"
 
 class S3SelectScanLogicalOperator: public ScanLogicalOperator {
 private:
@@ -22,4 +27,4 @@ public:
   std::shared_ptr<normal::core::Operator> toOperator() override;
 };
 
-#endif //NORMAL_NORMAL_SQL_SRC_AST_S3SELECTSCANLOGICALOPERATOR_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_S3SELECTSCANLOGICALOPERATOR_H

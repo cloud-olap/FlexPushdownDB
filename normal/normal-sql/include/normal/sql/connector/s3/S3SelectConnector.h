@@ -5,7 +5,8 @@
 #ifndef NORMAL_NORMAL_SQL_SRC_S3SELECTCONNECTOR_H
 #define NORMAL_NORMAL_SQL_SRC_S3SELECTCONNECTOR_H
 
-#include "connector/Connector.h"
+#include "normal/sql/connector/Connector.h"
+
 #include "normal/pushdown/AWSClient.h"
 
 class S3SelectConnector : public Connector {

@@ -2,13 +2,16 @@
 // Created by matt on 14/4/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_LOGICAL_PROJECTLOGICALOPERATOR_H
-#define NORMAL_NORMAL_SQL_SRC_LOGICAL_PROJECTLOGICALOPERATOR_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_PROJECTLOGICALOPERATOR_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_PROJECTLOGICALOPERATOR_H
 
-#include "LogicalOperator.h"
+#include <memory>
+#include <vector>
 
-#include <normal/core/expression/Expressions.h>
+#include <normal/core/Operator.h>
+#include <normal/core/expression/Expression.h>
 
+#include "normal/sql/logical/LogicalOperator.h"
 
 class ProjectLogicalOperator : public LogicalOperator {
 
@@ -25,4 +28,4 @@ private:
 };
 
 
-#endif //NORMAL_NORMAL_SQL_SRC_LOGICAL_PROJECTLOGICALOPERATOR_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_PROJECTLOGICALOPERATOR_H

@@ -2,9 +2,11 @@
 // Created by matt on 7/4/20.
 //
 
-#include "logical/SumLogicalFunction.h"
+#include "normal/sql/logical/SumLogicalFunction.h"
 
-#include "normal/core/expression/Expression.h"
+#include <memory>
+
+#include "normal/pushdown/aggregate/AggregationFunction.h"
 #include "normal/pushdown/aggregate/Sum.h"
 
 SumLogicalFunction::SumLogicalFunction() : AggregateLogicalFunction("sum") {}

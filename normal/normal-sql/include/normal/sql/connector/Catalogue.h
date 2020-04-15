@@ -2,15 +2,15 @@
 // Created by matt on 27/3/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_CATALOGUE_H
-#define NORMAL_NORMAL_SQL_SRC_CATALOGUE_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUE_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUE_H
 
 #include <string>
 #include <unordered_map>
 #include <memory>
 
-#include "connector/Connector.h"
-#include "connector/CatalogueEntry.h"
+#include "normal/sql/connector/Connector.h"
+#include "normal/sql/connector/CatalogueEntry.h"
 
 class CatalogueEntry;
 
@@ -32,4 +32,4 @@ public:
   std::string toString();
 };
 
-#endif //NORMAL_NORMAL_SQL_SRC_CATALOGUE_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUE_H

@@ -2,11 +2,12 @@
 // Created by matt on 27/3/20.
 //
 
-#include "connector/s3/S3SelectCatalogueEntry.h"
-#include "logical/S3SelectScanLogicalOperator.h"
+#include "normal/sql/connector/s3/S3SelectCatalogueEntry.h"
+#include "normal/sql/logical/S3SelectScanLogicalOperator.h"
 
 #include <utility>
-#include <connector/s3/S3SelectConnector.h>
+#include <normal/sql/connector/s3/S3SelectConnector.h>
+
 S3SelectCatalogueEntry::S3SelectCatalogueEntry(const std::string& Alias,
                                                std::string S3Bucket,
                                                std::string S3Object,

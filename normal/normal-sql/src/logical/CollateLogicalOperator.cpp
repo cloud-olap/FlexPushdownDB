@@ -2,7 +2,7 @@
 // Created by matt on 1/4/20.
 //
 
-#include "logical/CollateLogicalOperator.h"
+#include "normal/sql/logical/CollateLogicalOperator.h"
 
 #include <normal/pushdown/Collate.h>
 

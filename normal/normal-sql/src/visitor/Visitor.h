@@ -5,13 +5,13 @@
 #ifndef NORMAL_NORMAL_SQL_SRC_VISITOR_H
 #define NORMAL_NORMAL_SQL_SRC_VISITOR_H
 
-#include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/core/OperatorManager.h>
-#include <connector/Catalogue.h>
-#include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
+#include <normal/core/type/Type.h>
+#include <normal/core/expression/Expression.h>
+
+#include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/sql/NormalSQLBaseVisitor.h>
-#include "logical/ScanLogicalOperator.h"
-#include "normal/core/expression/Column.h"
+#include <normal/sql/connector/Catalogue.h>
 
 using namespace normal::core::type;
 using namespace normal::core::expression;

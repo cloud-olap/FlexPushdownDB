@@ -2,13 +2,14 @@
 // Created by matt on 27/3/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_INCLUDE_CONNECTOR_CATALOGUEENTRY_H
-#define NORMAL_NORMAL_SQL_INCLUDE_CONNECTOR_CATALOGUEENTRY_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUEENTRY_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUEENTRY_H
 
+#include <memory>
 #include <string>
 
-#include "logical/ScanLogicalOperator.h"
-#include "connector/Catalogue.h"
+#include "normal/sql/logical/ScanLogicalOperator.h"
+#include "Catalogue.h"
 
 class Catalogue;
 
@@ -30,4 +31,4 @@ public:
 
 };
 
-#endif //NORMAL_NORMAL_SQL_INCLUDE_CONNECTOR_CATALOGUEENTRY_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CATALOGUEENTRY_H

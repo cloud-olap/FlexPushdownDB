@@ -2,7 +2,7 @@
 // Created by matt on 2/4/20.
 //
 
-#include "logical/AggregateLogicalFunction.h"
+#include "normal/sql/logical/AggregateLogicalFunction.h"
 
 #include <utility>
 

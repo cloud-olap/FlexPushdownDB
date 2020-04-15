@@ -2,14 +2,14 @@
 // Created by matt on 27/3/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCATALOGUEENTRY_H
-#define NORMAL_NORMAL_SQL_SRC_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCATALOGUEENTRY_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCATALOGUEENTRY_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCATALOGUEENTRY_H
 
 #include <memory>
 #include <string>
 
-#include <connector/CatalogueEntry.h>
-#include "logical/ScanLogicalOperator.h"
+#include <normal/sql/connector/CatalogueEntry.h>
+#include "normal/sql/logical/ScanLogicalOperator.h"
 
 class LocalFileSystemCatalogueEntry: public CatalogueEntry {
 
@@ -26,4 +26,4 @@ public:
 
 };
 
-#endif //NORMAL_NORMAL_SQL_SRC_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCATALOGUEENTRY_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCATALOGUEENTRY_H

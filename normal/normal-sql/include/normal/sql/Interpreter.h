@@ -2,16 +2,15 @@
 // Created by matt on 26/3/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_INTERPRETER_H
-#define NORMAL_NORMAL_SQL_SRC_INTERPRETER_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_INTERPRETER_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_INTERPRETER_H
 
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include <connector/Catalogue.h>
-#include <normal/core/OperatorManager.h>
 
-#include "connector/Connector.h"
+#include <normal/sql/connector/Catalogue.h>
+#include <normal/core/OperatorManager.h>
 
 class Interpreter{
 
@@ -27,4 +26,4 @@ public:
 
 };
 
-#endif //NORMAL_NORMAL_SQL_SRC_INTERPRETER_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_INTERPRETER_H

@@ -2,12 +2,13 @@
 // Created by matt on 27/3/20.
 //
 
-#ifndef NORMAL_NORMAL_SQL_SRC_S3SELECTCATALOGUEENTRY_H
-#define NORMAL_NORMAL_SQL_SRC_S3SELECTCATALOGUEENTRY_H
+#ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_S3_S3SELECTCATALOGUEENTRY_H
+#define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_S3_S3SELECTCATALOGUEENTRY_H
 
 #include <string>
-#include <connector/CatalogueEntry.h>
-#include "logical/ScanLogicalOperator.h"
+
+#include <normal/sql/connector/CatalogueEntry.h>
+#include "normal/sql/logical/ScanLogicalOperator.h"
 
 class S3SelectCatalogueEntry: public CatalogueEntry {
 private:
@@ -24,4 +25,4 @@ public:
 
 };
 
-#endif //NORMAL_NORMAL_SQL_SRC_S3SELECTCATALOGUEENTRY_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_S3_S3SELECTCATALOGUEENTRY_H

@@ -2,7 +2,7 @@
 // Created by matt on 27/3/20.
 //
 
-#include "connector/Catalogue.h"
+#include "normal/sql/connector/Catalogue.h"
 
 #include <utility>
 #include <sstream>

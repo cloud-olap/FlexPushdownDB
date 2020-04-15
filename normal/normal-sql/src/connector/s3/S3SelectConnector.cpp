@@ -3,7 +3,7 @@
 //
 
 #include <normal/pushdown/AWSClient.h>
-#include "connector/s3/S3SelectConnector.h"
+#include "normal/sql/connector/s3/S3SelectConnector.h"
 
 S3SelectConnector::S3SelectConnector(const std::string &name) :
     Connector(name),

@@ -2,7 +2,7 @@
 // Created by matt on 27/3/20.
 //
 
-#include "connector/CatalogueEntry.h"
+#include "normal/sql/connector/CatalogueEntry.h"
 
 #include <utility>
 

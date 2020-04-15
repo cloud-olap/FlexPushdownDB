@@ -2,12 +2,12 @@
 // Created by matt on 26/3/20.
 //
 
-#include <Interpreter.h>
+#include <normal/sql/Interpreter.h>
 
 #include <normal/sql/NormalSQLLexer.h>
 #include <normal/sql/NormalSQLParser.h>
 #include "visitor/Visitor.h"
-#include "Globals.h"
+#include "normal/sql/Globals.h"
 
 Interpreter::Interpreter() :
     catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<Catalogue>>>()),

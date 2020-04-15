@@ -2,13 +2,14 @@
 // Created by matt on 7/4/20.
 //
 
-#include "logical/S3SelectScanLogicalOperator.h"
+#include "normal/sql/logical/S3SelectScanLogicalOperator.h"
 
-#include <connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/pushdown/S3SelectScan.h>
-#include <normal/pushdown/FileScan.h>
-
+#include <string>
+#include <memory>
 #include <utility>
+
+#include <normal/pushdown/AWSClient.h>
+#include <normal/pushdown/S3SelectScan.h>
 
 S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(std::string S3Bucket,
                                                          std::string S3Object,

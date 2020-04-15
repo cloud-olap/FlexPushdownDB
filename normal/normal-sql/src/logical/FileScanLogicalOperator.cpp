@@ -2,7 +2,7 @@
 // Created by matt on 7/4/20.
 //
 
-#include "logical/FileScanLogicalOperator.h"
+#include "normal/sql/logical/FileScanLogicalOperator.h"
 
 #include <normal/pushdown/FileScan.h>
 

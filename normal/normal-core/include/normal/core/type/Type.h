@@ -7,6 +7,9 @@
 
 #include <memory>
 #include <utility>
+#include <string>
+
+#include <arrow/api.h>
 
 namespace normal::core::type {
 

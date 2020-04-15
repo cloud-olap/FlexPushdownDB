@@ -6,16 +6,14 @@
 
 #include <utility>
 
-#include "../Globals.h"
-#include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
-#include <logical/ProjectLogicalOperator.h>
-#include "logical/ScanLogicalOperator.h"
-#include "logical/CollateLogicalOperator.h"
-#include "logical/AggregateLogicalOperator.h"
 #include "normal/core/expression/Cast.h"
 #include "normal/core/expression/Column.h"
 #include "normal/core/type/Types.h"
-#include "logical/SumLogicalFunction.h"
+
+#include <normal/sql/logical/ProjectLogicalOperator.h>
+#include "normal/sql/logical/CollateLogicalOperator.h"
+#include "normal/sql/logical/AggregateLogicalOperator.h"
+#include "normal/sql/logical/SumLogicalFunction.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
