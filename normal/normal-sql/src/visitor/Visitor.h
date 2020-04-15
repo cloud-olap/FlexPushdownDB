@@ -17,7 +17,7 @@
 
 #include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/sql/NormalSQLBaseVisitor.h>
-#include <normal/sql/connector/Catalogue.h>
+#include <normal/connector/Catalogue.h>
 
 using namespace normal::core::type;
 using namespace normal::core::expression;

@@ -7,24 +7,37 @@
 #include <doctest/doctest.h>
 
 #include <normal/sql/Interpreter.h>
-#include <normal/sql/connector/s3/S3SelectConnector.h>
-#include <normal/sql/connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/sql/connector/local-fs/LocalFileSystemConnector.h>
-#include <normal/sql/connector/local-fs/LocalFileSystemCatalogueEntry.h>
+#include <normal/connector/s3/S3SelectConnector.h>
+#include <normal/connector/s3/S3SelectCatalogueEntry.h>
+#include <normal/connector/local-fs/LocalFileSystemConnector.h>
+#include <normal/connector/local-fs/LocalFileSystemCatalogueEntry.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/test/TestUtil.h>
+#include <normal/connector/local-fs/ExplicitLocalFilePartitioningScheme.h>
 
 void configureLocalConnector(normal::sql::Interpreter &i) {
-  auto conn = std::make_shared<normal::sql::connector::local_fs::LocalFileSystemConnector>("local_fs");
-  auto cat = std::make_shared<normal::sql::connector::Catalogue>("local_fs", conn);
-  cat->put(std::make_shared<normal::sql::connector::local_fs::LocalFileSystemCatalogueEntry>("test", "data/data-file-simple/test.csv", cat));
+
+  auto conn = std::make_shared<normal::connector::local_fs::LocalFileSystemConnector>("local_fs");
+
+  auto cat = std::make_shared<normal::connector::Catalogue>("local_fs", conn);
+
+  auto partitioningScheme1 = std::make_shared<ExplicitLocalFilePartitioningScheme>();
+  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/data-file-simple/test.csv"));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test", partitioningScheme1, cat));
+
+  auto partitioningScheme2 = std::make_shared<ExplicitLocalFilePartitioningScheme>();
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test01.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test02.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test03.csv"));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test_partitioned", partitioningScheme2, cat));
+
   i.put(cat);
 }
 
 void configureS3Connector(normal::sql::Interpreter &i) {
-  auto conn = std::make_shared<normal::sql::connector::s3::S3SelectConnector>("s3_select");
-  auto cat = std::make_shared<normal::sql::connector::Catalogue>("s3_select", conn);
-  cat->put(std::make_shared<normal::sql::connector::s3::S3SelectCatalogueEntry>("customer", "s3Filter", "tpch-sf1/customer.csv", cat));
+  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
+  auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
+  cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>("customer", "s3Filter", "tpch-sf1/customer.csv", cat));
   i.put(cat);
 }
 
@@ -102,5 +115,5 @@ TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
 }
 
 TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
-  auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test");
+  auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test_partitioned");
 }

@@ -5,11 +5,11 @@
 #ifndef NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCONNECTOR_H
 #define NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_LOCAL_FS_LOCALFILESYSTEMCONNECTOR_H
 
-#include <normal/sql/connector/Connector.h>
+#include <normal/connector/Connector.h>
 
-namespace normal::sql::connector::local_fs {
+namespace normal::connector::local_fs {
 
-class LocalFileSystemConnector : public normal::sql::connector::Connector {
+class LocalFileSystemConnector : public normal::connector::Connector {
 
 private:
 

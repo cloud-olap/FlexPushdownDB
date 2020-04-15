@@ -9,17 +9,15 @@
 #include <utility>
 #include <vector>
 
-#include "PartitioningScheme.h"
-#include "Partition.h"
+#include <normal/connector/local-fs/LocalFilePartitioningScheme.h>
+#include <normal/connector/local-fs/LocalFilePartition.h>
 
-class ExplicitPartitioningScheme : public PartitioningScheme {
+class ExplicitLocalFilePartitioningScheme : public LocalFilePartitioningScheme {
 
 public:
-  explicit ExplicitPartitioningScheme(std::shared_ptr<std::vector<Partition>> Partitions) :
-	  partitions_(std::move(Partitions)) {}
+  explicit ExplicitLocalFilePartitioningScheme() = default;
 
-private:
-  std::shared_ptr<std::vector<Partition>> partitions_;
+  void add(const std::shared_ptr<LocalFilePartition> &partition);
 
 };
 

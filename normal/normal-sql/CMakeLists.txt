@@ -15,13 +15,6 @@ add_library(normal-sql STATIC
         include/normal/sql/Globals.h
         src/Interpreter.cpp include/normal/sql/Interpreter.h
         src/visitor/Visitor.cpp src/visitor/Visitor.h
-        src/connector/Connector.cpp include/normal/sql/connector/Connector.h
-        src/connector/CatalogueEntry.cpp include/normal/sql/connector/CatalogueEntry.h
-        src/connector/Catalogue.cpp include/normal/sql/connector/Catalogue.h
-        src/connector/s3/S3SelectConnector.cpp include/normal/sql/connector/s3/S3SelectConnector.h
-        src/connector/s3/S3SelectCatalogueEntry.cpp include/normal/sql/connector/s3/S3SelectCatalogueEntry.h
-        src/connector/local-fs/LocalFileSystemCatalogueEntry.cpp include/normal/sql/connector/local-fs/LocalFileSystemCatalogueEntry.h
-        src/connector/local-fs/LocalFileSystemConnector.cpp include/normal/sql/connector/local-fs/LocalFileSystemConnector.h
         src/logical/ScanLogicalOperator.cpp include/normal/sql/logical/ScanLogicalOperator.h
         src/logical/LogicalOperator.cpp include/normal/sql/logical/LogicalOperator.h
         src/logical/CollateLogicalOperator.cpp include/normal/sql/logical/CollateLogicalOperator.h
@@ -30,16 +23,14 @@ add_library(normal-sql STATIC
         src/logical/SumLogicalFunction.cpp include/normal/sql/logical/SumLogicalFunction.h
         src/logical/FileScanLogicalOperator.cpp include/normal/sql/logical/FileScanLogicalOperator.h
         src/logical/S3SelectScanLogicalOperator.cpp include/normal/sql/logical/S3SelectScanLogicalOperator.h
-        src/logical/ProjectLogicalOperator.cpp include/normal/sql/logical/ProjectLogicalOperator.h
-        include/normal/sql/connector/partition/PartitioningScheme.h
-        include/normal/sql/connector/partition/ExplicitPartitioningScheme.h
-        include/normal/sql/connector/partition/Partition.h)
+        src/logical/ProjectLogicalOperator.cpp include/normal/sql/logical/ProjectLogicalOperator.h)
 
 target_include_directories(normal-sql PUBLIC include)
 target_include_directories(normal-sql PUBLIC gen-src)
 
 target_link_libraries(normal-sql PUBLIC normal-core)
 target_link_libraries(normal-sql PUBLIC normal-pushdown)
+target_link_libraries(normal-sql PUBLIC normal-connector)
 target_link_libraries(normal-sql PRIVATE spdlog::spdlog)
 target_link_libraries(normal-sql PRIVATE antlr4_static)
 

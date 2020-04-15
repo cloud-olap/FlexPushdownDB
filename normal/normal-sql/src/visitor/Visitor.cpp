@@ -23,7 +23,7 @@ using namespace normal::core::expression;
  * @param OperatorManager
  */
 normal::sql::visitor::Visitor::Visitor(
-    std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<normal::sql::connector::Catalogue>>> catalogues,
+    std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<normal::connector::Catalogue>>> catalogues,
     std::shared_ptr<normal::core::OperatorManager> OperatorManager) :
     catalogues_(std::move(catalogues)),
     operatorManager_(std::move(OperatorManager)) {}

@@ -5,14 +5,14 @@
 #ifndef NORMAL_NORMAL_SQL_SRC_S3SELECTCONNECTOR_H
 #define NORMAL_NORMAL_SQL_SRC_S3SELECTCONNECTOR_H
 
-#include <normal/sql/connector/Connector.h>
+#include <normal/connector/Connector.h>
 
 #include <normal/pushdown/AWSClient.h>
-#include <normal/sql/connector/Connector.h>
+#include <normal/connector/Connector.h>
 
-namespace normal::sql::connector::s3 {
+namespace normal::connector::s3 {
 
-class S3SelectConnector : public normal::sql::connector::Connector {
+class S3SelectConnector : public normal::connector::Connector {
 
 private:
   std::shared_ptr<pushdown::AWSClient> awsClient_;

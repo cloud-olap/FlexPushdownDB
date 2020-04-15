@@ -6,15 +6,15 @@
 
 #include <normal/pushdown/FileScan.h>
 
-
-normal::sql::logical::FileScanLogicalOperator::FileScanLogicalOperator(std::string path) : path_(std::move(path)) {}
-
-const std::string &normal::sql::logical::FileScanLogicalOperator::path() const {
-  return path_;
-}
+normal::sql::logical::FileScanLogicalOperator::FileScanLogicalOperator(
+	std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme) :
+	partitioningScheme_(std::move(partitioningScheme)) {}
 
 std::shared_ptr<normal::core::Operator> normal::sql::logical::FileScanLogicalOperator::toOperator() {
-  return std::make_shared<normal::pushdown::FileScan>(this->name, this->path_);
+  auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+  for(const auto& partition: partitioningScheme_->partitions()){
+	operators->push_back(std::make_shared<normal::pushdown::FileScan>(this->name, partition->getPath()));
+  }
+  // FIXME: Should return multiple operators
+  return operators->at(0);
 }
-
-

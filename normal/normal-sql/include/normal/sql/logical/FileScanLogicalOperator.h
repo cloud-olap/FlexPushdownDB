@@ -10,18 +10,17 @@
 #include <normal/core/Operator.h>
 
 #include <normal/sql/logical/ScanLogicalOperator.h>
+#include <normal/connector/local-fs/LocalFilePartitioningScheme.h>
 
 namespace normal::sql::logical {
 
 class FileScanLogicalOperator: public ScanLogicalOperator {
 
 private:
-  std::string path_;
+  std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme_;
 
 public:
-  explicit FileScanLogicalOperator(std::string Path);
-
-  [[nodiscard]] const std::string &path() const;
+  explicit FileScanLogicalOperator(std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme);
 
   std::shared_ptr<core::Operator> toOperator() override;
 

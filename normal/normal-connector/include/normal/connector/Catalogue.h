@@ -9,10 +9,10 @@
 #include <unordered_map>
 #include <memory>
 
-#include <normal/sql/connector/Connector.h>
-#include <normal/sql/connector/CatalogueEntry.h>
+#include <normal/connector/Connector.h>
+#include <normal/connector/CatalogueEntry.h>
 
-namespace normal::sql::connector {
+namespace normal::connector {
 
 class CatalogueEntry;
 

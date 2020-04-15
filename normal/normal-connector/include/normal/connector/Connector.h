@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace normal::sql::connector {
+namespace normal::connector {
 
 class Connector {
 

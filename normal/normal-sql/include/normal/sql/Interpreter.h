@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include <normal/sql/connector/Catalogue.h>
+#include <normal/connector/Catalogue.h>
 #include <normal/core/OperatorManager.h>
 
 namespace normal::sql {
