@@ -22,7 +22,18 @@ add_library(normal-sql STATIC
         src/connector/s3/S3SelectCatalogueEntry.cpp include/normal/sql/connector/s3/S3SelectCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemCatalogueEntry.cpp include/normal/sql/connector/local-fs/LocalFileSystemCatalogueEntry.h
         src/connector/local-fs/LocalFileSystemConnector.cpp include/normal/sql/connector/local-fs/LocalFileSystemConnector.h
-        src/logical/ScanLogicalOperator.cpp include/normal/sql/logical/ScanLogicalOperator.h src/logical/LogicalOperator.cpp include/normal/sql/logical/LogicalOperator.h src/logical/CollateLogicalOperator.cpp include/normal/sql/logical/CollateLogicalOperator.h src/logical/AggregateLogicalOperator.cpp include/normal/sql/logical/AggregateLogicalOperator.h src/logical/AggregateLogicalFunction.cpp include/normal/sql/logical/AggregateLogicalFunction.h src/logical/SumLogicalFunction.cpp include/normal/sql/logical/SumLogicalFunction.h src/logical/FileScanLogicalOperator.cpp include/normal/sql/logical/FileScanLogicalOperator.h src/logical/S3SelectScanLogicalOperator.cpp include/normal/sql/logical/S3SelectScanLogicalOperator.h src/logical/ProjectLogicalOperator.cpp include/normal/sql/logical/ProjectLogicalOperator.h)
+        src/logical/ScanLogicalOperator.cpp include/normal/sql/logical/ScanLogicalOperator.h
+        src/logical/LogicalOperator.cpp include/normal/sql/logical/LogicalOperator.h
+        src/logical/CollateLogicalOperator.cpp include/normal/sql/logical/CollateLogicalOperator.h
+        src/logical/AggregateLogicalOperator.cpp include/normal/sql/logical/AggregateLogicalOperator.h
+        src/logical/AggregateLogicalFunction.cpp include/normal/sql/logical/AggregateLogicalFunction.h
+        src/logical/SumLogicalFunction.cpp include/normal/sql/logical/SumLogicalFunction.h
+        src/logical/FileScanLogicalOperator.cpp include/normal/sql/logical/FileScanLogicalOperator.h
+        src/logical/S3SelectScanLogicalOperator.cpp include/normal/sql/logical/S3SelectScanLogicalOperator.h
+        src/logical/ProjectLogicalOperator.cpp include/normal/sql/logical/ProjectLogicalOperator.h
+        include/normal/sql/connector/partition/PartitioningScheme.h
+        include/normal/sql/connector/partition/ExplicitPartitioningScheme.h
+        include/normal/sql/connector/partition/Partition.h)
 
 target_include_directories(normal-sql PUBLIC include)
 target_include_directories(normal-sql PUBLIC gen-src)

@@ -100,3 +100,7 @@ TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
 	  CHECK(tuples->value<arrow::Int32Type>("B", 1) == 5);
 	  CHECK(tuples->value<arrow::Int32Type>("B", 2) == 8);
 }
+
+TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
+  auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test");
+}
