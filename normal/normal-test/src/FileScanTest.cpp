@@ -7,17 +7,17 @@
 
 #include <doctest/doctest.h>
 
-#include "normal/pushdown/Collate.h"
+#include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/FileScan.h>
 #include <normal/pushdown/aggregate/Sum.h>
 #include <normal/pushdown/Project.h>
-#include "normal/test/Globals.h"
-#include "normal/core/expression/Cast.h"
-#include "normal/core/expression/Column.h"
-#include "normal/core/type/Float64Type.h"
-#include "normal/test/TestUtil.h"
+#include <normal/test/Globals.h>
+#include <normal/core/expression/Cast.h>
+#include <normal/core/expression/Column.h>
+#include <normal/core/type/Float64Type.h>
+#include <normal/test/TestUtil.h>
 
 using namespace normal::core::type;
 using namespace normal::core::expression;

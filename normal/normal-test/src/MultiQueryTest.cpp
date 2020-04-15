@@ -6,11 +6,10 @@
 
 #include <doctest/doctest.h>
 
-#include "normal/pushdown/Collate.h"
+#include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/FileScan.h>
 #include <normal/test/TestUtil.h>
-#include "normal/test/Globals.h"
 
 /**
  * Test to make sure a query can be run and then re run (useful for instances such as

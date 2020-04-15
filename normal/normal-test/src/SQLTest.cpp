@@ -8,13 +8,11 @@
 
 #include <normal/sql/Interpreter.h>
 #include <normal/sql/connector/s3/S3SelectConnector.h>
-#include <normal/sql/connector/Catalogue.h>
 #include <normal/sql/connector/s3/S3SelectCatalogueEntry.h>
 #include <normal/sql/connector/local-fs/LocalFileSystemConnector.h>
 #include <normal/sql/connector/local-fs/LocalFileSystemCatalogueEntry.h>
 #include <normal/pushdown/Collate.h>
-#include "normal/test/Globals.h"
-#include "normal/test/TestUtil.h"
+#include <normal/test/TestUtil.h>
 
 void configureLocalConnector(normal::sql::Interpreter &i) {
   auto conn = std::make_shared<normal::sql::connector::local_fs::LocalFileSystemConnector>("local_fs");

@@ -17,7 +17,7 @@
 #include <normal/core/type/Float64Type.h>
 #include <normal/core/expression/Cast.h>
 
-#include "normal/test/TestUtil.h"
+#include <normal/test/TestUtil.h>
 
 using namespace normal::core::type;
 using namespace normal::core::expression;

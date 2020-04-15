@@ -7,7 +7,7 @@
 
 #include <experimental/filesystem>
 
-#include "normal/core/OperatorManager.h"
+#include <normal/core/OperatorManager.h>
 
 
 /*

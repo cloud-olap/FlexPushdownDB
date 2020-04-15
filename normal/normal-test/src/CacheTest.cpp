@@ -5,21 +5,18 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <cstdio>
 #include <unistd.h>
 
 #include <doctest/doctest.h>
 
-#include "normal/pushdown/S3SelectScan.h"
-#include "normal/pushdown/Collate.h"
+#include <normal/pushdown/S3SelectScan.h>
+#include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/aggregate/Sum.h>
 #include <normal/core/expression/Cast.h>
 #include <normal/core/expression/Column.h>
-#include <normal/core/type/Float64Type.h>
-#include "normal/test/Globals.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
