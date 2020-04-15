@@ -13,8 +13,8 @@
 #include <connector/local-fs/LocalFileSystemConnector.h>
 #include <connector/local-fs/LocalFileSystemCatalogueEntry.h>
 #include <normal/pushdown/Collate.h>
-#include "Globals.h"
-#include "TestUtil.h"
+#include "normal/test/Globals.h"
+#include "normal/test/TestUtil.h"
 
 void configureLocalConnector(Interpreter &i) {
   auto conn = std::make_shared<LocalFileSystemConnector>("local_fs");
@@ -50,7 +50,7 @@ auto executeTest(const std::string &sql) {
   configureLocalConnector(i);
   configureS3Connector(i);
   i.parse(sql);
-  TestUtil::writeLogicalExecutionPlan(*i.getOperatorManager());
+  normal::test::TestUtil::writeLogicalExecutionPlan(*i.getOperatorManager());
   auto tuples = execute(i);
   i.getOperatorManager()->stop();
 

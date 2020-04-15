@@ -2,16 +2,13 @@
 // Created by matt on 5/3/20.
 //
 
-#include <string>
 #include <memory>
 #include <vector>
-#include <cstdio>
-#include <unistd.h>
 
 #include <doctest/doctest.h>
 
-#include "normal/pushdown/S3SelectScan.h"
-#include "normal/pushdown/Collate.h"
+#include <normal/pushdown/S3SelectScan.h>
+#include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
@@ -19,9 +16,8 @@
 #include <normal/core/expression/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/core/expression/Cast.h>
-#include <normal/core/type/DecimalType.h>
-#include "Globals.h"
-#include "TestUtil.h"
+
+#include "normal/test/TestUtil.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
@@ -60,7 +56,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate"
   mgr->put(aggregate);
   mgr->put(collate);
 
-  TestUtil::writeLogicalExecutionPlan(*mgr);
+  normal::test::TestUtil::writeLogicalExecutionPlan(*mgr);
 
   mgr->boot();
 

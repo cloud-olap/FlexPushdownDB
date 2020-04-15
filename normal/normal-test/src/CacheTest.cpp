@@ -19,7 +19,7 @@
 #include <normal/core/expression/Cast.h>
 #include <normal/core/expression/Column.h>
 #include <normal/core/type/Float64Type.h>
-#include "Globals.h"
+#include "normal/test/Globals.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;

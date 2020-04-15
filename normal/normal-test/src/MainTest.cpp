@@ -6,13 +6,10 @@
 #include <doctest/doctest.h>
 
 #include "normal/core/TupleSet.h"
-#include "Globals.h"
 
 namespace arrow { class Array; }
 namespace arrow { class MemoryPool; }
 namespace arrow { class StringArray; }
-
-namespace normal::test {}
 
 /**
  * Returns the name of the current test case

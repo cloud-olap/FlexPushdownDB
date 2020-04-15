@@ -12,9 +12,7 @@
 #include <normal/core/type/Type.h>
 #include <normal/core/type/DecimalType.h>
 
-#include "gandiva/arrow.h"
-
-#include "Globals.h"
+#include "normal/test/Globals.h"
 
 using namespace normal::core::type;
 using namespace normal::core::expression;

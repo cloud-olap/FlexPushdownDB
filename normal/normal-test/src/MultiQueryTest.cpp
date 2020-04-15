@@ -2,20 +2,15 @@
 // Created by matt on 5/3/20.
 //
 
-#include <string>
 #include <memory>
-#include <vector>
-#include <cstdio>
-#include <unistd.h>
 
 #include <doctest/doctest.h>
 
 #include "normal/pushdown/Collate.h"
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/FileScan.h>
-#include <normal/pushdown/aggregate/Sum.h>
-#include "Globals.h"
+#include <normal/test/TestUtil.h>
+#include "normal/test/Globals.h"
 
 /**
  * Test to make sure a query can be run and then re run (useful for instances such as
@@ -23,12 +18,6 @@
  */
 TEST_CASE ("FileScan -> Collate"
                * doctest::skip(false)) {
-
-  char buff[FILENAME_MAX];
-  getcwd(buff, FILENAME_MAX);
-  std::string current_working_dir(buff);
-
-  SPDLOG_DEBUG("Current working dir: {}", current_working_dir);
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
@@ -41,6 +30,8 @@ TEST_CASE ("FileScan -> Collate"
   mgr->put(fileScan);
   mgr->put(collate);
 
+  normal::test::TestUtil::writeLogicalExecutionPlan(*mgr);
+
   mgr->boot();
 
   mgr->start();
@@ -50,6 +41,8 @@ TEST_CASE ("FileScan -> Collate"
   mgr->join();
 
   auto tuples = collate->tuples();
+
+  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
 
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 3);
