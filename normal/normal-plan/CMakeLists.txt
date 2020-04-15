@@ -15,7 +15,8 @@ add_library(normal-plan STATIC
         src/SumLogicalFunction.cpp include/normal/plan/SumLogicalFunction.h
         src/FileScanLogicalOperator.cpp include/normal/plan/FileScanLogicalOperator.h
         src/S3SelectScanLogicalOperator.cpp include/normal/plan/S3SelectScanLogicalOperator.h
-        src/ProjectLogicalOperator.cpp include/normal/plan/ProjectLogicalOperator.h)
+        src/ProjectLogicalOperator.cpp include/normal/plan/ProjectLogicalOperator.h
+        src/LogicalPlan.cpp include/normal/plan/LogicalPlan.h)
 
 target_include_directories(normal-plan PUBLIC include)
 

@@ -7,6 +7,7 @@
 #include <normal/sql/NormalSQLLexer.h>
 #include <normal/sql/NormalSQLParser.h>
 #include <normal/sql/Globals.h>
+#include <normal/plan/LogicalPlan.h>
 
 #include "visitor/Visitor.h"
 
@@ -33,22 +34,20 @@ void Interpreter::parse(const std::string &sql) {
   SPDLOG_DEBUG("Parse Tree:\n{}", tree->toStringTree(true));
 
   visitor::Visitor visitor(this->catalogues_, this->operatorManager_);
-  auto sqlStatements = tree->accept(&visitor);
-
-  auto typedSqlStatements = sqlStatements.as<std::shared_ptr<std::vector<std::shared_ptr<std::vector<std::shared_ptr<
-	  plan::LogicalOperator>>>>>>();
+  auto untypedLogicalPlans = tree->accept(&visitor);
+  auto logicalPlans = untypedLogicalPlans.as<std::shared_ptr<std::vector<std::shared_ptr<LogicalPlan>>>>();
 
   // TODO: Perhaps support multiple statements in future
-  auto firstSQLStatement = typedSqlStatements->at(0);
+  auto logicalPlan = logicalPlans->at(0);
 
-  for(const auto& astNode: *firstSQLStatement){
-    operatorManager_->put(astNode->toOperator());
+  for(const auto& logicalOperator: *logicalPlan->getOperators()){
+    operatorManager_->put(logicalOperator->toOperator());
   }
 
-  for(const auto& astNode: *firstSQLStatement){
-    auto op = operatorManager_->getOperator(astNode->name);
-    if(astNode->consumer != nullptr){
-      auto consumerOp = operatorManager_->getOperator(astNode->consumer->name);
+  for(const auto& logicalOperator: *logicalPlan->getOperators()){
+    auto op = operatorManager_->getOperator(logicalOperator->name);
+    if(logicalOperator->consumer != nullptr){
+      auto consumerOp = operatorManager_->getOperator(logicalOperator->consumer->name);
       op->produce(consumerOp);
       consumerOp->consume(op);
     }
