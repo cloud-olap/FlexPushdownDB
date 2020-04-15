@@ -28,8 +28,8 @@ public:
 
 };
 
-static std::unique_ptr<Type> float64Type(){
-  return std::make_unique<Float64Type>();
+static std::shared_ptr<Type> float64Type(){
+  return std::make_shared<Float64Type>();
 }
 
 }

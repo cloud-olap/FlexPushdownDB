@@ -10,6 +10,7 @@
 #include "Type.h"
 #include "DecimalType.h"
 #include "Float64Type.h"
+#include "Integer32Type.h"
 
 namespace normal::core::type {
 
@@ -25,10 +26,17 @@ public:
     }
   }
 
-  static std::unique_ptr<Type> fromStringType(std::string &&stringType) {
-    if (stringType == "double") {
+  static std::shared_ptr<Type> fromStringType(std::string &&stringType) {
+
+    // Make sure its in lower case
+	std::transform(stringType.begin(), stringType.end(), stringType.begin(), ::tolower);
+
+    if (stringType == "double" || stringType == "float64") {
       return float64Type();
     }
+	if (stringType == "int" || stringType == "integer" || stringType == "int32" || stringType == "integer32") {
+	  return integer32Type();
+	}
     else{
       throw std::runtime_error("Unrecognized type " + stringType);
     }

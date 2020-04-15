@@ -38,7 +38,7 @@ auto execute(normal::sql::Interpreter &i) {
 
   auto tuples = collate->tuples();
 
-  SPDLOG_DEBUG(tuples->toString());
+  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
 
   return tuples;
 }
@@ -62,26 +62,35 @@ auto executeTest(const std::string &sql) {
 //}
 
 TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
-  auto tuples = executeTest("select sum(cast(A as double)) from local_fs.test");
+  auto tuples = executeTest("select sum(cast(A as double)), sum(cast(B as double)) from local_fs.test");
       CHECK(tuples->numRows() == 1);
       CHECK(tuples->numColumns() == 1);
-      CHECK(tuples->value<arrow::DoubleType, double>("sum", 0) == 12.0);
+      CHECK(tuples->value<arrow::DoubleType>("sum", 0) == 12.0);
 }
 
-TEST_CASE ("sql-select-all-from-local" * doctest::skip(false)) {
+TEST_CASE ("sql-select-all-from-local" * doctest::skip(true)) {
   auto tuples = executeTest("select * from local_fs.test");
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 3);
-      CHECK(tuples->value<arrow::Int64Type, int>("A", 0) == 1.0);
-      CHECK(tuples->value<arrow::Int64Type, int>("B", 1) == 5.0);
-      CHECK(tuples->value<arrow::Int64Type, int>("C", 2) == 9.0);
+	  CHECK(tuples->value<arrow::Int64Type>("A", 0) == 1.0);
+	  CHECK(tuples->value<arrow::Int64Type>("A", 1) == 4.0);
+	  CHECK(tuples->value<arrow::Int64Type>("A", 2) == 7.0);
+	  CHECK(tuples->value<arrow::Int64Type>("B", 0) == 2.0);
+	  CHECK(tuples->value<arrow::Int64Type>("B", 1) == 5.0);
+	  CHECK(tuples->value<arrow::Int64Type>("B", 2) == 8.0);
+	  CHECK(tuples->value<arrow::Int64Type>("C", 0) == 3.0);
+	  CHECK(tuples->value<arrow::Int64Type>("C", 1) == 6.0);
+	  CHECK(tuples->value<arrow::Int64Type>("C", 2) == 9.0);
 }
 
-TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
-  auto tuples = executeTest("select cast(A as double) from local_fs.test");
+TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(true)) {
+  auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test");
       CHECK(tuples->numRows() == 3);
-      CHECK(tuples->numColumns() == 1);
+      CHECK(tuples->numColumns() == 2);
       CHECK(tuples->value<arrow::DoubleType>("A", 0) == 1.0);
       CHECK(tuples->value<arrow::DoubleType>("A", 1) == 4.0);
       CHECK(tuples->value<arrow::DoubleType>("A", 2) == 7.0);
+	  CHECK(tuples->value<arrow::DoubleType>("B", 0) == 2.0);
+	  CHECK(tuples->value<arrow::DoubleType>("B", 1) == 5.0);
+	  CHECK(tuples->value<arrow::DoubleType>("B", 2) == 8.0);
 }

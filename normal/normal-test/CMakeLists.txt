@@ -21,19 +21,20 @@ endfunction()
 
 add_executable(normal-test
         include/normal/test/Globals.h
+        src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
         src/FileScanTest.cpp
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
         src/MultiQueryTest.cpp
         src/SQLTest.cpp
-        src/TupleTest.cpp
-        src/TestUtil.cpp include/normal/test/TestUtil.h)
+        src/TupleTest.cpp)
 
 link_target(normal-test)
 
 add_executable(normal-test-file
         include/normal/test/Globals.h
+        src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
         src/FileScanTest.cpp)
 
@@ -42,6 +43,7 @@ link_target(normal-test-file)
 
 add_executable(normal-test-s3
         include/normal/test/Globals.h
+        src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
         src/S3SelectScanTest.cpp)
 
@@ -50,6 +52,7 @@ link_target(normal-test-s3)
 
 add_executable(normal-test-cache
         include/normal/test/Globals.h
+        src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
         src/CacheTest.cpp)
 
@@ -58,6 +61,7 @@ link_target(normal-test-cache)
 
 add_executable(normal-test-sql
         include/normal/test/Globals.h
+        src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
         src/SQLTest.cpp)
 
@@ -65,6 +69,7 @@ link_target(normal-test-sql)
 
 add_executable(normal-test-tuple
         include/normal/test/Globals.h
+        src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
         src/TupleTest.cpp)
 

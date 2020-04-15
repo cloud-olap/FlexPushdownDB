@@ -90,7 +90,8 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   bool aggregate = false;
 
   auto aggregateNodes = std::make_shared<std::vector<std::shared_ptr<normal::sql::logical::LogicalOperator>>>();
-  auto projectNodes = std::make_shared<std::vector<std::shared_ptr<normal::sql::logical::LogicalOperator>>>();
+
+  auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::core::expression::Expression>>>();
 
   for (const auto &resultColumn: ctx->result_column()) {
     auto resultColumn_Result = visitResult_column(resultColumn);
@@ -109,13 +110,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       aggregateNodes->push_back(node);
     } else if (resultColumn_Result.is<std::shared_ptr<Expression>>()) {
       project = true;
-
-      // FIXME: Only supporting 1 expr at mo
-      auto expressions = {resultColumn_Result.as<std::shared_ptr<Expression>>()};
-      auto node = std::make_shared<normal::sql::logical::ProjectLogicalOperator>(expressions);
-      node->name = "proj";
-      nodes->push_back(node);
-      projectNodes->push_back(node);
+	  projectExpressions->push_back(resultColumn_Result.as<std::shared_ptr<Expression>>());
     }
     else{
       throw std::runtime_error("Not yet implemented");
@@ -131,14 +126,16 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
 
   // Projection
   if(project){
+
+	auto projectNode = std::make_shared<normal::sql::logical::ProjectLogicalOperator>(*projectExpressions);
+	projectNode->name = "proj";
+	nodes->push_back(projectNode);
+
     for(const auto &scanNode: *scanNodes){
-      for(const auto &projectNode: *projectNodes){
-        scanNode->consumer = projectNode;
-      }
-    }
-    for(const auto &projectNode: *projectNodes){
-      projectNode->consumer = collate;
-    }
+	  scanNode->consumer = projectNode;
+	}
+
+    projectNode->consumer = collate;
   }
 
   // Aggregate query
