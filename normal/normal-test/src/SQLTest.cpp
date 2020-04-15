@@ -71,10 +71,13 @@ TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
 	  CHECK(tuples->value<arrow::DoubleType>(1, 0) == 15.0);
 }
 
-TEST_CASE ("sql-select-all-from-local" * doctest::skip(true)) {
+TEST_CASE ("sql-select-all-from-local" * doctest::skip(false)) {
   auto tuples = executeTest("select * from local_fs.test");
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 3);
+
+      // NOTE: The arrow csv parser infers numeric strings to int64
+
 	  CHECK(tuples->value<arrow::Int64Type>("A", 0) == 1.0);
 	  CHECK(tuples->value<arrow::Int64Type>("A", 1) == 4.0);
 	  CHECK(tuples->value<arrow::Int64Type>("A", 2) == 7.0);
@@ -86,14 +89,14 @@ TEST_CASE ("sql-select-all-from-local" * doctest::skip(true)) {
 	  CHECK(tuples->value<arrow::Int64Type>("C", 2) == 9.0);
 }
 
-TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(true)) {
+TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
   auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test");
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 2);
       CHECK(tuples->value<arrow::DoubleType>("A", 0) == 1.0);
       CHECK(tuples->value<arrow::DoubleType>("A", 1) == 4.0);
       CHECK(tuples->value<arrow::DoubleType>("A", 2) == 7.0);
-	  CHECK(tuples->value<arrow::DoubleType>("B", 0) == 2.0);
-	  CHECK(tuples->value<arrow::DoubleType>("B", 1) == 5.0);
-	  CHECK(tuples->value<arrow::DoubleType>("B", 2) == 8.0);
+	  CHECK(tuples->value<arrow::Int32Type>("B", 0) == 2);
+	  CHECK(tuples->value<arrow::Int32Type>("B", 1) == 5);
+	  CHECK(tuples->value<arrow::Int32Type>("B", 2) == 8);
 }
