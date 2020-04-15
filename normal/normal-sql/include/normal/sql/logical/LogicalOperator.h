@@ -10,13 +10,17 @@
 
 #include <normal/core/Operator.h>
 
+namespace normal::sql::logical {
+
 class LogicalOperator {
 public:
   virtual ~LogicalOperator() = default;
   std::string name;
   std::shared_ptr<LogicalOperator> consumer;
-  virtual std::shared_ptr<normal::core::Operator> toOperator() = 0;
+  virtual std::shared_ptr<core::Operator> toOperator() = 0;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_LOGICALOPERATOR_H

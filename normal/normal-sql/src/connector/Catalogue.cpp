@@ -2,27 +2,24 @@
 // Created by matt on 27/3/20.
 //
 
-#include "normal/sql/connector/Catalogue.h"
+#include <normal/sql/connector/Catalogue.h>
 
-#include <utility>
-#include <sstream>
-
-Catalogue::Catalogue(std::string Name, std::shared_ptr<Connector> Connector)
+normal::sql::connector::Catalogue::Catalogue(std::string Name, std::shared_ptr<Connector> Connector)
     : name_(std::move(Name)), connector_(std::move(Connector)) {}
 
-const std::string &Catalogue::getName() const {
+const std::string &normal::sql::connector::Catalogue::getName() const {
   return name_;
 }
 
-void Catalogue::put(const std::shared_ptr<CatalogueEntry>& entry) {
+void normal::sql::connector::Catalogue::put(const std::shared_ptr<normal::sql::connector::CatalogueEntry>& entry) {
   this->entries_.emplace(entry->getAlias(), entry);
 }
 
-std::shared_ptr<CatalogueEntry> Catalogue::getEntry(const std::string& alias) {
+std::shared_ptr<normal::sql::connector::CatalogueEntry> normal::sql::connector::Catalogue::getEntry(const std::string& alias) {
   return this->entries_.find(alias)->second;
 }
 
-std::string Catalogue::toString() {
+std::string normal::sql::connector::Catalogue::toString() {
   std::stringstream ss;
   for(const auto& entry : entries_){
     ss << entry.second->getAlias() << std::endl;
@@ -30,6 +27,6 @@ std::string Catalogue::toString() {
   return ss.str();
 }
 
-const std::shared_ptr<Connector> &Catalogue::getConnector() const {
+const std::shared_ptr<normal::sql::connector::Connector> &normal::sql::connector::Catalogue::getConnector() const {
   return connector_;
 }

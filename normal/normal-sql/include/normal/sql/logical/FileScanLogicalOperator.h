@@ -7,9 +7,11 @@
 
 #include <string>
 
-#include "normal/core/Operator.h"
+#include <normal/core/Operator.h>
 
-#include "normal/sql/logical/ScanLogicalOperator.h"
+#include <normal/sql/logical/ScanLogicalOperator.h>
+
+namespace normal::sql::logical {
 
 class FileScanLogicalOperator: public ScanLogicalOperator {
 
@@ -21,8 +23,10 @@ public:
 
   [[nodiscard]] const std::string &path() const;
 
-  std::shared_ptr<normal::core::Operator> toOperator() override;
+  std::shared_ptr<core::Operator> toOperator() override;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_FILESCANLOGICALOPERATOR_H

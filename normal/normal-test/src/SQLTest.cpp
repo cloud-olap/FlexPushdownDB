@@ -16,21 +16,21 @@
 #include "normal/test/Globals.h"
 #include "normal/test/TestUtil.h"
 
-void configureLocalConnector(Interpreter &i) {
-  auto conn = std::make_shared<LocalFileSystemConnector>("local_fs");
-  auto cat = std::make_shared<Catalogue>("local_fs", conn);
-  cat->put(std::make_shared<LocalFileSystemCatalogueEntry>("test", "data/data-file-simple/test.csv", cat));
+void configureLocalConnector(normal::sql::Interpreter &i) {
+  auto conn = std::make_shared<normal::sql::connector::local_fs::LocalFileSystemConnector>("local_fs");
+  auto cat = std::make_shared<normal::sql::connector::Catalogue>("local_fs", conn);
+  cat->put(std::make_shared<normal::sql::connector::local_fs::LocalFileSystemCatalogueEntry>("test", "data/data-file-simple/test.csv", cat));
   i.put(cat);
 }
 
-void configureS3Connector(Interpreter &i) {
-  auto conn = std::make_shared<S3SelectConnector>("s3_select");
-  auto cat = std::make_shared<Catalogue>("s3_select", conn);
-  cat->put(std::make_shared<S3SelectCatalogueEntry>("customer", "s3Filter", "tpch-sf1/customer.csv", cat));
+void configureS3Connector(normal::sql::Interpreter &i) {
+  auto conn = std::make_shared<normal::sql::connector::s3::S3SelectConnector>("s3_select");
+  auto cat = std::make_shared<normal::sql::connector::Catalogue>("s3_select", conn);
+  cat->put(std::make_shared<normal::sql::connector::s3::S3SelectCatalogueEntry>("customer", "s3Filter", "tpch-sf1/customer.csv", cat));
   i.put(cat);
 }
 
-auto execute(Interpreter &i) {
+auto execute(normal::sql::Interpreter &i) {
   i.getOperatorManager()->boot();
   i.getOperatorManager()->start();
   i.getOperatorManager()->join();
@@ -46,7 +46,7 @@ auto execute(Interpreter &i) {
 }
 
 auto executeTest(const std::string &sql) {
-  Interpreter i;
+  normal::sql::Interpreter i;
   configureLocalConnector(i);
   configureS3Connector(i);
   i.parse(sql);

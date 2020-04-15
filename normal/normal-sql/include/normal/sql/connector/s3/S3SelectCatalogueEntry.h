@@ -8,9 +8,13 @@
 #include <string>
 
 #include <normal/sql/connector/CatalogueEntry.h>
-#include "normal/sql/logical/ScanLogicalOperator.h"
+#include <normal/sql/connector/Catalogue.h>
+#include <normal/sql/logical/ScanLogicalOperator.h>
 
-class S3SelectCatalogueEntry: public CatalogueEntry {
+
+namespace normal::sql::connector::s3 {
+
+class S3SelectCatalogueEntry: public normal::sql::connector::CatalogueEntry {
 private:
   std::string s3Bucket_;
   std::string s3Object_;
@@ -21,8 +25,10 @@ public:
   S3SelectCatalogueEntry(const std::string& Alias, std::string S3Bucket, std::string S3Object, std::shared_ptr<Catalogue>);
   ~S3SelectCatalogueEntry() override = default;
 
-  std::shared_ptr<ScanLogicalOperator> toLogicalOperator() override ;
+  std::shared_ptr<logical::ScanLogicalOperator> toLogicalOperator() override ;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_S3_S3SELECTCATALOGUEENTRY_H

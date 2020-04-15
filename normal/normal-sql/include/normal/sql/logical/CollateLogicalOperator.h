@@ -8,11 +8,15 @@
 #include <memory>
 
 #include <normal/core/Operator.h>
-#include "normal/sql/logical/LogicalOperator.h"
+#include <normal/sql/logical/LogicalOperator.h>
+
+namespace normal::sql::logical {
 
 class CollateLogicalOperator : public LogicalOperator {
 public:
-  std::shared_ptr<normal::core::Operator> toOperator() override;
+  std::shared_ptr<core::Operator> toOperator() override;
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_COLLATELOGICALOPERATOR_H

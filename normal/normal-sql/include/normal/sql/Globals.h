@@ -10,4 +10,6 @@
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
 #include <spdlog/spdlog.h>
 
+namespace normal::sql {}
+
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL__GLOBALS_H

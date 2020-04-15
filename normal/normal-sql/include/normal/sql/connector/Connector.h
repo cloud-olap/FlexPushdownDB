@@ -7,6 +7,8 @@
 
 #include <string>
 
+namespace normal::sql::connector {
+
 class Connector {
 
 private:
@@ -17,5 +19,7 @@ public:
   virtual ~Connector() = default;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_CONNECTOR_H

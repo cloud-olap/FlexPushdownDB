@@ -11,20 +11,24 @@
 #include <normal/core/Operator.h>
 #include <normal/pushdown/AWSClient.h>
 
-#include "normal/sql/logical/ScanLogicalOperator.h"
+#include <normal/sql/logical/ScanLogicalOperator.h>
+
+namespace normal::sql::logical {
 
 class S3SelectScanLogicalOperator: public ScanLogicalOperator {
 private:
   std::string s3Bucket_;
   std::string s3Object_;
-  std::shared_ptr<normal::pushdown::AWSClient> awsClient_;
+  std::shared_ptr<pushdown::AWSClient> awsClient_;
 
 public:
   S3SelectScanLogicalOperator(std::string S3Bucket,
                               std::string S3Object,
-                              std::shared_ptr<normal::pushdown::AWSClient> AwsClient);
+                              std::shared_ptr<pushdown::AWSClient> AwsClient);
 
-  std::shared_ptr<normal::core::Operator> toOperator() override;
+  std::shared_ptr<core::Operator> toOperator() override;
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_S3SELECTSCANLOGICALOPERATOR_H

@@ -11,20 +11,24 @@
 #include <normal/core/expression/Expression.h>
 #include <normal/pushdown/aggregate/AggregationFunction.h>
 
+namespace normal::sql::logical {
+
 class AggregateLogicalFunction {
 private:
   std::string type_;
-  std::shared_ptr<normal::core::expression::Expression> expression_;
+  std::shared_ptr<core::expression::Expression> expression_;
 
 public:
   explicit AggregateLogicalFunction(std::string type);
   virtual ~AggregateLogicalFunction() = default;
 
-  std::shared_ptr<normal::core::expression::Expression> expression();
-  void expression(const std::shared_ptr<normal::core::expression::Expression> &expression);
+  std::shared_ptr<core::expression::Expression> expression();
+  void expression(const std::shared_ptr<core::expression::Expression> &expression);
 
-  virtual std::shared_ptr<normal::pushdown::aggregate::AggregationFunction> toExecutorFunction() = 0;
+  virtual std::shared_ptr<pushdown::aggregate::AggregationFunction> toExecutorFunction() = 0;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_AGGREGATELOGICALFUNCTION_H

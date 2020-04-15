@@ -2,10 +2,11 @@
 // Created by matt on 14/4/20.
 //
 
-#include "normal/sql/logical/ProjectLogicalOperator.h"
+#include <normal/sql/logical/ProjectLogicalOperator.h>
 
-#include <utility>
 #include <normal/pushdown/Project.h>
+
+using namespace normal::sql::logical;
 
 ProjectLogicalOperator::ProjectLogicalOperator(
     std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions) :
