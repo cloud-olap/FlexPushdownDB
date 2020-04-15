@@ -89,8 +89,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   bool project = false;
   bool aggregate = false;
 
-  auto aggregateNodes = std::make_shared<std::vector<std::shared_ptr<normal::sql::logical::LogicalOperator>>>();
-
+  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>>();
   auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::core::expression::Expression>>>();
 
   for (const auto &resultColumn: ctx->result_column()) {
@@ -100,17 +99,12 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       simpleScan = true;
     } else if (resultColumn_Result.is<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>()) {
       aggregate = true;
-      // FIXME: Only supporting 1 agg function at mo
-
-      auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>();
-      auto aggregateFunctions = {aggregateFunction};
-      auto node = std::make_shared<normal::sql::logical::AggregateLogicalOperator>(aggregateFunctions);
-      node->name = "agg";
-      nodes->push_back(node);
-      aggregateNodes->push_back(node);
+	  auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::sql::logical::AggregateLogicalFunction>>();
+	  aggregateFunctions->push_back(aggregateFunction);
     } else if (resultColumn_Result.is<std::shared_ptr<Expression>>()) {
       project = true;
-	  projectExpressions->push_back(resultColumn_Result.as<std::shared_ptr<Expression>>());
+      auto projectExpression = resultColumn_Result.as<std::shared_ptr<Expression>>();
+	  projectExpressions->push_back(projectExpression);
     }
     else{
       throw std::runtime_error("Not yet implemented");
@@ -140,14 +134,15 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
 
   // Aggregate query
   if(aggregate){
-    for(const auto &scanNode: *scanNodes){
-      for(const auto &aggregateNode: *aggregateNodes){
-        scanNode->consumer = aggregateNode;
-      }
-    }
-    for(const auto &aggregateNode: *aggregateNodes){
-      aggregateNode->consumer = collate;
-    }
+	auto aggregateNode = std::make_shared<normal::sql::logical::AggregateLogicalOperator>(*aggregateFunctions);
+	aggregateNode->name = "agg";
+	nodes->push_back(aggregateNode);
+
+	for(const auto &scanNode: *scanNodes){
+	  scanNode->consumer = aggregateNode;
+	}
+
+	aggregateNode->consumer = collate;
   }
 
   return nodes;
