@@ -16,7 +16,7 @@ add_library(normal-plan STATIC
         src/FileScanLogicalOperator.cpp include/normal/plan/FileScanLogicalOperator.h
         src/S3SelectScanLogicalOperator.cpp include/normal/plan/S3SelectScanLogicalOperator.h
         src/ProjectLogicalOperator.cpp include/normal/plan/ProjectLogicalOperator.h
-        src/LogicalPlan.cpp include/normal/plan/LogicalPlan.h)
+        src/LogicalPlan.cpp include/normal/plan/LogicalPlan.h src/Planner.cpp include/normal/plan/Planner.h src/PhysicalPlan.cpp include/normal/plan/PhysicalPlan.h)
 
 target_include_directories(normal-plan PUBLIC include)
 

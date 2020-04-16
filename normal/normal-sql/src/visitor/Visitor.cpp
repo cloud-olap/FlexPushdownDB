@@ -38,15 +38,12 @@ normal::sql::visitor::Visitor::Visitor(
  */
 antlrcpp::Any normal::sql::visitor::Visitor::visitParse(normal::sql::NormalSQLParser::ParseContext *ctx) {
 
-//  auto sqlStatements = std::make_shared<std::vector<std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>>>();
-
   auto queryPlans = std::make_shared<std::vector<std::shared_ptr<LogicalPlan>>>();
 
   for (const auto &sql_stmt: ctx->sql_stmt_list()) {
-    auto sqlStmt = visitSql_stmt_list(sql_stmt);
-//    sqlStatements->emplace_back(sqlStmt);
-
-	auto queryPlan = std::make_shared<LogicalPlan>(sqlStmt);
+    auto untypedLogicalOperators = visitSql_stmt_list(sql_stmt);
+	auto logicalOperators = untypedLogicalOperators.as<std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>>();
+	auto queryPlan = std::make_shared<LogicalPlan>(logicalOperators);
 	queryPlans->push_back(queryPlan);
   }
 

@@ -8,6 +8,7 @@
 #include <normal/sql/NormalSQLParser.h>
 #include <normal/sql/Globals.h>
 #include <normal/plan/LogicalPlan.h>
+#include <normal/plan/Planner.h>
 
 #include "visitor/Visitor.h"
 
@@ -40,17 +41,12 @@ void Interpreter::parse(const std::string &sql) {
   // TODO: Perhaps support multiple statements in future
   auto logicalPlan = logicalPlans->at(0);
 
-  for(const auto& logicalOperator: *logicalPlan->getOperators()){
-    operatorManager_->put(logicalOperator->toOperator());
-  }
+  // Create physical plan
+  auto physicalPlan = Planner::generate(logicalPlan);
 
-  for(const auto& logicalOperator: *logicalPlan->getOperators()){
-    auto op = operatorManager_->getOperator(logicalOperator->name);
-    if(logicalOperator->consumer != nullptr){
-      auto consumerOp = operatorManager_->getOperator(logicalOperator->consumer->name);
-      op->produce(consumerOp);
-      consumerOp->consume(op);
-    }
+  // Add the plan to the operator manager
+  for(const auto& physicalOperator: *physicalPlan->getOperators()){
+    operatorManager_->put(physicalOperator.second);
   }
 
   SPDLOG_DEBUG("Finished");

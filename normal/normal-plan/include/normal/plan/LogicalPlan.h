@@ -14,6 +14,7 @@
  * A logical query plan. A collection of operators and their connections.
  */
 class LogicalPlan {
+
 public:
   LogicalPlan(const std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> &Operators);
   const std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> &getOperators() const;
