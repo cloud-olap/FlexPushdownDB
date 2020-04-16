@@ -13,14 +13,7 @@
 /**
  * Abstract class representing a collection of local file system partitions
  */
-class LocalFilePartitioningScheme : public PartitioningScheme<LocalFilePartition> {
-
-public:
-  std::vector<std::shared_ptr<LocalFilePartition>> partitions() override;
-
-protected:
-  std::vector<std::shared_ptr<LocalFilePartition>> partitions_;
-
+class LocalFilePartitioningScheme : public PartitioningScheme {
 };
 
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_PARTITION_LOCALFILEPARTITIONINGSCHEME_H

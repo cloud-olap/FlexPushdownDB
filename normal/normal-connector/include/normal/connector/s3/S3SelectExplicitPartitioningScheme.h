@@ -15,9 +15,14 @@
 class S3SelectExplicitPartitioningScheme  : public S3SelectPartitioningScheme {
 
 public:
-  explicit S3SelectExplicitPartitioningScheme() = default;
+  S3SelectExplicitPartitioningScheme();
 
   void add(const std::shared_ptr<S3SelectPartition> &partition);
+
+  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> partitions() override;
+
+private:
+  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> partitions_;
 
 };
 

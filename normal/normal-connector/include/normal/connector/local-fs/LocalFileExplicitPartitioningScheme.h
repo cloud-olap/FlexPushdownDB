@@ -15,9 +15,14 @@
 class LocalFileExplicitPartitioningScheme : public LocalFilePartitioningScheme {
 
 public:
-  explicit LocalFileExplicitPartitioningScheme() = default;
+  LocalFileExplicitPartitioningScheme();
 
   void add(const std::shared_ptr<LocalFilePartition> &partition);
+
+  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> partitions() override;
+
+private:
+  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> partitions_;
 
 };
 

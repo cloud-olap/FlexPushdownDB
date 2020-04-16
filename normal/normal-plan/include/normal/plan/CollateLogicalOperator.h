@@ -14,6 +14,9 @@ namespace normal::plan {
 
 class CollateLogicalOperator : public LogicalOperator {
 public:
+
+  CollateLogicalOperator();
+
   std::shared_ptr<core::Operator> toOperator() override;
 };
 

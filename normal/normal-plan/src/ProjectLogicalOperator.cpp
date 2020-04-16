@@ -5,12 +5,14 @@
 #include "normal/plan/ProjectLogicalOperator.h"
 
 #include <normal/pushdown/Project.h>
+#include <normal/plan/OperatorTypes.h>
 
 using namespace normal::plan;
 
 ProjectLogicalOperator::ProjectLogicalOperator(
-    std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions) :
-    expressions_(std::move(expressions)) {}
+	std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions) :
+	LogicalOperator(OperatorTypes::projectOperatorType()),
+	expressions_(std::move(expressions)) {}
 
 const std::vector<std::shared_ptr<normal::core::expression::Expression>> &ProjectLogicalOperator::expressions() const {
   return expressions_;

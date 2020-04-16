@@ -15,6 +15,5 @@ normal::connector::s3::S3SelectCatalogueEntry::S3SelectCatalogueEntry(const std:
 std::shared_ptr<normal::plan::ScanLogicalOperator> normal::connector::s3::S3SelectCatalogueEntry::toLogicalOperator() {
   auto connector = std::static_pointer_cast<S3SelectConnector>(this->getCatalogue()->getConnector());
   auto op = std::make_shared<normal::plan::S3SelectScanLogicalOperator>(partitioningScheme_, connector->getAwsClient());
-  op->name = "s3SelectScan";
   return op;
 }

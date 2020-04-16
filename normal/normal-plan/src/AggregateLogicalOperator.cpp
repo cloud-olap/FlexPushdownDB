@@ -5,12 +5,15 @@
 #include <normal/plan/AggregateLogicalOperator.h>
 
 #include <normal/pushdown/Aggregate.h>
+#include <normal/plan/OperatorTypes.h>
 
 using namespace normal::core::type;
 using namespace normal::core::expression;
 
-normal::plan::AggregateLogicalOperator::AggregateLogicalOperator(std::vector<std::shared_ptr<normal::plan::AggregateLogicalFunction>> Functions)
-    : functions_(std::move(Functions)) {}
+normal::plan::AggregateLogicalOperator::AggregateLogicalOperator(
+	std::vector<std::shared_ptr<normal::plan::AggregateLogicalFunction>> Functions)
+    : LogicalOperator(OperatorTypes::aggregateOperatorType()),
+    functions_(std::move(Functions)) {}
 
 const std::vector<std::shared_ptr<normal::plan::AggregateLogicalFunction>> &normal::plan::AggregateLogicalOperator::functions() const {
   return functions_;

@@ -16,6 +16,5 @@ LocalFileSystemCatalogueEntry::LocalFileSystemCatalogueEntry(
 
 std::shared_ptr<normal::plan::ScanLogicalOperator> LocalFileSystemCatalogueEntry::toLogicalOperator() {
   auto op = std::make_shared<normal::plan::FileScanLogicalOperator>(partitioningScheme_);
-  op->name = "fileScan";
   return op;
 }

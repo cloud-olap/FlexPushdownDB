@@ -20,7 +20,7 @@ private:
   std::vector<std::shared_ptr<AggregateLogicalFunction>> functions_;
 
 public:
-  explicit AggregateLogicalOperator(std::vector<std::shared_ptr<AggregateLogicalFunction>> functions);
+  explicit AggregateLogicalOperator(std::vector<std::shared_ptr<normal::plan::AggregateLogicalFunction>> Functions);
 
   [[nodiscard]] const std::vector<std::shared_ptr<AggregateLogicalFunction>> &functions() const;
 

@@ -16,11 +16,8 @@ namespace normal::plan {
 
 class FileScanLogicalOperator: public ScanLogicalOperator {
 
-private:
-  std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme_;
-
 public:
-  explicit FileScanLogicalOperator(std::shared_ptr<LocalFilePartitioningScheme> partitioningScheme);
+  explicit FileScanLogicalOperator(const std::shared_ptr<LocalFilePartitioningScheme>& partitioningScheme);
 
   std::shared_ptr<core::Operator> toOperator() override;
 

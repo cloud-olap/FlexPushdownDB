@@ -18,7 +18,7 @@ namespace normal::plan {
 class ProjectLogicalOperator : public normal::plan::LogicalOperator {
 
 public:
-  explicit ProjectLogicalOperator(std::vector<std::shared_ptr<core::expression::Expression>> expressions);
+  explicit ProjectLogicalOperator(std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions);
 
   [[nodiscard]] const std::vector<std::shared_ptr<core::expression::Expression>> &expressions() const;
 

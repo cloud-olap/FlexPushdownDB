@@ -12,7 +12,6 @@
 /**
  * Base class for a partitioning scheme, i.e. how to break up and parallelise a data source
  */
-template <typename PARTITION_TYPE>
 class PartitioningScheme {
 
 public:
@@ -23,7 +22,7 @@ public:
    *
    * @return
    */
-  virtual std::vector<std::shared_ptr<PARTITION_TYPE>> partitions() = 0;
+  virtual std::shared_ptr<std::vector<std::shared_ptr<Partition>>> partitions() = 0;
 
 };
 

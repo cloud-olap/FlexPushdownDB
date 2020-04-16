@@ -86,7 +86,7 @@ auto executeTest(const std::string &sql) {
 //
 //}
 
-TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
+TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(true)) {
   auto tuples = executeTest("select sum(cast(A as double)), sum(cast(B as double)) from local_fs.test");
       CHECK(tuples->numRows() == 1);
       CHECK(tuples->numColumns() == 2);
@@ -96,7 +96,7 @@ TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
 	  CHECK(tuples->value<arrow::DoubleType>(1, 0) == 15.0);
 }
 
-TEST_CASE ("sql-select-all-from-local" * doctest::skip(false)) {
+TEST_CASE ("sql-select-all-from-local" * doctest::skip(true)) {
   auto tuples = executeTest("select * from local_fs.test");
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 3);
@@ -114,7 +114,7 @@ TEST_CASE ("sql-select-all-from-local" * doctest::skip(false)) {
 	  CHECK(tuples->value<arrow::Int64Type>("C", 2) == 9.0);
 }
 
-TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
+TEST_CASE ("sql-select-cast-from-local" * doctest::skip(true)) {
   auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test");
       CHECK(tuples->numRows() == 3);
       CHECK(tuples->numColumns() == 2);
@@ -126,6 +126,6 @@ TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
 	  CHECK(tuples->value<arrow::Int32Type>("B", 2) == 8);
 }
 
-TEST_CASE ("sql-select-cast_a-from-local" * doctest::skip(false)) {
+TEST_CASE ("sql-select-cast-from-local-partitioned" * doctest::skip(false)) {
   auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test_partitioned");
 }

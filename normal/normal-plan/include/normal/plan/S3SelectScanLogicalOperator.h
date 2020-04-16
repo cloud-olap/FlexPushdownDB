@@ -18,11 +18,10 @@ namespace normal::plan {
 
 class S3SelectScanLogicalOperator: public ScanLogicalOperator {
 private:
-  std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme_;
   std::shared_ptr<pushdown::AWSClient> awsClient_;
 
 public:
-  S3SelectScanLogicalOperator(std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme,
+  S3SelectScanLogicalOperator(const std::shared_ptr<S3SelectPartitioningScheme>& partitioningScheme,
                               std::shared_ptr<pushdown::AWSClient> AwsClient);
 
   std::shared_ptr<core::Operator> toOperator() override;

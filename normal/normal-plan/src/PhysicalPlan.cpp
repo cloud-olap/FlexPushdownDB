@@ -11,8 +11,12 @@ void PhysicalPlan::put(std::shared_ptr<normal::core::Operator> operator_) {
   operators_->emplace(operator_->name(), operator_);
 }
 
-std::shared_ptr<normal::core::Operator> PhysicalPlan::get(std::string operatorName) {
-  return operators_->at(operatorName);
+tl::expected<std::shared_ptr<normal::core::Operator>, std::string> PhysicalPlan::get(std::string operatorName) {
+  auto entry = operators_->find(operatorName);
+  if(entry == operators_->end())
+	return tl::unexpected("No entry for operator '" + operatorName + "'");
+  else
+	return entry->second;
 }
 
 const std::shared_ptr<std::unordered_map<std::string,

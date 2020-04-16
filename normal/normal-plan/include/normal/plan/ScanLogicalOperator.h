@@ -9,16 +9,24 @@
 
 #include <normal/core/Operator.h>
 
-#include "LogicalOperator.h"
+#include <normal/plan/LogicalOperator.h>
+#include <normal/connector/partition/PartitioningScheme.h>
 
 namespace normal::plan {
 
-class ScanLogicalOperator : public normal::plan::LogicalOperator {
+class ScanLogicalOperator : public LogicalOperator {
 
 public:
+  explicit ScanLogicalOperator(std::shared_ptr<PartitioningScheme> partitioningScheme);
   ~ScanLogicalOperator() override = default;
 
+  [[nodiscard]] const std::shared_ptr<PartitioningScheme> &getPartitioningScheme() const;
+
   std::shared_ptr<core::Operator> toOperator() override = 0;
+
+private:
+  std::shared_ptr<PartitioningScheme> partitioningScheme_;
+
 };
 
 }

@@ -10,14 +10,10 @@
 #include <normal/connector/partition/PartitioningScheme.h>
 #include "S3SelectPartition.h"
 
-class S3SelectPartitioningScheme  : public PartitioningScheme<S3SelectPartition> {
-
-public:
-  std::vector<std::shared_ptr<S3SelectPartition>> partitions() override;
-
-protected:
-  std::vector<std::shared_ptr<S3SelectPartition>> partitions_;
-
+/**
+ * Abstract class representing a collection of s3 partitions
+ */
+class S3SelectPartitioningScheme  : public PartitioningScheme {
 };
 
 #endif //NORMAL_NORMAL_CONNECTOR_INCLUDE_NORMAL_CONNECTOR_S3_S3SELECTPARTITIONINGSCHEME_H

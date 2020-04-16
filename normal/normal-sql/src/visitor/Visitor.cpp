@@ -76,7 +76,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   auto nodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
 
   auto collate = std::make_shared<normal::plan::CollateLogicalOperator>();
-  collate->name = "collate";
+  collate->setName("collate");
   nodes->emplace_back(collate);
 
   auto scanNodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
@@ -117,7 +117,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   // Simple scan
   if(simpleScan){
     for(const auto &scanNode: *scanNodes){
-      scanNode->consumer = collate;
+      scanNode->setConsumer(collate);
     }
   }
 
@@ -125,27 +125,27 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   if(project){
 
 	auto projectNode = std::make_shared<normal::plan::ProjectLogicalOperator>(*projectExpressions);
-	projectNode->name = "proj";
+	projectNode->setName("proj");
 	nodes->push_back(projectNode);
 
     for(const auto &scanNode: *scanNodes){
-	  scanNode->consumer = projectNode;
+	  scanNode->setConsumer(projectNode);
 	}
 
-    projectNode->consumer = collate;
+    projectNode->setConsumer(collate);
   }
 
   // Aggregate query
   if(aggregate){
 	auto aggregateNode = std::make_shared<normal::plan::AggregateLogicalOperator>(*aggregateFunctions);
-	aggregateNode->name = "agg";
+	aggregateNode->setName( "agg");
 	nodes->push_back(aggregateNode);
 
 	for(const auto &scanNode: *scanNodes){
-	  scanNode->consumer = aggregateNode;
+	  scanNode->setConsumer(aggregateNode);
 	}
 
-	aggregateNode->consumer = collate;
+	aggregateNode->setConsumer(collate);
   }
 
   return nodes;
