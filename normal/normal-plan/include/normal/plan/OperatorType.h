@@ -17,6 +17,8 @@ public:
 
   bool is(std::shared_ptr<OperatorType> type);
 
+  std::string toString();
+
 private:
   OperatorTypeId id_;
 

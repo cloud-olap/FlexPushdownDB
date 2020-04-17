@@ -69,12 +69,18 @@ auto execute(normal::sql::Interpreter &i) {
 }
 
 auto executeTest(const std::string &sql) {
+
   normal::sql::Interpreter i;
+
   configureLocalConnector(i);
   configureS3Connector(i);
+
   i.parse(sql);
-  normal::test::TestUtil::writeLogicalExecutionPlan(*i.getOperatorManager());
+
+  normal::test::TestUtil::writeExecutionPlan(i);
+
   auto tuples = execute(i);
+
   i.getOperatorManager()->stop();
 
   return tuples;

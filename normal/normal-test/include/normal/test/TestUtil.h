@@ -8,7 +8,7 @@
 #include <experimental/filesystem>
 
 #include <normal/core/OperatorManager.h>
-
+#include <normal/sql/Interpreter.h>
 
 /*
  * Hack to get the current DocTest test being run. Need to forward declare getCurrentTestName declared in MainTest.
@@ -30,10 +30,10 @@ public:
   static std::experimental::filesystem::path getTestScratchDirectory();
 
   /**
-   * Generates and saves an SVG of the logical execution plan to the test scratch directory
+   * Generates and saves an SVG of the logical and physical execution plans to the test scratch directory
    * @param mgr
    */
-  static void writeLogicalExecutionPlan(normal::core::OperatorManager &mgr);
+  static void writeExecutionPlan(normal::sql::Interpreter &i);
 
 };
 

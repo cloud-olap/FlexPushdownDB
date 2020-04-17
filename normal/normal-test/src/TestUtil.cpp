@@ -3,6 +3,7 @@
 //
 
 #include <normal/test/TestUtil.h>
+#include <normal/sql/Interpreter.h>
 
 using namespace std::experimental;
 using namespace normal::test;
@@ -17,8 +18,12 @@ filesystem::path TestUtil::getTestScratchDirectory() {
   return testScratchDir;
 }
 
-void TestUtil::writeLogicalExecutionPlan(normal::core::OperatorManager &mgr) {
+void TestUtil::writeExecutionPlan(normal::sql::Interpreter &i) {
   auto testScratchDir = getTestScratchDirectory();
-  auto planFile = testScratchDir.append("logical-execution-plan.svg");
-  mgr.write_graph(planFile);
+
+  auto logicalPlanFile = filesystem::path(testScratchDir).append("logical-execution-plan.svg");
+  i.getLogicalPlan()->writeGraph(logicalPlanFile);
+
+  auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
+  i.getOperatorManager()->write_graph(physicalPlanFile);
 }
