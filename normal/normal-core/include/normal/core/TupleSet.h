@@ -84,6 +84,20 @@ public:
   }
 
   /**
+   * Returns a column from the tupleset as a vector given a column name
+   *
+   * @tparam ARROW_TYPE
+   * @tparam C_TYPE
+   * @param columnName
+   * @param row
+   * @return
+   */
+  template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
+  tl::expected<std::shared_ptr<std::vector<C_TYPE>>, std::string> vector(const std::string &columnName){
+	return TableHelper::vector<ARROW_TYPE, C_TYPE>(*table_->GetColumnByName(columnName));
+  }
+
+  /**
    * Templated visitor, visits record batches from the internal arrow table and applies the given
    * function to each batch. Returns the result of the function.
    *

@@ -105,6 +105,23 @@ public:
 
 	return value<ARROW_TYPE, C_TYPE>(*array, row);
   }
+
+  template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
+  static tl::expected<std::shared_ptr<std::vector<C_TYPE>>, std::string> vector(arrow::ChunkedArray &array) {
+
+    auto vector = std::make_shared<std::vector<C_TYPE>>();
+
+	using ARROW_ARRAY_TYPE = typename arrow::TypeTraits<ARROW_TYPE>::ArrayType;
+
+    for(const auto& chunk: array.chunks()){
+	  auto &typedChunk = dynamic_cast<ARROW_ARRAY_TYPE &>(*chunk);
+	  for (int i = 0; i < typedChunk.length(); ++i) {
+		vector->push_back(typedChunk.Value(i));
+	  }
+    }
+
+	return vector;
+  }
 };
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_TABLEHELPER_H

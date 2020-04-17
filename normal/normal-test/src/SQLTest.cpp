@@ -24,13 +24,17 @@ void configureLocalConnector(normal::sql::Interpreter &i) {
 
   auto partitioningScheme1 = std::make_shared<LocalFileExplicitPartitioningScheme>();
   partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/data-file-simple/test.csv"));
-  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test", partitioningScheme1, cat));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test",
+																						partitioningScheme1,
+																						cat));
 
   auto partitioningScheme2 = std::make_shared<LocalFileExplicitPartitioningScheme>();
   partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test01.csv"));
   partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test02.csv"));
   partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test03.csv"));
-  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test_partitioned", partitioningScheme2, cat));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test_partitioned",
+																						partitioningScheme2,
+																						cat));
 
   i.put(cat);
 }
@@ -48,7 +52,9 @@ void configureS3Connector(normal::sql::Interpreter &i) {
   partitioningScheme2->add(std::make_shared<S3SelectPartition>("s3Filter", "tpch-sf1/customer_01.csv"));
   partitioningScheme2->add(std::make_shared<S3SelectPartition>("s3Filter", "tpch-sf1/customer_02.csv"));
   partitioningScheme2->add(std::make_shared<S3SelectPartition>("s3Filter", "tpch-sf1/customer_03.csv"));
-  cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>("customer_partitioned", partitioningScheme2, cat));
+  cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>("customer_partitioned",
+																		   partitioningScheme2,
+																		   cat));
 
   i.put(cat);
 }
@@ -59,7 +65,7 @@ auto execute(normal::sql::Interpreter &i) {
   i.getOperatorManager()->join();
 
   std::shared_ptr<normal::pushdown::Collate>
-      collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
+	  collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
 
   auto tuples = collate->tuples();
 
@@ -92,22 +98,22 @@ auto executeTest(const std::string &sql) {
 //
 //}
 
-TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(true)) {
+TEST_CASE ("sql-select-sum_a-from-local" * doctest::skip(false)) {
   auto tuples = executeTest("select sum(cast(A as double)), sum(cast(B as double)) from local_fs.test");
-      CHECK(tuples->numRows() == 1);
-      CHECK(tuples->numColumns() == 2);
+	  CHECK(tuples->numRows() == 1);
+	  CHECK(tuples->numColumns() == 2);
 
-      // NOTE: Both columns have the same alias so need to access via column index
-      CHECK(tuples->value<arrow::DoubleType>(0, 0) == 12.0);
+  // NOTE: Both columns have the same alias so need to access via column index
+	  CHECK(tuples->value<arrow::DoubleType>(0, 0) == 12.0);
 	  CHECK(tuples->value<arrow::DoubleType>(1, 0) == 15.0);
 }
 
-TEST_CASE ("sql-select-all-from-local" * doctest::skip(true)) {
+TEST_CASE ("sql-select-all-from-local" * doctest::skip(false)) {
   auto tuples = executeTest("select * from local_fs.test");
-      CHECK(tuples->numRows() == 3);
-      CHECK(tuples->numColumns() == 3);
+	  CHECK(tuples->numRows() == 3);
+	  CHECK(tuples->numColumns() == 3);
 
-      // NOTE: The arrow csv parser infers numeric strings to int64
+  // NOTE: The arrow csv parser infers numeric strings to int64
 
 	  CHECK(tuples->value<arrow::Int64Type>("A", 0) == 1.0);
 	  CHECK(tuples->value<arrow::Int64Type>("A", 1) == 4.0);
@@ -120,13 +126,13 @@ TEST_CASE ("sql-select-all-from-local" * doctest::skip(true)) {
 	  CHECK(tuples->value<arrow::Int64Type>("C", 2) == 9.0);
 }
 
-TEST_CASE ("sql-select-cast-from-local" * doctest::skip(true)) {
+TEST_CASE ("sql-select-cast-from-local" * doctest::skip(false)) {
   auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test");
-      CHECK(tuples->numRows() == 3);
-      CHECK(tuples->numColumns() == 2);
-      CHECK(tuples->value<arrow::DoubleType>("A", 0) == 1.0);
-      CHECK(tuples->value<arrow::DoubleType>("A", 1) == 4.0);
-      CHECK(tuples->value<arrow::DoubleType>("A", 2) == 7.0);
+	  CHECK(tuples->numRows() == 3);
+	  CHECK(tuples->numColumns() == 2);
+	  CHECK(tuples->value<arrow::DoubleType>("A", 0) == 1.0);
+	  CHECK(tuples->value<arrow::DoubleType>("A", 1) == 4.0);
+	  CHECK(tuples->value<arrow::DoubleType>("A", 2) == 7.0);
 	  CHECK(tuples->value<arrow::Int32Type>("B", 0) == 2);
 	  CHECK(tuples->value<arrow::Int32Type>("B", 1) == 5);
 	  CHECK(tuples->value<arrow::Int32Type>("B", 2) == 8);
@@ -134,4 +140,35 @@ TEST_CASE ("sql-select-cast-from-local" * doctest::skip(true)) {
 
 TEST_CASE ("sql-select-cast-from-local-partitioned" * doctest::skip(false)) {
   auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test_partitioned");
+	  CHECK(tuples->numRows() == 9);
+	  CHECK(tuples->numColumns() == 2);
+
+  auto columnA = tuples->vector<arrow::DoubleType>("A").value();
+  auto columnB = tuples->vector<arrow::Int32Type>("B").value();
+
+  /*
+   * NOTE: The partitioned (i.e. parallel) executor will produce non-deterministic output, so we
+   * don't know exactly which row a value will be in. Need to sort before checking.
+   */
+  std::sort(columnA->begin(), columnA->end());
+  std::sort(columnB->begin(), columnB->end());
+
+	  CHECK(columnA->at(0) == 1.0);
+	  CHECK(columnA->at(1) == 2.0);
+	  CHECK(columnA->at(2) == 3.0);
+	  CHECK(columnA->at(3) == 4.0);
+	  CHECK(columnA->at(4) == 5.0);
+	  CHECK(columnA->at(5) == 6.0);
+	  CHECK(columnA->at(6) == 7.0);
+	  CHECK(columnA->at(7) == 8.0);
+	  CHECK(columnA->at(8) == 9.0);
+	  CHECK(columnB->at(0) == 11);
+	  CHECK(columnB->at(1) == 12);
+	  CHECK(columnB->at(2) == 13);
+	  CHECK(columnB->at(3) == 14);
+	  CHECK(columnB->at(4) == 15);
+	  CHECK(columnB->at(5) == 16);
+	  CHECK(columnB->at(6) == 17);
+	  CHECK(columnB->at(7) == 18);
+	  CHECK(columnB->at(8) == 19);
 }
