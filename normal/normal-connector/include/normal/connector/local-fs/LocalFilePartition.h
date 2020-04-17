@@ -14,7 +14,7 @@ public:
   explicit LocalFilePartition(std::string Path);
 
   [[nodiscard]] const std::string &getPath() const;
-
+  std::string toString() override;
 private:
   std::string path_;
 

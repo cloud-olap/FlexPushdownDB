@@ -40,7 +40,7 @@ public:
   [[nodiscard]] caf::actor actorHandle() const;
   void actorHandle(caf::actor actorId);
   std::shared_ptr<OperatorContext> ctx();
-
+  void setName(const std::string &Name);
   virtual void onReceive(const normal::core::message::Envelope &msg) = 0;
 
   std::map<std::string, std::shared_ptr<Operator>> producers();

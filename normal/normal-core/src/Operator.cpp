@@ -70,5 +70,9 @@ void Operator::actorHandle(caf::actor actorHandle) {
   this->actorHandle_ = std::move(actorHandle);
 }
 
+void Operator::setName(const std::string &Name) {
+  name_ = Name;
+}
+
 } // namespace
 

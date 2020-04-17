@@ -16,4 +16,8 @@ const std::string &S3SelectPartition::getObject() const {
   return object_;
 }
 
+std::string S3SelectPartition::toString() {
+  return bucket_ + "/" + object_;
+}
+
 

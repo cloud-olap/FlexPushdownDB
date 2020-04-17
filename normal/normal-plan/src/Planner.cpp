@@ -33,6 +33,7 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOper
 	  auto physicalOperators = std::vector<std::shared_ptr<normal::core::Operator>>();
 	  for (const auto &partition: *partitions) {
 		auto physicalOperator = logicalOperator->toOperator();
+		physicalOperator->setName(partition->toString());
 		physicalOperators.push_back(physicalOperator);
 
 		// Add the physical scan operator to the plan

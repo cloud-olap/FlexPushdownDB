@@ -16,6 +16,8 @@ public:
   const std::string &getBucket() const;
   const std::string &getObject() const;
 
+  std::string toString() override;
+
 private:
   std::string bucket_;
   std::string object_;
