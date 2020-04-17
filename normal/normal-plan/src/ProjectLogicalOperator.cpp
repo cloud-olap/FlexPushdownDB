@@ -25,3 +25,9 @@ std::shared_ptr<normal::core::Operator> ProjectLogicalOperator::toOperator() {
 
   return projectPhysicalOperator;
 }
+
+std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> ProjectLogicalOperator::toOperators() {
+  auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();
+  operators->push_back(this->toOperator());
+  return operators;
+}

@@ -32,3 +32,9 @@ std::shared_ptr<normal::core::Operator> normal::plan::AggregateLogicalOperator::
 
   return aggregateExecutor;
 }
+
+std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> normal::plan::AggregateLogicalOperator::toOperators() {
+  auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();
+  operators->push_back(this->toOperator());
+  return operators;
+}

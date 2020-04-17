@@ -20,3 +20,12 @@ std::shared_ptr<normal::core::Operator> normal::plan::FileScanLogicalOperator::t
   // FIXME: Should return multiple operators
   return operators->at(0);
 }
+
+std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> normal::plan::FileScanLogicalOperator::toOperators() {
+  auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+	auto localFilePartition = std::static_pointer_cast<LocalFilePartition>(partition);
+	operators->push_back(std::make_shared<normal::pushdown::FileScan>(localFilePartition->getPath(), localFilePartition->getPath()));
+  }
+  return operators;
+}

@@ -23,7 +23,7 @@ public:
   explicit AggregateLogicalOperator(std::vector<std::shared_ptr<normal::plan::AggregateLogicalFunction>> Functions);
 
   [[nodiscard]] const std::vector<std::shared_ptr<AggregateLogicalFunction>> &functions() const;
-
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
   std::shared_ptr<core::Operator> toOperator() override;
 };
 

@@ -30,12 +30,8 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOper
 	  auto partitions = partitioningScheme->partitions();
 
 	  // Create a physical scan operator for each partition
-	  auto physicalOperators = std::vector<std::shared_ptr<normal::core::Operator>>();
-	  for (const auto &partition: *partitions) {
-		auto physicalOperator = logicalOperator->toOperator();
-		physicalOperator->setName(partition->toString());
-		physicalOperators.push_back(physicalOperator);
-
+	  auto physicalOperators = logicalOperator->toOperators();
+	  for (const auto &physicalOperator: *physicalOperators) {
 		// Add the physical scan operator to the plan
 		physicalPlan->put(physicalOperator);
 	  }
@@ -44,14 +40,31 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOper
 	  if (logicalOperator->getConsumer() != nullptr) {
 		auto consumers = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
 		consumers->push_back(logicalOperator->getConsumer());
-		visit(consumers, physicalOperators, physicalPlan);
+		visit(consumers, *physicalOperators, physicalPlan);
 	  }
+	} else if (logicalOperator->type()->is(OperatorTypes::collateOperatorType())) {
+
+	  // Create a single collate operator, collate operators are never partitioned
+	  auto physicalCollateOperator = logicalOperator->toOperator();
+
+	  // Connect all producers to the single collate
+	  for (const auto &producer: producers) {
+		producer->produce(physicalCollateOperator);
+		physicalCollateOperator->consume(producer);
+	  }
+
+	  // Add the collate operator to the plan
+	  physicalPlan->put(physicalCollateOperator);
 	} else {
 
 	  // Create a physical operator for each producer
 	  auto physicalOperators = std::vector<std::shared_ptr<normal::core::Operator>>();
 	  for (const auto &producer: producers) {
 		auto physicalOperator = logicalOperator->toOperator();
+
+		// FIXME: A hack to make sure the op is named after its partition
+		physicalOperator->setName(physicalOperator->name() + "/" + producer->name());
+
 		physicalOperators.push_back(physicalOperator);
 
 		// Connect this operator to its producer
