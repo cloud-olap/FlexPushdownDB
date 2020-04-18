@@ -87,6 +87,8 @@ auto executeTest(const std::string &sql) {
 
   auto tuples = execute(i);
 
+  SPDLOG_INFO("Metrics:\n{}", normal::test::TestUtil::showMetrics(*i.getOperatorManager()));
+
   i.getOperatorManager()->stop();
 
   return tuples;

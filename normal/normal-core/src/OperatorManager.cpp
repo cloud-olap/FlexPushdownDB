@@ -200,4 +200,8 @@ std::shared_ptr<Operator> OperatorManager::getOperator(const std::string &name) 
   return this->m_operatorMap.find(name)->second->op();
 }
 
+std::map<std::string, std::shared_ptr<OperatorContext>> OperatorManager::getOperators() {
+  return this->m_operatorMap;
+}
+
 }

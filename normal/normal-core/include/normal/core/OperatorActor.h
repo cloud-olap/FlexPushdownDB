@@ -24,7 +24,10 @@ class OperatorActor : public caf::event_based_actor {
 
 private:
   std::shared_ptr<Operator> opBehaviour_;
-
+  long processingTime_ = 0;
+public:
+  long getProcessingTime() const;
+  void incrementProcessingTime(long time);
 public:
   OperatorActor(caf::actor_config &cfg, std::shared_ptr<Operator> opBehaviour);
 

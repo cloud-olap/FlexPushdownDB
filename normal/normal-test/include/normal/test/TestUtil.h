@@ -35,6 +35,7 @@ public:
    */
   static void writeExecutionPlan(normal::sql::Interpreter &i);
 
+  static std::string showMetrics(core::OperatorManager &mgr);
 };
 
 }

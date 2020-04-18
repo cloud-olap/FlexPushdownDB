@@ -36,6 +36,8 @@ public:
 
   void put(const std::shared_ptr<Operator> &op);
   std::shared_ptr<Operator> getOperator(const std::string &);
+  std::map<std::string, std::shared_ptr<OperatorContext>> getOperators();
+
   void boot();
   void start();
   void stop();
