@@ -22,8 +22,6 @@ public:
 
   [[nodiscard]] const std::shared_ptr<PartitioningScheme> &getPartitioningScheme() const;
 
-  std::shared_ptr<core::Operator> toOperator() override = 0;
-
 private:
   std::shared_ptr<PartitioningScheme> partitioningScheme_;
 

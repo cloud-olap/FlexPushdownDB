@@ -2,22 +2,21 @@
 // Created by matt on 16/4/20.
 //
 
-#include "normal/plan/LogicalPlan.h"
-
-#include <utility>
+#include <normal/plan/LogicalPlan.h>
 
 #include <graphviz/gvc.h>
 
 using namespace normal::plan;
 
-LogicalPlan::LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>> Operators)
-	: operators_(std::move(Operators)) {}
+LogicalPlan::LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> operators)
+	: operators_(std::move(operators)) {}
 
-const std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>> &LogicalPlan::getOperators() const {
+const std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> &LogicalPlan::getOperators() const {
   return operators_;
 }
 
 void LogicalPlan::writeGraph(const filesystem::path &path) {
+
   auto gvc = gvContext();
 
   auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);

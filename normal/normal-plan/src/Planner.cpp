@@ -2,17 +2,16 @@
 // Created by matt on 16/4/20.
 //
 
-#include "normal/plan/Planner.h"
+#include <normal/plan/Planner.h>
 
 #include <normal/plan/operator_/type/OperatorTypes.h>
 #include <normal/plan/operator_/ScanLogicalOperator.h>
 
 using namespace normal::plan;
 
-std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> getRootOperators(std::shared_ptr<
-	LogicalPlan> logicalPlan){
+std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> getRootOperators(const LogicalPlan &logicalPlan){
   auto rootOperators = std::make_shared<std::vector<std::shared_ptr<operator_::LogicalOperator>>>();
-  for (const auto &logicalOperator: *logicalPlan->getOperators()) {
+  for (const auto &logicalOperator: *logicalPlan.getOperators()) {
 	if (logicalOperator->type()->is(operator_::type::OperatorTypes::scanOperatorType())) {
 	  rootOperators->push_back(logicalOperator);
 	}
@@ -20,9 +19,9 @@ std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> getRoo
   return rootOperators;
 }
 
-void visit(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> operators,
-		   std::vector<std::shared_ptr<normal::core::Operator>> producers,
-		   std::shared_ptr<PhysicalPlan> physicalPlan) {
+void visit(const std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>>& operators,
+		   const std::vector<std::shared_ptr<normal::core::Operator>>& producers,
+		   PhysicalPlan &physicalPlan) {
 
   for (const auto &logicalOperator: *operators) {
 
@@ -37,7 +36,7 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperato
 	  auto physicalOperators = logicalOperator->toOperators();
 	  for (const auto &physicalOperator: *physicalOperators) {
 		// Add the physical scan operator to the plan
-		physicalPlan->put(physicalOperator);
+		physicalPlan.put(physicalOperator);
 	  }
 
 	  // Visit the consumers of this operator
@@ -58,7 +57,7 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperato
 	  }
 
 	  // Add the collate operator to the plan
-	  physicalPlan->put(physicalCollateOperator);
+	  physicalPlan.put(physicalCollateOperator);
 	} else {
 
 	  // Create a physical operator for each producer
@@ -76,7 +75,7 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperato
 		physicalOperator->consume(producer);
 
 		// Add the physical scan operator to the plan
-		physicalPlan->put(physicalOperator);
+		physicalPlan.put(physicalOperator);
 	  }
 
 	  // Visit the consumers of this operator
@@ -90,8 +89,8 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperato
 
 }
 
-std::shared_ptr<PhysicalPlan> Planner::generate(std::shared_ptr<LogicalPlan> logicalPlan) {
-  auto physicalPlan = std::make_shared<PhysicalPlan>();
+PhysicalPlan Planner::generate(const LogicalPlan &logicalPlan) {
+  PhysicalPlan physicalPlan;
   std::vector<std::shared_ptr<normal::core::Operator>> producers = {};
   auto rootOperators = getRootOperators(logicalPlan);
   visit(rootOperators, producers, physicalPlan);

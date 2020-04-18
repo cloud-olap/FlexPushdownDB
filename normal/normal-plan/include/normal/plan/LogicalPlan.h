@@ -21,7 +21,8 @@ namespace normal::plan {
 class LogicalPlan {
 
 public:
-  explicit LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> Operators);
+  explicit LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> operators);
+
   [[nodiscard]] const std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> &getOperators() const;
 
   /**

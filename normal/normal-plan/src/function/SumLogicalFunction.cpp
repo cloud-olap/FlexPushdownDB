@@ -2,7 +2,7 @@
 // Created by matt on 7/4/20.
 //
 
-#include "normal/plan/function/SumLogicalFunction.h"
+#include <normal/plan/function/SumLogicalFunction.h>
 
 #include <normal/pushdown/aggregate/Sum.h>
 

@@ -2,7 +2,7 @@
 // Created by matt on 7/4/20.
 //
 
-#include "normal/plan/operator_/S3SelectScanLogicalOperator.h"
+#include <normal/plan/operator_/S3SelectScanLogicalOperator.h>
 
 #include <normal/pushdown/S3SelectScan.h>
 
@@ -15,6 +15,8 @@ S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
 	awsClient_(std::move(AwsClient)) {}
 
 std::shared_ptr<normal::core::Operator> S3SelectScanLogicalOperator::toOperator() {
+
+  // FIXME: This doesn't make sense anymore
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   for (const auto &partition: *getPartitioningScheme()->partitions()) {

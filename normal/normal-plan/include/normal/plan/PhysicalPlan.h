@@ -14,13 +14,17 @@
 
 namespace normal::plan {
 
+/**
+ * A physical query plan
+ *
+ * At the moment a collection of connected operators.
+ */
 class PhysicalPlan {
 
 public:
   PhysicalPlan();
 
   void put(std::shared_ptr<core::Operator> operator_);
-  tl::expected<std::shared_ptr<core::Operator>, std::string> get(std::string operatorName);
 
   [[nodiscard]] const std::shared_ptr<std::unordered_map<std::string,
 														 std::shared_ptr<core::Operator>>>

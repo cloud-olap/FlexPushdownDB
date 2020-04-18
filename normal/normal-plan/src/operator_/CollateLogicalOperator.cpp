@@ -2,7 +2,7 @@
 // Created by matt on 1/4/20.
 //
 
-#include "normal/plan/operator_/CollateLogicalOperator.h"
+#include <normal/plan/operator_/CollateLogicalOperator.h>
 
 
 #include <normal/pushdown/Collate.h>
@@ -12,7 +12,7 @@
 using namespace normal::plan::operator_;
 
 CollateLogicalOperator::CollateLogicalOperator()
-	: LogicalOperator(operator_::type::OperatorTypes::collateOperatorType()) {}
+	: LogicalOperator(type::OperatorTypes::collateOperatorType()) {}
 
 std::shared_ptr<normal::core::Operator> CollateLogicalOperator::toOperator() {
   return std::make_shared<normal::pushdown::Collate>("collate");

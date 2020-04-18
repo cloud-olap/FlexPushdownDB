@@ -2,13 +2,11 @@
 // Created by matt on 1/4/20.
 //
 
-#include "normal/plan/operator_/LogicalOperator.h"
-
-#include <utility>
+#include <normal/plan/operator_/LogicalOperator.h>
 
 using namespace normal::plan::operator_;
 
-LogicalOperator::LogicalOperator(std::shared_ptr<type::OperatorType> Type) : type_(std::move(Type)) {}
+LogicalOperator::LogicalOperator(std::shared_ptr<type::OperatorType> type) : type_(std::move(type)) {}
 
 std::shared_ptr<type::OperatorType> LogicalOperator::type() {
   return type_;

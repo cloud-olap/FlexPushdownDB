@@ -13,13 +13,9 @@ using namespace normal::core::type;
 using namespace normal::core::expression;
 
 AggregateLogicalOperator::AggregateLogicalOperator(
-	std::vector<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>> Functions)
-    : LogicalOperator(operator_::type::OperatorTypes::aggregateOperatorType()),
-    functions_(std::move(Functions)) {}
-
-const std::vector<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>> &AggregateLogicalOperator::functions() const {
-  return functions_;
-}
+	std::vector<std::shared_ptr<function::AggregateLogicalFunction>> functions)
+    : LogicalOperator(type::OperatorTypes::aggregateOperatorType()),
+    functions_(std::move(functions)) {}
 
 std::shared_ptr<normal::core::Operator> AggregateLogicalOperator::toOperator() {
 

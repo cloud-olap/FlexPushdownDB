@@ -19,6 +19,7 @@ public:
 
   std::shared_ptr<core::Operator> toOperator() override;
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
+
 };
 
 }

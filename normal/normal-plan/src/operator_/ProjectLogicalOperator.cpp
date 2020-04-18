@@ -2,7 +2,7 @@
 // Created by matt on 14/4/20.
 //
 
-#include "normal/plan/operator_/ProjectLogicalOperator.h"
+#include <normal/plan/operator_/ProjectLogicalOperator.h>
 
 
 #include <normal/pushdown/Project.h>
@@ -12,7 +12,7 @@ using namespace normal::plan::operator_;
 
 ProjectLogicalOperator::ProjectLogicalOperator(
 	std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions) :
-	LogicalOperator(operator_::type::OperatorTypes::projectOperatorType()),
+	LogicalOperator(type::OperatorTypes::projectOperatorType()),
 	expressions_(std::move(expressions)) {}
 
 const std::vector<std::shared_ptr<normal::core::expression::Expression>> &ProjectLogicalOperator::expressions() const {

@@ -26,6 +26,7 @@ public:
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
 private:
+  // FIXME: This should probably be a pointer
   std::vector<std::shared_ptr<core::expression::Expression>> expressions_;
 
 };

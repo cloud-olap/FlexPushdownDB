@@ -21,7 +21,14 @@ namespace normal::plan {
 class Planner {
 
 public:
-  static std::shared_ptr<PhysicalPlan> generate(std::shared_ptr<LogicalPlan> logicalPlan);
+
+  /**
+   * Generates the physical plan from the logical plan
+   *
+   * @param logicalPlan
+   * @return
+   */
+  static PhysicalPlan generate(const LogicalPlan &logicalPlan);
 
 };
 

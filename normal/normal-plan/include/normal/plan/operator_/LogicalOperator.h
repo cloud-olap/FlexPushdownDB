@@ -16,13 +16,12 @@ namespace normal::plan::operator_ {
 class LogicalOperator {
 
 public:
-  explicit LogicalOperator(std::shared_ptr<type::OperatorType> Type);
+  explicit LogicalOperator(std::shared_ptr<type::OperatorType> type);
   virtual ~LogicalOperator() = default;
 
   std::shared_ptr<type::OperatorType> type();
 
   virtual std::shared_ptr<core::Operator> toOperator() = 0;
-
   virtual std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() = 0;
 
   const std::string &getName() const;

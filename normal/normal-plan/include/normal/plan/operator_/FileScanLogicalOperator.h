@@ -8,9 +8,9 @@
 #include <string>
 
 #include <normal/core/Operator.h>
-
 #include <normal/connector/local-fs/LocalFilePartitioningScheme.h>
-#include "ScanLogicalOperator.h"
+
+#include <normal/plan/operator_/ScanLogicalOperator.h>
 
 namespace normal::plan::operator_ {
 
@@ -21,6 +21,7 @@ public:
 
   std::shared_ptr<core::Operator> toOperator() override;
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
+
 };
 
 }
