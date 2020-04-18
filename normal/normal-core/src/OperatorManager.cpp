@@ -38,6 +38,8 @@ void OperatorManager::put(const std::shared_ptr<normal::core::Operator> &op) {
 
 void OperatorManager::start() {
 
+  startTime_ = std::chrono::steady_clock::now();
+
   // Mark all the operators as incomplete
   operatorDirectory_.setIncomplete();
 
@@ -60,6 +62,8 @@ void OperatorManager::start() {
 void OperatorManager::stop() {
   // TODO: Send actors a shutdown message
   this->actorSystem->await_actors_before_shutdown(false);
+
+  stopTime_ = std::chrono::steady_clock::now();
 }
 
 OperatorManager::OperatorManager() {
@@ -202,6 +206,16 @@ std::shared_ptr<Operator> OperatorManager::getOperator(const std::string &name) 
 
 std::map<std::string, std::shared_ptr<OperatorContext>> OperatorManager::getOperators() {
   return this->m_operatorMap;
+}
+
+tl::expected<long, std::string> OperatorManager::getElapsedTime() {
+
+  if(startTime_.time_since_epoch().count() == 0)
+    return tl::unexpected(std::string("Execution time unavailable, query has not been started"));
+  if(stopTime_.time_since_epoch().count() == 0)
+	return tl::unexpected(std::string("Execution time unavailable, query has not been stopped"));
+
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime_ - startTime_).count();
 }
 
 }

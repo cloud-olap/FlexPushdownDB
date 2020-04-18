@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <caf/all.hpp>
+#include <tl/expected.hpp>
 
 #include "OperatorContext.h"
 #include "OperatorDirectory.h"
@@ -31,6 +32,9 @@ private:
   std::shared_ptr<caf::scoped_actor> rootActor_;
   OperatorDirectory operatorDirectory_;
 
+  std::chrono::steady_clock::time_point startTime_;
+  std::chrono::steady_clock::time_point stopTime_;
+
 public:
   OperatorManager();
 
@@ -44,6 +48,8 @@ public:
   void join();
 
   void write_graph(const std::string& file);
+
+  tl::expected<long, std::string> getElapsedTime();
 
 };
 
