@@ -12,21 +12,25 @@
 
 #include <normal/core/Operator.h>
 
+namespace normal::plan {
+
 class PhysicalPlan {
 
 public:
   PhysicalPlan();
 
-  void put(std::shared_ptr<normal::core::Operator> operator_);
-  tl::expected<std::shared_ptr<normal::core::Operator>, std::string> get(std::string operatorName);
+  void put(std::shared_ptr<core::Operator> operator_);
+  tl::expected<std::shared_ptr<core::Operator>, std::string> get(std::string operatorName);
 
   [[nodiscard]] const std::shared_ptr<std::unordered_map<std::string,
-														 std::shared_ptr<normal::core::Operator>>>
+														 std::shared_ptr<core::Operator>>>
   &getOperators() const;
 
 private:
-  std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<normal::core::Operator>>> operators_;
+  std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<core::Operator>>> operators_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_PHYSICALPLAN_H

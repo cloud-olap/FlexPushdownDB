@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include <normal/plan/ScanLogicalOperator.h>
+#include <normal/plan/operator_/ScanLogicalOperator.h>
 #include <normal/connector/Catalogue.h>
 
 class Catalogue;
@@ -29,7 +29,7 @@ public:
   [[nodiscard]] const std::string &getAlias() const;
   [[nodiscard]] const std::shared_ptr<Catalogue> &getCatalogue() const;
 
-  virtual std::shared_ptr<plan::ScanLogicalOperator> toLogicalOperator() = 0;
+  virtual std::shared_ptr<normal::plan::operator_::ScanLogicalOperator> toLogicalOperator() = 0;
 
 };
 

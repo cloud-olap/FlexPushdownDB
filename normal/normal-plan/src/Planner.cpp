@@ -2,30 +2,34 @@
 // Created by matt on 16/4/20.
 //
 
-#include <normal/plan/OperatorTypes.h>
-#include <normal/plan/ScanLogicalOperator.h>
 #include "normal/plan/Planner.h"
 
-std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> getRootOperators(std::shared_ptr<LogicalPlan> logicalPlan){
-  auto rootOperators = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
+#include <normal/plan/operator_/type/OperatorTypes.h>
+#include <normal/plan/operator_/ScanLogicalOperator.h>
+
+using namespace normal::plan;
+
+std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> getRootOperators(std::shared_ptr<
+	LogicalPlan> logicalPlan){
+  auto rootOperators = std::make_shared<std::vector<std::shared_ptr<operator_::LogicalOperator>>>();
   for (const auto &logicalOperator: *logicalPlan->getOperators()) {
-	if (logicalOperator->type()->is(OperatorTypes::scanOperatorType())) {
+	if (logicalOperator->type()->is(operator_::type::OperatorTypes::scanOperatorType())) {
 	  rootOperators->push_back(logicalOperator);
 	}
   }
   return rootOperators;
 }
 
-void visit(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> operators,
+void visit(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> operators,
 		   std::vector<std::shared_ptr<normal::core::Operator>> producers,
 		   std::shared_ptr<PhysicalPlan> physicalPlan) {
 
   for (const auto &logicalOperator: *operators) {
 
-	if (logicalOperator->type()->is(OperatorTypes::scanOperatorType())) {
+	if (logicalOperator->type()->is(operator_::type::OperatorTypes::scanOperatorType())) {
 
 	  // Examine the partitioning scheme of the scan operator
-	  auto scanOp = std::static_pointer_cast<normal::plan::ScanLogicalOperator>(logicalOperator);
+	  auto scanOp = std::static_pointer_cast<operator_::ScanLogicalOperator>(logicalOperator);
 	  auto partitioningScheme = scanOp->getPartitioningScheme();
 	  auto partitions = partitioningScheme->partitions();
 
@@ -38,11 +42,11 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOper
 
 	  // Visit the consumers of this operator
 	  if (logicalOperator->getConsumer() != nullptr) {
-		auto consumers = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
+		auto consumers = std::make_shared<std::vector<std::shared_ptr<operator_::LogicalOperator>>>();
 		consumers->push_back(logicalOperator->getConsumer());
 		visit(consumers, *physicalOperators, physicalPlan);
 	  }
-	} else if (logicalOperator->type()->is(OperatorTypes::collateOperatorType())) {
+	} else if (logicalOperator->type()->is(operator_::type::OperatorTypes::collateOperatorType())) {
 
 	  // Create a single collate operator, collate operators are never partitioned
 	  auto physicalCollateOperator = logicalOperator->toOperator();
@@ -77,7 +81,7 @@ void visit(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOper
 
 	  // Visit the consumers of this operator
 	  if (logicalOperator->getConsumer() != nullptr) {
-		auto consumers = std::make_shared<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>>();
+		auto consumers = std::make_shared<std::vector<std::shared_ptr<operator_::LogicalOperator>>>();
 		consumers->push_back(logicalOperator->getConsumer());
 		visit(consumers, physicalOperators, physicalPlan);
 	  }

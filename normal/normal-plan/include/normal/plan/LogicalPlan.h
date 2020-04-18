@@ -9,9 +9,11 @@
 #include <vector>
 #include <experimental/filesystem>
 
-#include <normal/plan/LogicalOperator.h>
+#include <normal/plan/operator_/LogicalOperator.h>
 
 using namespace std::experimental;
+
+namespace normal::plan {
 
 /**
  * A logical query plan. A collection of operators and their connections.
@@ -19,8 +21,8 @@ using namespace std::experimental;
 class LogicalPlan {
 
 public:
-  explicit LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> Operators);
-  [[nodiscard]] const std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> &getOperators() const;
+  explicit LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> Operators);
+  [[nodiscard]] const std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> &getOperators() const;
 
   /**
    * Generate an graph of the plan in SVG format
@@ -30,8 +32,10 @@ public:
   void writeGraph(const filesystem::path& path);
 
 private:
-  std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> operators_;
+  std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> operators_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_LOGICALPLAN_H

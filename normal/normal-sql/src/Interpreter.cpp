@@ -36,13 +36,13 @@ void Interpreter::parse(const std::string &sql) {
 
   visitor::Visitor visitor(this->catalogues_, this->operatorManager_);
   auto untypedLogicalPlans = tree->accept(&visitor);
-  auto logicalPlans = untypedLogicalPlans.as<std::shared_ptr<std::vector<std::shared_ptr<LogicalPlan>>>>();
+  auto logicalPlans = untypedLogicalPlans.as<std::shared_ptr<std::vector<std::shared_ptr<plan::LogicalPlan>>>>();
 
   // TODO: Perhaps support multiple statements in future
   logicalPlan_ = logicalPlans->at(0);
 
   // Create physical plan
-  auto physicalPlan = Planner::generate(logicalPlan_);
+  auto physicalPlan = plan::Planner::generate(logicalPlan_);
 
   // Add the plan to the operator manager
   for(const auto& physicalOperator: *physicalPlan->getOperators()){
@@ -60,7 +60,7 @@ const std::shared_ptr<normal::core::OperatorManager> &Interpreter::getOperatorMa
   return operatorManager_;
 }
 
-const std::shared_ptr<LogicalPlan> &Interpreter::getLogicalPlan() const {
+const std::shared_ptr<normal::plan::LogicalPlan> &Interpreter::getLogicalPlan() const {
   return logicalPlan_;
 }
 

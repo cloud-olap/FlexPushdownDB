@@ -4,6 +4,8 @@
 
 #include "normal/plan/PhysicalPlan.h"
 
+using namespace normal::plan;
+
 PhysicalPlan::PhysicalPlan()
 	: operators_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<normal::core::Operator>>>()) {}
 

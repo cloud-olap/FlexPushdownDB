@@ -25,9 +25,9 @@ public:
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>> catalogues_;
-  std::shared_ptr<LogicalPlan> logicalPlan_;
+  std::shared_ptr<plan::LogicalPlan> logicalPlan_;
 public:
-  const std::shared_ptr<LogicalPlan> &getLogicalPlan() const;
+  const std::shared_ptr<plan::LogicalPlan> &getLogicalPlan() const;
 private:
   std::shared_ptr<core::OperatorManager> operatorManager_;
 

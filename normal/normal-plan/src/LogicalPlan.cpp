@@ -8,10 +8,12 @@
 
 #include <graphviz/gvc.h>
 
-LogicalPlan::LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> Operators)
+using namespace normal::plan;
+
+LogicalPlan::LogicalPlan(std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>> Operators)
 	: operators_(std::move(Operators)) {}
 
-const std::shared_ptr<std::vector<std::shared_ptr<normal::plan::LogicalOperator>>> &LogicalPlan::getOperators() const {
+const std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>> &LogicalPlan::getOperators() const {
   return operators_;
 }
 

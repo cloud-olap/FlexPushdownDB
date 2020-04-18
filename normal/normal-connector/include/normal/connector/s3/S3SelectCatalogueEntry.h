@@ -9,7 +9,7 @@
 
 #include <normal/connector/CatalogueEntry.h>
 #include <normal/connector/Catalogue.h>
-#include "normal/plan/ScanLogicalOperator.h"
+#include "normal/plan/operator_/ScanLogicalOperator.h"
 #include "S3SelectPartitioningScheme.h"
 
 namespace normal::connector::s3 {
@@ -22,7 +22,7 @@ public:
 						 std::shared_ptr<Catalogue>);
   ~S3SelectCatalogueEntry() override = default;
 
-  std::shared_ptr<plan::ScanLogicalOperator> toLogicalOperator() override;
+  std::shared_ptr<normal::plan::operator_::ScanLogicalOperator> toLogicalOperator() override;
 
 private:
   std::shared_ptr<S3SelectPartitioningScheme> partitioningScheme_;
