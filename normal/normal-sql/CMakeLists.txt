@@ -20,6 +20,7 @@ target_include_directories(normal-sql PUBLIC include)
 target_include_directories(normal-sql PUBLIC gen-src)
 
 target_link_libraries(normal-sql PUBLIC normal-core)
+target_link_libraries(normal-sql PUBLIC normal-expression)
 target_link_libraries(normal-sql PUBLIC normal-pushdown)
 target_link_libraries(normal-sql PUBLIC normal-connector)
 target_link_libraries(normal-sql PUBLIC normal-plan)

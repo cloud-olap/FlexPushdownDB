@@ -36,4 +36,11 @@ function(setDefaults)
         add_compile_options(-fcolor-diagnostics)
     endif ()
 
+    # These are needed so the profiler can show methods in stack frames
+    # Not using makes inlined methods simply appear as "inline"
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+    endif()
+
 endfunction()

@@ -14,13 +14,13 @@
 #include <normal/pushdown/aggregate/Sum.h>
 #include <normal/pushdown/Project.h>
 #include <normal/test/Globals.h>
-#include <normal/core/expression/Cast.h>
-#include <normal/core/expression/Column.h>
+#include <normal/expression/Cast.h>
+#include <normal/expression/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/test/TestUtil.h>
 
 using namespace normal::core::type;
-using namespace normal::core::expression;
+using namespace normal::expression;
 using namespace normal::pushdown::aggregate;
 
 TEST_CASE ("filescan-sum-collate"
@@ -46,7 +46,7 @@ TEST_CASE ("filescan-sum-collate"
   mgr->put(aggregate);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeLogicalExecutionPlan(*mgr);
+  normal::test::TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 
@@ -87,7 +87,7 @@ TEST_CASE ("filescan-project-collate"
   mgr->put(project);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeLogicalExecutionPlan(*mgr);
+  normal::test::TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 
@@ -178,7 +178,7 @@ TEST_CASE ("filescan-sum-collate-parallel"
   mgr->put(reduceAggregate);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeLogicalExecutionPlan(*mgr);
+  normal::test::TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

@@ -13,14 +13,14 @@
 
 #include <normal/core/OperatorManager.h>
 #include <normal/core/type/Type.h>
-#include <normal/core/expression/Expression.h>
+#include <normal/expression/Expression.h>
 
 #include <normal/sql/NormalSQLBaseListener.h>
 #include <normal/sql/NormalSQLBaseVisitor.h>
 #include <normal/connector/Catalogue.h>
 
 using namespace normal::core::type;
-using namespace normal::core::expression;
+using namespace normal::expression;
 
 namespace normal::sql::visitor {
 

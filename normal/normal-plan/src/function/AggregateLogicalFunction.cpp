@@ -10,10 +10,10 @@ AggregateLogicalFunction::AggregateLogicalFunction(std::string type)
     : type_(std::move(type)) {
 }
 
-std::shared_ptr<normal::core::expression::Expression> AggregateLogicalFunction::expression() {
+std::shared_ptr<normal::expression::Expression> AggregateLogicalFunction::expression() {
   return expression_;
 }
 
-void AggregateLogicalFunction::expression(const std::shared_ptr<normal::core::expression::Expression> &expression) {
+void AggregateLogicalFunction::expression(const std::shared_ptr<normal::expression::Expression> &expression) {
   expression_ = expression;
 }

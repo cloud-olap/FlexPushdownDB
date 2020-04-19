@@ -13,9 +13,9 @@
 
 #include "Expression.h"
 
-namespace normal::core::expression {
+namespace normal::expression {
 
-class Column : public Expression {
+class Column : public normal::expression::Expression {
 private:
   std::string columnName_;
 
@@ -40,7 +40,7 @@ public:
   }
 };
 
-static std::shared_ptr<Expression> col(std::string columnName){
+static std::shared_ptr<normal::expression::Expression> col(std::string columnName){
   return std::make_shared<Column>(std::move(columnName));
 }
 

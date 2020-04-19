@@ -13,14 +13,14 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/aggregate/Sum.h>
-#include <normal/core/expression/Column.h>
+#include <normal/expression/Column.h>
 #include <normal/core/type/Float64Type.h>
-#include <normal/core/expression/Cast.h>
+#include <normal/expression/Cast.h>
 
 #include <normal/test/TestUtil.h>
 
 using namespace normal::core::type;
-using namespace normal::core::expression;
+using namespace normal::expression;
 
 TEST_CASE ("S3SelectScan -> Sum -> Collate"
 * doctest::skip(false)) {
@@ -56,7 +56,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate"
   mgr->put(aggregate);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeLogicalExecutionPlan(*mgr);
+  normal::test::TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

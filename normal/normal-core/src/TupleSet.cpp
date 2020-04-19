@@ -13,7 +13,7 @@
 
 #include <arrow/api.h>                 // for Array, NumericArray, StringA...
 #include <arrow/csv/api.h>            // for TableReader
-#include <normal/core/expression/Expressions.h>
+#include <normal/expression/Expressions.h>
 #include <tl/expected.hpp>
 #include <arrow/scalar.h>
 
@@ -160,7 +160,7 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
-TupleSet::evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>> &expressions) {
+TupleSet::evaluate(const std::vector<std::shared_ptr<normal::expression::Expression>> &expressions) {
 
   // Prepare a schema for the results
   auto resultFields = std::vector<std::shared_ptr<arrow::Field>>();

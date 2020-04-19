@@ -11,11 +11,11 @@
 using namespace normal::plan::operator_;
 
 ProjectLogicalOperator::ProjectLogicalOperator(
-	std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions) :
+	std::vector<std::shared_ptr<normal::expression::Expression>> expressions) :
 	LogicalOperator(type::OperatorTypes::projectOperatorType()),
 	expressions_(std::move(expressions)) {}
 
-const std::vector<std::shared_ptr<normal::core::expression::Expression>> &ProjectLogicalOperator::expressions() const {
+const std::vector<std::shared_ptr<normal::expression::Expression>> &ProjectLogicalOperator::expressions() const {
   return expressions_;
 }
 

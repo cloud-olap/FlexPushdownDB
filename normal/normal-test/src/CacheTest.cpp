@@ -15,11 +15,11 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/aggregate/Sum.h>
-#include <normal/core/expression/Cast.h>
-#include <normal/core/expression/Column.h>
+#include <normal/expression/Cast.h>
+#include <normal/expression/Column.h>
 
 using namespace normal::core::type;
-using namespace normal::core::expression;
+using namespace normal::expression;
 
 /**
  * TODO: Throwing errors when issuing AWS requests, reported as a CRC error but suspect an auth issue. Skip for now.

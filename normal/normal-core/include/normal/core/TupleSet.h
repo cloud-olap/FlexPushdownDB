@@ -10,7 +10,7 @@
 
 #include <arrow/api.h>
 #include <arrow/csv/api.h>
-#include <normal/core/expression/Expression.h>
+#include <normal/expression/Expression.h>
 #include <tl/expected.hpp>
 #include <normal/core/arrow/Arrays.h>
 #include <normal/core/arrow/TableHelper.h>
@@ -53,7 +53,7 @@ public:
   int64_t numColumns();
 
   tl::expected<std::shared_ptr<TupleSet>, std::string>
-  evaluate(const std::vector<std::shared_ptr<normal::core::expression::Expression>>&);
+  evaluate(const std::vector<std::shared_ptr<normal::expression::Expression>>&);
 
   /**
    * Returns an element from the tupleset given and column name and row number.

@@ -4,7 +4,7 @@
 
 #include <sstream>
 #include <utility>
-#include <normal/core/expression/Expressions.h>
+#include <normal/expression/Expressions.h>
 #include <normal/core/arrow/ScalarHelperImpl.h>
 #include <normal/core/arrow/ScalarHelperBuilder.h>
 
@@ -16,7 +16,7 @@
 
 namespace normal::pushdown::aggregate {
 
-Sum::Sum(std::string columnName, std::shared_ptr<normal::core::expression::Expression> expression) :
+Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::Expression> expression) :
     AggregationFunction(std::move(columnName)),
     expression_(std::move(expression)) {}
 

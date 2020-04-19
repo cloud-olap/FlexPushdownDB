@@ -10,7 +10,7 @@
 using namespace normal::plan::operator_;
 
 using namespace normal::core::type;
-using namespace normal::core::expression;
+using namespace normal::expression;
 
 AggregateLogicalOperator::AggregateLogicalOperator(
 	std::vector<std::shared_ptr<function::AggregateLogicalFunction>> functions)

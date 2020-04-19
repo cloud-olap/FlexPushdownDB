@@ -10,7 +10,7 @@
 #include <arrow/api.h>
 #include <memory>
 
-namespace normal::core::expression {
+namespace normal::expression {
 
 /**
  * FIXME: For some reason removing the namespace prefixes triggers on error in CLions editor.
@@ -18,15 +18,15 @@ namespace normal::core::expression {
  * @tparam T
  */
 
-class Add : public normal::core::expression::Expression {
+class Add : public normal::expression::Expression {
 
 private:
-  std::shared_ptr<normal::core::expression::Expression> left_;
-  std::shared_ptr<normal::core::expression::Expression> right_;
+  std::shared_ptr<normal::expression::Expression> left_;
+  std::shared_ptr<normal::expression::Expression> right_;
 
 public:
-  Add(std::shared_ptr<normal::core::expression::Expression> left,
-      std::shared_ptr<normal::core::expression::Expression> right)
+  Add(std::shared_ptr<normal::expression::Expression> left,
+      std::shared_ptr<normal::expression::Expression> right)
       : left_(std::move(left)), right_(std::move(right)) {
   }
 
@@ -39,9 +39,9 @@ public:
   }
 };
 
-static std::shared_ptr<normal::core::expression::Expression> plus(
-    std::shared_ptr<normal::core::expression::Expression> left,
-    std::shared_ptr<normal::core::expression::Expression> right) {
+static std::shared_ptr<normal::expression::Expression> plus(
+    std::shared_ptr<normal::expression::Expression> left,
+    std::shared_ptr<normal::expression::Expression> right) {
   return std::make_shared<Add>(std::move(left), std::move(right));
 }
 

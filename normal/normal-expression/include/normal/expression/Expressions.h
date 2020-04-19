@@ -25,7 +25,7 @@ public:
    * @return
    */
   static std::shared_ptr<arrow::ArrayVector> evaluate(
-      const std::vector<std::shared_ptr<normal::core::expression::Expression>> &expressions,
+      const std::vector<std::shared_ptr<normal::expression::Expression>> &expressions,
       const arrow::RecordBatch &recordBatch) {
 
     // Prepare a schema for the results

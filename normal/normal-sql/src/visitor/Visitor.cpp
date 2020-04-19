@@ -4,8 +4,8 @@
 
 #include "Visitor.h"
 
-#include <normal/core/expression/Cast.h>
-#include <normal/core/expression/Column.h>
+#include <normal/expression/Cast.h>
+#include <normal/expression/Column.h>
 #include <normal/core/type/Types.h>
 #include <normal/plan/LogicalPlan.h>
 
@@ -15,7 +15,7 @@
 #include "normal/plan/function/SumLogicalFunction.h"
 
 using namespace normal::core::type;
-using namespace normal::core::expression;
+using namespace normal::expression;
 
 /**
  * SQL parse tree visitor. Converts the parse tree into a logical graph of operators.
@@ -93,7 +93,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   bool aggregate = false;
 
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>>();
-  auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::core::expression::Expression>>>();
+  auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::expression::Expression>>>();
 
   for (const auto &resultColumn: ctx->result_column()) {
     auto resultColumn_Result = visitResult_column(resultColumn);
@@ -184,7 +184,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr(normal::sql::NormalSQLPar
   if (ctx->K_CAST()) {
     auto expressionCtx = ctx->expr(0);
     auto typeNameCtx = ctx->type_name();
-    std::shared_ptr<normal::core::expression::Expression> expression = visitExpr(expressionCtx);
+    std::shared_ptr<normal::expression::Expression> expression = visitExpr(expressionCtx);
     auto type = typed_visitType_name(typeNameCtx);
     return cast(expression, type);
   } else if (ctx->column_name()) {

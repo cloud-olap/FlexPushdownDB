@@ -25,23 +25,17 @@ add_library(normal-core STATIC
         src/OperatorRelationshipType.cpp include/normal/core/OperatorRelationshipType.h
         src/LocalOperatorDirectory.cpp include/normal/core/LocalOperatorDirectory.h
         src/LocalOperatorDirectoryEntry.cpp include/normal/core/LocalOperatorDirectoryEntry.h
-        include/normal/core/expression/Expression.h
-        include/normal/core/expression/Add.h
-        include/normal/core/expression/Literal.h
-        include/normal/core/expression/Multiply.h
-        include/normal/core/expression/Subtract.h
-        include/normal/core/expression/Divide.h
-        include/normal/core/expression/Column.h
         src/arrow/Arrays.cpp include/normal/core/arrow/Arrays.h
-        include/normal/core/expression/Cast.h
         include/normal/core/type/Type.h
         include/normal/core/type/DecimalType.h
         src/type/Types.cpp include/normal/core/type/Types.h
         include/normal/core/type/Float64Type.h
-        src/expression/Expressions.cpp
-        include/normal/core/expression/Expressions.h
         include/normal/core/arrow/ArrayHelper.h
-        include/normal/core/arrow/TableHelper.h include/normal/core/arrow/ScalarHelperImpl.h include/normal/core/arrow/ScalarHelperBuilder.h include/normal/core/arrow/ScalarHelper.h include/normal/core/type/Integer32Type.h)
+        include/normal/core/arrow/TableHelper.h
+        include/normal/core/arrow/ScalarHelperImpl.h
+        include/normal/core/arrow/ScalarHelperBuilder.h
+        include/normal/core/arrow/ScalarHelper.h
+        include/normal/core/type/Integer32Type.h)
 
 
 target_include_directories(normal-core PUBLIC include)
@@ -56,6 +50,7 @@ target_link_libraries(normal-core PUBLIC graphviz_gvc_shared)
 target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)
 target_link_libraries(normal-core PUBLIC expected)
+target_link_libraries(normal-core PUBLIC normal-expression)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

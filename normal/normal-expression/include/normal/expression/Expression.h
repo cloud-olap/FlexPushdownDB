@@ -11,7 +11,7 @@
 #include <gandiva/gandiva_aliases.h>
 #include <normal/core/type/Type.h>
 
-namespace normal::core::expression {
+namespace normal::expression {
 
 class Expression {
 private:

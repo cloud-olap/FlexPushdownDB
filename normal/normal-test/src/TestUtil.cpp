@@ -24,8 +24,14 @@ void TestUtil::writeExecutionPlan(normal::sql::Interpreter &i) {
   auto logicalPlanFile = filesystem::path(testScratchDir).append("logical-execution-plan.svg");
   i.getLogicalPlan()->writeGraph(logicalPlanFile);
 
+  TestUtil::writeExecutionPlan(*i.getOperatorManager());
+}
+
+void TestUtil::writeExecutionPlan(normal::core::OperatorManager &mgr) {
+  auto testScratchDir = getTestScratchDirectory();
+
   auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
-  i.getOperatorManager()->write_graph(physicalPlanFile);
+  mgr.write_graph(physicalPlanFile);
 }
 
 std::string TestUtil::showMetrics(normal::core::OperatorManager &mgr) {

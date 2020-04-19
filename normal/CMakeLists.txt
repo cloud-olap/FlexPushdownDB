@@ -39,6 +39,7 @@ include(External_expected)
 
 add_subdirectory(normal-core)
 add_subdirectory(normal-connector)
+add_subdirectory(normal-expression)
 add_subdirectory(normal-plan)
 add_subdirectory(normal-pushdown)
 add_subdirectory(normal-sql)

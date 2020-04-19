@@ -9,7 +9,7 @@
 #include <arrow/api.h>
 #include "Expression.h"
 
-namespace normal::core::expression {
+namespace normal::expression {
 
 template <typename T>
 class Literal : public Expression {

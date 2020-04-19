@@ -12,11 +12,11 @@ namespace normal::pushdown::aggregate {
 class Sum : public AggregationFunction {
 
 private:
-  std::shared_ptr<normal::core::expression::Expression> expression_;
+  std::shared_ptr<normal::expression::Expression> expression_;
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
 
 public:
-  Sum(std::string columnName, std::shared_ptr<normal::core::expression::Expression> expression);
+  Sum(std::string columnName, std::shared_ptr<normal::expression::Expression> expression);
   ~Sum() override = default;
 
   void apply(std::shared_ptr<normal::core::TupleSet> tuples) override;

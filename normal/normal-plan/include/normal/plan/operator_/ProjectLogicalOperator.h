@@ -9,7 +9,7 @@
 #include <vector>
 
 #include <normal/core/Operator.h>
-#include <normal/core/expression/Expression.h>
+#include <normal/expression/Expression.h>
 
 #include <normal/plan/operator_/LogicalOperator.h>
 
@@ -18,16 +18,16 @@ namespace normal::plan::operator_ {
 class ProjectLogicalOperator : public LogicalOperator {
 
 public:
-  explicit ProjectLogicalOperator(std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions);
+  explicit ProjectLogicalOperator(std::vector<std::shared_ptr<normal::expression::Expression>> expressions);
 
-  [[nodiscard]] const std::vector<std::shared_ptr<core::expression::Expression>> &expressions() const;
+  [[nodiscard]] const std::vector<std::shared_ptr<expression::Expression>> &expressions() const;
 
   std::shared_ptr<core::Operator> toOperator() override;
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
 private:
   // FIXME: This should probably be a pointer
-  std::vector<std::shared_ptr<core::expression::Expression>> expressions_;
+  std::vector<std::shared_ptr<expression::Expression>> expressions_;
 
 };
 

@@ -5,14 +5,14 @@
 #include <doctest/doctest.h>
 
 #include <normal/core/arrow/Arrays.h>
-#include <normal/core/expression/Expression.h>
-#include <normal/core/expression/Cast.h>
-#include <normal/core/expression/Column.h>
+#include <normal/expression/Expression.h>
+#include <normal/expression/Cast.h>
+#include <normal/expression/Column.h>
 #include <normal/core/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
 
 using namespace normal::core::type;
-using namespace normal::core::expression;
+using namespace normal::expression;
 
 TEST_CASE ("make-tupleset" * doctest::skip(false)) {
 
@@ -57,7 +57,7 @@ TEST_CASE ("cast-string-to-decimal" * doctest::skip(false)) {
 
   SPDLOG_DEBUG("Input:\n{}", tuples->toString());
 
-  auto expressions = std::vector<std::shared_ptr<normal::core::expression::Expression>>{
+  auto expressions = std::vector<std::shared_ptr<normal::expression::Expression>>{
       cast(col("a"), decimalType(10, 5)),
       cast(col("b"), decimalType(10, 5)),
       cast(col("c"), decimalType(10, 5))
@@ -88,7 +88,7 @@ TEST_CASE ("cast-string-to-double" * doctest::skip(false)) {
 
   SPDLOG_DEBUG("Input:\n{}", tuples->toString());
 
-  auto expressions = std::vector<std::shared_ptr<normal::core::expression::Expression>>{
+  auto expressions = std::vector<std::shared_ptr<normal::expression::Expression>>{
       cast(col("a"), float64Type()),
       cast(col("b"), float64Type()),
       cast(col("c"), float64Type())

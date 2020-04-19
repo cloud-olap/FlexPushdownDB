@@ -14,21 +14,21 @@
 #include <gandiva/tree_expr_builder.h>
 #include <normal/core/type/Float64Type.h>
 
-namespace normal::core::expression {
+namespace normal::expression {
 
 /**
  * FIXME: For some reason removing the namespace prefixes triggers on error in CLions editor.
  *
  * @tparam T
  */
-class Cast : public normal::core::expression::Expression {
+class Cast : public normal::expression::Expression {
 
 private:
-  std::shared_ptr<normal::core::expression::Expression> value_;
+  std::shared_ptr<normal::expression::Expression> value_;
   std::shared_ptr<normal::core::type::Type> resultType_;
 
 public:
-  Cast(std::shared_ptr<normal::core::expression::Expression> value,
+  Cast(std::shared_ptr<normal::expression::Expression> value,
        std::shared_ptr<normal::core::type::Type> resultType)
       : value_(std::move(value)), resultType_(std::move(resultType)) {
   }
@@ -79,8 +79,8 @@ public:
 
 };
 
-static std::shared_ptr<normal::core::expression::Expression> cast(
-    std::shared_ptr<normal::core::expression::Expression> value,
+static std::shared_ptr<normal::expression::Expression> cast(
+    std::shared_ptr<normal::expression::Expression> value,
     std::shared_ptr<normal::core::type::Type> type) {
   return std::make_shared<Cast>(std::move(value), std::move(type));
 }

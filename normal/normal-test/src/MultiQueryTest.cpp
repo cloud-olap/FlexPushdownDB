@@ -29,7 +29,7 @@ TEST_CASE ("FileScan -> Collate"
   mgr->put(fileScan);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeLogicalExecutionPlan(*mgr);
+  normal::test::TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

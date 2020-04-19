@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_PUSHDOWN_SRC_PROJECT_H
 
 #include <normal/core/Operator.h>
-#include <normal/core/expression/Expression.h>
+#include <normal/expression/Expression.h>
 #include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
@@ -22,7 +22,7 @@ public:
    * @param Expressions Expressions to evaluate to produce the attributes in the projection
    */
   Project(const std::string &Name,
-          std::vector<std::shared_ptr<normal::core::expression::Expression>> Expressions);
+          std::vector<std::shared_ptr<normal::expression::Expression>> Expressions);
 
   /**
    * Default destructor
@@ -55,7 +55,7 @@ private:
   /**
    * The expressions defining the attributes the projection should include
    */
-  std::vector<std::shared_ptr<normal::core::expression::Expression>> expressions_;
+  std::vector<std::shared_ptr<normal::expression::Expression>> expressions_;
 
   /**
    * A buffer of received tuples that are not projected until enough tuples have been received
