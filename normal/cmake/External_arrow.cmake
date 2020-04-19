@@ -82,12 +82,16 @@ add_library(gandiva_static STATIC IMPORTED)
 set_target_properties(gandiva_static PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_STATIC_LIB})
 target_include_directories(gandiva_static INTERFACE ${ARROW_INCLUDE_DIR})
 target_link_libraries(gandiva_static INTERFACE LLVM)
+target_link_libraries(gandiva_static INTERFACE arrow_static)
+target_link_libraries(gandiva_static INTERFACE ${ARROW_RE2_STATIC_LIB})
 add_dependencies(gandiva_static ${ARROW_BASE})
 
 add_library(gandiva_shared SHARED IMPORTED)
 set_target_properties(gandiva_shared PROPERTIES IMPORTED_LOCATION ${ARROW_GANDIVA_SHARED_LIB})
 target_include_directories(gandiva_shared INTERFACE ${ARROW_INCLUDE_DIR})
-target_link_libraries(gandiva_static INTERFACE LLVM)
+target_link_libraries(gandiva_shared INTERFACE LLVM)
+target_link_libraries(gandiva_shared INTERFACE arrow_static)
+target_link_libraries(gandiva_shared INTERFACE ${ARROW_RE2_STATIC_LIB})
 add_dependencies(gandiva_shared ${ARROW_BASE})
 
 

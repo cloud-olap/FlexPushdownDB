@@ -23,6 +23,7 @@ target_include_directories(normal-expression PUBLIC include)
 
 target_link_libraries(normal-expression PRIVATE spdlog::spdlog)
 target_link_libraries(normal-expression PUBLIC arrow_static)
+target_link_libraries(normal-expression PUBLIC gandiva_static)
 target_link_libraries(normal-expression PUBLIC expected)
 target_link_libraries(normal-expression PUBLIC normal-core)
 
