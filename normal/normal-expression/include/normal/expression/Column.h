@@ -5,7 +5,6 @@
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_EXPRESSION_COLUMN_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_EXPRESSION_COLUMN_H
 
-
 #include <memory>
 #include <utility>
 #include <arrow/api.h>
@@ -15,36 +14,28 @@
 
 namespace normal::expression {
 
-class Column : public normal::expression::Expression {
+class Column : public Expression {
+
+public:
+  explicit Column(std::string columnName);
+
+  [[nodiscard]] const std::string &columnName() const;
+
+  [[nodiscard]] std::string &name() override;
+  void compile(std::shared_ptr<arrow::Schema> schema) override;
+  gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override;
+
+  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override;
+
 private:
   std::string columnName_;
 
-public:
-  explicit Column(std::string columnName) : columnName_(std::move(columnName)) {
-  }
-
-  [[nodiscard]] const std::string &columnName() const {
-    return columnName_;
-  }
-
-  [[nodiscard]] std::string &name() override {
-    return columnName_;
-  };
-
-  gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override {
-    return gandiva::TreeExprBuilder::MakeField(schema->GetFieldByName(columnName_));
-  }
-
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override {
-    return schema->GetFieldByName(columnName_)->type();
-  }
 };
 
-static std::shared_ptr<normal::expression::Expression> col(std::string columnName){
+static std::shared_ptr<Expression> col(std::string columnName) {
   return std::make_shared<Column>(std::move(columnName));
 }
 
 }
-
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_EXPRESSION_COLUMN_H

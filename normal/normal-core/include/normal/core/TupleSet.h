@@ -14,6 +14,7 @@
 #include <tl/expected.hpp>
 #include <normal/core/arrow/Arrays.h>
 #include <normal/core/arrow/TableHelper.h>
+#include <normal/expression/Projector.h>
 #include "normal/core/Globals.h"
 
 namespace arrow { class Table; }
@@ -124,6 +125,9 @@ public:
 
     return result;
   }
+
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+  evaluate(const std::shared_ptr<normal::expression::Projector> &projector);
 };
 
 }

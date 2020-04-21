@@ -18,6 +18,7 @@
 
 #include <normal/test/Globals.h>
 #include <normal/test/TestUtil.h>
+#include <normal/expression/Projector.h>
 
 using namespace normal::core::type;
 using namespace normal::expression;
@@ -61,6 +62,10 @@ TEST_CASE ("cast" * doctest::skip(false)) {
 		cast(col("c"), decimalType(10, 5))
 	};
 
+	for(const auto& expression: expressions){
+	  expression->compile(tuples->table()->schema());
+	}
+
 	auto evaluated = tuples->evaluate(expressions).value();
 	SPDLOG_DEBUG("Output:\n{}", evaluated->toString());
 }
@@ -77,7 +82,10 @@ TEST_CASE ("cast-string-to-double" * doctest::skip(false)) {
 	  cast(col("c"), float64Type())
   };
 
-  auto evaluated = tuples->evaluate(expressions).value();
+  auto projector = std::make_shared<Projector>(expressions);
+  projector->compile(tuples->table()->schema());
+
+  auto evaluated = tuples->evaluate(projector).value();
   SPDLOG_DEBUG("Output:\n{}", evaluated->toString());
 
   auto value_a_0 = evaluated->value<arrow::DoubleType>("a", 0).value();

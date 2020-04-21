@@ -178,7 +178,7 @@ TupleSet::evaluate(const std::vector<std::shared_ptr<normal::expression::Express
   while (res.ok() && batch) {
 
     // Evaluate expressions against a batch
-    std::shared_ptr<arrow::ArrayVector> outputs = Expressions::evaluate(expressions, *batch);;
+    std::shared_ptr<arrow::ArrayVector> outputs = expression::Expressions::evaluate(expressions, *batch);;
     auto batchResultTuples = normal::core::TupleSet::make(resultSchema, *outputs);
 
     // Concatenate the batch result to the full results
@@ -191,6 +191,42 @@ TupleSet::evaluate(const std::vector<std::shared_ptr<normal::expression::Express
   }
 
   return resultTuples;
+}
+
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &projector) {
+
+//  // Prepare a schema for the results
+//  auto resultFields = std::vector<std::shared_ptr<arrow::Field>>();
+//  for (const auto &e: projector->expressions_) {
+//	resultFields.emplace_back(arrow::field(e->name(), e->resultType(table_->schema())));
+//  }
+//  auto resultSchema = arrow::schema(resultFields);
+//
+//  // Read the table in batches
+//  std::shared_ptr<arrow::RecordBatch> batch;
+//  arrow::TableBatchReader reader(*table_);
+//  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
+//  auto res = reader.ReadNext(&batch);
+//  std::shared_ptr<TupleSet> resultTuples = nullptr;
+//  while (res.ok() && batch) {
+//
+//	// Evaluate expressions against a batch
+//	std::shared_ptr<arrow::ArrayVector> outputs = Expressions::evaluate(expressions, *batch);;
+//	auto batchResultTuples = normal::core::TupleSet::make(resultSchema, *outputs);
+//
+//	// Concatenate the batch result to the full results
+//	if (resultTuples)
+//	  resultTuples = concatenate(batchResultTuples, resultTuples);
+//	else
+//	  resultTuples = batchResultTuples;
+//
+//	res = reader.ReadNext(&batch);
+//  }
+//
+//  return resultTuples;
+
+	return nullptr;
 }
 
 }

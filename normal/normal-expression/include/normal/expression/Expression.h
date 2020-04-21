@@ -14,29 +14,28 @@
 namespace normal::expression {
 
 class Expression {
-private:
+
+public:
+  virtual ~Expression() = default;
+
+  [[nodiscard]] const std::shared_ptr<arrow::DataType> &getReturnType() const;
+  [[nodiscard]] const gandiva::NodePtr &getGandivaExpression() const;
+
+  virtual gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema>) = 0;
+  virtual std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) = 0;
+  virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
+
+  [[nodiscard]] virtual std::string &name() = 0;
+
+protected:
 
   /**
    * This is only know after the expression has been evaluated, e.g. a column expression can only know its return type once
    * its inspected the input schema
    */
   std::shared_ptr<arrow::DataType> returnType_;
+  gandiva::NodePtr gandivaExpression_;
 
-public:
-  virtual ~Expression() = default;
-
-  [[nodiscard]] virtual std::string &name() = 0;
-
-  virtual gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema>) = 0;
-  virtual std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) = 0;
-
-  [[nodiscard]] const std::shared_ptr<arrow::DataType> &getReturnType() const {
-    return returnType_;
-  }
-
-  void setReturnType(const std::shared_ptr<arrow::DataType> &ReturnType) {
-    returnType_ = ReturnType;
-  }
 };
 
 }
