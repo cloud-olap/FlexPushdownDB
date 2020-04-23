@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <memory>
+#include <gandiva/projector.h>
 #include "Expression.h"
 
 namespace normal::expression {
@@ -23,8 +24,16 @@ public:
 
   void compile(std::shared_ptr<arrow::Schema> schema);
 
+  const std::vector<std::shared_ptr<Expression>> &getExpressions() const;
+  const std::shared_ptr<arrow::Schema> &getResultSchema() const;
+  const std::vector<gandiva::ExpressionPtr> &getGandivaExpressions() const;
+  const std::shared_ptr<gandiva::Projector> &getGandivaProjector() const;
+
 private:
   std::vector<std::shared_ptr<Expression>> expressions_;
+  std::vector<gandiva::ExpressionPtr> gandivaExpressions_;
+  std::shared_ptr<arrow::Schema> resultSchema_;
+  std::shared_ptr<gandiva::Projector> gandivaProjector_;
 
 };
 

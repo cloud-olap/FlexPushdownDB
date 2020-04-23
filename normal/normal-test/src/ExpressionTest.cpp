@@ -50,7 +50,7 @@ std::shared_ptr<normal::core::TupleSet> prepareTupleSet(){
   return tuples;
 }
 
-TEST_CASE ("cast" * doctest::skip(false)) {
+TEST_CASE ("cast-string-to-decimal" * doctest::skip(false)) {
 
 	auto tuples = prepareTupleSet();
 
@@ -62,15 +62,14 @@ TEST_CASE ("cast" * doctest::skip(false)) {
 		cast(col("c"), decimalType(10, 5))
 	};
 
-	for(const auto& expression: expressions){
-	  expression->compile(tuples->table()->schema());
-	}
+	auto projector = std::make_shared<Projector>(expressions);
+	projector->compile(tuples->table()->schema());
 
-	auto evaluated = tuples->evaluate(expressions).value();
+	auto evaluated = tuples->evaluate(projector).value();
 	SPDLOG_DEBUG("Output:\n{}", evaluated->toString());
 }
 
-TEST_CASE ("cast-string-to-double" * doctest::skip(false)) {
+TEST_CASE ("cast-string-to-double" * doctest::skip(true)) {
 
   auto tuples = prepareTupleSet();
 

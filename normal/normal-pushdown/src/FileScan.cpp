@@ -71,8 +71,6 @@ void FileScan::onStart() {
   ctx()->tell(message);
 
   ctx()->notifyComplete();
-
-//  ctx()->operatorActor()->quit();
 }
 
 }

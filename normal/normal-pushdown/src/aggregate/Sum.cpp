@@ -28,8 +28,9 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
   auto resultType = this->expression_->resultType(tuples->table()->schema());
 
   std::shared_ptr<arrow::Scalar> batchSum = tuples->visit([&](auto accum, auto &batch) -> auto{
-
-    auto arrayVector = expression::Expressions::evaluate({this->expression_}, batch);
+    auto expressionsVec = {this->expression_};
+	auto projector = std::make_shared<normal::expression::Projector>(expressionsVec);
+    auto arrayVector = expression::Expressions::evaluate(projector, batch);
     auto array = arrayVector->at(0);
 
     // Initialise accumulator

@@ -39,7 +39,8 @@ void Project::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Project::projectAndSendTuples() {
-  auto projectedTuples = tuples_->evaluate(expressions_);
+  auto projector = std::make_shared<normal::expression::Projector>(expressions_);
+  auto projectedTuples = tuples_->evaluate(projector);
   if(projectedTuples) {
     sendTuples(projectedTuples.value());
   }

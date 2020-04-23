@@ -23,14 +23,10 @@ public:
 
   /**
    * Evaluates the given expressions against an Arrow record batch
-   * @param expressions
+   * @param projector
    * @param recordBatch
    * @return
    */
-  static std::shared_ptr<arrow::ArrayVector> evaluate(
-      const std::vector<std::shared_ptr<Expression>> &expressions,
-      const arrow::RecordBatch &recordBatch);
-
   static std::shared_ptr<arrow::ArrayVector> evaluate(
 	  const std::shared_ptr<Projector> &projector,
 	  const arrow::RecordBatch &recordBatch);

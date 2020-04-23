@@ -53,9 +53,6 @@ public:
   [[deprecated ("getValue is a hack that returns everything as a string, use value()")]] std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
 
-  tl::expected<std::shared_ptr<TupleSet>, std::string>
-  evaluate(const std::vector<std::shared_ptr<normal::expression::Expression>>&);
-
   /**
    * Returns an element from the tupleset given and column name and row number.
    *
