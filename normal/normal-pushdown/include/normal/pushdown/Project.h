@@ -58,9 +58,20 @@ private:
   std::vector<std::shared_ptr<normal::expression::Expression>> expressions_;
 
   /**
+   * The schema of received tuples, sometimes cannot be know up front (e.g. when input source is a CSV file, the
+   * columns aren't known until the file is read) so needs to be extracted from the first batch of tuples received
+   */
+  std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
+
+  /**
    * A buffer of received tuples that are not projected until enough tuples have been received
    */
   std::shared_ptr<normal::core::TupleSet> tuples_;
+
+  /**
+   * The expression projector, created and cached when input schema is extracted from first tuple received
+   */
+  std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
 
   /**
    * Adds the tuples in the tuple message to the internal buffer
@@ -78,6 +89,8 @@ private:
    * Projects the tuples and sends them to consumers
    */
   void projectAndSendTuples();
+  void cacheInputSchema(const core::message::TupleMessage &message);
+  void buildAndCacheProjector();
 };
 
 }

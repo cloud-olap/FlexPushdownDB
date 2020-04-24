@@ -39,8 +39,7 @@ void Project::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Project::projectAndSendTuples() {
-  auto projector = std::make_shared<normal::expression::Projector>(expressions_);
-  auto projectedTuples = tuples_->evaluate(projector);
+  auto projectedTuples = tuples_->evaluate(projector_.value());
   if(projectedTuples) {
     sendTuples(projectedTuples.value());
   }
@@ -52,14 +51,31 @@ void Project::projectAndSendTuples() {
 
 void Project::onTuple(const core::message::TupleMessage &message) {
 
+  // Set the input schema if not yet set
+  cacheInputSchema(message);
+
+  // Build and set the expression projector if not yet set
+  buildAndCacheProjector();
+
   // Add the tuples to the internal buffer
   bufferTuples(message);
 
   // Project and send if the buffer is full enough
   if (tuples_->numRows() > DEFAULT_BUFFER_SIZE) {
     projectAndSendTuples();
-  } else {
-    // NOOP
+  }
+}
+
+void Project::buildAndCacheProjector() {
+  if(!projector_.has_value()){
+	projector_ = std::make_shared<expression::Projector>(expressions_);
+	projector_.value()->compile(inputSchema_.value());
+  }
+}
+
+void Project::cacheInputSchema(const core::message::TupleMessage &message) {
+  if(!inputSchema_.has_value()){
+	inputSchema_ = message.tuples()->table()->schema();
   }
 }
 
