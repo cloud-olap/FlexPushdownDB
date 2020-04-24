@@ -3,6 +3,8 @@
 //
 
 #include <normal/expression/Cast.h>
+#include <normal/expression/Globals.h>
+#include <gandiva/node.h>
 
 using namespace normal::expression;
 
@@ -55,7 +57,9 @@ gandiva::NodePtr Cast::buildGandivaExpression(std::shared_ptr<arrow::Schema> sch
 	auto function = "cast" + resultType_->asGandivaTypeString();
 	auto returnType = resultType_->asArrowType();
 
-	return gandiva::TreeExprBuilder::MakeFunction(function, {paramGandivaExpression}, returnType);
+	auto expressionNode = gandiva::TreeExprBuilder::MakeFunction(function, {paramGandivaExpression}, returnType);
+
+	return expressionNode;
   }
 }
 

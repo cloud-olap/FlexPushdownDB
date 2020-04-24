@@ -171,7 +171,7 @@ TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &project
   while (res.ok() && batch) {
 
 	// Evaluate expressions against a batch
-	std::shared_ptr<arrow::ArrayVector> outputs = normal::expression::Expressions::evaluate(projector, *batch);;
+	std::shared_ptr<arrow::ArrayVector> outputs = normal::expression::Expressions::evaluate(projector, *batch);
 	auto batchResultTuples = normal::core::TupleSet::make(projector->getResultSchema(), *outputs);
 
 	// Concatenate the batch result to the full results

@@ -30,6 +30,8 @@ ExternalProject_Add(${NANOBENCH_BASE}
         INSTALL_COMMAND ""
         )
 
+file(MAKE_DIRECTORY ${NANOBENCH_INCLUDE_DIR}) # Include directory needs to exist to run configure step
+
 add_library(nanobench::nanobench INTERFACE IMPORTED)
 target_include_directories(nanobench::nanobench INTERFACE ${NANOBENCH_INCLUDE_DIR})
 add_dependencies(nanobench::nanobench ${NANOBENCH_BASE})

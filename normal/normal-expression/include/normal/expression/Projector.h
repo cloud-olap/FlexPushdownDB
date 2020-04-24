@@ -24,10 +24,12 @@ public:
 
   void compile(std::shared_ptr<arrow::Schema> schema);
 
-  const std::vector<std::shared_ptr<Expression>> &getExpressions() const;
-  const std::shared_ptr<arrow::Schema> &getResultSchema() const;
-  const std::vector<gandiva::ExpressionPtr> &getGandivaExpressions() const;
-  const std::shared_ptr<gandiva::Projector> &getGandivaProjector() const;
+  [[nodiscard]] const std::vector<std::shared_ptr<Expression>> &getExpressions() const;
+  [[nodiscard]] const std::shared_ptr<arrow::Schema> &getResultSchema() const;
+  [[nodiscard]] const std::vector<gandiva::ExpressionPtr> &getGandivaExpressions() const;
+  [[nodiscard]] const std::shared_ptr<gandiva::Projector> &getGandivaProjector() const;
+
+  std::string showString();
 
 private:
   std::vector<std::shared_ptr<Expression>> expressions_;

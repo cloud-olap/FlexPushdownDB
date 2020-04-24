@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <doctest/doctest.h>
+#include <gandiva/function_registry.h>
 
 #include <normal/core/type/Type.h>
 #include <normal/expression/Expression.h>
@@ -65,8 +66,22 @@ TEST_CASE ("cast-string-to-decimal" * doctest::skip(false)) {
 	auto projector = std::make_shared<Projector>(expressions);
 	projector->compile(tuples->table()->schema());
 
+  	SPDLOG_DEBUG("Projector:\n{}", projector->showString());
+
 	auto evaluated = tuples->evaluate(projector).value();
 	SPDLOG_DEBUG("Output:\n{}", evaluated->toString());
+}
+
+TEST_CASE ("show-gandiva-functions" * doctest::skip(true)) {
+  gandiva::FunctionRegistry registry;
+  for (auto native_func_it = registry.begin(); native_func_it != registry.end();++native_func_it){
+	SPDLOG_DEBUG("Function  |  pc_name: {}", native_func_it->pc_name());
+
+	for (auto& sig : native_func_it->signatures()) {
+	  auto sig_str = sig.ToString();
+	  SPDLOG_DEBUG("          |  signature: {}", sig_str);
+	}
+  }
 }
 
 TEST_CASE ("cast-string-to-double" * doctest::skip(true)) {

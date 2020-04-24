@@ -56,3 +56,10 @@ const std::vector<gandiva::ExpressionPtr> &Projector::getGandivaExpressions() co
 const std::shared_ptr<gandiva::Projector> &Projector::getGandivaProjector() const {
   return gandivaProjector_;
 }
+std::string Projector::showString() {
+  std::stringstream ss;
+  for (const auto &gandivaExpression: gandivaExpressions_) {
+	ss << gandivaExpression->ToString() << std::endl;
+  }
+  return ss.str();
+}

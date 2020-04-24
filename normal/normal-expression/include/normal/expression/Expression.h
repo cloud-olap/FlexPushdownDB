@@ -8,7 +8,8 @@
 #include <utility>
 
 #include <arrow/api.h>
-#include <gandiva/gandiva_aliases.h>
+#include <gandiva/node.h>
+
 #include <normal/core/type/Type.h>
 
 namespace normal::expression {
@@ -26,6 +27,8 @@ public:
   virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
 
   [[nodiscard]] virtual std::string &name() = 0;
+
+  std::string showString();
 
 protected:
 
