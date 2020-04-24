@@ -58,7 +58,7 @@ private:
   std::vector<std::shared_ptr<normal::expression::Expression>> expressions_;
 
   /**
-   * The schema of received tuples, sometimes cannot be know up front (e.g. when input source is a CSV file, the
+   * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the
    * columns aren't known until the file is read) so needs to be extracted from the first batch of tuples received
    */
   std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;

@@ -21,6 +21,17 @@ class AggregationFunction {
 protected:
   std::shared_ptr<aggregate::AggregationResult> result();
 
+  /**
+   * The expression projector, created and cached when input schema is extracted from first tuple received
+   */
+  std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
+
+  /**
+   * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the
+   * columns aren't known until the file is read) so needs to be extracted from the first batch of tuples received
+   */
+  std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
+
 public:
   explicit AggregationFunction(std::string alias);
   virtual ~AggregationFunction() = 0;

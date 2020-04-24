@@ -107,17 +107,22 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
     ctx()->tell(tupleMessage);
 
     ctx()->notifyComplete();
-
-    //  std::shared_ptr<normal::core::Message> cm = std::make_shared<normal::core::CompleteMessage>();
-    //  ctx()->tell(cm);
-    //
-    //  ctx()->operatorActor()->quit();
   }
 }
 
 void Aggregate::onTuple(const core::message::TupleMessage &message) {
   SPDLOG_DEBUG("Received tuple message");
+
+  // Set the input schema if not yet set
+  cacheInputSchema(message);
+
   compute(message.tuples());
+}
+
+void Aggregate::cacheInputSchema(const core::message::TupleMessage &message) {
+  if(!inputSchema_.has_value()){
+	inputSchema_ = message.tuples()->table()->schema();
+  }
 }
 
 void Aggregate::compute(const std::shared_ptr<normal::core::TupleSet> &tuples) {

@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_SUM_H
 
 #include <normal/pushdown/aggregate/AggregationFunction.h>
+#include <normal/core/message/TupleMessage.h>
 
 namespace normal::pushdown::aggregate {
 
@@ -23,6 +24,9 @@ public:
   std::shared_ptr<arrow::DataType> returnType() override;
 
   void finalize() override;
+
+  void cacheInputSchema(const normal::core::TupleSet &tuples);
+  void buildAndCacheProjector();
 };
 
 }

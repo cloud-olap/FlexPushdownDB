@@ -27,11 +27,15 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
 
   auto resultType = this->expression_->resultType(tuples->table()->schema());
 
+  // Set the input schema if not yet set
+  cacheInputSchema(*tuples);
+
+  // Build and set the expression projector if not yet set
+  buildAndCacheProjector();
+
   std::shared_ptr<arrow::Scalar> batchSum = tuples->visit([&](auto accum, auto &batch) -> auto{
-    auto expressionsVec = {this->expression_};
-	auto projector = std::make_shared<normal::expression::Projector>(expressionsVec);
-	projector->compile(batch.schema());
-    auto arrayVector = expression::Expressions::evaluate(projector, batch);
+
+    auto arrayVector = expression::Expressions::evaluate(projector_.value(), batch);
     auto array = arrayVector->at(0);
 
     // Initialise accumulator
@@ -101,6 +105,20 @@ std::shared_ptr<arrow::DataType> Sum::returnType() {
 
 void Sum::finalize() {
   this->result()->finalize(this->result()->get(SUM_RESULT_KEY));
+}
+
+void Sum::buildAndCacheProjector() {
+  if(!projector_.has_value()){
+	auto expressionsVec = {this->expression_};
+	projector_ = std::make_shared<expression::Projector>(expressionsVec);
+	projector_.value()->compile(inputSchema_.value());
+  }
+}
+
+void Sum::cacheInputSchema(const normal::core::TupleSet &tuples) {
+  if(!inputSchema_.has_value()){
+	inputSchema_ = tuples.table()->schema();
+  }
 }
 
 }

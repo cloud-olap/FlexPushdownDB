@@ -23,6 +23,12 @@ private:
   std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions_;
   std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationResult>>> results_;
 
+  /**
+   * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the
+   * columns aren't known until the file is read) so needs to be extracted from the first batch of tuples received
+   */
+  std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
+
   void onReceive(const normal::core::message::Envelope &message) override;
 
   void onTuple(const normal::core::message::TupleMessage &message);
@@ -35,6 +41,7 @@ public:
   ~Aggregate() override = default;
 
   void compute(const std::shared_ptr<normal::core::TupleSet> &tuples);
+  void cacheInputSchema(const core::message::TupleMessage &message);
 
 };
 
