@@ -67,12 +67,14 @@ add_library(arrow_static STATIC IMPORTED)
 set_target_properties(arrow_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
 target_include_directories(arrow_static INTERFACE ${ARROW_INCLUDE_DIR})
 target_link_libraries(arrow_static INTERFACE ${ARROW_RE2_STATIC_LIB})
+target_link_libraries(arrow_static INTERFACE pthread)
 add_dependencies(arrow_static ${ARROW_BASE})
 
-add_library(arrow_shared STATIC IMPORTED)
+add_library(arrow_shared SHARED IMPORTED)
 set_target_properties(arrow_shared PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_SHARED_LIBS})
 target_include_directories(arrow_shared INTERFACE ${ARROW_INCLUDE_DIR})
 target_link_libraries(arrow_shared INTERFACE ${ARROW_RE2_STATIC_LIB})
+target_link_libraries(arrow_shared INTERFACE pthread)
 add_dependencies(arrow_shared ${ARROW_BASE})
 
 # Gandiva needs LLVM version 7 or 7.1

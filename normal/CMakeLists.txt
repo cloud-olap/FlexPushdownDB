@@ -25,6 +25,7 @@ set(DEPS_PREFIX "_deps")
 
 include(External_spdlog)
 include(External_doctest)
+include(External_nanobench)
 include(External_caf)
 include(External_arrow)
 include(External_AWSCPPSDK)

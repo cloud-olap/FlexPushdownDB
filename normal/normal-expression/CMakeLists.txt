@@ -7,7 +7,7 @@ project(normal-expression VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 add_library(normal-expression STATIC
         include/normal/expression/Globals.h
-        include/normal/expression/Expression.h
+        src/expression/Expression.cpp include/normal/expression/Expression.h
         include/normal/expression/Expressions.h src/expression/Expressions.cpp
         include/normal/expression/Add.h
         include/normal/expression/Literal.h
@@ -16,7 +16,7 @@ add_library(normal-expression STATIC
         include/normal/expression/Divide.h
         src/expression/Column.cpp include/normal/expression/Column.h
         src/expression/Cast.cpp include/normal/expression/Cast.h
-        src/expression/Expression.cpp src/expression/Column.cpp src/expression/Projector.cpp include/normal/expression/Projector.h)
+        src/expression/Projector.cpp include/normal/expression/Projector.h)
 
 set_target_properties(normal-expression PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -30,7 +30,24 @@ target_link_libraries(normal-expression PUBLIC normal-core)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Tests
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-expression-benchmark
+        test/Globals.h
+        test/Main.cpp
+        test/ExpressionBenchmark.cpp)
+
+target_link_libraries(normal-expression-benchmark PRIVATE spdlog::spdlog)
+target_link_libraries(normal-expression-benchmark PRIVATE doctest::doctest)
+target_link_libraries(normal-expression-benchmark PRIVATE nanobench::nanobench)
+target_link_libraries(normal-expression-benchmark PRIVATE normal-core)
+target_link_libraries(normal-expression-benchmark PRIVATE normal-expression)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-#showTargetProps(normal-core)
+showTargetProps(normal-expression)
+showTargetProps(normal-expression-benchmark)
