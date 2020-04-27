@@ -8,8 +8,8 @@
 
 using namespace normal::expression;
 
-Projector::Projector(const std::vector<std::shared_ptr<Expression>> &Expressions) : expressions_(
-	Expressions) {}
+//Projector::Projector(const std::vector<std::shared_ptr<Expression>> &Expressions) : expressions_(
+//	Expressions) {}
 
 void Projector::compile(std::shared_ptr<arrow::Schema> schema) {
 

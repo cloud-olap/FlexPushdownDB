@@ -20,22 +20,22 @@ namespace normal::expression {
 class Projector {
 
 public:
-  Projector(const std::vector<std::shared_ptr<Expression>> &Expressions);
+//  Projector(const std::vector<std::shared_ptr<Expression>> &Expressions);
 
   void compile(std::shared_ptr<arrow::Schema> schema);
 
   [[nodiscard]] const std::vector<std::shared_ptr<Expression>> &getExpressions() const;
   [[nodiscard]] const std::shared_ptr<arrow::Schema> &getResultSchema() const;
-  [[nodiscard]] const std::vector<gandiva::ExpressionPtr> &getGandivaExpressions() const;
-  [[nodiscard]] const std::shared_ptr<gandiva::Projector> &getGandivaProjector() const;
+  [[nodiscard]] const std::vector<::gandiva::ExpressionPtr> &getGandivaExpressions() const;
+  [[nodiscard]] const std::shared_ptr<::gandiva::Projector> &getGandivaProjector() const;
 
   std::string showString();
 
 private:
   std::vector<std::shared_ptr<Expression>> expressions_;
-  std::vector<gandiva::ExpressionPtr> gandivaExpressions_;
+  std::vector<::gandiva::ExpressionPtr> gandivaExpressions_;
   std::shared_ptr<arrow::Schema> resultSchema_;
-  std::shared_ptr<gandiva::Projector> gandivaProjector_;
+  std::shared_ptr<::gandiva::Projector> gandivaProjector_;
 
 };
 

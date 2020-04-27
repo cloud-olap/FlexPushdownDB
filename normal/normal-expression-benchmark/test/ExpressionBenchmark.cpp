@@ -17,6 +17,11 @@
 #include <normal/expression/Cast.h>
 #include <normal/expression/Projector.h>
 
+#include <normal/expression/simple/Expression.h>
+#include <normal/expression/simple/Column.h>
+#include <normal/expression/simple/Cast.h>
+#include <normal/expression/simple/Projector.h>
+
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/Cast.h>
@@ -24,7 +29,7 @@
 
 using namespace normal::core::type;
 
-//namespace spl = normal::expression::simple;
+namespace spl = normal::expression::simple;
 namespace gdv = normal::expression::gandiva;
 
 std::shared_ptr<normal::core::TupleSet> prepareRandomTupleSet(int numColumns, int numRows) {
@@ -59,13 +64,15 @@ TEST_CASE ("benchmark-expression") {
 
   auto tuples = prepareRandomTupleSet(3, 10000);
 
-//  SPDLOG_DEBUG("Input:\n{}", tuples->toString());
+  SPDLOG_DEBUG("Input:\n{}", tuples->toString());
 
-//  auto expressions = std::vector<std::shared_ptr<normal::expression::Expression>>{
-//	  cast(col("0"), decimalType(10, 5)),
-//	  cast(col("1"), decimalType(10, 5)),
-//	  cast(col("2"), decimalType(10, 5))
-//  };
+  auto splExpressions = std::vector<std::shared_ptr<normal::expression::simple::Expression>>{
+	  spl::cast(spl::col("0"), float64Type()),
+	  spl::cast(spl::col("1"), float64Type()),
+	  spl::cast(spl::col("2"), float64Type())
+  };
+
+  auto simpleProjector = std::make_shared<normal::expression::simple::Projector>(splExpressions);
 
   auto gdvExpressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
 	  gdv::cast(gdv::col("0"), decimalType(10, 5)),
@@ -73,21 +80,14 @@ TEST_CASE ("benchmark-expression") {
 	  gdv::cast(gdv::col("2"), decimalType(10, 5))
   };
 
-  auto projector = std::make_shared<normal::expression::gandiva::Projector>(gdvExpressions);
-  projector->compile(tuples->table()->schema());
+  auto gandivaProjector = std::make_shared<normal::expression::gandiva::Projector>(gdvExpressions);
+  gandivaProjector->compile(tuples->table()->schema());
 
-//  ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-cast-string-to-decimal", [&] {
-//	auto projector = std::make_shared<Projector>(expressions);
-//	projector->compile(tuples->table()->schema());
-//
-//	auto evaluated = tuples->evaluate(projector).value();
-//  });
-
-//  ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-cast-string-to-decimal-reuse-projector", [&] {
-//	auto evaluated = tuples->evaluate(projector).value();
-//  });
+  ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-simple-cast-string-to-decimal-reuse-projector", [&] {
+	auto evaluated = tuples->evaluate(simpleProjector).value();
+  });
 
   ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-gandiva-cast-string-to-decimal-reuse-projector", [&] {
-	auto evaluated = tuples->evaluate(projector).value();
+	auto evaluated = tuples->evaluate(gandivaProjector).value();
   });
 }

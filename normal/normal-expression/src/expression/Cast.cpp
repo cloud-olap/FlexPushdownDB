@@ -5,6 +5,7 @@
 #include <normal/expression/Cast.h>
 #include <normal/expression/Globals.h>
 #include <gandiva/node.h>
+#include "../../../normal-expression-simple/include/normal/expression/simple/Cast.h"
 
 using namespace normal::expression;
 

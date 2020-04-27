@@ -160,7 +160,7 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
-TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &projector) {
+TupleSet::evaluate(const std::shared_ptr<normal::expression::IProjector> &projector) {
 
   // Read the table in batches
   std::shared_ptr<arrow::RecordBatch> batch;
@@ -171,7 +171,7 @@ TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &project
   while (res.ok() && batch) {
 
 	// Evaluate expressions against a batch
-	std::shared_ptr<arrow::ArrayVector> outputs = normal::expression::Expressions::evaluate(projector, *batch);
+	std::shared_ptr<arrow::ArrayVector> outputs = projector->evaluate(*batch);
 	auto batchResultTuples = normal::core::TupleSet::make(projector->getResultSchema(), *outputs);
 
 	// Concatenate the batch result to the full results

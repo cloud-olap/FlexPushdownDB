@@ -1,11 +1,10 @@
 //
-// Created by matt on 21/4/20.
+// Created by matt on 27/4/20.
 //
 
-#include <normal/expression/Expression.h>
-#include "../../../normal-expression-simple/include/normal/expression/simple/Expression.h"
+#include "normal/expression/gandiva/Expression.h"
 
-using namespace normal::expression;
+using namespace normal::expression::gandiva;
 
 const std::shared_ptr<arrow::DataType> &Expression::getReturnType() const {
   return returnType_;

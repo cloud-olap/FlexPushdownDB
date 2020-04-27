@@ -1,18 +1,15 @@
 //
-// Created by matt on 2/4/20.
+// Created by matt on 27/4/20.
 //
 
-#ifndef NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
-#define NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
+#ifndef NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_EXPRESSION_H
+#define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_EXPRESSION_H
 
-#include <utility>
-
-#include <arrow/api.h>
+#include <memory>
+#include <arrow/type.h>
 #include <gandiva/node.h>
 
-#include <normal/core/type/Type.h>
-
-namespace normal::expression {
+namespace normal::expression::gandiva {
 
 class Expression {
 
@@ -43,4 +40,4 @@ protected:
 
 }
 
-#endif //NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
+#endif //NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_EXPRESSION_H

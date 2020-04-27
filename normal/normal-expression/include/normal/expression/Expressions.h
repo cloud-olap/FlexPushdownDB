@@ -12,6 +12,7 @@
 #include <gandiva/projector.h>
 #include "Expression.h"
 #include "Projector.h"
+#include "IProjector.h"
 
 namespace normal::expression{
 
@@ -28,7 +29,7 @@ public:
    * @return
    */
   static std::shared_ptr<arrow::ArrayVector> evaluate(
-	  const std::shared_ptr<Projector> &projector,
+	  const std::shared_ptr<IProjector> &projector,
 	  const arrow::RecordBatch &recordBatch);
 
 };
