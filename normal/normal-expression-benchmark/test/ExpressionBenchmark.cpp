@@ -78,12 +78,14 @@ TEST_CASE ("benchmark-expression") {
   auto gandivaProjector = std::make_shared<normal::expression::gandiva::Projector>(gdvExpressions);
   gandivaProjector->compile(tuples->table()->schema());
 
-  ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-simple-cast-string-to-decimal-reuse-projector", [&] {
-	auto evaluated = tuples->evaluate(simpleProjector).value();
-  });
+  ankerl::nanobench::Config().minEpochIterations(10).run(
+	  "evaluate-simple-cast-string-to-decimal-reuse-projector", [&] {
+		auto evaluated = tuples->evaluate(simpleProjector).value();
+	  });
 
-  ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-gandiva-cast-string-to-decimal-reuse-projector",
-														 [&] {
-														   auto evaluated = tuples->evaluate(gandivaProjector).value();
-														 });
+  ankerl::nanobench::Config().minEpochIterations(10).run(
+	  "evaluate-gandiva-cast-string-to-decimal-reuse-projector",
+	  [&] {
+		auto evaluated = tuples->evaluate(gandivaProjector).value();
+	  });
 }

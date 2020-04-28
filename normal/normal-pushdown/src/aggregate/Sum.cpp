@@ -24,13 +24,13 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
 
   SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
-  auto resultType = this->expression_->resultType(tuples->table()->schema());
-
   // Set the input schema if not yet set
   cacheInputSchema(*tuples);
 
   // Build and set the expression projector if not yet set
   buildAndCacheProjector();
+
+  auto resultType = this->expression_->getReturnType();
 
   std::shared_ptr<arrow::Scalar> batchSum = tuples->visit([&](auto accum, auto &batch) -> auto{
 

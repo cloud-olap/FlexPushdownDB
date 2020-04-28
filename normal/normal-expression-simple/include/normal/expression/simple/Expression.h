@@ -9,28 +9,16 @@
 #include <arrow/type.h>
 #include <tl/expected.hpp>
 
+#include <normal/expression/Expression.h>
+
 namespace normal::expression::simple {
 
-class Expression {
+class Expression : public normal::expression::Expression {
 
 public:
   virtual ~Expression() = default;
 
-  virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
-  [[nodiscard]] virtual std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) = 0;
-
-  [[nodiscard]] virtual std::string &alias() = 0;
-  [[nodiscard]] const std::shared_ptr<arrow::DataType> &getReturnType() const;
-
-  virtual tl::expected<std::shared_ptr<arrow::Array>, std::string> evaluate(const arrow::RecordBatch &recordBatch) = 0;
-
-protected:
-
-  /**
-   * This is only know after the expression has been evaluated, e.g. a column expression can only know its return type once
-   * its inspected the input schema
-   */
-  std::shared_ptr<arrow::DataType> returnType_;
+  virtual tl::expected<std::shared_ptr<arrow::Array>, std::string> evaluate(const arrow::RecordBatch &batch) = 0;
 
 };
 

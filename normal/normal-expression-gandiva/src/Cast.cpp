@@ -8,16 +8,16 @@
 
 using namespace normal::expression::gandiva;
 
-Cast::Cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type::Type> resultType) :
-	value_(std::move(value)),
-	resultType_(std::move(resultType)) {
+Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type) :
+	expr_(std::move(expr)),
+	type_(std::move(type)) {
 }
 
-::gandiva::NodePtr Cast::buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) {
+::gandiva::NodePtr Cast::buildGandivaExpression() {
 
-  auto paramGandivaExpression = value_->buildGandivaExpression(schema);
-  auto fromArrowType = value_->resultType(schema);
-  auto toArrowType = resultType_->asArrowType();
+  auto paramGandivaExpression = expr_->getGandivaExpression();
+  auto fromArrowType = expr_->getReturnType();
+  auto toArrowType = type_->asArrowType();
 
   /**
    * NOTE: Some cast operations are not supported by Gandiva so we set up some special cases here
@@ -26,13 +26,13 @@ Cast::Cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type
 	// Not supported directly by Gandiva, need to cast string to decimal and then that to float64
 
 	auto castDecimalFunctionName = "castDECIMAL";
-	auto castDecimalReturnType = arrow::decimal(10, 5); // FIXME: Need to check if this is sufficient to cast to double
+	auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
 	auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
 																		{paramGandivaExpression},
 																		castDecimalReturnType);
 
-	auto castFunctionName = "cast" + resultType_->asGandivaTypeString();
-	auto castReturnType = resultType_->asArrowType();
+	auto castFunctionName = "cast" + type_->asGandivaTypeString();
+	auto castReturnType = type_->asArrowType();
 
 	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
 															   {castToDecimalFunction},
@@ -42,8 +42,8 @@ Cast::Cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type
 
   } else {
 
-	auto function = "cast" + resultType_->asGandivaTypeString();
-	auto returnType = resultType_->asArrowType();
+	auto function = "cast" + type_->asGandivaTypeString();
+	auto returnType = type_->asArrowType();
 
 	auto expressionNode = ::gandiva::TreeExprBuilder::MakeFunction(function, {paramGandivaExpression}, returnType);
 
@@ -51,19 +51,17 @@ Cast::Cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type
   }
 }
 
-std::shared_ptr<arrow::DataType> Cast::resultType(std::shared_ptr<arrow::Schema>) {
-  return resultType_->asArrowType();
-}
-
 void Cast::compile(std::shared_ptr<arrow::Schema> schema) {
-  gandivaExpression_ = buildGandivaExpression(schema);
-  returnType_ = resultType(schema);
+  expr_->compile(schema);
+
+  gandivaExpression_ = buildGandivaExpression();
+  returnType_ = type_->asArrowType();
 }
 
-std::string Cast::name() {
-  return value_->name();
+std::string Cast::alias() {
+  return expr_->alias();
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type::Type> type) {
-  return std::make_shared<Cast>(std::move(value), std::move(type));
+std::shared_ptr<Expression> normal::expression::gandiva::cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type) {
+  return std::make_shared<Cast>(std::move(expr), std::move(type));
 }

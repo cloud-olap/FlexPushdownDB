@@ -19,7 +19,7 @@ void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
 	expression->compile(schema);
 
 	gandivaExpressions_.emplace_back(::gandiva::TreeExprBuilder::MakeExpression(expression->getGandivaExpression(),
-																				field(expression->name(),
+																				field(expression->alias(),
 																					  expression->getReturnType())));
   }
 
@@ -36,7 +36,7 @@ void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
   // Prepare the schema for the results
   auto resultFields = std::vector<std::shared_ptr<arrow::Field>>();
   for (const auto &e: expressions_) {
-	resultFields.emplace_back(arrow::field(e->name(), e->getReturnType()));
+	resultFields.emplace_back(arrow::field(e->alias(), e->getReturnType()));
   }
   resultSchema_ = arrow::schema(resultFields);
 }

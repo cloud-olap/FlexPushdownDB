@@ -30,6 +30,7 @@ private:
   std::vector<::gandiva::ExpressionPtr> gandivaExpressions_;
   std::shared_ptr<arrow::Schema> resultSchema_;
   std::shared_ptr<::gandiva::Projector> gandivaProjector_;
+
 };
 
 }

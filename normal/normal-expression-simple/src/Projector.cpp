@@ -6,8 +6,8 @@
 
 using namespace normal::expression::simple;
 
-Projector::Projector(std::vector<std::shared_ptr<Expression>> Expressions) :
-	expressions_(std::move(Expressions)) {}
+Projector::Projector(std::vector<std::shared_ptr<Expression>> exprs) :
+	expressions_(std::move(exprs)) {}
 
 std::shared_ptr<arrow::Schema> Projector::getResultSchema() {
   // Prepare the schema for the results
@@ -18,18 +18,18 @@ std::shared_ptr<arrow::Schema> Projector::getResultSchema() {
   return arrow::schema(resultFields);
 }
 
-std::shared_ptr<arrow::ArrayVector> Projector::evaluate(const arrow::RecordBatch &recordBatch) {
+std::shared_ptr<arrow::ArrayVector> Projector::evaluate(const arrow::RecordBatch &batch) {
 
   // Evaluate the expressions
   auto outputs = std::make_shared<arrow::ArrayVector>();
 
-  for(const auto &expression: expressions_){
-    expression->evaluate(recordBatch);
+  for (const auto &expression: expressions_) {
+	expression->evaluate(batch);
   }
 
   return outputs;
 }
 
 void Projector::compile(const std::shared_ptr<arrow::Schema> &) {
-	// NOOP
+  // NOOP
 }

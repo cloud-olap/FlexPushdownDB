@@ -24,15 +24,8 @@ public:
   void compile(std::shared_ptr<arrow::Schema> schema) override {
   }
 
-  std::string name() override {
+  std::string alias() override {
 	return std::to_string(value_);
-  }
-
-  std::shared_ptr<::gandiva::Node> buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override {
-	return std::shared_ptr<::gandiva::Node>();
-  }
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override {
-	return std::shared_ptr<arrow::DataType>();
   }
 
 private:

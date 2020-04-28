@@ -20,20 +20,16 @@ public:
   explicit Column(std::string columnName);
 
   void compile(std::shared_ptr<arrow::Schema> schema) override;
+  std::string alias() override;
 
-  std::string &alias() override;
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) override;
-
-  tl::expected<std::shared_ptr<arrow::Array>, std::string> evaluate(const arrow::RecordBatch &recordBatch) override;
+  tl::expected<std::shared_ptr<arrow::Array>, std::string> evaluate(const arrow::RecordBatch &batch) override;
 
 private:
   std::string columnName_;
 
 };
 
-static std::shared_ptr<Expression> col(std::string columnName) {
-  return std::make_shared<Column>(std::move(columnName));
-}
+std::shared_ptr<Expression> col(std::string columnName);
 
 }
 

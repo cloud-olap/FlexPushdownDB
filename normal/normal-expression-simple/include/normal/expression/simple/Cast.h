@@ -14,25 +14,23 @@
 namespace normal::expression::simple {
 
 class Cast : public Expression {
-public:
-  Cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type::Type> resultType);
 
-  std::string &alias() override;
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) override;
-  tl::expected<std::shared_ptr<arrow::Array>, std::string> evaluate(const arrow::RecordBatch &recordBatch) override;
+public:
+  Cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type);
+
+  std::string alias() override;
   void compile(std::shared_ptr<arrow::Schema> schema) override;
 
+  tl::expected<std::shared_ptr<arrow::Array>, std::string> evaluate(const arrow::RecordBatch &batch) override;
+
 private:
-  std::shared_ptr<Expression> value_;
-  std::shared_ptr<normal::core::type::Type> resultType_;
+  std::shared_ptr<Expression> expr_;
+  std::shared_ptr<normal::core::type::Type> type_;
 
 };
 
-static std::shared_ptr<Expression> cast(
-	std::shared_ptr<Expression> value,
-	std::shared_ptr<normal::core::type::Type> type) {
-  return std::make_shared<Cast>(std::move(value), std::move(type));
-}
+std::shared_ptr<Expression> cast(std::shared_ptr<Expression> value,
+										std::shared_ptr<normal::core::type::Type> type);
 
 }
 

@@ -13,16 +13,8 @@ Multiply::Multiply(std::shared_ptr<Expression> left, std::shared_ptr<Expression>
 void Multiply::compile(std::shared_ptr<arrow::Schema> schema) {
 }
 
-std::string Multiply::name() {
+std::string Multiply::alias() {
   return "multiply";
-}
-
-::gandiva::NodePtr Multiply::buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) {
-  return ::gandiva::NodePtr();
-}
-
-std::shared_ptr<arrow::DataType> Multiply::resultType(std::shared_ptr<arrow::Schema> schema) {
-  return std::shared_ptr<arrow::DataType>();
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::times(std::shared_ptr<Expression> left,

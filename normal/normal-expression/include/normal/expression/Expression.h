@@ -20,9 +20,21 @@ public:
   virtual ~Expression() = default;
 
   [[nodiscard]] const std::shared_ptr<arrow::DataType> &getReturnType() const;
+
+  /**
+   * Invoked once before evaluation so expressions can run any initializations that can only be done at runtime (e.g.
+   * where an expression needs an input schema) and can be reused across evaluations.
+   *
+   * @param schema
+   */
   virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
 
-  [[nodiscard]] virtual std::string &name() = 0;
+  /**
+   * The alias of the evaluated expression (e.g. "select COL from TBL" should assign the alias "COL" to the
+   * column expression COL)
+   * @return
+   */
+  [[nodiscard]] virtual std::string alias() = 0;
 
 protected:
 

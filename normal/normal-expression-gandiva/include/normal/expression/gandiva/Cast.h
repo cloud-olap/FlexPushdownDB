@@ -20,21 +20,21 @@ namespace normal::expression::gandiva {
 class Cast : public Expression {
 
 public:
-  Cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type::Type> resultType);
+  Cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type);
 
   void compile(std::shared_ptr<arrow::Schema> schema) override;
-  std::string name() override;
-
-  ::gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override;
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override;
+  std::string alias() override;
 
 private:
-  std::shared_ptr<Expression> value_;
-  std::shared_ptr<normal::core::type::Type> resultType_;
+  ::gandiva::NodePtr buildGandivaExpression();
+
+private:
+  std::shared_ptr<Expression> expr_;
+  std::shared_ptr<normal::core::type::Type> type_;
 
 };
 
-std::shared_ptr<Expression> cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type::Type> type);
+std::shared_ptr<Expression> cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type);
 
 }
 

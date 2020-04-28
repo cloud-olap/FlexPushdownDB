@@ -21,10 +21,7 @@ public:
   explicit Column(std::string columnName);
 
   void compile(std::shared_ptr<arrow::Schema> schema) override;
-  std::string name() override;
-
-  ::gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override;
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override;
+  std::string alias() override;
 
 private:
   std::string columnName_;

@@ -10,31 +10,22 @@
 #include <arrow/type.h>
 #include <gandiva/node.h>
 
+#include <normal/expression/Expression.h>
+
 namespace normal::expression::gandiva {
 
-class Expression {
+class Expression : public normal::expression::Expression {
 
 public:
   virtual ~Expression() = default;
 
-  [[nodiscard]] const std::shared_ptr<arrow::DataType> &getReturnType() const;
+  [[nodiscard]] virtual std::string alias() = 0;
+
   [[nodiscard]] const ::gandiva::NodePtr &getGandivaExpression() const;
-
-  virtual ::gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) = 0;
-  virtual std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) = 0;
-  virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
-
-  [[nodiscard]] virtual std::string name() = 0;
 
   std::string showString();
 
 protected:
-
-  /**
-   * This is only know after the expression has been evaluated, e.g. a column expression can only know its return type once
-   * its inspected the input schema
-   */
-  std::shared_ptr<arrow::DataType> returnType_;
   ::gandiva::NodePtr gandivaExpression_;
 
 };

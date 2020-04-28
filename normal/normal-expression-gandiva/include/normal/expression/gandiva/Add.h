@@ -21,10 +21,7 @@ public:
   Add(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
 
   void compile(std::shared_ptr<arrow::Schema> schema) override;
-  std::string name() override;
-
-  ::gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override;
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override;
+  std::string alias() override;
 
 private:
   std::shared_ptr<Expression> left_;
