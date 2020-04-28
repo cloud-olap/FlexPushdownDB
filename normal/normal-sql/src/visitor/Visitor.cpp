@@ -6,6 +6,7 @@
 
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Column.h>
+#include <normal/expression/gandiva/Multiply.h>
 #include <normal/core/type/Types.h>
 #include <normal/plan/LogicalPlan.h>
 
@@ -205,10 +206,16 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr(normal::sql::NormalSQLPar
   } else if (ctx->column_name()) {
     return visitColumn_name(ctx->column_name());
   } else if (ctx->function_name()) {
-    auto function = visitFunction_name(ctx->function_name());
-    auto typedFunction = function.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
-    typedFunction->expression(visitExpr(ctx->expr(0)));
-    return function;
+	auto function = visitFunction_name(ctx->function_name());
+	auto typedFunction = function.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
+	typedFunction->expression(visitExpr(ctx->expr(0)));
+	return function;
+  } else if(ctx->STAR()){
+	auto leftExprCtx = ctx->expr(0);
+	auto rightExprCtx = ctx->expr(1);
+	std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visitExpr(leftExprCtx);
+	std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visitExpr(rightExprCtx);
+	return times(leftExpression, rightExpression);
   } else {
     throw std::runtime_error("Cannot parse expression " + ctx->getText());
   }

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <doctest/doctest.h>
+#include <nanobench.h>
 
 #include <normal/test/TestUtil.h>
 #include <normal/sql/Interpreter.h>
@@ -25,14 +26,16 @@ void configureLocalConnector(normal::sql::Interpreter &i) {
   auto cat = std::make_shared<normal::connector::Catalogue>("local_fs", conn);
 
   auto partitioningScheme1 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/lineorder.csv"));
-  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("lineorder",
+  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/data-file-simple/test.csv"));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test",
 																						partitioningScheme1,
 																						cat));
 
   auto partitioningScheme2 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/date.csv"));
-  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("date",
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test01.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test02.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test03.csv"));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test_partitioned",
 																						partitioningScheme2,
 																						cat));
 

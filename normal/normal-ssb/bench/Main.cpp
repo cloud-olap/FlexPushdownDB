@@ -6,6 +6,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include <doctest/doctest.h>
 
+#define ANKERL_NANOBENCH_IMPLEMENT
+#include <nanobench.h>
+
 #include "normal/ssb/Globals.h"
 
 /**

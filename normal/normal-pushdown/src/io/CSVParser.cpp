@@ -74,7 +74,10 @@ CSVParser::readFields(const std::shared_ptr<arrow::io::ReadableFile> &inputStrea
 
         st = p.VisitColumn(i, [&fields](const uint8_t *data, uint32_t size, bool quoted) -> arrow::Status {
           std::string fieldName{reinterpret_cast<const char *>(data), size};
-          if (quoted) {
+
+		  transform(fieldName.begin(), fieldName.end(), fieldName.begin(), ::tolower);
+
+		  if (quoted) {
             fieldName.erase(0);
             fieldName.erase(fieldName.length());
           }
