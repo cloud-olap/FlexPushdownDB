@@ -6,7 +6,6 @@
 
 using namespace normal::expression::simple;
 
-
 Projector::Projector(std::vector<std::shared_ptr<Expression>> Expressions) :
 	expressions_(std::move(Expressions)) {}
 

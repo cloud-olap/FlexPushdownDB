@@ -159,7 +159,7 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
-TupleSet::evaluate(const std::shared_ptr<normal::expression::IProjector> &projector) {
+TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &projector) {
 
   // Read the table in batches
   std::shared_ptr<arrow::RecordBatch> batch;

@@ -2,18 +2,18 @@
 // Created by matt on 27/4/20.
 //
 
-#ifndef NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_IPROJECTOR_H
-#define NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_IPROJECTOR_H
+#ifndef NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_PROJECTOR_H
+#define NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_PROJECTOR_H
 
 #include <arrow/type.h>
 #include <arrow/array.h>
 
 namespace normal::expression {
 
-class IProjector {
+class Projector {
 
 public:
-  virtual ~IProjector() = default;
+  virtual ~Projector() = default;
 
   virtual std::shared_ptr<arrow::Schema> getResultSchema() = 0;
 
@@ -25,4 +25,4 @@ public:
 
 }
 
-#endif //NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_IPROJECTOR_H
+#endif //NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_PROJECTOR_H

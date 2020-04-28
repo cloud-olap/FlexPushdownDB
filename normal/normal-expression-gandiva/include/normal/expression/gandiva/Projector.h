@@ -10,11 +10,11 @@
 #include <arrow/api.h>
 #include <gandiva/expression.h>
 #include <gandiva/projector.h>
-#include <normal/expression/IProjector.h>
+#include <normal/expression/Projector.h>
 
 namespace normal::expression::gandiva {
 
-class Projector : public normal::expression::IProjector {
+class Projector : public normal::expression::Projector {
 
 public:
   explicit Projector(std::vector<std::shared_ptr<Expression>> Expressions);

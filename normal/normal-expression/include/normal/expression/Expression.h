@@ -2,8 +2,8 @@
 // Created by matt on 2/4/20.
 //
 
-#ifndef NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
-#define NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
+#ifndef NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_EXPRESSION_H
+#define NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_EXPRESSION_H
 
 #include <utility>
 
@@ -20,12 +20,9 @@ public:
   virtual ~Expression() = default;
 
   [[nodiscard]] const std::shared_ptr<arrow::DataType> &getReturnType() const;
-  virtual std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) = 0;
   virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
 
   [[nodiscard]] virtual std::string &name() = 0;
-
-//  std::string showString();
 
 protected:
 
@@ -34,10 +31,9 @@ protected:
    * its inspected the input schema
    */
   std::shared_ptr<arrow::DataType> returnType_;
-//  ::gandiva::NodePtr gandivaExpression_;
 
 };
 
 }
 
-#endif //NORMAL_NORMAL_CORE_SRC_EXPRESSION_H
+#endif //NORMAL_NORMAL_EXPRESSION_INCLUDE_NORMAL_EXPRESSION_EXPRESSION_H
