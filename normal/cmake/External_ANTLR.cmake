@@ -40,7 +40,7 @@ ExternalProject_Add(${ANTLR_BASE}
 file(MAKE_DIRECTORY ${ANTLR_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 
 
-add_library(antlr4_shared SHARED IMPORTED)
+add_library(antlr4_shared SHARED IMPORTED ../normal-ssb/include/normal/ssb/Globals.h)
 set_target_properties(antlr4_shared PROPERTIES IMPORTED_LOCATION ${ANTLR_RUNTIME_SHARED_LIB})
 target_include_directories(antlr4_shared INTERFACE ${ANTLR_INCLUDE_DIR})
 add_dependencies(antlr4_shared ${ANTLR_BASE})

@@ -11,9 +11,9 @@
 #include <normal/plan/operator_/ScanLogicalOperator.h>
 #include <normal/connector/Catalogue.h>
 
-class Catalogue;
-
 namespace normal::connector {
+
+class Catalogue;
 
 class CatalogueEntry {
 

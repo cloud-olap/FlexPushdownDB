@@ -32,6 +32,7 @@ include(External_AWSCPPSDK)
 include(External_ANTLR)
 include(External_graphviz)
 include(External_expected)
+include(External_fmt)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -48,3 +49,4 @@ add_subdirectory(normal-plan)
 add_subdirectory(normal-pushdown)
 add_subdirectory(normal-sql)
 add_subdirectory(normal-test)
+add_subdirectory(normal-ssb)

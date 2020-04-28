@@ -21,7 +21,18 @@ endfunction()
 # Target
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_executable(normal-test
+add_library(normal-test
+        include/normal/test/Globals.h
+        src/TestUtil.cpp include/normal/test/TestUtil.h)
+
+target_include_directories(normal-test PUBLIC include)
+
+target_link_libraries(normal-test PRIVATE spdlog::spdlog)
+target_link_libraries(normal-test PRIVATE doctest::doctest)
+target_link_libraries(normal-test PUBLIC normal-sql)
+
+
+add_executable(normal-test-suite
         include/normal/test/Globals.h
         src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
@@ -32,7 +43,7 @@ add_executable(normal-test
         src/SQLTest.cpp
         src/TupleTest.cpp)
 
-link_target(normal-test)
+link_target(normal-test-suite)
 
 add_executable(normal-test-file
         include/normal/test/Globals.h

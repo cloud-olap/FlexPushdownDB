@@ -160,18 +160,32 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
  */
 antlrcpp::Any normal::sql::visitor::Visitor::visitTable_or_subquery(normal::sql::NormalSQLParser::Table_or_subqueryContext *ctx) {
 
-  auto catalogueName = ctx->database_name()->any_name()->IDENTIFIER()->getText();
   auto tableName = ctx->table_name()->any_name()->IDENTIFIER()->getText();
 
-  auto catalogue = this->catalogues_->find(catalogueName);
-  if (catalogue == this->catalogues_->end())
-    throw std::runtime_error("Catalogue '" + catalogueName + "' not found.");
+  std::shared_ptr<connector::Catalogue> catalogue;
+  if(ctx->database_name()){
+	auto catalogueName = ctx->database_name()->any_name()->IDENTIFIER()->getText();
+	auto catalogueIterator = this->catalogues_->find(catalogueName);
+	if (catalogueIterator == this->catalogues_->end())
+	  throw std::runtime_error("Catalogue '" + catalogueName + "' does not exist.");
+	catalogue = catalogueIterator->second;
+  }
+  else{
+    // No catalogue specified, use default catalogue
+    // TODO: Implement
+	throw std::runtime_error("Default catalogue not yet implemented.");
+//	catalogue = this->defaultCatalogue();
+  }
 
-  auto catalogueEntry = catalogue->second->getEntry(tableName);
-
-  auto scanOp = catalogueEntry->toLogicalOperator();
-
-  return std::static_pointer_cast<normal::plan::operator_::LogicalOperator>(scanOp);
+  auto catalogueEntryExpected = catalogue->entry(tableName);
+  if(!catalogueEntryExpected) {
+    // FIXME: Propagate errors properly
+	throw std::runtime_error("Table '" + tableName + "' does not exist in catalogue '" + catalogue->getName() + "'");
+  }
+  else{
+	auto scanOp = catalogueEntryExpected.value()->toLogicalOperator();
+	return std::static_pointer_cast<normal::plan::operator_::LogicalOperator>(scanOp);
+  }
 }
 
 /**

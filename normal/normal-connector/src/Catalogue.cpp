@@ -4,22 +4,30 @@
 
 #include <normal/connector/Catalogue.h>
 
-normal::connector::Catalogue::Catalogue(std::string Name, std::shared_ptr<Connector> Connector)
+using namespace normal::connector;
+
+Catalogue::Catalogue(std::string Name, std::shared_ptr<Connector> Connector)
     : name_(std::move(Name)), connector_(std::move(Connector)) {}
 
-const std::string &normal::connector::Catalogue::getName() const {
+const std::string &Catalogue::getName() const {
   return name_;
 }
 
-void normal::connector::Catalogue::put(const std::shared_ptr<normal::connector::CatalogueEntry>& entry) {
+void Catalogue::put(const std::shared_ptr<CatalogueEntry>& entry) {
   this->entries_.emplace(entry->getAlias(), entry);
 }
 
-std::shared_ptr<normal::connector::CatalogueEntry> normal::connector::Catalogue::getEntry(const std::string& alias) {
-  return this->entries_.find(alias)->second;
+tl::expected<std::shared_ptr<CatalogueEntry>, std::string> Catalogue::entry(const std::string& name) {
+  auto entryIterator = this->entries_.find(name);
+  if(entryIterator == this->entries_.end()){
+    return tl::unexpected("Catalogue entry '" + name + "' not found");
+  }
+  else{
+    return entryIterator->second;
+  }
 }
 
-std::string normal::connector::Catalogue::toString() {
+std::string Catalogue::toString() {
   std::stringstream ss;
   for(const auto& entry : entries_){
     ss << entry.second->getAlias() << std::endl;
@@ -27,6 +35,6 @@ std::string normal::connector::Catalogue::toString() {
   return ss.str();
 }
 
-const std::shared_ptr<normal::connector::Connector> &normal::connector::Catalogue::getConnector() const {
+const std::shared_ptr<Connector> &Catalogue::getConnector() const {
   return connector_;
 }

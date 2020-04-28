@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <memory>
 
+#include <tl/expected.hpp>
+
 #include <normal/connector/Connector.h>
 #include <normal/connector/CatalogueEntry.h>
 
@@ -26,7 +28,7 @@ public:
   const std::shared_ptr<Connector> &getConnector() const;
 
   void put(const std::shared_ptr<CatalogueEntry> &entry);
-  std::shared_ptr<CatalogueEntry> getEntry(const std::string &alias);
+  tl::expected<std::shared_ptr<CatalogueEntry>, std::string> entry(const std::string &name);
 
   std::string toString();
 
