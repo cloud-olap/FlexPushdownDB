@@ -63,3 +63,7 @@ void Cast::compile(std::shared_ptr<arrow::Schema> schema) {
 std::string Cast::name() {
   return value_->name();
 }
+
+std::shared_ptr<Expression> normal::expression::gandiva::cast(std::shared_ptr<Expression> value, std::shared_ptr<normal::core::type::Type> type) {
+  return std::make_shared<Cast>(std::move(value), std::move(type));
+}

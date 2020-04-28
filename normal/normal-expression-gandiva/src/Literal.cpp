@@ -3,3 +3,5 @@
 //
 
 #include "normal/expression/gandiva/Literal.h"
+
+using namespace normal::expression::gandiva;

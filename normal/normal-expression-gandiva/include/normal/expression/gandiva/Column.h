@@ -8,6 +8,9 @@
 #include <string>
 #include <memory>
 
+#include <arrow/api.h>
+#include <gandiva/node.h>
+
 #include "Expression.h"
 
 namespace normal::expression::gandiva {
@@ -17,19 +20,18 @@ class Column : public Expression {
 public:
   explicit Column(std::string columnName);
 
-  ::gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> Ptr) override;
-  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> Ptr) override;
   void compile(std::shared_ptr<arrow::Schema> schema) override;
   std::string name() override;
+
+  ::gandiva::NodePtr buildGandivaExpression(std::shared_ptr<arrow::Schema> schema) override;
+  std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema> schema) override;
 
 private:
   std::string columnName_;
 
 };
 
-static std::shared_ptr<Expression> col(std::string columnName) {
-  return std::make_shared<Column>(std::move(columnName));
-}
+std::shared_ptr<Expression> col(std::string columnName);
 
 }
 
