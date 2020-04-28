@@ -60,6 +60,6 @@ void Cast::compile(std::shared_ptr<arrow::Schema> schema) {
   returnType_ = resultType(schema);
 }
 
-std::string &Cast::name() {
+std::string Cast::name() {
   return value_->name();
 }

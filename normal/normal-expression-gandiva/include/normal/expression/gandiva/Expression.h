@@ -23,7 +23,7 @@ public:
   virtual std::shared_ptr<arrow::DataType> resultType(std::shared_ptr<arrow::Schema>) = 0;
   virtual void compile(std::shared_ptr<arrow::Schema> schema) = 0;
 
-  [[nodiscard]] virtual std::string &name() = 0;
+  [[nodiscard]] virtual std::string name() = 0;
 
   std::string showString();
 

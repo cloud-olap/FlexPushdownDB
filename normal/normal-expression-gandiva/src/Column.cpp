@@ -25,6 +25,6 @@ void Column::compile(std::shared_ptr<arrow::Schema> schema) {
   returnType_ = resultType(schema);
 }
 
-std::string &Column::name() {
+std::string Column::name() {
   return columnName_;
 }

@@ -10,7 +10,12 @@ add_library(normal-expression-gandiva STATIC
         src/Expression.cpp include/normal/expression/gandiva/Expression.h
         src/Column.cpp include/normal/expression/gandiva/Column.h
         src/Cast.cpp include/normal/expression/gandiva/Cast.h
-        src/Projector.cpp include/normal/expression/gandiva/Projector.h)
+        src/Projector.cpp include/normal/expression/gandiva/Projector.h
+        src/Add.cpp include/normal/expression/gandiva/Add.h
+        src/Divide.cpp include/normal/expression/gandiva/Divide.h
+        src/Literal.cpp include/normal/expression/gandiva/Literal.h
+        src/Multiply.cpp include/normal/expression/gandiva/Multiply.h
+        src/Subtract.cpp include/normal/expression/gandiva/Subtract.h)
 
 target_include_directories(normal-expression-gandiva PUBLIC include)
 
