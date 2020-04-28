@@ -4,8 +4,8 @@
 
 #include "Visitor.h"
 
-#include <normal/expression/Cast.h>
-#include <normal/expression/Column.h>
+#include <normal/expression/gandiva/Cast.h>
+#include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Types.h>
 #include <normal/plan/LogicalPlan.h>
 
@@ -16,6 +16,7 @@
 
 using namespace normal::core::type;
 using namespace normal::expression;
+using namespace normal::expression::gandiva;
 
 /**
  * SQL parse tree visitor. Converts the parse tree into a logical graph of operators.
@@ -93,7 +94,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   bool aggregate = false;
 
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>>();
-  auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::expression::Expression>>>();
+  auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
 
   for (const auto &resultColumn: ctx->result_column()) {
     auto resultColumn_Result = visitResult_column(resultColumn);
@@ -104,9 +105,9 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       aggregate = true;
 	  auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
 	  aggregateFunctions->push_back(aggregateFunction);
-    } else if (resultColumn_Result.is<std::shared_ptr<Expression>>()) {
+    } else if (resultColumn_Result.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
       project = true;
-      auto projectExpression = resultColumn_Result.as<std::shared_ptr<Expression>>();
+      auto projectExpression = resultColumn_Result.as<std::shared_ptr<normal::expression::gandiva::Expression>>();
 	  projectExpressions->push_back(projectExpression);
     }
     else{
@@ -184,7 +185,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr(normal::sql::NormalSQLPar
   if (ctx->K_CAST()) {
     auto expressionCtx = ctx->expr(0);
     auto typeNameCtx = ctx->type_name();
-    std::shared_ptr<normal::expression::Expression> expression = visitExpr(expressionCtx);
+    std::shared_ptr<normal::expression::gandiva::Expression> expression = visitExpr(expressionCtx);
     auto type = typed_visitType_name(typeNameCtx);
     return cast(expression, type);
   } else if (ctx->column_name()) {

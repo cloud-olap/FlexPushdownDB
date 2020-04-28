@@ -4,10 +4,7 @@
 
 #include "normal/expression/gandiva/Projector.h"
 
-#include <normal/expression/gandiva/Expression.h>
 #include <gandiva/tree_expr_builder.h>
-
-#include <utility>
 
 using namespace normal::expression::gandiva;
 
@@ -44,21 +41,10 @@ void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
   resultSchema_ = arrow::schema(resultFields);
 }
 
-const std::vector<std::shared_ptr<Expression>> &Projector::getExpressions() const {
-  return expressions_;
-}
-
 std::shared_ptr<arrow::Schema> Projector::getResultSchema() {
   return resultSchema_;
 }
 
-const std::vector<gandiva::ExpressionPtr> &Projector::getGandivaExpressions() const {
-  return gandivaExpressions_;
-}
-
-const std::shared_ptr<::gandiva::Projector> &Projector::getGandivaProjector() const {
-  return gandivaProjector_;
-}
 std::string Projector::showString() {
   std::stringstream ss;
   for (const auto &gandivaExpression: gandivaExpressions_) {

@@ -4,7 +4,6 @@
 
 #include "normal/expression/gandiva/Column.h"
 
-#include <utility>
 #include <gandiva/tree_expr_builder.h>
 
 using namespace normal::expression::gandiva;
@@ -28,8 +27,6 @@ std::string Column::name() {
 std::shared_ptr<arrow::DataType> Column::resultType(std::shared_ptr<arrow::Schema> schema) {
   return schema->GetFieldByName(columnName_)->type();
 }
-
-
 
 std::shared_ptr<Expression> normal::expression::gandiva::col(std::string columnName) {
   return std::make_shared<Column>(std::move(columnName));

@@ -7,15 +7,10 @@
 #include <doctest/doctest.h>
 #include <nanobench.h>
 
-#include <normal/core/type/Type.h>
-#include <normal/expression/Expression.h>
 #include <normal/core/arrow/Arrays.h>
 #include <normal/core/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
-#include <normal/expression/Column.h>
 #include <normal/core/type/Float64Type.h>
-#include <normal/expression/Cast.h>
-#include <normal/expression/Projector.h>
 
 #include <normal/expression/simple/Expression.h>
 #include <normal/expression/simple/Column.h>
@@ -32,12 +27,12 @@ using namespace normal::core::type;
 namespace spl = normal::expression::simple;
 namespace gdv = normal::expression::gandiva;
 
-std::shared_ptr<normal::core::TupleSet> prepareRandomTupleSet(int numColumns, int numRows) {
+std::shared_ptr<normal::core::TupleSet> prepareRandomTupleSet(unsigned long numColumns, unsigned long numRows) {
 
   // Create fields
   std::vector<std::shared_ptr<arrow::Field>> fields;
   fields.reserve(numColumns);
-	for(int c=0;c<numColumns;c++){
+  for (unsigned long c = 0; c < numColumns; c++) {
 	fields.emplace_back(arrow::field(std::to_string(c), arrow::utf8()));
   }
   auto schema = arrow::schema(fields);
@@ -45,10 +40,10 @@ std::shared_ptr<normal::core::TupleSet> prepareRandomTupleSet(int numColumns, in
   // Create data
   int counter = 0;
   std::vector<std::shared_ptr<arrow::Array>> arrowArrays;
-  for(int c=0;c<numColumns;c++){
+  for (unsigned long c = 0; c < numColumns; c++) {
 	std::vector<std::string> column;
 	column.reserve(numRows);
-	for(int r=0;r<numRows;r++){
+	for (unsigned long r = 0; r < numRows; r++) {
 	  column.emplace_back(std::to_string(counter++));
 	}
 	auto arrowArray = Arrays::make<arrow::StringType>(column);
@@ -87,7 +82,8 @@ TEST_CASE ("benchmark-expression") {
 	auto evaluated = tuples->evaluate(simpleProjector).value();
   });
 
-  ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-gandiva-cast-string-to-decimal-reuse-projector", [&] {
-	auto evaluated = tuples->evaluate(gandivaProjector).value();
-  });
+  ankerl::nanobench::Config().minEpochIterations(10).run("evaluate-gandiva-cast-string-to-decimal-reuse-projector",
+														 [&] {
+														   auto evaluated = tuples->evaluate(gandivaProjector).value();
+														 });
 }

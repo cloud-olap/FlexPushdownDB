@@ -30,3 +30,7 @@ std::shared_ptr<arrow::ArrayVector> Projector::evaluate(const arrow::RecordBatch
 
   return outputs;
 }
+
+void Projector::compile(const std::shared_ptr<arrow::Schema> &) {
+	// NOOP
+}

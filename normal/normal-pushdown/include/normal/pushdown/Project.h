@@ -7,6 +7,7 @@
 
 #include <normal/core/Operator.h>
 #include <normal/expression/Expression.h>
+#include <normal/expression/gandiva/Expression.h>
 #include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
@@ -22,7 +23,7 @@ public:
    * @param Expressions Expressions to evaluate to produce the attributes in the projection
    */
   Project(const std::string &Name,
-          std::vector<std::shared_ptr<normal::expression::Expression>> Expressions);
+          std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> Expressions);
 
   /**
    * Default destructor
@@ -55,7 +56,7 @@ private:
   /**
    * The expressions defining the attributes the projection should include
    */
-  std::vector<std::shared_ptr<normal::expression::Expression>> expressions_;
+  std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> expressions_;
 
   /**
    * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the
@@ -71,7 +72,7 @@ private:
   /**
    * The expression projector, created and cached when input schema is extracted from first tuple received
    */
-  std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
+  std::optional<std::shared_ptr<normal::expression::IProjector>> projector_;
 
   /**
    * Adds the tuples in the tuple message to the internal buffer

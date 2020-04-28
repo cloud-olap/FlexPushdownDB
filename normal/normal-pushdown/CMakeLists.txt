@@ -22,14 +22,15 @@ add_library(normal-pushdown STATIC
 
 target_include_directories(normal-pushdown PUBLIC include)
 
-target_link_libraries(normal-pushdown PUBLIC normal-core)
+target_link_libraries(normal-pushdown PUBLIC pthread)
 target_link_libraries(normal-pushdown PRIVATE spdlog::spdlog)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-core)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-pushdown PUBLIC arrow_static)
 target_link_libraries(normal-pushdown PUBLIC gandiva_static)
-target_link_libraries(normal-pushdown PUBLIC pthread)
-
+target_link_libraries(normal-pushdown PUBLIC normal-core)
+target_link_libraries(normal-pushdown PUBLIC normal-expression)
+target_link_libraries(normal-pushdown PUBLIC normal-expression-gandiva)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

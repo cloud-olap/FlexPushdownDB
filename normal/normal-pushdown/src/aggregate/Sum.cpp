@@ -4,19 +4,18 @@
 
 #include <sstream>
 #include <utility>
-#include <normal/expression/Expressions.h>
-#include <normal/core/arrow/ScalarHelperImpl.h>
-#include <normal/core/arrow/ScalarHelperBuilder.h>
 
-#include "normal/pushdown/aggregate/Sum.h"
-#include "normal/pushdown/Globals.h"
-#include "arrow/api.h"
 #include "arrow/visitor_inline.h"
 #include "arrow/scalar.h"
 
+#include <normal/core/arrow/ScalarHelperBuilder.h>
+#include <normal/expression/gandiva/Projector.h>
+#include "normal/pushdown/aggregate/Sum.h"
+#include "normal/pushdown/Globals.h"
+
 namespace normal::pushdown::aggregate {
 
-Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::Expression> expression) :
+Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Expression> expression) :
     AggregationFunction(std::move(columnName)),
     expression_(std::move(expression)) {}
 
@@ -35,7 +34,7 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
 
   std::shared_ptr<arrow::Scalar> batchSum = tuples->visit([&](auto accum, auto &batch) -> auto{
 
-    auto arrayVector = expression::Expressions::evaluate(projector_.value(), batch);
+    auto arrayVector = projector_.value()->evaluate(batch);
     auto array = arrayVector->at(0);
 
     // Initialise accumulator
@@ -110,7 +109,7 @@ void Sum::finalize() {
 void Sum::buildAndCacheProjector() {
   if(!projector_.has_value()){
 	auto expressionsVec = {this->expression_};
-	projector_ = std::make_shared<expression::Projector>(expressionsVec);
+	projector_ = std::make_shared<expression::gandiva::Projector>(expressionsVec);
 	projector_.value()->compile(inputSchema_.value());
   }
 }

@@ -14,13 +14,14 @@
 #include <normal/pushdown/aggregate/Sum.h>
 #include <normal/pushdown/Project.h>
 #include <normal/test/Globals.h>
-#include <normal/expression/Cast.h>
-#include <normal/expression/Column.h>
+#include <normal/expression/gandiva/Cast.h>
+#include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/test/TestUtil.h>
 
 using namespace normal::core::type;
 using namespace normal::expression;
+using namespace normal::expression::gandiva;
 using namespace normal::pushdown::aggregate;
 
 TEST_CASE ("filescan-sum-collate"
@@ -31,7 +32,10 @@ TEST_CASE ("filescan-sum-collate"
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
 
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
-  aggregateFunctions->emplace_back(std::make_shared<Sum>("Sum", cast(col("A"), float64Type())));
+
+  // FIXME: Why does col need to be fully classified?
+
+  aggregateFunctions->emplace_back(std::make_shared<Sum>("Sum", cast(normal::expression::gandiva::col("A"), float64Type())));
 
   auto aggregate = std::make_shared<normal::pushdown::Aggregate>("aggregate", aggregateFunctions);
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");
@@ -71,8 +75,8 @@ TEST_CASE ("filescan-project-collate"
 
   auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
   auto expressions = {
-      cast(col("A"), float64Type()),
-      col("B")
+      cast(normal::expression::gandiva::col("A"), float64Type()),
+	  normal::expression::gandiva::col("B")
   };
   auto project = std::make_shared<normal::pushdown::Project>("project", expressions);
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");

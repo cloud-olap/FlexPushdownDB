@@ -20,12 +20,8 @@ public:
   explicit Projector(std::vector<std::shared_ptr<Expression>> Expressions);
 
   std::shared_ptr<arrow::ArrayVector> evaluate(const arrow::RecordBatch &recordBatch) override;
-  void compile(const std::shared_ptr<arrow::Schema>& schema);
-
-  [[nodiscard]] const std::vector<std::shared_ptr<Expression>> &getExpressions() const;
+  void compile(const std::shared_ptr<arrow::Schema>& schema) override;
   [[nodiscard]] std::shared_ptr<arrow::Schema> getResultSchema() override;
-  [[nodiscard]] const std::vector<::gandiva::ExpressionPtr> &getGandivaExpressions() const;
-  [[nodiscard]] const std::shared_ptr<::gandiva::Projector> &getGandivaProjector() const;
 
   std::string showString();
 

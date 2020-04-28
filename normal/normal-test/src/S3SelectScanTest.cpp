@@ -13,14 +13,15 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/aggregate/Sum.h>
-#include <normal/expression/Column.h>
+#include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
-#include <normal/expression/Cast.h>
+#include <normal/expression/gandiva/Cast.h>
 
 #include <normal/test/TestUtil.h>
 
 using namespace normal::core::type;
 using namespace normal::expression;
+using namespace normal::expression::gandiva;
 
 TEST_CASE ("S3SelectScan -> Sum -> Collate"
 * doctest::skip(false)) {

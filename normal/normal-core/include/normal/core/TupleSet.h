@@ -14,7 +14,6 @@
 #include <tl/expected.hpp>
 #include <normal/core/arrow/Arrays.h>
 #include <normal/core/arrow/TableHelper.h>
-#include <normal/expression/Projector.h>
 #include <normal/expression/IProjector.h>
 #include "normal/core/Globals.h"
 

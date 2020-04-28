@@ -8,14 +8,15 @@
 
 #include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
-#include <normal/expression/Expressions.h>
+#include <normal/expression/gandiva/Projector.h>
+#include <normal/expression/gandiva/Expression.h>
 
 #include "normal/pushdown/Globals.h"
 
 namespace normal::pushdown {
 
 Project::Project(const std::string &Name,
-                 std::vector<std::shared_ptr<normal::expression::Expression>> Expressions)
+                 std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> Expressions)
     : Operator(Name, "Project"),
       expressions_(std::move(Expressions)) {}
 
@@ -68,7 +69,7 @@ void Project::onTuple(const core::message::TupleMessage &message) {
 
 void Project::buildAndCacheProjector() {
   if(!projector_.has_value()){
-	projector_ = std::make_shared<expression::Projector>(expressions_);
+	projector_ = std::make_shared<normal::expression::gandiva::Projector>(expressions_);
 	projector_.value()->compile(inputSchema_.value());
   }
 }

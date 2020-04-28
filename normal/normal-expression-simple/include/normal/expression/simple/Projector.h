@@ -11,9 +11,9 @@
 namespace normal::expression::simple {
 
 class Projector : public normal::expression::IProjector {
-
 public:
   explicit Projector(std::vector<std::shared_ptr<Expression>> Expressions);
+  void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   std::shared_ptr<arrow::ArrayVector> evaluate(const arrow::RecordBatch &recordBatch) override;
   [[nodiscard]] std::shared_ptr<arrow::Schema> getResultSchema() override;
 

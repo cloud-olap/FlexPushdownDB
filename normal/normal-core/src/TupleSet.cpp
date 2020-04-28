@@ -13,7 +13,6 @@
 
 #include <arrow/api.h>                 // for Array, NumericArray, StringA...
 #include <arrow/csv/api.h>            // for TableReader
-#include <normal/expression/Expressions.h>
 #include <tl/expected.hpp>
 #include <arrow/scalar.h>
 

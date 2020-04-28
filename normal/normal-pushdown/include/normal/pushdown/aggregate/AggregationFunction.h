@@ -24,7 +24,7 @@ protected:
   /**
    * The expression projector, created and cached when input schema is extracted from first tuple received
    */
-  std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
+  std::optional<std::shared_ptr<normal::expression::IProjector>> projector_;
 
   /**
    * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the

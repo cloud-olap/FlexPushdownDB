@@ -6,8 +6,8 @@
 
 #include <normal/core/arrow/Arrays.h>
 #include <normal/expression/Expression.h>
-#include <normal/expression/Cast.h>
-#include <normal/expression/Column.h>
+#include <normal/expression/gandiva/Cast.h>
+#include <normal/expression/gandiva/Column.h>
 #include <normal/core/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
 
