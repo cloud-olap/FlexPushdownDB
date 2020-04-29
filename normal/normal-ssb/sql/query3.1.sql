@@ -1,8 +1,7 @@
 select c_nation,
        s_nation,
        d_year,
-       sum(lo_revenue)
-           as revenue
+       sum(lo_revenue) as revenue
 from customer,
      lineorder,
      supplier,

@@ -13,16 +13,17 @@
 #include <normal/core/arrow/Arrays.h>
 #include <normal/core/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
-#include <normal/expression/Column.h>
+#include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
-#include <normal/expression/Cast.h>
+#include <normal/expression/gandiva/Cast.h>
 
 #include <normal/test/Globals.h>
 #include <normal/test/TestUtil.h>
 #include <normal/expression/Projector.h>
+#include <normal/expression/gandiva/Projector.h>
 
 using namespace normal::core::type;
-using namespace normal::expression;
+using namespace normal::expression::gandiva;
 
 /**
  * Create a simple 3 col, 3 row tupleset for testing expressions against
@@ -57,7 +58,7 @@ TEST_CASE ("cast-string-to-decimal" * doctest::skip(false)) {
 
 	SPDLOG_DEBUG("Input:\n{}", tuples->toString());
 
-	auto expressions = std::vector<std::shared_ptr<normal::expression::Expression>>{
+	auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
 		cast(col("a"), decimalType(10, 5)),
 		cast(col("b"), decimalType(10, 5)),
 		cast(col("c"), decimalType(10, 5))
@@ -73,7 +74,7 @@ TEST_CASE ("cast-string-to-decimal" * doctest::skip(false)) {
 }
 
 TEST_CASE ("show-gandiva-functions" * doctest::skip(true)) {
-  gandiva::FunctionRegistry registry;
+  ::gandiva::FunctionRegistry registry;
   for (auto native_func_it = registry.begin(); native_func_it != registry.end();++native_func_it){
 	SPDLOG_DEBUG("Function  |  pc_name: {}", native_func_it->pc_name());
 
@@ -90,7 +91,7 @@ TEST_CASE ("cast-string-to-double" * doctest::skip(true)) {
 
   SPDLOG_DEBUG("Input:\n{}", tuples->toString());
 
-  auto expressions = std::vector<std::shared_ptr<normal::expression::Expression>>{
+  auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
 	  cast(col("a"), float64Type()),
 	  cast(col("b"), float64Type()),
 	  cast(col("c"), float64Type())

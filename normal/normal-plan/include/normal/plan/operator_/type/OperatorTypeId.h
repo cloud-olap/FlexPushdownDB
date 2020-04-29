@@ -5,11 +5,15 @@
 #ifndef NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_OPERATORTYPEID_H
 #define NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_OPERATORTYPEID_H
 
+namespace normal::plan::operator_::type {
+
 enum OperatorTypeId {
   Scan,
   Project,
   Aggregate,
   Collate
 };
+
+}
 
 #endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_OPERATORTYPEID_H

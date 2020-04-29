@@ -1,4 +1,6 @@
-select sum(lo_revenue), d_year, p_brand1
+select sum(lo_revenue),
+       d_year,
+       p_brand1
 from lineorder,
      date,
      part,

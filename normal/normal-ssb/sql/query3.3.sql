@@ -1,4 +1,7 @@
-select c_city, s_city, d_year, sum(lo_revenue) as revenue
+select c_city,
+       s_city,
+       d_year,
+       sum(lo_revenue) as revenue
 from customer,
      lineorder,
      supplier,

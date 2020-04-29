@@ -34,7 +34,7 @@ private:
 
 public:
   explicit Operator(std::string name, std::string type);
-  virtual ~Operator() = 0;
+  virtual ~Operator() = default;
 
   std::string &name();
   [[nodiscard]] caf::actor actorHandle() const;

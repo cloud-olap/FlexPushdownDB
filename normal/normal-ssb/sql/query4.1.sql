@@ -1,4 +1,6 @@
-select d_year, c_nation, sum(lo_revenue - lo_supplycost) as profit
+select d_year,
+       c_nation,
+       sum(lo_revenue - lo_supplycost) as profit
 from date,
      customer,
      supplier,

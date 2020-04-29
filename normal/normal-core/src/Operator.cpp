@@ -18,8 +18,6 @@ Operator::Operator(std::string name, std::string type) :
     type_(std::move(type)) {
 }
 
-Operator::~Operator() = default;
-
 const std::string &Operator::getType() const {
   return type_;
 }

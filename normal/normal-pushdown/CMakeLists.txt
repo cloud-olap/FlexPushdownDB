@@ -18,7 +18,11 @@ add_library(normal-pushdown STATIC
         src/aggregate/Sum.cpp include/normal/pushdown/aggregate/Sum.h
         src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h
         src/AWSClient.cpp include/normal/pushdown/AWSClient.h
-        src/Project.cpp include/normal/pushdown/Project.h)
+        src/Project.cpp include/normal/pushdown/Project.h
+        src/join/JoinPredicate.cpp include/normal/pushdown/join/JoinPredicate.h
+        src/join/HashJoinProbe.cpp include/normal/pushdown/join/HashJoinProbe.h
+        src/join/HashJoinBuild.cpp include/normal/pushdown/join/HashJoinBuild.h
+        src/join/HashTableMessage.cpp include/normal/pushdown/join/HashTableMessage.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -31,6 +35,31 @@ target_link_libraries(normal-pushdown PUBLIC gandiva_static)
 target_link_libraries(normal-pushdown PUBLIC normal-core)
 target_link_libraries(normal-pushdown PUBLIC normal-expression)
 target_link_libraries(normal-pushdown PUBLIC normal-expression-gandiva)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Test
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-pushdown-test
+        test/MainTest.cpp
+        test/JoinTest.cpp test/Globals.h)
+
+target_include_directories(normal-pushdown-test PRIVATE include)
+
+target_link_libraries(normal-pushdown-test PRIVATE spdlog::spdlog)
+target_link_libraries(normal-pushdown-test PRIVATE doctest::doctest)
+target_link_libraries(normal-pushdown-test PRIVATE normal-test)
+target_link_libraries(normal-pushdown-test PRIVATE normal-pushdown)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Test Data
+#-----------------------------------------------------------------------------------------------------------------------
+
+configure_file(data/join/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/a.csv COPYONLY)
+configure_file(data/join/b.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/b.csv COPYONLY)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
