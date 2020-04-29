@@ -9,14 +9,19 @@
 
 namespace normal::pushdown::join {
 
+/**
+ * A join predicate for straight column to column joins
+ *
+ * TODO: Support expressions
+ */
 class JoinPredicate {
   
 public:
   JoinPredicate(const std::string &leftColumnName, const std::string &rightColumnName);
   
 private:
-  std::string leftField_;
-  std::string rightField_;
+  std::string leftColumnName_;
+  std::string rightColumnName_;
 
 };
 

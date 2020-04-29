@@ -35,11 +35,26 @@ private:
    */
   JoinPredicate pred_;
 
+  /**
+   * A buffer of received tuples that are not joined until enough hashtable entries and tuples have been received
+   */
+  std::shared_ptr<normal::core::TupleSet> tuples_;
+
+  /**
+   * The hashtable
+   */
+  std::shared_ptr<std::unordered_multimap<std::shared_ptr<arrow::Scalar>, long>> hashtable_;
+
   void onStart();
   void onTuple(core::message::TupleMessage msg);
   void onHashTable(HashTableMessage msg);
   void onComplete(core::message::CompleteMessage msg);
 
+  void bufferTuples(core::message::TupleMessage msg);
+  void bufferHashTable(HashTableMessage msg);
+  void joinAndSendTuples();
+  tl::expected<std::shared_ptr<normal::core::TupleSet>, std::string> join();
+  void sendTuples(std::shared_ptr<normal::core::TupleSet> &joined);
 };
 
 }

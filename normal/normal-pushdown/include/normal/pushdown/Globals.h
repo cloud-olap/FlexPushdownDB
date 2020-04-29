@@ -17,6 +17,11 @@ namespace normal::pushdown {
  */
 const auto DEFAULT_BUFFER_SIZE = 10000;
 
+/**
+ * Default number of records per arrow chunk when processing record batches
+ */
+const auto DEFAULT_CHUNK_SIZE = 10000;
+
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GLOBALS_H

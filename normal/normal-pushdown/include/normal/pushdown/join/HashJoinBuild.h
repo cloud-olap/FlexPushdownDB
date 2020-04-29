@@ -39,11 +39,12 @@ private:
   /**
    * The hashtable
    */
-  std::unordered_multimap<std::shared_ptr<arrow::Scalar>, std::shared_ptr<arrow::Scalar>> hashtable_;
+  std::shared_ptr<std::unordered_multimap<std::shared_ptr<arrow::Scalar>, long>> hashtable_;
 
   void onStart();
   void onTuple(core::message::TupleMessage msg);
   void onComplete(core::message::CompleteMessage msg);
+
 };
 
 }

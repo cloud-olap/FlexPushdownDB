@@ -20,7 +20,7 @@ private:
 
 public:
   explicit Message(std::string type, std::string sender);
-  virtual ~Message() = 0;
+  virtual ~Message() = default;
   [[nodiscard]] std::string type() const;
   [[nodiscard]] std::string sender() const;
 
