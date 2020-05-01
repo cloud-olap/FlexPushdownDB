@@ -99,6 +99,8 @@ public:
    * Templated visitor, visits record batches from the internal arrow table and applies the given
    * function to each batch. Returns the result of the function.
    *
+   * FIXME: On;y returning last result
+   *
    * @tparam T
    * @param fn
    * @return

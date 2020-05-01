@@ -17,8 +17,11 @@ namespace normal::pushdown::join {
 class JoinPredicate {
   
 public:
-  JoinPredicate(const std::string &leftColumnName, const std::string &rightColumnName);
-  
+  JoinPredicate(std::string leftColumnName, std::string rightColumnName);
+  const std::string &getLeftColumnName() const;
+  const std::string &getRightColumnName() const;
+  static JoinPredicate create(const std::string &leftColumnName, const std::string &rightColumnName);
+
 private:
   std::string leftColumnName_;
   std::string rightColumnName_;

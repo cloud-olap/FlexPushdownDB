@@ -21,7 +21,8 @@ Project::Project(const std::string &Name,
       expressions_(std::move(Expressions)) {}
 
 void Project::onStart() {
-  // NOOP
+  // FIXME: Either set tuples to size 0 or use an optional
+  tuples_ = nullptr;
 }
 
 void Project::onReceive(const normal::core::message::Envelope &message) {
@@ -62,7 +63,7 @@ void Project::onTuple(const core::message::TupleMessage &message) {
   bufferTuples(message);
 
   // Project and send if the buffer is full enough
-  if (tuples_->numRows() > DEFAULT_BUFFER_SIZE) {
+  if (tuples_->numRows() > DefaultBufferSize) {
     projectAndSendTuples();
   }
 }

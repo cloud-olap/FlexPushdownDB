@@ -12,6 +12,7 @@
 #include <normal/core/Operator.h>
 #include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
+#include "HashTable.h"
 
 namespace normal::pushdown::join {
 
@@ -27,6 +28,8 @@ class HashJoinBuild : public normal::core::Operator {
 public:
   explicit HashJoinBuild(const std::string &name, std::string columnName);
 
+  static std::shared_ptr<HashJoinBuild> create(const std::string &name, const std::string &columnName);
+
   void onReceive(const core::message::Envelope &msg) override;
 
 private:
@@ -38,12 +41,14 @@ private:
 
   /**
    * The hashtable
+   *
+   * FIXME: This probably doesn't need to use a pointer
    */
-  std::shared_ptr<std::unordered_multimap<std::shared_ptr<arrow::Scalar>, long>> hashtable_;
+  std::shared_ptr<HashTable> hashtable_;
 
   void onStart();
-  void onTuple(core::message::TupleMessage msg);
-  void onComplete(core::message::CompleteMessage msg);
+  void onTuple(const core::message::TupleMessage &msg);
+  void onComplete(const core::message::CompleteMessage &msg);
 
 };
 

@@ -22,9 +22,9 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
 
   auto aScan = std::make_shared<FileScan>("fileScanA", "data/join/a.csv");
   auto bScan = std::make_shared<FileScan>("fileScanB", "data/join/b.csv");
-  auto joinBuild = std::make_shared<HashJoinBuild>("join-build", "A");
+  auto joinBuild = HashJoinBuild::create("join-build", "AA");
   auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-												   JoinPredicate("A", "A"));
+												   JoinPredicate::create("AA", "BA"));
   auto collate = std::make_shared<Collate>("collate");
 
   aScan->produce(joinBuild);

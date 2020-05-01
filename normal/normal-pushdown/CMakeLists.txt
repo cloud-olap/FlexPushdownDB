@@ -22,7 +22,9 @@ add_library(normal-pushdown STATIC
         src/join/JoinPredicate.cpp include/normal/pushdown/join/JoinPredicate.h
         src/join/HashJoinProbe.cpp include/normal/pushdown/join/HashJoinProbe.h
         src/join/HashJoinBuild.cpp include/normal/pushdown/join/HashJoinBuild.h
-        src/join/HashTableMessage.cpp include/normal/pushdown/join/HashTableMessage.h)
+        src/join/HashTableMessage.cpp include/normal/pushdown/join/HashTableMessage.h
+        src/join/HashTable.cpp include/normal/pushdown/join/HashTable.h
+        src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -33,6 +35,7 @@ target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-pushdown PUBLIC arrow_static)
 target_link_libraries(normal-pushdown PUBLIC gandiva_static)
 target_link_libraries(normal-pushdown PUBLIC normal-core)
+target_link_libraries(normal-pushdown PUBLIC normal-tuple)
 target_link_libraries(normal-pushdown PUBLIC normal-expression)
 target_link_libraries(normal-pushdown PUBLIC normal-expression-gandiva)
 

@@ -8,13 +8,25 @@
 
 #include <normal/pushdown/Globals.h>
 #include <normal/pushdown/join/HashTableMessage.h>
+#include <normal/tuple/TupleSet2.h>
 
+using namespace normal::pushdown;
 using namespace normal::pushdown::join;
+using namespace normal::tuple;
 
 HashJoinBuild::HashJoinBuild(const std::string &name, std::string columnName) :
 	Operator(name, "HashJoinBuild"),
 	columnName_(std::move(columnName)),
-	hashtable_(std::make_shared<std::unordered_multimap<std::shared_ptr<arrow::Scalar>, long>>()) {
+	hashtable_(std::make_shared<HashTable>()) {
+}
+
+std::shared_ptr<HashJoinBuild> HashJoinBuild::create(const std::string &name, const std::string &columnName) {
+
+  // Convert the column name to (canonical) lower case
+  std::string c(columnName);
+  std::transform(c.begin(), c.end(), c.begin(), ::tolower);
+
+  return std::make_shared<HashJoinBuild>(name, c);
 }
 
 void HashJoinBuild::onReceive(const normal::core::message::Envelope &msg) {
@@ -36,41 +48,14 @@ void HashJoinBuild::onStart() {
   hashtable_->clear();
 }
 
-void HashJoinBuild::onTuple(normal::core::message::TupleMessage msg) {
-
-  // FIXME: This should probably use record batch visitor
-
-  std::shared_ptr<arrow::RecordBatch> batch;
-  arrow::TableBatchReader reader(*msg.tuples()->table());
-  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
-  auto arrowStatus = reader.ReadNext(&batch);
-
-  std::shared_ptr<arrow::Scalar> result;
-  while (arrowStatus.ok() && batch) {
-
-	auto joinColumn = batch->GetColumnByName(columnName_);
-	auto joinColumnType = joinColumn->type();
-
-	if (joinColumnType->id() == arrow::int64()->id()) {
-
-	  auto typedJoinColumn = std::static_pointer_cast<arrow::Int64Array>(joinColumn);
-	  for (long r = 0; r < typedJoinColumn->length(); r++) {
-
-		// FIXME: Is this the best way to use Arrow, get the value out and then make a scalar?
-
-		auto value = typedJoinColumn->Value(r);
-		auto scalar = arrow::MakeScalar(value);
-		hashtable_->insert(std::pair<std::shared_ptr<arrow::Scalar>, long>(scalar, r));
-	  }
-	} else {
-	  throw std::runtime_error("Join on column type '" + joinColumnType->ToString() + "' not implemented yet");
-	}
-
-	arrowStatus = reader.ReadNext(&batch);
-  }
+void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
+  auto tupleSet = TupleSet2::create(msg.tuples());
+  hashtable_->put(columnName_, tupleSet);
 }
 
-void HashJoinBuild::onComplete(normal::core::message::CompleteMessage) {
+void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
+
+  SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
 
   std::shared_ptr<normal::core::message::Message>
 	  hashTableMessage = std::make_shared<HashTableMessage>(hashtable_, name());
@@ -79,4 +64,3 @@ void HashJoinBuild::onComplete(normal::core::message::CompleteMessage) {
 
   ctx()->notifyComplete();
 }
-

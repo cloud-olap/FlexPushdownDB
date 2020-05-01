@@ -41,10 +41,7 @@ void Collate::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Collate::onComplete(const normal::core::message::CompleteMessage &) {
-
   ctx()->notifyComplete();
-
-//  ctx()->operatorActor()->quit();
 }
 
 void Collate::show() {

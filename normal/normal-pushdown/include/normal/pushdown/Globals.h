@@ -15,12 +15,13 @@ namespace normal::pushdown {
 /**
  * Default number of tuples operators should buffer before sending to consumers
  */
-const auto DEFAULT_BUFFER_SIZE = 10000;
+inline constexpr int DefaultBufferSize = 10000;
 
 /**
  * Default number of records per arrow chunk when processing record batches
  */
-const auto DEFAULT_CHUNK_SIZE = 10000;
+inline constexpr int DefaultChunkSize = 10000;
+
 
 }
 

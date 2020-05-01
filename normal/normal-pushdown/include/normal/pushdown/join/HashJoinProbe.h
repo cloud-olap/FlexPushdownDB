@@ -11,6 +11,7 @@
 
 #include "JoinPredicate.h"
 #include "HashTableMessage.h"
+#include "HashTable.h"
 
 namespace normal::pushdown::join {
 
@@ -38,23 +39,24 @@ private:
   /**
    * A buffer of received tuples that are not joined until enough hashtable entries and tuples have been received
    */
-  std::shared_ptr<normal::core::TupleSet> tuples_;
+  std::shared_ptr<normal::tuple::TupleSet2> tuples_;
 
   /**
    * The hashtable
    */
-  std::shared_ptr<std::unordered_multimap<std::shared_ptr<arrow::Scalar>, long>> hashtable_;
+  std::shared_ptr<HashTable> hashtable_;
 
   void onStart();
-  void onTuple(core::message::TupleMessage msg);
-  void onHashTable(HashTableMessage msg);
-  void onComplete(core::message::CompleteMessage msg);
+  void onTuple(const core::message::TupleMessage &msg);
+  void onHashTable(const HashTableMessage &msg);
+  void onComplete(const core::message::CompleteMessage &msg);
 
-  void bufferTuples(core::message::TupleMessage msg);
-  void bufferHashTable(HashTableMessage msg);
+  void bufferTuples(const core::message::TupleMessage &msg);
+  void bufferHashTable(const HashTableMessage &msg);
   void joinAndSendTuples();
-  tl::expected<std::shared_ptr<normal::core::TupleSet>, std::string> join();
-  void sendTuples(std::shared_ptr<normal::core::TupleSet> &joined);
+  tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> join();
+  void sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &tuples);
+
 };
 
 }

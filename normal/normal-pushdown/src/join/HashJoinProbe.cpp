@@ -5,14 +5,19 @@
 #include "normal/pushdown/join/HashJoinProbe.h"
 
 #include <utility>
+
+#include <normal/core/arrow/SchemaHelper.h>
+
 #include <normal/pushdown/join/HashTableMessage.h>
+#include <normal/pushdown/Globals.h>
+#include <normal/pushdown/join/Joiner.h>
 
 using namespace normal::pushdown::join;
 
 HashJoinProbe::HashJoinProbe(const std::string &name, JoinPredicate pred) :
 	Operator(name, "HashJoinProbe"),
 	pred_(std::move(pred)),
-	hashtable_(std::make_shared<std::unordered_multimap<std::shared_ptr<arrow::Scalar>, long>>()) {
+	hashtable_(std::make_shared<HashTable>()) {
 }
 
 void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
@@ -40,30 +45,25 @@ void HashJoinProbe::onStart() {
 
 }
 
-void HashJoinProbe::onTuple(normal::core::message::TupleMessage msg) {
+void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
 
   // Add the tuples to the internal buffer
   bufferTuples(msg);
 }
 
-void HashJoinProbe::bufferTuples(normal::core::message::TupleMessage msg) {
+void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg) {
+
+  auto tupleSet = TupleSet2::create(msg.tuples());
+
   if (!tuples_) {
 	// Initialise tuples buffer with message contents
-	tuples_ = msg.tuples();
+	tuples_ = tupleSet;
   } else {
-	// Append message contents to tuples buffer
-	auto tables = {tuples_->table(), msg.tuples()->table()};
-	auto res = arrow::ConcatenateTables(tables);
-	if (!res.ok()) {
-	  tuples_->table(*res);
-	} else {
-	  // FIXME: Propagate error properly
-	  throw std::runtime_error(res.status().message());
-	}
+	tuples_->append(tupleSet);
   }
 }
 
-void HashJoinProbe::onComplete(normal::core::message::CompleteMessage) {
+void HashJoinProbe::onComplete(const normal::core::message::CompleteMessage &) {
   if (ctx()->operatorMap().allComplete(normal::core::OperatorRelationshipType::Producer)) {
 	joinAndSendTuples();
   }
@@ -79,23 +79,26 @@ void HashJoinProbe::joinAndSendTuples() {
   }
 }
 
-tl::expected<std::shared_ptr<normal::core::TupleSet>, std::string>
-HashJoinProbe::join() {
-  // TODO: Implement
-  return tl::unexpected(std::string("Not implemented yet"));
+tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinProbe::join() {
+  Joiner joiner(pred_, hashtable_, tuples_);
+  auto joinedTuplesExpected = joiner.join();
+  return joinedTuplesExpected;
 }
 
-void HashJoinProbe::sendTuples(std::shared_ptr<normal::core::TupleSet> &joined) {
+void HashJoinProbe::sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &joined) {
+
+  auto v1TupleSet = joined->toTupleSetV1();
+
   std::shared_ptr<core::message::Message>
-	  tupleMessage = std::make_shared<core::message::TupleMessage>(joined, name());
+	  tupleMessage = std::make_shared<core::message::TupleMessage>(v1TupleSet, name());
   ctx()->tell(tupleMessage);
 }
 
-void HashJoinProbe::onHashTable(HashTableMessage msg) {
+void HashJoinProbe::onHashTable(const HashTableMessage &msg) {
   // Add the hashtable to the internal buffer
   bufferHashTable(msg);
 }
 
-void HashJoinProbe::bufferHashTable(HashTableMessage msg) {
-  hashtable_->merge(*msg.getHashtable());
+void HashJoinProbe::bufferHashTable(const HashTableMessage &msg) {
+  hashtable_->merge(msg.getHashtable());
 }

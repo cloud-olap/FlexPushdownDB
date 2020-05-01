@@ -40,6 +40,7 @@ include(External_fmt)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_subdirectory(normal-core)
+add_subdirectory(normal-tuple)
 add_subdirectory(normal-connector)
 add_subdirectory(normal-expression)
 add_subdirectory(normal-expression-gandiva)
