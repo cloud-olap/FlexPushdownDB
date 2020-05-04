@@ -2,6 +2,6 @@
 // Created by matt on 1/5/20.
 //
 
-#include "Column.h"
+#include "ColumnIterator.h"
 
 using namespace normal::tuple;

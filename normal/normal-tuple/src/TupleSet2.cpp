@@ -79,16 +79,6 @@ tl::expected<void, std::string> TupleSet2::append(const std::shared_ptr<TupleSet
   return append(tupleSetVector);
 }
 
-tl::expected<std::shared_ptr<Column>, std::string> TupleSet2::getColumnByName(const std::string &columnName) {
-  auto columnArray = table_.value()->GetColumnByName(columnName);
-  if (columnArray == nullptr) {
-	return tl::make_unexpected("Column '" + columnName + "' does not exist");
-  } else {
-	auto column = std::make_shared<Column>(columnArray);
-	return column;
-  }
-}
-
 std::string TupleSet2::showString() {
 
   if(table_.has_value()) {

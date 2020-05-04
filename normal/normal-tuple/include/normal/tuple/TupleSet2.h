@@ -83,7 +83,15 @@ public:
    *
    * @return
    */
-  tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &columnName);
+  tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &columnName){
+	auto columnArray = table_.value()->GetColumnByName(columnName);
+	if (columnArray == nullptr) {
+	  return tl::make_unexpected("Column '" + columnName + "' does not exist");
+	} else {
+	  auto column = Column::make(columnArray);
+	  return column;
+	}
+  }
 
   /**
    * Returns the tuple set pretty printed as a string
@@ -109,6 +117,7 @@ private:
   std::optional<std::shared_ptr<::arrow::Table>> table_;
 
   static std::vector<std::shared_ptr<arrow::Table>> tupleSetVectorToArrowTableVector(const std::vector<std::shared_ptr<TupleSet2>> &tupleSets);
+
 };
 
 }

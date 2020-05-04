@@ -12,15 +12,28 @@
 #include <arrow/record_batch.h>
 #include <arrow/table.h>
 #include <map>
-#include <normal/core/hash/HashUtil.h>
 #include <normal/tuple/TupleSet2.h>
 
 #include "JoinPredicate.h"
 
 using namespace normal::tuple;
-using namespace normal::core::hash;
 
 namespace normal::pushdown::join {
+
+struct ScalarPointerHash {
+  inline size_t operator()(const std::shared_ptr<Scalar> &scalar) const {
+	return scalar->hash();
+  }
+};
+
+struct ScalarPointerPredicate {
+  inline bool operator()(const std::shared_ptr<Scalar>& lhs, const std::shared_ptr<Scalar>& rhs) const {
+	return *lhs == *rhs;
+  }
+};
+
+typedef std::unordered_multimap<std::shared_ptr<Scalar>, long, ScalarPointerHash, ScalarPointerPredicate> ValueRowMap;
+
 
 /**
  * The hashtable data structure used in a hash join.
@@ -38,12 +51,11 @@ public:
   HashTable();
 
   [[nodiscard]] const std::shared_ptr<TupleSet2> &getTupleSet() const;
-  [[nodiscard]] const std::shared_ptr<std::unordered_multimap<std::shared_ptr<Scalar>, long>> &
+  [[nodiscard]] const std::shared_ptr<ValueRowMap> &
   getValueRowMap() const;
 
   void clear();
   void merge(const std::shared_ptr<HashTable> &other);
-//  void put(std::string &columnName, std::shared_ptr<arrow::RecordBatch> &batch);
   tl::expected<void, std::string> put(std::string &columnName, std::shared_ptr<TupleSet2> &tupleSet);
   std::string toString();
 
@@ -57,7 +69,7 @@ private:
   /**
    * Mapping from join column values to rows in join table
    */
-  std::shared_ptr<std::unordered_multimap<std::shared_ptr<Scalar>, long>> valueIndexMap_;
+  std::shared_ptr<ValueRowMap> valueIndexMap_;
 
 };
 

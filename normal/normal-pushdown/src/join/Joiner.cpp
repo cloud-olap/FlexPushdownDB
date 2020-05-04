@@ -53,21 +53,24 @@ void Joiner::processProbeTuples() {
   SPDLOG_DEBUG("Probe column:\n{}", probeColumn->showString());
 
   long rowCounter = 0;
-  for (Column::iterator columnIterator = probeColumn->begin(); columnIterator != probeColumn->end(); columnIterator++) {
-	std::shared_ptr<Scalar> probeValue = columnIterator.get();
+  for (const auto& probeValue: *probeColumn) {
 	SPDLOG_DEBUG("Loaded probe value (probeRow: {}, probeValue: {})", rowCounter, probeValue->showString());
 
-	auto valueIndexMapIterator = this->hashtable_->getValueRowMap()->find(probeValue);
+	auto buildRowsRange = this->hashtable_->getValueRowMap()->equal_range(probeValue);
 
-	if (valueIndexMapIterator == this->hashtable_->getValueRowMap()->end()) {
+	if (std::distance(buildRowsRange.first, buildRowsRange.second) == 0) {
 	  SPDLOG_DEBUG("Match NOT FOUND (probeRow: {}, probeValue {})", rowCounter, probeValue->showString());
 	} else {
-	  auto buildRows = valueIndexMapIterator->second;
-	  SPDLOG_DEBUG("Match FOUND (probeRow: {}, probeValue {}, buildRows: {})",
-				   rowCounter,
-				   probeValue->showString(),
-				   buildRows);
+	  for(auto buildRowsIterator = buildRowsRange.first; buildRowsIterator != buildRowsRange.second; buildRowsIterator++){
+	    auto buildRow = buildRowsIterator->second;
+		SPDLOG_DEBUG("Match FOUND (probeRow: {}, probeValue {}, buildRow: {})",
+					 rowCounter,
+					 probeValue->showString(),
+					 buildRow);
+	  }
 	}
+
+	rowCounter++;
   }
 }
 
