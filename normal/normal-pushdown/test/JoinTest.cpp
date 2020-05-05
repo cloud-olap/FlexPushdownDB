@@ -54,11 +54,11 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
 
   auto tuples = collate->tuples();
 
-  SPDLOG_INFO("Output:\n{}", tuples->toString());
-
   mgr->stop();
 
   auto tupleSet = TupleSet2::create(tuples);
+
+  SPDLOG_INFO("Output:\n{}", tupleSet->showString(TupleSet2::ShowOptions::Orientation::Row));
 
 	  CHECK(tupleSet->numRows() == 4);
 	  CHECK(tupleSet->numColumns() == 6);

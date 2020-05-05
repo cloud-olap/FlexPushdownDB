@@ -20,6 +20,23 @@ class TupleSet2 : public std::enable_shared_from_this<TupleSet2> {
 
 public:
 
+  class ShowOptions{
+
+  public:
+
+	enum Orientation {
+	  Column,
+	  Row
+	};
+
+	ShowOptions(Orientation Orientation);
+	Orientation getOrientation() const;
+
+  private:
+	Orientation orientation_;
+
+  };
+
   /**
    * Creates an empty tuple set
    */
@@ -147,6 +164,7 @@ public:
    * @return
    */
   std::string showString();
+  std::string showString(ShowOptions options);
 
   /**
    * The tuple set schema

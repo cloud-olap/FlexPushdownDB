@@ -8,6 +8,7 @@
 
 #include <arrow/api.h>
 #include <arrow/pretty_print.h>
+#include <iomanip>
 
 using namespace normal::tuple;
 
@@ -80,21 +81,7 @@ tl::expected<void, std::string> TupleSet2::append(const std::shared_ptr<TupleSet
 }
 
 std::string TupleSet2::showString() {
-
-  if(table_.has_value()) {
-	auto ss = std::stringstream();
-	arrow::Status arrowStatus = ::arrow::PrettyPrint(*table_.value(), 0, &ss);
-
-	if (!arrowStatus.ok()) {
-	  // FIXME: How to handle this? How can pretty print fail? Maybe just abort?
-	  throw std::runtime_error(arrowStatus.detail()->ToString());
-	}
-
-	return ss.str();
-  }
-  else{
-    return "<empty>";
-  }
+  return showString(ShowOptions(ShowOptions::Orientation::Column));
 }
 
 std::shared_ptr<normal::core::TupleSet> TupleSet2::toTupleSetV1() {
@@ -105,10 +92,93 @@ std::shared_ptr<normal::core::TupleSet> TupleSet2::toTupleSetV1() {
 }
 
 long TupleSet2::numColumns() {
-  if(table_.has_value()){
-    return table_.value()->num_columns();
+  if (table_.has_value()) {
+	return table_.value()->num_columns();
+  } else {
+	return 0;
   }
-  else{
-    return 0;
+}
+
+std::string TupleSet2::showString(TupleSet2::ShowOptions options) {
+
+  if (!table_.has_value()) {
+	return "<empty>";
+  } else {
+
+	auto table = table_.value();
+
+	if (options.getOrientation() == ShowOptions::Orientation::Column) {
+	  auto ss = std::stringstream();
+	  arrow::Status arrowStatus = ::arrow::PrettyPrint(*table, 0, &ss);
+
+	  if (!arrowStatus.ok()) {
+		// FIXME: How to handle this? How can pretty print fail? RAM? Maybe just abort?
+		throw std::runtime_error(arrowStatus.detail()->ToString());
+	  }
+
+	  return ss.str();
+	} else {
+
+	  int width = 120;
+	  int maxNumRows = 10;
+
+	  std::stringstream ss;
+
+	  ss << std::endl;
+
+	  ss << std::left << std::setw(width) << std::setfill('-') << "" << std::endl;
+
+	  int columnWidth = (width / table->num_columns());
+
+	  // Column names
+	  for (const auto &field: table_.value()->schema()->fields()) {
+		ss << std::left << std::setw(columnWidth) << std::setfill(' ');
+		ss << "| " + field->name();
+	  }
+	  ss << std::endl;
+
+	  // Column types
+	  for (const auto &field: table_.value()->schema()->fields()) {
+		ss << std::left << std::setw(columnWidth) << std::setfill(' ');
+		ss << "| " + field->type()->ToString();
+	  }
+	  ss << std::endl;
+
+	  ss << std::left << std::setw(width) << std::setfill('-') << "" << std::endl;
+
+	  // Data
+	  int rowCounter = 0;
+	  for (int rowIndex = 0; rowIndex < table_.value()->num_rows(); ++rowIndex) {
+
+		if (rowCounter >= maxNumRows)
+		  break;
+
+		for (int columnIndex = 0; columnIndex < table_.value()->num_columns(); ++columnIndex) {
+		  auto value = this->getColumnByIndex(columnIndex).value()->element(rowIndex).value()->toString();
+		  ss << std::left << std::setw(columnWidth) << std::setfill(' ');
+		  ss << "| " + value;
+		}
+		ss << std::endl;
+
+		rowCounter++;
+	  }
+
+	  // Shape
+	  ss << std::left << std::setw(width) << std::setfill('-') << "" << std::endl;
+	  ss << table->num_columns() << " cols x " << table->num_rows() << " rows";
+	  if (rowCounter < table->num_rows()) {
+		ss << " (showing only top " << rowCounter << " rows)";
+	  }
+
+	  ss << std::endl;
+
+	  return ss.str();
+	}
   }
+}
+
+TupleSet2::ShowOptions::ShowOptions(TupleSet2::ShowOptions::Orientation orientation) : orientation_(orientation) {}
+
+TupleSet2::ShowOptions::Orientation TupleSet2::ShowOptions::getOrientation() const {
+  return orientation_;
 }

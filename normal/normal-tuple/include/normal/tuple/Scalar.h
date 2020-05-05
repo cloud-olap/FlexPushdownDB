@@ -52,6 +52,10 @@ public:
 	}
   }
 
+  std::string toString(){
+    return scalar_->ToString();
+  }
+
   template<typename T>
   T value() {
 	if (scalar_->type->id() == arrow::Int64Type::type_id) {
