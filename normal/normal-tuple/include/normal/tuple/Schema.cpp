@@ -23,3 +23,7 @@ std::shared_ptr<Schema> Schema::concatenate(const std::vector<std::shared_ptr<Sc
 std::string Schema::showString() {
   return schema_->ToString();
 }
+
+const std::shared_ptr<::arrow::Schema> &Schema::getSchema() const {
+  return schema_;
+}

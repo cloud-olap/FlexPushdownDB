@@ -33,24 +33,34 @@ public:
 	  return std::hash<long>()(typedScalar->value);
 	} else {
 	  throw std::runtime_error(
-		  "Column type '" + scalar_->type->ToString() + "' not implemented yet");
+		  "Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
 	}
   };
 
-  bool operator ==(const Scalar &other) const{
-	if (scalar_->type->id() == other.scalar_->type->id()){
+  bool operator==(const Scalar &other) const {
+	if (scalar_->type->id() == other.scalar_->type->id()) {
 	  if (scalar_->type->id() == arrow::int64()->id()) {
 		auto typedScalar = std::static_pointer_cast<::arrow::Int64Scalar>(scalar_);
 		auto typedOther = std::static_pointer_cast<::arrow::Int64Scalar>(other.scalar_);
-	    return typedScalar->value == typedOther->value;
-	  }
-	  else{
+		return typedScalar->value == typedOther->value;
+	  } else {
 		throw std::runtime_error(
-			"Column type '" + scalar_->type->ToString() + "' not implemented yet");
+			"Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
 	  }
-	}
-	else{
+	} else {
 	  return false;
+	}
+  }
+
+  template<typename T>
+  T value() {
+	if (scalar_->type->id() == arrow::Int64Type::type_id) {
+	  auto typedScalar = std::static_pointer_cast<::arrow::Int64Scalar>(scalar_);
+	  auto typedValue = typedScalar->value;
+	  return typedValue;
+	} else {
+	  throw std::runtime_error(
+		  "Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
 	}
   }
 

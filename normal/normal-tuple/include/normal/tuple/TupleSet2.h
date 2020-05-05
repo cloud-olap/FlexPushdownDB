@@ -7,6 +7,9 @@
 
 #include <vector>
 
+#include <arrow/api.h>
+#include <arrow/table.h>
+
 #include <normal/core/TupleSet.h>
 #include "Column.h"
 #include "Schema.h"
@@ -36,6 +39,19 @@ public:
    * @return
    */
   static std::shared_ptr<TupleSet2> create(const std::shared_ptr<normal::core::TupleSet>& tuples);
+
+  /**
+   * Creates an empty tuple set with the given schema
+   *
+   * @param tuples
+   * @return
+   */
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& schema){
+	std::vector<std::shared_ptr<::arrow::ChunkedArray>> columns;
+	auto arrowTable = ::arrow::Table::Make(schema->getSchema(), columns);
+    auto tupleSet = std::make_shared<TupleSet2>(arrowTable);
+    return tupleSet;
+  }
 
   /**
    * Gets the tuple set as a v1 tuple set
@@ -88,7 +104,18 @@ public:
 	if (columnArray == nullptr) {
 	  return tl::make_unexpected("Column '" + columnName + "' does not exist");
 	} else {
-	  auto column = Column::make(columnArray);
+	  auto column = Column::make(columnName, columnArray);
+	  return column;
+	}
+  }
+
+  tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex){
+    auto columnName = table_.value()->field(columnIndex)->name();
+	auto columnArray = table_.value()->column(columnIndex);
+	if (columnArray == nullptr) {
+	  return tl::make_unexpected("Column '" + std::to_string(columnIndex) + "' does not exist");
+	} else {
+	  auto column = Column::make(columnName, columnArray);
 	  return column;
 	}
   }

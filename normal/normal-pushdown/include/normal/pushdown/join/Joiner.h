@@ -9,6 +9,9 @@
 
 #include <normal/core/TupleSet.h>
 
+#include "arrow/api.h"
+#include "arrow/table.h"
+
 #include "HashTable.h"
 
 namespace normal::pushdown::join {
@@ -30,18 +33,18 @@ private:
   JoinPredicate pred_;
 
   /**
-   * The hashed left relation
+   * The hashed build relation
    */
   std::shared_ptr<HashTable> hashtable_;
 
   /**
-   * The right relation
+   * The probe relation
    */
   std::shared_ptr<normal::tuple::TupleSet2> tuples_;
 
   [[nodiscard]] std::shared_ptr<normal::tuple::Schema> buildJoinedSchema() const;
-  void processProbeTuples();
-  void processProbeTupleBatch(const std::shared_ptr<arrow::RecordBatch>& batch);
+  [[nodiscard]] tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> processProbeTuples();
+
 };
 
 }
