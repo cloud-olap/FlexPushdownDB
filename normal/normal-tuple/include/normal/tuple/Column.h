@@ -66,19 +66,19 @@ public:
   }
 
   /**
-   * TODO: Implement this... maybe
+   * Returns the element in the column at the given row index
    *
    * @param row
    * @return
    */
-  tl::expected<std::shared_ptr<Scalar>, std::string> value(long row) {
+  tl::expected<std::shared_ptr<Scalar>, std::string> element(long index) {
 
-	if(row > array_->length()){
-	  return tl::make_unexpected("Row '" + std::to_string(row) + "' does not exist");
+	if(index > array_->length()){
+	  return tl::make_unexpected("Row '" + std::to_string(index) + "' does not exist");
 	}
 
 	if (array_->type()->id() == arrow::int64()->id()) {
-	  auto typedArray = std::static_pointer_cast<arrow::Int64Array>(array_->Slice(row)->chunk(0));
+	  auto typedArray = std::static_pointer_cast<arrow::Int64Array>(array_->Slice(index)->chunk(0));
 
 	  auto value = typedArray->Value(0);
 	  auto valueScalar = arrow::MakeScalar(value);

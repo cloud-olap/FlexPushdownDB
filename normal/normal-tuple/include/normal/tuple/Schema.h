@@ -12,7 +12,7 @@ namespace normal::tuple {
 class Schema {
 
 public:
-  explicit Schema(const std::shared_ptr<::arrow::Schema> &Schema);
+  explicit Schema(std::shared_ptr<::arrow::Schema> Schema);
 
   static std::shared_ptr<Schema> concatenate(const std::vector<std::shared_ptr<Schema>>& schemas);
 

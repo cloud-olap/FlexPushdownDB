@@ -58,42 +58,48 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
 
   mgr->stop();
 
-	  CHECK(tuples->numRows() == 4);
-	  CHECK(tuples->numColumns() == 6);
+  auto tupleSet = TupleSet2::create(tuples);
 
-	  /*
-	   * FIXME: The following assumes the output is produced in a specific order but this shouldn't necessarily
-	   *  be assumed. Will only be able to check the properly once we have a sort operator
-	   *
-	   * FIXME: Still using old tuple set class so column names aren't canonicalized, Need to use lower case for now.
-	   */
-	  CHECK(tuples->value<arrow::Int64Type>("aa", 0).value() == 10);
-	  CHECK(tuples->value<arrow::Int64Type>("aa", 1).value() == 10);
-	  CHECK(tuples->value<arrow::Int64Type>("aa", 2).value() == 10);
-	  CHECK(tuples->value<arrow::Int64Type>("aa", 0).value() == 10);
+	  CHECK(tupleSet->numRows() == 4);
+	  CHECK(tupleSet->numColumns() == 6);
 
-	  CHECK(tuples->value<arrow::Int64Type>("ab", 0).value() == 13);
-	  CHECK(tuples->value<arrow::Int64Type>("ab", 1).value() == 14);
-	  CHECK(tuples->value<arrow::Int64Type>("ab", 2).value() == 13);
-	  CHECK(tuples->value<arrow::Int64Type>("ab", 3).value() == 14);
+  /*
+   * FIXME: The following assumes the output is produced in a specific order but this shouldn't necessarily
+   *  be assumed. Will only be able to check the properly once we have a sort operator
+   */
+  auto columnAA = tupleSet->getColumnByName("AA").value();
+	  CHECK(columnAA->element(0).value()->value<long>() == 10);
+	  CHECK(columnAA->element(1).value()->value<long>() == 10);
+	  CHECK(columnAA->element(2).value()->value<long>() == 10);
+	  CHECK(columnAA->element(3).value()->value<long>() == 10);
 
-	  CHECK(tuples->value<arrow::Int64Type>("ac", 0).value() == 16);
-	  CHECK(tuples->value<arrow::Int64Type>("ac", 1).value() == 17);
-	  CHECK(tuples->value<arrow::Int64Type>("ac", 2).value() == 16);
-	  CHECK(tuples->value<arrow::Int64Type>("ac", 3).value() == 17);
+  auto columnAB = tupleSet->getColumnByName("AB").value();
+	  CHECK(columnAB->element(0).value()->value<long>() == 13);
+	  CHECK(columnAB->element(1).value()->value<long>() == 14);
+	  CHECK(columnAB->element(2).value()->value<long>() == 13);
+	  CHECK(columnAB->element(3).value()->value<long>() == 14);
 
-	  CHECK(tuples->value<arrow::Int64Type>("ba", 0).value() == 10);
-	  CHECK(tuples->value<arrow::Int64Type>("ba", 1).value() == 10);
-	  CHECK(tuples->value<arrow::Int64Type>("ba", 2).value() == 10);
-	  CHECK(tuples->value<arrow::Int64Type>("ba", 3).value() == 10);
+  auto columnAC = tupleSet->getColumnByName("AC").value();
+	  CHECK(columnAC->element(0).value()->value<long>() == 16);
+	  CHECK(columnAC->element(1).value()->value<long>() == 17);
+	  CHECK(columnAC->element(2).value()->value<long>() == 16);
+	  CHECK(columnAC->element(3).value()->value<long>() == 17);
 
-	  CHECK(tuples->value<arrow::Int64Type>("bb", 0).value() == 23);
-	  CHECK(tuples->value<arrow::Int64Type>("bb", 1).value() == 23);
-	  CHECK(tuples->value<arrow::Int64Type>("bb", 2).value() == 25);
-	  CHECK(tuples->value<arrow::Int64Type>("bb", 3).value() == 25);
+  auto columnBA = tupleSet->getColumnByName("BA").value();
+	  CHECK(columnBA->element(0).value()->value<long>() == 10);
+	  CHECK(columnBA->element(1).value()->value<long>() == 10);
+	  CHECK(columnBA->element(2).value()->value<long>() == 10);
+	  CHECK(columnBA->element(3).value()->value<long>() == 10);
 
-	  CHECK(tuples->value<arrow::Int64Type>("bc", 0).value() == 26);
-	  CHECK(tuples->value<arrow::Int64Type>("bc", 1).value() == 26);
-	  CHECK(tuples->value<arrow::Int64Type>("bc", 2).value() == 28);
-	  CHECK(tuples->value<arrow::Int64Type>("bc", 3).value() == 28);
+  auto columnBB = tupleSet->getColumnByName("BB").value();
+	  CHECK(columnBB->element(0).value()->value<long>() == 23);
+	  CHECK(columnBB->element(1).value()->value<long>() == 23);
+	  CHECK(columnBB->element(2).value()->value<long>() == 25);
+	  CHECK(columnBB->element(3).value()->value<long>() == 25);
+
+  auto columnBC = tupleSet->getColumnByName("BC").value();
+	  CHECK(columnBC->element(0).value()->value<long>() == 26);
+	  CHECK(columnBC->element(1).value()->value<long>() == 26);
+	  CHECK(columnBC->element(2).value()->value<long>() == 28);
+	  CHECK(columnBC->element(3).value()->value<long>() == 28);
 }

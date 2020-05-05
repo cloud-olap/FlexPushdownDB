@@ -4,9 +4,11 @@
 
 #include "Schema.h"
 
+#include <utility>
+
 using namespace normal::tuple;
 
-Schema::Schema(const std::shared_ptr<::arrow::Schema> &schema) : schema_(schema) {}
+Schema::Schema(std::shared_ptr<::arrow::Schema> schema) : schema_(std::move(schema)) {}
 
 std::shared_ptr<Schema> Schema::concatenate(const std::vector<std::shared_ptr<Schema>> &schemas) {
 

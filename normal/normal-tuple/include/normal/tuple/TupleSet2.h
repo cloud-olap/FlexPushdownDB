@@ -66,6 +66,12 @@ public:
   long numRows();
 
   /**
+   * Returns number of columns in the tuple set
+   * @return
+   */
+  long numColumns();
+
+  /**
    * Clears the schema and all data
    */
   void clear();
@@ -99,7 +105,10 @@ public:
    *
    * @return
    */
-  tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &columnName){
+  tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &name){
+
+	auto columnName = canonicalize(name);
+
 	auto columnArray = table_.value()->GetColumnByName(columnName);
 	if (columnArray == nullptr) {
 	  return tl::make_unexpected("Column '" + columnName + "' does not exist");
@@ -107,6 +116,18 @@ public:
 	  auto column = Column::make(columnName, columnArray);
 	  return column;
 	}
+  }
+
+  /**
+   * Converts column name to lower case
+   *
+   * @param columnName
+   * @return
+   */
+  std::string canonicalize(const std::string &columnName) const {
+	std::string canonicalColumnName(columnName);
+	std::transform(canonicalColumnName.begin(), canonicalColumnName.end(), canonicalColumnName.begin(), tolower);
+	return canonicalColumnName;
   }
 
   tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex){

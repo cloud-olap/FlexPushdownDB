@@ -103,3 +103,12 @@ std::shared_ptr<normal::core::TupleSet> TupleSet2::toTupleSetV1() {
 
   return normal::core::TupleSet::make(table_.value());
 }
+
+long TupleSet2::numColumns() {
+  if(table_.has_value()){
+    return table_.value()->num_columns();
+  }
+  else{
+    return 0;
+  }
+}

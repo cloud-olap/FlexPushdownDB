@@ -84,7 +84,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
 		for (const auto &buildField: buildFields) {
 		  auto typedBuilder = std::static_pointer_cast<::arrow::Int64Builder>(buildTupleSetBuilders.at(buildColumnIndex));
 		  auto buildColumn = hashtable_->getTupleSet()->getColumnByIndex(buildColumnIndex);
-		  auto buildValue = buildColumn.value()->value(buildRowIndex);
+		  auto buildValue = buildColumn.value()->element(buildRowIndex);
 		  typedBuilder->Append(buildValue.value()->value<long>());
 		  buildColumnIndex++;
 		}
@@ -93,7 +93,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
 		for (const auto &probeField: probeFields) {
 		  auto typedBuilder = std::static_pointer_cast<::arrow::Int64Builder>(probeTupleSetBuilders.at(probeColumnIndex));
 		  auto probeColumn2 = tuples_->getColumnByIndex(probeColumnIndex);
-		  auto probeValue2 = probeColumn2.value()->value(probeRowIndex);
+		  auto probeValue2 = probeColumn2.value()->element(probeRowIndex);
 		  typedBuilder->Append(probeValue2.value()->value<long>());
 		  probeColumnIndex++;
 		}
