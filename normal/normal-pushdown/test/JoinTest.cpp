@@ -57,4 +57,43 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
   SPDLOG_INFO("Output:\n{}", tuples->toString());
 
   mgr->stop();
+
+	  CHECK(tuples->numRows() == 4);
+	  CHECK(tuples->numColumns() == 6);
+
+	  /*
+	   * FIXME: The following assumes the output is produced in a specific order but this shouldn't necessarily
+	   *  be assumed. Will only be able to check the properly once we have a sort operator
+	   *
+	   * FIXME: Still using old tuple set class so column names aren't canonicalized, Need to use lower case for now.
+	   */
+	  CHECK(tuples->value<arrow::Int64Type>("aa", 0).value() == 10);
+	  CHECK(tuples->value<arrow::Int64Type>("aa", 1).value() == 10);
+	  CHECK(tuples->value<arrow::Int64Type>("aa", 2).value() == 10);
+	  CHECK(tuples->value<arrow::Int64Type>("aa", 0).value() == 10);
+
+	  CHECK(tuples->value<arrow::Int64Type>("ab", 0).value() == 13);
+	  CHECK(tuples->value<arrow::Int64Type>("ab", 1).value() == 14);
+	  CHECK(tuples->value<arrow::Int64Type>("ab", 2).value() == 13);
+	  CHECK(tuples->value<arrow::Int64Type>("ab", 3).value() == 14);
+
+	  CHECK(tuples->value<arrow::Int64Type>("ac", 0).value() == 16);
+	  CHECK(tuples->value<arrow::Int64Type>("ac", 1).value() == 17);
+	  CHECK(tuples->value<arrow::Int64Type>("ac", 2).value() == 16);
+	  CHECK(tuples->value<arrow::Int64Type>("ac", 3).value() == 17);
+
+	  CHECK(tuples->value<arrow::Int64Type>("ba", 0).value() == 10);
+	  CHECK(tuples->value<arrow::Int64Type>("ba", 1).value() == 10);
+	  CHECK(tuples->value<arrow::Int64Type>("ba", 2).value() == 10);
+	  CHECK(tuples->value<arrow::Int64Type>("ba", 3).value() == 10);
+
+	  CHECK(tuples->value<arrow::Int64Type>("bb", 0).value() == 23);
+	  CHECK(tuples->value<arrow::Int64Type>("bb", 1).value() == 23);
+	  CHECK(tuples->value<arrow::Int64Type>("bb", 2).value() == 25);
+	  CHECK(tuples->value<arrow::Int64Type>("bb", 3).value() == 25);
+
+	  CHECK(tuples->value<arrow::Int64Type>("bc", 0).value() == 26);
+	  CHECK(tuples->value<arrow::Int64Type>("bc", 1).value() == 26);
+	  CHECK(tuples->value<arrow::Int64Type>("bc", 2).value() == 28);
+	  CHECK(tuples->value<arrow::Int64Type>("bc", 3).value() == 28);
 }

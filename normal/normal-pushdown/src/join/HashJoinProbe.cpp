@@ -66,6 +66,7 @@ void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg)
 void HashJoinProbe::onComplete(const normal::core::message::CompleteMessage &) {
   if (ctx()->operatorMap().allComplete(normal::core::OperatorRelationshipType::Producer)) {
 	joinAndSendTuples();
+	ctx()->notifyComplete();
   }
 }
 
