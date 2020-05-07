@@ -24,7 +24,8 @@ add_library(normal-pushdown STATIC
         src/join/HashJoinBuild.cpp include/normal/pushdown/join/HashJoinBuild.h
         src/join/HashTableMessage.cpp include/normal/pushdown/join/HashTableMessage.h
         src/join/HashTable.cpp include/normal/pushdown/join/HashTable.h
-        src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h)
+        src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h
+        src/Sort.cpp include/normal/pushdown/Sort.h src/cacheScan.cpp include/normal/pushdown/cacheScan.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

@@ -68,8 +68,7 @@ void S3SelectScan::onStart() {
 
   std::string cacheID = tblName + "." + colName;
   std::unordered_map<std::string, std::shared_ptr<normal::core::TupleSet>> cacheMap = m_cache->m_cacheData;
-  //no found
-  if (cacheMap.empty() || cacheMap.find(cacheID)==cacheMap.end()) {
+
     Aws::String bucketName = Aws::String(s3Bucket_);
 
     SelectObjectContentRequest selectObjectContentRequest;
@@ -139,17 +138,7 @@ void S3SelectScan::onStart() {
 
     auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
 
-  }
-  else {
-    std::shared_ptr<normal::core::TupleSet> tupleSet = cacheMap[cacheID];
-    std::shared_ptr<normal::core::message::Message> message = std::make_shared<normal::core::message::TupleMessage>(tupleSet, this->name());
-    ctx()->tell(message);
-//    message = std::make_shared<normal::core::CompleteMessage>();
-//    ctx()->tell(message);
-//    this->ctx()->operatorActor()->quit();
 
-    ctx()->notifyComplete();
-  }
 
 }
 
@@ -169,13 +158,29 @@ S3SelectScan::S3SelectScan(std::string name,
       m_tbl(std::move(m_tbl)),
       s3Client_(std::move(s3Client)){
 }
-
+void S3SelectScan::onTuple(const core::message::TupleMessage &message) {
+    std::shared_ptr<normal::core::message::Message>
+            tupleMessage = std::make_shared<normal::core::message::TupleMessage>(message.tuples(), this->name());
+    ctx()->tell(tupleMessage);
+}
 void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
-  if (message.message().type() == "StartMessage") {
-    this->onStart();
-  } else {
-    throw;
-  }
+    if (message.message().type() == "StartMessage") {
+        //this->onStart();
+    } else if (message.message().type() == "TupleMessage") {
+        auto tupleMessage = dynamic_cast<const normal::core::message::TupleMessage &>(message.message());
+        this->onTuple(tupleMessage);
+        cacheSuccess_ = true;
+    } else if (message.message().type() == "CompleteMessage") {
+        auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message.message());
+        if (cacheSuccess_==true)
+        {
+            ctx()->notifyComplete();
+        } else {
+            this->onStart();
+        }
+    } else {
+        throw;
+    }
 }
 
 }

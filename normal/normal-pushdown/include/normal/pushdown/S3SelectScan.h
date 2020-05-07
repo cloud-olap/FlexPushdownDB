@@ -10,6 +10,7 @@
 
 #include <aws/s3/S3Client.h>
 #include <normal/core/Cache.h>
+#include <normal/core/message/TupleMessage.h>
 
 #include "normal/core/Operator.h"
 #include "normal/core/TupleSet.h"
@@ -25,6 +26,7 @@ private:
   std::string m_col;
   std::string m_tbl;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
+  bool cacheSuccess_ = false;
 
   void onStart();
 
@@ -35,6 +37,7 @@ public:
       return m_cache;
   }
   void onReceive(const normal::core::message::Envelope &message) override;
+  void onTuple(const core::message::TupleMessage &message);
 };
 
 }
