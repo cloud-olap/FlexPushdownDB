@@ -36,7 +36,8 @@ add_library(normal-core STATIC
         include/normal/core/arrow/ScalarHelperBuilder.h
         include/normal/core/arrow/ScalarHelper.h
         include/normal/core/type/Integer32Type.h
-        src/arrow/SchemaHelper.cpp include/normal/core/arrow/SchemaHelper.h include/normal/core/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h)
+        src/arrow/SchemaHelper.cpp include/normal/core/arrow/SchemaHelper.h
+        src/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h)
 
 
 target_include_directories(normal-core PUBLIC include)

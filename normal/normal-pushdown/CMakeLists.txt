@@ -25,8 +25,8 @@ add_library(normal-pushdown STATIC
         src/join/HashTableMessage.cpp include/normal/pushdown/join/HashTableMessage.h
         src/join/HashTable.cpp include/normal/pushdown/join/HashTable.h
         src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h
-        include/normal/pushdown/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
-        include/normal/pushdown/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
+        src/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
+        src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
         src/Sort.cpp include/normal/pushdown/Sort.h src/cacheScan.cpp include/normal/pushdown/cacheScan.h)
 
 target_include_directories(normal-pushdown PUBLIC include)

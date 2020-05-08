@@ -2,7 +2,7 @@
 // Created by matt on 6/5/20.
 //
 
-#include "FilterPredicate.h"
+#include "normal/pushdown/filter/FilterPredicate.h"
 
 #include <utility>
 

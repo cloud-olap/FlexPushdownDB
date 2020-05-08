@@ -9,7 +9,7 @@ add_library(normal-expression STATIC
         src/Globals.h
         src/Expression.cpp include/normal/expression/Expression.h
         src/Projector.cpp include/normal/expression/Projector.h
-        include/normal/expression/Filter.cpp include/normal/expression/Filter.h)
+        src/Filter.cpp include/normal/expression/Filter.h)
 
 target_include_directories(normal-expression PUBLIC include)
 

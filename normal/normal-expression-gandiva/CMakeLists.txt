@@ -17,7 +17,7 @@ add_library(normal-expression-gandiva STATIC
         src/Multiply.cpp include/normal/expression/gandiva/Multiply.h
         src/Subtract.cpp include/normal/expression/gandiva/Subtract.h
         src/LessThan.cpp include/normal/expression/gandiva/LessThan.h
-        include/normal/expression/gandiva/Filter.cpp include/normal/expression/gandiva/Filter.h)
+        src/Filter.cpp include/normal/expression/gandiva/Filter.h)
 
 target_include_directories(normal-expression-gandiva PUBLIC include)
 

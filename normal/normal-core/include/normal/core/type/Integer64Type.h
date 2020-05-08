@@ -26,9 +26,7 @@ public:
 
 };
 
-static std::shared_ptr<Type> integer64Type(){
-  return std::make_shared<Integer64Type>();
-}
+static std::shared_ptr<Type> integer64Type();
 
 }
 

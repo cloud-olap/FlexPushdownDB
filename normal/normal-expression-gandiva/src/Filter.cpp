@@ -7,7 +7,7 @@
 #include <utility>
 #include <normal/tuple/Globals.h>
 
-#include "Filter.h"
+#include "normal/expression/gandiva/Filter.h"
 
 using namespace normal::expression::gandiva;
 
