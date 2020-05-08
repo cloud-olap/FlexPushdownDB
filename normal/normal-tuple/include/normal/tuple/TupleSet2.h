@@ -49,26 +49,15 @@ public:
    * @param tuples
    * @return
    */
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema){
-	auto columns = Schema->makeColumns();
-    return make(Schema, columns);
-  }
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema);
 
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema, const std::vector<std::shared_ptr<Column>>& columns){
-	auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-	auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
-	auto tupleSet = std::make_shared<TupleSet2>(arrowTable);
-	return tupleSet;
-  }
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema, const std::vector<std::shared_ptr<Column>>& columns);
 
   /**
    * Creates an empty tupleset
    * @return
    */
-  static std::shared_ptr<TupleSet2> make(){
-	auto tupleSet = std::make_shared<TupleSet2>();
-	return tupleSet;
-  }
+  static std::shared_ptr<TupleSet2> make();
 
   /**
    * Gets the tuple set as a v1 tuple set
@@ -122,29 +111,9 @@ public:
    *
    * @return
    */
-  tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &name){
+  tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &name);
 
-	auto canonicalColumnName = ColumnName::canonicalize(name);
-
-	auto columnArray = table_.value()->GetColumnByName(canonicalColumnName);
-	if (columnArray == nullptr) {
-	  return tl::make_unexpected("Column '" + canonicalColumnName + "' does not exist");
-	} else {
-	  auto column = Column::make(canonicalColumnName, columnArray);
-	  return column;
-	}
-  }
-
-  tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex){
-    auto columnName = table_.value()->field(columnIndex)->name();
-	auto columnArray = table_.value()->column(columnIndex);
-	if (columnArray == nullptr) {
-	  return tl::make_unexpected("Column '" + std::to_string(columnIndex) + "' does not exist");
-	} else {
-	  auto column = Column::make(columnName, columnArray);
-	  return column;
-	}
-  }
+  tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex);
 
   /**
    * Returns the tuple set pretty printed as a string
@@ -159,14 +128,7 @@ public:
    *
    * @return The tuple set schema or nullopt if not yet defined
    */
-  std::optional<std::shared_ptr<Schema>> schema() const {
-    if(table_.has_value()) {
-	  return std::make_shared<Schema>(table_.value()->schema());
-	}
-    else{
-      return std::nullopt;
-    }
-  }
+  std::optional<std::shared_ptr<Schema>> schema() const;
 
   /**
    * Sets the tuple set schema
@@ -175,21 +137,11 @@ public:
    *  Could perhaps do a check to see if any columns can be preserved across schema changes.
    *  Or, maybe its just better to make at least some of the tuple set immutable?
    */
-  void setSchema(const std::shared_ptr<Schema>& Schema){
-	auto columns = Schema->makeColumns();
-	auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-	auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
-	table_ = std::optional(arrowTable);
-  }
+  void setSchema(const std::shared_ptr<Schema>& Schema);
 
   const std::optional<std::shared_ptr<::arrow::Table>> &getArrowTable() const;
 
-  bool validate(){
-    if(table_.has_value())
-    	return table_.value()->ValidateFull().ok();
-	else
-	  return true;
-  }
+  bool validate();
 
 private:
 

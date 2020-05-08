@@ -13,24 +13,15 @@ namespace normal::tuple {
 class ColumnIndex {
 
 public:
-  ColumnIndex(int chunk, long chunkIndex) :
-	  chunk_(chunk), chunkIndex_(chunkIndex) {}
+  ColumnIndex(int chunk, long chunkIndex);
 
-  void setChunk(int chunk) {
-	chunk_ = chunk;
-  }
+  void setChunk(int chunk);
 
-  void setChunkIndex(long chunkIndex) {
-	chunkIndex_ = chunkIndex;
-  }
+  void setChunkIndex(long chunkIndex);
 
-  [[nodiscard]] int getChunk() const {
-	return chunk_;
-  }
+  [[nodiscard]] int getChunk() const;
 
-  [[nodiscard]] long getChunkIndex() const {
-	return chunkIndex_;
-  }
+  [[nodiscard]] long getChunkIndex() const;
 
 private:
   int chunk_;

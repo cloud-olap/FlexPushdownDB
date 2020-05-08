@@ -8,13 +8,14 @@ project(normal-tuple VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(normal-tuple STATIC
         include/normal/tuple/Globals.h
         src/TupleSet2.cpp include/normal/tuple/TupleSet2.h
-        include/normal/tuple/Scalar.cpp include/normal/tuple/Scalar.h
-        include/normal/tuple/Column.cpp include/normal/tuple/Column.h
-        include/normal/tuple/Schema.cpp include/normal/tuple/Schema.h
-        include/normal/tuple/ColumnIterator.cpp include/normal/tuple/ColumnIterator.h
-        include/normal/tuple/ColumnIndex.cpp include/normal/tuple/ColumnIndex.h
-        include/normal/tuple/TupleSetShowOptions.cpp include/normal/tuple/TupleSetShowOptions.h
-        include/normal/tuple/ColumnName.cpp include/normal/tuple/ColumnName.h include/normal/tuple/ColumnBuilder.cpp include/normal/tuple/ColumnBuilder.h)
+        src/Scalar.cpp include/normal/tuple/Scalar.h
+        src/Column.cpp include/normal/tuple/Column.h
+        src/Schema.cpp include/normal/tuple/Schema.h
+        src/ColumnIterator.cpp include/normal/tuple/ColumnIterator.h
+        src/ColumnIndex.cpp include/normal/tuple/ColumnIndex.h
+        src/TupleSetShowOptions.cpp include/normal/tuple/TupleSetShowOptions.h
+        src/ColumnName.cpp include/normal/tuple/ColumnName.h
+        src/ColumnBuilder.cpp include/normal/tuple/ColumnBuilder.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 

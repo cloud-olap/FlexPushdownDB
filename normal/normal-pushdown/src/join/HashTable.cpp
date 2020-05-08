@@ -48,7 +48,7 @@ std::string HashTable::toString() {
 
   s += fmt::format("ValueRowMap:\n");
   for(auto & entry : *valueIndexMap_){
-    s+= fmt::format("value: {{{}: {}}}, row: [{}]\n", entry.first->showString(), entry.first->type()->ToString(), entry.second);
+    s+= fmt::format("value: {{{}: {}}}, row: [{}]\n", entry.first->toString(), entry.first->type()->ToString(), entry.second);
   }
   s += fmt::format("\n");
 

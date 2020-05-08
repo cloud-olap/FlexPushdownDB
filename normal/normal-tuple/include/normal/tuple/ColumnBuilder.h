@@ -18,31 +18,13 @@ namespace normal::tuple {
 class ColumnBuilder {
 
 public:
-  ColumnBuilder(std::string  name, const std::shared_ptr<::arrow::DataType>& type):name_(std::move(name)) {
-	auto arrowStatus = ::arrow::MakeBuilder(::arrow::default_memory_pool(), type, &arrowBuilder_);
-  }
+  ColumnBuilder(std::string  name, const std::shared_ptr<::arrow::DataType>& type);
 
-  static std::shared_ptr<ColumnBuilder> make(const std::string& name, const std::shared_ptr<::arrow::DataType>& type){
-	return std::make_unique<ColumnBuilder>(name, type);
-  }
+  static std::shared_ptr<ColumnBuilder> make(const std::string& name, const std::shared_ptr<::arrow::DataType>& type);
 
-  void append(const std::shared_ptr<Scalar>& scalar){
-    if(scalar->type()->id() == ::arrow::Int64Type::type_id){
-      auto rawBuilderPtr = arrowBuilder_.get();
-      auto typedArrowBuilder = dynamic_cast<::arrow::Int64Builder*>(rawBuilderPtr);
-	  auto status = typedArrowBuilder->Append(scalar->value<long>());
-    }
-    else{
-	  throw std::runtime_error(
-		  "Builder for type '" + scalar->type()->ToString() + "' not implemented yet");
-    }
-  }
+  void append(const std::shared_ptr<Scalar>& scalar);
 
-  std::shared_ptr<Column> finalize(){
-	auto status = arrowBuilder_->Finish(&array_);
-	auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(array_);
-	return std::make_shared<Column>(name_, chunkedArray);
-  }
+  std::shared_ptr<Column> finalize();
 
 private:
   std::string name_;

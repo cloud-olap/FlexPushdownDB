@@ -32,8 +32,7 @@ public:
   /**
    * Default constructor required for forward iterators
    */
-  ColumnIterator() :
-	  index_(ColumnIndex(0, 0)) {};
+  ColumnIterator();
 
   /**
    * Constructs the iterator over the underlying chunked array
@@ -42,51 +41,33 @@ public:
    * @param chunk
    * @param chunkIndex
    */
-  ColumnIterator(std::shared_ptr<::arrow::ChunkedArray> chunkedArray, int chunk, long chunkIndex) :
-	  chunkedArray_(std::move(chunkedArray)), index_(ColumnIndex(chunk, chunkIndex)) {}
+  ColumnIterator(std::shared_ptr<::arrow::ChunkedArray> chunkedArray, int chunk, long chunkIndex);
 
   /**
    * Advances the iterator
    */
-  void advance() {
-	if (index_.getChunk() < chunkedArray_->chunk(index_.getChunk())->length()) {
-	  index_.setChunkIndex(index_.getChunkIndex() + 1);
-	} else {
-	  if (index_.getChunk() < chunkedArray_->num_chunks()) {
-		index_.setChunk(index_.getChunk() + 1);
-	  }
-	}
-  }
+  void advance();
 
   /**
    * Pre increment operator (++iterator) required for forward iterators
    *
    * @return
    */
-  this_type &operator++() {
-	advance();
-	return *this;
-  }
+  this_type &operator++();
 
   /**
    * Post increment operator (iterator++) required for forward iterators
    *
    * @return
    */
-  this_type operator++(int) {
-	auto iterator = *this;
-	++(*this);
-	return iterator;
-  }
+  this_type operator++(int);
 
   /**
    * Returns the scalar the iterator is pointing at
    *
    * @return
    */
-  [[nodiscard]] value_type value() const {
-	return getScalar();
-  }
+  [[nodiscard]] value_type value() const;
 
   /**
    * Dereference operator required for forward iterators. Need to return value as can't return reference to Scalar
@@ -94,44 +75,33 @@ public:
    *
    * @return
    */
-  value_type operator*() const {
-	return getScalar();
-  }
+  value_type operator*() const;
 
   /**
    * Returns the value pointed at
    *
    * @return
    */
-  pointer operator->() const {
-	return std::make_shared<value_type>(getScalar());
-  }
+  pointer operator->() const;
 
   /**
    * Equality operator required for forward iterators
    *
    * @return
    */
-  bool operator==(const this_type &other) {
-	return index_.getChunk() == other.index_.getChunk() && index_.getChunkIndex() == other.index_.getChunkIndex();
-  }
+  bool operator==(const this_type &other);
 
   /**
    * Not-Equality operator required for forward iterators
    *
    * @return
    */
-  bool operator!=(const this_type &other) {
-	return !(*this == other);
-  }
+  bool operator!=(const this_type &other);
 
   /**
    * Difference operator, TODO: Not sure if this really is needed?
    */
-  this_type operator-(const difference_type &other) {
-	return ColumnIterator(chunkedArray_, index_.getChunk() - other.index_.getChunk(),
-						  index_.getChunkIndex() - other.index_.getChunkIndex());
-  }
+  this_type operator-(const difference_type &other);
 
 private:
 
@@ -143,28 +113,14 @@ private:
    *
    * @return
    */
-  [[nodiscard]] std::shared_ptr<::arrow::Scalar> getArrowScalar() const {
-
-    // Need to cast to the array type to be able to use the element accessors
-	if (chunkedArray_->type()->id() == arrow::int64()->id()) {
-	  auto typedArray = std::static_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
-	  auto value = typedArray->Value(index_.getChunkIndex());
-	  auto arrowScalar = arrow::MakeScalar(value);
-	  return arrowScalar;
-	} else {
-	  throw std::runtime_error(
-		  "Iterator on column type '" + chunkedArray_->type()->ToString() + "' not implemented yet");
-	}
-  }
+  [[nodiscard]] std::shared_ptr<::arrow::Scalar> getArrowScalar() const;
 
   /**
    * Gets the value pointed at by the iterator as a scalar
    *
    * @return
    */
-  [[nodiscard]] value_type getScalar() const {
-	return Scalar::make(getArrowScalar());
-  }
+  [[nodiscard]] value_type getScalar() const;
 };
 
 }

@@ -181,3 +181,68 @@ std::string TupleSet2::showString(TupleSetShowOptions options) {
 const std::optional<std::shared_ptr<::arrow::Table>> &TupleSet2::getArrowTable() const {
   return table_;
 }
+
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<Schema> &Schema) {
+  auto columns = Schema->makeColumns();
+  return make(Schema, columns);
+}
+
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<Schema> &Schema,
+										   const std::vector<std::shared_ptr<Column>> &columns) {
+  auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+  auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
+  auto tupleSet = std::make_shared<TupleSet2>(arrowTable);
+  return tupleSet;
+}
+
+std::shared_ptr<TupleSet2> TupleSet2::make() {
+  auto tupleSet = std::make_shared<TupleSet2>();
+  return tupleSet;
+}
+
+tl::expected<std::shared_ptr<Column>, std::string> TupleSet2::getColumnByName(const std::string &name) {
+
+  auto canonicalColumnName = ColumnName::canonicalize(name);
+
+  auto columnArray = table_.value()->GetColumnByName(canonicalColumnName);
+  if (columnArray == nullptr) {
+	return tl::make_unexpected("Column '" + canonicalColumnName + "' does not exist");
+  } else {
+	auto column = Column::make(canonicalColumnName, columnArray);
+	return column;
+  }
+}
+
+tl::expected<std::shared_ptr<Column>, std::string> TupleSet2::getColumnByIndex(const int &columnIndex) {
+  auto columnName = table_.value()->field(columnIndex)->name();
+  auto columnArray = table_.value()->column(columnIndex);
+  if (columnArray == nullptr) {
+	return tl::make_unexpected("Column '" + std::to_string(columnIndex) + "' does not exist");
+  } else {
+	auto column = Column::make(columnName, columnArray);
+	return column;
+  }
+}
+
+std::optional<std::shared_ptr<Schema>> TupleSet2::schema() const {
+  if(table_.has_value()) {
+	return std::make_shared<Schema>(table_.value()->schema());
+  }
+  else{
+	return std::nullopt;
+  }
+}
+
+void TupleSet2::setSchema(const std::shared_ptr<Schema> &Schema) {
+  auto columns = Schema->makeColumns();
+  auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+  auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
+  table_ = std::optional(arrowTable);
+}
+
+bool TupleSet2::validate() {
+  if(table_.has_value())
+	return table_.value()->ValidateFull().ok();
+  else
+	return true;
+}

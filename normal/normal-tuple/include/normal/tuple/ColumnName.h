@@ -20,11 +20,7 @@ public:
    * @param columnName
    * @return
    */
-  static std::string canonicalize(const std::string &columnName) {
-	std::string canonicalColumnName(columnName);
-	std::transform(canonicalColumnName.begin(), canonicalColumnName.end(), canonicalColumnName.begin(), tolower);
-	return canonicalColumnName;
-  }
+  static std::string canonicalize(const std::string &columnName);
 
 };
 

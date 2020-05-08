@@ -19,19 +19,9 @@ public:
   static std::shared_ptr<Schema> concatenate(const std::vector<std::shared_ptr<Schema>>& schemas);
 
   [[nodiscard]] const std::shared_ptr<::arrow::Schema> &getSchema() const;
-  [[nodiscard]] const std::vector<std::shared_ptr<::arrow::Field>> &fields() const{
-    return schema_->fields();
-  };
+  [[nodiscard]] const std::vector<std::shared_ptr<::arrow::Field>> &fields() const;
 
-  std::vector<std::shared_ptr<Column>> makeColumns(){
-	std::vector<std::shared_ptr<Column>> columns;
-	columns.reserve(schema_->fields().size());
-    for(const auto &field: schema_->fields()){
-      auto column = Column::make(field->name(), field->type());
-	  columns.emplace_back(column);
-    }
-    return columns;
-  }
+  std::vector<std::shared_ptr<Column>> makeColumns();
 
   std::string showString();
 
