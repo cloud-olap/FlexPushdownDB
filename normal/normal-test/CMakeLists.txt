@@ -88,13 +88,6 @@ add_executable(normal-test-tuple
 
 link_target(normal-test-tuple)
 
-add_executable(normal-test-expression
-        include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h
-        src/MainTest.cpp
-        src/ExpressionTest.cpp)
-
-link_target(normal-test-expression)
 
 # Test data
 configure_file(data/data-file-simple/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/data-file-simple/test.csv COPYONLY)

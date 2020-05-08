@@ -92,15 +92,41 @@ public:
 	  return tl::make_unexpected("Row '" + std::to_string(index) + "' does not exist");
 	}
 
-	if (array_->type()->id() == arrow::int64()->id()) {
+	if (array_->type()->id() == arrow::Int32Type::type_id) {
+	  auto typedArray = std::static_pointer_cast<arrow::Int32Array>(array_->Slice(index)->chunk(0));
+	  auto value = typedArray->Value(0);
+	  auto valueScalar = arrow::MakeScalar(value);
+	  return std::make_shared<Scalar>(valueScalar);
+	} else if (array_->type()->id() == arrow::Int64Type::type_id) {
 	  auto typedArray = std::static_pointer_cast<arrow::Int64Array>(array_->Slice(index)->chunk(0));
 	  auto value = typedArray->Value(0);
 	  auto valueScalar = arrow::MakeScalar(value);
 	  return std::make_shared<Scalar>(valueScalar);
-	} else if (array_->type()->id() == arrow::boolean()->id()) {
+	} else if (array_->type()->id() == arrow::FloatType::type_id) {
+	  auto typedArray = std::static_pointer_cast<arrow::FloatArray>(array_->Slice(index)->chunk(0));
+	  auto value = typedArray->Value(0);
+	  auto valueScalar = arrow::MakeScalar(value);
+	  return std::make_shared<Scalar>(valueScalar);
+	} else if (array_->type()->id() == arrow::DoubleType::type_id) {
+	  auto typedArray = std::static_pointer_cast<arrow::DoubleArray>(array_->Slice(index)->chunk(0));
+	  auto value = typedArray->Value(0);
+	  auto valueScalar = arrow::MakeScalar(value);
+	  return std::make_shared<Scalar>(valueScalar);
+	} else if (array_->type()->id() == arrow::BooleanType::type_id) {
 	  auto typedArray = std::static_pointer_cast<arrow::BooleanArray>(array_->Slice(index)->chunk(0));
 	  auto value = typedArray->Value(0);
 	  auto valueScalar = arrow::MakeScalar(value);
+	  return std::make_shared<Scalar>(valueScalar);
+	} else if (array_->type()->id() == arrow::StringType::type_id) {
+	  auto typedArray = std::static_pointer_cast<arrow::StringArray>(array_->Slice(index)->chunk(0));
+	  auto value = typedArray->GetString(0);
+	  auto valueScalar = arrow::MakeScalar(value);
+	  return std::make_shared<Scalar>(valueScalar);
+	} else if (array_->type()->id() == arrow::Decimal128Type::type_id) {
+	  auto typedArray = std::static_pointer_cast<arrow::Decimal128Array>(array_->Slice(index)->chunk(0));
+	  auto value = typedArray->Value(0);
+	  auto decimalValue = static_cast<::arrow::Decimal128>(value);
+	  auto valueScalar = std::make_shared<::arrow::Decimal128Scalar>(decimalValue, typedArray->type());
 	  return std::make_shared<Scalar>(valueScalar);
 	} else {
 	  return tl::make_unexpected(
@@ -116,6 +142,10 @@ public:
 	return ColumnIterator(array_,
 						  array_->num_chunks() - 1,
 						  array_->chunk(array_->num_chunks() - 1)->length());
+  }
+
+  const std::shared_ptr<::arrow::ChunkedArray> &getArrowArray() const {
+	return array_;
   }
 
 private:

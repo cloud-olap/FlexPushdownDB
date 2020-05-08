@@ -30,6 +30,23 @@ target_link_libraries(normal-expression-gandiva PUBLIC normal-expression)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Test
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-expression-gandiva-test
+        test/Globals.h
+        test/MainTest.cpp
+        test/CastTest.cpp test/TestUtil.cpp test/TestUtil.h test/BinaryExpressionTest.cpp test/GandivaFunctionRegistryTest.cpp)
+
+target_include_directories(normal-expression-gandiva-test PRIVATE include)
+
+target_link_libraries(normal-expression-gandiva-test PRIVATE spdlog::spdlog)
+target_link_libraries(normal-expression-gandiva-test PRIVATE doctest::doctest)
+target_link_libraries(normal-expression-gandiva-test PRIVATE normal-test)
+target_link_libraries(normal-expression-gandiva-test PRIVATE normal-expression-gandiva)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 

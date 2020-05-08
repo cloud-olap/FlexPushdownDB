@@ -11,6 +11,7 @@
 #include <normal/pushdown/Globals.h>
 
 #include <utility>
+#include <normal/tuple/ColumnBuilder.h>
 
 using namespace normal::pushdown::join;
 
@@ -53,15 +54,15 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
   // Create builders for each column
   auto buildFields = hashtable_->getTupleSet()->schema().value()->fields();
   auto probeFields = tuples_->schema().value()->fields();
-  std::vector<std::shared_ptr<::arrow::ArrayBuilder>> buildTupleSetBuilders;
-  std::vector<std::shared_ptr<::arrow::ArrayBuilder>> probeTupleSetBuilders;
+  std::vector<std::shared_ptr<::normal::tuple::ColumnBuilder>> buildTupleSetBuilders;
+  std::vector<std::shared_ptr<::normal::tuple::ColumnBuilder>> probeTupleSetBuilders;
   buildTupleSetBuilders.reserve(buildFields.size());
   for (const auto &buildField: buildFields) {
-	buildTupleSetBuilders.emplace_back(std::make_shared<::arrow::Int64Builder>());
+	buildTupleSetBuilders.emplace_back(ColumnBuilder::make(buildField->name(), buildField->type()));
   }
   probeTupleSetBuilders.reserve(probeFields.size());
   for (const auto &probeField: probeFields) {
-	probeTupleSetBuilders.emplace_back(std::make_shared<::arrow::Int64Builder>());
+	probeTupleSetBuilders.emplace_back(ColumnBuilder::make(probeField->name(), probeField->type()));
   }
 
   long probeRowIndex = 0;
@@ -80,22 +81,22 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
 					 probeValue->showString(),
 					 buildRowIndex);
 
-		int buildColumnIndex = 0;
-		for (const auto &buildField: buildFields) {
-		  auto typedBuilder = std::static_pointer_cast<::arrow::Int64Builder>(buildTupleSetBuilders.at(buildColumnIndex));
+		for (size_t buildColumnIndex= 0; buildColumnIndex <buildFields.size(); ++buildColumnIndex) {
+//		  auto typedBuilder = std::static_pointer_cast<::arrow::Int64Builder>(buildTupleSetBuilders.at(buildColumnIndex));
+			auto builder = buildTupleSetBuilders.at(buildColumnIndex);
 		  auto buildColumn = hashtable_->getTupleSet()->getColumnByIndex(buildColumnIndex);
 		  auto buildValue = buildColumn.value()->element(buildRowIndex);
-		  typedBuilder->Append(buildValue.value()->value<long>());
-		  buildColumnIndex++;
+//		  typedBuilder->Append(probeValue2.value()->value<long>());
+		  builder->append(buildValue.value());
 		}
 
-		int probeColumnIndex = 0;
-		for (const auto &probeField: probeFields) {
-		  auto typedBuilder = std::static_pointer_cast<::arrow::Int64Builder>(probeTupleSetBuilders.at(probeColumnIndex));
+		for (size_t probeColumnIndex= 0; probeColumnIndex <probeFields.size(); ++probeColumnIndex) {
+//		  auto typedBuilder = std::static_pointer_cast<::arrow::Int64Builder>(probeTupleSetBuilders.at(probeColumnIndex));
+		  auto builder = probeTupleSetBuilders.at(probeColumnIndex);
 		  auto probeColumn2 = tuples_->getColumnByIndex(probeColumnIndex);
 		  auto probeValue2 = probeColumn2.value()->element(probeRowIndex);
-		  typedBuilder->Append(probeValue2.value()->value<long>());
-		  probeColumnIndex++;
+//		  typedBuilder->Append(probeValue2.value()->value<long>());
+		  builder->append(probeValue2.value());
 		}
 	  }
 	}
@@ -104,38 +105,50 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
   }
 
   // Create the columns for the joined tuple set
-  std::vector<std::shared_ptr<::arrow::Array>> buildArrays;
-  std::vector<std::shared_ptr<::arrow::Array>> probeArrays;
-  buildArrays.reserve(buildFields.size());
-  for (const auto &buildField: buildFields) {
-	buildArrays.emplace_back(std::shared_ptr<::arrow::Array>());
-  }
-  probeArrays.reserve(probeFields.size());
-  for (const auto &probeField: probeFields) {
-	probeArrays.emplace_back(std::shared_ptr<::arrow::Array>());
-  }
-
-  // Finalize the builders
-  int buildColumnIndex = 0;
-  for (const auto &buildTupleSetBuilder: buildTupleSetBuilders) {
-	buildTupleSetBuilder->Finish(&buildArrays.at(buildColumnIndex));
-	buildColumnIndex++;
-  }
-  int probeColumnIndex = 0;
-  for (const auto &probeTupleSetBuilder: probeTupleSetBuilders) {
-	probeTupleSetBuilder->Finish(&probeArrays.at(probeColumnIndex));
-	probeColumnIndex++;
-  }
+//  std::vector<std::shared_ptr<::arrow::Array>> buildArrays;
+//  std::vector<std::shared_ptr<::arrow::Array>> probeArrays;
+//  buildArrays.reserve(buildFields.size());
+//  for (const auto &buildField: buildFields) {
+//	buildArrays.emplace_back(std::shared_ptr<::arrow::Array>());
+//  }
+//  probeArrays.reserve(probeFields.size());
+//  for (const auto &probeField: probeFields) {
+//	probeArrays.emplace_back(std::shared_ptr<::arrow::Array>());
+//  }
+//
+//  // Finalize the builders
+//  int buildColumnIndex = 0;
+//  for (const auto &buildTupleSetBuilder: buildTupleSetBuilders) {
+//	buildTupleSetBuilder->finalize(&buildArrays.at(buildColumnIndex));
+//	buildColumnIndex++;
+//  }
+//  int probeColumnIndex = 0;
+//  for (const auto &probeTupleSetBuilder: probeTupleSetBuilders) {
+//	probeTupleSetBuilder->finalize(&probeArrays.at(probeColumnIndex));
+//	probeColumnIndex++;
+//  }
 
   // Create the full array of columns
-  std::vector<std::shared_ptr<::arrow::Array>> arrays;
-  arrays.insert(arrays.end(), buildArrays.begin(), buildArrays.end());
-  arrays.insert(arrays.end(), probeArrays.begin(), probeArrays.end());
+//  std::vector<std::shared_ptr<::arrow::Array>> arrays;
+//  arrays.insert(arrays.end(), buildArrays.begin(), buildArrays.end());
+//  arrays.insert(arrays.end(), probeArrays.begin(), probeArrays.end());
+
+  std::vector<std::shared_ptr<Column>> arrays;
+  for (const auto &buildTupleSetBuilder: buildTupleSetBuilders) {
+	auto array = buildTupleSetBuilder->finalize();
+	arrays.push_back(array);
+  }
+  for (const auto &probeTupleSetBuilder: probeTupleSetBuilders) {
+	auto array = probeTupleSetBuilder->finalize();
+	arrays.push_back(array);
+  }
 
   // Create the joined schema
   auto schema = buildJoinedSchema();
 
-  auto joinedTupleSet2 = std::make_shared<TupleSet2>(::arrow::Table::Make(schema->getSchema(), arrays));
+//  auto joinedTupleSet2 = std::make_shared<TupleSet2>(::arrow::Table::Make(schema->getSchema(), arrays));
+
+  auto joinedTupleSet2 = TupleSet2::make(schema, arrays);
 
   SPDLOG_DEBUG("Joined tuple set:\n{}", joinedTupleSet2->showString());
 

@@ -40,7 +40,45 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type:
 																 castReturnType);
 
 	return castFunction;
+  } else if (fromArrowType->id() == arrow::utf8()->id() && toArrowType->id() == arrow::int64()->id()) {
+	// Not supported directly by Gandiva, need to cast string to decimal and then that to int64
 
+	auto castDecimalFunctionName = "castDECIMAL";
+	auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
+	auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
+																		  {paramGandivaExpression},
+																		  castDecimalReturnType);
+
+	auto castFunctionName = "cast" + type_->asGandivaTypeString();
+	auto castReturnType = type_->asArrowType();
+
+	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
+																 {castToDecimalFunction},
+																 castReturnType);
+
+	return castFunction;
+  }
+  else if (fromArrowType->id() == arrow::utf8()->id() && toArrowType->id() == arrow::int32()->id()) {
+	// Not supported directly by Gandiva, need to cast string to decimal to int64 and then that to int32
+
+	auto castDecimalFunctionName = "castDECIMAL";
+	auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
+	auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
+																		  {paramGandivaExpression},
+																		  castDecimalReturnType);
+
+	auto castToInt64Function = ::gandiva::TreeExprBuilder::MakeFunction("castBIGINT",
+																		  {castToDecimalFunction},
+																		  ::arrow::int64());
+
+	auto castFunctionName = "cast" + type_->asGandivaTypeString();
+	auto castReturnType = type_->asArrowType();
+
+	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
+																 {castToInt64Function},
+																 castReturnType);
+
+	return castFunction;
   } else {
 
 	auto function = "cast" + type_->asGandivaTypeString();

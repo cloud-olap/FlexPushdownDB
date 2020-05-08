@@ -28,6 +28,7 @@ void LessThan::compile(std::shared_ptr<arrow::Schema> Schema) {
 	  ::arrow::boolean());
 
   gandivaExpression_ = lessThanFunction;
+  returnType_ = ::arrow::boolean();
 }
 
 std::string LessThan::alias() {

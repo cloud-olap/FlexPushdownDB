@@ -51,10 +51,14 @@ public:
    */
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema){
 	auto columns = Schema->makeColumns();
+    return make(Schema, columns);
+  }
+
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema, const std::vector<std::shared_ptr<Column>>& columns){
 	auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
 	auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
-    auto tupleSet = std::make_shared<TupleSet2>(arrowTable);
-    return tupleSet;
+	auto tupleSet = std::make_shared<TupleSet2>(arrowTable);
+	return tupleSet;
   }
 
   /**

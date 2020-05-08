@@ -16,15 +16,17 @@
 
 namespace normal::expression::gandiva {
 
-template <typename T>
+template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
 class Literal : public Expression {
 
 public:
-  explicit Literal(T value) : value_(value) {}
+  explicit Literal(C_TYPE value) : value_(value) {}
 
   void compile(std::shared_ptr<arrow::Schema>) override {
 	auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
+
 	gandivaExpression_ = literal;
+	returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
   }
 
   std::string alias() override {
@@ -32,13 +34,13 @@ public:
   }
 
 private:
-  T value_;
+  C_TYPE value_;
 
 };
 
-template <typename T>
-std::shared_ptr<Expression> lit(T value){
-  return std::make_shared<Literal<T>>(value);
+template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
+std::shared_ptr<Expression> lit(C_TYPE value){
+  return std::make_shared<Literal<ARROW_TYPE>>(value);
 }
 
 }
