@@ -27,7 +27,7 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
   auto scan = std::make_shared<FileScan>("fileScan", "data/filter/a.csv");
-  auto filter = Filter::make("filter", FilterPredicate::make(lt(col("AA"), lit<long>(11))));
+  auto filter = Filter::make("filter", FilterPredicate::make(lt(col("AA"), lit<::arrow::Int64Type>(11))));
   auto collate = std::make_shared<Collate>("collate");
 
   scan->produce(filter);
