@@ -5,15 +5,13 @@
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_DECIMALTYPE_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_DECIMALTYPE_H
 
-#include <utility>
-#include "Type.h"
+#include <arrow/type.h>
+
+#include <normal/core/type/Type.h>
 
 namespace normal::core::type {
 
 class DecimalType: public Type {
-private:
-  int precision_;
-  int scale_;
 
 public:
   explicit DecimalType(int precision, int scale) : Type("Decimal"), precision_(precision), scale_(scale) {}
@@ -26,11 +24,13 @@ public:
     return arrow::decimal(precision_, scale_);
   }
 
+private:
+  int precision_;
+  int scale_;
+
 };
 
-static std::unique_ptr<Type> decimalType(int precision, int scale){
-  return std::make_unique<DecimalType>(precision, scale);
-}
+std::unique_ptr<Type> decimalType(int precision, int scale);
 
 }
 

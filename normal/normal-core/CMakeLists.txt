@@ -27,15 +27,15 @@ add_library(normal-core STATIC
         src/LocalOperatorDirectoryEntry.cpp include/normal/core/LocalOperatorDirectoryEntry.h
         src/arrow/Arrays.cpp include/normal/core/arrow/Arrays.h
         include/normal/core/type/Type.h
-        include/normal/core/type/DecimalType.h
+        src/type/DecimalType.cpp include/normal/core/type/DecimalType.h
         src/type/Types.cpp include/normal/core/type/Types.h
-        include/normal/core/type/Float64Type.h
+        src/type/Float64Type.cpp include/normal/core/type/Float64Type.h
         include/normal/core/arrow/ArrayHelper.h
         include/normal/core/arrow/TableHelper.h
         include/normal/core/arrow/ScalarHelperImpl.h
         include/normal/core/arrow/ScalarHelperBuilder.h
         include/normal/core/arrow/ScalarHelper.h
-        include/normal/core/type/Integer32Type.h
+        src/type/Integer32Type.cpp include/normal/core/type/Integer32Type.h
         src/arrow/SchemaHelper.cpp include/normal/core/arrow/SchemaHelper.h
         src/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h)
 

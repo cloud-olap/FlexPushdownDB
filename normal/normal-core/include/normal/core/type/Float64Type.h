@@ -5,15 +5,13 @@
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_FLOAT64TYPE_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_FLOAT64TYPE_H
 
-
-#include <utility>
 #include <arrow/type.h>
-#include "Type.h"
+
+#include <normal/core/type/Type.h>
 
 namespace normal::core::type {
 
 class Float64Type: public Type {
-private:
 
 public:
   explicit Float64Type() : Type("Float64") {}
@@ -28,11 +26,8 @@ public:
 
 };
 
-static std::shared_ptr<Type> float64Type(){
-  return std::make_shared<Float64Type>();
-}
+std::shared_ptr<Type> float64Type();
 
 }
-
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_FLOAT64TYPE_H

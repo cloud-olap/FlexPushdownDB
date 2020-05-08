@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_INTEGER32TYPE_H
 
 #include <arrow/api.h>
+
 #include <normal/core/type/Type.h>
 
 namespace normal::core::type {
@@ -26,9 +27,7 @@ public:
 
 };
 
-static std::shared_ptr<Type> integer32Type(){
-  return std::make_shared<Integer32Type>();
-}
+std::shared_ptr<Type> integer32Type();
 
 }
 

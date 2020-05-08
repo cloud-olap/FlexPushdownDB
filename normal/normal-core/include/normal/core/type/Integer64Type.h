@@ -5,10 +5,11 @@
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_INTEGER64TYPE_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_TYPE_INTEGER64TYPE_H
 
-#include "Type.h"
+#include <arrow/api.h>
+
+#include <normal/core/type/Type.h>
 
 namespace normal::core::type {
-
 
 class Integer64Type: public Type {
 private:
@@ -26,7 +27,7 @@ public:
 
 };
 
-static std::shared_ptr<Type> integer64Type();
+std::shared_ptr<Type> integer64Type();
 
 }
 
