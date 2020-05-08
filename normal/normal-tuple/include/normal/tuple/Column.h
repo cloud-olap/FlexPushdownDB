@@ -33,12 +33,27 @@ public:
   };
 
   static std::shared_ptr<Column> make(const std::string &name, const std::shared_ptr<::arrow::ChunkedArray> &array) {
-	if (array->type()->id() == arrow::int64()->id()) {
-	  return std::make_shared<Column>(name, array);
-	} else {
-	  throw std::runtime_error(
-		  "Column type '" + array->type()->ToString() + "' not implemented yet");
+	return std::make_shared<Column>(name, array);
+  }
+
+  /**
+   * Makes an empty column of the given type
+   */
+  static std::shared_ptr<Column> make(const std::string &name, const std::shared_ptr<::arrow::DataType> &type) {
+	std::vector<std::shared_ptr<::arrow::Array>> arrayVector = {};
+	auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(arrayVector, type);
+	return std::make_shared<Column>(name, chunkedArray);
+  }
+
+  static std::vector<std::shared_ptr<::arrow::ChunkedArray>> columnVectorToArrowChunkedArrayVector(const std::vector<std::shared_ptr<
+	  Column>> &columns) {
+	std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
+	chunkedArrays.reserve(columns.size());
+	for (const auto &column: columns) {
+	  auto array = column->array_;
+	  chunkedArrays.emplace_back(array);
 	}
+	return chunkedArrays;
   }
 
   [[nodiscard]] const std::string &getName() const {
@@ -73,21 +88,25 @@ public:
    */
   tl::expected<std::shared_ptr<Scalar>, std::string> element(long index) {
 
-	if(index > array_->length()){
+	if (index > array_->length()) {
 	  return tl::make_unexpected("Row '" + std::to_string(index) + "' does not exist");
 	}
 
 	if (array_->type()->id() == arrow::int64()->id()) {
 	  auto typedArray = std::static_pointer_cast<arrow::Int64Array>(array_->Slice(index)->chunk(0));
-
+	  auto value = typedArray->Value(0);
+	  auto valueScalar = arrow::MakeScalar(value);
+	  return std::make_shared<Scalar>(valueScalar);
+	} else if (array_->type()->id() == arrow::boolean()->id()) {
+	  auto typedArray = std::static_pointer_cast<arrow::BooleanArray>(array_->Slice(index)->chunk(0));
 	  auto value = typedArray->Value(0);
 	  auto valueScalar = arrow::MakeScalar(value);
 	  return std::make_shared<Scalar>(valueScalar);
 	} else {
-	  return tl::make_unexpected("Column value accessor for type '" + array_->type()->ToString() + "' not implemented yet");
+	  return tl::make_unexpected(
+		  "Column value accessor for type '" + array_->type()->ToString() + "' not implemented yet");
 	}
   }
-
 
   ColumnIterator begin() {
 	return ColumnIterator(array_, 0, 0);

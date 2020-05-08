@@ -58,7 +58,7 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
 
   auto tupleSet = TupleSet2::create(tuples);
 
-  SPDLOG_INFO("Output:\n{}", tupleSet->showString(TupleSet2::ShowOptions::Orientation::Row));
+  SPDLOG_INFO("Output:\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 	  CHECK(tupleSet->numRows() == 4);
 	  CHECK(tupleSet->numColumns() == 6);

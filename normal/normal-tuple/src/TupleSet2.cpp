@@ -76,12 +76,12 @@ tl::expected<void, std::string> TupleSet2::append(const std::vector<std::shared_
 }
 
 tl::expected<void, std::string> TupleSet2::append(const std::shared_ptr<TupleSet2> &tupleSet) {
-  auto tupleSetVector = std::vector{shared_from_this(), tupleSet};
+  auto tupleSetVector = {tupleSet};
   return append(tupleSetVector);
 }
 
 std::string TupleSet2::showString() {
-  return showString(ShowOptions(ShowOptions::Orientation::Column));
+  return showString(TupleSetShowOptions(TupleSetShowOrientation::ColumnOriented));
 }
 
 std::shared_ptr<normal::core::TupleSet> TupleSet2::toTupleSetV1() {
@@ -99,7 +99,7 @@ long TupleSet2::numColumns() {
   }
 }
 
-std::string TupleSet2::showString(TupleSet2::ShowOptions options) {
+std::string TupleSet2::showString(TupleSetShowOptions options) {
 
   if (!table_.has_value()) {
 	return "<empty>";
@@ -107,7 +107,7 @@ std::string TupleSet2::showString(TupleSet2::ShowOptions options) {
 
 	auto table = table_.value();
 
-	if (options.getOrientation() == ShowOptions::Orientation::Column) {
+	if (options.getOrientation() == TupleSetShowOrientation::ColumnOriented) {
 	  auto ss = std::stringstream();
 	  arrow::Status arrowStatus = ::arrow::PrettyPrint(*table, 0, &ss);
 
@@ -154,9 +154,10 @@ std::string TupleSet2::showString(TupleSet2::ShowOptions options) {
 		  break;
 
 		for (int columnIndex = 0; columnIndex < table_.value()->num_columns(); ++columnIndex) {
-		  auto value = this->getColumnByIndex(columnIndex).value()->element(rowIndex).value()->toString();
+		  auto column = this->getColumnByIndex(columnIndex).value();
+		  auto value = column->element(rowIndex).value();
 		  ss << std::left << std::setw(columnWidth) << std::setfill(' ');
-		  ss << "| " + value;
+		  ss << "| " + value->toString();
 		}
 		ss << std::endl;
 
@@ -177,8 +178,6 @@ std::string TupleSet2::showString(TupleSet2::ShowOptions options) {
   }
 }
 
-TupleSet2::ShowOptions::ShowOptions(TupleSet2::ShowOptions::Orientation orientation) : orientation_(orientation) {}
-
-TupleSet2::ShowOptions::Orientation TupleSet2::ShowOptions::getOrientation() const {
-  return orientation_;
+const std::optional<std::shared_ptr<::arrow::Table>> &TupleSet2::getArrowTable() const {
+  return table_;
 }

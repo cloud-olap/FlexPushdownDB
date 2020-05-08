@@ -5,11 +5,11 @@
 #ifndef NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_PROJECTOR_H
 #define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_PROJECTOR_H
 
-#include <normal/expression/gandiva/Expression.h>
-
 #include <arrow/api.h>
 #include <gandiva/expression.h>
 #include <gandiva/projector.h>
+
+#include <normal/expression/gandiva/Expression.h>
 #include <normal/expression/Projector.h>
 
 namespace normal::expression::gandiva {

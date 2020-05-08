@@ -7,6 +7,8 @@
 
 #include <arrow/type.h>
 
+#include "Column.h"
+
 namespace normal::tuple {
 
 class Schema {
@@ -20,6 +22,16 @@ public:
   [[nodiscard]] const std::vector<std::shared_ptr<::arrow::Field>> &fields() const{
     return schema_->fields();
   };
+
+  std::vector<std::shared_ptr<Column>> makeColumns(){
+	std::vector<std::shared_ptr<Column>> columns;
+	columns.reserve(schema_->fields().size());
+    for(const auto &field: schema_->fields()){
+      auto column = Column::make(field->name(), field->type());
+	  columns.emplace_back(column);
+    }
+    return columns;
+  }
 
   std::string showString();
 

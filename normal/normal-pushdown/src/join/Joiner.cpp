@@ -30,8 +30,8 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::joi
 }
 
 std::shared_ptr<Schema> Joiner::buildJoinedSchema() const {
-  auto buildSchema = hashtable_->getTupleSet()->schema();
-  auto probeSchema = tuples_->schema();
+  auto buildSchema = hashtable_->getTupleSet()->schema().value();
+  auto probeSchema = tuples_->schema().value();
   auto joinedSchema = Schema::concatenate({buildSchema, probeSchema});
 
   SPDLOG_DEBUG("Joined schema:\n{}", joinedSchema->showString());
@@ -51,8 +51,8 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
   SPDLOG_DEBUG("Probe column:\n{}", probeColumn->showString());
 
   // Create builders for each column
-  auto buildFields = hashtable_->getTupleSet()->schema()->fields();
-  auto probeFields = tuples_->schema()->fields();
+  auto buildFields = hashtable_->getTupleSet()->schema().value()->fields();
+  auto probeFields = tuples_->schema().value()->fields();
   std::vector<std::shared_ptr<::arrow::ArrayBuilder>> buildTupleSetBuilders;
   std::vector<std::shared_ptr<::arrow::ArrayBuilder>> probeTupleSetBuilders;
   buildTupleSetBuilders.reserve(buildFields.size());

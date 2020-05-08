@@ -12,7 +12,9 @@ add_library(normal-tuple STATIC
         include/normal/tuple/Column.cpp include/normal/tuple/Column.h
         include/normal/tuple/Schema.cpp include/normal/tuple/Schema.h
         include/normal/tuple/ColumnIterator.cpp include/normal/tuple/ColumnIterator.h
-        include/normal/tuple/ColumnIndex.cpp include/normal/tuple/ColumnIndex.h)
+        include/normal/tuple/ColumnIndex.cpp include/normal/tuple/ColumnIndex.h
+        include/normal/tuple/TupleSetShowOptions.cpp include/normal/tuple/TupleSetShowOptions.h
+        include/normal/tuple/ColumnName.cpp include/normal/tuple/ColumnName.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 

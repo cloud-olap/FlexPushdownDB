@@ -10,6 +10,13 @@
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
 #include <spdlog/spdlog.h>
 
-namespace normal::tuple {}
+namespace normal::tuple {
+
+/**
+ * Default number of records per arrow chunk when processing record batches
+ */
+inline constexpr int DefaultChunkSize = 10000;
+
+}
 
 #endif //NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_GLOBALS_H

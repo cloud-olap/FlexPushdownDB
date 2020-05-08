@@ -10,6 +10,7 @@
 
 #include <arrow/api.h>
 #include <gandiva/node.h>
+#include <gandiva/tree_expr_builder.h>
 
 #include "Expression.h"
 
@@ -21,7 +22,9 @@ class Literal : public Expression {
 public:
   explicit Literal(T value) : value_(value) {}
 
-  void compile(std::shared_ptr<arrow::Schema> schema) override {
+  void compile(std::shared_ptr<arrow::Schema>) override {
+	auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
+	gandivaExpression_ = literal;
   }
 
   std::string alias() override {

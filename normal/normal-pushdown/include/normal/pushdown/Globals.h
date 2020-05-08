@@ -17,12 +17,6 @@ namespace normal::pushdown {
  */
 inline constexpr int DefaultBufferSize = 10000;
 
-/**
- * Default number of records per arrow chunk when processing record batches
- */
-inline constexpr int DefaultChunkSize = 10000;
-
-
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GLOBALS_H

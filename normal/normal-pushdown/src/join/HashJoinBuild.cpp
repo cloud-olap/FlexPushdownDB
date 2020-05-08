@@ -21,12 +21,8 @@ HashJoinBuild::HashJoinBuild(const std::string &name, std::string columnName) :
 }
 
 std::shared_ptr<HashJoinBuild> HashJoinBuild::create(const std::string &name, const std::string &columnName) {
-
-  // Convert the column name to (canonical) lower case
-  std::string c(columnName);
-  std::transform(c.begin(), c.end(), c.begin(), ::tolower);
-
-  return std::make_shared<HashJoinBuild>(name, c);
+  auto canonicalColumnName = ColumnName::canonicalize(columnName);
+  return std::make_shared<HashJoinBuild>(name, canonicalColumnName);
 }
 
 void HashJoinBuild::onReceive(const normal::core::message::Envelope &msg) {

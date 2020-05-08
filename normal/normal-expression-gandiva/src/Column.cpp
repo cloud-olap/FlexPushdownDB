@@ -6,6 +6,9 @@
 
 #include <gandiva/tree_expr_builder.h>
 
+#include <normal/tuple/Column.h>
+#include <normal/tuple/ColumnName.h>
+
 using namespace normal::expression::gandiva;
 
 Column::Column(std::string columnName): columnName_(std::move(columnName)) {
@@ -21,5 +24,6 @@ std::string Column::alias() {
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::col(std::string columnName) {
-  return std::make_shared<Column>(std::move(columnName));
+  auto canonicalColumnName = normal::tuple::ColumnName::canonicalize(columnName);
+  return std::make_shared<Column>(canonicalColumnName);
 }

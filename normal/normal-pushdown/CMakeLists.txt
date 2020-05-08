@@ -25,6 +25,8 @@ add_library(normal-pushdown STATIC
         src/join/HashTableMessage.cpp include/normal/pushdown/join/HashTableMessage.h
         src/join/HashTable.cpp include/normal/pushdown/join/HashTable.h
         src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h
+        include/normal/pushdown/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
+        include/normal/pushdown/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
         src/Sort.cpp include/normal/pushdown/Sort.h src/cacheScan.cpp include/normal/pushdown/cacheScan.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
@@ -46,8 +48,10 @@ target_link_libraries(normal-pushdown PUBLIC normal-expression-gandiva)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(normal-pushdown-test
+        test/Globals.h
         test/MainTest.cpp
-        test/JoinTest.cpp test/Globals.h)
+        test/JoinTest.cpp
+        test/FilterTest.cpp)
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 
@@ -60,6 +64,8 @@ target_link_libraries(normal-pushdown-test PRIVATE normal-pushdown)
 #-----------------------------------------------------------------------------------------------------------------------
 # Test Data
 #-----------------------------------------------------------------------------------------------------------------------
+
+configure_file(data/filter/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filter/a.csv COPYONLY)
 
 configure_file(data/join/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/a.csv COPYONLY)
 configure_file(data/join/b.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/b.csv COPYONLY)

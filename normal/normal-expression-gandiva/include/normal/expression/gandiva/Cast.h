@@ -10,10 +10,9 @@
 
 #include <arrow/api.h>
 #include <gandiva/node.h>
+#include <normal/core/type/Type.h>
 
 #include "Expression.h"
-
-#include <normal/core/type/Type.h>
 
 namespace normal::expression::gandiva {
 

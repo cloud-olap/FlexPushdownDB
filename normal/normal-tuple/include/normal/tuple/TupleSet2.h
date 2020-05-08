@@ -11,31 +11,17 @@
 #include <arrow/table.h>
 
 #include <normal/core/TupleSet.h>
+
 #include "Column.h"
 #include "Schema.h"
+#include "TupleSetShowOptions.h"
+#include "ColumnName.h"
 
 namespace normal::tuple {
 
 class TupleSet2 : public std::enable_shared_from_this<TupleSet2> {
 
 public:
-
-  class ShowOptions{
-
-  public:
-
-	enum Orientation {
-	  Column,
-	  Row
-	};
-
-	ShowOptions(Orientation Orientation);
-	Orientation getOrientation() const;
-
-  private:
-	Orientation orientation_;
-
-  };
 
   /**
    * Creates an empty tuple set
@@ -63,11 +49,21 @@ public:
    * @param tuples
    * @return
    */
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& schema){
-	std::vector<std::shared_ptr<::arrow::ChunkedArray>> columns;
-	auto arrowTable = ::arrow::Table::Make(schema->getSchema(), columns);
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema){
+	auto columns = Schema->makeColumns();
+	auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+	auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
     auto tupleSet = std::make_shared<TupleSet2>(arrowTable);
     return tupleSet;
+  }
+
+  /**
+   * Creates an empty tupleset
+   * @return
+   */
+  static std::shared_ptr<TupleSet2> make(){
+	auto tupleSet = std::make_shared<TupleSet2>();
+	return tupleSet;
   }
 
   /**
@@ -124,27 +120,15 @@ public:
    */
   tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &name){
 
-	auto columnName = canonicalize(name);
+	auto canonicalColumnName = ColumnName::canonicalize(name);
 
-	auto columnArray = table_.value()->GetColumnByName(columnName);
+	auto columnArray = table_.value()->GetColumnByName(canonicalColumnName);
 	if (columnArray == nullptr) {
-	  return tl::make_unexpected("Column '" + columnName + "' does not exist");
+	  return tl::make_unexpected("Column '" + canonicalColumnName + "' does not exist");
 	} else {
-	  auto column = Column::make(columnName, columnArray);
+	  auto column = Column::make(canonicalColumnName, columnArray);
 	  return column;
 	}
-  }
-
-  /**
-   * Converts column name to lower case
-   *
-   * @param columnName
-   * @return
-   */
-  std::string canonicalize(const std::string &columnName) const {
-	std::string canonicalColumnName(columnName);
-	std::transform(canonicalColumnName.begin(), canonicalColumnName.end(), canonicalColumnName.begin(), tolower);
-	return canonicalColumnName;
   }
 
   tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex){
@@ -164,21 +148,49 @@ public:
    * @return
    */
   std::string showString();
-  std::string showString(ShowOptions options);
+  std::string showString(TupleSetShowOptions options);
 
   /**
-   * The tuple set schema
+   * Gets the tuple set schema
    *
-   * @return
+   * @return The tuple set schema or nullopt if not yet defined
    */
-  std::shared_ptr<Schema> schema() {
-    return std::make_shared<Schema>(table_.value()->schema());
+  std::optional<std::shared_ptr<Schema>> schema() const {
+    if(table_.has_value()) {
+	  return std::make_shared<Schema>(table_.value()->schema());
+	}
+    else{
+      return std::nullopt;
+    }
+  }
+
+  /**
+   * Sets the tuple set schema
+   *
+   * TODO: This is a destructive operation which just overwrites the table
+   *  Could perhaps do a check to see if any columns can be preserved across schema changes.
+   *  Or, maybe its just better to make at least some of the tuple set immutable?
+   */
+  void setSchema(const std::shared_ptr<Schema>& Schema){
+	auto columns = Schema->makeColumns();
+	auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
+	auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
+	table_ = std::optional(arrowTable);
+  }
+
+  const std::optional<std::shared_ptr<::arrow::Table>> &getArrowTable() const;
+
+  bool validate(){
+    if(table_.has_value())
+    	return table_.value()->ValidateFull().ok();
+	else
+	  return true;
   }
 
 private:
 
   /**
-   * The underlying arrow table, which may not be set to support an "empty" tuple set
+   * The underlying arrow table, which may or may not be set to support an "empty" tuple set
    */
   std::optional<std::shared_ptr<::arrow::Table>> table_;
 

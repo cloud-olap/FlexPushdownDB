@@ -4,13 +4,14 @@
 
 #include "normal/expression/gandiva/Cast.h"
 
+#include <utility>
+
 #include <gandiva/tree_expr_builder.h>
 
 using namespace normal::expression::gandiva;
 
 Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type) :
-	expr_(std::move(expr)),
-	type_(std::move(type)) {
+	expr_(std::move(expr)), type_(std::move(type)) {
 }
 
 ::gandiva::NodePtr Cast::buildGandivaExpression() {
@@ -28,15 +29,15 @@ Cast::Cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type:
 	auto castDecimalFunctionName = "castDECIMAL";
 	auto castDecimalReturnType = arrow::decimal(38, 0); // FIXME: Need to check if this is sufficient to cast to double
 	auto castToDecimalFunction = ::gandiva::TreeExprBuilder::MakeFunction(castDecimalFunctionName,
-																		{paramGandivaExpression},
-																		castDecimalReturnType);
+																		  {paramGandivaExpression},
+																		  castDecimalReturnType);
 
 	auto castFunctionName = "cast" + type_->asGandivaTypeString();
 	auto castReturnType = type_->asArrowType();
 
 	auto castFunction = ::gandiva::TreeExprBuilder::MakeFunction(castFunctionName,
-															   {castToDecimalFunction},
-															   castReturnType);
+																 {castToDecimalFunction},
+																 castReturnType);
 
 	return castFunction;
 
@@ -62,6 +63,7 @@ std::string Cast::alias() {
   return expr_->alias();
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type) {
+std::shared_ptr<Expression> normal::expression::gandiva::cast(std::shared_ptr<Expression> expr,
+															  std::shared_ptr<normal::core::type::Type> type) {
   return std::make_shared<Cast>(std::move(expr), std::move(type));
 }
