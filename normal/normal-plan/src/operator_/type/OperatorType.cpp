@@ -3,6 +3,7 @@
 //
 
 #include <normal/plan/operator_/type/OperatorType.h>
+#include <string>
 
 using namespace normal::plan::operator_::type;
 

@@ -2,6 +2,7 @@
 // Created by Jialing Pei on 5/6/20.
 //
 
+#include <normal/pushdown/Sort.h>
 #include "normal/pushdown/Sort.h"
 namespace normal::pushdown{
     void Sort::onStart() {
@@ -24,6 +25,40 @@ namespace normal::pushdown{
         }
     }
 
+    void Sort::onComplete(const normal::core::message::CompleteMessage &message) {
+        //this is where the real sort happens
+        auto pri = priorities_;
+        std::vector<int> idx = std::vector<int>(tmpRes_->size());
+        iota(idx.begin(),idx.end(),0);
+        std::stable_sort(idx.begin(),idx.end(),Comparator(pri,tmpRes_));
+        //sort tuples according to idx
+        arrow::MemoryPool* pool = arrow::default_memory_pool();
+        auto allColumns = tuples_->table()->columns();
+        auto allFields = tuples_->table()->fields();
+        std::vector<std::shared_ptr<arrow::Array>> newArrList;
+        for (auto i=0; i< allColumns.size();++i){
+            auto column = allColumns.at(i);
+            auto colType = column->type();
+            auto field =  allFields.at(i);
+            //Todo: add more cases
+            if (colType->Equals(arrow::Int32Type())) {
+                    auto typedColumn = std::static_pointer_cast<arrow::Int32Array>(column->chunk(0));
+                    arrow::Int64Builder builder(pool);
+                    for (auto it:idx){
+                        builder.Append(typedColumn->Value(it));
+                    }
+                    std::shared_ptr<arrow::Array> newArray;
+                    builder.Finish(&newArray);
+                    newArrList.push_back(newArray);
+            }
+
+        }
+        auto newTable = arrow::Table::Make(tuples_->table()->schema(),newArrList);
+        tuples_->table() = newTable;
+        std::shared_ptr<normal::core::message::Message> tpmessage = std::make_shared<normal::core::message::TupleMessage>(tuples_, this->name());
+        ctx()->tell(tpmessage);
+        ctx()->notifyComplete();
+    }
     void Sort::onTuple(const core::message::TupleMessage &message) {
         SPDLOG_DEBUG("Received tuple message");
 
@@ -36,6 +71,9 @@ namespace normal::pushdown{
     void Sort::compute(const std::shared_ptr<normal::core::TupleSet> &tuples){
         SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
+        //concantenate tuples
+        tuples_ = normal::core::TupleSet::concatenate(tuples,tuples_);
+
         // Set the input schema if not yet set
 
         // Build and set the expression projector if not yet set
@@ -46,7 +84,38 @@ namespace normal::pushdown{
 
             auto arrayVector = projector_.value()->evaluate(batch);
             auto array = arrayVector->at(0);
-
+            int numOfFields = arrayVector->size();
+            int lenOfBatch = array->length();
+            for (int i=0; i<lenOfBatch; ++i){
+                std::vector<Cell> row;
+                for (int j=0; j<numOfFields; ++j){
+                    array = arrayVector->at(j);
+                    auto colType = array->type();
+                    Cell cell;
+                    if (colType->Equals(arrow::Int32Type())) {
+                        auto typedArray = std::static_pointer_cast<arrow::Int32Array>(array);
+                        cell.type = Cell::is_int;
+                        cell.val.ival = typedArray->Value(i);
+                    }
+                    else if (colType->Equals(arrow::Int64Type())) {
+                        auto typedArray = std::static_pointer_cast<arrow::Int64Array>(array);
+                        cell.type = Cell::is_int;
+                        cell.val.ival = typedArray->Value(i);
+                    }
+                    else if (colType->Equals(arrow::DoubleType())) {
+                        auto typedArray = std::static_pointer_cast<arrow::DoubleArray>(array);
+                        cell.type = Cell::is_float;
+                        cell.val.fval = typedArray->Value(i);
+                    }
+                    else if (colType->Equals(arrow::StringType())) {
+                        auto typedArray = std::static_pointer_cast<arrow::StringArray>(array);
+                        cell.type = Cell::is_char;
+                        //cell.val.cval = typedArray->Value(i);
+                    }
+                    row.push_back(cell);
+                }
+                tmpRes_->push_back(row);
+            }
             return accum;
         });
     }

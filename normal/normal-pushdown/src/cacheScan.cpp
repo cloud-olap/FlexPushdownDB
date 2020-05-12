@@ -8,7 +8,7 @@ namespace normal::pushdown {
     cacheScan::cacheScan(std::string name,  std::string cacheID,std::shared_ptr<Cache> cache) :
     Operator(std::move(name), "cacheScan"),
     cacheID_(std::move(cacheID)),
-    cache_(std::move(cache)){}
+    cache_(cache){}
     void cacheScan::onStart() {
         std::unordered_map<std::string, std::shared_ptr<normal::core::TupleSet>> cacheMap = cache_->m_cacheData;
         //no found

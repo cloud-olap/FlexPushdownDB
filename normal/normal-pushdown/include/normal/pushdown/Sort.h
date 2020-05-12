@@ -13,6 +13,39 @@
 
 
 namespace normal::pushdown {
+    struct Cell{
+        Cell():type(is_int),val(){};
+        enum { is_int, is_float, is_char } type;
+        union {
+            int ival;
+            float fval;
+            char cval;
+        } val;
+    };
+
+    struct Comparator{
+        Comparator(std::shared_ptr<std::vector<int>> priorities,std::shared_ptr<std::vector<std::vector<Cell>>> vectors): priorities_(priorities),
+        vectors_(vectors){}
+        bool operator() (int  idx1, int  idx2) {
+            auto a = vectors_->at(idx1);
+            auto b = vectors_->at(idx2);
+            for (int i=0; i<priorities_->size(); ++i){
+                int index = priorities_->at(i);
+                if (a.at(index).type==Cell::is_int){
+                    return a.at(index).val.ival < b.at(index).val.ival;
+                }
+                else if (a.at(index).type==Cell::is_float){
+                    return a.at(index).val.fval < b.at(index).val.fval;
+                }
+                else if (a.at(index).type==Cell::is_char){
+                    return a.at(index).val.cval < b.at(index).val.cval;
+                }
+            }
+            return true;
+        }
+        std::shared_ptr<std::vector<int>> priorities_;
+        std::shared_ptr<std::vector<std::vector<Cell>>> vectors_;
+    };
     class Sort : public normal::core::Operator {
 
     private:
@@ -20,7 +53,8 @@ namespace normal::pushdown {
         * A buffer of received tuples that stores the temporal result
         */
         std::shared_ptr<normal::core::TupleSet> tuples_;
-
+        std::shared_ptr<std::vector<std::vector<Cell>>> tmpRes_;
+        std::shared_ptr<std::vector<int>> priorities_;
         /**
          * The schema of received tuples, sometimes cannot be known up front (e.g. when input source is a CSV file, the
          * columns aren't known until the file is read) so needs to be extracted from the first batch of tuples received
@@ -44,6 +78,7 @@ namespace normal::pushdown {
         void onTuple(const normal::core::message::TupleMessage &message);
         void onComplete(const normal::core::message::CompleteMessage &message);
         void onStart();
+        bool compareTwoTuples(std::vector<Cell> & a,std::vector<Cell> & b);
 
     public:
         Sort(std::string name,std::shared_ptr<normal::expression::gandiva::Expression> expression);
@@ -52,6 +87,7 @@ namespace normal::pushdown {
         void compute(const std::shared_ptr<normal::core::TupleSet> &tuples);
         void cacheInputSchema(const core::message::TupleMessage &message);
         void buildAndCacheProjector();
+
 
     };
 
