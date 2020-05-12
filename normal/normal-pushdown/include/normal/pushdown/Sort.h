@@ -81,7 +81,9 @@ namespace normal::pushdown {
         bool compareTwoTuples(std::vector<Cell> & a,std::vector<Cell> & b);
 
     public:
-        Sort(std::string name,std::shared_ptr<normal::expression::gandiva::Expression> expression);
+        Sort(std::string name,std::shared_ptr<normal::expression::gandiva::Expression> expression,std::shared_ptr<std::vector<int>> priorities):
+        Operator(std::move(name), "Sort"),
+        priorities_(std::move(priorities)){};
         ~Sort() override = default;
 
         void compute(const std::shared_ptr<normal::core::TupleSet> &tuples);
