@@ -53,7 +53,9 @@ add_executable(normal-pushdown-test
         test/Globals.h
         test/MainTest.cpp
         test/JoinTest.cpp
-        test/FilterTest.cpp test/GroupTest.cpp)
+        test/FilterTest.cpp
+        test/GroupTest.cpp
+        test/AggregateTest.cpp)
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 
@@ -74,6 +76,7 @@ configure_file(data/join/b.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/b.csv COPYO
 
 configure_file(data/group/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/group/a.csv COPYONLY)
 
+configure_file(data/aggregate/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/aggregate/a.csv COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

@@ -15,15 +15,20 @@ Column::Column(std::string columnName): columnName_(std::move(columnName)) {
 }
 
 void Column::compile(std::shared_ptr<arrow::Schema> schema) {
-  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeField(schema->GetFieldByName(columnName_));
-  returnType_ = schema->GetFieldByName(columnName_)->type();
+  auto field = schema->GetFieldByName(columnName_);
+  if(field == nullptr){
+    // FIXME
+    throw std::runtime_error("Column '" + columnName_ + "' does not exist");
+  }
+  gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeField(field);
+  returnType_ = field->type();
 }
 
 std::string Column::alias() {
   return columnName_;
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::col(std::string columnName) {
+std::shared_ptr<Expression> normal::expression::gandiva::col(const std::string& columnName) {
   auto canonicalColumnName = normal::tuple::ColumnName::canonicalize(columnName);
   return std::make_shared<Column>(canonicalColumnName);
 }
