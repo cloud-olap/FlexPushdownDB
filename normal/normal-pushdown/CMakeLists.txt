@@ -51,7 +51,7 @@ add_executable(normal-pushdown-test
         test/Globals.h
         test/MainTest.cpp
         test/JoinTest.cpp
-        test/FilterTest.cpp)
+        test/FilterTest.cpp test/SortTest.cpp)
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 

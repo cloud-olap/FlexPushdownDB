@@ -83,7 +83,9 @@ namespace normal::pushdown {
     public:
         Sort(std::string name,std::shared_ptr<normal::expression::gandiva::Expression> expression,std::shared_ptr<std::vector<int>> priorities):
         Operator(std::move(name), "Sort"),
-        priorities_(std::move(priorities)){};
+        expression_(std::move(expression)),
+        priorities_(std::move(priorities)),
+        tmpRes_(std::make_shared<std::vector<std::vector<Cell>>>(std::vector<std::vector<Cell>>{})){};
         ~Sort() override = default;
 
         void compute(const std::shared_ptr<normal::core::TupleSet> &tuples);

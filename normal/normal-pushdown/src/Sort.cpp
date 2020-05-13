@@ -41,21 +41,34 @@ namespace normal::pushdown{
             auto colType = column->type();
             auto field =  allFields.at(i);
             //Todo: add more cases
-            if (colType->Equals(arrow::Int32Type())) {
-                    auto typedColumn = std::static_pointer_cast<arrow::Int32Array>(column->chunk(0));
+            if (colType->Equals(arrow::Int64Type())) {
+                    auto typedColumn = std::static_pointer_cast<arrow::Int64Array>(column->chunk(0));
                     arrow::Int64Builder builder(pool);
                     for (auto it:idx){
                         builder.Append(typedColumn->Value(it));
+                        SPDLOG_INFO(typedColumn->Value(it));
                     }
                     std::shared_ptr<arrow::Array> newArray;
                     builder.Finish(&newArray);
                     newArrList.push_back(newArray);
+                    SPDLOG_INFO(newArray->ToString());
+            } else if (colType->Equals(arrow::Int32Type())) {
+                auto typedColumn = std::static_pointer_cast<arrow::Int32Array>(column->chunk(0));
+                arrow::Int32Builder builder(pool);
+                for (auto it:idx){
+                    builder.Append(typedColumn->Value(it));
+                }
+                std::shared_ptr<arrow::Array> newArray;
+                builder.Finish(&newArray);
+                newArrList.push_back(newArray);
             }
 
         }
         auto newTable = arrow::Table::Make(tuples_->table()->schema(),newArrList);
-        tuples_->table() = newTable;
-        std::shared_ptr<normal::core::message::Message> tpmessage = std::make_shared<normal::core::message::TupleMessage>(tuples_, this->name());
+        //tuples_->table() = newTable;
+        //SPDLOG_INFO(tuples_->table()->column(0)->chunk(0)->ToString());
+        auto newTuples  = core::TupleSet::make(newTable);
+        std::shared_ptr<normal::core::message::Message> tpmessage = std::make_shared<normal::core::message::TupleMessage>(newTuples, this->name());
         ctx()->tell(tpmessage);
         ctx()->notifyComplete();
     }
@@ -72,15 +85,35 @@ namespace normal::pushdown{
         SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
         //concantenate tuples
-        tuples_ = normal::core::TupleSet::concatenate(tuples,tuples_);
-
+        if (tuples_== nullptr) {
+            tuples_ = tuples;
+        } else {
+            tuples_ = normal::core::TupleSet::concatenate(tuples, tuples_);
+        }
         // Set the input schema if not yet set
 
         // Build and set the expression projector if not yet set
         buildAndCacheProjector();
 
+
+
+
         auto resultType = this->expression_->getReturnType();
         std::shared_ptr<arrow::Scalar> batchSum = tuples->visit([&](auto accum, auto &batch) -> auto {
+
+            // Initialise accumulator
+            if(accum == nullptr) {
+                if (resultType->id() == arrow::float64()->id()) {
+                    accum = arrow::MakeScalar(arrow::float64(), 0.0).ValueOrDie();
+                } else if (resultType->id() == arrow::int32()->id()) {
+                    accum = arrow::MakeScalar(arrow::int32(), 0).ValueOrDie();
+                } else if (resultType->id() == arrow::int64()->id()) {
+                    accum = arrow::MakeScalar(arrow::int64(), 0).ValueOrDie();
+                } else {
+                    throw std::runtime_error("Accumulator init for type " + accum->type->name() + " not implemented yet");
+                }
+            }
+
 
             auto arrayVector = projector_.value()->evaluate(batch);
             auto array = arrayVector->at(0);
@@ -132,6 +165,7 @@ namespace normal::pushdown{
             inputSchema_ = message.tuples()->table()->schema();
         }
     }
+
 
 
 }
