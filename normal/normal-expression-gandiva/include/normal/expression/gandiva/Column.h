@@ -28,7 +28,7 @@ private:
 
 };
 
-std::shared_ptr<Expression> col(std::string columnName);
+std::shared_ptr<Expression> col(const std::string& columnName);
 
 }
 

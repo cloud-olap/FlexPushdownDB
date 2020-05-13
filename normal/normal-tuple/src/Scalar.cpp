@@ -24,9 +24,13 @@ std::shared_ptr<Scalar> Scalar::make(const std::shared_ptr<::arrow::Scalar> &sca
 }
 
 size_t Scalar::hash() {
-  if (scalar_->type->id() == arrow::int64()->id()) {
+  if (scalar_->type->id() == arrow::Int64Type::type_id) {
 	auto typedScalar = std::static_pointer_cast<::arrow::Int64Scalar>(scalar_);
 	return std::hash<long>()(typedScalar->value);
+  }
+  else if (scalar_->type->id() == arrow::Int32Type::type_id) {
+	  auto typedScalar = std::static_pointer_cast<::arrow::Int32Scalar>(scalar_);
+	  return std::hash<int>()(typedScalar->value);
   } else {
 	throw std::runtime_error(
 		"Scalar type '" + scalar_->type->ToString() + "' not implemented yet");

@@ -19,7 +19,6 @@ namespace normal::pushdown::aggregate {
 class AggregationFunction {
 
 protected:
-  std::shared_ptr<aggregate::AggregationResult> result();
 
   /**
    * The expression projector, created and cached when input schema is extracted from first tuple received
@@ -34,9 +33,7 @@ protected:
 
 public:
   explicit AggregationFunction(std::string alias);
-  virtual ~AggregationFunction() = 0;
-
-  void init(std::shared_ptr<aggregate::AggregationResult> result);
+  virtual ~AggregationFunction() = default;
 
   /**
    * Alias is the symbolic name of the attribute, it's not guaranteed to be unique so shouldn't be used for anything
@@ -48,16 +45,14 @@ public:
    */
   [[nodiscard]] const std::string &alias() const;
 
-  virtual void apply(std::shared_ptr<normal::core::TupleSet> tuples) = 0;
+  virtual void apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<normal::core::TupleSet> tuples) = 0;
   virtual std::shared_ptr<arrow::DataType> returnType() = 0;
-
-  std::shared_ptr<aggregate::AggregationResult> buffer_;
 
   /**
    * Invoked when an aggregate function should expect no more data to give it an opportunity to
    * compute its final result.
    */
-  virtual void finalize() = 0;
+  virtual void finalize(std::shared_ptr<aggregate::AggregationResult> result) = 0;
 
 private:
   std::string alias_;

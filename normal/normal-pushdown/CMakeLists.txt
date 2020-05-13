@@ -27,7 +27,9 @@ add_library(normal-pushdown STATIC
         src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h
         src/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
         src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
-        src/Sort.cpp include/normal/pushdown/Sort.h src/cacheScan.cpp include/normal/pushdown/cacheScan.h)
+        src/Sort.cpp include/normal/pushdown/Sort.h
+        src/cacheScan.cpp include/normal/pushdown/cacheScan.h
+        src/group/Group.cpp include/normal/pushdown/group/Group.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -51,7 +53,13 @@ add_executable(normal-pushdown-test
         test/Globals.h
         test/MainTest.cpp
         test/JoinTest.cpp
+<<<<<<< HEAD
         test/FilterTest.cpp test/SortTest.cpp)
+=======
+        test/FilterTest.cpp
+        test/GroupTest.cpp
+        test/AggregateTest.cpp)
+>>>>>>> 169b700888c1d83372b4578792e1edd6f1ad61e8
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 
@@ -70,6 +78,9 @@ configure_file(data/filter/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filter/a.csv C
 configure_file(data/join/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/a.csv COPYONLY)
 configure_file(data/join/b.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/b.csv COPYONLY)
 
+configure_file(data/group/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/group/a.csv COPYONLY)
+
+configure_file(data/aggregate/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/aggregate/a.csv COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

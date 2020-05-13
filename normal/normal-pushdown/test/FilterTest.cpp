@@ -22,7 +22,11 @@ using namespace normal::pushdown::filter;
 using namespace normal::tuple;
 using namespace normal::expression::gandiva;
 
-TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
+#define SKIP_SUITE true
+
+TEST_SUITE ("filter" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("filescan-filter-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
@@ -70,5 +74,7 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
 
   auto columnAC = tupleSet->getColumnByName("AC").value();
 	  CHECK(columnAC->element(0).value()->value<long>() == 16);
+
+}
 
 }

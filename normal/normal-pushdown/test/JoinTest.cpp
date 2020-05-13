@@ -16,7 +16,11 @@
 using namespace normal::pushdown;
 using namespace normal::pushdown::join;
 
-TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
+#define SKIP_SUITE true
+
+TEST_SUITE ("join" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("filescan-join-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
@@ -102,4 +106,6 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false)) {
 	  CHECK(columnBC->element(1).value()->value<long>() == 26);
 	  CHECK(columnBC->element(2).value()->value<long>() == 28);
 	  CHECK(columnBC->element(3).value()->value<long>() == 28);
+}
+
 }
