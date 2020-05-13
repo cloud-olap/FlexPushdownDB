@@ -27,7 +27,9 @@ add_library(normal-pushdown STATIC
         src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h
         src/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
         src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
-        src/Sort.cpp include/normal/pushdown/Sort.h src/cacheScan.cpp include/normal/pushdown/cacheScan.h)
+        src/Sort.cpp include/normal/pushdown/Sort.h
+        src/cacheScan.cpp include/normal/pushdown/cacheScan.h
+        src/group/Group.cpp include/normal/pushdown/group/Group.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -51,7 +53,7 @@ add_executable(normal-pushdown-test
         test/Globals.h
         test/MainTest.cpp
         test/JoinTest.cpp
-        test/FilterTest.cpp)
+        test/FilterTest.cpp test/GroupTest.cpp)
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 
