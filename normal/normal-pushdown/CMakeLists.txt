@@ -53,13 +53,10 @@ add_executable(normal-pushdown-test
         test/Globals.h
         test/MainTest.cpp
         test/JoinTest.cpp
-<<<<<<< HEAD
-        test/FilterTest.cpp test/SortTest.cpp)
-=======
         test/FilterTest.cpp
         test/GroupTest.cpp
-        test/AggregateTest.cpp)
->>>>>>> 169b700888c1d83372b4578792e1edd6f1ad61e8
+        test/AggregateTest.cpp test/SortTest.cpp)
+
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 
