@@ -27,15 +27,9 @@ Aggregate::Aggregate(std::string name,
 void Aggregate::onStart() {
   SPDLOG_DEBUG("Starting");
 
-  for (const auto &function: *functions_) {
-    if(function->buffer_ == nullptr){
-      auto result = std::make_shared<aggregate::AggregationResult>();
-	  results_->emplace_back(result);
-	  function->init(result);
-    }
-    else{
-	  function->buffer_->reset();
-    }
+  for(size_t i=0;i<functions_->size();++i) {
+	auto result = std::make_shared<aggregate::AggregationResult>();
+	results_->emplace_back(result);
   }
 }
 
@@ -76,17 +70,19 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
 
     // Create output tuples
     std::vector<std::shared_ptr<arrow::Array>> columns;
-    for (const auto &function: *functions_) {
+	for(size_t i=0;i<functions_->size();++i){
+	  auto function = functions_->at(i);
+	  auto result = results_->at(i);
 
-	  function->finalize();
+	  function->finalize(result);
 
       if(function->returnType() == arrow::float64()){
-        auto scalar = std::static_pointer_cast<arrow::DoubleScalar>(function->buffer_->evaluate());
+        auto scalar = std::static_pointer_cast<arrow::DoubleScalar>(result->evaluate());
         auto colArgh = makeArgh<arrow::DoubleType>(scalar);
         columns.emplace_back(colArgh.value());
       }
 	  else if(function->returnType() == arrow::int32()){
-		auto scalar = std::static_pointer_cast<arrow::Int32Scalar>(function->buffer_->evaluate());
+		auto scalar = std::static_pointer_cast<arrow::Int32Scalar>(result->evaluate());
 		auto colArgh = makeArgh<arrow::Int32Type>(scalar);
 		columns.emplace_back(colArgh.value());
 	  }
@@ -126,8 +122,10 @@ void Aggregate::cacheInputSchema(const core::message::TupleMessage &message) {
 }
 
 void Aggregate::compute(const std::shared_ptr<normal::core::TupleSet> &tuples) {
-  for (const auto &function: *functions_) {
-	function->apply(tuples);
+  for(size_t i=0;i<functions_->size();++i){
+    auto function = functions_->at(i);
+    auto result = results_->at(i);
+	function->apply(result, tuples);
   }
 }
 

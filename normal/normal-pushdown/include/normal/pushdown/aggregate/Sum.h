@@ -23,10 +23,10 @@ public:
   Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Expression> expression);
   ~Sum() override = default;
 
-  void apply(std::shared_ptr<normal::core::TupleSet> tuples) override;
+  void apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<normal::core::TupleSet> tuples) override;
   std::shared_ptr<arrow::DataType> returnType() override;
 
-  void finalize() override;
+  void finalize(std::shared_ptr<aggregate::AggregationResult> result) override;
 
   void cacheInputSchema(const normal::core::TupleSet &tuples);
   void buildAndCacheProjector();

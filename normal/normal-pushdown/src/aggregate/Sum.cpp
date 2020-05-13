@@ -20,7 +20,7 @@ Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Ex
     expression_(std::move(expression)) {}
 
 
-void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::TupleSet> tuples) {
+void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<normal::core::TupleSet> tuples) {
 
   SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
@@ -86,7 +86,7 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
   });
 
   // Get the current running sum, initialising it if necessary
-  auto currentSum = this->result()->get(SUM_RESULT_KEY, arrow::MakeScalar(0.0));
+  auto currentSum = result->get(SUM_RESULT_KEY, arrow::MakeScalar(0.0));
 
   auto currentSumWrapped = ScalarHelperBuilder::make(currentSum).value();
   auto batchSumWrapped = ScalarHelperBuilder::make(batchSum).value();
@@ -95,15 +95,15 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<normal::core::Tuple
   currentSumWrapped->operator+=(batchSumWrapped);
 
   // Store the current running sum away again for the next batch of tuples
-  this->result()->put(SUM_RESULT_KEY, currentSumWrapped->asScalar());
+  result->put(SUM_RESULT_KEY, currentSumWrapped->asScalar());
 }
 
 std::shared_ptr<arrow::DataType> Sum::returnType() {
   return expression_->getReturnType();
 }
 
-void Sum::finalize() {
-  this->result()->finalize(this->result()->get(SUM_RESULT_KEY));
+void Sum::finalize(std::shared_ptr<aggregate::AggregationResult> result) {
+  result->finalize(result->get(SUM_RESULT_KEY));
 }
 
 void Sum::buildAndCacheProjector() {
