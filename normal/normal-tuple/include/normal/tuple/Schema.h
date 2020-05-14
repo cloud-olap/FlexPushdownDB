@@ -21,6 +21,8 @@ public:
   [[nodiscard]] const std::shared_ptr<::arrow::Schema> &getSchema() const;
   [[nodiscard]] const std::vector<std::shared_ptr<::arrow::Field>> &fields() const;
 
+  int getFieldIndexByName(std::string name);
+
   std::vector<std::shared_ptr<Column>> makeColumns();
 
   std::string showString();

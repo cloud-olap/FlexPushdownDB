@@ -4,7 +4,6 @@
 
 #include <normal/pushdown/group/Group.h>
 #include <normal/tuple/TupleSet2.h>
-#include <normal/expression/gandiva/Projector.h>
 
 #include <utility>
 
@@ -52,16 +51,6 @@ void Group::onReceive(const normal::core::message::Envelope &msg) {
 
 void Group::onStart() {
   SPDLOG_DEBUG("Starting");
-
-//  for (const auto &function: *aggregateFunctions_) {
-//	if (function->buffer_ == nullptr) {
-//	  auto result = std::make_shared<aggregate::AggregationResult>();
-//	  aggregateResults_->emplace_back(result);
-//	  function->init(result);
-//	} else {
-//	  function->buffer_->reset();
-//	}
-//  }
 }
 
 void Group::onTuple(const normal::core::message::TupleMessage &message) {
@@ -83,13 +72,11 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
 		  auto typedColumn = std::static_pointer_cast<::arrow::Int64Array>(column);
 		  auto value = ::arrow::MakeScalar(typedColumn->Value(r));
 		  auto scalar = std::make_shared<normal::tuple::Scalar>(value);
-		  groupKey->append(scalar);
+		  groupKey->append(columnName, scalar);
 		} else {
 		  throw std::runtime_error("Group for column of type '" + column->type()->ToString() + "' not implemented yet");
 		}
 	  }
-
-	  SPDLOG_DEBUG("Row: (groupKey: {})", groupKey->toString());
 
 	  // Get or initialise the tuple set for the current group
 	  std::shared_ptr<normal::tuple::TupleSet2> currentTupleSet;
@@ -108,91 +95,137 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
 	  auto arrowSliceTable = ::arrow::Table::Make(inputSchema_.value(), arrowSliceColumns);
 	  auto sliceTupleSet = normal::tuple::TupleSet2::make(arrowSliceTable);
 
-	  SPDLOG_DEBUG("Row Tuple Set: (groupKey: {})\n{}",
-	  	groupKey->toString(),
-	  	sliceTupleSet->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
-
+	  // Append the current row to the current group tuple set
 	  auto result = currentTupleSet->append(sliceTupleSet);
 	  if(!result.has_value()){
 	    // FIXME
 	    throw std::runtime_error(result.error());
 	  }
-
-	  // Get or initialise the aggregate result for the current group
-	  std::shared_ptr<aggregate::AggregationResult> currentAggregateResult;
-	  auto currentAggregateIt = aggregateResults_.find(groupKey);
-	  if (currentAggregateIt == aggregateResults_.end()) {
-		currentAggregateResult = std::make_shared<aggregate::AggregationResult>();
-		aggregateResults_.emplace(groupKey, currentAggregateResult);
-	  } else {
-		currentAggregateResult = currentAggregateIt->second;
-	  }
-
-	  for(const auto &groupTupleSet_: groupedTuples_){
-		SPDLOG_DEBUG("Group Tuple Set: (group: {})\n{}", groupTupleSet_.first->toString(), groupTupleSet_.second->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
-	  }
 	}
 
 	batch = batchReader.Next().ValueOrDie();
   }
+
+  for(const auto &groupTupleSetPair: groupedTuples_){
+
+    auto groupKey = groupTupleSetPair.first;
+    auto groupTupleSet = groupTupleSetPair.second;
+
+	// Get or initialise the aggregate results for the current group
+	std::vector<std::shared_ptr<aggregate::AggregationResult>> currentAggregateResults;
+	auto aggregateResultsIt = aggregateResults_.find(groupKey);
+	if (aggregateResultsIt == aggregateResults_.end()) {
+	  for(size_t i=0;i<aggregateFunctions_->size();++i){
+		auto aggregateResult = std::make_shared<aggregate::AggregationResult>();
+		currentAggregateResults.push_back(aggregateResult);
+	  }
+	  aggregateResults_.emplace(groupKey, currentAggregateResults);
+	} else {
+	  currentAggregateResults = aggregateResultsIt->second;
+	}
+
+	// Apply the aggregate functions to the current group
+	for(size_t i=0;i<aggregateFunctions_->size();i++){
+	  auto aggregateResult = currentAggregateResults.at(i);
+	  auto aggregateFunction = aggregateFunctions_->at(i);
+	  aggregateFunction->apply(aggregateResult, groupTupleSet->toTupleSetV1());
+	}
+  }
 }
 
-void Group::onComplete(const normal::core::message::CompleteMessage &msg) {
-
-  SPDLOG_DEBUG("Producer complete");
+void Group::onComplete(const normal::core::message::CompleteMessage&) {
 
   if (this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
 
-	SPDLOG_DEBUG("All producers complete, completing");
-
-	for(const auto &groupTupleSet_: groupedTuples_){
-	  SPDLOG_DEBUG("Group Tuple Set: (group: {})\n{}", groupTupleSet_.first->toString(), groupTupleSet_.second->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
+	// Finalize the aggregate results
+	for(const auto &groupAggregateResults: aggregateResults_) {
+	  for (size_t i = 0; i < aggregateFunctions_->size(); i++) {
+		auto aggregateResult = groupAggregateResults.second.at(i);
+		auto aggregateFunction = aggregateFunctions_->at(i);
+		aggregateFunction->finalize(aggregateResult);
+	  }
 	}
 
-//	// Create output schema
-//	std::shared_ptr<arrow::Schema> schema;
-//	std::vector<std::shared_ptr<arrow::Field>> fields;
-//	for (const auto &function: *aggregateFunctions_) {
-//	  std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), function->returnType());
-//	  fields.emplace_back(field);
-//	}
-//	schema = arrow::schema(fields);
-//
-//	SPDLOG_DEBUG("Aggregation output schema: {}\n", schema->ToString());
-//
-////    arrow::MemoryPool *pool = arrow::default_memory_pool();
-//
-//	// Create output tuples
-//	std::vector<std::shared_ptr<arrow::Array>> columns;
-//	for (const auto &function: *aggregateFunctions_) {
-//
-//	  function->finalize();
-//
-//	  if (function->returnType() == arrow::float64()) {
-//		auto scalar = std::static_pointer_cast<arrow::DoubleScalar>(function->buffer_->evaluate());
-//		auto colArgh = makeArgh<arrow::DoubleType>(scalar);
-//		columns.emplace_back(colArgh.value());
-//	  } else if (function->returnType() == arrow::int32()) {
-//		auto scalar = std::static_pointer_cast<arrow::Int32Scalar>(function->buffer_->evaluate());
-//		auto colArgh = makeArgh<arrow::Int32Type>(scalar);
-//		columns.emplace_back(colArgh.value());
-//	  } else {
-//		throw std::runtime_error("Unrecognized type " + function->returnType()->name());
-//	  }
-//	}
-//
-//	std::shared_ptr<arrow::Table> table;
-//	table = arrow::Table::Make(schema, columns);
-//
-//	const std::shared_ptr<core::TupleSet> &aggregatedTuples = core::TupleSet::make(table);
-//
-//	SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
-//
-//	std::shared_ptr<normal::core::message::Message>
-//		tupleMessage = std::make_shared<normal::core::message::TupleMessage>(aggregatedTuples, this->name());
-//	ctx()->tell(tupleMessage);
-//
-//	ctx()->notifyComplete();
+	// Create output schema
+	std::vector<std::shared_ptr<arrow::Field>> fields;
+	for(const auto&columnName: columnNames_){
+	  auto field = inputSchema_.value()->GetFieldByName(columnName);
+	  fields.emplace_back(field);
+	}
+	for (const auto &function: *aggregateFunctions_) {
+	  std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), function->returnType());
+	  fields.emplace_back(field);
+	}
+	auto schema = std::make_shared<Schema>(::arrow::schema(fields));
+
+	// Create the group field columns
+	std::vector<std::shared_ptr<arrow::Array>> groupFieldColumns;
+	for(size_t c = 0;c<columnNames_.size();c++){
+
+	  std::shared_ptr<arrow::Array> array;
+	  ::arrow::Int64Builder builder;
+
+	  auto field = schema->getSchema()->field(c);
+	  for(const auto &groupAggregateResults: aggregateResults_){
+		auto groupKey = groupAggregateResults.first;
+		auto groupKeyValue = groupKey->getAttributeValueByName(field->name());
+		auto arrowStatus = builder.Append(groupKeyValue->value<long>());
+		if(!arrowStatus.ok()){
+		  // FIXME
+		  throw std::runtime_error(arrowStatus.message());
+		}
+	  }
+
+	  auto arrowStatus = builder.Finish(&array);
+	  if(!arrowStatus.ok()){
+		// FIXME
+		throw std::runtime_error(arrowStatus.message());
+	  }
+	  groupFieldColumns.emplace_back(array);
+	}
+
+	// Create the aggregate function columns
+	std::vector<std::shared_ptr<arrow::Array>> aggregateFunctionColumns;
+	for(size_t c = 0;c<aggregateFunctions_->size();++c){
+
+	  std::shared_ptr<arrow::Array> array;
+	  ::arrow::Int64Builder builder;
+
+	  auto field = schema->getSchema()->field(c);
+	  for(const auto &groupAggregateResults: aggregateResults_){
+		auto groupResults = groupAggregateResults.second;
+		auto groupResultValue = groupResults.at(c);
+		auto groupResultValueArrowScalar = groupResultValue->evaluate();
+		auto groupResultValueScalar = Scalar::make(groupResultValueArrowScalar);
+		auto arrowStatus = builder.Append(groupResultValueScalar->value<long>());
+		if(!arrowStatus.ok()){
+		  // FIXME
+		  throw std::runtime_error(arrowStatus.message());
+		}
+	  }
+
+	  auto arrowStatus = builder.Finish(&array);
+	  if(!arrowStatus.ok()){
+		// FIXME
+		throw std::runtime_error(arrowStatus.message());
+	  }
+	  aggregateFunctionColumns.emplace_back(array);
+	}
+
+	std::vector<std::shared_ptr<::arrow::Array>> columns;
+	columns.insert (columns.end(), groupFieldColumns.begin(), groupFieldColumns.end());
+	columns.insert (columns.end(), aggregateFunctionColumns.begin(), aggregateFunctionColumns.end());
+
+	auto table = arrow::Table::Make(schema->getSchema(), columns);
+
+	const std::shared_ptr<core::TupleSet> &groupedTupleSet = core::TupleSet::make(table);
+	auto tupleSetV2 = TupleSet2::create(groupedTupleSet);
+
+	std::shared_ptr<normal::core::message::Message>
+		tupleMessage = std::make_shared<normal::core::message::TupleMessage>(groupedTupleSet, this->name());
+	ctx()->tell(tupleMessage);
+
+	ctx()->notifyComplete();
 }
 
 }

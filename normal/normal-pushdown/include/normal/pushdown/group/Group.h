@@ -44,7 +44,7 @@ private:
   std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> aggregateFunctions_;
 
   std::unordered_map<std::shared_ptr<GroupKey>, std::shared_ptr<normal::tuple::TupleSet2>, GroupKeyPointerHash, GroupKeyPointerPredicate> groupedTuples_;
-  std::unordered_map<std::shared_ptr<GroupKey>, std::shared_ptr<aggregate::AggregationResult>, GroupKeyPointerHash, GroupKeyPointerPredicate> aggregateResults_;
+  std::unordered_map<std::shared_ptr<GroupKey>, std::vector<std::shared_ptr<aggregate::AggregationResult>>, GroupKeyPointerHash, GroupKeyPointerPredicate> aggregateResults_;
 
   std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
   std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;

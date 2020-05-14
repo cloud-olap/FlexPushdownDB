@@ -28,7 +28,7 @@ using namespace normal::expression::gandiva;
 
 TEST_SUITE ("group" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("filescan-group-collate" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("group" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
@@ -67,21 +67,20 @@ TEST_CASE ("filescan-group-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   SPDLOG_INFO("Output:\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
-	  CHECK(tupleSet->numRows() == 1);
-	  CHECK(tupleSet->numColumns() == 3);
+	  CHECK(tupleSet->numRows() == 2);
+	  CHECK(tupleSet->numColumns() == 2);
 
-//  /*
-//   * FIXME: The following assumes the output is produced in a specific order but this shouldn't necessarily
-//   *  be assumed. Will only be able to check the properly once we have a sort operator
-//   */
-//  auto columnAA = tupleSet->getColumnByName("AA").value();
-//	  CHECK(columnAA->element(0).value()->value<long>() == 10);
-//
-//  auto columnAB = tupleSet->getColumnByName("AB").value();
-//	  CHECK(columnAB->element(0).value()->value<long>() == 13);
-//
-//  auto columnAC = tupleSet->getColumnByName("AC").value();
-//	  CHECK(columnAC->element(0).value()->value<long>() == 16);
+  /*
+   * FIXME: The following assumes the output is produced in a specific order but this shouldn't necessarily
+   *  be assumed. Will only be able to check properly once we have a sort operator
+   */
+  auto columnAA = tupleSet->getColumnByName("AA").value();
+	  CHECK(columnAA->element(0).value()->value<long>() == 10);
+	  CHECK(columnAA->element(1).value()->value<long>() == 12);
+
+  auto columnAB = tupleSet->getColumnByName("sum").value();
+	  CHECK(columnAB->element(0).value()->value<double>() == 27);
+	  CHECK(columnAB->element(1).value()->value<double>() == 15);
 
 }
 

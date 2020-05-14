@@ -43,3 +43,7 @@ std::vector<std::shared_ptr<Column>> Schema::makeColumns() {
 const std::vector<std::shared_ptr<::arrow::Field>> &Schema::fields() const {
   return schema_->fields();
 }
+
+int Schema::getFieldIndexByName(std::string name) {
+  return schema_->GetFieldIndex(name);
+}

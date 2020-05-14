@@ -24,7 +24,7 @@ using namespace normal::expression::gandiva;
 
 TEST_SUITE ("aggregate" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("SortTest" * doctest::skip(false)) {
+TEST_CASE ("SortTest" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
