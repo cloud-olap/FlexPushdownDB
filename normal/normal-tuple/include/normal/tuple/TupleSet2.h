@@ -44,6 +44,14 @@ public:
   static std::shared_ptr<TupleSet2> create(const std::shared_ptr<normal::core::TupleSet>& tuples);
 
   /**
+   * Creates a tuple set from an arrow table
+   *
+   * @param tuples
+   * @return
+   */
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Table> arrowTable);
+
+  /**
    * Creates an empty tuple set with the given schema
    *
    * @param tuples

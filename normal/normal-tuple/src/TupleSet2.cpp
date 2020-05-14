@@ -246,3 +246,7 @@ bool TupleSet2::validate() {
   else
 	return true;
 }
+
+std::shared_ptr<TupleSet2> TupleSet2::make(std::shared_ptr<::arrow::Table> arrowTable) {
+  return std::make_shared<TupleSet2>(std::move(arrowTable));
+}

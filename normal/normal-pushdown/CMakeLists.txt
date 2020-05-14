@@ -29,7 +29,8 @@ add_library(normal-pushdown STATIC
         src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
         src/Sort.cpp include/normal/pushdown/Sort.h
         src/cacheScan.cpp include/normal/pushdown/cacheScan.h
-        src/group/Group.cpp include/normal/pushdown/group/Group.h)
+        src/group/Group.cpp include/normal/pushdown/group/Group.h
+        src/group/GroupKey.cpp include/normal/pushdown/group/GroupKey.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

@@ -24,7 +24,7 @@ using namespace normal::core::type;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
 
-#define SKIP_SUITE true
+#define SKIP_SUITE false
 
 TEST_SUITE ("group" * doctest::skip(SKIP_SUITE)) {
 
@@ -32,7 +32,7 @@ TEST_CASE ("filescan-group-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto scan = std::make_shared<FileScan>("fileScan", "data/filter/a.csv");
+  auto scan = std::make_shared<FileScan>("fileScan", "data/group/a.csv");
   auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum",
 																	cast(col("AB"), float64Type()));
   auto

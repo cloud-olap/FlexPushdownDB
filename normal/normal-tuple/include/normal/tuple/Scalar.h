@@ -26,6 +26,8 @@ public:
 
   bool operator==(const Scalar &other) const;
 
+  bool operator!=(const Scalar &other) const;
+
   std::string toString();
 
   template<typename T>
