@@ -8,6 +8,7 @@
 #include <string>
 
 #include <normal/connector/partition/Partition.h>
+#include <memory>
 
 class S3SelectPartition: public Partition {
 public:
@@ -17,6 +18,11 @@ public:
   const std::string &getObject() const;
 
   std::string toString() override;
+  size_t hash() override;
+
+  bool equalTo(std::shared_ptr<Partition> other) override;
+
+  bool operator==(const S3SelectPartition& other);
 
 private:
   std::string bucket_;

@@ -15,6 +15,12 @@ public:
 
   [[nodiscard]] const std::string &getPath() const;
   std::string toString() override;
+  size_t hash() override;
+
+  bool equalTo(std::shared_ptr<Partition> other) override;
+
+  bool operator==(const LocalFilePartition& other);
+
 private:
   std::string path_;
 
