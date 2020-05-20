@@ -1,13 +1,10 @@
 //
-// Created by matt on 2/4/20.
+// Created by matt on 20/5/20.
 //
 
 #include <doctest/doctest.h>
 
 #include <normal/core/arrow/Arrays.h>
-#include <normal/expression/Expression.h>
-#include <normal/expression/gandiva/Cast.h>
-#include <normal/expression/gandiva/Column.h>
 #include <normal/core/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
 
@@ -35,5 +32,3 @@ TEST_CASE ("make-tupleset" * doctest::skip(false)) {
 
   SPDLOG_DEBUG("Output:\n{}", tuples->toString());
 }
-
-

@@ -41,7 +41,7 @@ add_executable(normal-test-suite
         src/CacheTest.cpp
         src/MultiQueryTest.cpp
         src/SQLTest.cpp
-        src/TupleTest.cpp)
+        )
 
 link_target(normal-test-suite)
 
@@ -84,7 +84,7 @@ add_executable(normal-test-tuple
         include/normal/test/Globals.h
         src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
-        src/TupleTest.cpp)
+        )
 
 link_target(normal-test-tuple)
 

@@ -56,6 +56,23 @@ target_link_libraries(normal-core PUBLIC normal-expression)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Test
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-core-test
+        test/Globals.h
+        test/MainTest.cpp)
+
+
+target_include_directories(normal-core-test PRIVATE include)
+
+target_link_libraries(normal-core-test spdlog::spdlog)
+target_link_libraries(normal-core-test doctest::doctest)
+target_link_libraries(normal-core-test normal-test)
+target_link_libraries(normal-core-test normal-core)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
