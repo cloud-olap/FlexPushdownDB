@@ -23,14 +23,16 @@ namespace normal::core::cache {
 class LoadResponseMessage {
 
 public:
-  LoadResponseMessage(std::shared_ptr<SegmentKey> SegmentKey, std::optional<std::shared_ptr<SegmentData>> SegmentData);
+  LoadResponseMessage(std::shared_ptr<SegmentKey> segmentKey,
+					  std::optional<std::shared_ptr<SegmentData>> segmentData);
 
-  static std::shared_ptr<LoadResponseMessage> make(std::shared_ptr<SegmentKey> SegmentKey, std::optional<std::shared_ptr<SegmentData>> SegmentData);
+  static std::shared_ptr<LoadResponseMessage> make(std::shared_ptr<SegmentKey> segmentKey,
+												   std::optional<std::shared_ptr<SegmentData>> segmentData);
 
   [[maybe_unused]] [[nodiscard]] const std::shared_ptr<SegmentKey> &getSegmentKey() const;
   [[maybe_unused]] [[nodiscard]] const std::optional<std::shared_ptr<SegmentData>> &getSegmentData() const;
 
-  std::string toString();
+  [[nodiscard]] std::string toString() const;
 
 private:
   std::shared_ptr<SegmentKey> segmentKey_;

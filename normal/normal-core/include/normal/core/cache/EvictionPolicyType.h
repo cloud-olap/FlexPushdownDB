@@ -25,9 +25,9 @@ enum EvictionPolicyTypeId {
 class EvictionPolicyType {
 
 public:
-  explicit EvictionPolicyType(EvictionPolicyTypeId Id);
+  explicit EvictionPolicyType(EvictionPolicyTypeId id);
 
-  static std::shared_ptr<EvictionPolicyType> make(EvictionPolicyTypeId Id);
+  static std::shared_ptr<EvictionPolicyType> make(EvictionPolicyTypeId id);
 
   [[maybe_unused]] [[nodiscard]] EvictionPolicyTypeId getId() const;
 

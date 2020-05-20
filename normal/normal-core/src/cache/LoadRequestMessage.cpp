@@ -8,17 +8,18 @@
 
 using namespace normal::core::cache;
 
-LoadRequestMessage::LoadRequestMessage(std::shared_ptr<SegmentKey> SegmentKey) : segmentKey_(std::move(SegmentKey)) {}
+LoadRequestMessage::LoadRequestMessage(std::shared_ptr<SegmentKey> segmentKey) :
+	segmentKey_(std::move(segmentKey)) {}
 
-std::shared_ptr<LoadRequestMessage> LoadRequestMessage::make(const std::shared_ptr<SegmentKey> &SegmentKey) {
-  return std::make_shared<LoadRequestMessage>(SegmentKey);
+std::shared_ptr<LoadRequestMessage> LoadRequestMessage::make(std::shared_ptr<SegmentKey> segmentKey) {
+  return std::make_shared<LoadRequestMessage>(std::move(segmentKey));
 }
 
 const std::shared_ptr<SegmentKey> &LoadRequestMessage::getSegmentKey() const {
   return segmentKey_;
 }
 
-std::string LoadRequestMessage::toString() {
+std::string LoadRequestMessage::toString() const {
   return fmt::format("segmentKey: {}", segmentKey_->toString());
 }
 

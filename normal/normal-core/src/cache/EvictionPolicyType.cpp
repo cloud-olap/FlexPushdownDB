@@ -6,10 +6,10 @@
 
 using namespace normal::core::cache;
 
-EvictionPolicyType::EvictionPolicyType(EvictionPolicyTypeId Id) : id_(Id) {}
+EvictionPolicyType::EvictionPolicyType(EvictionPolicyTypeId id) : id_(id) {}
 
-std::shared_ptr<EvictionPolicyType> EvictionPolicyType::make(EvictionPolicyTypeId Id) {
-  return std::make_shared<EvictionPolicyType>(Id);
+std::shared_ptr<EvictionPolicyType> EvictionPolicyType::make(EvictionPolicyTypeId id) {
+  return std::make_shared<EvictionPolicyType>(id);
 }
 
 [[maybe_unused]] EvictionPolicyTypeId EvictionPolicyType::getId() const {

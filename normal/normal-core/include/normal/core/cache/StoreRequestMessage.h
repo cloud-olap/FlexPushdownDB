@@ -20,14 +20,16 @@ namespace normal::core::cache {
 class StoreRequestMessage {
 
 public:
-  StoreRequestMessage(std::shared_ptr<SegmentKey> SegmentKey, std::shared_ptr<SegmentData> SegmentData);
+  StoreRequestMessage(std::shared_ptr<SegmentKey> SegmentKey,
+					  std::shared_ptr<SegmentData> SegmentData);
 
-  static std::shared_ptr<StoreRequestMessage> make(const std::shared_ptr<SegmentKey> &SegmentKey, const std::shared_ptr<SegmentData> &SegmentData);
+  static std::shared_ptr<StoreRequestMessage> make(std::shared_ptr<SegmentKey> SegmentKey,
+												   std::shared_ptr<SegmentData> SegmentData);
 
   [[nodiscard]] const std::shared_ptr<SegmentKey> &getSegmentKey() const;
   [[nodiscard]] const std::shared_ptr<SegmentData> &getSegmentData() const;
 
-  std::string toString();
+  [[nodiscard]] std::string toString() const;
 
 private:
   std::shared_ptr<SegmentKey> segmentKey_;

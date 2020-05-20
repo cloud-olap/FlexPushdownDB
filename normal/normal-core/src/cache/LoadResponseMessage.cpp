@@ -6,23 +6,25 @@
 
 using namespace normal::core::cache;
 
-LoadResponseMessage::LoadResponseMessage(std::shared_ptr<SegmentKey> SegmentKey,
-										 std::optional<std::shared_ptr<SegmentData>> SegmentData)
-	: segmentKey_(std::move(SegmentKey)), segmentData_(std::move(SegmentData)) {}
+LoadResponseMessage::LoadResponseMessage(std::shared_ptr<SegmentKey> segmentKey,
+										 std::optional<std::shared_ptr<SegmentData>> segmentData) :
+	segmentKey_(std::move(segmentKey)),
+	segmentData_(std::move(segmentData)) {}
 
-std::shared_ptr<LoadResponseMessage> LoadResponseMessage::make(std::shared_ptr<SegmentKey> SegmentKey,
-															   std::optional<std::shared_ptr<SegmentData>> SegmentData) {
-  return std::make_shared<LoadResponseMessage>(std::move(SegmentKey), std::move(SegmentData));
+std::shared_ptr<LoadResponseMessage>
+LoadResponseMessage::make(std::shared_ptr<SegmentKey> segmentKey,
+						  std::optional<std::shared_ptr<SegmentData>> segmentData) {
+  return std::make_shared<LoadResponseMessage>(std::move(segmentKey), std::move(segmentData));
 }
 
-const std::shared_ptr<SegmentKey> &LoadResponseMessage::getSegmentKey() const {
+[[maybe_unused]] const std::shared_ptr<SegmentKey> &LoadResponseMessage::getSegmentKey() const {
   return segmentKey_;
 }
 
-const std::optional<std::shared_ptr<SegmentData>> &LoadResponseMessage::getSegmentData() const {
+[[maybe_unused]] const std::optional<std::shared_ptr<SegmentData>> &LoadResponseMessage::getSegmentData() const {
   return segmentData_;
 }
 
-std::string LoadResponseMessage::toString() {
+std::string LoadResponseMessage::toString() const {
   return fmt::format("segmentKey: {}, segmentData.size: {}", segmentKey_->toString(), 0);
 }

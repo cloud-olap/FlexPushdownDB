@@ -20,14 +20,14 @@ namespace normal::core::cache {
 class EvictRequestMessage {
 
 public:
-  explicit EvictRequestMessage(std::shared_ptr<EvictionPolicyType> EvictionPolicy);
+  explicit EvictRequestMessage(std::shared_ptr<EvictionPolicyType> evictionPolicyType);
 
   [[maybe_unused]] [[nodiscard]] const std::shared_ptr<EvictionPolicyType> &getEvictionPolicy() const;
 
-  std::string toString();
+  [[nodiscard]] std::string toString() const;
 
 private:
-  std::shared_ptr<EvictionPolicyType> evictionPolicy_;
+  std::shared_ptr<EvictionPolicyType> evictionPolicyType_;
 
 };
 
