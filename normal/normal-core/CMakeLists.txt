@@ -37,7 +37,13 @@ add_library(normal-core STATIC
         include/normal/core/arrow/ScalarHelper.h
         src/type/Integer32Type.cpp include/normal/core/type/Integer32Type.h
         src/arrow/SchemaHelper.cpp include/normal/core/arrow/SchemaHelper.h
-        src/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h)
+        src/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h
+        src/cache/SegmentCacheActor.cpp include/normal/core/cache/SegmentCacheActor.h
+        src/cache/LoadRequestMessage.cpp include/normal/core/cache/LoadRequestMessage.h
+        src/cache/StoreRequestMessage.cpp include/normal/core/cache/StoreRequestMessage.h
+        src/cache/EvictRequestMessage.cpp include/normal/core/cache/EvictRequestMessage.h
+        src/cache/EvictionPolicyType.cpp include/normal/core/cache/EvictionPolicyType.h
+        src/cache/LoadResponseMessage.cpp include/normal/core/cache/LoadResponseMessage.h)
 
 
 target_include_directories(normal-core PUBLIC include)
@@ -53,6 +59,7 @@ target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)
 target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)
 target_link_libraries(normal-core PUBLIC expected)
 target_link_libraries(normal-core PUBLIC normal-expression)
+target_link_libraries(normal-core PUBLIC normal-cache)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -61,7 +68,8 @@ target_link_libraries(normal-core PUBLIC normal-expression)
 
 add_executable(normal-core-test
         test/Globals.h
-        test/MainTest.cpp)
+        test/MainTest.cpp
+        test/CacheTest.cpp)
 
 
 target_include_directories(normal-core-test PRIVATE include)

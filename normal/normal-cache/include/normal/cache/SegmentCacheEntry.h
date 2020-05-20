@@ -28,7 +28,7 @@ public:
   [[nodiscard]] const std::shared_ptr<SegmentData> &getData() const;
   [[maybe_unused]] [[nodiscard]] const std::chrono::system_clock::time_point &getLastUsedTimeStamp() const;
   [[maybe_unused]] [[nodiscard]] long getUsedCount() const;
-  void setLastUsedTimeStamp(const std::chrono::time_point &LastUsedTimeStamp);
+  void setLastUsedTimeStamp(const std::chrono::system_clock::time_point &LastUsedTimeStamp);
   void setUsedCount(long UsedCount);
 
 private:

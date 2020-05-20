@@ -36,7 +36,7 @@ const std::shared_ptr<SegmentData> &SegmentCacheEntry::getData() const {
   return usedCount_;
 }
 
-void SegmentCacheEntry::setLastUsedTimeStamp(const std::chrono::time_point &LastUsedTimeStamp) {
+void SegmentCacheEntry::setLastUsedTimeStamp(const std::chrono::system_clock::time_point &LastUsedTimeStamp) {
   lastUsedTimeStamp_ = LastUsedTimeStamp;
 }
 
