@@ -7,20 +7,26 @@
 
 #include <caf/all.hpp>
 #include <fmt/format.h>
+#include <normal/core/message/Message.h>
 
 #include "EvictionPolicyType.h"
 
 using namespace caf;
+using namespace normal::core::message;
 
 namespace normal::core::cache {
 
 /**
  * Request for the segment cache actor to run the given eviction policy.
  */
-class EvictRequestMessage {
+class EvictRequestMessage : public Message {
 
 public:
-  explicit EvictRequestMessage(std::shared_ptr<EvictionPolicyType> evictionPolicyType);
+  EvictRequestMessage(std::shared_ptr<EvictionPolicyType> evictionPolicyType,
+					  const std::string &sender);
+
+  static std::shared_ptr<EvictRequestMessage> make(std::shared_ptr<EvictionPolicyType> evictionPolicyType,
+												   const std::string &sender);
 
   [[maybe_unused]] [[nodiscard]] const std::shared_ptr<EvictionPolicyType> &getEvictionPolicy() const;
 

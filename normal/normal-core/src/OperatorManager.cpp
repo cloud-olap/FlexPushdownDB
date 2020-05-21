@@ -14,7 +14,6 @@
 #include <graphviz/gvc.h>
 
 #include <normal/core/Actors.h>
-#include <normal/core/cache/SegmentCacheActor.h>
 #include "normal/core/Globals.h"
 #include "normal/core/message/Envelope.h"
 #include "normal/core/Operator.h"
@@ -22,6 +21,9 @@
 #include "normal/core/OperatorActor.h"
 #include "normal/core/message/StartMessage.h"
 #include "normal/core/OperatorDirectory.h"
+#include <normal/core/cache/SegmentCacheActor.h>
+
+using namespace normal::core::cache;
 
 namespace normal::core {
 
@@ -101,7 +103,7 @@ void OperatorManager::join() {
 void OperatorManager::boot() {
 
   // Create the system actors
-  actorSystem->spawn(normal::core::cache::segmentCacheActorBehaviour);
+  actorSystem->spawn<normal::core::OperatorActor>(std::make_shared<SegmentCacheActor>("SegmentCache"));
 
   // Create the operators
   for (const auto &element: m_operatorMap) {

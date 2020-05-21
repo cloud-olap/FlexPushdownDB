@@ -36,7 +36,8 @@ void Collate::onReceive(const normal::core::message::Envelope &message) {
     auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message.message());
     this->onComplete(completeMessage);
   } else {
-    throw;
+	// FIXME: Propagate error properly
+	throw std::runtime_error("Unrecognized message type " + message.message().type());
   }
 }
 

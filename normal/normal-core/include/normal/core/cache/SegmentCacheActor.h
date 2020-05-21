@@ -1,9 +1,11 @@
 //
-// Created by matt on 20/5/20.
+// Created by matt on 21/5/20.
 //
 
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTCACHEACTOR_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTCACHEACTOR_H
+
+#include <normal/core/Operator.h>
 
 #include <caf/all.hpp>
 
@@ -14,26 +16,30 @@
 #include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/StoreRequestMessage.h>
 #include <normal/core/cache/EvictRequestMessage.h>
+#include "SegmentCacheActorState.h"
+#include "LoadResponseMessage.h"
 
 using namespace caf;
 using namespace normal::cache;
 
 namespace normal::core::cache {
 
-/**
- * Actor guarding access to a segment cache.
- *
- * Manages a single instance of a segment cache. Provides store, load and evict behaviours.
- */
-using SegmentCacheActor = typed_actor<reacts_to<normal::core::cache::LoadRequestMessage>,
-									  reacts_to<normal::core::cache::StoreRequestMessage>,
-									  reacts_to<normal::core::cache::EvictRequestMessage>>;
+class SegmentCacheActor : public normal::core::Operator {
 
-struct SegmentCacheActorState {
-  std::shared_ptr<SegmentCache> cache_ = SegmentCache::make();
+public:
+
+  SegmentCacheActor(const std::string &Name);
+
+  void onReceive(const message::Envelope &message) override;
+
+  void load(const LoadRequestMessage &msg);
+  void store(const StoreRequestMessage &msg);
+  void evict(const EvictRequestMessage &msg);
+
+private:
+  std::shared_ptr<SegmentCacheActorState> state_;
+
 };
-
-SegmentCacheActor::behavior_type segmentCacheActorBehaviour(SegmentCacheActor::stateful_pointer <SegmentCacheActorState> self);
 
 }
 

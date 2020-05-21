@@ -7,14 +7,18 @@
 using namespace normal::core::cache;
 
 LoadResponseMessage::LoadResponseMessage(std::shared_ptr<SegmentKey> segmentKey,
-										 std::optional<std::shared_ptr<SegmentData>> segmentData) :
+										 std::optional<std::shared_ptr<SegmentData>> segmentData,
+										 const std::string &sender) :
+	Message("LoadResponseMessage", sender),
 	segmentKey_(std::move(segmentKey)),
 	segmentData_(std::move(segmentData)) {}
 
 std::shared_ptr<LoadResponseMessage>
+
 LoadResponseMessage::make(std::shared_ptr<SegmentKey> segmentKey,
-						  std::optional<std::shared_ptr<SegmentData>> segmentData) {
-  return std::make_shared<LoadResponseMessage>(std::move(segmentKey), std::move(segmentData));
+						  std::optional<std::shared_ptr<SegmentData>> segmentData,
+						  const std::string &sender) {
+  return std::make_shared<LoadResponseMessage>(std::move(segmentKey), std::move(segmentData), sender);
 }
 
 [[maybe_unused]] const std::shared_ptr<SegmentKey> &LoadResponseMessage::getSegmentKey() const {

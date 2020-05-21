@@ -36,12 +36,13 @@ add_library(normal-core STATIC
         src/type/Integer32Type.cpp include/normal/core/type/Integer32Type.h
         src/arrow/SchemaHelper.cpp include/normal/core/arrow/SchemaHelper.h
         src/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h
-        src/cache/SegmentCacheActor.cpp include/normal/core/cache/SegmentCacheActor.h
         src/cache/LoadRequestMessage.cpp include/normal/core/cache/LoadRequestMessage.h
         src/cache/StoreRequestMessage.cpp include/normal/core/cache/StoreRequestMessage.h
         src/cache/EvictRequestMessage.cpp include/normal/core/cache/EvictRequestMessage.h
         src/cache/EvictionPolicyType.cpp include/normal/core/cache/EvictionPolicyType.h
-        src/cache/LoadResponseMessage.cpp include/normal/core/cache/LoadResponseMessage.h)
+        src/cache/LoadResponseMessage.cpp include/normal/core/cache/LoadResponseMessage.h
+        src/cache/SegmentCacheActor.cpp include/normal/core/cache/SegmentCacheActor.h
+        src/cache/SegmentCacheActorState.cpp include/normal/core/cache/SegmentCacheActorState.h)
 
 
 target_include_directories(normal-core PUBLIC include)

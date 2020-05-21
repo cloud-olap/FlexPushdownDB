@@ -6,25 +6,31 @@
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_STOREREQUESTMESSAGE_H
 
 #include <caf/all.hpp>
+
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
 
+#include <normal/core/message/Message.h>
+
 using namespace caf;
 using namespace normal::cache;
+using namespace normal::core::message;
 
 namespace normal::core::cache {
 
 /**
  * Reuest for the segment cache actor to store the given segment data given a segment key.
  */
-class StoreRequestMessage {
+class StoreRequestMessage: public Message {
 
 public:
   StoreRequestMessage(std::shared_ptr<SegmentKey> SegmentKey,
-					  std::shared_ptr<SegmentData> SegmentData);
+					  std::shared_ptr<SegmentData> SegmentData,
+					  const std::string &sender);
 
   static std::shared_ptr<StoreRequestMessage> make(std::shared_ptr<SegmentKey> SegmentKey,
-												   std::shared_ptr<SegmentData> SegmentData);
+												   std::shared_ptr<SegmentData> SegmentData,
+												   const std::string &sender);
 
   [[nodiscard]] const std::shared_ptr<SegmentKey> &getSegmentKey() const;
   [[nodiscard]] const std::shared_ptr<SegmentData> &getSegmentData() const;

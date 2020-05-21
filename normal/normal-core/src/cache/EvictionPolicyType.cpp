@@ -16,7 +16,7 @@ std::shared_ptr<EvictionPolicyType> EvictionPolicyType::make(EvictionPolicyTypeI
   return id_;
 }
 
-std::string EvictionPolicyType::toString() {
+std::string EvictionPolicyType::toString() const {
   switch (id_) {
   case EvictionPolicyTypeId::LRU: return "LRU";
   case EvictionPolicyTypeId::LFU: return "LFU";

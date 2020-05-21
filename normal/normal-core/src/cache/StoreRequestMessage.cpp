@@ -4,18 +4,19 @@
 
 #include "normal/core/cache/StoreRequestMessage.h"
 
-#include <utility>
-
 using namespace normal::core::cache;
 
 StoreRequestMessage::StoreRequestMessage(std::shared_ptr<SegmentKey> SegmentKey,
-										 std::shared_ptr<SegmentData> SegmentData) :
+										 std::shared_ptr<SegmentData> SegmentData,
+										 const std::string &sender) :
+	Message("StoreRequestMessage", sender),
 	segmentKey_(std::move(SegmentKey)),
 	segmentData_(std::move(SegmentData)) {}
 
 std::shared_ptr<StoreRequestMessage> StoreRequestMessage::make(std::shared_ptr<SegmentKey> SegmentKey,
-															   std::shared_ptr<SegmentData> SegmentData) {
-  return std::make_shared<StoreRequestMessage>(std::move(SegmentKey), std::move(SegmentData));
+															   std::shared_ptr<SegmentData> SegmentData,
+															   const std::string &sender) {
+  return std::make_shared<StoreRequestMessage>(std::move(SegmentKey), std::move(SegmentData), sender);
 }
 
 const std::shared_ptr<SegmentKey> &StoreRequestMessage::getSegmentKey() const {

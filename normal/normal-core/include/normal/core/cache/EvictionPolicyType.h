@@ -31,7 +31,7 @@ public:
 
   [[maybe_unused]] [[nodiscard]] EvictionPolicyTypeId getId() const;
 
-  std::string toString();
+  [[nodiscard]] std::string toString() const;
 
 private:
   EvictionPolicyTypeId id_;

@@ -8,8 +8,15 @@
 
 using namespace normal::core::cache;
 
-EvictRequestMessage::EvictRequestMessage(std::shared_ptr<EvictionPolicyType> evictionPolicyType) :
+EvictRequestMessage::EvictRequestMessage(std::shared_ptr<EvictionPolicyType> evictionPolicyType,
+										 const std::string &sender) :
+	Message("EvictRequestMessage", sender),
 	evictionPolicyType_(std::move(evictionPolicyType)) {}
+
+std::shared_ptr<EvictRequestMessage> EvictRequestMessage::make(std::shared_ptr<EvictionPolicyType> evictionPolicyType,
+															   const std::string &sender) {
+  return std::make_shared<EvictRequestMessage>(std::move(evictionPolicyType), sender);
+}
 
 [[maybe_unused]] const std::shared_ptr<EvictionPolicyType> &EvictRequestMessage::getEvictionPolicy() const {
   return evictionPolicyType_;
@@ -18,3 +25,4 @@ EvictRequestMessage::EvictRequestMessage(std::shared_ptr<EvictionPolicyType> evi
 std::string EvictRequestMessage::toString() const {
   return fmt::format("evictionPolicyType: {}", evictionPolicyType_->toString());
 }
+
