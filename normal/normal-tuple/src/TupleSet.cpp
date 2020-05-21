@@ -2,7 +2,7 @@
 // Created by matt on 12/12/19.
 //
 
-#include "normal/core/TupleSet.h"
+#include "normal/tuple/TupleSet.h"
 #include "normal/core/Globals.h"
 
 #include <utility>

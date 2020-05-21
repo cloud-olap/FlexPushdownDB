@@ -5,7 +5,7 @@
 #include <doctest/doctest.h>
 
 #include <normal/core/arrow/Arrays.h>
-#include <normal/core/TupleSet.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
 
 using namespace normal::core::type;

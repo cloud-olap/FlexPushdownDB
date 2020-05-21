@@ -8,7 +8,7 @@
 #include <nanobench.h>
 
 #include <normal/core/arrow/Arrays.h>
-#include <normal/core/TupleSet.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
 #include <normal/core/type/Float64Type.h>
 

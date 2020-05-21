@@ -10,10 +10,10 @@
 
 #include <aws/s3/S3Client.h>
 #include <normal/core/Cache.h>
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 
 #include "normal/core/Operator.h"
-#include "normal/core/TupleSet.h"
+#include "normal/tuple/TupleSet.h"
 
 namespace normal::pushdown {
 

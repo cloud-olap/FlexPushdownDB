@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_SUM_H
 #define NORMAL_NORMAL_PUSHDOWN_SRC_AGGREGATE_SUM_H
 
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/expression/gandiva/Expression.h>
 
 #include <normal/pushdown/aggregate/AggregationFunction.h>

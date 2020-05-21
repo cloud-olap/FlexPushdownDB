@@ -9,12 +9,12 @@
 #include <memory>                  // for unique_ptr
 
 #include <arrow/api.h>
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
 #include "normal/core/Operator.h"
 #include "normal/core/OperatorContext.h"
-#include "normal/core/TupleSet.h"
+#include "normal/tuple/TupleSet.h"
 
 namespace normal::core {
   class Message;

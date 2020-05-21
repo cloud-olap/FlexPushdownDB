@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <normal/core/TupleSet.h>
+#include <normal/tuple/TupleSet.h>
 
 namespace normal::pushdown::aggregate {
 

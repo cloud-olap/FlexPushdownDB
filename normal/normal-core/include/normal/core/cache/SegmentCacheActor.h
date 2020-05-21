@@ -33,7 +33,7 @@ struct SegmentCacheActorState {
   std::shared_ptr<SegmentCache> cache_ = SegmentCache::make();
 };
 
-SegmentCacheActor::behavior_type SegmentCacheActorBehaviour(SegmentCacheActor::stateful_pointer <SegmentCacheActorState> self);
+SegmentCacheActor::behavior_type segmentCacheActorBehaviour(SegmentCacheActor::stateful_pointer <SegmentCacheActorState> self);
 
 }
 

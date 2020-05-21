@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/pushdown/Globals.h>
 #include <normal/expression/gandiva/Filter.h>

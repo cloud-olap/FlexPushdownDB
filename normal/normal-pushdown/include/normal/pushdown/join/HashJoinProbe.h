@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_JOIN_HASHJOINPROBE_H
 
 #include <normal/core/Operator.h>
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
 #include "JoinPredicate.h"

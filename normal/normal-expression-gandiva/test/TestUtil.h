@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include <normal/core/TupleSet.h>
+#include <normal/tuple/TupleSet.h>
 
 namespace normal::expression::gandiva::test {
 

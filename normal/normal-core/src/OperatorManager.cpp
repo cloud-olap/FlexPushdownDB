@@ -101,7 +101,7 @@ void OperatorManager::join() {
 void OperatorManager::boot() {
 
   // Create the system actors
-  actorSystem->spawn(normal::core::cache::SegmentCacheActorBehaviour);
+  actorSystem->spawn(normal::core::cache::segmentCacheActorBehaviour);
 
   // Create the operators
   for (const auto &element: m_operatorMap) {

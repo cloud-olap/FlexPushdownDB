@@ -5,7 +5,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include <doctest/doctest.h>
 
-#include <normal/core/TupleSet.h>
+#include <normal/tuple/TupleSet.h>
 
 namespace arrow { class Array; }
 namespace arrow { class MemoryPool; }

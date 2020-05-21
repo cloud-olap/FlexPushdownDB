@@ -14,8 +14,8 @@
 #include <arrow/status.h>              // for Status
 #include <arrow/type_fwd.h>            // for default_memory_pool
 
-#include <normal/core/message/TupleMessage.h>
-#include <normal/core/TupleSet.h>
+#include <normal/pushdown/TupleMessage.h>
+#include <normal/tuple/TupleSet.h>
 #include <normal/core/message/CompleteMessage.h>
 
 #include "normal/core/message/Message.h"       // for Message

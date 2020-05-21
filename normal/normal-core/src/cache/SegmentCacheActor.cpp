@@ -8,7 +8,7 @@
 
 using namespace normal::core::cache;
 
-SegmentCacheActor::behavior_type behaviour(SegmentCacheActor::stateful_pointer <SegmentCacheActorState> self) {
+SegmentCacheActor::behavior_type normal::core::cache::segmentCacheActorBehaviour(SegmentCacheActor::stateful_pointer <SegmentCacheActorState> self) {
   return {
 	  [&](const normal::core::cache::LoadRequestMessage &msg) {
 		SPDLOG_TRACE("Load  |  loadMessage: {}", msg.toString());

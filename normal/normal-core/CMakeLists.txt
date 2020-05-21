@@ -16,8 +16,6 @@ add_library(normal-core STATIC
         src/OperatorContext.cpp include/normal/core/OperatorContext.h
         src/OperatorManager.cpp include/normal/core/OperatorManager.h
         src/message/Message.cpp include/normal/core/message/Message.h
-        src/message/TupleMessage.cpp include/normal/core/message/TupleMessage.h
-        src/TupleSet.cpp include/normal/core/TupleSet.h
         src/Cache.cpp include/normal/core/Cache.h
         src/Actors.cpp include/normal/core/Actors.h
         src/OperatorDirectory.cpp include/normal/core/OperatorDirectory.h

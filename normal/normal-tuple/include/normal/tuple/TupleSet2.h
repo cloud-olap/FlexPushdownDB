@@ -10,7 +10,7 @@
 #include <arrow/api.h>
 #include <arrow/table.h>
 
-#include <normal/core/TupleSet.h>
+#include <normal/tuple/TupleSet.h>
 
 #include "Column.h"
 #include "Schema.h"

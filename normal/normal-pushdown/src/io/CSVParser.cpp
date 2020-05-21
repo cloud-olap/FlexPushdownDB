@@ -7,8 +7,8 @@
 #include <iostream>
 #include <sstream>
 #include <arrow/csv/parser.h>
-#include <normal/core/TupleSet.h>
-#include <normal/core/message/TupleMessage.h>
+#include <normal/tuple/TupleSet.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <arrow/type_fwd.h>            // for default_memory_pool
 #include <arrow/status.h>              // for Status
 #include <arrow/result.h>              // for Result

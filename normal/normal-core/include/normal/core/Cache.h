@@ -10,7 +10,7 @@
 #include <unordered_map> 
 
 #include "normal/core/Operator.h"
-#include "normal/core/TupleSet.h"
+#include "normal/tuple/TupleSet.h"
 
 class Cache {
 private:

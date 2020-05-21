@@ -40,9 +40,9 @@
 #include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
 
 #include "normal/core/message/Message.h"                            // for Message
-#include "normal/core/TupleSet.h"                           // for TupleSet
+#include "normal/tuple/TupleSet.h"                           // for TupleSet
 #include "s3/S3SelectParser.h"
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
 #include "normal/pushdown/Globals.h"

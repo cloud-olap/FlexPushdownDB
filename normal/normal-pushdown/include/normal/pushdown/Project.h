@@ -8,7 +8,7 @@
 #include <normal/core/Operator.h>
 #include <normal/expression/Expression.h>
 #include <normal/expression/gandiva/Expression.h>
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
 namespace normal::pushdown {

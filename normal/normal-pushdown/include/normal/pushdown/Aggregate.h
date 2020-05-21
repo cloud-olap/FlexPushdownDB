@@ -10,7 +10,7 @@
 #include <vector>
 
 #include <normal/core/Operator.h>
-#include <normal/core/message/TupleMessage.h>
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/pushdown/aggregate/AggregationResult.h>
 #include <normal/pushdown/aggregate/AggregationFunction.h>

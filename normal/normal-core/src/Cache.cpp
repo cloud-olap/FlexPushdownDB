@@ -6,6 +6,6 @@
 #include <string>
 
 #include "normal/core/Operator.h"
-#include "normal/core/TupleSet.h"
+#include "normal/tuple/TupleSet.h"
 #include "normal/core/Cache.h"
 #include<unordered_map>
