@@ -9,6 +9,8 @@
 
 #include <normal/tuple/TupleSet.h>
 
+using namespace normal::tuple;
+
 namespace normal::expression::gandiva::test {
 
 class TestUtil {
@@ -20,7 +22,7 @@ public:
  *
  * @return
  */
-  static std::shared_ptr<normal::core::TupleSet> prepareTupleSet() {
+  static std::shared_ptr<TupleSet> prepareTupleSet() {
 
 	auto column1 = std::vector{"1", "2", "3"};
 	auto column2 = std::vector{"4", "5", "6"};
@@ -37,7 +39,7 @@ public:
 	auto arrowColumn2 = Arrays::make<arrow::StringType>(column2).value();
 	auto arrowColumn3 = Arrays::make<arrow::StringType>(column3).value();
 
-	auto tuples = normal::core::TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
+	auto tuples = TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
 
 	return tuples;
   }

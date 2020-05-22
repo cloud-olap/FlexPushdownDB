@@ -53,7 +53,7 @@ private:
   void onTuple(const core::message::TupleMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
 
-  void cacheInputSchema(const normal::core::TupleSet &tuples);
+  void cacheInputSchema(const TupleSet &tuples);
   void buildAndCacheProjector();
 
 };

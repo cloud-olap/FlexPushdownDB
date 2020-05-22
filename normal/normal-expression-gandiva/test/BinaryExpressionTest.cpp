@@ -45,7 +45,7 @@ TEST_CASE ("less-than" * doctest::skip(false || SKIP_SUITE)) {
 
   SPDLOG_DEBUG("Projector:\n{}", projector->showString());
 
-  auto evaluated = tuples->evaluate(projector).value();
+  auto evaluated = projector->evaluate(*tuples);
   auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 

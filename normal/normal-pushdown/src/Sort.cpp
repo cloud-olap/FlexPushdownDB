@@ -67,7 +67,7 @@ namespace normal::pushdown{
         auto newTable = arrow::Table::Make(tuples_->table()->schema(),newArrList);
         //tuples_->table() = newTable;
         //SPDLOG_INFO(tuples_->table()->column(0)->chunk(0)->ToString());
-        auto newTuples  = core::TupleSet::make(newTable);
+        auto newTuples  = TupleSet::make(newTable);
         std::shared_ptr<normal::core::message::Message> tpmessage = std::make_shared<normal::core::message::TupleMessage>(newTuples, this->name());
         ctx()->tell(tpmessage);
         ctx()->notifyComplete();
@@ -81,14 +81,14 @@ namespace normal::pushdown{
         compute(message.tuples());
     }
 
-    void Sort::compute(const std::shared_ptr<normal::core::TupleSet> &tuples){
+    void Sort::compute(const std::shared_ptr<TupleSet> &tuples){
         SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
         //concantenate tuples
         if (tuples_== nullptr) {
             tuples_ = tuples;
         } else {
-            tuples_ = normal::core::TupleSet::concatenate(tuples, tuples_);
+            tuples_ = TupleSet::concatenate(tuples, tuples_);
         }
         // Set the input schema if not yet set
 

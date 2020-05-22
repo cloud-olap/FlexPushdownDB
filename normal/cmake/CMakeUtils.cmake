@@ -26,7 +26,16 @@ function(setDefaults)
     set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE INTERNAL "CMAKE_CXX_STANDARD_REQUIRED")
     set(CMAKE_CXX_EXTENSIONS OFF CACHE INTERNAL "CMAKE_CXX_EXTENSIONS")
 
+#    set(CMAKE_VERBOSE_MAKEFILE ON CACHE INTERNAL "CMAKE_VERBOSE_MAKEFILE")
+
     add_compile_options(-Wall -Wextra -pedantic)
+
+#    # Needed so we compile with CLang standard library, we use the CMake variable instead of the functions so
+#    # we can pass the needed flags to external project cmake invocations
+##    add_compile_options(-stdlib=libc++)
+##    add_link_options(-stdlib=libc++)
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" CACHE INTERNAL "CMAKE_CXX_FLAGS")
+#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++" CACHE INTERNAL "CMAKE_EXE_LINKER_FLAGS")
 
     #    add_compile_options(-fsanitize=undefined -fno-omit-frame-pointer)
     #    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)

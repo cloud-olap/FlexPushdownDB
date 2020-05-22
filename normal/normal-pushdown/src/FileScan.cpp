@@ -65,7 +65,7 @@ void FileScan::onStart() {
                                               input,
                                               readOptions, parseOptions, convertOptions).ValueOrDie();
 
-  auto tupleSet = normal::core::TupleSet::make(reader);
+  auto tupleSet = TupleSet::make(reader);
 
   std::shared_ptr<normal::core::message::Message> message = std::make_shared<normal::core::message::TupleMessage>(tupleSet, this->name());
   ctx()->tell(message);

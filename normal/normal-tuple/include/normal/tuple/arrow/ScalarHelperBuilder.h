@@ -9,7 +9,7 @@
 #include <memory>
 #include <arrow/scalar.h>
 #include "ScalarHelperImpl.h"
-#include "ScalarHelper.h"
+#include "normal/tuple/arrow/ScalarHelper.h"
 
 class ScalarHelperBuilder {
 

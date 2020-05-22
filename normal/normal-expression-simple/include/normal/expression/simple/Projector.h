@@ -20,6 +20,7 @@ public:
   [[nodiscard]] std::shared_ptr<arrow::Schema> getResultSchema() override;
 
   std::shared_ptr<arrow::ArrayVector> evaluate(const arrow::RecordBatch &batch) override;
+  std::shared_ptr<TupleSet> evaluate(const TupleSet &tupleSet) override;
 
 private:
   std::vector<std::shared_ptr<Expression>> expressions_;

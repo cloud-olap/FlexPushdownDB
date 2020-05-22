@@ -12,6 +12,8 @@
 #include "normal/core/message/Message.h"
 #include "normal/tuple/TupleSet.h"
 
+using namespace normal::tuple;
+
 namespace normal::core::message {
 
 /**

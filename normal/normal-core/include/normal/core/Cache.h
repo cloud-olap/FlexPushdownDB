@@ -12,6 +12,8 @@
 #include "normal/core/Operator.h"
 #include "normal/tuple/TupleSet.h"
 
+using namespace normal::tuple;
+
 class Cache {
 private:
  
@@ -20,7 +22,7 @@ private:
 
 public:
 	//name/id->tupleSets
-  std::unordered_map<std::string, std::shared_ptr<normal::core::TupleSet>> m_cacheData;
+  std::unordered_map<std::string, std::shared_ptr<TupleSet>> m_cacheData;
 
   ~Cache() = default;
 };

@@ -41,7 +41,7 @@ public:
    * @param tuples
    * @return
    */
-  static std::shared_ptr<TupleSet2> create(const std::shared_ptr<normal::core::TupleSet>& tuples);
+  static std::shared_ptr<TupleSet2> create(const std::shared_ptr<TupleSet>& tuples);
 
   /**
    * Creates a tuple set from an arrow table
@@ -71,7 +71,7 @@ public:
    * Gets the tuple set as a v1 tuple set
    * @return
    */
-  std::shared_ptr<normal::core::TupleSet> toTupleSetV1();
+  std::shared_ptr<TupleSet> toTupleSetV1();
 
   /**
    * Returns number of rows in the tuple set

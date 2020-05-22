@@ -18,7 +18,7 @@ namespace normal::pushdown {
  * @param to
  * @return
  */
-std::shared_ptr<normal::core::TupleSet> S3SelectParser::parseCompletePayload(
+std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
     const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &from,
     const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &to) {
 
@@ -76,7 +76,7 @@ std::shared_ptr<normal::core::TupleSet> S3SelectParser::parseCompletePayload(
   }
 
   std::shared_ptr<arrow::csv::TableReader> tableReader = makeReaderResult.ValueOrDie();
-  std::shared_ptr<normal::core::TupleSet> tupleSet = normal::core::TupleSet::make(tableReader);
+  std::shared_ptr<TupleSet> tupleSet = TupleSet::make(tableReader);
 
   return tupleSet;
 }
@@ -86,7 +86,7 @@ std::shared_ptr<normal::core::TupleSet> S3SelectParser::parseCompletePayload(
  * @param payload
  * @return
  */
-std::shared_ptr<normal::core::TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char> &payload) {
+std::shared_ptr<TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char> &payload) {
 
   SPDLOG_TRACE({
                  Aws::String payloadString(payload.begin(), payload.end());
@@ -128,7 +128,7 @@ std::shared_ptr<normal::core::TupleSet> S3SelectParser::parsePayload(Aws::Vector
                  spdlog::trace("Complete payload: \n{}", records3);
                });
 
-  std::shared_ptr<normal::core::TupleSet>
+  std::shared_ptr<TupleSet>
       tupleSet = S3SelectParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
 
   return tupleSet;

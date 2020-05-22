@@ -30,6 +30,33 @@ std::shared_ptr<arrow::ArrayVector> Projector::evaluate(const arrow::RecordBatch
   return outputs;
 }
 
+std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
+
+  // Read the table in batches
+  std::shared_ptr<arrow::RecordBatch> batch;
+  arrow::TableBatchReader reader(*tupleSet.table());
+  reader.set_chunksize(tuple::DefaultChunkSize);
+  auto res = reader.ReadNext(&batch);
+  std::shared_ptr<TupleSet> resultTuples = nullptr;
+  while (res.ok() && batch) {
+
+	// Evaluate expressions against a batch
+	std::shared_ptr<arrow::ArrayVector> outputs = evaluate(*batch);
+	auto batchResultTuples = TupleSet::make(getResultSchema(), *outputs);
+
+	// Concatenate the batch result to the full results
+	if (resultTuples)
+	  resultTuples = tupleSet.concatenate(batchResultTuples, resultTuples);
+	else
+	  resultTuples = batchResultTuples;
+
+	res = reader.ReadNext(&batch);
+  }
+
+  return resultTuples;
+
+}
+
 void Projector::compile(const std::shared_ptr<arrow::Schema> &) {
   // NOOP
 }

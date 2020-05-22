@@ -218,7 +218,7 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
 
 	auto table = arrow::Table::Make(schema->getSchema(), columns);
 
-	const std::shared_ptr<core::TupleSet> &groupedTupleSet = core::TupleSet::make(table);
+	const std::shared_ptr<TupleSet> &groupedTupleSet = TupleSet::make(table);
 	auto tupleSetV2 = TupleSet2::create(groupedTupleSet);
 
 	std::shared_ptr<normal::core::message::Message>
@@ -230,7 +230,7 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
 
 }
 
-void Group::cacheInputSchema(const normal::core::TupleSet &tuples) {
+void Group::cacheInputSchema(const TupleSet &tuples) {
   if(!inputSchema_.has_value()){
 	inputSchema_ = tuples.table()->schema();
   }

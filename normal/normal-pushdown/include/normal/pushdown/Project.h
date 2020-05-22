@@ -7,6 +7,7 @@
 
 #include <normal/core/Operator.h>
 #include <normal/expression/Expression.h>
+#include <normal/expression/Projector.h>
 #include <normal/expression/gandiva/Expression.h>
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
@@ -67,7 +68,7 @@ private:
   /**
    * A buffer of received tuples that are not projected until enough tuples have been received
    */
-  std::shared_ptr<normal::core::TupleSet> tuples_;
+  std::shared_ptr<TupleSet> tuples_;
 
   /**
    * The expression projector, created and cached when input schema is extracted from first tuple received
@@ -84,7 +85,7 @@ private:
    * Sends the given projected tuples to consumers
    * @param projected
    */
-  void sendTuples(std::shared_ptr<normal::core::TupleSet> &projected);
+  void sendTuples(std::shared_ptr<TupleSet> &projected);
 
   /**
    * Projects the tuples and sends them to consumers

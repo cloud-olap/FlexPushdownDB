@@ -20,7 +20,7 @@ TupleSet2::TupleSet2(std::shared_ptr<::arrow::Table> arrowTable) :
 	table_(std::optional(std::move(arrowTable))) {
 }
 
-std::shared_ptr<TupleSet2> TupleSet2::create(const std::shared_ptr<normal::core::TupleSet> &tuples) {
+std::shared_ptr<TupleSet2> TupleSet2::create(const std::shared_ptr<TupleSet> &tuples) {
   return std::make_shared<TupleSet2>(tuples->table());
 }
 
@@ -84,11 +84,11 @@ std::string TupleSet2::showString() {
   return showString(TupleSetShowOptions(TupleSetShowOrientation::ColumnOriented));
 }
 
-std::shared_ptr<normal::core::TupleSet> TupleSet2::toTupleSetV1() {
+std::shared_ptr<TupleSet> TupleSet2::toTupleSetV1() {
 
   // FIXME: V1 tuple sets cant be empty
 
-  return normal::core::TupleSet::make(table_.value());
+  return TupleSet::make(table_.value());
 }
 
 long TupleSet2::numColumns() {

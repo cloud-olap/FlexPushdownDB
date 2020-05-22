@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include <normal/core/arrow/SchemaHelper.h>
+#include <normal/tuple/arrow/SchemaHelper.h>
 
 #include <normal/pushdown/join/HashTableMessage.h>
 #include <normal/pushdown/Globals.h>

@@ -10,17 +10,15 @@
 
 #include <arrow/api.h>
 #include <arrow/csv/api.h>
-#include <normal/expression/Expression.h>
 #include <tl/expected.hpp>
-#include <normal/core/arrow/Arrays.h>
-#include <normal/core/arrow/TableHelper.h>
-#include <normal/expression/Projector.h>
-#include "normal/core/Globals.h"
+#include <normal/tuple/arrow/Arrays.h>
+#include <normal/tuple/arrow/TableHelper.h>
+#include "normal/tuple/Globals.h"
 
 namespace arrow { class Table; }
 namespace arrow::csv { class TableReader; }
 
-namespace normal::core {
+namespace normal::tuple {
 
 /**
  * A list of tuples/rows/records. Really just encapsulates Arrow tables and record batches. Hiding
@@ -113,7 +111,7 @@ public:
     std::shared_ptr<arrow::RecordBatch> batch;
     arrow::TableBatchReader reader(*table_);
 
-    reader.set_chunksize(DEFAULT_CHUNK_SIZE);
+    reader.set_chunksize(tuple::DefaultChunkSize);
     arrowStatus = reader.ReadNext(&batch);
 
     T result;
@@ -125,8 +123,8 @@ public:
     return result;
   }
 
-  tl::expected<std::shared_ptr<TupleSet>, std::string>
-  evaluate(const std::shared_ptr<normal::expression::Projector> &projector);
+//  tl::expected<std::shared_ptr<TupleSet>, std::string>
+//  evaluate(const std::shared_ptr<normal::expression::Projector> &projector);
 };
 
 }

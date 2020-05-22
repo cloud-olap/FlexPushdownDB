@@ -52,7 +52,7 @@ void Collate::show() {
   SPDLOG_DEBUG("{}  |  Show:\n{}", this->name(), tuples_->toString());
 }
 
-std::shared_ptr<normal::core::TupleSet> Collate::tuples() {
+std::shared_ptr<TupleSet> Collate::tuples() {
 
   assert(tuples_);
 

@@ -9,7 +9,7 @@
 
 #include <arrow/api.h>
 #include <tl/expected.hpp>
-#include "ArrayHelper.h"
+#include "normal/tuple/arrow/ArrayHelper.h"
 
 /**
  * Arrow utility methods

@@ -7,7 +7,7 @@
 #include <doctest/doctest.h>
 #include <nanobench.h>
 
-#include <normal/core/arrow/Arrays.h>
+#include <normal/tuple/arrow/Arrays.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
 #include <normal/core/type/Float64Type.h>
@@ -27,7 +27,7 @@ using namespace normal::core::type;
 namespace spl = normal::expression::simple;
 namespace gdv = normal::expression::gandiva;
 
-std::shared_ptr<normal::core::TupleSet> prepareRandomTupleSet(unsigned long numColumns, unsigned long numRows) {
+std::shared_ptr<TupleSet> prepareRandomTupleSet(unsigned long numColumns, unsigned long numRows) {
 
   // Create fields
   std::vector<std::shared_ptr<arrow::Field>> fields;
@@ -50,7 +50,7 @@ std::shared_ptr<normal::core::TupleSet> prepareRandomTupleSet(unsigned long numC
 	arrowArrays.emplace_back(arrowArray.value());
   }
 
-  auto tuples = normal::core::TupleSet::make(schema, arrowArrays);
+  auto tuples = TupleSet::make(schema, arrowArrays);
 
   return tuples;
 }
@@ -80,12 +80,12 @@ TEST_CASE ("benchmark-expression") {
 
   ankerl::nanobench::Config().minEpochIterations(10).run(
 	  "evaluate-simple-cast-string-to-decimal-reuse-projector", [&] {
-		auto evaluated = tuples->evaluate(simpleProjector).value();
+		auto evaluated = simpleProjector->evaluate(*tuples);
 	  });
 
   ankerl::nanobench::Config().minEpochIterations(10).run(
 	  "evaluate-gandiva-cast-string-to-decimal-reuse-projector",
 	  [&] {
-		auto evaluated = tuples->evaluate(gandivaProjector).value();
+		auto evaluated = gandivaProjector->evaluate(*tuples);
 	  });
 }

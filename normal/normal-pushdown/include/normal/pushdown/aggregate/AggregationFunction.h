@@ -8,8 +8,11 @@
 #include <memory>
 
 #include <normal/tuple/TupleSet.h>
+#include <normal/expression/Projector.h>
 
 #include <normal/pushdown/aggregate/AggregationResult.h>
+
+using namespace normal::tuple;
 
 namespace normal::pushdown::aggregate {
 
@@ -45,7 +48,7 @@ public:
    */
   [[nodiscard]] const std::string &alias() const;
 
-  virtual void apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<normal::core::TupleSet> tuples) = 0;
+  virtual void apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) = 0;
   virtual std::shared_ptr<arrow::DataType> returnType() = 0;
 
   /**

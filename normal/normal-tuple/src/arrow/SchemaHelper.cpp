@@ -2,7 +2,7 @@
 // Created by matt on 30/4/20.
 //
 
-#include "normal/core/arrow/SchemaHelper.h"
+#include "normal/tuple/arrow/SchemaHelper.h"
 
 using namespace normal::core::arrow;
 

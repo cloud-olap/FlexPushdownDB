@@ -47,7 +47,7 @@ TEST_CASE ("cast-string-to-decimal" * doctest::skip(false || SKIP_SUITE)) {
 
   SPDLOG_DEBUG("Projector:\n{}", projector->showString());
 
-  auto evaluated = tuples->evaluate(projector).value();
+  auto evaluated = projector->evaluate(*tuples);
   auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
@@ -83,7 +83,7 @@ TEST_CASE ("cast-string-to-double" * doctest::skip(false || SKIP_SUITE)) {
   auto projector = std::make_shared<Projector>(expressions);
   projector->compile(tuples->table()->schema());
 
-  auto evaluated = tuples->evaluate(projector).value();
+  auto evaluated = projector->evaluate(*tuples);
   auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
@@ -111,7 +111,7 @@ TEST_CASE ("cast-string-to-long" * doctest::skip(false || SKIP_SUITE)) {
   auto projector = std::make_shared<Projector>(expressions);
   projector->compile(tuples->table()->schema());
 
-  auto evaluated = tuples->evaluate(projector).value();
+  auto evaluated = projector->evaluate(*tuples);
   auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
@@ -139,7 +139,7 @@ TEST_CASE ("cast-string-to-int" * doctest::skip(false || SKIP_SUITE)) {
   auto projector = std::make_shared<Projector>(expressions);
   projector->compile(tuples->table()->schema());
 
-  auto evaluated = tuples->evaluate(projector).value();
+ auto evaluated = projector->evaluate(*tuples);
   auto evaluatedTupleSet = normal::tuple::TupleSet2::create(evaluated);
   SPDLOG_DEBUG("Output:\n{}", evaluatedTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 

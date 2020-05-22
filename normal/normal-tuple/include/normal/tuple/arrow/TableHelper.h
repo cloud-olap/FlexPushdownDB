@@ -8,9 +8,9 @@
 #include <tl/expected.hpp>
 #include <string>
 #include <arrow/api.h>
-#include <normal/core/Globals.h>
+#include <normal/tuple/Globals.h>
 
-#include "normal/core/arrow/ArrayHelper.h"
+#include "normal/tuple/arrow/ArrayHelper.h"
 
 /**
  * Bunch of utilities for working with Arrow tables

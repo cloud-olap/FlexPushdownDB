@@ -8,7 +8,7 @@
 #include "arrow/visitor_inline.h"
 #include "arrow/scalar.h"
 
-#include <normal/core/arrow/ScalarHelperBuilder.h>
+#include <normal/tuple/arrow/ScalarHelperBuilder.h>
 #include <normal/expression/gandiva/Projector.h>
 #include "normal/pushdown/aggregate/Sum.h"
 #include "normal/pushdown/Globals.h"
@@ -20,7 +20,7 @@ Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Ex
     expression_(std::move(expression)) {}
 
 
-void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<normal::core::TupleSet> tuples) {
+void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) {
 
   SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
@@ -114,7 +114,7 @@ void Sum::buildAndCacheProjector() {
   }
 }
 
-void Sum::cacheInputSchema(const normal::core::TupleSet &tuples) {
+void Sum::cacheInputSchema(const TupleSet &tuples) {
   if(!inputSchema_.has_value()){
 	inputSchema_ = tuples.table()->schema();
   }

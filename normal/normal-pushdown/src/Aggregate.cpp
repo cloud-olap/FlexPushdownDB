@@ -94,7 +94,7 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
     std::shared_ptr<arrow::Table> table;
     table = arrow::Table::Make(schema, columns);
 
-    const std::shared_ptr<core::TupleSet> &aggregatedTuples = core::TupleSet::make(table);
+    const std::shared_ptr<TupleSet> &aggregatedTuples = TupleSet::make(table);
 
     SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
 
@@ -121,7 +121,7 @@ void Aggregate::cacheInputSchema(const core::message::TupleMessage &message) {
   }
 }
 
-void Aggregate::compute(const std::shared_ptr<normal::core::TupleSet> &tuples) {
+void Aggregate::compute(const std::shared_ptr<TupleSet> &tuples) {
   for(size_t i=0;i<functions_->size();++i){
     auto function = functions_->at(i);
     auto result = results_->at(i);

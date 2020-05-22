@@ -4,12 +4,12 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/core/arrow/Arrays.h>
+#include <normal/tuple/arrow/Arrays.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/core/type/DecimalType.h>
 
+using namespace normal::tuple;
 using namespace normal::core::type;
-using namespace normal::expression;
 
 TEST_CASE ("make-tupleset" * doctest::skip(false)) {
 
@@ -28,7 +28,7 @@ TEST_CASE ("make-tupleset" * doctest::skip(false)) {
   auto arrowColumn2 = Arrays::make<arrow::StringType>(column2).value();
   auto arrowColumn3 = Arrays::make<arrow::StringType>(column3).value();
 
-  auto tuples = normal::core::TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
+  auto tuples = TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
 
   SPDLOG_DEBUG("Output:\n{}", tuples->toString());
 }

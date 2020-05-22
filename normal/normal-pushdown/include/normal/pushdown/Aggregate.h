@@ -40,7 +40,7 @@ public:
             std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions);
   ~Aggregate() override = default;
 
-  void compute(const std::shared_ptr<normal::core::TupleSet> &tuples);
+  void compute(const std::shared_ptr<TupleSet> &tuples);
   void cacheInputSchema(const core::message::TupleMessage &message);
 
 };

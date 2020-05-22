@@ -18,7 +18,10 @@
 
 namespace normal::core {
   class Message;
-  class TupleSet;
+}
+
+namespace normal::tuple {
+	class TupleSet;
 }
 
 namespace normal::pushdown {
@@ -26,7 +29,7 @@ namespace normal::pushdown {
 class Collate : public normal::core::Operator {
 
 private:
-  std::shared_ptr<normal::core::TupleSet> tuples_;
+  std::shared_ptr<TupleSet> tuples_;
   void onStart();
 
   void onComplete(const normal::core::message::CompleteMessage &message);
@@ -37,7 +40,7 @@ public:
   explicit Collate(std::string name);
   ~Collate() override = default;
   void show();
-  std::shared_ptr<normal::core::TupleSet> tuples();
+  std::shared_ptr<TupleSet> tuples();
 
 };
 

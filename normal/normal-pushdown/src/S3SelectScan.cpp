@@ -67,7 +67,7 @@ void S3SelectScan::onStart() {
   std::string tblName = m_tbl;
 
   std::string cacheID = tblName + "." + colName;
-  std::unordered_map<std::string, std::shared_ptr<normal::core::TupleSet>> cacheMap = m_cache->m_cacheData;
+  std::unordered_map<std::string, std::shared_ptr<TupleSet>> cacheMap = m_cache->m_cacheData;
 
     Aws::String bucketName = Aws::String(s3Bucket_);
 
@@ -98,7 +98,7 @@ void S3SelectScan::onStart() {
     SelectObjectContentHandler handler;
     handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
       auto payload = recordsEvent.GetPayload();
-      std::shared_ptr<normal::core::TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
+      std::shared_ptr<TupleSet> tupleSet = s3SelectParser.parsePayload(payload);
 
       std::shared_ptr<normal::core::message::Message> message = std::make_shared<normal::core::message::TupleMessage>(tupleSet, this->name());
       ctx()->tell(message);
@@ -108,7 +108,7 @@ void S3SelectScan::onStart() {
           m_cache->m_cacheData[cacheID] = tupleSet;
       }
       else {
-          m_cache->m_cacheData[cacheID] = normal::core::TupleSet::concatenate(tupleSet, m_cache->m_cacheData[cacheID]);
+          m_cache->m_cacheData[cacheID] = TupleSet::concatenate(tupleSet, m_cache->m_cacheData[cacheID]);
       }
     });
     handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {

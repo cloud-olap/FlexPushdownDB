@@ -3,7 +3,7 @@
 //
 
 #include "normal/tuple/TupleSet.h"
-#include "normal/core/Globals.h"
+#include "normal/tuple/Globals.h"
 
 #include <utility>
 #include <sstream>
@@ -18,7 +18,7 @@
 
 namespace arrow { class MemoryPool; }
 
-namespace normal::core {
+using namespace normal::tuple;
 
 std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::TableReader> &tableReader) {
 
@@ -112,7 +112,7 @@ std::shared_ptr<arrow::Scalar> TupleSet::visit(const std::function<std::shared_p
 
   std::shared_ptr<arrow::RecordBatch> batch;
   arrow::TableBatchReader reader(*table_);
-  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
+  reader.set_chunksize(tuple::DefaultChunkSize);
   arrowStatus = reader.ReadNext(&batch);
 
   std::shared_ptr<arrow::Scalar> result;
@@ -158,32 +158,30 @@ std::string TupleSet::getValue(const std::string &columnName, int row) {
   return value;
 }
 
-tl::expected<std::shared_ptr<TupleSet>, std::string>
-TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &projector) {
-
-  // Read the table in batches
-  std::shared_ptr<arrow::RecordBatch> batch;
-  arrow::TableBatchReader reader(*table_);
-  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
-  auto res = reader.ReadNext(&batch);
-  std::shared_ptr<TupleSet> resultTuples = nullptr;
-  while (res.ok() && batch) {
-
-	// Evaluate expressions against a batch
-	std::shared_ptr<arrow::ArrayVector> outputs = projector->evaluate(*batch);
-	auto batchResultTuples = normal::core::TupleSet::make(projector->getResultSchema(), *outputs);
-
-	// Concatenate the batch result to the full results
-	if (resultTuples)
-	  resultTuples = concatenate(batchResultTuples, resultTuples);
-	else
-	  resultTuples = batchResultTuples;
-
-	res = reader.ReadNext(&batch);
-  }
-
-  return resultTuples;
-
-}
-
-}
+//tl::expected<std::shared_ptr<TupleSet>, std::string>
+//TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &projector) {
+//
+//  // Read the table in batches
+//  std::shared_ptr<arrow::RecordBatch> batch;
+//  arrow::TableBatchReader reader(*table_);
+//  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
+//  auto res = reader.ReadNext(&batch);
+//  std::shared_ptr<TupleSet> resultTuples = nullptr;
+//  while (res.ok() && batch) {
+//
+//	// Evaluate expressions against a batch
+//	std::shared_ptr<arrow::ArrayVector> outputs = projector->evaluate(*batch);
+//	auto batchResultTuples = normal::core::TupleSet::make(projector->getResultSchema(), *outputs);
+//
+//	// Concatenate the batch result to the full results
+//	if (resultTuples)
+//	  resultTuples = concatenate(batchResultTuples, resultTuples);
+//	else
+//	  resultTuples = batchResultTuples;
+//
+//	res = reader.ReadNext(&batch);
+//  }
+//
+//  return resultTuples;
+//
+//}

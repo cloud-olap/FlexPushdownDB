@@ -59,6 +59,24 @@ ExternalProject_Add(${ARROW_BASE}
 
 file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 
+## Needed by the re2 find_package module
+#include(FindPkgConfig)
+#
+## Add the installed arrow find_package modules
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARROW_LIB_DIR}/cmake/arrow)
+#
+## Add the arrow source find_package modules
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARROW_BASE_DIR}/src/arrow_ep/cpp/cmake_modules)
+#
+## Add the path to the re2 install dir needed by the re2 find_package module
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${ARROW_BASE_DIR}/src/arrow_ep-build/re2_ep-install)
+#
+## Find the arrow and gandiva packages
+#find_package(Threads REQUIRED)
+#find_package(LLVM REQUIRED)
+#find_package(RE2 REQUIRED)
+#find_package(Arrow REQUIRED)
+#find_package(Gandiva REQUIRED)
 
 add_library(re2_static STATIC IMPORTED)
 set_target_properties(re2_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
@@ -97,7 +115,6 @@ target_link_libraries(gandiva_shared INTERFACE LLVM)
 target_link_libraries(gandiva_shared INTERFACE arrow_static)
 target_link_libraries(gandiva_shared INTERFACE ${ARROW_RE2_STATIC_LIB})
 add_dependencies(gandiva_shared ${ARROW_BASE})
-
 
 #showTargetProps(arrow_static)
 #showTargetProps(arrow_dataset_static)

@@ -10,13 +10,13 @@ namespace normal::pushdown {
     cacheID_(std::move(cacheID)),
     cache_(cache){}
     void cacheScan::onStart() {
-        std::unordered_map<std::string, std::shared_ptr<normal::core::TupleSet>> cacheMap = cache_->m_cacheData;
+        std::unordered_map<std::string, std::shared_ptr<TupleSet>> cacheMap = cache_->m_cacheData;
         //no found
         if (cacheMap.empty() || cacheMap.find(cacheID_)==cacheMap.end()) {
             ctx()->notifyComplete();
         }
         else {
-            std::shared_ptr<normal::core::TupleSet> tupleSet = cacheMap[cacheID_];
+            std::shared_ptr<TupleSet> tupleSet = cacheMap[cacheID_];
             std::shared_ptr<normal::core::message::Message> message = std::make_shared<normal::core::message::TupleMessage>(tupleSet, this->name());
             ctx()->tell(message);
             ctx()->notifyComplete();

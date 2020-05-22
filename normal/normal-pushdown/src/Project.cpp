@@ -41,14 +41,8 @@ void Project::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Project::projectAndSendTuples() {
-  auto projectedTuples = tuples_->evaluate(projector_.value());
-  if(projectedTuples) {
-    sendTuples(projectedTuples.value());
-  }
-  else{
-    // FIXME: Propagate error properly
-    throw std::runtime_error(projectedTuples.error());
-  }
+  auto projectedTuples = projector_.value()->evaluate(*tuples_);
+  sendTuples(projectedTuples);
 }
 
 void Project::onTuple(const core::message::TupleMessage &message) {
@@ -81,7 +75,7 @@ void Project::cacheInputSchema(const core::message::TupleMessage &message) {
   }
 }
 
-void Project::sendTuples(std::shared_ptr<normal::core::TupleSet> &projected) {
+void Project::sendTuples(std::shared_ptr<TupleSet> &projected) {
 
   std::shared_ptr<core::message::Message>
       tupleMessage = std::make_shared<core::message::TupleMessage>(projected, name());

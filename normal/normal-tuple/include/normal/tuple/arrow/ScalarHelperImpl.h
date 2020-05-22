@@ -9,7 +9,7 @@
 #include <tl/expected.hpp>
 #include "arrow/api.h"
 #include "arrow/scalar.h"
-#include "ScalarHelper.h"
+#include "normal/tuple/arrow/ScalarHelper.h"
 
 template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
 class ScalarHelperImpl : public ScalarHelper {

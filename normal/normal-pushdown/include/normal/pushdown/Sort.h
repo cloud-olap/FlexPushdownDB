@@ -52,7 +52,7 @@ namespace normal::pushdown {
         /**
         * A buffer of received tuples that stores the temporal result
         */
-        std::shared_ptr<normal::core::TupleSet> tuples_;
+        std::shared_ptr<TupleSet> tuples_;
         std::shared_ptr<std::vector<std::vector<Cell>>> tmpRes_;
         std::shared_ptr<std::vector<int>> priorities_;
         /**
@@ -88,7 +88,7 @@ namespace normal::pushdown {
         tmpRes_(std::make_shared<std::vector<std::vector<Cell>>>(std::vector<std::vector<Cell>>{})){};
         ~Sort() override = default;
 
-        void compute(const std::shared_ptr<normal::core::TupleSet> &tuples);
+        void compute(const std::shared_ptr<TupleSet> &tuples);
         void cacheInputSchema(const core::message::TupleMessage &message);
         void buildAndCacheProjector();
 
