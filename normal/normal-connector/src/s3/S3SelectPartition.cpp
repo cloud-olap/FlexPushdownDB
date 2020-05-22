@@ -17,11 +17,11 @@ const std::string &S3SelectPartition::getObject() const {
 }
 
 std::string S3SelectPartition::toString() {
-  return "s3//" + bucket_ + "/" + object_;
+  return "s3://" + bucket_ + "/" + object_;
 }
 
 size_t S3SelectPartition::hash() {
-  return std::hash<std::string>()("s3//" + bucket_ + "/" + object_);
+  return std::hash<std::string>()("s3://" + bucket_ + "/" + object_);
 }
 
 bool S3SelectPartition::equalTo(std::shared_ptr<Partition> other) {

@@ -42,6 +42,7 @@ public:
 
   void notifyComplete();
 
+  tl::expected<void, std::string> send(std::shared_ptr<message::Message> &msg, const std::string &recipientId);
 };
 
 }

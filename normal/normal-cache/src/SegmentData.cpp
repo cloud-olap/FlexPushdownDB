@@ -11,3 +11,7 @@ SegmentData::SegmentData(std::shared_ptr<normal::tuple::TupleSet2> TupleSet) : t
 std::shared_ptr <SegmentData> SegmentData::make(const std::shared_ptr <normal::tuple::TupleSet2> &TupleSet) {
   return std::make_shared<SegmentData>(TupleSet);
 }
+
+const std::shared_ptr<normal::tuple::TupleSet2> &SegmentData::getTupleSet() const {
+  return tupleSet_;
+}

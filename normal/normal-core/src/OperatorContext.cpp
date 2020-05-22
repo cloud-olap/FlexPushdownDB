@@ -28,6 +28,24 @@ void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
   }
 }
 
+tl::expected<void, std::string> OperatorContext::send(std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
+
+  OperatorActor* oa = this->operatorActor();
+  message::Envelope e(msg);
+
+  auto expectedOperator = operatorMap_.get(recipientId);
+  if(expectedOperator.has_value()){
+    auto recipientOperator = expectedOperator.value();
+    auto expectedRecipientActor = recipientOperator.getActor();
+    auto recipientActor = expectedRecipientActor.value();
+	oa->send(recipientActor, e);
+	return {};
+  }
+  else{
+  	return tl::unexpected(fmt::format("Actor with id '{}' not found", recipientId));
+  }
+}
+
 OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op,  caf::actor& rootActor):
     operator_(std::move(op)),
     operatorActor_(nullptr),

@@ -11,6 +11,10 @@ Column::Column(std::string name, std::shared_ptr<::arrow::ChunkedArray> array) :
 	array_(std::move(array)) {
 }
 
+std::shared_ptr<Column> Column::make(const std::string &name, const std::shared_ptr<::arrow::Array> &array) {
+  return std::make_shared<Column>(name, std::make_shared<::arrow::ChunkedArray>(array));
+}
+
 std::shared_ptr<Column> Column::make(const std::string &name, const std::shared_ptr<::arrow::ChunkedArray> &array) {
   return std::make_shared<Column>(name, array);
 }

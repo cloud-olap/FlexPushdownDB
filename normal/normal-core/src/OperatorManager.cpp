@@ -36,7 +36,7 @@ void OperatorManager::put(const std::shared_ptr<normal::core::Operator> &op) {
   auto ctx = std::make_shared<normal::core::OperatorContext>(op, rootActorHandle);
   m_operatorMap.insert(std::pair(op->name(), ctx));
 
-  operatorDirectory_.insert(normal::core::OperatorDirectoryEntry(op->name(), std::optional<caf::actor>(), false));
+  operatorDirectory_.insert(normal::core::OperatorDirectoryEntry(op->name(), std::nullopt, false));
 }
 
 void OperatorManager::start() {
@@ -103,7 +103,8 @@ void OperatorManager::join() {
 void OperatorManager::boot() {
 
   // Create the system actors
-  actorSystem->spawn<normal::core::OperatorActor>(std::make_shared<SegmentCacheActor>("SegmentCache"));
+  auto segmentCacheActor = std::make_shared<SegmentCacheActor>("SegmentCache");
+  put(segmentCacheActor);
 
   // Create the operators
   for (const auto &element: m_operatorMap) {
@@ -118,6 +119,27 @@ void OperatorManager::boot() {
     auto op = ctx->op();
     caf::actor actorHandle = actorSystem->spawn<normal::core::OperatorActor>(op);
     op->actorHandle(actorHandle);
+  }
+
+  // Tell the actors about the system actors
+  for (const auto &element: m_operatorMap) {
+
+	auto ctx = element.second;
+	auto op = ctx->op();
+
+	auto rootActorEntry = LocalOperatorDirectoryEntry("root",
+											 std::optional(rootActor_->ptr()),
+											 OperatorRelationshipType::None,
+											 false);
+
+	ctx->operatorMap().insert(rootActorEntry);
+
+	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry("SegmentCacheActor",
+															  std::optional(segmentCacheActor->actorHandle()),
+											 OperatorRelationshipType::None,
+											 false);
+
+	ctx->operatorMap().insert(segmentCacheActorEntry);
   }
 
   // Tell the actors who their producers are
@@ -223,6 +245,41 @@ tl::expected<long, std::string> OperatorManager::getElapsedTime() {
 	return tl::unexpected(std::string("Execution time unavailable, query has not been stopped"));
 
   return std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime_ - startTime_).count();
+}
+
+std::shared_ptr<normal::core::message::Message> OperatorManager::receive() {
+
+  SPDLOG_DEBUG("Waiting for message");
+
+  auto handle_err = [&](const caf::error &err) {
+	aout(*rootActor_) << "AUT (actor under test) failed: "
+					  << (*rootActor_)->system().render(err) << std::endl;
+  };
+
+  std::shared_ptr<normal::core::message::Message> message;
+
+  (*rootActor_)->receive(
+	  [&](const normal::core::message::Envelope& msg){
+		message = msg.getMessage();
+	  },
+	  handle_err
+  );
+
+  return message;
+}
+
+tl::expected<void, std::string> OperatorManager::send(std::shared_ptr<message::Message> message,
+													  const std::string &recipientId) {
+  auto expectedOperator = m_operatorMap.find(recipientId);
+  if(expectedOperator != m_operatorMap.end()){
+	auto operatorContext = expectedOperator->second;
+	auto operatorActor = operatorContext->operatorActor();
+	(*rootActor_)->send(operatorActor, normal::core::message::Envelope(std::move(message)));
+	return {};
+  }
+  else{
+	return tl::unexpected(fmt::format("Actor with id '{}' not found", recipientId));
+  }
 }
 
 }

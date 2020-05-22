@@ -16,7 +16,8 @@ add_library(normal-tuple STATIC
         src/ColumnIndex.cpp include/normal/tuple/ColumnIndex.h
         src/TupleSetShowOptions.cpp include/normal/tuple/TupleSetShowOptions.h
         src/ColumnName.cpp include/normal/tuple/ColumnName.h
-        src/ColumnBuilder.cpp include/normal/tuple/ColumnBuilder.h)
+        src/ColumnBuilder.cpp include/normal/tuple/ColumnBuilder.h
+        src/Sample.cpp include/normal/tuple/Sample.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 

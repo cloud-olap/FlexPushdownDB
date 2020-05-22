@@ -11,6 +11,8 @@
 
 #include <caf/all.hpp>
 #include <tl/expected.hpp>
+#include <utility>
+#include <normal/core/Globals.h>
 
 #include "OperatorContext.h"
 #include "OperatorDirectory.h"
@@ -46,6 +48,9 @@ public:
   void start();
   void stop();
   void join();
+
+  tl::expected<void, std::string> send(std::shared_ptr<message::Message> message, const std::string& recipientId);
+  std::shared_ptr<normal::core::message::Message> receive();
 
   void write_graph(const std::string& file);
 

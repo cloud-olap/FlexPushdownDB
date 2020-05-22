@@ -29,6 +29,9 @@ private:
 public:
   explicit Envelope(std::shared_ptr<Message> message);
   [[nodiscard]] const Message &message() const;
+  [[nodiscard]] std::shared_ptr<Message> getMessage() const{
+    return message_;
+  }
 
 };
 

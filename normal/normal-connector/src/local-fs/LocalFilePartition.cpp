@@ -13,11 +13,11 @@ const std::string &LocalFilePartition::getPath() const {
 }
 
 std::string LocalFilePartition::toString() {
-  return "file//" + path_;
+  return "file://" + path_;
 }
 
 size_t LocalFilePartition::hash() {
-  return std::hash<std::string>()("file//" + path_);
+  return std::hash<std::string>()("file://" + path_);
 }
 
 bool LocalFilePartition::equalTo(std::shared_ptr<Partition> other) {

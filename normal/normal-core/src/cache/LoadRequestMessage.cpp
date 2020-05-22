@@ -23,5 +23,5 @@ const std::shared_ptr<SegmentKey> &LoadRequestMessage::getSegmentKey() const {
 }
 
 std::string LoadRequestMessage::toString() const {
-  return fmt::format("segmentKey: {}", segmentKey_->toString());
+  return fmt::format("{{segmentKey: {}}}", segmentKey_->toString());
 }

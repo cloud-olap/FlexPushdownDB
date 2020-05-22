@@ -34,7 +34,7 @@ public:
 
   [[nodiscard]] const std::string &name() const;
   void name(const std::string &name);
-
+  const std::optional<caf::actor> &getActor() const;
   [[nodiscard]] OperatorRelationshipType relationshipType() const;
   void relationshipType(OperatorRelationshipType relationshipType);
 

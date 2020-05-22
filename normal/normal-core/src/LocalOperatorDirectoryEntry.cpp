@@ -42,4 +42,8 @@ void LocalOperatorDirectoryEntry::name(const std::string &name) {
   name_ = name;
 }
 
+const std::optional<caf::actor> &LocalOperatorDirectoryEntry::getActor() const {
+  return actor_;
+}
+
 }

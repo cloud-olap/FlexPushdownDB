@@ -27,6 +27,9 @@ public:
   [[nodiscard]] bool complete() const;
   void complete(bool complete);
   [[nodiscard]] const std::string &name() const;
+  [[nodiscard]] std::optional<caf::actor> getActor() const {
+    return actor_;
+  }
 
 };
 

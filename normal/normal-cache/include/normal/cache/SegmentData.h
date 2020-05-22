@@ -17,7 +17,7 @@ public:
   explicit SegmentData(std::shared_ptr<normal::tuple::TupleSet2> TupleSet);
 
   static std::shared_ptr<SegmentData> make(const std::shared_ptr<normal::tuple::TupleSet2> &TupleSet);
-
+  const std::shared_ptr<normal::tuple::TupleSet2> &getTupleSet() const;
 private:
   std::shared_ptr<normal::tuple::TupleSet2> tupleSet_;
 
