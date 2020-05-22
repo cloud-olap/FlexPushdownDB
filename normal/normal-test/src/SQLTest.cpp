@@ -23,15 +23,15 @@ void configureLocalConnector(normal::sql::Interpreter &i) {
   auto cat = std::make_shared<normal::connector::Catalogue>("local_fs", conn);
 
   auto partitioningScheme1 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/data-file-simple/test.csv"));
+  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/single-partition/test.csv"));
   cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test",
 																						partitioningScheme1,
 																						cat));
 
   auto partitioningScheme2 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test01.csv"));
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test02.csv"));
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test03.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test01.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test02.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test03.csv"));
   cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test_partitioned",
 																						partitioningScheme2,
 																						cat));
@@ -140,7 +140,7 @@ TEST_CASE ("sql-select-cast-from-local" * doctest::skip(true)) {
 	  CHECK(tuples->value<arrow::Int32Type>("B", 2) == 8);
 }
 
-TEST_CASE ("sql-select-cast-from-local-partitioned" * doctest::skip(true)) {
+TEST_CASE ("sql-select-cast-from-local-multi-partition" * doctest::skip(true)) {
   auto tuples = executeTest("select cast(A as double), cast(B as int) from local_fs.test_partitioned");
 	  CHECK(tuples->numRows() == 9);
 	  CHECK(tuples->numColumns() == 2);
@@ -149,7 +149,7 @@ TEST_CASE ("sql-select-cast-from-local-partitioned" * doctest::skip(true)) {
   auto columnB = tuples->vector<arrow::Int32Type>("B").value();
 
   /*
-   * NOTE: The partitioned (i.e. parallel) executor will produce non-deterministic output, so we
+   * NOTE: The multi-partition (i.e. parallel) executor will produce non-deterministic output, so we
    * don't know exactly which row a value will be in. Need to sort before checking.
    */
   std::sort(columnA->begin(), columnA->end());

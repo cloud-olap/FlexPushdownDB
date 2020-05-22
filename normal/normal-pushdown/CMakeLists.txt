@@ -11,7 +11,7 @@ add_library(normal-pushdown STATIC
         include/normal/pushdown/Globals.h
         src/Collate.cpp include/normal/pushdown/Collate.h
         src/S3SelectScan.cpp include/normal/pushdown/S3SelectScan.h
-        src/FileScan.cpp include/normal/pushdown/FileScan.h
+        src/file/FileScan.cpp include/normal/pushdown/file/FileScan.h
         src/Aggregate.cpp include/normal/pushdown/Aggregate.h
         src/s3/S3SelectParser.cpp src/s3/S3SelectParser.h
         src/aggregate/AggregationResult.cpp include/normal/pushdown/aggregate/AggregationResult.h
@@ -58,7 +58,9 @@ add_executable(normal-pushdown-test
         test/JoinTest.cpp
         test/FilterTest.cpp
         test/GroupTest.cpp
-        test/AggregateTest.cpp test/SortTest.cpp)
+        test/AggregateTest.cpp
+        test/SortTest.cpp
+        test/FileScanTest.cpp)
 
 
 target_include_directories(normal-pushdown-test PRIVATE include)
@@ -81,6 +83,11 @@ configure_file(data/join/b.csv ${CMAKE_CURRENT_BINARY_DIR}/data/join/b.csv COPYO
 configure_file(data/group/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/group/a.csv COPYONLY)
 
 configure_file(data/aggregate/a.csv ${CMAKE_CURRENT_BINARY_DIR}/data/aggregate/a.csv COPYONLY)
+
+configure_file(data/filescan/single-partition/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/single-partition/test.csv COPYONLY)
+configure_file(data/filescan/multi-partition/test01.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/multi-partition/test01.csv COPYONLY)
+configure_file(data/filescan/multi-partition/test02.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/multi-partition/test02.csv COPYONLY)
+configure_file(data/filescan/multi-partition/test03.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/multi-partition/test03.csv COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

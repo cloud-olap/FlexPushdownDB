@@ -8,7 +8,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/FileScan.h>
+#include <normal/pushdown/file/FileScan.h>
 #include <normal/test/TestUtil.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/pushdown/Sort.h>
@@ -22,7 +22,7 @@ using namespace normal::expression::gandiva;
 
 #define SKIP_SUITE true
 
-TEST_SUITE ("aggregate" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("sort" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("SortTest" * doctest::skip(false || SKIP_SUITE)) {
 

@@ -16,10 +16,6 @@
 #include "normal/core/OperatorContext.h"
 #include "normal/tuple/TupleSet.h"
 
-namespace normal::core {
-  class Message;
-}
-
 namespace normal::tuple {
 	class TupleSet;
 }

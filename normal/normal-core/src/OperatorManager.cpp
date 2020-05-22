@@ -94,8 +94,8 @@ void OperatorManager::join() {
 
         allComplete = this->operatorDirectory_.allComplete();
 
-        SPDLOG_DEBUG(this->operatorDirectory_.showString());
-        SPDLOG_DEBUG(allComplete);
+        SPDLOG_DEBUG(fmt::format("Operator directory:\n{}", this->operatorDirectory_.showString()));
+        SPDLOG_DEBUG(fmt::format("All operators complete: {}", allComplete));
       },
       handle_err);
 }
@@ -134,12 +134,26 @@ void OperatorManager::boot() {
 
 	ctx->operatorMap().insert(rootActorEntry);
 
-	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry("SegmentCacheActor",
+	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry(segmentCacheActor->name(),
 															  std::optional(segmentCacheActor->actorHandle()),
 											 OperatorRelationshipType::None,
 											 false);
 
 	ctx->operatorMap().insert(segmentCacheActorEntry);
+  }
+
+  // Tell the system actors about the other actors
+  for (const auto &element: m_operatorMap) {
+
+	auto ctx = element.second;
+	auto op = ctx->op();
+
+	auto entry = LocalOperatorDirectoryEntry(op->name(),
+											 op->actorHandle(),
+											 OperatorRelationshipType::None,
+											 false);
+
+	segmentCacheActor->ctx()->operatorMap().insert(entry);
   }
 
   // Tell the actors who their producers are

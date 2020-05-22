@@ -4,7 +4,7 @@
 
 #include <normal/plan/operator_/FileScanLogicalOperator.h>
 
-#include <normal/pushdown/FileScan.h>
+#include <normal/pushdown/file/FileScan.h>
 #include <normal/plan/operator_/type/OperatorTypes.h>
 
 using namespace normal::plan::operator_;

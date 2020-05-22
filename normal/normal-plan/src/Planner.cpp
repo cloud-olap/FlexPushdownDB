@@ -47,7 +47,7 @@ void visit(const std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalO
 	  }
 	} else if (logicalOperator->type()->is(operator_::type::OperatorTypes::collateOperatorType())) {
 
-	  // Create a single collate operator, collate operators are never partitioned
+	  // Create a single collate operator, collate operators are never multi-partition
 	  auto physicalCollateOperator = logicalOperator->toOperator();
 
 	  // Connect all producers to the single collate

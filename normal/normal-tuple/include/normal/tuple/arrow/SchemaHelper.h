@@ -9,7 +9,7 @@
 
 #include <arrow/api.h>
 
-namespace normal::core::arrow {
+namespace normal::tuple::arrow {
 
 class SchemaHelper {
 

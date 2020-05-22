@@ -8,7 +8,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/FileScan.h>
+#include <normal/pushdown/file/FileScan.h>
 #include <normal/test/TestUtil.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>

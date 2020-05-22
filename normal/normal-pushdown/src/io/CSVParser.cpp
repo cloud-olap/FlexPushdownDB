@@ -19,7 +19,7 @@
 #include <utility>
 #include <memory>                      // for make_unique, unique_ptr, __sha...
 #include <cstdlib>                    // for abort
-#include "normal/pushdown/FileScan.h"
+#include "normal/pushdown/file/FileScan.h"
 #include "CSVParser.h"
 
 namespace normal::pushdown {
@@ -39,10 +39,10 @@ arrow::util::string_view CSVParser::asStringView(const std::shared_ptr<arrow::Bu
   return asStringView(*buffer);
 }
 
-std::unordered_map<std::string, std::shared_ptr<arrow::DataType>>
+std::map<std::string, std::shared_ptr<arrow::DataType>>
 CSVParser::readFields(const std::shared_ptr<arrow::io::ReadableFile> &inputStream) {
 
-  std::unordered_map<std::string, std::shared_ptr<arrow::DataType>> fields;
+  std::map<std::string, std::shared_ptr<arrow::DataType>> fields;
   arrow::Status st;
   auto parseOptions = arrow::csv::ParseOptions::Defaults();
 

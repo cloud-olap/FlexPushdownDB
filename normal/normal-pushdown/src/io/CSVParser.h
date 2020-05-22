@@ -13,7 +13,7 @@ class CSVParser {
   static nonstd::string_view asStringView(const std::shared_ptr<arrow::Buffer> &buffer);
   static nonstd::string_view asStringView(const arrow::Buffer *buffer);
 public:
-  static std::unordered_map<std::string, std::shared_ptr<arrow::DataType>>
+  static std::map<std::string, std::shared_ptr<arrow::DataType>>
   readFields(const std::shared_ptr<arrow::io::ReadableFile> &inputStream);
 };
 

@@ -28,7 +28,7 @@ void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
   }
 }
 
-tl::expected<void, std::string> OperatorContext::send(std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
+tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
 
   OperatorActor* oa = this->operatorActor();
   message::Envelope e(msg);

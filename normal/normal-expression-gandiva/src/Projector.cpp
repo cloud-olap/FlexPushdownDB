@@ -19,9 +19,13 @@ void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
   for (const auto &expression: expressions_) {
 	expression->compile(schema);
 
-	gandivaExpressions_.emplace_back(::gandiva::TreeExprBuilder::MakeExpression(expression->getGandivaExpression(),
-																				field(expression->alias(),
-																					  expression->getReturnType())));
+	auto gandivaExpression = ::gandiva::TreeExprBuilder::MakeExpression(expression->getGandivaExpression(),
+																		field(expression->alias(),
+																			  expression->getReturnType()));
+
+	SPDLOG_DEBUG(fmt::format("Gandiva expression: {}", gandivaExpression->ToString()));
+
+	gandivaExpressions_.emplace_back(gandivaExpression);
   }
 
   // Build a projector for the expression.

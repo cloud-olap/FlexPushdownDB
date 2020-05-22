@@ -8,7 +8,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/FileScan.h>
+#include <normal/pushdown/file/FileScan.h>
 #include <normal/test/TestUtil.h>
 
 /**
@@ -20,7 +20,7 @@ TEST_CASE ("FileScan -> Collate"
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/data-file-simple/test.csv");
+  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/single-partition/test.csv");
   auto collate = std::make_shared<normal::pushdown::Collate>("collate");
 
   fileScan->produce(collate);

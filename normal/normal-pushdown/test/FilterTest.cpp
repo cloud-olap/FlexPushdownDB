@@ -9,7 +9,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/FileScan.h>
+#include <normal/pushdown/file/FileScan.h>
 #include <normal/test/TestUtil.h>
 #include <normal/pushdown/filter/Filter.h>
 #include <normal/pushdown/filter/FilterPredicate.h>

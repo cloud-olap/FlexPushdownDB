@@ -2,6 +2,7 @@
 // Created by matt on 25/3/20.
 //
 
+#include <normal/core/Globals.h>
 #include "normal/core/LocalOperatorDirectory.h"
 #include <sstream>
 
@@ -30,7 +31,7 @@ bool LocalOperatorDirectory::allComplete() {
 std::string LocalOperatorDirectory::showString() const {
   std::stringstream ss;
   for(const auto& entry : entries_){
-    ss << entry.second.name() << ": " << entry.second.complete() << std::endl;
+    ss << "{name: " << entry.second.name() << ", complete: " << entry.second.complete() << "}" << std::endl;
   }
   return ss.str();
 }
@@ -47,6 +48,19 @@ bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operato
       return false;
   }
   return true;
+}
+
+tl::expected<LocalOperatorDirectoryEntry, std::string> LocalOperatorDirectory::get(const std::string &operatorId) {
+  auto entryIt = entries_.find(operatorId);
+  if(entryIt == entries_.end()){
+    auto message = fmt::format("Operator with id '{}' not found", operatorId);
+    SPDLOG_DEBUG(message);
+	SPDLOG_DEBUG("Operator directory:\n{}", showString());
+	return tl::unexpected(message);
+  }
+  else{
+	return entryIt->second;
+  }
 }
 
 }

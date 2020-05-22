@@ -23,7 +23,9 @@ void OperatorDirectory::setComplete(const std::string& name) {
 
 bool OperatorDirectory::allComplete() {
   for(const auto& entry : entries_){
-    if(!entry.second.complete())
+
+    // FIXME: Hack to skip actors that aren't operators (i.e. SegmentCache)
+    if(entry.first != "SegmentCache" && !entry.second.complete())
       return false;
   }
   return true;

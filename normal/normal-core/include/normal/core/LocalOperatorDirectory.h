@@ -29,15 +29,7 @@ public:
   bool allComplete(const OperatorRelationshipType &operatorRelationshipType);
   std::string showString() const;
   void setIncomplete();
-  tl::expected<LocalOperatorDirectoryEntry, std::string> get(const std::string& operatorId){
-	auto entryIt = entries_.find(operatorId);
-	if(entryIt == entries_.end()){
-	  return tl::unexpected(fmt::format("Operator with id '{}' not found", operatorId));
-	}
-	else{
-	  return entryIt->second;
-	}
-  }
+  tl::expected<LocalOperatorDirectoryEntry, std::string> get(const std::string& operatorId);
 
 };
 

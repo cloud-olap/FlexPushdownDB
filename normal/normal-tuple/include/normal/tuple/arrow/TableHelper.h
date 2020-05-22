@@ -9,6 +9,7 @@
 #include <string>
 #include <arrow/api.h>
 #include <normal/tuple/Globals.h>
+#include <normal/tuple/ColumnName.h>
 
 #include "normal/tuple/arrow/ArrayHelper.h"
 
@@ -75,8 +76,10 @@ public:
 												 int row,
 												 const arrow::Table &table) {
 
+    auto canonicalColumnName = normal::tuple::ColumnName::canonicalize(columnName);
+
 	// Check column name
-	auto array = table.GetColumnByName(columnName);
+	auto array = table.GetColumnByName(canonicalColumnName);
 	if (!array)
 	  return tl::unexpected("Column '" + columnName + "' not found");
 

@@ -65,6 +65,11 @@ public:
     return TableHelper::value<ARROW_TYPE, C_TYPE>(columnName, row, *table_);
   }
 
+  tl::expected<std::string, std::string> getString(const std::string &columnName, int row){
+	return TableHelper::value<::arrow::StringType, std::string>(columnName, row, *table_);
+  }
+
+
   /**
    * Returns an element from the tupleset given and column number and row number.
    *

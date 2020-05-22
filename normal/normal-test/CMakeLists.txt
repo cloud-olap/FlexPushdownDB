@@ -36,7 +36,6 @@ add_executable(normal-test-suite
         include/normal/test/Globals.h
         src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
-        src/FileScanTest.cpp
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
         src/MultiQueryTest.cpp
@@ -49,7 +48,7 @@ add_executable(normal-test-file
         include/normal/test/Globals.h
         src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
-        src/FileScanTest.cpp)
+        )
 
 link_target(normal-test-file)
 

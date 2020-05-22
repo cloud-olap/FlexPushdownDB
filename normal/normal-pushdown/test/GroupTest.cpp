@@ -8,7 +8,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/FileScan.h>
+#include <normal/pushdown/file/FileScan.h>
 #include <normal/test/TestUtil.h>
 #include <normal/pushdown/group/Group.h>
 #include <normal/tuple/TupleSet2.h>
@@ -24,7 +24,7 @@ using namespace normal::core::type;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 TEST_SUITE ("group" * doctest::skip(SKIP_SUITE)) {
 

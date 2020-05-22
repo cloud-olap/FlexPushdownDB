@@ -4,7 +4,7 @@
 
 #include "normal/tuple/arrow/SchemaHelper.h"
 
-using namespace normal::core::arrow;
+using namespace normal::tuple::arrow;
 
 std::shared_ptr<::arrow::Schema> SchemaHelper::concatenate(const std::vector<std::shared_ptr<::arrow::Schema>>& schemas) {
 

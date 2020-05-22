@@ -26,15 +26,15 @@ void configureLocalConnector(normal::sql::Interpreter &i) {
   auto cat = std::make_shared<normal::connector::Catalogue>("local_fs", conn);
 
   auto partitioningScheme1 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/data-file-simple/test.csv"));
+  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/single-partition/test.csv"));
   cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test",
 																						partitioningScheme1,
 																						cat));
 
   auto partitioningScheme2 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test01.csv"));
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test02.csv"));
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/data-file-sharded/test03.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test01.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test02.csv"));
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test03.csv"));
   cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test_partitioned",
 																						partitioningScheme2,
 																						cat));
