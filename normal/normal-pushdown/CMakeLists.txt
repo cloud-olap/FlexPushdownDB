@@ -6,8 +6,6 @@ project("normal-pushdown" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-pushdown STATIC
-        src/io/CSVParser.cpp
-        src/io/CSVParser.h
         include/normal/pushdown/Globals.h
         src/Collate.cpp include/normal/pushdown/Collate.h
         src/S3SelectScan.cpp include/normal/pushdown/S3SelectScan.h
@@ -60,7 +58,8 @@ add_executable(normal-pushdown-test
         test/GroupTest.cpp
         test/AggregateTest.cpp
         test/SortTest.cpp
-        test/FileScanTest.cpp)
+        test/FileScanTest.cpp
+        test/CacheTest.cpp)
 
 
 target_include_directories(normal-pushdown-test PRIVATE include)
@@ -88,6 +87,8 @@ configure_file(data/filescan/single-partition/test.csv ${CMAKE_CURRENT_BINARY_DI
 configure_file(data/filescan/multi-partition/test01.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/multi-partition/test01.csv COPYONLY)
 configure_file(data/filescan/multi-partition/test02.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/multi-partition/test02.csv COPYONLY)
 configure_file(data/filescan/multi-partition/test03.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/multi-partition/test03.csv COPYONLY)
+
+configure_file(data/cache/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/cache/test.csv COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

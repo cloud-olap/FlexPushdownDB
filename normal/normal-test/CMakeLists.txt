@@ -38,7 +38,6 @@ add_executable(normal-test-suite
         src/MainTest.cpp
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
-        src/MultiQueryTest.cpp
         src/SQLTest.cpp
         )
 

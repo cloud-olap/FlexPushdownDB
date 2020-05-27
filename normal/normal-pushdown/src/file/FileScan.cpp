@@ -13,6 +13,7 @@
 #include <arrow/io/file.h>             // for ReadableFile
 #include <arrow/status.h>              // for Status
 #include <arrow/type_fwd.h>            // for default_memory_pool
+#include <arrow/csv/parser.h>
 
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/tuple/TupleSet.h>
@@ -21,13 +22,14 @@
 
 #include "normal/core/message/Message.h"       // for Message
 #include "normal/core/Operator.h"      // for Operator
-#include "../io/CSVParser.h"
 #include <normal/cache/SegmentKey.h>
 #include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
 #include "normal/pushdown/Globals.h"
+#include <normal/tuple/csv/CSVParser.h>
 
 using namespace normal::tuple;
+using namespace normal::tuple::csv;
 using namespace normal::core::cache;
 using namespace normal::core::message;
 
@@ -39,13 +41,33 @@ FileScan::FileScan(std::string name, std::string filePath) :
 	Operator(std::move(name), "FileScan"),
 	filePath_(std::move(filePath)),
 	startOffset_(0),
-	finishOffset_(ULONG_MAX){}
+	finishOffset_(ULONG_MAX) {}
 
-FileScan::FileScan(std::string name, std::string filePath, unsigned long startOffset, unsigned long finishOffset) :
+FileScan::FileScan(std::string name,
+				   std::string filePath,
+				   std::vector<std::string> columnNames,
+				   unsigned long startOffset,
+				   unsigned long finishOffset) :
 	Operator(std::move(name), "FileScan"),
 	filePath_(std::move(filePath)),
+	columnNames_(std::move(columnNames)),
 	startOffset_(startOffset),
 	finishOffset_(finishOffset) {}
+
+std::shared_ptr<FileScan> FileScan::make(std::string name,
+										 std::string filePath,
+										 std::vector<std::string> columnNames,
+										 unsigned long startOffset,
+										 unsigned long finishOffset) {
+
+  auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
+
+  return std::make_shared<FileScan>(name,
+									filePath,
+									canonicalColumnNames,
+									startOffset,
+									finishOffset);
+}
 
 void FileScan::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {
@@ -69,14 +91,16 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> FileScan::readCSVFile() {
 
   auto input = res.ValueOrDie();
 
-  auto fields = CSVParser::readFields(input);
+  CSVParser parser(filePath_);
+  auto schema = parser.parseSchema();
+  auto fields = schema.value()->fields();
 
   std::vector<std::string> fieldNames;
-  for(const auto &field: fields) {
-	fieldNames.push_back(field.first);
+  for (const auto &field: fields) {
+	fieldNames.push_back(field->name());
   }
 
-  auto st = input->Seek(0);
+  auto st = input->Seek(startOffset_);
   if (!st.ok())
 	return tl::unexpected(st.message());
 
@@ -86,11 +110,16 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> FileScan::readCSVFile() {
   readOptions.column_names = fieldNames;
   readOptions.skip_rows = 1;
   auto convertOptions = arrow::csv::ConvertOptions::Defaults();
-  convertOptions.column_types = std::unordered_map(fields.begin(), fields.end());
-
+  std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
+  for(const auto &field: fields){
+	columnTypes[field->name()] = field->type();
+  }
+  convertOptions.column_types = columnTypes;
   auto reader = arrow::csv::TableReader::Make(pool,
 											  input,
-											  readOptions, parseOptions, convertOptions).ValueOrDie();
+											  readOptions,
+											  parseOptions,
+											  convertOptions).ValueOrDie();
 
   auto tupleSet = TupleSet::make(reader);
 
@@ -109,7 +138,7 @@ void FileScan::requestCachedSegment() {
 	  .map_error([](auto err) { throw std::runtime_error(err); });
 }
 
-void FileScan::onCacheLoadResponse(const LoadResponseMessage& Message) {
+void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
 
   std::shared_ptr<TupleSet> tupleSet;
   if (Message.getSegmentData().has_value()) {

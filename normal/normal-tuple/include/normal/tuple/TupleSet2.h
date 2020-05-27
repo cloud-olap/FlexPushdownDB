@@ -61,6 +61,8 @@ public:
 
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema, const std::vector<std::shared_ptr<Column>>& columns);
 
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays);
+
   /**
    * Creates an empty tupleset
    * @return
@@ -150,6 +152,9 @@ public:
   const std::optional<std::shared_ptr<::arrow::Table>> &getArrowTable() const;
 
   bool validate();
+
+  tl::expected<std::string, std::string> getString(const std::string &columnName, int row);
+
 
 private:
 

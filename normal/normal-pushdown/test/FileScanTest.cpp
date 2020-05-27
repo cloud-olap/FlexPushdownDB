@@ -24,7 +24,7 @@ using namespace normal::expression;
 using namespace normal::expression::gandiva;
 using namespace normal::pushdown::aggregate;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 TEST_SUITE ("filescan" * doctest::skip(SKIP_SUITE)) {
 

@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_COLUMNNAME_H
 
 #include <string>
-#include <algorithm>
+#include <vector>
 
 namespace normal::tuple {
 
@@ -21,6 +21,8 @@ public:
    * @return
    */
   static std::string canonicalize(const std::string &columnName);
+
+  static std::vector<std::string> canonicalize(const std::vector<std::string> &columnNames);
 
 };
 

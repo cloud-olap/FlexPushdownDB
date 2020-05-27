@@ -10,6 +10,10 @@
 #include <arrow/pretty_print.h>
 #include <iomanip>
 
+#include <normal/tuple/arrow/TableHelper.h>
+#include <normal/tuple/arrow/Arrays.h>
+
+
 using namespace normal::tuple;
 
 TupleSet2::TupleSet2() :
@@ -249,4 +253,18 @@ bool TupleSet2::validate() {
 
 std::shared_ptr<TupleSet2> TupleSet2::make(std::shared_ptr<::arrow::Table> arrowTable) {
   return std::make_shared<TupleSet2>(std::move(arrowTable));
+}
+
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays) {
+  auto arrowTable = ::arrow::Table::Make (schema, arrays);
+  return std::make_shared<TupleSet2>(std::move(arrowTable));
+}
+
+tl::expected<std::string, std::string> TupleSet2::getString(const std::string &columnName, int row){
+  if(!table_.has_value()){
+    return tl::unexpected(fmt::format("Column with name '{}' not found", columnName));
+  }
+  else {
+	return TableHelper::value<::arrow::StringType, std::string>(columnName, row, *table_.value());
+  }
 }

@@ -17,15 +17,27 @@ namespace normal::pushdown {
 class FileScan : public normal::core::Operator {
 
 public:
-  [[ deprecated ("Use constructor that accepting a byte range")]] FileScan(std::string name, std::string filePath);
-  FileScan(std::string name, std::string filePath, unsigned long startOffset, unsigned long finishOffset);
+  [[deprecated ("Use constructor accepting a byte range")]] FileScan(std::string name, std::string filePath);
+
+  FileScan(std::string name,
+		   std::string filePath,
+		   std::vector<std::string> columnNames,
+		   unsigned long startOffset,
+		   unsigned long finishOffset);
+
+  static std::shared_ptr<FileScan> make(std::string name,
+										std::string filePath,
+										std::vector<std::string> columnNames,
+										unsigned long startOffset,
+										unsigned long finishOffset);
 
   void requestCachedSegment();
-  void onCacheLoadResponse(const normal::core::cache::LoadResponseMessage& Message);
+  void onCacheLoadResponse(const normal::core::cache::LoadResponseMessage &Message);
   tl::expected<std::shared_ptr<TupleSet>, std::string> readCSVFile();
 
 private:
   std::string filePath_;
+  std::vector<std::string> columnNames_;
   unsigned long startOffset_;
   unsigned long finishOffset_;
   void onStart();

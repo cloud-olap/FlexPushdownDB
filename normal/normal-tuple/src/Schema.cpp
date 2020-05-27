@@ -51,4 +51,3 @@ const std::vector<std::shared_ptr<::arrow::Field>> &Schema::fields() const {
 int Schema::getFieldIndexByName(std::string name) {
   return schema_->GetFieldIndex(name);
 }
-

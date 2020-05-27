@@ -24,7 +24,8 @@ add_library(normal-tuple STATIC
         include/normal/tuple/arrow/ScalarHelperImpl.h
         include/normal/tuple/arrow/ScalarHelperBuilder.h
         include/normal/tuple/arrow/ScalarHelper.h
-        src/arrow/SchemaHelper.cpp include/normal/tuple/arrow/SchemaHelper.h)
+        src/arrow/SchemaHelper.cpp include/normal/tuple/arrow/SchemaHelper.h
+        src/csv/CSVParser.cpp include/normal/tuple/csv/CSVParser.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 
@@ -41,7 +42,7 @@ target_link_libraries(normal-tuple PUBLIC arrow_static)
 add_executable(normal-tuple-test
         test/Globals.h
         test/MainTest.cpp
-        test/TupleTest.cpp)
+        test/TupleTest.cpp test/CSVTest.cpp)
 
 
 target_include_directories(normal-tuple-test PRIVATE include)
@@ -50,6 +51,13 @@ target_link_libraries(normal-tuple-test spdlog::spdlog)
 target_link_libraries(normal-tuple-test doctest::doctest)
 target_link_libraries(normal-tuple-test normal-test)
 target_link_libraries(normal-tuple-test normal-tuple)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Test Data
+#-----------------------------------------------------------------------------------------------------------------------
+
+configure_file(data/csv/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/csv/test.csv COPYONLY)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -11,7 +11,11 @@
 using namespace normal::tuple;
 using namespace normal::core::type;
 
-TEST_CASE ("make-tupleset" * doctest::skip(false)) {
+#define SKIP_SUITE true
+
+TEST_SUITE ("cache" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("make-tupleset" * doctest::skip(false || SKIP_SUITE)) {
 
   auto column1 = std::vector{"1", "2", "3"};
   auto column2 = std::vector{"4", "5", "6"};
@@ -31,4 +35,6 @@ TEST_CASE ("make-tupleset" * doctest::skip(false)) {
   auto tuples = TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
 
   SPDLOG_DEBUG("Output:\n{}", tuples->toString());
+}
+
 }
