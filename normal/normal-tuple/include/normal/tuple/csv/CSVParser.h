@@ -20,8 +20,15 @@ class CSVParser {
 
 public:
 
-  CSVParser(const std::string &filePath);
-  CSVParser(const std::string &filePath, int64_t startOffset, int64_t finishOffset);
+  CSVParser(std::string filePath,
+			int64_t startOffset,
+			std::optional<int64_t> finishOffset,
+			int64_t bufferSize);
+
+  CSVParser(const std::string &filePath,
+			int64_t bufferSize);
+
+  explicit CSVParser(const std::string &filePath);
 
   /**
    * Parse a tuple set from the CSV file
@@ -37,11 +44,12 @@ public:
 
 private:
 
-  static constexpr int64_t ChunkSize = 16 * 1024;
+  static constexpr int64_t DefaultBufferSize = 16 * 1024;
 
   std::string filePath_;
   int64_t startOffset_;
-  int64_t finishOffset_;
+  std::optional<int64_t> finishOffset_;
+  int64_t bufferSize_;
 
   std::optional<std::shared_ptr<::arrow::io::ReadableFile>> inputStream_;
 
@@ -89,6 +97,15 @@ private:
    */
   static tl::expected<std::shared_ptr<::arrow::Buffer>, std::string>
   concatenateBuffers(std::shared_ptr<::arrow::Buffer> buffer1, std::shared_ptr<::arrow::Buffer> buffer2);
+
+  /**
+   * Checks if the current buffer already ends with EOR, otherwise advances the input stream to EOR and appends
+   * the remaining data to the buffer.
+   *
+   * @param buffer
+   * @return
+   */
+  tl::expected<std::shared_ptr<::arrow::Buffer>, std::string> advanceToEOR(std::shared_ptr<::arrow::Buffer> buffer);
 };
 
 }
