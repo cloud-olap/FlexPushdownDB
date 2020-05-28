@@ -8,20 +8,29 @@
 
 using namespace normal::core::cache;
 
-LoadRequestMessage::LoadRequestMessage(std::shared_ptr<SegmentKey> segmentKey,
+LoadRequestMessage::LoadRequestMessage(std::vector<std::shared_ptr<SegmentKey>> segmentKeys,
 									   const std::string &sender) :
 	Message("LoadRequestMessage", sender),
-	segmentKey_(std::move(segmentKey)) {}
+	segmentKeys_(std::move(segmentKeys)) {}
 
-std::shared_ptr<LoadRequestMessage> LoadRequestMessage::make(std::shared_ptr<SegmentKey> segmentKey,
+std::shared_ptr<LoadRequestMessage> LoadRequestMessage::make(std::vector<std::shared_ptr<SegmentKey>> segmentKeys,
 															 const std::string &sender) {
-  return std::make_shared<LoadRequestMessage>(std::move(segmentKey), sender);
+  return std::make_shared<LoadRequestMessage>(std::move(segmentKeys), sender);
 }
 
-const std::shared_ptr<SegmentKey> &LoadRequestMessage::getSegmentKey() const {
-  return segmentKey_;
+const std::vector<std::shared_ptr<SegmentKey>> &LoadRequestMessage::getSegmentKeys() const {
+  return segmentKeys_;
 }
 
 std::string LoadRequestMessage::toString() const {
-  return fmt::format("{{segmentKey: {}}}", segmentKey_->toString());
+
+  std::string s = "segmentKeys : [";
+  for(auto it = segmentKeys_.begin();it != segmentKeys_.end();++it){
+    s += fmt::format("{}", it->get()->toString());
+    if(std::next(it) != segmentKeys_.end())
+      s +=",";
+  }
+  s += "]";
+
+  return s;
 }

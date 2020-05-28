@@ -33,7 +33,7 @@ public:
 
   void requestCachedSegment();
   void onCacheLoadResponse(const normal::core::cache::LoadResponseMessage &Message);
-  tl::expected<std::shared_ptr<TupleSet>, std::string> readCSVFile();
+  tl::expected<std::shared_ptr<TupleSet2>, std::string> readCSVFile(const std::vector<std::string>& columnNames);
 
 private:
   std::string filePath_;

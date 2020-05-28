@@ -9,17 +9,20 @@
 
 #include <normal/tuple/TupleSet2.h>
 
+using namespace normal::tuple;
+
 namespace normal::cache {
 
 class SegmentData {
 
 public:
-  explicit SegmentData(std::shared_ptr<normal::tuple::TupleSet2> TupleSet);
+  explicit SegmentData(std::shared_ptr<Column> column);
 
-  static std::shared_ptr<SegmentData> make(const std::shared_ptr<normal::tuple::TupleSet2> &TupleSet);
-  const std::shared_ptr<normal::tuple::TupleSet2> &getTupleSet() const;
+  static std::shared_ptr<SegmentData> make(const std::shared_ptr<Column> &column);
+  const std::shared_ptr<Column> &getColumn() const;
+
 private:
-  std::shared_ptr<normal::tuple::TupleSet2> tupleSet_;
+  std::shared_ptr<Column> column_;
 
 };
 

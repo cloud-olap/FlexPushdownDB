@@ -76,7 +76,8 @@ TEST_CASE ("filescan-project-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/filescan/single-partition/test.csv");
+  std::vector<std::string> columnNames = {"a","b","c"};
+  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/filescan/single-partition/test.csv", columnNames , 0, 18);
   auto expressions = {
 	  cast(normal::expression::gandiva::col("A"), float64Type()),
 	  normal::expression::gandiva::col("B")

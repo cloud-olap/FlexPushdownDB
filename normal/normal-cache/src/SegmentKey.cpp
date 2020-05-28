@@ -6,11 +6,13 @@
 
 using namespace normal::cache;
 
-SegmentKey::SegmentKey(std::shared_ptr<Partition> Partition, SegmentRange Range)
-	: partition_(std::move(Partition)), range_(Range) {}
+SegmentKey::SegmentKey(std::shared_ptr<Partition> Partition, std::string columnName, SegmentRange Range)
+	: partition_(std::move(Partition)), columnName_(std::move(columnName)), range_(Range) {}
 
-std::shared_ptr<SegmentKey> SegmentKey::make(const std::shared_ptr<Partition> &Partition, SegmentRange Range) {
-  return std::make_shared<SegmentKey>(Partition, Range);
+std::shared_ptr<SegmentKey> SegmentKey::make(const std::shared_ptr<Partition> &Partition,
+											 std::string columnName,
+											 SegmentRange Range) {
+  return std::make_shared<SegmentKey>(std::move(Partition), std::move(columnName), Range);
 }
 
 const std::shared_ptr<Partition> &SegmentKey::getPartition() const {
@@ -22,11 +24,13 @@ const std::shared_ptr<Partition> &SegmentKey::getPartition() const {
 }
 
 std::string SegmentKey::toString() {
-  return fmt::format("({},{})", partition_->toString() , range_.toString());
+  return fmt::format("({},{})", partition_->toString(), range_.toString());
 }
 
 bool SegmentKey::operator==(const SegmentKey &other) const {
-  return this->partition_->equalTo(other.partition_) && this->range_ == other.range_;
+  return this->partition_->equalTo(other.partition_) &&
+	  this->columnName_ == other.columnName_ &&
+	  this->range_ == other.range_;
 }
 
 bool SegmentKey::operator!=(const SegmentKey &other) const {
@@ -35,4 +39,8 @@ bool SegmentKey::operator!=(const SegmentKey &other) const {
 
 size_t SegmentKey::hash() {
   return partition_->hash() + range_.hash();
+}
+
+const std::string &SegmentKey::getColumnName() const {
+  return columnName_;
 }

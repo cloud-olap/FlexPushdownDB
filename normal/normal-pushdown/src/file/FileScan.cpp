@@ -81,47 +81,10 @@ void FileScan::onReceive(const Envelope &message) {
   }
 }
 
-tl::expected<std::shared_ptr<TupleSet>, std::string> FileScan::readCSVFile() {
+tl::expected<std::shared_ptr<TupleSet2>, std::string> FileScan::readCSVFile(const std::vector<std::string>& columnNames) {
 
-  auto pool = arrow::default_memory_pool();
-
-  auto res = arrow::io::ReadableFile::Open(filePath_);
-  if (!res.ok())
-	return tl::unexpected(res.status().message());
-
-  auto input = res.ValueOrDie();
-
-  CSVParser parser(filePath_);
-  auto schema = parser.parseSchema();
-  auto fields = schema.value()->fields();
-
-  std::vector<std::string> fieldNames;
-  for (const auto &field: fields) {
-	fieldNames.push_back(field->name());
-  }
-
-  auto st = input->Seek(startOffset_);
-  if (!st.ok())
-	return tl::unexpected(st.message());
-
-  auto parseOptions = arrow::csv::ParseOptions::Defaults();
-  auto readOptions = arrow::csv::ReadOptions::Defaults();
-  readOptions.use_threads = false;
-  readOptions.column_names = fieldNames;
-  readOptions.skip_rows = 1;
-  auto convertOptions = arrow::csv::ConvertOptions::Defaults();
-  std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
-  for(const auto &field: fields){
-	columnTypes[field->name()] = field->type();
-  }
-  convertOptions.column_types = columnTypes;
-  auto reader = arrow::csv::TableReader::Make(pool,
-											  input,
-											  readOptions,
-											  parseOptions,
-											  convertOptions).ValueOrDie();
-
-  auto tupleSet = TupleSet::make(reader);
+  CSVParser parser(filePath_, columnNames);
+  auto tupleSet = parser.parse();
 
   return tupleSet;
 }
@@ -131,24 +94,62 @@ void FileScan::onStart() {
 }
 
 void FileScan::requestCachedSegment() {
-  auto partition1 = std::make_shared<LocalFilePartition>(filePath_);
-  auto segmentKey1 = SegmentKey::make(partition1, SegmentRange::make(startOffset_, finishOffset_));
 
-  ctx()->send(LoadRequestMessage::make(segmentKey1, name()), "SegmentCache")
+  auto partition = std::make_shared<LocalFilePartition>(filePath_);
+
+  std::vector<std::shared_ptr<SegmentKey>> segmentKeys;
+  for(const auto &columnName: columnNames_){
+	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
+  }
+
+  ctx()->send(LoadRequestMessage::make(segmentKeys, name()), "SegmentCache")
 	  .map_error([](auto err) { throw std::runtime_error(err); });
 }
 
 void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
 
-  std::shared_ptr<TupleSet> tupleSet;
-  if (Message.getSegmentData().has_value()) {
-	tupleSet = Message.getSegmentData().value()->getTupleSet()->toTupleSetV1();
-  } else {
-	tupleSet = readCSVFile()
-		.map_error([](auto err) { throw std::runtime_error(err); }).value();
+  std::vector<std::shared_ptr<Column>> columns;
+  std::vector<std::shared_ptr<Column>> cachedColumns;
+  std::vector<std::string> columnNamesToLoad;
+  auto segments = Message.getSegments();
+
+  auto partition = std::make_shared<LocalFilePartition>(filePath_);
+
+  for(const auto &columnName: columnNames_){
+	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
+
+	auto segment = segments.find(segmentKey);
+	if (segment != segments.end()) {
+	  cachedColumns.push_back(segment->second->getColumn());
+	}
+	else{
+	  columnNamesToLoad.push_back(columnName);
+	}
   }
 
-  std::shared_ptr<normal::core::message::Message> message = std::make_shared<TupleMessage>(tupleSet, this->name());
+  // Read the columns not present in the cache
+  auto expectedReadTupleSet = readCSVFile(columnNamesToLoad);
+  auto readTupleSet = expectedReadTupleSet.value();
+
+  // Combine the read columns with the columns present in the cache
+  for(const auto &column: cachedColumns){
+    columns.push_back(column);
+  }
+  for(int c = 0;c < readTupleSet->numColumns();++c){
+	columns.push_back(readTupleSet->getColumnByIndex(c).value());
+  }
+
+  auto tupleSet = TupleSet2::make(columns);
+
+//  std::shared_ptr<TupleSet> tupleSet;
+//  if (Message.getSegmentKey().has_value()) {
+//	tupleSet = Message.getSegmentData().value()->getTupleSet()->toTupleSetV1();
+//  } else {
+//	tupleSet = readCSVFile()
+//		.map_error([](auto err) { throw std::runtime_error(err); }).value();
+//  }
+
+  std::shared_ptr<normal::core::message::Message> message = std::make_shared<TupleMessage>(tupleSet->toTupleSetV1(), this->name());
   ctx()->tell(message);
 
   ctx()->notifyComplete();

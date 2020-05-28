@@ -10,14 +10,23 @@ using namespace normal::tuple::csv;
 using namespace normal::tuple;
 
 CSVParser::CSVParser(std::string filePath,
+					 std::optional<std::vector<std::string>> columnNames,
 					 int64_t startOffset,
 					 std::optional<int64_t> finishOffset,
 					 int64_t bufferSize) :
-	filePath_(std::move(filePath)), startOffset_(startOffset), finishOffset_(finishOffset), bufferSize_(bufferSize) {
+	filePath_(std::move(filePath)),
+	columnNames_(std::move(columnNames)),
+	startOffset_(startOffset),
+	finishOffset_(finishOffset),
+	bufferSize_(bufferSize) {
 }
 
 CSVParser::CSVParser(const std::string &filePath, int64_t bufferSize) :
-	CSVParser(filePath, 0, std::nullopt, bufferSize) {
+	CSVParser(filePath, std::nullopt, 0, std::nullopt, bufferSize) {
+}
+
+CSVParser::CSVParser(const std::string &filePath, const std::vector<std::string>& columnNames) :
+	CSVParser(filePath, columnNames, 0, std::nullopt, DefaultBufferSize) {
 }
 
 CSVParser::CSVParser(const std::string &filePath) :
@@ -144,7 +153,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
 	  return tl::unexpected(maybeChunkBuffer.status().ToString());
 	auto chunkBuffer = *maybeChunkBuffer;
 
-	SPDLOG_DEBUG("Chunk: '{}'", chunkBuffer->ToString());
+//	SPDLOG_DEBUG("Chunk: '{}'", chunkBuffer->ToString());
 
 	// Advance to EOR
 	auto expectedBlockBuffer = advanceToEOR(chunkBuffer);
@@ -152,7 +161,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
 	  return tl::unexpected(expectedBlockBuffer.error());
 	auto blockBuffer = expectedBlockBuffer.value();
 
-	SPDLOG_DEBUG("Block: '{}'", blockBuffer->ToString());
+//	SPDLOG_DEBUG("Block: '{}'", blockBuffer->ToString());
 
 	// Add the buffer to the block vector
 	blockBuffers.push_back(blockBuffer);

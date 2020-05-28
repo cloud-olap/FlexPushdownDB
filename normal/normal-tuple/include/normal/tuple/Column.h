@@ -44,6 +44,7 @@ public:
   long numRows();
 
   std::string showString();
+  std::string toString() const;
 
   /**
    * Returns the element in the column at the given row index
@@ -62,6 +63,7 @@ public:
 private:
   std::string name_;
   std::shared_ptr<::arrow::ChunkedArray> array_;
+
 
 };
 

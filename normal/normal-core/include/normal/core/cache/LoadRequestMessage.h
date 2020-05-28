@@ -24,17 +24,17 @@ namespace normal::core::cache {
 class LoadRequestMessage : public Message {
 
 public:
-  LoadRequestMessage(std::shared_ptr<SegmentKey> segmentKey,
+  LoadRequestMessage(std::vector<std::shared_ptr<SegmentKey>> segmentKeys,
 							  const std::string &sender);
 
-  static std::shared_ptr<LoadRequestMessage> make(std::shared_ptr<SegmentKey> segmentKey, const std::string &sender);
+  static std::shared_ptr<LoadRequestMessage> make(std::vector<std::shared_ptr<SegmentKey>> segmentKeys, const std::string &sender);
 
-  [[nodiscard]] const std::shared_ptr<SegmentKey> &getSegmentKey() const;
+  [[nodiscard]] const std::vector<std::shared_ptr<SegmentKey>> &getSegmentKeys() const;
 
   [[nodiscard]] std::string toString() const;
 
 private:
-  std::shared_ptr<SegmentKey> segmentKey_;
+  std::vector<std::shared_ptr<SegmentKey>> segmentKeys_;
 
 };
 

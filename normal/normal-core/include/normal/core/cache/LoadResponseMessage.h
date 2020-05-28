@@ -26,22 +26,19 @@ namespace normal::core::cache {
 class LoadResponseMessage : public Message {
 
 public:
-  LoadResponseMessage(std::shared_ptr<SegmentKey> segmentKey,
-					  std::optional<std::shared_ptr<SegmentData>> segmentData,
+  LoadResponseMessage(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
 					  const std::string &sender);
 
-  static std::shared_ptr<LoadResponseMessage> make(std::shared_ptr<SegmentKey> segmentKey,
-												   std::optional<std::shared_ptr<SegmentData>> segmentData,
+  static std::shared_ptr<LoadResponseMessage> make(
+  	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
 												   const std::string &sender);
 
-  [[maybe_unused]] [[nodiscard]] const std::shared_ptr<SegmentKey> &getSegmentKey() const;
-  [[maybe_unused]] [[nodiscard]] const std::optional<std::shared_ptr<SegmentData>> &getSegmentData() const;
+  [[maybe_unused]] [[nodiscard]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &getSegments() const;
 
   [[nodiscard]] std::string toString() const;
 
 private:
-  std::shared_ptr<SegmentKey> segmentKey_;
-  std::optional<std::shared_ptr<SegmentData>> segmentData_;
+  std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments_;
 
 };
 

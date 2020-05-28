@@ -32,7 +32,7 @@ void TupleSet2::clear() {
   table_ = std::nullopt;
 }
 
-long TupleSet2::numRows() {
+long TupleSet2::numRows() const {
   if (table_)
 	return table_.value()->num_rows();
   else
@@ -95,7 +95,7 @@ std::shared_ptr<TupleSet> TupleSet2::toTupleSetV1() {
   return TupleSet::make(table_.value());
 }
 
-long TupleSet2::numColumns() {
+long TupleSet2::numColumns() const {
   if (table_.has_value()) {
 	return table_.value()->num_columns();
   } else {
@@ -182,6 +182,13 @@ std::string TupleSet2::showString(TupleSetShowOptions options) {
   }
 }
 
+std::string TupleSet2::toString() const {
+  if(table_.has_value())
+  	return fmt::format("<TupleSet2: {} x {}>", numColumns(), numRows());
+  else
+	return fmt::format("<TupleSet2: empty>", numColumns(), numRows());
+}
+
 const std::optional<std::shared_ptr<::arrow::Table>> &TupleSet2::getArrowTable() const {
   return table_;
 }
@@ -260,6 +267,12 @@ std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<::arrow::Schema
   return std::make_shared<TupleSet2>(std::move(arrowTable));
 }
 
+std::shared_ptr<TupleSet2> TupleSet2::make(std::shared_ptr<::arrow::Schema> schema,
+										   const std::vector<std::shared_ptr<::arrow::ChunkedArray>> &arrays) {
+  auto arrowTable = ::arrow::Table::Make (schema, arrays);
+  return std::make_shared<TupleSet2>(std::move(arrowTable));
+}
+
 tl::expected<std::string, std::string> TupleSet2::getString(const std::string &columnName, int row){
   if(!table_.has_value()){
     return tl::unexpected(fmt::format("Column with name '{}' not found", columnName));
@@ -267,4 +280,19 @@ tl::expected<std::string, std::string> TupleSet2::getString(const std::string &c
   else {
 	return TableHelper::value<::arrow::StringType, std::string>(columnName, row, *table_.value());
   }
+}
+
+std::shared_ptr<TupleSet2> TupleSet2::make(std::vector<std::shared_ptr<Column>> columns) {
+
+  std::vector<std::shared_ptr<::arrow::ChunkedArray>> arrays;
+  std::vector<std::shared_ptr<::arrow::Field>> fields;
+
+  for(const auto &column: columns){
+	arrays.push_back(column->getArrowArray());
+	fields.push_back(std::make_shared<::arrow::Field>(column->getName(), column->type()));
+  }
+
+  auto schema = std::make_shared<::arrow::Schema>(fields);
+
+  return make (schema, arrays);
 }

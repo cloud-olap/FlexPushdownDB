@@ -51,6 +51,8 @@ public:
    */
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Table> arrowTable);
 
+  static std::shared_ptr<TupleSet2> make(const std::vector<std::shared_ptr<Column>> columns);
+
   /**
    * Creates an empty tuple set with the given schema
    *
@@ -62,6 +64,8 @@ public:
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema, const std::vector<std::shared_ptr<Column>>& columns);
 
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays);
+
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::ChunkedArray>>& arrays);
 
   /**
    * Creates an empty tupleset
@@ -79,13 +83,13 @@ public:
    * Returns number of rows in the tuple set
    * @return
    */
-  long numRows();
+  long numRows() const;
 
   /**
    * Returns number of columns in the tuple set
    * @return
    */
-  long numColumns();
+  long numColumns() const;
 
   /**
    * Clears the schema and all data
@@ -132,6 +136,12 @@ public:
    */
   std::string showString();
   std::string showString(TupleSetShowOptions options);
+
+  /**
+   * Returns a short string representing the tuple set
+   * @return
+   */
+  std::string toString() const;
 
   /**
    * Gets the tuple set schema

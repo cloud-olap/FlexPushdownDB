@@ -16,11 +16,12 @@ namespace normal::cache {
 class SegmentKey {
 
 public:
-  SegmentKey(std::shared_ptr<Partition> Partition, SegmentRange Range);
+  SegmentKey(std::shared_ptr<Partition> Partition, std::string columnName, SegmentRange Range);
 
-  static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition, SegmentRange Range);
+  static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition, std::string columnName, SegmentRange Range);
 
   [[nodiscard]] const std::shared_ptr<Partition> &getPartition() const;
+  [[nodiscard]] const std::string &getColumnName() const;
   [[maybe_unused]] [[nodiscard]] const SegmentRange &getRange() const;
 
   std::string toString();
@@ -32,6 +33,7 @@ public:
 
 private:
   std::shared_ptr<Partition> partition_;
+  std::string columnName_;
   SegmentRange range_;
 
 };

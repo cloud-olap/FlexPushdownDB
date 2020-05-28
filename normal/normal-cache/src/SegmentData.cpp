@@ -6,12 +6,12 @@
 
 using namespace normal::cache;
 
-SegmentData::SegmentData(std::shared_ptr<normal::tuple::TupleSet2> TupleSet) : tupleSet_(std::move(TupleSet)) {}
+SegmentData::SegmentData(std::shared_ptr<Column> column) : column_(std::move(column)) {}
 
-std::shared_ptr <SegmentData> SegmentData::make(const std::shared_ptr <normal::tuple::TupleSet2> &TupleSet) {
-  return std::make_shared<SegmentData>(TupleSet);
+std::shared_ptr <SegmentData> SegmentData::make(const std::shared_ptr <Column> &column) {
+  return std::make_shared<SegmentData>(column);
 }
 
-const std::shared_ptr<normal::tuple::TupleSet2> &SegmentData::getTupleSet() const {
-  return tupleSet_;
+const std::shared_ptr<Column> &SegmentData::getColumn() const {
+  return column_;
 }

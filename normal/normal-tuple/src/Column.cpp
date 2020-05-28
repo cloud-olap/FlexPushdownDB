@@ -101,6 +101,12 @@ std::string Column::showString() {
   return s;
 }
 
+std::string Column::toString() const {
+  std::string s;
+  s += fmt::format("<column|size:{}>", array_->length());
+  return s;
+}
+
 ColumnIterator Column::begin() {
   return ColumnIterator(array_, 0, 0);
 }
