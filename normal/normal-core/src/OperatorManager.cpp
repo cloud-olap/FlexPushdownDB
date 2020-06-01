@@ -296,4 +296,68 @@ tl::expected<void, std::string> OperatorManager::send(std::shared_ptr<message::M
   }
 }
 
+std::string OperatorManager::showMetrics() {
+
+  std::stringstream ss;
+
+  ss << std::endl;
+
+  auto operators = getOperators();
+
+  long totalProcessingTime = 0;
+  for (auto &entry : operators) {
+	auto processingTime = entry.second->operatorActor()->getProcessingTime();
+	totalProcessingTime += processingTime;
+  }
+
+  auto totalExecutionTime = getElapsedTime().value();
+  std::stringstream formattedExecutionTime;
+  formattedExecutionTime << totalExecutionTime << " \u33B1" << " (" << ((double)totalExecutionTime / 1000000000.0 ) << " secs)";
+  ss << std::left << std::setw(60) << "Total Execution Time ";
+  ss << std::left << std::setw(60) << formattedExecutionTime.str();
+  ss << std::endl;
+  ss << std::endl;
+
+  ss << std::left << std::setw(120) << "Operator Execution Times" << std::endl;
+  ss << std::setfill(' ');
+
+  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+
+  ss << std::left << std::setw(60) << "Operator";
+  ss << std::left << std::setw(40) << "Execution Time";
+  ss << std::left << std::setw(20) << "% Total Time";
+  ss << std::endl;
+
+  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+
+  for (auto &entry : operators) {
+	auto operatorName = entry.second->op()->name();
+	auto processingTime = entry.second->operatorActor()->getProcessingTime();
+	auto processingFraction = (double)processingTime / (double)totalProcessingTime;
+	std::stringstream formattedProcessingTime;
+	formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double)processingTime / 1000000000.0 ) << " secs)";
+	std::stringstream formattedProcessingPercentage;
+	formattedProcessingPercentage << (processingFraction * 100.0);
+	ss << std::left << std::setw(60) << operatorName;
+	ss << std::left << std::setw(40) << formattedProcessingTime.str();
+	ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
+	ss << std::endl;
+  }
+
+  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+
+  std::stringstream formattedProcessingTime;
+  formattedProcessingTime << totalProcessingTime << " \u33B1" << " (" << ((double)totalProcessingTime / 1000000000.0 ) << " secs)";
+  ss << std::left << std::setw(60) << "Total ";
+  ss << std::left << std::setw(40) << formattedProcessingTime.str();
+  ss << std::left << std::setw(20) << "100.0";
+  ss << std::endl;
+  ss << std::endl;
+
+  return ss.str();
+}
+
 }

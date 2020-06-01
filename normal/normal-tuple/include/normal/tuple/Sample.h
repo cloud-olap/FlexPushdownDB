@@ -23,7 +23,9 @@ public:
    *
    * @return
    */
-  static std::shared_ptr<normal::tuple::TupleSet2> sample3x3String();
+  static std::shared_ptr<TupleSet2> sample3x3String();
+
+  static std::shared_ptr<Column> sample3String();
 };
 
 }

@@ -56,6 +56,8 @@ public:
 
   tl::expected<long, std::string> getElapsedTime();
 
+  std::string showMetrics();
+
 };
 
 }

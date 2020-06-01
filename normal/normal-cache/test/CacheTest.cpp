@@ -7,7 +7,6 @@
 #include <doctest/doctest.h>
 
 #include <normal/connector/local-fs/LocalFilePartition.h>
-#include <normal/tuple/TupleSet2.h>
 
 #include <normal/cache/SegmentCache.h>
 #include <normal/cache/SegmentKey.h>
@@ -26,23 +25,23 @@ TEST_SUITE ("cache" * doctest::skip(SKIP_SUITE)) {
 TEST_CASE ("segmentkey-equality" * doctest::skip(false || SKIP_SUITE)) {
 
   auto partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segmentKey1 = SegmentKey::make(partition1, SegmentRange::make(0, 1023));
+  auto segmentKey1 = SegmentKey::make(partition1, "a", SegmentRange::make(0, 1023));
 
   // An equal segment key
   auto partition2 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segmentKey2 = SegmentKey::make(partition2, SegmentRange::make(0, 1023));
+  auto segmentKey2 = SegmentKey::make(partition2, "a",SegmentRange::make(0, 1023));
 	  CHECK_EQ(*segmentKey1, *segmentKey2);
 	  CHECK_EQ(segmentKey1->hash(), segmentKey2->hash());
 
   // A non equal segment key (different partition)
   auto partition3 = std::make_shared<LocalFilePartition>("data/b.csv");
-  auto segmentKey3 = SegmentKey::make(partition3, SegmentRange::make(0, 1023));
+  auto segmentKey3 = SegmentKey::make(partition3, "a",SegmentRange::make(0, 1023));
 	  CHECK_NE(*segmentKey1, *segmentKey3);
 	  CHECK_NE(segmentKey1->hash(), segmentKey3->hash());
 
   // A non equal segment key (different range)
   auto partition4 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segmentKey4 = SegmentKey::make(partition4, SegmentRange::make(1024, 2047));
+  auto segmentKey4 = SegmentKey::make(partition4, "a",SegmentRange::make(1024, 2047));
 	  CHECK_NE(*segmentKey1, *segmentKey4);
 	  CHECK_NE(segmentKey1->hash(), segmentKey4->hash());
 }
@@ -52,16 +51,16 @@ TEST_CASE ("cache-hit" * doctest::skip(false || SKIP_SUITE)) {
   auto cache = SegmentCache::make();
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segment1Key1 = SegmentKey::make(segment1Partition1, SegmentRange::make(0, 1023));
+  auto segment1Key1 = SegmentKey::make(segment1Partition1, "a",SegmentRange::make(0, 1023));
 
-  auto segment1TupleSet1 = TupleSet2::make();
-  auto segment1Data1 = SegmentData::make(segment1TupleSet1);
+  auto segment1Column1 = Column::make("a", ::arrow::utf8());
+  auto segment1Data1 = SegmentData::make(segment1Column1);
 
   cache->store(segment1Key1, segment1Data1);
 
   // An equal segment key
   auto segment1Partition2 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segment1Key2 = SegmentKey::make(segment1Partition2, SegmentRange::make(0, 1023));
+  auto segment1Key2 = SegmentKey::make(segment1Partition2, "a", SegmentRange::make(0, 1023));
 
   auto expectedSegment1CacheEntry = cache->load(segment1Key2);
 
@@ -80,16 +79,16 @@ TEST_CASE ("cache-miss" * doctest::skip(false || SKIP_SUITE)) {
   auto cache = SegmentCache::make();
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segment1Key1 = SegmentKey::make(segment1Partition1, SegmentRange::make(0, 1023));
+  auto segment1Key1 = SegmentKey::make(segment1Partition1, "a", SegmentRange::make(0, 1023));
 
-  auto segment1TupleSet1 = TupleSet2::make();
-  auto segment1Data1 = SegmentData::make(segment1TupleSet1);
+  auto segment1Column1 = Column::make("a", ::arrow::utf8());
+  auto segment1Data1 = SegmentData::make(segment1Column1);
 
   cache->store(segment1Key1, segment1Data1);
 
   // A non equal segment key (different partition)
   auto segment2Partition = std::make_shared<LocalFilePartition>("data/b.csv");
-  auto segment2Key = SegmentKey::make(segment2Partition, SegmentRange::make(0, 1023));
+  auto segment2Key = SegmentKey::make(segment2Partition, "a", SegmentRange::make(0, 1023));
 
   // Check its a miss
   auto expectedSegment2Data = cache->load(segment2Key);
@@ -101,26 +100,26 @@ TEST_CASE ("cache-erase" * doctest::skip(false || SKIP_SUITE)) {
   auto cache = SegmentCache::make();
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segment1Key1 = SegmentKey::make(segment1Partition1, SegmentRange::make(0, 1023));
+  auto segment1Key1 = SegmentKey::make(segment1Partition1, "a", SegmentRange::make(0, 1023));
 
-  auto segment1TupleSet1 = TupleSet2::make();
-  auto segment1Data1 = SegmentData::make(segment1TupleSet1);
+  auto segment1Column1 = Column::make("a", ::arrow::utf8());
+  auto segment1Data1 = SegmentData::make(segment1Column1);
 
   cache->store(segment1Key1, segment1Data1);
 
   auto segment2Partition1 = std::make_shared<LocalFilePartition>("data/b.csv");
-  auto segment2Key1 = SegmentKey::make(segment2Partition1, SegmentRange::make(0, 1023));
+  auto segment2Key1 = SegmentKey::make(segment2Partition1, "a", SegmentRange::make(0, 1023));
 
-  auto segment2TupleSet1 = TupleSet2::make();
-  auto segment2Data1 = SegmentData::make(segment2TupleSet1);
+  auto segment2Column1 = Column::make("a", ::arrow::utf8());
+  auto segment2Data1 = SegmentData::make(segment2Column1);
 
   cache->store(segment2Key1, segment2Data1);
 
   auto segment3Partition1 = std::make_shared<LocalFilePartition>("data/c.csv");
-  auto segment3Key1 = SegmentKey::make(segment3Partition1, SegmentRange::make(0, 1023));
+  auto segment3Key1 = SegmentKey::make(segment3Partition1, "a", SegmentRange::make(0, 1023));
 
-  auto segment3TupleSet1 = TupleSet2::make();
-  auto segment3Data1 = SegmentData::make(segment3TupleSet1);
+  auto segment3Column1 = Column::make("a", ::arrow::utf8());
+  auto segment3Data1 = SegmentData::make(segment3Column1);
 
   cache->store(segment3Key1, segment3Data1);
 

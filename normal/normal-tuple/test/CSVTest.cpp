@@ -45,7 +45,7 @@ std::shared_ptr<TupleSet2> parseData(int64_t bufferSize,
 									 int64_t startOffset = 0,
 									 std::optional<int64_t> finishOffset = std::nullopt) {
 
-  CSVParser parser("data/csv/test.csv", startOffset, finishOffset, bufferSize);
+  CSVParser parser("data/csv/test.csv", std::nullopt, startOffset, finishOffset, bufferSize);
 
   auto maybeTupleSet = parser.parse();
 	  CHECK_MESSAGE(maybeTupleSet.has_value(), maybeTupleSet.error());

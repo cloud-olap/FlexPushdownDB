@@ -34,23 +34,23 @@ TEST_CASE ("load" * doctest::skip(false || SKIP_SUITE)) {
   mgr->start();
 
   auto partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
-  auto segmentKey1 = SegmentKey::make(partition1, SegmentRange::make(0, 1023));
-  auto segment1TupleSet1 = Sample::sample3x3String();
+  auto segmentKey1 = SegmentKey::make(partition1, "a", SegmentRange::make(0, 1023));
+  auto segment1TupleSet1 = Sample::sample3String();
   auto segment1Data1 = SegmentData::make(segment1TupleSet1);
+  auto segmentKeys = {segmentKey1};
 
   mgr->send(StoreRequestMessage::make(segmentKey1, segment1Data1, "root"), "SegmentCache")
 	  .map_error([](auto err) { throw std::runtime_error(err); });
-  mgr->send(LoadRequestMessage::make(segmentKey1, "root"), "SegmentCache")
+  mgr->send(LoadRequestMessage::make(segmentKeys, "root"), "SegmentCache")
 	  .map_error([](auto err) { throw std::runtime_error(err); });
 
   auto msg = mgr->receive();
 
   auto loadResponseMessage = std::static_pointer_cast<LoadResponseMessage>(msg);
-	  CHECK(loadResponseMessage->getSegmentData().has_value());
+	  CHECK_GT(loadResponseMessage->getSegments().size(), 0);
 
-  auto segmentData = loadResponseMessage->getSegmentData().value();
-	  CHECK(segmentData->getTupleSet()->numColumns() == segment1Data1->getTupleSet()->numColumns());
-	  CHECK(segmentData->getTupleSet()->numRows() == segment1Data1->getTupleSet()->numRows());
+  auto segmentData = loadResponseMessage->getSegments().at(0);
+	  CHECK(segmentData->getColumn()->numRows() == segment1Data1->getColumn()->numRows());
 
   // TODO: Check cell by cell
 

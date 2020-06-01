@@ -6,6 +6,23 @@
 
 using namespace normal::tuple;
 
+std::shared_ptr<Column> Sample::sample3String() {
+
+  auto vec1 = std::vector{"1", "2", "3"};
+
+  auto stringType = arrow::TypeTraits<arrow::StringType>::type_singleton();
+
+  auto fieldA = field("a", stringType);
+  auto arrowSchema = arrow::schema({fieldA});
+  auto schema = Schema::make(arrowSchema);
+
+  auto arrowColumn1 = Arrays::make<arrow::StringType>(vec1).value();
+
+  auto column1 = Column::make(fieldA->name(), arrowColumn1);
+
+  return column1;
+}
+
 std::shared_ptr<TupleSet2> Sample::sample3x3String() {
 
   auto vec1 = std::vector{"1", "2", "3"};

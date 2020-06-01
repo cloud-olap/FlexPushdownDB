@@ -89,7 +89,7 @@ auto executeTest(const std::string &sql) {
 
   i.getOperatorManager()->stop();
 
-  SPDLOG_INFO("Metrics:\n{}", normal::test::TestUtil::showMetrics(*i.getOperatorManager()));
+  SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
 
   return tuples;
 }
