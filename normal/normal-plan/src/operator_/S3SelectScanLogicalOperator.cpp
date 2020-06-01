@@ -4,7 +4,7 @@
 
 #include <normal/plan/operator_/S3SelectScanLogicalOperator.h>
 
-#include <normal/pushdown/S3SelectScan.h>
+#include <normal/pushdown/s3/S3SelectScan.h>
 
 using namespace normal::plan::operator_;
 
@@ -25,13 +25,19 @@ std::shared_ptr<normal::core::Operator> S3SelectScanLogicalOperator::toOperator(
 
 	// FIXME: Still unsure what to do with m_col? col could be an expression or an aggregate, or something else?
 
+	// FIXME: Feels like there is a conceptual difference between a s3 select scan that contains
+	//  push down operators vs one that simply brings back raw data?
+
+	std::vector<std::string> columns = {"A"};
+
 	auto scanOp = std::make_shared<normal::pushdown::S3SelectScan>(
 		s3Partition->getBucket() + "/" + s3Partition->getObject(),
 		s3Partition->getBucket(),
 		s3Partition->getObject(),
 		"select * from S3Object",
-		s3Partition->getObject(),
-		"A",
+		columns,
+		0,
+		1023,
 		this->awsClient_->defaultS3Client());
 
 	operators->push_back(scanOp);
@@ -49,13 +55,19 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
 
 	// FIXME: Still unsure what to do with m_col? col could be an expression or an aggregate, or something else?
 
+	// FIXME: Feels like there is a conceptual difference between a s3 select scan that contains
+	//  push down operators vs one that simply brings back raw data?
+
+	std::vector<std::string> columns = {"A"};
+
 	auto scanOp = std::make_shared<normal::pushdown::S3SelectScan>(
 		s3Partition->getBucket() + "/" + s3Partition->getObject(),
 		s3Partition->getBucket(),
 		s3Partition->getObject(),
 		"select * from S3Object",
-		s3Partition->getObject(),
-		"A",
+		columns,
+		0,
+		1023,
 		this->awsClient_->defaultS3Client());
 
 	operators->push_back(scanOp);

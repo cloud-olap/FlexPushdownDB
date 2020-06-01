@@ -65,8 +65,6 @@ std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
 
   auto input = createResult.ValueOrDie();
 
-
-
   // Instantiate TableReader from input stream and options
   auto makeReaderResult = arrow::csv::TableReader::Make(pool, input, read_options,
                                                         parse_options, convert_options);

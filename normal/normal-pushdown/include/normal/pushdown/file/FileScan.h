@@ -31,7 +31,7 @@ public:
 										unsigned long startOffset,
 										unsigned long finishOffset);
 
-  void requestCachedSegment();
+  void requestSegmentsFromCache();
   void onCacheLoadResponse(const normal::core::cache::LoadResponseMessage &Message);
   tl::expected<std::shared_ptr<TupleSet2>, std::string> readCSVFile(const std::vector<std::string>& columnNames);
 

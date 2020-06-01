@@ -37,7 +37,7 @@ public:
   columnVectorToArrowChunkedArrayVector(const std::vector<std::shared_ptr<Column>> &columns);
 
   [[nodiscard]] const std::string &getName() const;
-
+  void setName(const std::string &Name);
   std::shared_ptr<::arrow::DataType> type();
 
   long numRows();

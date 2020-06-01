@@ -9,7 +9,7 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/pushdown/S3SelectScan.h>
+#include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/Aggregate.h>

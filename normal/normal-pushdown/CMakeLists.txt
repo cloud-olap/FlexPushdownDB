@@ -8,7 +8,7 @@ project("normal-pushdown" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(normal-pushdown STATIC
         include/normal/pushdown/Globals.h
         src/Collate.cpp include/normal/pushdown/Collate.h
-        src/S3SelectScan.cpp include/normal/pushdown/S3SelectScan.h
+        src/s3/S3SelectScan.cpp include/normal/pushdown/s3/S3SelectScan.h
         src/file/FileScan.cpp include/normal/pushdown/file/FileScan.h
         src/Aggregate.cpp include/normal/pushdown/Aggregate.h
         src/s3/S3SelectParser.cpp src/s3/S3SelectParser.h
@@ -52,6 +52,7 @@ target_link_libraries(normal-pushdown PUBLIC normal-expression-gandiva)
 
 add_executable(normal-pushdown-test
         test/Globals.h
+        test/TestUtil.cpp test/TestUtil.h
         test/MainTest.cpp
         test/JoinTest.cpp
         test/FilterTest.cpp
@@ -59,7 +60,8 @@ add_executable(normal-pushdown-test
         test/AggregateTest.cpp
         test/SortTest.cpp
         test/FileScanTest.cpp
-        test/CacheTest.cpp test/TestUtil.cpp test/TestUtil.h)
+        test/CacheTest.cpp
+        test/S3SelectScanTest.cpp)
 
 
 target_include_directories(normal-pushdown-test PRIVATE include)

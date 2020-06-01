@@ -128,3 +128,7 @@ std::vector<std::shared_ptr<::arrow::ChunkedArray>> Column::columnVectorToArrowC
   }
   return chunkedArrays;
 }
+
+void Column::setName(const std::string &Name) {
+  name_ = Name;
+}

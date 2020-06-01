@@ -22,35 +22,25 @@ endfunction()
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(normal-test-suite
-        include/normal/test/Globals.h
+        src/Globals.h
+        src/TestUtil.cpp src/TestUtil.h
         src/MainTest.cpp
-        src/S3SelectScanTest.cpp
         src/CacheTest.cpp
         src/SQLTest.cpp
-        src/TestUtil.cpp src/TestUtil.h)
+)
 
 link_target(normal-test-suite)
 
-add_executable(normal-test-s3
-        include/normal/test/Globals.h
-        src/TestUtil.cpp src/TestUtil.h
-        src/MainTest.cpp
-        src/S3SelectScanTest.cpp)
-
-link_target(normal-test-s3)
-
-
 add_executable(normal-test-cache
-        include/normal/test/Globals.h
+        src/Globals.h
         src/TestUtil.cpp src/TestUtil.h
         src/MainTest.cpp
         src/CacheTest.cpp)
 
 link_target(normal-test-cache)
 
-
 add_executable(normal-test-sql
-        include/normal/test/Globals.h
+        src/Globals.h
         src/TestUtil.cpp src/TestUtil.h
         src/MainTest.cpp
         src/SQLTest.cpp)

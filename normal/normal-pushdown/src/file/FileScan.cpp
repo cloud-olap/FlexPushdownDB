@@ -90,16 +90,17 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> FileScan::readCSVFile(cons
 }
 
 void FileScan::onStart() {
-  requestCachedSegment();
+  requestSegmentsFromCache();
 }
 
-void FileScan::requestCachedSegment() {
+void FileScan::requestSegmentsFromCache() {
 
   auto partition = std::make_shared<LocalFilePartition>(filePath_);
 
   std::vector<std::shared_ptr<SegmentKey>> segmentKeys;
   for(const auto &columnName: columnNames_){
 	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
+	segmentKeys.push_back(segmentKey);
   }
 
   ctx()->send(LoadRequestMessage::make(segmentKeys, name()), "SegmentCache")
@@ -140,14 +141,6 @@ void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   }
 
   auto tupleSet = TupleSet2::make(columns);
-
-//  std::shared_ptr<TupleSet> tupleSet;
-//  if (Message.getSegmentKey().has_value()) {
-//	tupleSet = Message.getSegmentData().value()->getTupleSet()->toTupleSetV1();
-//  } else {
-//	tupleSet = readCSVFile()
-//		.map_error([](auto err) { throw std::runtime_error(err); }).value();
-//  }
 
   std::shared_ptr<normal::core::message::Message> message = std::make_shared<TupleMessage>(tupleSet->toTupleSetV1(), this->name());
   ctx()->tell(message);

@@ -16,14 +16,14 @@ using namespace normal::pushdown::test;
 using namespace normal::tuple;
 using namespace normal::core;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 /**
  * Test running a query multiple times to test cache hits on second run
  */
 TEST_SUITE ("cache" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("multi-filescan-collate" * doctest::skip(false)) {
+TEST_CASE ("multi-filescan-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
