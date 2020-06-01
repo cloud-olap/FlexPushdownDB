@@ -59,14 +59,13 @@ add_executable(normal-pushdown-test
         test/AggregateTest.cpp
         test/SortTest.cpp
         test/FileScanTest.cpp
-        test/CacheTest.cpp)
+        test/CacheTest.cpp test/TestUtil.cpp test/TestUtil.h)
 
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 
 target_link_libraries(normal-pushdown-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-pushdown-test PRIVATE doctest::doctest)
-target_link_libraries(normal-pushdown-test PRIVATE normal-test)
 target_link_libraries(normal-pushdown-test PRIVATE normal-pushdown)
 
 

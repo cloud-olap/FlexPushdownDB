@@ -18,43 +18,22 @@ endfunction()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Target
+# Targets
 #-----------------------------------------------------------------------------------------------------------------------
-
-add_library(normal-test
-        include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h)
-
-target_include_directories(normal-test PUBLIC include)
-
-target_link_libraries(normal-test PRIVATE spdlog::spdlog)
-target_link_libraries(normal-test PRIVATE doctest::doctest)
-target_link_libraries(normal-test PUBLIC normal-sql)
-
 
 add_executable(normal-test-suite
         include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h
         src/MainTest.cpp
         src/S3SelectScanTest.cpp
         src/CacheTest.cpp
         src/SQLTest.cpp
-        )
+        src/TestUtil.cpp src/TestUtil.h)
 
 link_target(normal-test-suite)
 
-add_executable(normal-test-file
-        include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h
-        src/MainTest.cpp
-        )
-
-link_target(normal-test-file)
-
-
 add_executable(normal-test-s3
         include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h
+        src/TestUtil.cpp src/TestUtil.h
         src/MainTest.cpp
         src/S3SelectScanTest.cpp)
 
@@ -63,7 +42,7 @@ link_target(normal-test-s3)
 
 add_executable(normal-test-cache
         include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h
+        src/TestUtil.cpp src/TestUtil.h
         src/MainTest.cpp
         src/CacheTest.cpp)
 
@@ -72,19 +51,11 @@ link_target(normal-test-cache)
 
 add_executable(normal-test-sql
         include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h
+        src/TestUtil.cpp src/TestUtil.h
         src/MainTest.cpp
         src/SQLTest.cpp)
 
 link_target(normal-test-sql)
-
-add_executable(normal-test-tuple
-        include/normal/test/Globals.h
-        src/TestUtil.cpp include/normal/test/TestUtil.h
-        src/MainTest.cpp
-        )
-
-link_target(normal-test-tuple)
 
 
 # Test data

@@ -6,10 +6,8 @@
 
 #include <normal/tuple/arrow/Arrays.h>
 #include <normal/tuple/TupleSet.h>
-#include <normal/core/type/DecimalType.h>
 
 using namespace normal::tuple;
-using namespace normal::core::type;
 
 #define SKIP_SUITE true
 

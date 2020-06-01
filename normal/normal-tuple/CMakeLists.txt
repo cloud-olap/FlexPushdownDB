@@ -49,7 +49,6 @@ target_include_directories(normal-tuple-test PRIVATE include)
 
 target_link_libraries(normal-tuple-test spdlog::spdlog)
 target_link_libraries(normal-tuple-test doctest::doctest)
-target_link_libraries(normal-tuple-test normal-test)
 target_link_libraries(normal-tuple-test normal-tuple)
 
 

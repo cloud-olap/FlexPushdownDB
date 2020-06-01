@@ -13,16 +13,17 @@
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/aggregate/Sum.h>
 #include <normal/pushdown/Project.h>
-#include <normal/test/Globals.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
-#include <normal/test/TestUtil.h>
+
+#include "TestUtil.h"
 
 using namespace normal::core::type;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
 using namespace normal::pushdown::aggregate;
+using namespace normal::pushdown::test;
 
 #define SKIP_SUITE true
 
@@ -54,7 +55,7 @@ TEST_CASE ("filescan-sum-collate" * doctest::skip(true || SKIP_SUITE)) {
   mgr->put(aggregate);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 
@@ -95,7 +96,7 @@ TEST_CASE ("filescan-project-collate" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(project);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 
@@ -185,7 +186,7 @@ TEST_CASE ("filescan-sum-collate-parallel" * doctest::skip(true || SKIP_SUITE)) 
   mgr->put(reduceAggregate);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

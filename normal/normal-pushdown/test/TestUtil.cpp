@@ -4,7 +4,7 @@
 
 #include "TestUtil.h"
 
-using namespace normal::test;
+using namespace normal::pushdown::test;
 
 filesystem::path TestUtil::getTestScratchDirectory() {
   auto testName = getCurrentTestName();

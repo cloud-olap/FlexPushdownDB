@@ -17,8 +17,9 @@
 #include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
 
-#include <normal/test/TestUtil.h>
+#include "TestUtil.h"
 
+using namespace normal::test;
 using namespace normal::core::type;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
@@ -57,7 +58,7 @@ TEST_CASE ("S3SelectScan -> Sum -> Collate"
   mgr->put(aggregate);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

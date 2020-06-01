@@ -9,14 +9,15 @@
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/file/FileScan.h>
-#include <normal/test/TestUtil.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/pushdown/Sort.h>
 #include <normal/core/type/Integer32Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/tuple/TupleSet2.h>
+#include "TestUtil.h"
 
 using namespace normal::pushdown;
+using namespace normal::pushdown::test;
 using namespace normal::tuple;
 using namespace normal::expression::gandiva;
 
@@ -42,7 +43,7 @@ TEST_CASE ("SortTest" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(sort);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

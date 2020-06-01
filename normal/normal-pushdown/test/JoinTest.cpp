@@ -9,12 +9,13 @@
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/file/FileScan.h>
-#include <normal/test/TestUtil.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
+#include "TestUtil.h"
 
 using namespace normal::pushdown;
 using namespace normal::pushdown::join;
+using namespace normal::pushdown::test;
 
 #define SKIP_SUITE true
 
@@ -49,7 +50,7 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(joinProbe);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

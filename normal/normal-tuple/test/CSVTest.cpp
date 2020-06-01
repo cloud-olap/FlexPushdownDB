@@ -5,12 +5,10 @@
 #include <memory>
 
 #include <doctest/doctest.h>
-#include <normal/test/TestUtil.h>
 #include <normal/tuple/csv/CSVParser.h>
 
 using namespace normal::tuple::csv;
 using namespace normal::tuple;
-using namespace normal::test;
 
 #define SKIP_SUITE false
 

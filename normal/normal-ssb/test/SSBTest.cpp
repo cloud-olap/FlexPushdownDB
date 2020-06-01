@@ -6,7 +6,7 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/test/TestUtil.h>
+#include <normal/ssb/TestUtil.h>
 #include <normal/sql/Interpreter.h>
 #include <normal/connector/local-fs/LocalFileSystemConnector.h>
 #include <normal/connector/local-fs/LocalFileExplicitPartitioningScheme.h>
@@ -17,6 +17,8 @@
 #include <normal/pushdown/Collate.h>
 
 #include "normal/ssb/Queries.h"
+
+using namespace normal::ssb;
 
 void configureLocalConnector(normal::sql::Interpreter &i) {
 
@@ -85,7 +87,8 @@ auto executeTest(const std::string &sql) {
 
   i.parse(sql);
 
-  normal::test::TestUtil::writeExecutionPlan(i);
+  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
+  TestUtil::writeExecutionPlan(*i.getOperatorManager());
 
   auto tuples = execute(i);
 

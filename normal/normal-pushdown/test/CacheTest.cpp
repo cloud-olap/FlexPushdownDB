@@ -9,12 +9,12 @@
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/file/FileScan.h>
-#include <normal/test/TestUtil.h>
+#include "TestUtil.h"
 
 using namespace normal::pushdown;
+using namespace normal::pushdown::test;
 using namespace normal::tuple;
 using namespace normal::core;
-using namespace normal::test;
 
 #define SKIP_SUITE false
 

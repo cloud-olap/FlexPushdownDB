@@ -10,14 +10,15 @@
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/file/FileScan.h>
-#include <normal/test/TestUtil.h>
 #include <normal/pushdown/filter/Filter.h>
 #include <normal/pushdown/filter/FilterPredicate.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/Literal.h>
 #include <normal/expression/gandiva/LessThan.h>
+#include "TestUtil.h"
 
 using namespace normal::pushdown;
+using namespace normal::pushdown::test;
 using namespace normal::pushdown::filter;
 using namespace normal::tuple;
 using namespace normal::expression::gandiva;
@@ -44,7 +45,7 @@ TEST_CASE ("filescan-filter-collate" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(filter);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 

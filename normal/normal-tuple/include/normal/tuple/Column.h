@@ -9,7 +9,6 @@
 #include <arrow/table.h>
 #include <arrow/array.h>
 #include <tl/expected.hpp>
-#include <fmt/format.h>
 #include <utility>
 
 #include "Scalar.h"

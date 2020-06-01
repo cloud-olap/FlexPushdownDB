@@ -2,6 +2,7 @@
 // Created by matt on 1/5/20.
 //
 
+#include <fmt/format.h>
 #include "normal/tuple/Column.h"
 
 using namespace normal::tuple;

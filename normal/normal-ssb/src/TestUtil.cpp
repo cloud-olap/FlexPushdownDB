@@ -2,9 +2,9 @@
 // Created by matt on 1/6/20.
 //
 
-#include "TestUtil.h"
+#include "normal/ssb/TestUtil.h"
 
-using namespace normal::test;
+using namespace normal::ssb;
 
 filesystem::path TestUtil::getTestScratchDirectory() {
   auto testName = getCurrentTestName();

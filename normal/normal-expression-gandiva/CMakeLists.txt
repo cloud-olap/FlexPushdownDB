@@ -45,7 +45,6 @@ target_include_directories(normal-expression-gandiva-test PRIVATE include)
 
 target_link_libraries(normal-expression-gandiva-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-expression-gandiva-test PRIVATE doctest::doctest)
-target_link_libraries(normal-expression-gandiva-test PRIVATE normal-test)
 target_link_libraries(normal-expression-gandiva-test PRIVATE normal-expression-gandiva)
 
 

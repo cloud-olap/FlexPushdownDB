@@ -9,15 +9,16 @@
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/file/FileScan.h>
-#include <normal/test/TestUtil.h>
 #include <normal/pushdown/group/Group.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/pushdown/aggregate/Sum.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
+#include "TestUtil.h"
 
 using namespace normal::pushdown;
+using namespace normal::pushdown::test;
 using namespace normal::pushdown::group;
 using namespace normal::tuple;
 using namespace normal::core::type;
@@ -52,7 +53,7 @@ TEST_CASE ("group" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(group);
   mgr->put(collate);
 
-  normal::test::TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
 
