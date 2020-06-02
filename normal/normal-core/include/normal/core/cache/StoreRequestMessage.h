@@ -21,25 +21,28 @@ namespace normal::core::cache {
 /**
  * Reuest for the segment cache actor to store the given segment data given a segment key.
  */
-class StoreRequestMessage: public Message {
+class StoreRequestMessage : public Message {
 
 public:
-  StoreRequestMessage(std::shared_ptr<SegmentKey> SegmentKey,
-					  std::shared_ptr<SegmentData> SegmentData,
+  StoreRequestMessage(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
 					  const std::string &sender);
 
-  static std::shared_ptr<StoreRequestMessage> make(std::shared_ptr<SegmentKey> SegmentKey,
-												   std::shared_ptr<SegmentData> SegmentData,
-												   const std::string &sender);
+  static std::shared_ptr<StoreRequestMessage>
+  make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
+	   const std::string &sender);
 
-  [[nodiscard]] const std::shared_ptr<SegmentKey> &getSegmentKey() const;
-  [[nodiscard]] const std::shared_ptr<SegmentData> &getSegmentData() const;
+  static std::shared_ptr<StoreRequestMessage>
+  make(std::shared_ptr<SegmentKey>,
+	   std::shared_ptr<SegmentData> segment,
+	   const std::string &sender);
+
+  [[nodiscard]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &
+  getSegments() const;
 
   [[nodiscard]] std::string toString() const;
 
 private:
-  std::shared_ptr<SegmentKey> segmentKey_;
-  std::shared_ptr<SegmentData> segmentData_;
+  std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments_;
 
 };
 

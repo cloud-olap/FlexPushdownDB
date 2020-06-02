@@ -50,6 +50,7 @@
 #include <normal/cache/SegmentKey.h>
 
 #include "normal/pushdown/Globals.h"
+#include <normal/pushdown/cache/CacheHelper.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
 namespace arrow { class MemoryPool; }
@@ -63,6 +64,7 @@ using namespace Aws::S3::Model;
 
 using namespace normal::cache;
 using namespace normal::core::cache;
+using namespace normal::pushdown::cache;
 
 namespace normal::pushdown {
 
@@ -173,21 +175,12 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 
 void S3SelectScan::onStart() {
   SPDLOG_DEBUG("Starting");
-  requestSegmentsFromCache();
+  requestLoadSegmentsFromCache();
 }
 
-void S3SelectScan::requestSegmentsFromCache() {
-
+void S3SelectScan::requestLoadSegmentsFromCache() {
   auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
-
-  std::vector<std::shared_ptr<SegmentKey>> segmentKeys;
-  for (const auto &columnName: columnNames_) {
-	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
-	segmentKeys.push_back(segmentKey);
-  }
-
-  ctx()->send(LoadRequestMessage::make(segmentKeys, name()), "SegmentCache")
-	  .map_error([](auto err) { throw std::runtime_error(err); });
+  CacheHelper::requestLoadSegmentsFromCache(columnNames_, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
 void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
@@ -281,6 +274,11 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
 
 void S3SelectScan::onComplete(const normal::core::message::CompleteMessage &) {
   ctx()->notifyComplete();
+}
+
+void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
+  auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
 }

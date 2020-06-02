@@ -57,7 +57,11 @@ void SegmentCacheActor::load(const LoadRequestMessage &msg) {
 
 void SegmentCacheActor::store(const StoreRequestMessage &msg) {
   SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
-  state_->cache->store(msg.getSegmentKey(), msg.getSegmentData());
+  for(const auto &segmentEntry: msg.getSegments()){
+    auto segmentKey = segmentEntry.first;
+	auto segmentData = segmentEntry.second;
+	state_->cache->store(segmentKey, segmentData);
+  }
 }
 
 void SegmentCacheActor::evict(const EvictRequestMessage &msg) {

@@ -6,27 +6,43 @@
 
 using namespace normal::core::cache;
 
-StoreRequestMessage::StoreRequestMessage(std::shared_ptr<SegmentKey> SegmentKey,
-										 std::shared_ptr<SegmentData> SegmentData,
-										 const std::string &sender) :
+StoreRequestMessage::StoreRequestMessage(
+	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
+	const std::string &sender) :
 	Message("StoreRequestMessage", sender),
-	segmentKey_(std::move(SegmentKey)),
-	segmentData_(std::move(SegmentData)) {}
+	segments_(std::move(segments)) {}
 
-std::shared_ptr<StoreRequestMessage> StoreRequestMessage::make(std::shared_ptr<SegmentKey> SegmentKey,
-															   std::shared_ptr<SegmentData> SegmentData,
-															   const std::string &sender) {
-  return std::make_shared<StoreRequestMessage>(std::move(SegmentKey), std::move(SegmentData), sender);
+std::shared_ptr<StoreRequestMessage>
+StoreRequestMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
+						  const std::string &sender) {
+  return std::make_shared<StoreRequestMessage>(std::move(segments), sender);
 }
 
-const std::shared_ptr<SegmentKey> &StoreRequestMessage::getSegmentKey() const {
-  return segmentKey_;
+std::shared_ptr<StoreRequestMessage>
+StoreRequestMessage::make(std::shared_ptr<SegmentKey> segmentKey,
+						  std::shared_ptr<SegmentData> segmentData,
+						  const std::string &sender) {
+  std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments;
+  segments.emplace(segmentKey, segmentData);
+
+  return make(segments, sender);
 }
 
-const std::shared_ptr<SegmentData> &StoreRequestMessage::getSegmentData() const {
-  return segmentData_;
+const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &
+StoreRequestMessage::getSegments() const {
+  return segments_;
 }
 
 std::string StoreRequestMessage::toString() const {
-  return fmt::format("segmentKey: {}, segmentData.size: {}", segmentKey_->toString(), 0);
+  std::string s = "{";
+  for (auto it = segments_.begin(); it != segments_.end(); ++it) {
+	s += fmt::format("{}", it->first->toString());
+	s += ": ";
+	s += fmt::format("{}", it->second->getColumn()->toString());
+	if (std::next(it) != segments_.end())
+	  s += ", ";
+  }
+  s += "}";
+
+  return s;
 }

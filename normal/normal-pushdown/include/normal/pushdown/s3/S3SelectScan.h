@@ -48,9 +48,6 @@ public:
 									 std::shared_ptr<Aws::S3::S3Client> s3Client);
 
   void onReceive(const Envelope &message) override;
-  void onTuple(const TupleMessage &message);
-  void onComplete(const CompleteMessage &message);
-  void onCacheLoadResponse(const LoadResponseMessage &Message);
 
 private:
   std::string s3Bucket_;
@@ -63,10 +60,14 @@ private:
   std::vector<std::shared_ptr<Column>> columns_;
 
   void onStart();
-
-  void requestSegmentsFromCache();
+  void onTuple(const TupleMessage &message);
+  void onComplete(const CompleteMessage &message);
+  void onCacheLoadResponse(const LoadResponseMessage &Message);
 
   tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
+
+  void requestLoadSegmentsFromCache();
+  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
 
 };
 

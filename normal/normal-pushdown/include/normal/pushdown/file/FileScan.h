@@ -31,10 +31,6 @@ public:
 										unsigned long startOffset,
 										unsigned long finishOffset);
 
-  void requestSegmentsFromCache();
-  void onCacheLoadResponse(const normal::core::cache::LoadResponseMessage &Message);
-  tl::expected<std::shared_ptr<TupleSet2>, std::string> readCSVFile(const std::vector<std::string>& columnNames);
-
 private:
   std::string filePath_;
   std::vector<std::string> columnNames_;
@@ -42,7 +38,12 @@ private:
   unsigned long finishOffset_;
   void onStart();
   void onReceive(const normal::core::message::Envelope &message) override;
+  void onCacheLoadResponse(const normal::core::cache::LoadResponseMessage &Message);
 
+  tl::expected<std::shared_ptr<TupleSet2>, std::string> readCSVFile(const std::vector<std::string> &columnNames);
+
+  void requestLoadSegmentsFromCache();
+  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
 };
 
 }

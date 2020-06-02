@@ -25,13 +25,16 @@
 #include <normal/cache/SegmentKey.h>
 #include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
+#include <normal/core/cache/StoreRequestMessage.h>
 #include "normal/pushdown/Globals.h"
 #include <normal/tuple/csv/CSVParser.h>
+#include <normal/pushdown/cache/CacheHelper.h>
 
 using namespace normal::tuple;
 using namespace normal::tuple::csv;
 using namespace normal::core::cache;
 using namespace normal::core::message;
+using namespace normal::pushdown::cache;
 
 namespace arrow { class MemoryPool; }
 
@@ -90,21 +93,13 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> FileScan::readCSVFile(cons
 }
 
 void FileScan::onStart() {
-  requestSegmentsFromCache();
+  SPDLOG_DEBUG("Starting");
+  requestLoadSegmentsFromCache();
 }
 
-void FileScan::requestSegmentsFromCache() {
-
+void FileScan::requestLoadSegmentsFromCache() {
   auto partition = std::make_shared<LocalFilePartition>(filePath_);
-
-  std::vector<std::shared_ptr<SegmentKey>> segmentKeys;
-  for(const auto &columnName: columnNames_){
-	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
-	segmentKeys.push_back(segmentKey);
-  }
-
-  ctx()->send(LoadRequestMessage::make(segmentKeys, name()), "SegmentCache")
-	  .map_error([](auto err) { throw std::runtime_error(err); });
+  CacheHelper::requestLoadSegmentsFromCache(columnNames_, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
 void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
@@ -132,6 +127,9 @@ void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   auto expectedReadTupleSet = readCSVFile(columnNamesToLoad);
   auto readTupleSet = expectedReadTupleSet.value();
 
+  // Store the read columns in the cache
+  requestStoreSegmentsInCache(readTupleSet);
+
   // Combine the read columns with the columns present in the cache
   for(const auto &column: cachedColumns){
     columns.push_back(column);
@@ -146,6 +144,11 @@ void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   ctx()->tell(message);
 
   ctx()->notifyComplete();
+}
+
+void FileScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
+  auto partition = std::make_shared<LocalFilePartition>(filePath_);
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
 }
