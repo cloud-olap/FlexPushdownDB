@@ -29,10 +29,10 @@ add_library(normal-plan STATIC
 
 target_include_directories(normal-plan PUBLIC include)
 
-target_link_libraries(normal-plan PUBLIC normal-core)
+target_link_libraries(normal-plan PRIVATE spdlog::spdlog)
+target_link_libraries(normal-plan PRIVATE fmt::fmt)
 target_link_libraries(normal-plan PUBLIC normal-pushdown)
 target_link_libraries(normal-plan PUBLIC normal-connector)
-target_link_libraries(normal-plan PRIVATE spdlog::spdlog)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

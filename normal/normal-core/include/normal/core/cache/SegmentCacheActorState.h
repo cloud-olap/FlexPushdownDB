@@ -13,7 +13,7 @@ using namespace normal::cache;
 namespace normal::core::cache {
 
 struct SegmentCacheActorState {
-  std::shared_ptr<SegmentCache> cache = std::make_shared<SegmentCache>();
+  std::shared_ptr<SegmentCache> cache = SegmentCache::make();
 };
 
 }

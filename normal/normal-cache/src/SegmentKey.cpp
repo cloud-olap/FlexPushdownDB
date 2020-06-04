@@ -40,7 +40,3 @@ bool SegmentKey::operator!=(const SegmentKey &other) const {
 size_t SegmentKey::hash() {
   return partition_->hash() + range_.hash();
 }
-
-const std::string &SegmentKey::getColumnName() const {
-  return columnName_;
-}

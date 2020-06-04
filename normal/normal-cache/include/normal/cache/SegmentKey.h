@@ -21,7 +21,7 @@ public:
   static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition, std::string columnName, SegmentRange Range);
 
   [[nodiscard]] const std::shared_ptr<Partition> &getPartition() const;
-  [[nodiscard]] const std::string &getColumnName() const;
+//  [[nodiscard]] const std::string &getColumnName() const;
   [[maybe_unused]] [[nodiscard]] const SegmentRange &getRange() const;
 
   std::string toString();

@@ -19,7 +19,7 @@ public:
   explicit SegmentData(std::shared_ptr<Column> column);
 
   static std::shared_ptr<SegmentData> make(const std::shared_ptr<Column> &column);
-  const std::shared_ptr<Column> &getColumn() const;
+  [[nodiscard]] const std::shared_ptr<Column> &getColumn() const;
 
 private:
   std::shared_ptr<Column> column_;

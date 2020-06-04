@@ -12,6 +12,7 @@
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
 #include <normal/cache/SegmentRange.h>
+#include <normal/cache/LRUCachingPolicy.h>
 
 using namespace normal::cache;
 using namespace normal::tuple;
@@ -22,6 +23,9 @@ namespace normal::cache::test {
 
 TEST_SUITE ("cache" * doctest::skip(SKIP_SUITE)) {
 
+/**
+ * Tests the equality and hash functions work for segment keys
+ */
 TEST_CASE ("segmentkey-equality" * doctest::skip(false || SKIP_SUITE)) {
 
   auto partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
@@ -46,9 +50,12 @@ TEST_CASE ("segmentkey-equality" * doctest::skip(false || SKIP_SUITE)) {
 	  CHECK_NE(segmentKey1->hash(), segmentKey4->hash());
 }
 
+/**
+ * Tests we can store and retrieve and entry in the cache
+ */
 TEST_CASE ("cache-hit" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto cache = SegmentCache::make();
+  auto cache = SegmentCache::make(LRUCachingPolicy::make(100));
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
   auto segment1Key1 = SegmentKey::make(segment1Partition1, "a",SegmentRange::make(0, 1023));
@@ -57,6 +64,8 @@ TEST_CASE ("cache-hit" * doctest::skip(false || SKIP_SUITE)) {
   auto segment1Data1 = SegmentData::make(segment1Column1);
 
   cache->store(segment1Key1, segment1Data1);
+
+	  CHECK_EQ(cache->getSize(), 1);
 
   // An equal segment key
   auto segment1Partition2 = std::make_shared<LocalFilePartition>("data/a.csv");
@@ -67,16 +76,19 @@ TEST_CASE ("cache-hit" * doctest::skip(false || SKIP_SUITE)) {
   // Check its a hit
   if (expectedSegment1CacheEntry.has_value()) {
 	auto segment1CacheEntry = expectedSegment1CacheEntry.value();
-		CHECK_EQ(segment1Data1, segment1CacheEntry->getData());
+		CHECK_EQ(segment1Data1, segment1CacheEntry);
   }
   else{
     FAIL(expectedSegment1CacheEntry.error());
   }
 }
 
+/**
+ * Tests we can store en entry and loading a different entry results in a miss
+ */
 TEST_CASE ("cache-miss" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto cache = SegmentCache::make();
+  auto cache = SegmentCache::make(LRUCachingPolicy::make(100));
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
   auto segment1Key1 = SegmentKey::make(segment1Partition1, "a", SegmentRange::make(0, 1023));
@@ -85,6 +97,8 @@ TEST_CASE ("cache-miss" * doctest::skip(false || SKIP_SUITE)) {
   auto segment1Data1 = SegmentData::make(segment1Column1);
 
   cache->store(segment1Key1, segment1Data1);
+
+	  CHECK_EQ(cache->getSize(), 1);
 
   // A non equal segment key (different partition)
   auto segment2Partition = std::make_shared<LocalFilePartition>("data/b.csv");
@@ -95,7 +109,47 @@ TEST_CASE ("cache-miss" * doctest::skip(false || SKIP_SUITE)) {
 	  CHECK_FALSE(expectedSegment2Data.has_value());
 }
 
-TEST_CASE ("cache-erase" * doctest::skip(false || SKIP_SUITE)) {
+/**
+ * Tests storing two entries in a 1 entry cache results in the first being evicted
+ */
+TEST_CASE ("cache-eviction" * doctest::skip(false || SKIP_SUITE)) {
+
+  auto cache = SegmentCache::make(LRUCachingPolicy::make(1));
+
+  auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
+  auto segment1Key1 = SegmentKey::make(segment1Partition1, "a", SegmentRange::make(0, 1023));
+
+  auto segment1Column1 = Column::make("a", ::arrow::utf8());
+  auto segment1Data1 = SegmentData::make(segment1Column1);
+
+  cache->store(segment1Key1, segment1Data1);
+
+	  CHECK_EQ(cache->getSize(), 1);
+
+  // A non equal segment key (different partition)
+  auto segment2Partition = std::make_shared<LocalFilePartition>("data/b.csv");
+  auto segment2Key = SegmentKey::make(segment2Partition, "a", SegmentRange::make(0, 1023));
+
+  auto segment2Column1 = Column::make("b", ::arrow::utf8());
+  auto segment2Data1 = SegmentData::make(segment1Column1);
+
+  cache->store(segment2Key, segment2Data1);
+
+	  CHECK_EQ(cache->getSize(), 1);
+
+  // Check its a miss on the first key
+  auto expectedSegment1Data = cache->load(segment1Key1);
+	  CHECK_FALSE(expectedSegment1Data.has_value());
+
+  // Check its a hit on the second key
+  auto expectedSegment2Data = cache->load(segment2Key);
+	  CHECK(expectedSegment2Data.has_value());
+}
+
+/**
+ * Test storing and removing entries
+ */
+TEST_CASE ("cache-remove" * doctest::skip(true || SKIP_SUITE)) {
 
   auto cache = SegmentCache::make();
 
@@ -124,15 +178,15 @@ TEST_CASE ("cache-erase" * doctest::skip(false || SKIP_SUITE)) {
   cache->store(segment3Key1, segment3Data1);
 
   // Erase segment 1 using segment key
-  auto segment1NumErased = cache->erase(segment1Key1);
+  auto segment1NumErased = cache->remove(segment1Key1);
 	  CHECK_EQ(segment1NumErased, 1);
 
   auto expectedSegment1Data = cache->load(segment1Key1);
 	  CHECK_FALSE(expectedSegment1Data.has_value());
 
   // Erase segment 2 using a partition predicate
-  auto segment2NumErased = cache->erase([](const SegmentCacheEntry &entry) {
-	auto typedPartition = std::static_pointer_cast<LocalFilePartition>(entry.getKey()->getPartition());
+  auto segment2NumErased = cache->remove([](const SegmentKey &key) {
+	auto typedPartition = std::static_pointer_cast<LocalFilePartition>(key.getPartition());
 	auto path = typedPartition->getPath();
 	return path == "data/b.csv";
   });

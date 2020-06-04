@@ -11,14 +11,13 @@ add_library(normal-cache STATIC
         src/SegmentKey.cpp include/normal/cache/SegmentKey.h
         src/SegmentData.cpp include/normal/cache/SegmentData.h
         src/SegmentRange.cpp include/normal/cache/SegmentRange.h
-        src/SegmentCacheEntry.cpp include/normal/cache/SegmentCacheEntry.h)
+        src/LRUCachingPolicy.cpp include/normal/cache/LRUCachingPolicy.h src/CachingPolicy.cpp include/normal/cache/CachingPolicy.h)
 
 target_include_directories(normal-cache PUBLIC include)
 
 target_link_libraries(normal-cache PRIVATE spdlog::spdlog)
 target_link_libraries(normal-cache PRIVATE fmt::fmt)
 target_link_libraries(normal-cache PUBLIC arrow_static)
-target_link_libraries(normal-cache PUBLIC normal-core)
 target_link_libraries(normal-cache PUBLIC normal-connector)
 target_link_libraries(normal-cache PUBLIC normal-tuple)
 
