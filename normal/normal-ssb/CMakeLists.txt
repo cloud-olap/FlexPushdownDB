@@ -47,6 +47,17 @@ target_link_libraries(normal-ssb-test PRIVATE normal-sql)
 # Data
 #-----------------------------------------------------------------------------------------------------------------------
 
+# Generate SSB SF=0.01 data set
+
+add_custom_target(normal-ssb-data
+        COMMAND DSS_PATH=${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01 ${SSB_DBGEN_EXECUTABLE} -f -v -s 0.01
+        WORKING_DIRECTORY ${SSB_DBGEN_WORKING_DIRECTORY})
+
+add_dependencies(normal-ssb-data ssb_db_gen)
+
+
+# Some manually created data
+
 configure_file(data/lineorder.csv ${CMAKE_CURRENT_BINARY_DIR}/data/lineorder.csv COPYONLY)
 configure_file(data/date.csv ${CMAKE_CURRENT_BINARY_DIR}/data/date.csv COPYONLY)
 

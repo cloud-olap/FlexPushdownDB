@@ -76,7 +76,7 @@ auto execute(normal::sql::Interpreter &i) {
   return tuples;
 }
 
-auto executeTest(const std::string &sql) {
+auto executeSQLTest(const std::string &sql) {
 
   SPDLOG_INFO("SQL:\n{}", sql);
 
@@ -99,6 +99,17 @@ auto executeTest(const std::string &sql) {
   return tuples;
 }
 
+TEST_CASE ("ssb-benchmark-sql-query01") {
+
+  short year = 1993;
+  short discount = 2;
+  short quantity = 24;
+
+  auto sql = Queries::query01(year, discount, quantity);
+
+  auto tuples = executeSQLTest(sql);
+}
+
 TEST_CASE ("ssb-benchmark-query01") {
 
   short year = 1993;
@@ -107,5 +118,5 @@ TEST_CASE ("ssb-benchmark-query01") {
 
   auto sql = Queries::query01(year, discount, quantity);
 
-  auto tuples = executeTest(sql);
+  auto tuples = executeSQLTest(sql);
 }

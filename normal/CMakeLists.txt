@@ -33,6 +33,7 @@ include(External_ANTLR)
 include(External_graphviz)
 include(External_expected)
 include(External_fmt)
+include(External_ssb_dbgen)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
