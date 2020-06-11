@@ -15,10 +15,34 @@
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
 #include <normal/pushdown/Collate.h>
-
+#include <normal/pushdown/file/FileScan.h>
+#include <normal/pushdown/aggregate/AggregationFunction.h>
+#include <normal/pushdown/aggregate/Sum.h>
+#include <normal/pushdown/Aggregate.h>
+#include <normal/expression/gandiva/Column.h>
+#include <normal/core/type/Float64Type.h>
+#include <normal/expression/gandiva/Cast.h>
+#include <normal/expression/gandiva/Multiply.h>
+#include <normal/pushdown/join/HashJoinBuild.h>
+#include <normal/pushdown/join/HashJoinProbe.h>
+#include <normal/pushdown/filter/Filter.h>
+#include <normal/pushdown/filter/FilterPredicate.h>
+#include <normal/expression/gandiva/Literal.h>
+#include <normal/expression/gandiva/LessThan.h>
+#include <normal/expression/gandiva/EqualTo.h>
+#include <normal/expression/gandiva/LessThanOrEqualTo.h>
+#include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
+#include <normal/expression/gandiva/And.h>
 #include "normal/ssb/Queries.h"
 
 using namespace normal::ssb;
+using namespace normal::pushdown;
+using namespace normal::pushdown::aggregate;
+using namespace normal::pushdown::filter;
+using namespace normal::core::type;
+using namespace normal::expression;
+using namespace normal::expression::gandiva;
+using namespace normal::pushdown::join;
 
 void configureLocalConnector(normal::sql::Interpreter &i) {
 
@@ -99,7 +123,11 @@ auto executeSQLTest(const std::string &sql) {
   return tuples;
 }
 
-TEST_CASE ("ssb-benchmark-sql-query01") {
+#define SKIP_SUITE false
+
+TEST_SUITE ("ssb" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("ssb-benchmark-sql-query01" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1993;
   short discount = 2;
@@ -110,13 +138,122 @@ TEST_CASE ("ssb-benchmark-sql-query01") {
   auto tuples = executeSQLTest(sql);
 }
 
-TEST_CASE ("ssb-benchmark-query01") {
+TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
 
   short year = 1993;
   short discount = 2;
   short quantity = 24;
 
-  auto sql = Queries::query01(year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  year: {}, discount: {}, quantity: {}", year, discount, quantity);
 
-  auto tuples = executeSQLTest(sql);
+  auto mgr = std::make_shared<normal::core::OperatorManager>();
+
+  /**
+   * Scan
+   * lineorder.tbl
+   * date.tbl
+   */
+  std::vector<std::string> lineOrderColumns =
+	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
+	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
+	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
+  auto numBytesLineOrderFile = 5947638;
+  auto lineOrderScan = FileScan::make("lineOrderScan", "data/ssb-sf0.01/lineorder.tbl", lineOrderColumns, 0, numBytesLineOrderFile);
+  std::vector<std::string> dateColumns =
+	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
+	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
+	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
+  auto numBytesDateFile = 2928;
+  auto dateScan = FileScan::make("dateScan", "data/ssb-sf0.01/date.tbl", dateColumns, 0, numBytesDateFile);
+
+  /**
+   * Filter
+   * d_year (f4) = 1993
+   * and lo_discount (f11) between 1 and 3
+   * and lo_quantity (f8) < 25
+   */
+  auto dateFilter = normal::pushdown::filter::Filter::make(
+	  "dateFilter",
+	  FilterPredicate::make(
+		  eq(col("d_year"), lit<::arrow::Int32Type>(year))));
+
+  short discountLower = discount - 1;
+  short discountUpper = discount + 1;
+
+  auto lineOrderFilter = normal::pushdown::filter::Filter::make(
+	  "lineOrderFilter",
+	  FilterPredicate::make(
+		  and_(and_(gte(col("lo_discount"), lit<::arrow::Int32Type>(discountLower)),
+					lte(col("lo_discount"), lit<::arrow::Int32Type>(discountUpper))),
+			   lt(col("lo_quantity"), lit<::arrow::Int32Type>(quantity))))
+  );
+
+  /**
+   * Join
+   * lo_orderdate (f5) = d_datekey (f0)
+   */
+  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
+  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
+												   JoinPredicate::create("d_datekey", "lo_orderdate"));
+
+  /**
+   * Aggregate
+   * sum(lo_extendedprice (f9) * lo_discount (f11))
+   */
+  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  aggregateFunctions->
+	  emplace_back(std::make_shared<Sum>("Sum", times(cast(col("lo_extendedprice"), float64Type()),
+													  cast(col("lo_discount"), float64Type()))
+  ));
+  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
+
+  /**
+   * Collate
+   */
+  auto collate = std::make_shared<Collate>("collate");
+
+  // Wire up
+  lineOrderScan->produce(lineOrderFilter);
+  lineOrderFilter->consume(lineOrderScan);
+
+  dateScan->produce(dateFilter);
+  dateFilter->consume(dateScan);
+
+  dateFilter->produce(joinBuild);
+  joinBuild->consume(dateFilter);
+
+  lineOrderFilter->produce(joinProbe);
+  joinProbe->consume(lineOrderFilter);
+
+  joinProbe->produce(aggregate);
+  aggregate->consume(joinProbe);
+
+  aggregate->produce(collate);
+  collate->consume(aggregate);
+
+  mgr->put(lineOrderScan);
+  mgr->put(dateScan);
+  mgr->put(lineOrderFilter);
+  mgr->put(dateFilter);
+  mgr->put(joinBuild);
+  mgr->put(joinProbe);
+  mgr->put(aggregate);
+  mgr->put(collate);
+
+  TestUtil::writeExecutionPlan(*mgr);
+
+  mgr->boot();
+
+  mgr->start();
+  mgr->join();
+
+  auto tuples = collate->tuples();
+
+  mgr->stop();
+
+  auto tupleSet = TupleSet2::create(tuples);
+
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
 }
