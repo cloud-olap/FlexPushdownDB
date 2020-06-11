@@ -249,14 +249,15 @@ std::shared_ptr<Schema> CSVParser::extractSchema(const arrow::csv::BlockParser &
 
   for (int i = 0; i < blockParser.num_cols(); ++i) {
 
-	status = blockParser.VisitColumn(i, [&](const uint8_t *data, uint32_t size, bool quoted) -> arrow::Status {
+	status = blockParser.VisitColumn(i, [&](const uint8_t *data, uint32_t size, bool /*quoted*/) -> arrow::Status {
 	  std::string fieldName{reinterpret_cast<const char *>(data), size};
 
+	  // TODO: Seems quotes are already removed, need to figure out why the quoted flag is passed in?
 	  // Remove quotes
-	  if (quoted) {
-		fieldName.erase(0);
-		fieldName.erase(fieldName.length());
-	  }
+//	  if (quoted) {
+//		fieldName.erase(0);
+//		fieldName.erase(fieldName.length());
+//	  }
 
 	  // Canonicalize
 	  auto canonicalFieldName = ColumnName::canonicalize(fieldName);
@@ -281,14 +282,15 @@ CSVParser::extractArrays(const arrow::csv::BlockParser &blockParser) {
 
 	::arrow::StringBuilder arrayBuilder;
 
-	status = blockParser.VisitColumn(i, [&](const uint8_t *data, uint32_t size, bool quoted) -> arrow::Status {
+	status = blockParser.VisitColumn(i, [&](const uint8_t *data, uint32_t size, bool /*quoted*/) -> arrow::Status {
 	  std::string cell{reinterpret_cast<const char *>(data), size};
 
+	  // TODO: Seems quotes are already removed, need to figure out why the quoted flag is passed in?
 	  // Remove quotes
-	  if (quoted) {
-		cell.erase(0);
-		cell.erase(cell.length());
-	  }
+//	  if (quoted) {
+//		cell.erase(0, 1);
+//		cell.erase(cell.length() - 1, cell.length());
+//	  }
 
 	  // Append cell
 	  status = arrayBuilder.Append(cell);

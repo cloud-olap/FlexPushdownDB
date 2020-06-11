@@ -25,4 +25,4 @@ target_link_libraries(normal-expression-simple PUBLIC normal-expression)
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-showTargetProps(normal-expression-simple)
+#showTargetProps(normal-expression-simple)

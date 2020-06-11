@@ -24,4 +24,4 @@ target_link_libraries(normal-expression PUBLIC normal-tuple)
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-showTargetProps(normal-expression)
+#showTargetProps(normal-expression)

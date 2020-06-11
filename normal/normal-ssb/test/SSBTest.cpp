@@ -219,31 +219,38 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   auto collate = std::make_shared<Collate>("collate");
 
   // Wire up
-  lineOrderScan->produce(lineOrderFilter);
-  lineOrderFilter->consume(lineOrderScan);
+//  lineOrderScan->produce(lineOrderFilter);
+//  lineOrderFilter->consume(lineOrderScan);
+//
+//  dateScan->produce(dateFilter);
+//  dateFilter->consume(dateScan);
+//
+//  dateFilter->produce(joinBuild);
+//  joinBuild->consume(dateFilter);
+//
+//  lineOrderFilter->produce(joinProbe);
+//  joinProbe->consume(lineOrderFilter);
+//
+//  joinProbe->produce(aggregate);
+//  aggregate->consume(joinProbe);
+//
+//  aggregate->produce(collate);
+//  collate->consume(aggregate);
+//
+//  mgr->put(lineOrderScan);
+//  mgr->put(dateScan);
+//  mgr->put(lineOrderFilter);
+//  mgr->put(dateFilter);
+//  mgr->put(joinBuild);
+//  mgr->put(joinProbe);
+//  mgr->put(aggregate);
+//  mgr->put(collate);
 
-  dateScan->produce(dateFilter);
-  dateFilter->consume(dateScan);
 
-  dateFilter->produce(joinBuild);
-  joinBuild->consume(dateFilter);
-
-  lineOrderFilter->produce(joinProbe);
-  joinProbe->consume(lineOrderFilter);
-
-  joinProbe->produce(aggregate);
-  aggregate->consume(joinProbe);
-
-  aggregate->produce(collate);
-  collate->consume(aggregate);
+  lineOrderScan->produce(collate);
+  collate->consume(lineOrderScan);
 
   mgr->put(lineOrderScan);
-  mgr->put(dateScan);
-  mgr->put(lineOrderFilter);
-  mgr->put(dateFilter);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
-  mgr->put(aggregate);
   mgr->put(collate);
 
   TestUtil::writeExecutionPlan(*mgr);

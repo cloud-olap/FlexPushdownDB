@@ -22,4 +22,4 @@ target_link_libraries(normal-expression-benchmark PRIVATE normal-expression-gand
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-showTargetProps(normal-expression-benchmark)
+#showTargetProps(normal-expression-benchmark)

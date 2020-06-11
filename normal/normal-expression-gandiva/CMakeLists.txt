@@ -56,4 +56,4 @@ target_link_libraries(normal-expression-gandiva-test PRIVATE normal-expression-g
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
-showTargetProps(normal-expression-gandiva)
+#showTargetProps(normal-expression-gandiva)
