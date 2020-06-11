@@ -22,12 +22,12 @@ void EqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
   auto leftGandivaExpression = left_->getGandivaExpression();
   auto rightGandivaExpression = right_->getGandivaExpression();
 
-  auto lessThanFunction = ::gandiva::TreeExprBuilder::MakeFunction(
+  auto equalToExpression = ::gandiva::TreeExprBuilder::MakeFunction(
 	  "equal",
 	  {leftGandivaExpression, rightGandivaExpression},
 	  ::arrow::boolean());
 
-  gandivaExpression_ = lessThanFunction;
+  gandivaExpression_ = equalToExpression;
   returnType_ = ::arrow::boolean();
 }
 

@@ -22,12 +22,12 @@ void GreaterThanOrEqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
   auto leftGandivaExpression = left_->getGandivaExpression();
   auto rightGandivaExpression = right_->getGandivaExpression();
 
-  auto lessThanFunction = ::gandiva::TreeExprBuilder::MakeFunction(
-	  "equal",
+  auto greaterThanOrEqualToExpression = ::gandiva::TreeExprBuilder::MakeFunction(
+	  "greater_than_or_equal_to",
 	  {leftGandivaExpression, rightGandivaExpression},
 	  ::arrow::boolean());
 
-  gandivaExpression_ = lessThanFunction;
+  gandivaExpression_ = greaterThanOrEqualToExpression;
   returnType_ = ::arrow::boolean();
 }
 

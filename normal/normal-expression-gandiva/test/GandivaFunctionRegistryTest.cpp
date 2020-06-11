@@ -8,7 +8,7 @@
 
 #include "Globals.h"
 
-TEST_SUITE ("gandiva-function-registry" * doctest::skip(true)) {
+TEST_SUITE ("gandiva-function-registry" * doctest::skip(false)) {
 
 TEST_CASE ("show-functions") {
   ::gandiva::FunctionRegistry registry;

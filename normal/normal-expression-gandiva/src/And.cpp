@@ -19,12 +19,10 @@ void And::compile(std::shared_ptr<arrow::Schema> schema) {
   auto leftGandivaExpression = left_->getGandivaExpression();
   auto rightGandivaExpression = right_->getGandivaExpression();
 
-  auto andFunction = ::gandiva::TreeExprBuilder::MakeFunction(
-	  "and",
-	  {leftGandivaExpression, rightGandivaExpression},
-	  ::arrow::boolean());
+  auto andExpression = ::gandiva::TreeExprBuilder::MakeAnd(
+	  {leftGandivaExpression, rightGandivaExpression});
 
-  gandivaExpression_ = andFunction;
+  gandivaExpression_ = andExpression;
   returnType_ = ::arrow::boolean();
 }
 

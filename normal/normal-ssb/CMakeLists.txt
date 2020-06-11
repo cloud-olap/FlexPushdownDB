@@ -65,10 +65,16 @@ add_custom_target(normal-ssb-data-headers
 add_dependencies(normal-ssb-data ssb_db_gen)
 
 
-# Some manually created data
+# Copy data to runtime directory
 
 configure_file(data/lineorder.csv ${CMAKE_CURRENT_BINARY_DIR}/data/lineorder.csv COPYONLY)
 configure_file(data/date.csv ${CMAKE_CURRENT_BINARY_DIR}/data/date.csv COPYONLY)
+
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/customer.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/customer.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/date.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/date.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/lineorder.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/part.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/supplier.tbl COPYONLY)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

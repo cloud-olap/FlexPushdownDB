@@ -24,7 +24,7 @@ const std::shared_ptr<Partition> &SegmentKey::getPartition() const {
 }
 
 std::string SegmentKey::toString() {
-  return fmt::format("({},{})", partition_->toString(), range_.toString());
+  return fmt::format("{{ partition: {}, column: {}, range: {} }}", partition_->toString(), columnName_, range_.toString());
 }
 
 bool SegmentKey::operator==(const SegmentKey &other) const {

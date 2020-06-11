@@ -21,6 +21,8 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
+#include <normal/core/type/Integer32Type.h>
+#include <normal/core/type/Integer64Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
@@ -148,6 +150,8 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
+
+
   /**
    * Scan
    * lineorder.tbl
@@ -157,14 +161,16 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
 	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
 	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
 	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-  auto numBytesLineOrderFile = 5947638;
-  auto lineOrderScan = FileScan::make("lineOrderScan", "data/ssb-sf0.01/lineorder.tbl", lineOrderColumns, 0, numBytesLineOrderFile);
+  auto lineOrderFile = filesystem::absolute("data/ssb-sf0.01/lineorder.tbl");
+  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
+  auto lineOrderScan = FileScan::make("lineOrderScan", lineOrderFile, lineOrderColumns, 0, numBytesLineOrderFile);
   std::vector<std::string> dateColumns =
 	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
 	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
 	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
-  auto numBytesDateFile = 2928;
-  auto dateScan = FileScan::make("dateScan", "data/ssb-sf0.01/date.tbl", dateColumns, 0, numBytesDateFile);
+  auto dateFile = filesystem::absolute("data/ssb-sf0.01/date.tbl");
+  auto numBytesDateFile = filesystem::file_size(dateFile);
+  auto dateScan = FileScan::make("dateScan", dateFile, dateColumns, 0, numBytesDateFile);
 
   /**
    * Filter
@@ -175,7 +181,7 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   auto dateFilter = normal::pushdown::filter::Filter::make(
 	  "dateFilter",
 	  FilterPredicate::make(
-		  eq(col("d_year"), lit<::arrow::Int32Type>(year))));
+		  eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
 
   short discountLower = discount - 1;
   short discountUpper = discount + 1;
@@ -183,9 +189,9 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   auto lineOrderFilter = normal::pushdown::filter::Filter::make(
 	  "lineOrderFilter",
 	  FilterPredicate::make(
-		  and_(and_(gte(col("lo_discount"), lit<::arrow::Int32Type>(discountLower)),
-					lte(col("lo_discount"), lit<::arrow::Int32Type>(discountUpper))),
-			   lt(col("lo_quantity"), lit<::arrow::Int32Type>(quantity))))
+		  and_(and_(gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
+					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))),
+			   lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))))
   );
 
   /**
