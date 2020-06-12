@@ -145,7 +145,7 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   short year = 1993;
   short discount = 2;
   short quantity = 24;
-  std::string dataDir = "data/ssb-sf1"; // NOTE: Need to generate data in this dir first
+  std::string dataDir = "data/ssb-sf0.01"; // NOTE: Need to generate data in this dir first
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}", dataDir, year, discount, quantity);
 
@@ -188,9 +188,14 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   auto lineOrderFilter = normal::pushdown::filter::Filter::make(
 	  "lineOrderFilter",
 	  FilterPredicate::make(
-		  and_(and_(gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))),
-			   lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))))
+		  and_(
+			  and_(
+				  gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
+				  lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
+			  ),
+			  lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
+		  )
+	  )
   );
 
   /**
@@ -246,14 +251,14 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
 //  mgr->put(collate);
 
 
-  dateScan->produce(dateFilter);
-  dateFilter->consume(dateScan);
+  lineOrderScan->produce(lineOrderFilter);
+  lineOrderFilter->consume(lineOrderScan);
 
-  dateFilter->produce(collate);
-  collate->consume(dateFilter);
+  lineOrderFilter->produce(collate);
+  collate->consume(lineOrderFilter);
 
-  mgr->put(dateScan);
-  mgr->put(dateFilter);
+  mgr->put(lineOrderScan);
+  mgr->put(lineOrderFilter);
   mgr->put(collate);
 
   TestUtil::writeExecutionPlan(*mgr);

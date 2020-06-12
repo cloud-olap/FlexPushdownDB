@@ -70,9 +70,6 @@ add_dependencies(normal-ssb-data normal-ssb-data-prepend-headers)
 
 # Copy data to runtime directory
 
-configure_file(data/lineorder.csv ${CMAKE_CURRENT_BINARY_DIR}/data/lineorder.csv COPYONLY)
-configure_file(data/date.csv ${CMAKE_CURRENT_BINARY_DIR}/data/date.csv COPYONLY)
-
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/customer.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/customer.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/date.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/date.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/lineorder.tbl COPYONLY)

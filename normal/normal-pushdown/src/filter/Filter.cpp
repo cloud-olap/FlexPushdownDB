@@ -60,8 +60,10 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
-  filterTuples();
-  sendTuples();
+  if(received_->getArrowTable().has_value()) {
+	filterTuples();
+	sendTuples();
+  }
   ctx()->notifyComplete();
 }
 
