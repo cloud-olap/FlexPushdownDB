@@ -212,7 +212,7 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
    */
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
   aggregateFunctions->
-	  emplace_back(std::make_shared<Sum>("Sum", times(cast(col("lo_extendedprice"), float64Type()),
+	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
 													  cast(col("lo_discount"), float64Type()))
   ));
   auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
@@ -238,15 +238,11 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   lineOrderFilter->produce(joinProbe);
   joinProbe->consume(lineOrderFilter);
 
-  joinProbe->produce(collate);
-  collate->consume(joinProbe);
+  joinProbe->produce(aggregate);
+  aggregate->consume(joinProbe);
 
-
-//  joinProbe->produce(aggregate);
-//  aggregate->consume(joinProbe);
-//
-//  aggregate->produce(collate);
-//  collate->consume(aggregate);
+  aggregate->produce(collate);
+  collate->consume(aggregate);
 
 
 
@@ -256,7 +252,7 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(dateFilter);
   mgr->put(joinBuild);
   mgr->put(joinProbe);
-//  mgr->put(aggregate);
+  mgr->put(aggregate);
   mgr->put(collate);
 
   TestUtil::writeExecutionPlan(*mgr);
