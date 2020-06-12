@@ -42,6 +42,22 @@ long TupleSet2::numRows() const {
 tl::expected<std::shared_ptr<TupleSet2>,
 			 std::string> TupleSet2::concatenate(const std::vector<std::shared_ptr<TupleSet2>> &tupleSets) {
 
+  // Make sure the tuple sets have the same schema
+  std::shared_ptr<TupleSet2> tupleSet1;
+  for(const auto& tupleSet: tupleSets){
+    if(tupleSet1 == nullptr){
+	  tupleSet1 = tupleSet;
+    }
+    else{
+      if(!tupleSet->getArrowTable().value()->schema()->Equals(tupleSet1->getArrowTable().value()->schema())){
+        return tl::make_unexpected("Cannot concatenate tuple sets with different schemas");
+      }
+	  if(tupleSet->getArrowTable().value()->columns().size() != tupleSet1->getArrowTable().value()->columns().size()){
+		return tl::make_unexpected("Cannot concatenate tuple sets with different number of columns");
+	  }
+    }
+  }
+
   // Create a vector of arrow tables to concatenate
   std::vector<std::shared_ptr<::arrow::Table>> tableVector = tupleSetVectorToArrowTableVector(tupleSets);
 
@@ -124,7 +140,6 @@ std::string TupleSet2::showString(TupleSetShowOptions options) {
 	} else {
 
 	  int width = 120;
-	  int maxNumRows = 10;
 
 	  std::stringstream ss;
 
@@ -154,7 +169,7 @@ std::string TupleSet2::showString(TupleSetShowOptions options) {
 	  int rowCounter = 0;
 	  for (int rowIndex = 0; rowIndex < table_.value()->num_rows(); ++rowIndex) {
 
-		if (rowCounter >= maxNumRows)
+		if (rowCounter >= options.getMaxNumRows())
 		  break;
 
 		for (int columnIndex = 0; columnIndex < table_.value()->num_columns(); ++columnIndex) {

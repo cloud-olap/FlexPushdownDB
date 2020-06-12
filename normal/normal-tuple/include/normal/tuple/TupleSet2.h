@@ -31,6 +31,8 @@ public:
   /**
    * Creates a tuple set from an arrow table
    *
+   * FIXME: Should add a validation call to the table
+   *
    * @param arrowTable
    */
   explicit TupleSet2(std::shared_ptr<::arrow::Table> arrowTable);

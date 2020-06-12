@@ -43,7 +43,7 @@ public:
   long numRows();
 
   std::string showString();
-  std::string toString() const;
+  [[nodiscard]] std::string toString() const;
 
   /**
    * Returns the element in the column at the given row index

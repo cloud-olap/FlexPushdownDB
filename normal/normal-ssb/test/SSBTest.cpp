@@ -247,10 +247,14 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
 //  mgr->put(collate);
 
 
-  lineOrderScan->produce(collate);
-  collate->consume(lineOrderScan);
+  dateScan->produce(dateFilter);
+  dateFilter->consume(dateScan);
 
-  mgr->put(lineOrderScan);
+  dateFilter->produce(collate);
+  collate->consume(dateFilter);
+
+  mgr->put(dateScan);
+  mgr->put(dateFilter);
   mgr->put(collate);
 
   TestUtil::writeExecutionPlan(*mgr);
