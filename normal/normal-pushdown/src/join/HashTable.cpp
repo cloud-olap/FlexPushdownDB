@@ -31,7 +31,15 @@ void HashTable::merge(const std::shared_ptr<HashTable>& other) {
   }
 
   // Add the other hashtable table to the table
-  tuples_->append(other->tuples_);
+  if(!tuples_->getArrowTable().has_value()){
+    tuples_ = other->tuples_;
+  }
+  else{
+	auto appendResult = tuples_->append(other->tuples_);
+	if(!appendResult.has_value()){
+	  throw std::runtime_error(appendResult.error());
+	}
+  }
 }
 
 const std::shared_ptr<TupleSet2> &HashTable::getTupleSet() const {
@@ -46,14 +54,14 @@ std::string HashTable::toString() {
 
   std::string s;
 
-  s += fmt::format("ValueRowMap:\n");
+  s += fmt::format("valueIndexMap:\n");
   for(auto & entry : *valueIndexMap_){
-    s+= fmt::format("value: {{{}: {}}}, row: [{}]\n", entry.first->toString(), entry.first->type()->ToString(), entry.second);
+    s+= fmt::format("value: {{{}: {}}}, row: {}\n", entry.first->toString(), entry.first->type()->ToString(), entry.second);
   }
   s += fmt::format("\n");
 
-  s += fmt::format("Tuples:\n");
-  s += tuples_->showString();
+  s += fmt::format("tuples:\n");
+  s += tuples_->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented));
 
   return s;
 }
@@ -75,7 +83,15 @@ tl::expected<void, std::string> HashTable::put(std::string &columnName, std::sha
 	rowCounter++;
   }
 
-  tuples_->append(tupleSet);
+  if(!tuples_->getArrowTable().has_value()){
+	tuples_ = tupleSet;
+  }
+  else {
+	auto appendResult = tuples_->append(tupleSet);
+	if (!appendResult.has_value()) {
+	  return tl::make_unexpected(appendResult.error());
+	}
+  }
 
   return {};
 }

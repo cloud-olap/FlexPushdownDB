@@ -59,6 +59,18 @@ public:
   }
 
   template<>
+  std::string value<std::string>() {
+	if (scalar_->type->id() == ::arrow::StringType::type_id) {
+	  auto typedScalar = std::static_pointer_cast<::arrow::StringScalar>(scalar_);
+	  auto typedValue = typedScalar->ToString();
+	  return typedValue;
+	} else {
+	  throw std::runtime_error(
+		  "Scalar type '" + scalar_->type->ToString() + "' not implemented yet");
+	}
+  }
+
+  template<>
   ::arrow::Decimal128 value<::arrow::Decimal128>() {
 	if (scalar_->type->id() == ::arrow::Decimal128Type::type_id) {
 	  auto typedScalar = std::static_pointer_cast<::arrow::Decimal128Scalar>(scalar_);

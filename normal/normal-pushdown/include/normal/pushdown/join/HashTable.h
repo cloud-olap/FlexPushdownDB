@@ -56,7 +56,7 @@ public:
 
   void clear();
   void merge(const std::shared_ptr<HashTable> &other);
-  tl::expected<void, std::string> put(std::string &columnName, std::shared_ptr<TupleSet2> &tupleSet);
+  [[nodiscard]] tl::expected<void, std::string> put(std::string &columnName, std::shared_ptr<TupleSet2> &tupleSet);
   std::string toString();
 
 private:

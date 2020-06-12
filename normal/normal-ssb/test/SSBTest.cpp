@@ -142,7 +142,7 @@ TEST_CASE ("ssb-benchmark-sql-query01" * doctest::skip(true || SKIP_SUITE)) {
 
 TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
 
-  short year = 1993;
+  short year = 1992;
   short discount = 2;
   short quantity = 24;
   std::string dataDir = "data/ssb-sf0.01"; // NOTE: Need to generate data in this dir first
@@ -223,42 +223,40 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   auto collate = std::make_shared<Collate>("collate");
 
   // Wire up
-//  lineOrderScan->produce(lineOrderFilter);
-//  lineOrderFilter->consume(lineOrderScan);
-//
-//  dateScan->produce(dateFilter);
-//  dateFilter->consume(dateScan);
-//
-//  dateFilter->produce(joinBuild);
-//  joinBuild->consume(dateFilter);
-//
-//  lineOrderFilter->produce(joinProbe);
-//  joinProbe->consume(lineOrderFilter);
-//
+  lineOrderScan->produce(lineOrderFilter);
+  lineOrderFilter->consume(lineOrderScan);
+
+  dateScan->produce(dateFilter);
+  dateFilter->consume(dateScan);
+
+  dateFilter->produce(joinBuild);
+  joinBuild->consume(dateFilter);
+
+  joinBuild->produce(joinProbe);
+  joinProbe->consume(joinBuild);
+
+  lineOrderFilter->produce(joinProbe);
+  joinProbe->consume(lineOrderFilter);
+
+  joinProbe->produce(collate);
+  collate->consume(joinProbe);
+
+
 //  joinProbe->produce(aggregate);
 //  aggregate->consume(joinProbe);
 //
 //  aggregate->produce(collate);
 //  collate->consume(aggregate);
-//
-//  mgr->put(lineOrderScan);
-//  mgr->put(dateScan);
-//  mgr->put(lineOrderFilter);
-//  mgr->put(dateFilter);
-//  mgr->put(joinBuild);
-//  mgr->put(joinProbe);
-//  mgr->put(aggregate);
-//  mgr->put(collate);
 
 
-  lineOrderScan->produce(lineOrderFilter);
-  lineOrderFilter->consume(lineOrderScan);
-
-  lineOrderFilter->produce(collate);
-  collate->consume(lineOrderFilter);
 
   mgr->put(lineOrderScan);
+  mgr->put(dateScan);
   mgr->put(lineOrderFilter);
+  mgr->put(dateFilter);
+  mgr->put(joinBuild);
+  mgr->put(joinProbe);
+//  mgr->put(aggregate);
   mgr->put(collate);
 
   TestUtil::writeExecutionPlan(*mgr);

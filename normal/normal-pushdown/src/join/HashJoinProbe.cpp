@@ -42,7 +42,7 @@ void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
 }
 
 void HashJoinProbe::onStart() {
-
+  SPDLOG_DEBUG("Starting  |  Local operator directory:\n{}", ctx()->operatorMap().showString());
 }
 
 void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {

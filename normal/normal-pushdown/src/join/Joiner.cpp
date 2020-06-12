@@ -25,7 +25,7 @@ Joiner::Joiner(JoinPredicate Pred,
 tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::join() {
 
   SPDLOG_DEBUG("Build hashtable:\n{}", hashtable_->toString());
-  SPDLOG_DEBUG("Probe tuple set:\n{}", tuples_->showString());
+  SPDLOG_DEBUG("Probe tuple set:\n{}", tuples_->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   return processProbeTuples();
 }

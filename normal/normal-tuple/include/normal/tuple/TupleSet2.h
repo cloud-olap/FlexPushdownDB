@@ -104,7 +104,7 @@ public:
    * @param tuples
    * @return
    */
-  static tl::expected<std::shared_ptr<TupleSet2>, std::string> concatenate(const std::vector<std::shared_ptr<TupleSet2>>& tupleSets);
+  [[ nodiscard ]] static tl::expected<std::shared_ptr<TupleSet2>, std::string> concatenate(const std::vector<std::shared_ptr<TupleSet2>>& tupleSets);
 
   /**
    * Appends a vector of tuple sets to this tuple set and returns the new tuple set
@@ -112,7 +112,7 @@ public:
    * @param tuples
    * @return
    */
-  tl::expected<void, std::string> append(const std::vector<std::shared_ptr<TupleSet2>>& tupleSet);
+  [[ nodiscard ]] tl::expected<void, std::string> append(const std::vector<std::shared_ptr<TupleSet2>>& tupleSet);
 
   /**
    * Appends a tuple set to this tuple set and returns the new tuple set
@@ -120,16 +120,16 @@ public:
    * @param tuples
    * @return
    */
-  tl::expected<void, std::string> append(const std::shared_ptr<TupleSet2>& tupleSet);
+  [[ nodiscard ]] tl::expected<void, std::string> append(const std::shared_ptr<TupleSet2>& tupleSet);
 
   /**
    * Returns a single column by name
    *
    * @return
    */
-  tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &name);
+  [[ nodiscard ]] tl::expected<std::shared_ptr<Column>, std::string> getColumnByName(const std::string &name);
 
-  tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex);
+  [[ nodiscard ]] tl::expected<std::shared_ptr<Column>, std::string> getColumnByIndex(const int &columnIndex);
 
   /**
    * Returns the tuple set pretty printed as a string

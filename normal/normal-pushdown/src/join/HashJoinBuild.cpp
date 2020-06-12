@@ -46,7 +46,13 @@ void HashJoinBuild::onStart() {
 
 void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
   auto tupleSet = TupleSet2::create(msg.tuples());
-  hashtable_->put(columnName_, tupleSet);
+  auto putResult = hashtable_->put(columnName_, tupleSet);
+
+  if (!putResult.has_value()) {
+	throw std::runtime_error(putResult.error());
+  }
+
+  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
 }
 
 void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {

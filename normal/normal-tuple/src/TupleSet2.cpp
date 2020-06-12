@@ -42,9 +42,12 @@ long TupleSet2::numRows() const {
 tl::expected<std::shared_ptr<TupleSet2>,
 			 std::string> TupleSet2::concatenate(const std::vector<std::shared_ptr<TupleSet2>> &tupleSets) {
 
-  // Make sure the tuple sets have the same schema
+  // Make sure the tuple sets are valid and have the same schema
   std::shared_ptr<TupleSet2> tupleSet1;
   for(const auto& tupleSet: tupleSets){
+	if(!tupleSet->getArrowTable().has_value()){
+	  return tl::make_unexpected("Cannot concatenate empty tuple sets");
+	}
     if(tupleSet1 == nullptr){
 	  tupleSet1 = tupleSet;
     }
@@ -52,9 +55,6 @@ tl::expected<std::shared_ptr<TupleSet2>,
       if(!tupleSet->getArrowTable().value()->schema()->Equals(tupleSet1->getArrowTable().value()->schema())){
         return tl::make_unexpected("Cannot concatenate tuple sets with different schemas");
       }
-	  if(tupleSet->getArrowTable().value()->columns().size() != tupleSet1->getArrowTable().value()->columns().size()){
-		return tl::make_unexpected("Cannot concatenate tuple sets with different number of columns");
-	  }
     }
   }
 
@@ -96,7 +96,7 @@ tl::expected<void, std::string> TupleSet2::append(const std::vector<std::shared_
 }
 
 tl::expected<void, std::string> TupleSet2::append(const std::shared_ptr<TupleSet2> &tupleSet) {
-  auto tupleSetVector = {tupleSet};
+  auto tupleSetVector = std::vector{tupleSet};
   return append(tupleSetVector);
 }
 

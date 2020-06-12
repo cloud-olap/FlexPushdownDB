@@ -115,7 +115,7 @@ ColumnIterator Column::begin() {
 ColumnIterator Column::end() {
   return ColumnIterator(array_,
 						array_->num_chunks() - 1,
-						array_->chunk(array_->num_chunks() - 1)->length());
+						array_->chunk(array_->num_chunks() - 1)->length() - 1);
 }
 
 std::vector<std::shared_ptr<::arrow::ChunkedArray>> Column::columnVectorToArrowChunkedArrayVector(const std::vector<std::shared_ptr<

@@ -13,11 +13,12 @@ ColumnIterator::ColumnIterator(std::shared_ptr<::arrow::ChunkedArray> chunkedArr
 	chunkedArray_(std::move(chunkedArray)), index_(ColumnIndex(chunk, chunkIndex)) {}
 
 void ColumnIterator::advance() {
-  if (index_.getChunk() < chunkedArray_->chunk(index_.getChunk())->length()) {
+  if (index_.getChunkIndex() < chunkedArray_->chunk(index_.getChunk())->length() - 1) {
 	index_.setChunkIndex(index_.getChunkIndex() + 1);
   } else {
-	if (index_.getChunk() < chunkedArray_->num_chunks()) {
+	if (index_.getChunk() < chunkedArray_->num_chunks() - 1) {
 	  index_.setChunk(index_.getChunk() + 1);
+	  index_.setChunkIndex(0);
 	}
   }
 }
@@ -64,6 +65,12 @@ std::shared_ptr<::arrow::Scalar> ColumnIterator::getArrowScalar() const {
   if (chunkedArray_->type()->id() == arrow::int64()->id()) {
 	auto typedArray = std::static_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
 	auto value = typedArray->Value(index_.getChunkIndex());
+	auto arrowScalar = arrow::MakeScalar(value);
+	return arrowScalar;
+  }
+  else if (chunkedArray_->type()->id() == arrow::utf8()->id()) {
+	auto typedArray = std::static_pointer_cast<arrow::StringArray>(chunkedArray_->chunk(index_.getChunk()));
+	auto value = typedArray->GetString(index_.getChunkIndex());
 	auto arrowScalar = arrow::MakeScalar(value);
 	return arrowScalar;
   } else {
