@@ -49,20 +49,23 @@ target_link_libraries(normal-ssb-test PRIVATE normal-expression-gandiva)
 
 # Generate SSB SF=0.01 data set
 
-add_custom_target(normal-ssb-data
-        COMMAND DSS_PATH=${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01 ${SSB_DBGEN_EXECUTABLE} -f -v -s 0.01
+add_custom_target(normal-ssb-data-generate
+        COMMAND DSS_PATH=${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1 ${SSB_DBGEN_EXECUTABLE} -f -v -s 1
         WORKING_DIRECTORY ${SSB_DBGEN_WORKING_DIRECTORY})
+add_dependencies(normal-ssb-data-generate ssb_db_gen)
 
 # dbgen doesn't generate headers so we add them manually
 
-add_custom_target(normal-ssb-data-headers
-        COMMAND sed -i '1s/^/LO_ORDERKEY,LO_LINENUMBER,LO_CUSTKEY,LO_PARTKEY,LO_SUPPKEY,LO_ORDERDATE,LO_ORDERPRIORITY,LO_SHIPPRIORITY,LO_QUANTITY,LO_EXTENDEDPRICE,LO_ORDTOTALPRICE,LO_DISCOUNT,LO_REVENUE,LO_SUPPLYCOST,LO_TAX,LO_COMMITDATE,LO_SHIPMODE\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/lineorder.tbl
-        COMMAND sed -i '1s/^/P_PARTKEY,P_NAME,P_MFGR,P_BRAND,P_TYPE,P_SIZE,P_CONTAINER,P_RETAILPRICE,P_COMMENT\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/part.tbl
-        COMMAND sed -i '1s/^/S_SUPPKEY,S_NAME,S_ADDRESS,S_CITY,S_NATION,S_REGION,S_PHONE\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/supplier.tbl
-        COMMAND sed -i '1s/^/C_CUSTKEY,C_NAME,C_ADDRESS,C_CITY,C_NATION,C_REGION,C_PHONE,C_MKTSEGMENT\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/customer.tbl
-        COMMAND sed -i '1s/^/D_DATEKEY,D_DATE,D_DAYOFWEEK,D_MONTH,D_YEAR,D_YEARMONTHNUM,D_YEARMONTH,D_DAYNUMINWEEK,D_DAYNUMINMONTH,D_DAYNUMINYEAR,D_MONTHNUMINYEAR,D_WEEKNUMINYEAR,D_SELLINGSEASON,D_LASTDAYINWEEKFL,D_LASTDAYINMONTHFL,D_HOLIDAYFL,D_WEEKDAYFL\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/date.tbl)
+add_custom_target(normal-ssb-data-prepend-headers
+        COMMAND sed -i '1s/^/LO_ORDERKEY,LO_LINENUMBER,LO_CUSTKEY,LO_PARTKEY,LO_SUPPKEY,LO_ORDERDATE,LO_ORDERPRIORITY,LO_SHIPPRIORITY,LO_QUANTITY,LO_EXTENDEDPRICE,LO_ORDTOTALPRICE,LO_DISCOUNT,LO_REVENUE,LO_SUPPLYCOST,LO_TAX,LO_COMMITDATE,LO_SHIPMODE\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl
+        COMMAND sed -i '1s/^/P_PARTKEY,P_NAME,P_MFGR,P_BRAND,P_TYPE,P_SIZE,P_CONTAINER,P_RETAILPRICE,P_COMMENT\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl
+        COMMAND sed -i '1s/^/S_SUPPKEY,S_NAME,S_ADDRESS,S_CITY,S_NATION,S_REGION,S_PHONE\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl
+        COMMAND sed -i '1s/^/C_CUSTKEY,C_NAME,C_ADDRESS,C_CITY,C_NATION,C_REGION,C_PHONE,C_MKTSEGMENT\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/customer.tbl
+        COMMAND sed -i '1s/^/D_DATEKEY,D_DATE,D_DAYOFWEEK,D_MONTH,D_YEAR,D_YEARMONTHNUM,D_YEARMONTH,D_DAYNUMINWEEK,D_DAYNUMINMONTH,D_DAYNUMINYEAR,D_MONTHNUMINYEAR,D_WEEKNUMINYEAR,D_SELLINGSEASON,D_LASTDAYINWEEKFL,D_LASTDAYINMONTHFL,D_HOLIDAYFL,D_WEEKDAYFL\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/date.tbl)
+add_dependencies(normal-ssb-data-prepend-headers normal-ssb-data-generate)
 
-add_dependencies(normal-ssb-data ssb_db_gen)
+add_custom_target(normal-ssb-data)
+add_dependencies(normal-ssb-data normal-ssb-data-prepend-headers)
 
 
 # Copy data to runtime directory
@@ -75,6 +78,12 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/date.tbl ${CMAKE_CURREN
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/lineorder.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/part.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/supplier.tbl COPYONLY)
+
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/customer.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/customer.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/date.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/date.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/lineorder.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -268,3 +268,6 @@ Temporary Items
 ### Custom
 
 !/tools/project/bin/
+
+# Ignore this data set, too big to check in to git
+/normal-ssb/data/ssb-sf1/

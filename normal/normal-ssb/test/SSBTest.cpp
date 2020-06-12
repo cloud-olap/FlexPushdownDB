@@ -145,12 +145,11 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
   short year = 1993;
   short discount = 2;
   short quantity = 24;
+  std::string dataDir = "data/ssb-sf1"; // NOTE: Need to generate data in this dir first
 
-  SPDLOG_INFO("Arguments  |  year: {}, discount: {}, quantity: {}", year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}", dataDir, year, discount, quantity);
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
-
-
 
   /**
    * Scan
@@ -161,14 +160,14 @@ TEST_CASE ("ssb-benchmark-ep-query01" * doctest::skip(false || SKIP_SUITE)) {
 	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
 	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
 	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-  auto lineOrderFile = filesystem::absolute("data/ssb-sf0.01/lineorder.tbl");
+  auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
   auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
   auto lineOrderScan = FileScan::make("lineOrderScan", lineOrderFile, lineOrderColumns, 0, numBytesLineOrderFile);
   std::vector<std::string> dateColumns =
 	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
 	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
 	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
-  auto dateFile = filesystem::absolute("data/ssb-sf0.01/date.tbl");
+  auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
   auto numBytesDateFile = filesystem::file_size(dateFile);
   auto dateScan = FileScan::make("dateScan", dateFile, dateColumns, 0, numBytesDateFile);
 
