@@ -21,7 +21,8 @@ add_library(normal-connector STATIC
         src/partition/Partition.cpp include/normal/connector/partition/Partition.h
         src/s3/S3SelectPartition.cpp include/normal/connector/s3/S3SelectPartition.h
         src/s3/S3SelectPartitioningScheme.cpp include/normal/connector/s3/S3SelectPartitioningScheme.h
-        src/s3/S3SelectExplicitPartitioningScheme.cpp include/normal/connector/s3/S3SelectExplicitPartitioningScheme.h)
+        src/s3/S3SelectExplicitPartitioningScheme.cpp include/normal/connector/s3/S3SelectExplicitPartitioningScheme.h
+        src/s3/S3Util.cpp include/normal/connector/s3/S3Util.h)
 
 target_include_directories(normal-connector PUBLIC include)
 

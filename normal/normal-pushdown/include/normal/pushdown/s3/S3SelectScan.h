@@ -38,7 +38,7 @@ public:
 			   int64_t finishOffset,
 			   std::shared_ptr<Aws::S3::S3Client> s3Client);
 
-  std::shared_ptr<S3SelectScan> make(std::string name,
+  static std::shared_ptr<S3SelectScan> make(std::string name,
 									 std::string s3Bucket,
 									 std::string s3Object,
 									 std::string sql,
