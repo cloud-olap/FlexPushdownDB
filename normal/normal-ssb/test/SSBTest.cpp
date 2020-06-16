@@ -152,7 +152,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup" * doctest::skip(true || SKIP_
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1993;
   short discount = 2;
@@ -170,7 +170,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(false || SKIP_S
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(false || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;

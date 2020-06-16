@@ -328,6 +328,17 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &
 															 short quantity,
 															 AWSClient &client) {
 
+
+    auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+    auto dateFile = s3ObjectDir + "/date.tbl";
+    auto s3Objects = std::vector{lineOrderFile, dateFile};
+
+    auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+
+    SPDLOG_DEBUG("Discovered partitions");
+    for (auto &partition : partitionMap) {
+        SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+    }
   auto mgr = std::make_shared<OperatorManager>();
 
   /**
@@ -337,8 +348,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &
    */
   std::vector<std::string> lineOrderColumns =
 	  {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
+  auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
   int discountLower = discount - 1;
   int discountUpper = discount + 1;
   auto lineOrderScan = S3SelectScan::make(
@@ -358,13 +368,12 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &
 
   std::vector<std::string> dateColumns =
 	  {"D_DATEKEY", "D_YEAR",};
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto numBytesDateFile = filesystem::file_size(dateFile);
+  auto numBytesDateFile = partitionMap.find(dateFile)->second;
   auto dateScan = S3SelectScan::make(
 	  "dateScan",
 	  s3Bucket,
 	  dateFile,
-	  fmt::format("select D_DATEKEY, D_YEAR from s3Object where d_datekey = '{}'", year),
+	  fmt::format("select D_DATEKEY, D_YEAR from s3Object where cast(D_YEAR as int) = {}", year),
 	  dateColumns,
 	  0,
 	  numBytesDateFile,
