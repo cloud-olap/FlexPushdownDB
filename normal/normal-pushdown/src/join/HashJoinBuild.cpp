@@ -13,6 +13,7 @@
 using namespace normal::pushdown;
 using namespace normal::pushdown::join;
 using namespace normal::tuple;
+using namespace normal::core;
 
 HashJoinBuild::HashJoinBuild(const std::string &name, std::string columnName) :
 	Operator(name, "HashJoinBuild"),
@@ -57,12 +58,14 @@ void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
 
 void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 
-  SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
+  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
+	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
 
-  std::shared_ptr<normal::core::message::Message>
-	  hashTableMessage = std::make_shared<HashTableMessage>(hashtable_, name());
+	std::shared_ptr<normal::core::message::Message>
+		hashTableMessage = std::make_shared<HashTableMessage>(hashtable_, name());
 
-  ctx()->tell(hashTableMessage);
+	ctx()->tell(hashTableMessage);
 
-  ctx()->notifyComplete();
+	ctx()->notifyComplete();
+  }
 }

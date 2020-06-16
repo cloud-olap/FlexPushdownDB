@@ -152,6 +152,22 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup" * doctest::skip(true || SKIP_
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
+TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup-parallel" * doctest::skip(false || SKIP_SUITE)) {
+
+  short year = 1993;
+  short discount = 2;
+  short quantity = 24;
+  std::string dataDir = "data/ssb-sf1"; // NOTE: Need to generate data in this dir first
+  short numPartitions = 2;
+
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}", dataDir, numPartitions, year, discount, quantity);
+
+  auto mgr = Queries::query1_1FilePullUpParallel(dataDir, year, discount, quantity, numPartitions);
+  auto tupleSet = executeExecutionPlanTest(mgr);
+
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 100)));
+}
+
 TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1993;

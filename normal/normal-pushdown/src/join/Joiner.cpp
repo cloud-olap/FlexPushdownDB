@@ -67,19 +67,19 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
 
   long probeRowIndex = 0;
   for (const auto& probeValue: *probeColumn) {
-	SPDLOG_DEBUG("Loaded probe value (probeRowIndex: {}, probeValue: {})", probeRowIndex, probeValue->toString());
+//	SPDLOG_DEBUG("Loaded probe value (probeRowIndex: {}, probeValue: {})", probeRowIndex, probeValue->toString());
 
 	auto buildRowsRange = this->hashtable_->getValueRowMap()->equal_range(probeValue);
 
 	if (std::distance(buildRowsRange.first, buildRowsRange.second) == 0) {
-	  SPDLOG_DEBUG("Match NOT FOUND (probeRowIndex: {}, probeValue {})", probeRowIndex, probeValue->toString());
+//	  SPDLOG_DEBUG("Match NOT FOUND (probeRowIndex: {}, probeValue {})", probeRowIndex, probeValue->toString());
 	} else {
 	  for(auto buildRowsIterator = buildRowsRange.first; buildRowsIterator != buildRowsRange.second; buildRowsIterator++){
 	    auto buildRowIndex = buildRowsIterator->second;
-		SPDLOG_DEBUG("Match FOUND (probeRowIndex: {}, probeValue {}, buildRowIndex: {})",
-					 probeRowIndex,
-					 probeValue->toString(),
-					 buildRowIndex);
+//		SPDLOG_DEBUG("Match FOUND (probeRowIndex: {}, probeValue {}, buildRowIndex: {})",
+//					 probeRowIndex,
+//					 probeValue->toString(),
+//					 buildRowIndex);
 
 		for (size_t buildColumnIndex= 0; buildColumnIndex <buildFields.size(); ++buildColumnIndex) {
 //		  auto typedBuilder = std::static_pointer_cast<::arrow::Int64Builder>(buildTupleSetBuilders.at(buildColumnIndex));

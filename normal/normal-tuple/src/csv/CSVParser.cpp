@@ -21,11 +21,18 @@ CSVParser::CSVParser(std::string filePath,
 	bufferSize_(bufferSize) {
 }
 
+CSVParser::CSVParser(std::string filePath,
+					 std::optional<std::vector<std::string>> columnNames,
+					 int64_t startOffset,
+					 std::optional<int64_t> finishOffset) :
+	CSVParser(std::move(filePath), std::move(columnNames), startOffset, finishOffset, DefaultBufferSize) {
+}
+
 CSVParser::CSVParser(const std::string &filePath, int64_t bufferSize) :
 	CSVParser(filePath, std::nullopt, 0, std::nullopt, bufferSize) {
 }
 
-CSVParser::CSVParser(const std::string &filePath, const std::vector<std::string>& columnNames) :
+CSVParser::CSVParser(const std::string &filePath, const std::vector<std::string> &columnNames) :
 	CSVParser(filePath, columnNames, 0, std::nullopt, DefaultBufferSize) {
 }
 

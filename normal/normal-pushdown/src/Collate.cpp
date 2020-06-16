@@ -14,6 +14,8 @@
 
 #include "normal/pushdown/Globals.h"
 
+using namespace normal::core;
+
 namespace normal::pushdown {
 
 void Collate::onStart() {
@@ -42,7 +44,9 @@ void Collate::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Collate::onComplete(const normal::core::message::CompleteMessage &) {
-  ctx()->notifyComplete();
+  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+	ctx()->notifyComplete();
+  }
 }
 
 void Collate::show() {

@@ -22,10 +22,16 @@ class Queries {
 public:
   static std::string query01(short year, short discount, short quantity);
 
-  static std::shared_ptr<OperatorManager> query1_1FilePullUp(const std::string& dataDir,
+  static std::shared_ptr<OperatorManager> query1_1FilePullUp(const std::string &dataDir,
 															 short year,
 															 short discount,
 															 short quantity);
+
+  static std::shared_ptr<OperatorManager> query1_1FilePullUpParallel(const std::string &dataDir,
+																	 short year,
+																	 short discount,
+																	 short quantity,
+																	 int numPartitions);
 
   static std::shared_ptr<OperatorManager> query1_1S3PullUp(const std::string &s3Bucket,
 														   const std::string &s3ObjectDir,

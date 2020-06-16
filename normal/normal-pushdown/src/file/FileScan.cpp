@@ -86,7 +86,7 @@ void FileScan::onReceive(const Envelope &message) {
 
 tl::expected<std::shared_ptr<TupleSet2>, std::string> FileScan::readCSVFile(const std::vector<std::string>& columnNames) {
 
-  CSVParser parser(filePath_, columnNames);
+  CSVParser parser(filePath_, columnNames, startOffset_, finishOffset_);
   auto tupleSet = parser.parse();
 
   return tupleSet;
@@ -131,6 +131,7 @@ void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   requestStoreSegmentsInCache(readTupleSet);
 
   // Combine the read columns with the columns present in the cache
+  columns.reserve(cachedColumns.size());
   for(const auto &column: cachedColumns){
     columns.push_back(column);
   }

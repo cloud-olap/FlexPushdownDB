@@ -26,10 +26,15 @@ public:
 			std::optional<int64_t> finishOffset,
 			int64_t bufferSize);
 
+  CSVParser(std::string filePath,
+			std::optional<std::vector<std::string>> columnNames,
+			int64_t startOffset,
+			std::optional<int64_t> finishOffset);
+
   CSVParser(const std::string &filePath,
 			int64_t bufferSize);
 
-  CSVParser(const std::string &filePath, const std::vector<std::string>& columnNames);
+  CSVParser(const std::string &filePath, const std::vector<std::string> &columnNames);
 
   explicit CSVParser(const std::string &filePath);
 
