@@ -75,6 +75,7 @@ S3SelectScan::S3SelectScan(std::string name,
 						   std::vector<std::string> columnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
+						   S3SelectCSVParseOptions parseOptions,
 						   std::shared_ptr<Aws::S3::S3Client> s3Client) :
 	Operator(std::move(name), "S3SelectScan"),
 	s3Bucket_(std::move(s3Bucket)),
@@ -83,8 +84,9 @@ S3SelectScan::S3SelectScan(std::string name,
 	columnNames_(std::move(columnNames)),
 	startOffset_(startOffset),
 	finishOffset_(finishOffset),
+	parseOptions_(parseOptions),
 	s3Client_(std::move(s3Client)),
-	columns_(columnNames_.size()){
+	columns_(columnNames_.size()) {
 }
 
 std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
@@ -94,6 +96,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::vector<std::string> columnNames,
 												 int64_t startOffset,
 												 int64_t finishOffset,
+												 S3SelectCSVParseOptions parseOptions,
 												 std::shared_ptr<Aws::S3::S3Client> s3Client) {
   return std::make_shared<S3SelectScan>(name,
 										s3Bucket,
@@ -102,6 +105,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										columnNames,
 										startOffset,
 										finishOffset,
+										parseOptions,
 										s3Client);
 
 }
@@ -128,8 +132,8 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 
   CSVInput csvInput;
   csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
-  csvInput.SetFieldDelimiter("|");
-  csvInput.SetRecordDelimiter("|\n");
+  csvInput.SetFieldDelimiter(parseOptions_.getFieldDelimiter().c_str());
+  csvInput.SetRecordDelimiter(parseOptions_.getRecordDelimiter().c_str());
   InputSerialization inputSerialization;
   inputSerialization.SetCSV(csvInput);
   selectObjectContentRequest.SetInputSerialization(inputSerialization);
@@ -144,21 +148,33 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
+	SPDLOG_DEBUG("S3 Select RecordsEvent  |  partition: s3://{}/{}, size: {}",
+				 s3Bucket_,
+				 s3Object_,
+				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
 	std::shared_ptr<TupleSet> tupleSetV1 = s3SelectParser.parsePayload(payload);
 	auto tupleSet = TupleSet2::create(tupleSetV1);
 	tupleSetEventCallback(tupleSet);
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
-	SPDLOG_DEBUG("Bytes scanned: {} ", statsEvent.GetDetails().GetBytesScanned());
-	SPDLOG_DEBUG("Bytes processed: {}", statsEvent.GetDetails().GetBytesProcessed());
-	SPDLOG_DEBUG("Bytes returned: {}", statsEvent.GetDetails().GetBytesReturned());
+	SPDLOG_DEBUG("S3 Select StatsEvent  |  partition: s3://{}/{}, scanned: {}, processed: {}, returned: {}",
+				 s3Bucket_,
+				 s3Object_,
+				 statsEvent.GetDetails().GetBytesScanned(),
+				 statsEvent.GetDetails().GetBytesProcessed(),
+				 statsEvent.GetDetails().GetBytesReturned());
   });
   handler.SetEndEventCallback([&]() {
-	SPDLOG_DEBUG("EndEvent");
+	SPDLOG_DEBUG("S3 Select EndEvent  |  partition: s3://{}/{}",
+				 s3Bucket_,
+				 s3Object_);
   });
   handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
-	SPDLOG_DEBUG("Error: {}", std::string(errors.GetMessage()));
+	SPDLOG_DEBUG("S3 Select Error  |  partition: s3://{}/{}, message: {}",
+				 s3Bucket_,
+				 s3Object_,
+				 std::string(errors.GetMessage()));
 	optionalErrorMessage = std::optional(errors.GetMessage());
   });
 
@@ -207,27 +223,31 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   SPDLOG_DEBUG("Reading From S3");
 
   // Read the columns not present in the cache
-  s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
+  auto result = s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
 
-    for(int columnIndex = 0;columnIndex < tupleSet->numColumns(); ++columnIndex){
-      auto columnName = columnNames_.at(columnIndex);
+	for (int columnIndex = 0; columnIndex < tupleSet->numColumns(); ++columnIndex) {
+	  auto columnName = columnNames_.at(columnIndex);
 	  auto readColumn = tupleSet->getColumnByIndex(columnIndex).value();
-	  readColumn->setName(columnName);
+	  auto canonicalColumnName = ColumnName::canonicalize(columnName);
+	  readColumn->setName(canonicalColumnName);
 	  auto bufferedColumn = columns_[columnIndex];
 
-	  if(bufferedColumn == nullptr){
+	  if (bufferedColumn == nullptr) {
 		columns_[columnIndex] = readColumn;
-	  }
-	  else{
-	    auto bufferedChunks = bufferedColumn->getArrowArray()->chunks();
+	  } else {
+		auto bufferedChunks = bufferedColumn->getArrowArray()->chunks();
 		// Add the read chunks to this buffered columns chunk vector
-		for(int chunkIndex = 0;chunkIndex < readColumn->getArrowArray()->num_chunks();++chunkIndex){
+		for (int chunkIndex = 0; chunkIndex < readColumn->getArrowArray()->num_chunks(); ++chunkIndex) {
 		  auto readChunk = readColumn->getArrowArray()->chunk(chunkIndex);
 		  bufferedChunks.emplace_back(readChunk);
 		}
 	  }
-    }
+	}
   });
+
+  if (!result.has_value()) {
+	throw std::runtime_error(result.error());
+  }
 
   // Combine the read columns with the columns that were loaded from the cache
   for (const auto &column: cachedColumns) {

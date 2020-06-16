@@ -29,7 +29,9 @@ add_library(normal-pushdown STATIC
         src/cacheScan.cpp include/normal/pushdown/cacheScan.h
         src/group/Group.cpp include/normal/pushdown/group/Group.h
         src/group/GroupKey.cpp include/normal/pushdown/group/GroupKey.h
-        src/TupleMessage.cpp include/normal/pushdown/TupleMessage.h src/cache/CacheHelper.cpp include/normal/pushdown/cache/CacheHelper.h)
+        src/TupleMessage.cpp include/normal/pushdown/TupleMessage.h
+        src/cache/CacheHelper.cpp include/normal/pushdown/cache/CacheHelper.h
+        src/s3/S3SelectCSVParseOptions.cpp include/normal/pushdown/s3/S3SelectCSVParseOptions.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

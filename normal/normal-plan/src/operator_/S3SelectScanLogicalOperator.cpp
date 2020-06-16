@@ -7,6 +7,7 @@
 #include <normal/pushdown/s3/S3SelectScan.h>
 
 using namespace normal::plan::operator_;
+using namespace normal::pushdown;
 
 S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
 	const std::shared_ptr<S3SelectPartitioningScheme>& partitioningScheme,
@@ -38,6 +39,7 @@ std::shared_ptr<normal::core::Operator> S3SelectScanLogicalOperator::toOperator(
 		columns,
 		0,
 		1023,
+		S3SelectCSVParseOptions(",", "\n"),
 		this->awsClient_->defaultS3Client());
 
 	operators->push_back(scanOp);
@@ -68,6 +70,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
 		columns,
 		0,
 		1023,
+		S3SelectCSVParseOptions(",", "\n"),
 		this->awsClient_->defaultS3Client());
 
 	operators->push_back(scanOp);

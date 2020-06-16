@@ -17,6 +17,7 @@
 
 #include "normal/core/Operator.h"
 #include "normal/tuple/TupleSet.h"
+#include "normal/pushdown/s3/S3SelectCSVParseOptions.h"
 
 using namespace normal::core;
 using namespace normal::core::message;
@@ -36,16 +37,18 @@ public:
 			   std::vector<std::string> columnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
+			   S3SelectCSVParseOptions parseOptions,
 			   std::shared_ptr<Aws::S3::S3Client> s3Client);
 
   static std::shared_ptr<S3SelectScan> make(std::string name,
-									 std::string s3Bucket,
-									 std::string s3Object,
-									 std::string sql,
-									 std::vector<std::string> columnNames,
-									 int64_t startOffset,
-									 int64_t finishOffset,
-									 std::shared_ptr<Aws::S3::S3Client> s3Client);
+											std::string s3Bucket,
+											std::string s3Object,
+											std::string sql,
+											std::vector<std::string> columnNames,
+											int64_t startOffset,
+											int64_t finishOffset,
+											S3SelectCSVParseOptions parseOptions,
+											std::shared_ptr<Aws::S3::S3Client> s3Client);
 
   void onReceive(const Envelope &message) override;
 
@@ -56,6 +59,7 @@ private:
   std::vector<std::string> columnNames_;
   int64_t startOffset_;
   int64_t finishOffset_;
+  S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<Column>> columns_;
 
@@ -64,7 +68,7 @@ private:
   void onComplete(const CompleteMessage &message);
   void onCacheLoadResponse(const LoadResponseMessage &Message);
 
-  tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
+  [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
 
   void requestLoadSegmentsFromCache();
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);

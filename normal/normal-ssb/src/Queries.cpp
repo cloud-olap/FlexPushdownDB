@@ -212,10 +212,11 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
 	  "lineOrderScan",
 	  s3Bucket,
 	  lineOrderFile,
-	  "select * from s3Object",
+	  "select * from s3object",
 	  lineOrderColumns,
 	  0,
 	  numBytesLineOrderFile,
+	  S3SelectCSVParseOptions(",", "\n"),
 	  client.defaultS3Client());
 
   std::vector<std::string> dateColumns =
@@ -228,10 +229,11 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
 	  "dateScan",
 	  s3Bucket,
 	  dateFile,
-	  "select * from s3Object",
+	  "select * from s3object",
 	  dateColumns,
 	  0,
 	  numBytesDateFile,
+	  S3SelectCSVParseOptions(",", "\n"),
 	  client.defaultS3Client());
 
   /**
@@ -351,6 +353,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &
 	  lineOrderColumns,
 	  0,
 	  numBytesLineOrderFile,
+	  S3SelectCSVParseOptions(",", "\n"),
 	  client.defaultS3Client());
 
   std::vector<std::string> dateColumns =
@@ -365,6 +368,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &
 	  dateColumns,
 	  0,
 	  numBytesDateFile,
+	  S3SelectCSVParseOptions(",", "\n"),
 	  client.defaultS3Client());
 
   /**
