@@ -127,7 +127,7 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
   selectObjectContentRequest.SetScanRange(scanRange);
 
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
-
+  //fixme: this sql comes from the original sql, but when in full pull up mode, we might want to kindly modify the sql so that it only retrieves columns not in cache
   selectObjectContentRequest.SetExpression(sql_.c_str());
 
   CSVInput csvInput;
@@ -206,18 +206,20 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   std::vector<std::string> columnNamesToLoad;
 
   auto cachedSegments = Message.getSegments();
+  //if not push down
+  if (!pushDownFlag_) {
+      // Gather the columns that were in the cache plus the columns we need to load
+      auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
+      for (const auto &columnName: columnNames_) {
+          auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
 
-  // Gather the columns that were in the cache plus the columns we need to load
-  auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
-  for (const auto &columnName: columnNames_) {
-	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
-
-	auto segment = cachedSegments.find(segmentKey);
-	if (segment != cachedSegments.end()) {
-	  cachedColumns.push_back(segment->second->getColumn());
-	} else {
-	  columnNamesToLoad.push_back(columnName);
-	}
+          auto segment = cachedSegments.find(segmentKey);
+          if (segment != cachedSegments.end()) {
+              cachedColumns.push_back(segment->second->getColumn());
+          } else {
+              columnNamesToLoad.push_back(columnName);
+          }
+      }
   }
 
   SPDLOG_DEBUG("Reading From S3");
@@ -248,27 +250,34 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   if (!result.has_value()) {
 	throw std::runtime_error(result.error());
   }
+  //need to check whether there are tuples returned from s3
+  if (columns_[0]!= nullptr) {
+      auto readTupleSet = TupleSet2::make(columns_);
 
-  auto readTupleSet = TupleSet2::make(columns_);
+      // Store the read columns in the cache
+      requestStoreSegmentsInCache(readTupleSet);
 
-  // Store the read columns in the cache
-  requestStoreSegmentsInCache(readTupleSet);
-
-  // Combine the read columns with the columns that were loaded from the cache
-  columns.reserve(cachedColumns.size());
-  for (const auto &column: cachedColumns) {
-	columns.push_back(column);
+      // Combine the read columns with the columns that were loaded from the cache
+      columns.reserve(cachedColumns.size());
+      for (const auto &column: cachedColumns) {
+          columns.push_back(column);
+      }
+      for (size_t c = 0; c < columns_.size(); ++c) {
+          columns.push_back(columns_.at(c));
+      }
+  } else{
+      columns.reserve(cachedColumns.size());
+      for (const auto &column: cachedColumns) {
+          columns.push_back(column);
+      }
   }
-  for (size_t c = 0; c < columns_.size(); ++c) {
-	columns.push_back(columns_.at(c));
+  if (columns.size()!=0) {
+      auto completeTupleSet = TupleSet2::make(columns);
+
+      std::shared_ptr<normal::core::message::Message>
+              message = std::make_shared<TupleMessage>(completeTupleSet->toTupleSetV1(), this->name());
+      ctx()->tell(message);
   }
-
-  auto completeTupleSet = TupleSet2::make(columns);
-
-  std::shared_ptr<normal::core::message::Message>
-	  message = std::make_shared<TupleMessage>(completeTupleSet->toTupleSetV1(), this->name());
-  ctx()->tell(message);
-
   SPDLOG_DEBUG("Finished Reading");
 
   ctx()->notifyComplete();

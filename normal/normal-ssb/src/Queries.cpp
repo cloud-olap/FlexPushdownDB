@@ -813,8 +813,10 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
 		dateScanRanges[p].second,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
+	dateScan->pushDownFlag_=true;
 	dateScanOperators.push_back(dateScan);
   }
+
 
   /**
    * Scan
@@ -826,7 +828,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
   int discountUpper = discount + 1;
 
   std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
-  auto lineOrderScanRanges = Util::ranges<int>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
+  auto lineOrderScanRanges = Util::ranges<long>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
   for (int p = 0; p < numPartitions; ++p) {
 	auto lineOrderScan = S3SelectScan::make(
 		fmt::format("lineOrderScan-{}", p),
@@ -842,6 +844,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
 		lineOrderScanRanges[p].second,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
+      lineOrderScan->pushDownFlag_=true;
 	lineOrderScanOperators.push_back(lineOrderScan);
   }
 

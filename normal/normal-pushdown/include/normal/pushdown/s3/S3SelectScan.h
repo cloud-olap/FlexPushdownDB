@@ -30,6 +30,7 @@ class S3SelectScan : public normal::core::Operator {
   typedef std::function<void(const std::shared_ptr<TupleSet2> &)> TupleSetEventCallback;
 
 public:
+  bool pushDownFlag_;
   S3SelectScan(std::string name,
 			   std::string s3Bucket,
 			   std::string s3Object,
@@ -62,6 +63,7 @@ private:
   S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<Column>> columns_;
+
 
   void onStart();
   void onTuple(const TupleMessage &message);
