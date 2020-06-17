@@ -101,7 +101,7 @@ std::shared_ptr<TupleSet2> executeSQLTest(const std::string &sql) {
   return tupleSet;
 }
 
-std::shared_ptr<TupleSet2> executeExecutionPlanTest(const std::shared_ptr<OperatorManager>& mgr){
+std::shared_ptr<TupleSet2> executeExecutionPlanTest(const std::shared_ptr<OperatorManager> &mgr) {
 
   TestUtil::writeExecutionPlan(*mgr);
 
@@ -129,7 +129,8 @@ TEST_CASE ("ssb-benchmark-sql-query1_1" * doctest::skip(true || SKIP_SUITE)) {
   short discount = 2;
   short quantity = 24;
 
-  SPDLOG_INFO("Arguments  |  year: {}, discount: {}, quantity: {}", year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  year: {}, discount: {}, quantity: {}",
+			  year, discount, quantity);
 
   auto sql = Queries::query01(year, discount, quantity);
   auto tupleSet = executeSQLTest(sql);
@@ -144,9 +145,11 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup" * doctest::skip(true || SKIP_
   short quantity = 24;
   std::string dataDir = "data/ssb-sf1"; // NOTE: Need to generate data in this dir first
 
-  SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}", dataDir, year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}",
+			  dataDir, year, discount, quantity);
 
-  auto mgr = Queries::query1_1FilePullUp(dataDir, year, discount, quantity);
+  auto mgr = Queries::query1_1FilePullUp(dataDir,
+										 year, discount, quantity);
   auto tupleSet = executeExecutionPlanTest(mgr);
 
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
@@ -160,9 +163,12 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup-parallel" * doctest::skip(true
   std::string dataDir = "data/ssb-sf1"; // NOTE: Need to generate data in this dir first
   short numPartitions = 2;
 
-  SPDLOG_INFO("Arguments  |  dataDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}", dataDir, numPartitions, year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",
+			  dataDir, numPartitions, year, discount, quantity);
 
-  auto mgr = Queries::query1_1FilePullUpParallel(dataDir, year, discount, quantity, numPartitions);
+  auto mgr = Queries::query1_1FilePullUpParallel(dataDir,
+												 year, discount, quantity,
+												 numPartitions);
   auto tupleSet = executeExecutionPlanTest(mgr);
 
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 100)));
@@ -176,17 +182,20 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(true || SKIP_SU
   std::string s3Bucket = "s3filter";
   std::string s3ObjectDir = "ssb-sf1";
 
-  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', year: {}, discount: {}, quantity: {}", s3Bucket, s3ObjectDir, year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', year: {}, discount: {}, quantity: {}",
+			  s3Bucket, s3ObjectDir, year, discount, quantity);
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::query1_1S3PullUp(s3Bucket, s3ObjectDir, year, discount, quantity, client);
+  auto mgr = Queries::query1_1S3PullUp(s3Bucket, s3ObjectDir,
+									   year, discount, quantity,
+									   client);
   auto tupleSet = executeExecutionPlanTest(mgr);
 
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;
@@ -195,11 +204,14 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(false 
   std::string s3ObjectDir = "ssb-sf0.01";
   short numPartitions = 2;
 
-  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}", s3Bucket, s3ObjectDir, numPartitions, year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",
+			  s3Bucket, s3ObjectDir, numPartitions, year, discount, quantity);
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::query1_1S3PullUpParallel(s3Bucket, s3ObjectDir, year, discount, quantity, numPartitions, client);
+  auto mgr = Queries::query1_1S3PullUpParallel(s3Bucket, s3ObjectDir,
+											   year, discount, quantity,
+											   numPartitions, client);
   auto tupleSet = executeExecutionPlanTest(mgr);
 
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
@@ -213,11 +225,36 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(true || SKIP_
   std::string s3Bucket = "s3filter";
   std::string s3ObjectDir = "ssb-sf1";
 
-  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', year: {}, discount: {}, quantity: {}", s3Bucket, s3ObjectDir, year, discount, quantity);
+  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', year: {}, discount: {}, quantity: {}",
+			  s3Bucket, s3ObjectDir, year, discount, quantity);
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::query1_1S3PushDown(s3Bucket, s3ObjectDir, year, discount, quantity, client);
+  auto mgr = Queries::query1_1S3PushDown(s3Bucket, s3ObjectDir,
+										 year, discount, quantity,
+										 client);
+  auto tupleSet = executeExecutionPlanTest(mgr);
+
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(false || SKIP_SUITE)) {
+
+  short year = 1992;
+  short discount = 2;
+  short quantity = 24;
+  std::string s3Bucket = "s3filter";
+  std::string s3ObjectDir = "ssb-sf0.01";
+  short numPartitions = 2;
+
+  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",
+			  s3Bucket, s3ObjectDir, numPartitions, year, discount, quantity);
+
+  AWSClient client;
+  client.init();
+  auto mgr = Queries::query1_1S3PushDownParallel(s3Bucket, s3ObjectDir,
+												 year, discount, quantity,
+												 numPartitions, client);
   auto tupleSet = executeExecutionPlanTest(mgr);
 
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
