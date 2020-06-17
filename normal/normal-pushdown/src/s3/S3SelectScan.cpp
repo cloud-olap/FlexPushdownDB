@@ -249,7 +249,13 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
 	throw std::runtime_error(result.error());
   }
 
+  auto readTupleSet = TupleSet2::make(columns_);
+
+  // Store the read columns in the cache
+  requestStoreSegmentsInCache(readTupleSet);
+
   // Combine the read columns with the columns that were loaded from the cache
+  columns.reserve(cachedColumns.size());
   for (const auto &column: cachedColumns) {
 	columns.push_back(column);
   }
