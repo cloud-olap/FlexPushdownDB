@@ -13,10 +13,13 @@ ColumnIterator::ColumnIterator(std::shared_ptr<::arrow::ChunkedArray> chunkedArr
 	chunkedArray_(std::move(chunkedArray)), index_(ColumnIndex(chunk, chunkIndex)) {}
 
 void ColumnIterator::advance() {
-  if (index_.getChunkIndex() < chunkedArray_->chunk(index_.getChunk())->length() - 1) {
-	index_.setChunkIndex(index_.getChunkIndex() + 1);
-  } else {
-	if (index_.getChunk() < chunkedArray_->num_chunks() - 1) {
+  if(index_.getChunk() < chunkedArray_->num_chunks()) {
+    // Not at end yet
+	if (index_.getChunkIndex() < chunkedArray_->chunk(index_.getChunk())->length() - 1) {
+	  // Chunk index not at end of chunk, advance chunk index
+	  index_.setChunkIndex(index_.getChunkIndex() + 1);
+	} else {
+	  // Chunk index at end of chunk, advance chunk and reset chunk index
 	  index_.setChunk(index_.getChunk() + 1);
 	  index_.setChunkIndex(0);
 	}
@@ -39,6 +42,11 @@ ColumnIterator::value_type ColumnIterator::value() const {
 }
 
 ColumnIterator::value_type ColumnIterator::operator*() const {
+
+  if(index_.getChunk() >= chunkedArray_->num_chunks() || index_.getChunkIndex() >= chunkedArray_->chunk(index_.getChunk())->length()){
+    throw std::runtime_error("Cannot dereference iterator. Iterator refers to past-the-end element");
+  }
+
   return getScalar();
 }
 
@@ -46,11 +54,11 @@ ColumnIterator::pointer ColumnIterator::operator->() const {
   return std::make_shared<value_type>(getScalar());
 }
 
-bool ColumnIterator::operator==(const ColumnIterator::this_type &other) {
+bool ColumnIterator::operator==(const ColumnIterator::this_type &other) const {
   return index_.getChunk() == other.index_.getChunk() && index_.getChunkIndex() == other.index_.getChunkIndex();
 }
 
-bool ColumnIterator::operator!=(const ColumnIterator::this_type &other) {
+bool ColumnIterator::operator!=(const ColumnIterator::this_type &other) const {
   return !(*this == other);
 }
 

@@ -82,7 +82,10 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 	  SPDLOG_DEBUG("Filtered batch:\n{}",
 				   batchTupleSet->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
 
-	  filteredTupleSet->append(batchTupleSet);
+	  auto result = filteredTupleSet->append(batchTupleSet);
+	  if(!result.has_value()){
+		throw std::runtime_error(result.error());
+	  }
 
 	  arrowStatus = reader.ReadNext(&batch);
 	  if (!arrowStatus.ok()) {

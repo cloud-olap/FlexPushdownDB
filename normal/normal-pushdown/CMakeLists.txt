@@ -32,7 +32,9 @@ add_library(normal-pushdown STATIC
         src/TupleMessage.cpp include/normal/pushdown/TupleMessage.h
         src/cache/CacheHelper.cpp include/normal/pushdown/cache/CacheHelper.h
         src/s3/S3SelectCSVParseOptions.cpp include/normal/pushdown/s3/S3SelectCSVParseOptions.h
-        src/Util.cpp include/normal/pushdown/Util.h)
+        src/Util.cpp include/normal/pushdown/Util.h
+        src/shuffle/Shuffle.cpp include/normal/pushdown/shuffle/Shuffle.h
+        src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -64,7 +66,8 @@ add_executable(normal-pushdown-test
         test/SortTest.cpp
         test/FileScanTest.cpp
         test/CacheTest.cpp
-        test/S3SelectScanTest.cpp)
+        test/S3SelectScanTest.cpp
+        test/ShuffleTest.cpp)
 
 
 target_include_directories(normal-pushdown-test PRIVATE include)
