@@ -517,7 +517,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::st
 	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
 
   std::vector<std::shared_ptr<Operator>> dateScanOperators;
-  auto dateScanRanges = Util::ranges<int>(0, partitionMap.find(dateFile)->second, numPartitions);
+  auto dateScanRanges = Util::ranges<long>(0, partitionMap.find(dateFile)->second, numPartitions);
   for (int p = 0; p < numPartitions; ++p) {
 	auto dateScan = S3SelectScan::make(
 		fmt::format("dateScan-{}", p),
@@ -542,7 +542,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::st
 	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
 
   std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
-  auto lineOrderScanRanges = Util::ranges<int>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
+  auto lineOrderScanRanges = Util::ranges<long>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
   for (int p = 0; p < numPartitions; ++p) {
 	auto lineOrderScan = S3SelectScan::make(
 		fmt::format("lineOrderScan-{}", p),
