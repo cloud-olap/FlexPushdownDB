@@ -152,7 +152,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup" * doctest::skip(true || SKIP_
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup-parallel" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-file-pullup-parallel" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1993;
   short discount = 2;
@@ -186,7 +186,26 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(true || SKIP_SU
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(false || SKIP_SUITE)) {
+
+  short year = 1992;
+  short discount = 2;
+  short quantity = 24;
+  std::string s3Bucket = "s3filter";
+  std::string s3ObjectDir = "ssb-sf0.01";
+  short numPartitions = 2;
+
+  SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}", s3Bucket, s3ObjectDir, numPartitions, year, discount, quantity);
+
+  AWSClient client;
+  client.init();
+  auto mgr = Queries::query1_1S3PullUpParallel(s3Bucket, s3ObjectDir, year, discount, quantity, numPartitions, client);
+  auto tupleSet = executeExecutionPlanTest(mgr);
+
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;

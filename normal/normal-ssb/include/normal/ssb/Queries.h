@@ -40,6 +40,14 @@ public:
 														   short quantity,
 														   AWSClient &client);
 
+  static std::shared_ptr<OperatorManager> query1_1S3PullUpParallel(const std::string &s3Bucket,
+																   const std::string &s3ObjectDir,
+																   short year,
+																   short discount,
+																   short quantity,
+																   int numPartitions,
+																   AWSClient &client);
+
   static std::shared_ptr<OperatorManager> query1_1S3PushDown(const std::string &s3Bucket,
 															 const std::string &s3ObjectDir,
 															 short year,
