@@ -801,7 +801,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
 	  {"D_DATEKEY", "D_YEAR",};
 
   std::vector<std::shared_ptr<Operator>> dateScanOperators;
-  auto dateScanRanges = Util::ranges<int>(0, partitionMap.find(dateFile)->second, numPartitions);
+  auto dateScanRanges = Util::ranges<long>(0, partitionMap.find(dateFile)->second, numPartitions);
   for (int p = 0; p < numPartitions; ++p) {
 	auto dateScan = S3SelectScan::make(
 		fmt::format("dateScan-{}", p),

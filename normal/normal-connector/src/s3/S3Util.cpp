@@ -9,13 +9,13 @@
 
 using namespace normal::connector::s3;
 
-std::unordered_map<std::string, int>
+std::unordered_map<std::string, long>
 S3Util::listObjects(std::string s3Bucket,
 					std::vector<std::string> s3Objects,
 					std::shared_ptr<S3Client> s3Client) {
 
   // Create a map of objects to object sizes
-  std::unordered_map<std::string, int> partitionMap;
+  std::unordered_map<std::string, long> partitionMap;
   for (auto &s3Object : s3Objects) {
 	partitionMap.emplace(s3Object, 0);
   }
