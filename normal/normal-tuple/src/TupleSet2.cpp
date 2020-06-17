@@ -147,7 +147,7 @@ std::string TupleSet2::showString(TupleSetShowOptions options) {
 
 	  ss << std::left << std::setw(width) << std::setfill('-') << "" << std::endl;
 
-	  int columnWidth = (width / table->num_columns());
+	  int columnWidth = table->num_columns() == 0 ? width : width / table->num_columns();
 
 	  // Column names
 	  for (const auto &field: table_.value()->schema()->fields()) {

@@ -109,28 +109,18 @@ std::string Column::toString() const {
 }
 
 ColumnIterator Column::begin() {
-
-  /**
-   * Needs to point to the first element, or in the case of an empty column,
-   * needs to be the same as "end". So as to fail fast, we use -1 and -1 for an
-   * empty array.
-   */
-
-  auto beginChunkIndex = array_->length() <= 0 ? -1 : 0;
-  auto beginChunkBeginIndex = array_->length() <= 0 ? -1 : 0;
-
-  return ColumnIterator(array_, beginChunkIndex, beginChunkBeginIndex);
+  return ColumnIterator(array_, 0, 0);
 }
 
 ColumnIterator Column::end() {
 
   /**
    * Needs to point to just past the last element, or in the case of an empty column,
-   * needs to be the same as "begin". So as to fail fast, we use -1 and -1 for an empty array.
+   * needs to be the same as "begin". We use 0 and 0 for an empty array.
    */
 
-  auto endChunkIndex = array_->length() <= 0 ? -1 : array_->num_chunks() - 1;
-  auto endChunkEndIndex =  array_->length() <= 0 ? -1 : array_->chunk(endChunkIndex)->length() - 1;
+  auto endChunkIndex = array_->length() <= 0 ? 0 : array_->num_chunks();
+  auto endChunkEndIndex =  array_->length() <= 0 ? 0 : 0;
 
   return ColumnIterator(array_,
 						endChunkIndex,

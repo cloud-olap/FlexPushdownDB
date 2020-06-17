@@ -89,14 +89,14 @@ public:
    *
    * @return
    */
-  bool operator==(const this_type &other);
+  bool operator==(const this_type &other) const;
 
   /**
    * Not-Equality operator required for forward iterators
    *
    * @return
    */
-  bool operator!=(const this_type &other);
+  bool operator!=(const this_type &other) const;
 
   /**
    * Difference operator, TODO: Not sure if this really is needed?

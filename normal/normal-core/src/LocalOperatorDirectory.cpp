@@ -64,4 +64,14 @@ tl::expected<LocalOperatorDirectoryEntry, std::string> LocalOperatorDirectory::g
   }
 }
 
+std::vector<LocalOperatorDirectoryEntry> LocalOperatorDirectory::get(const OperatorRelationshipType &operatorRelationshipType) {
+  std::vector<LocalOperatorDirectoryEntry> matchingEntries;
+  for(const auto& operatorEntry: entries_){
+    if(operatorEntry.second.relationshipType() == operatorRelationshipType){
+	  matchingEntries.emplace_back(operatorEntry.second);
+    }
+  }
+  return matchingEntries;
+}
+
 }
