@@ -14,6 +14,7 @@
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/tuple/TupleSet2.h>
+#include <normal/ssb/SQLite3.h>
 
 #include "normal/ssb/Queries.h"
 
@@ -205,7 +206,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(true || SKIP_SU
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;
@@ -248,7 +249,31 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(true || SKIP_
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(true || SKIP_SUITE)) {
+/**
+ * TODO: Sample of code that can be run alongside tests to verify that the results are correct. This needs
+ *  to be integrated with the test cases.
+ */
+TEST_CASE ("ssb-benchmark-ep-query1_1-result" * doctest::skip(false || SKIP_SUITE)) {
+
+  auto expectedResults = SQLite3::execute(
+	  "select sum(lo_extendedprice * lo_discount) as revenue "
+	  "from temp.lineorder, "
+	  "     temp.date "
+	  "where lo_orderdate = d_datekey "
+	  "  and d_year = 1992 "
+	  "  and lo_discount between 1 and 3 "
+	  "  and lo_quantity < 25;",
+	  std::vector<std::string>{"/home/matt/Work/pushdownDB/normal/normal-ssb/data/ssb-sf0.01/date.tbl",
+							   "/home/matt/Work/pushdownDB/normal/normal-ssb/data/ssb-sf0.01/lineorder.tbl"});
+
+  if (!expectedResults.has_value()) {
+	SPDLOG_ERROR("Result: {}", expectedResults.error());
+  } else {
+	SPDLOG_ERROR("Result: {} = {}", expectedResults.value()->at(0).first, expectedResults.value()->at(0).second);
+  }
+}
+
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(false || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;

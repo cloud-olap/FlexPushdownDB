@@ -34,7 +34,7 @@ include(External_graphviz)
 include(External_expected)
 include(External_fmt)
 include(External_ssb_dbgen)
-
+include(External_sqlite)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
