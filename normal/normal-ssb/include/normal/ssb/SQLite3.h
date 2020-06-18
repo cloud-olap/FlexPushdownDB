@@ -16,7 +16,7 @@ class SQLite3 {
 
 public:
   static tl::expected<std::shared_ptr<std::vector<std::pair<std::string, std::string>>>, std::string>
-  execute(std::string sql, std::vector<std::string> files);
+  execute(const std::string& sql, const std::vector<std::string>& files);
 
 };
 

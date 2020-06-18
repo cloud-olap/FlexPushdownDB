@@ -22,6 +22,8 @@ target_link_libraries(normal-ssb-benchmark PRIVATE LLVM-filesystem)
 target_link_libraries(normal-ssb-benchmark PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb-benchmark PRIVATE normal-plan)
 target_link_libraries(normal-ssb-benchmark PRIVATE normal-sql)
+target_link_libraries(normal-ssb-benchmark PRIVATE sqlite3_static)
+target_link_libraries(normal-ssb-benchmark PRIVATE sqlite3_csv_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -40,6 +42,7 @@ target_include_directories(normal-ssb-test PUBLIC include)
 
 target_link_libraries(normal-ssb-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
+target_link_libraries(normal-ssb-test PRIVATE LLVM-filesystem)
 target_link_libraries(normal-ssb-test PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb-test PRIVATE normal-plan)
 target_link_libraries(normal-ssb-test PRIVATE normal-sql)

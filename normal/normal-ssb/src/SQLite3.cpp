@@ -23,7 +23,7 @@ extern "C" {
 }
 
 tl::expected<std::shared_ptr<std::vector<std::pair<std::string, std::string>>>,
-			 std::string> SQLite3::execute(std::string sql, std::vector<std::string> files) {
+			 std::string> SQLite3::execute(const std::string& sql, const std::vector<std::string>& files) {
 
   sqlite3 *db;
   int rc;
@@ -64,7 +64,7 @@ tl::expected<std::shared_ptr<std::vector<std::pair<std::string, std::string>>>,
 					  [](void *, int , char **, char **) {
 						return 0;
 					  },
-					  0,
+					  nullptr,
 					  &errorMessage);
 	if (rc) {
 	  sqlite3_close(db);
