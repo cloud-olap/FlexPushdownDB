@@ -529,6 +529,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::st
 		dateScanRanges[p].second,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
+	dateScan->pushDownFlag_ = false;
 	dateScanOperators.push_back(dateScan);
   }
 
@@ -554,6 +555,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::st
 		lineOrderScanRanges[p].second,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
+	lineOrderScan->pushDownFlag_ = false;
 	lineOrderScanOperators.push_back(lineOrderScan);
   }
 

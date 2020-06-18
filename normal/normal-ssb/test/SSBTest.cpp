@@ -106,14 +106,24 @@ std::shared_ptr<TupleSet2> executeExecutionPlanTest(const std::shared_ptr<Operat
   TestUtil::writeExecutionPlan(*mgr);
 
   mgr->boot();
+
   mgr->start();
   mgr->join();
 
   auto tuples = std::static_pointer_cast<Collate>(mgr->getOperator("collate"))->tuples();
 
   mgr->stop();
-
+  auto totalExecutionTime1 = mgr->getElapsedTime().value();
   SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
+    mgr->start();
+    mgr->join();
+
+    tuples = std::static_pointer_cast<Collate>(mgr->getOperator("collate"))->tuples();
+
+    mgr->stop();
+    auto totalExecutionTime2 = mgr->getElapsedTime().value();
+    SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
+    SPDLOG_INFO("Execute for the first and second time:{},{}\n", totalExecutionTime1,totalExecutionTime2);
 
   auto tupleSet = TupleSet2::create(tuples);
   return tupleSet;
@@ -195,13 +205,13 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup" * doctest::skip(true || SKIP_SU
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(false || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;
   short quantity = 24;
   std::string s3Bucket = "s3filter";
-  std::string s3ObjectDir = "ssb-sf10";
+  std::string s3ObjectDir = "ssb-sf1";
   short numPartitions = 16;
 
   SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",
@@ -238,13 +248,13 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(true || SKIP_
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;
   short quantity = 24;
   std::string s3Bucket = "s3filter";
-  std::string s3ObjectDir = "ssb-sf10";
+  std::string s3ObjectDir = "ssb-sf1";
   short numPartitions = 16;
 
   SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",

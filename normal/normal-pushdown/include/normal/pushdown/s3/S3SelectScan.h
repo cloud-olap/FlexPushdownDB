@@ -70,7 +70,7 @@ private:
   void onComplete(const CompleteMessage &message);
   void onCacheLoadResponse(const LoadResponseMessage &Message);
 
-  [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
+  [[nodiscard]] tl::expected<void, std::string> s3Select(std::vector<std::string> columnNamesToLoad,const TupleSetEventCallback &tupleSetEventCallback);
 
   void requestLoadSegmentsFromCache();
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);

@@ -110,7 +110,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 
 }
 
-tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallback &tupleSetEventCallback) {
+tl::expected<void, std::string> S3SelectScan::s3Select(std::vector<std::string> columnNamesToLoad,const TupleSetEventCallback &tupleSetEventCallback) {
 
   std::optional<std::string> optionalErrorMessage;
 
@@ -127,8 +127,19 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
   selectObjectContentRequest.SetScanRange(scanRange);
 
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
-  //fixme: this sql comes from the original sql, but when in full pull up mode, we might want to kindly modify the sql so that it only retrieves columns not in cache
-  selectObjectContentRequest.SetExpression(sql_.c_str());
+  std::string pullUpSql = "select ";
+  for (auto colName:columnNamesToLoad){
+      pullUpSql += colName + ", ";
+  }
+  pullUpSql.pop_back();
+  pullUpSql.pop_back();
+  pullUpSql += " from s3Object";
+  if (pushDownFlag_) {
+      selectObjectContentRequest.SetExpression(sql_.c_str());
+  }
+  else {
+      selectObjectContentRequest.SetExpression(pullUpSql.c_str());
+  }
 
   CSVInput csvInput;
   csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
@@ -212,7 +223,6 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
       auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
       for (const auto &columnName: columnNames_) {
           auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
-
           auto segment = cachedSegments.find(segmentKey);
           if (segment != cachedSegments.end()) {
               cachedColumns.push_back(segment->second->getColumn());
@@ -225,7 +235,7 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   SPDLOG_DEBUG("Reading From S3");
 
   // Read the columns not present in the cache
-  auto result = s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
+  auto result = s3Select(columnNamesToLoad,[&](const std::shared_ptr<TupleSet2> &tupleSet) {
 
 	for (int columnIndex = 0; columnIndex < tupleSet->numColumns(); ++columnIndex) {
 	  auto columnName = columnNames_.at(columnIndex);
