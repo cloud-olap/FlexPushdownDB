@@ -232,6 +232,7 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
       }
   }
 
+
   SPDLOG_DEBUG("Reading From S3");
 
   // Read the columns not present in the cache

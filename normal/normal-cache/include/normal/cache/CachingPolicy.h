@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_CACHINGPOLICY_H
 
 #include <memory>
+#include <optional>
 
 #include "SegmentKey.h"
 

@@ -18,7 +18,7 @@
 #include <normal/pushdown/Collate.h>
 
 #include "normal/ssb/Queries.h"
-
+#define SKIP_SUITE false
 using namespace normal::ssb;
 
 void configureLocalConnector(normal::sql::Interpreter &i) {
@@ -102,7 +102,7 @@ auto executeTest(const std::string &sql) {
   return tuples;
 }
 
-TEST_CASE ("ssb-benchmark-query01") {
+TEST_CASE ("ssb-benchmark-query01" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1993;
   short discount = 2;

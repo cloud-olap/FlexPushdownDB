@@ -211,7 +211,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pullup-parallel" * doctest::skip(false 
   short discount = 2;
   short quantity = 24;
   std::string s3Bucket = "s3filter";
-  std::string s3ObjectDir = "ssb-sf1";
+  std::string s3ObjectDir = "ssb-sf0.01";
   short numPartitions = 16;
 
   SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",

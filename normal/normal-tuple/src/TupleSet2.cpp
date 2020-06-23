@@ -12,7 +12,9 @@
 
 #include <normal/tuple/arrow/TableHelper.h>
 #include <normal/tuple/arrow/Arrays.h>
-
+#include <string>
+#include <sstream>
+#include <iostream>
 
 using namespace normal::tuple;
 

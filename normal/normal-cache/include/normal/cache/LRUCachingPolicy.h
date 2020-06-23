@@ -8,6 +8,7 @@
 #include <memory>
 #include <list>
 #include <forward_list>
+#include <unordered_map>
 
 #include "SegmentKey.h"
 #include "CachingPolicy.h"
