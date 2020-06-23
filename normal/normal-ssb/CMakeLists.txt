@@ -9,6 +9,7 @@ add_executable(normal-ssb-benchmark
         include/normal/ssb/Globals.h
         src/TestUtil.cpp include/normal/ssb/TestUtil.h
         src/Queries.cpp include/normal/ssb/Queries.h
+        src/SQLite3.cpp include/normal/ssb/SQLite3.h
         bench/Main.cpp
         bench/SSBBenchmark.cpp bench/SSBNanoBenchmark.cpp)
 
@@ -21,6 +22,8 @@ target_link_libraries(normal-ssb-benchmark PRIVATE LLVM-filesystem)
 target_link_libraries(normal-ssb-benchmark PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb-benchmark PRIVATE normal-plan)
 target_link_libraries(normal-ssb-benchmark PRIVATE normal-sql)
+target_link_libraries(normal-ssb-benchmark PRIVATE sqlite3_static)
+target_link_libraries(normal-ssb-benchmark PRIVATE sqlite3_csv_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -30,18 +33,23 @@ target_link_libraries(normal-ssb-benchmark PRIVATE normal-sql)
 add_executable(normal-ssb-test
         include/normal/ssb/Globals.h
         src/TestUtil.cpp include/normal/ssb/TestUtil.h
+        src/Queries.cpp include/normal/ssb/Queries.h
+        src/SQLite3.cpp include/normal/ssb/SQLite3.h
         test/Main.cpp
-        test/SSBTest.cpp
-        src/Queries.cpp include/normal/ssb/Queries.h)
+        test/SSBTest.cpp)
 
 target_include_directories(normal-ssb-test PUBLIC include)
 
 target_link_libraries(normal-ssb-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
+target_link_libraries(normal-ssb-test PRIVATE LLVM-filesystem)
 target_link_libraries(normal-ssb-test PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb-test PRIVATE normal-plan)
 target_link_libraries(normal-ssb-test PRIVATE normal-sql)
 target_link_libraries(normal-ssb-test PRIVATE normal-expression-gandiva)
+target_link_libraries(normal-ssb-test PRIVATE sqlite3_static)
+target_link_libraries(normal-ssb-test PRIVATE sqlite3_csv_static)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Data
