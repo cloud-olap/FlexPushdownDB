@@ -10,7 +10,7 @@
 #include <sqlite3.h>
 #include <tl/expected.hpp>
 #include <fmt/format.h>
-
+#include <unistd.h>
 using namespace normal::ssb;
 using namespace std::experimental;
 

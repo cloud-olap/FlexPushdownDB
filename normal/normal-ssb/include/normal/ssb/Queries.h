@@ -62,6 +62,13 @@ public:
 																	 short quantity,
 																	 int numPartitions,
 																	 AWSClient &client);
+  static std::shared_ptr<OperatorManager> query1_1S3HybridParallel(const std::string &s3Bucket,
+                                                                       const std::string &s3ObjectDir,
+                                                                       short year,
+                                                                       short discount,
+                                                                       short quantity,
+                                                                       int numPartitions,
+                                                                       AWSClient &client);
 };
 
 #endif //NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERIES_H

@@ -28,6 +28,35 @@ void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
   }
 }
 
+void OperatorContext::tell_pushDownMode(std::shared_ptr<message::Message> &msg) {
+    assert(this);
+
+    OperatorActor* oa = this->operatorActor();
+    message::Envelope e(msg);
+
+    // Send message to filter consumers
+    for(const auto& consumer: this->operator_->consumers()){
+        if (consumer.second->getType()!="Filter") {
+            caf::actor actorHandle = consumer.second->actorHandle();
+            oa->send(actorHandle, e);
+        }
+    }
+}
+    void OperatorContext::tell_pullUpMode(std::shared_ptr<message::Message> &msg) {
+        assert(this);
+
+        OperatorActor* oa = this->operatorActor();
+        message::Envelope e(msg);
+
+        // Send message to filter consumers
+        for(const auto& consumer: this->operator_->consumers()){
+            if (consumer.second->getType()=="Filter") {
+                caf::actor actorHandle = consumer.second->actorHandle();
+                oa->send(actorHandle, e);
+            }
+        }
+    }
+
 tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
 
   OperatorActor* oa = this->operatorActor();

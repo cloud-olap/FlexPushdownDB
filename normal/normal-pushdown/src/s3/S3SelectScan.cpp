@@ -217,8 +217,7 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   std::vector<std::string> columnNamesToLoad;
 
   auto cachedSegments = Message.getSegments();
-  //if not push down
-  if (!pushDownFlag_) {
+
       // Gather the columns that were in the cache plus the columns we need to load
       auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
       for (const auto &columnName: columnNames_) {
@@ -230,6 +229,12 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
               columnNamesToLoad.push_back(columnName);
           }
       }
+  //simple strategy: hit ratio
+  if (((double)columnNamesToLoad.size())/(columnNamesToLoad.size()+cachedColumns.size())>=0.4){
+      pushDownFlag_ = true;
+  }
+  else{
+      pushDownFlag_ = false;
   }
 
 
@@ -287,7 +292,14 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
 
       std::shared_ptr<normal::core::message::Message>
               message = std::make_shared<TupleMessage>(completeTupleSet->toTupleSetV1(), this->name());
-      ctx()->tell(message);
+      //todo: now we always wait until all tuples are returned from s3, leading to significant overhead. We might want move ctx->tell to s3select method later on
+      //ctx()->tell(message);
+      if (pushDownFlag_){
+          ctx()->tell_pushDownMode(message);
+      }
+      else{
+          ctx()->tell_pullUpMode(message);
+      }
   }
   SPDLOG_DEBUG("Finished Reading");
 

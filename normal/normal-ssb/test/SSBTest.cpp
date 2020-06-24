@@ -253,7 +253,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown" * doctest::skip(true || SKIP_
  * TODO: Sample of code that can be run alongside tests to verify that the results are correct. This needs
  *  to be integrated with the test cases.
  */
-TEST_CASE ("ssb-benchmark-ep-query1_1-result" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-result" * doctest::skip(true || SKIP_SUITE)) {
 
   auto expectedResults = SQLite3::execute(
 	  "select sum(lo_extendedprice * lo_discount) as revenue "
@@ -273,7 +273,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-result" * doctest::skip(false || SKIP_SUIT
   }
 }
 
-TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1992;
   short discount = 2;
@@ -293,6 +293,28 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-s3-pushdown-parallel" * doctest::skip(fals
   auto tupleSet = executeExecutionPlanTest(mgr);
 
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("ssb-benchmark-ep-query1_1-s3-hyrbid-parallel" * doctest::skip(false || SKIP_SUITE)) {
+
+        short year = 1992;
+        short discount = 2;
+        short quantity = 24;
+        std::string s3Bucket = "s3filter";
+        std::string s3ObjectDir = "ssb-sf1";
+        short numPartitions = 16;
+
+        SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",
+                    s3Bucket, s3ObjectDir, numPartitions, year, discount, quantity);
+
+        AWSClient client;
+        client.init();
+        auto mgr = Queries::query1_1S3HybridParallel(s3Bucket, s3ObjectDir,
+                                                       year, discount, quantity,
+                                                       numPartitions, client);
+        auto tupleSet = executeExecutionPlanTest(mgr);
+
+        SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
 }
