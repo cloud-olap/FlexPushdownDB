@@ -59,7 +59,9 @@ void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg)
 	// Initialise tuples buffer with message contents
 	tuples_ = tupleSet;
   } else {
-	tuples_->append(tupleSet);
+	auto result = tuples_->append(tupleSet);
+	if(!result.has_value())
+	  throw std::runtime_error(result.error());
   }
 }
 

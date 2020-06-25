@@ -25,7 +25,7 @@ namespace normal::pushdown{
         }
     }
 
-    void Sort::onComplete(const normal::core::message::CompleteMessage &message) {
+    void Sort::onComplete(const normal::core::message::CompleteMessage& /* message */) {
         //this is where the real sort happens
         auto pri = priorities_;
         std::vector<int> idx = std::vector<int>(tmpRes_->size());
@@ -36,7 +36,7 @@ namespace normal::pushdown{
         auto allColumns = tuples_->table()->columns();
         auto allFields = tuples_->table()->fields();
         std::vector<std::shared_ptr<arrow::Array>> newArrList;
-        for (auto i=0; i< allColumns.size();++i){
+        for (size_t i=0; i< allColumns.size();++i){
             auto column = allColumns.at(i);
             auto colType = column->type();
             auto field =  allFields.at(i);
@@ -45,21 +45,29 @@ namespace normal::pushdown{
                     auto typedColumn = std::static_pointer_cast<arrow::Int64Array>(column->chunk(0));
                     arrow::Int64Builder builder(pool);
                     for (auto it:idx){
-                        builder.Append(typedColumn->Value(it));
+                        auto result = builder.Append(typedColumn->Value(it));
+					  	if(!result.ok())
+							throw std::runtime_error(result.message());
                         SPDLOG_INFO(typedColumn->Value(it));
                     }
                     std::shared_ptr<arrow::Array> newArray;
-                    builder.Finish(&newArray);
+			  		auto result = builder.Finish(&newArray);
+			  		if(!result.ok())
+						throw std::runtime_error(result.message());
                     newArrList.push_back(newArray);
                     SPDLOG_INFO(newArray->ToString());
             } else if (colType->Equals(arrow::Int32Type())) {
                 auto typedColumn = std::static_pointer_cast<arrow::Int32Array>(column->chunk(0));
                 arrow::Int32Builder builder(pool);
                 for (auto it:idx){
-                    builder.Append(typedColumn->Value(it));
+				  auto result = builder.Append(typedColumn->Value(it));
+				  if(!result.ok())
+					throw std::runtime_error(result.message());
                 }
                 std::shared_ptr<arrow::Array> newArray;
-                builder.Finish(&newArray);
+			  	auto result = builder.Finish(&newArray);
+				if(!result.ok())
+				  throw std::runtime_error(result.message());
                 newArrList.push_back(newArray);
             }
 
