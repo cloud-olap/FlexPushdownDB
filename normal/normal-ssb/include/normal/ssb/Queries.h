@@ -10,9 +10,16 @@
 #include <normal/core/OperatorManager.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/pushdown/AWSClient.h>
+#include <normal/pushdown/file/FileScan.h>
+#include <normal/pushdown/filter/Filter.h>
+#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/join/HashJoinBuild.h>
+#include <normal/pushdown/join/HashJoinProbe.h>
 
 using namespace normal::core;
 using namespace normal::pushdown;
+using namespace normal::pushdown::filter;
+using namespace normal::pushdown::join;
 
 /**
  * SSB query factories
@@ -20,7 +27,30 @@ using namespace normal::pushdown;
 class Queries {
 
 public:
-  static std::string query01(short year, short discount, short quantity);
+  static std::string query1_1SQLite(short year, short discount, short quantity, const std::string& catalogue);
+  static std::string query1_1DateFilterSQLite(short year, const std::string& catalogue);
+  static std::string query1_1LineOrderFilterSQLite(short discount, short quantity, const std::string& catalogue);
+  static std::string query1_1JoinSQLite(short year, short discount, short quantity, const std::string& catalogue);
+
+  static std::shared_ptr<FileScan> makeDateFileScan(const std::string &dataDir);
+  static std::shared_ptr<Filter> makeDateFilter(short year);
+  static std::shared_ptr<FileScan> makeLineOrderFileScan(const std::string &dataDir);
+  static std::shared_ptr<Filter> makeLineOrderFilter(short discount, short quantity);
+  static std::shared_ptr<HashJoinBuild> makeHashJoinBuild();
+  static std::shared_ptr<HashJoinProbe> makeHashJoinProbe();
+  static std::shared_ptr<Collate> makeCollate();
+
+  static std::shared_ptr<OperatorManager> query1_1DateFilterFilePullUp(const std::string &dataDir,
+																	   short year);
+
+  static std::shared_ptr<OperatorManager> query1_1LineOrderFilterFilePullUp(const std::string &dataDir,
+																		short discount,
+																		short quantity);
+
+  static std::shared_ptr<OperatorManager> query1_1JoinFilePullUp(const std::string &dataDir,
+															 short year,
+															 short discount,
+															 short quantity);
 
   static std::shared_ptr<OperatorManager> query1_1FilePullUp(const std::string &dataDir,
 															 short year,

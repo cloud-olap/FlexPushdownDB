@@ -47,25 +47,244 @@ using namespace normal::expression::gandiva;
 using namespace normal::pushdown::join;
 using namespace normal::connector::s3;
 
-std::string Queries::query01(short year, short discount, short quantity) {
+std::string Queries::query1_1SQLite(short year, short discount, short quantity, const std::string& catalogue) {
 
-  // FIXME: using catalogies until default catalogue implemented
   auto sql = fmt::format(
 	  "select "
 	  "sum(lo_extendedprice * lo_discount) as revenue "
 	  "from "
-	  "local_fs.lineorder, local_fs.date "
+	  "{0}.lineorder, {0}.date "
 	  "where "
 	  "lo_orderdate = d_datekey "
-	  "and d_year = {0} -- Specific values below "
-	  "and lo_discount between {1} - 1 "
-	  "and {1} + 1 and lo_quantity < {2}; ",
+	  "and cast(d_year as integer) = {1} "
+	  "and cast(lo_discount as integer) between {2} and {3} "
+	  "and cast(lo_quantity as integer) < {4}; ",
+	  catalogue,
 	  year,
-	  discount,
+	  discount - 1,
+	  discount + 1,
 	  quantity
   );
 
   return sql;
+}
+
+std::string Queries::query1_1DateFilterSQLite(short year, const std::string& catalogue) {
+
+  auto sql = fmt::format(
+	  "select "
+	  "* "
+	  "from "
+	  "{0}.date "
+	  "where "
+	  "cast(d_year as integer) = {1} ",
+	  catalogue,
+	  year
+  );
+
+  return sql;
+}
+
+std::string Queries::query1_1LineOrderFilterSQLite(short discount, short quantity, const std::string& catalogue) {
+
+  auto sql = fmt::format(
+	  "select "
+	  "* "
+	  "from "
+	  "{0}.lineorder "
+	  "where "
+	  "cast(lo_discount as integer) between {1} and {2} "
+	  "and cast(lo_quantity as integer) < {3};",
+	  catalogue,
+	  discount - 1,
+	  discount + 1,
+	  quantity
+  );
+
+  return sql;
+}
+
+std::string Queries::query1_1JoinSQLite(short year, short discount, short quantity, const std::string& catalogue) {
+
+  auto sql = fmt::format(
+	  "select "
+	  "* "
+	  "from "
+	  "{0}.lineorder, {0}.date "
+	  "where "
+	  "lo_orderdate = d_datekey "
+	  "and cast(d_year as integer) = {1} "
+	  "and cast(lo_discount as integer) between {2} and {3} "
+	  "and cast(lo_quantity as integer) < {4}; ",
+	  catalogue,
+	  year,
+	  discount - 1,
+	  discount + 1,
+	  quantity
+  );
+
+  return sql;
+}
+
+std::shared_ptr<FileScan> Queries::makeDateFileScan(const std::string &dataDir) {
+  std::vector<std::string> dateColumns =
+	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
+	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
+	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
+  auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
+  auto numBytesDateFile = filesystem::file_size(dateFile);
+  auto dateScan = FileScan::make("dateScan", dateFile, dateColumns, 0, numBytesDateFile);
+  return dateScan;
+}
+
+std::shared_ptr<normal::pushdown::filter::Filter> Queries::makeDateFilter(short year) {
+  auto dateFilter = normal::pushdown::filter::Filter::make(
+	  "dateFilter",
+	  FilterPredicate::make(
+		  eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
+  return dateFilter;
+}
+
+std::shared_ptr<FileScan> Queries::makeLineOrderFileScan(const std::string &dataDir) {
+
+  std::vector<std::string> lineOrderColumns =
+	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
+	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
+	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
+  auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
+  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
+  auto lineOrderScan = FileScan::make("lineOrderScan", lineOrderFile, lineOrderColumns, 0, numBytesLineOrderFile);
+  return lineOrderScan;
+}
+
+std::shared_ptr<normal::pushdown::filter::Filter> Queries::makeLineOrderFilter(short discount, short quantity) {
+
+/**
+ * Filter
+ * lo_discount (f11) between 1 and 3
+ * and lo_quantity (f8) < 25
+ */
+  int discountLower = discount - 1;
+  int discountUpper = discount + 1;
+
+  auto lineOrderFilter = normal::pushdown::filter::Filter::make(
+	  "lineOrderFilter",
+	  FilterPredicate::make(
+		  and_(
+			  and_(
+				  gte(cast(col("lo_discount"), integer32Type()), lit<arrow::Int32Type>(discountLower)),
+				  lte(cast(col("lo_discount"), integer32Type()), lit<arrow::Int32Type>(discountUpper))
+			  ),
+			  lt(cast(col("lo_quantity"), integer32Type()), lit<arrow::Int32Type>(quantity))
+		  )
+	  )
+  );
+  return lineOrderFilter;
+}
+
+std::shared_ptr<HashJoinBuild> Queries::makeHashJoinBuild(){
+  return HashJoinBuild::create("join-build", "d_datekey");
+}
+
+std::shared_ptr<HashJoinProbe> Queries::makeHashJoinProbe(){
+  return std::make_shared<HashJoinProbe>("join-probe",
+										 JoinPredicate::create("d_datekey", "lo_orderdate"));
+}
+
+std::shared_ptr<Collate> Queries::makeCollate() { return std::make_shared<Collate>("collate"); }
+
+
+std::shared_ptr<OperatorManager> Queries::query1_1DateFilterFilePullUp(const std::string &dataDir,
+																	   short year) {
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto dateScan = makeDateFileScan(dataDir);
+  auto dateFilter = makeDateFilter(year);
+  auto collate = makeCollate();
+
+  // Wire up
+  dateScan->produce(dateFilter);
+  dateFilter->consume(dateScan);
+
+  dateFilter->produce(collate);
+  collate->consume(dateFilter);
+
+  mgr->put(dateScan);
+  mgr->put(dateFilter);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+
+std::shared_ptr<OperatorManager> Queries::query1_1LineOrderFilterFilePullUp(const std::string &dataDir,
+															 short discount,
+															 short quantity) {
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto lineOrderScan = makeLineOrderFileScan(dataDir);
+  auto lineOrderFilter = makeLineOrderFilter(discount, quantity);
+  auto collate = makeCollate();
+
+  // Wire up
+  lineOrderScan->produce(lineOrderFilter);
+  lineOrderFilter->consume(lineOrderScan);
+
+  lineOrderFilter->produce(collate);
+  collate->consume(lineOrderFilter);
+
+  mgr->put(lineOrderScan);
+  mgr->put(lineOrderFilter);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+std::shared_ptr<OperatorManager> Queries::query1_1JoinFilePullUp(const std::string &dataDir,
+															 short year,
+															 short discount,
+															 short quantity) {
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto dateScan = makeDateFileScan(dataDir);
+  auto lineOrderScan = makeLineOrderFileScan(dataDir);
+  auto dateFilter = makeDateFilter(year);
+  auto lineOrderFilter = makeLineOrderFilter(discount, quantity);
+  auto joinBuild = makeHashJoinBuild();
+  auto joinProbe = makeHashJoinProbe();
+  auto collate = makeCollate();
+
+  // Wire up
+  dateScan->produce(dateFilter);
+  dateFilter->consume(dateScan);
+
+  lineOrderScan->produce(lineOrderFilter);
+  lineOrderFilter->consume(lineOrderScan);
+
+  dateFilter->produce(joinBuild);
+  joinBuild->consume(dateFilter);
+
+  joinBuild->produce(joinProbe);
+  joinProbe->consume(joinBuild);
+
+  lineOrderFilter->produce(joinProbe);
+  joinProbe->consume(lineOrderFilter);
+
+  joinProbe->produce(collate);
+  collate->consume(joinProbe);
+
+  mgr->put(lineOrderScan);
+  mgr->put(dateScan);
+  mgr->put(lineOrderFilter);
+  mgr->put(dateFilter);
+  mgr->put(joinBuild);
+  mgr->put(joinProbe);
+  mgr->put(collate);
+
+  return mgr;
 }
 
 std::shared_ptr<OperatorManager> Queries::query1_1FilePullUp(const std::string &dataDir,
@@ -75,52 +294,10 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUp(const std::string &
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  /**
-   * Scan
-   * lineorder.tbl
-   * date.tbl
-   */
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
-	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
-	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-  auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
-  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
-  auto lineOrderScan = FileScan::make("lineOrderScan", lineOrderFile, lineOrderColumns, 0, numBytesLineOrderFile);
-  std::vector<std::string> dateColumns =
-	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
-	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
-	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
-  auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
-  auto numBytesDateFile = filesystem::file_size(dateFile);
-  auto dateScan = FileScan::make("dateScan", dateFile, dateColumns, 0, numBytesDateFile);
-
-  /**
-   * Filter
-   * d_year (f4) = 1993
-   * and lo_discount (f11) between 1 and 3
-   * and lo_quantity (f8) < 25
-   */
-  auto dateFilter = normal::pushdown::filter::Filter::make(
-	  "dateFilter",
-	  FilterPredicate::make(
-		  eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
-
-  int discountLower = discount - 1;
-  int discountUpper = discount + 1;
-
-  auto lineOrderFilter = normal::pushdown::filter::Filter::make(
-	  "lineOrderFilter",
-	  FilterPredicate::make(
-		  and_(
-			  and_(
-				  gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-				  lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
-			  ),
-			  lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
-		  )
-	  )
-  );
+  auto dateScan = makeDateFileScan(dataDir);
+  auto lineOrderScan = makeLineOrderFileScan(dataDir);
+  auto dateFilter = makeDateFilter(year);
+  auto lineOrderFilter = makeLineOrderFilter(discount, quantity);
 
   /**
    * Join
@@ -144,7 +321,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUp(const std::string &
   /**
    * Collate
    */
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = makeCollate();
 
   // Wire up
   dateScan->produce(dateFilter);
@@ -295,7 +472,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUpParallel(const std::
   /**
    * Collate
    */
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = makeCollate();
 
   // Wire up
   for (int p = 0; p < numPartitions; ++p) {
@@ -450,7 +627,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
   /**
    * Collate
    */
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = makeCollate();
 
   // Wire up
   dateScan->produce(dateFilter);
@@ -619,7 +796,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::st
   /**
    * Collate
    */
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = makeCollate();
 
   // Wire up
   for (int p = 0; p < numPartitions; ++p) {
@@ -747,7 +924,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &
   /**
    * Collate
    */
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = makeCollate();
 
   // Wire up
   dateScan->produce(joinBuild);
@@ -871,7 +1048,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
   /**
    * Collate
    */
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = makeCollate();
 
   // Wire up
   for (int p = 0; p < numPartitions; ++p) {
@@ -1035,7 +1212,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3HybridParallel(const std::st
     /**
      * Collate
      */
-    auto collate = std::make_shared<Collate>("collate");
+  	auto collate = makeCollate();
 
     // Wire up
     for (int p = 0; p < numPartitions; ++p) {

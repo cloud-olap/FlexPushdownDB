@@ -11,6 +11,9 @@
 #include <tl/expected.hpp>
 #include <fmt/format.h>
 #include <unistd.h>
+
+#include <normal/ssb/Globals.h>
+
 using namespace normal::ssb;
 using namespace std::experimental;
 
@@ -22,8 +25,10 @@ extern "C" {
   );
 }
 
-tl::expected<std::shared_ptr<std::vector<std::pair<std::string, std::string>>>,
+tl::expected<std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>,
 			 std::string> SQLite3::execute(const std::string& sql, const std::vector<std::string>& files) {
+
+  SPDLOG_DEBUG("SQL  |\n{}", sql);
 
   sqlite3 *db;
   int rc;
@@ -73,16 +78,18 @@ tl::expected<std::shared_ptr<std::vector<std::pair<std::string, std::string>>>,
 	}
   }
 
-  auto results = std::make_shared<std::vector<std::pair<std::string, std::string>>>();
+  auto results = std::make_shared<std::vector<std::vector<std::pair<std::string, std::string>>>>();
 
   rc = sqlite3_exec(db,
 					sql.c_str(),
 					[](void *results, int argc, char **argv, char **azColName) {
-					  auto typedResults = static_cast<std::vector<std::pair<std::string, std::string>> *>(results);
+					  auto typedResults = static_cast<std::vector<std::vector<std::pair<std::string, std::string>>> *>(results);
+					  std::vector<std::pair<std::string, std::string>> row;
 					  int i;
 					  for (i = 0; i < argc; i++) {
-						typedResults->push_back(std::pair{azColName[i], argv[i] ? argv[i] : "NULL"});
+						row.push_back(std::pair{azColName[i], argv[i] ? argv[i] : "NULL"});
 					  }
+					  typedResults->push_back(row);
 					  return 0;
 					},
 					results.get(),
