@@ -11,7 +11,8 @@ add_library(normal-ssb
         src/SQLite3.cpp include/normal/ssb/SQLite3.h
         src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
         src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
-        src/query1_1/Queries.cpp include/normal/ssb/query1_1/Queries.h)
+        src/query1_1/Queries.cpp include/normal/ssb/query1_1/Queries.h
+        src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h)
 
 target_include_directories(normal-ssb PUBLIC include)
 

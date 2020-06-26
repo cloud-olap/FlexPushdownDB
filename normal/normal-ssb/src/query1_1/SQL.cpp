@@ -28,6 +28,19 @@ std::string SQL::query1_1SQLite(short year, short discount, short quantity, cons
   return sql;
 }
 
+std::string SQL::query1_1DateScanSQLite(const std::string &catalogue) {
+
+  auto sql = fmt::format(
+	  "select "
+	  "* "
+	  "from "
+	  "{0}.date;",
+	  catalogue
+  );
+
+  return sql;
+}
+
 std::string SQL::query1_1LineOrderScanSQLite(const std::string &catalogue) {
 
   auto sql = fmt::format(

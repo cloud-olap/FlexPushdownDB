@@ -111,6 +111,7 @@ Operators::makeLineOrderFileScanOperators(const std::string &dataDir, int numCon
 
   auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
   auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
+//  auto numBytesLineOrderFile = 2973819;
 
   std::vector<std::string> lineOrderColumns =
 	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",

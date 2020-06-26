@@ -11,21 +11,21 @@ using namespace normal::tuple;
 
 CSVParser::CSVParser(std::string filePath,
 					 std::optional<std::vector<std::string>> columnNames,
-					 int64_t startOffset,
-					 std::optional<int64_t> finishOffset,
+					 int64_t startPos,
+					 std::optional<int64_t> finishPos,
 					 int64_t bufferSize) :
 	filePath_(std::move(filePath)),
 	columnNames_(std::move(columnNames)),
-	startOffset_(startOffset),
-	finishOffset_(finishOffset),
+	startPos_(startPos),
+	finishPos_(finishPos),
 	bufferSize_(bufferSize) {
 }
 
 CSVParser::CSVParser(std::string filePath,
 					 std::optional<std::vector<std::string>> columnNames,
-					 int64_t startOffset,
-					 std::optional<int64_t> finishOffset) :
-	CSVParser(std::move(filePath), std::move(columnNames), startOffset, finishOffset, DefaultBufferSize) {
+					 int64_t startPos,
+					 std::optional<int64_t> finishPos) :
+	CSVParser(std::move(filePath), std::move(columnNames), startPos, finishPos, DefaultBufferSize) {
 }
 
 CSVParser::CSVParser(const std::string &filePath, int64_t bufferSize) :
@@ -135,61 +135,71 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
   bool done = false;
 
   // The offset where the data starts
-  int64_t dataStartOffset = inputStream_.value()->Tell().ValueOrDie();
+  int64_t dataStartPos = inputStream_.value()->Tell().ValueOrDie();
 
-  // Advance the input stream to (just before) the start offset
-  status = inputStream_.value()->Seek((dataStartOffset + startOffset_) - 1);
+  // Advance the input stream to (just before) the start pos
+  status = inputStream_.value()->Seek((dataStartPos + startPos_) - 1);
   if (!status.ok())
 	return tl::unexpected(status.ToString());
   advanceToNewLine();
 
-  int64_t currentOffset = inputStream_.value()->Tell().ValueOrDie();
+  int64_t currentPos = inputStream_.value()->Tell().ValueOrDie();
 
   while (!done) {
 
-	assert(currentOffset >= dataStartOffset + startOffset_);
-	assert(finishOffset_.has_value() ? currentOffset <= dataStartOffset + finishOffset_.value() : true);
+	assert(currentPos >= dataStartPos + startPos_);
+	assert(finishPos_.has_value() ? currentPos <= dataStartPos + finishPos_.value() : true);
 
 	// Read a chunk of data, no more than up to finish offset (inclusive)
-	long numBytesToRead = finishOffset_.has_value() ?
-						  std::min(currentOffset + bufferSize_,
-								   ((dataStartOffset + finishOffset_.value()) - currentOffset) + 1) :
-						  currentOffset + bufferSize_;
+	long numBytesToRead = finishPos_.has_value() ?
+						  std::min(currentPos + bufferSize_,
+								   ((dataStartPos + finishPos_.value()) - currentPos)) :
+						  currentPos + bufferSize_;
+
+	assert(finishPos_.has_value() ? currentPos + numBytesToRead <= dataStartPos + finishPos_.value() : true);
+
 	auto maybeChunkBuffer = inputStream_.value()->Read(numBytesToRead);
 	if (!maybeChunkBuffer.ok())
 	  return tl::unexpected(maybeChunkBuffer.status().ToString());
 	auto chunkBuffer = *maybeChunkBuffer;
+	auto chunkSize = chunkBuffer->size();
+	currentPos += chunkSize; // Get the number of bytes read from the size of the chunk
 
-//	SPDLOG_DEBUG("Chunk: '{}'", chunkBuffer->ToString());
+//	SPDLOG_DEBUG("Chunk: [{}]", chunkBuffer->ToString());
 
 	// Advance to EOR
 	auto expectedBlockBuffer = advanceToEOR(chunkBuffer);
 	if (!expectedBlockBuffer.has_value())
 	  return tl::unexpected(expectedBlockBuffer.error());
 	auto blockBuffer = expectedBlockBuffer.value();
+	auto blockSize = blockBuffer->size();
+	currentPos += blockSize - chunkSize; // Get the number of bytes read from the difference between the chunk and block buffer sizes
 
-//	SPDLOG_DEBUG("Block: '{}'", blockBuffer->ToString());
+//	SPDLOG_DEBUG("Block: [{}]", blockBuffer->ToString());
 
 	// Add the buffer to the block vector
 	blockBuffers.push_back(blockBuffer);
-
-	currentOffset = currentOffset + chunkBuffer->size();
 
 	if (chunkBuffer->size() <= 0) {
 	  // No more bytes to read, done
 	  done = true;
 	}
 
-	if (finishOffset_.has_value() && currentOffset >= dataStartOffset + finishOffset_.value()) {
+	if (finishPos_.has_value() && currentPos >= dataStartPos + finishPos_.value()) {
 	  // Have scanned up to finish offset, done
 	  done = true;
 	}
   }
 
+  int bufferCount = 0;
+
   std::vector<::arrow::util::string_view> blockStrings;
   blockStrings.reserve(blockBuffers.size());
   for (const auto &buffer: blockBuffers) {
+//    SPDLOG_DEBUG("Buffer {}  | start: {}...", bufferCount, buffer->ToString().substr(0, std::min(100L, buffer->size())));
+//	SPDLOG_DEBUG("Buffer {}  | end: ...{}", bufferCount, buffer->ToString().substr(std::max(0L, buffer->size() - 100), buffer->size()));
 	blockStrings.push_back(::arrow::util::string_view(*buffer));
+	++bufferCount;
   }
 
   uint32_t numBytesParsed;

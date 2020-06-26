@@ -28,40 +28,13 @@ using namespace normal::expression::gandiva;
 using namespace normal::connector::s3;
 
 
-std::shared_ptr<OperatorManager>
-Queries::query1_1DateFilterFilePullUp(const std::string &dataDir, short year, int numConcurrentUnits) {
 
-  auto mgr = std::make_shared<OperatorManager>();
 
-  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
-  auto collate = Operators::makeCollate();
-
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(collate);
-	collate->consume(dateFilters[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(dateFilters[u]);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager> Queries::query1_1DateFilterS3PullUp(const std::string &s3Bucket,
-																	 const std::string &s3ObjectDir,
-																	 short year,
-																	 int numConcurrentUnits,
-																	 AWSClient &client) {
+std::shared_ptr<OperatorManager> Queries::dateFilterS3PullUp(const std::string &s3Bucket,
+															 const std::string &s3ObjectDir,
+															 short year,
+															 int numConcurrentUnits,
+															 AWSClient &client) {
 
   auto dateFile = s3ObjectDir + "/date.tbl";
   auto s3Objects = std::vector{dateFile};
@@ -100,10 +73,10 @@ std::shared_ptr<OperatorManager> Queries::query1_1DateFilterS3PullUp(const std::
 }
 
 std::shared_ptr<OperatorManager>
-Queries::query1_1LineOrderScanS3PullUp(const std::string &s3Bucket,
-									   const std::string &s3ObjectDir,
-									   int numConcurrentUnits,
-									   AWSClient &client) {
+Queries::lineOrderScanS3PullUp(const std::string &s3Bucket,
+							   const std::string &s3ObjectDir,
+							   int numConcurrentUnits,
+							   AWSClient &client) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto s3Objects = std::vector{lineOrderFile};
@@ -129,38 +102,6 @@ Queries::query1_1LineOrderScanS3PullUp(const std::string &s3Bucket,
 
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(lineOrderScans[u]);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager>
-Queries::query1_1LineOrderFilterFilePullUp(const std::string &dataDir,
-										   short discount,
-										   short quantity,
-										   int numConcurrentUnits) {
-
-  auto mgr = std::make_shared<OperatorManager>();
-
-  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto collate = Operators::makeCollate();
-
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderFilters[u]);
-	lineOrderFilters[u]->consume(lineOrderScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(collate);
-	collate->consume(lineOrderFilters[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(lineOrderFilters[u]);
   mgr->put(collate);
 
   return mgr;
@@ -206,129 +147,6 @@ Queries::query1_1LineOrderFilterS3PullUp(const std::string &s3Bucket,
 	mgr->put(lineOrderScans[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(lineOrderFilters[u]);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager>
-Queries::query1_1JoinFilePullUp(const std::string &dataDir,
-								short year,
-								short discount,
-								short quantity,
-								int numConcurrentUnits) {
-
-  auto mgr = std::make_shared<OperatorManager>();
-
-  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
-  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto joinBuild = Operators::makeHashJoinBuildOperators();
-  auto joinProbe = Operators::makeHashJoinProbeOperators();
-  auto collate = Operators::makeCollate();
-
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderFilters[u]);
-	lineOrderFilters[u]->consume(lineOrderScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(joinBuild);
-	joinBuild->consume(dateFilters[u]);
-  }
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(joinProbe);
-	joinProbe->consume(lineOrderFilters[u]);
-  }
-
-  joinProbe->produce(collate);
-  collate->consume(joinProbe);
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(dateFilters[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(lineOrderFilters[u]);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager>
-Queries::query1_1FilePullUp(const std::string &dataDir,
-							short year,
-							short discount,
-							short quantity,
-							int numConcurrentUnits) {
-
-  auto mgr = std::make_shared<OperatorManager>();
-
-  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
-  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto joinBuild = Operators::makeHashJoinBuildOperators();
-  auto joinProbe = Operators::makeHashJoinProbeOperators();
-  auto aggregate = Operators::makeAggregateOperators();
-  auto collate = Operators::makeCollate();
-
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderFilters[u]);
-	lineOrderFilters[u]->consume(lineOrderScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(joinBuild);
-	joinBuild->consume(dateFilters[u]);
-  }
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(joinProbe);
-	joinProbe->consume(lineOrderFilters[u]);
-  }
-
-  joinProbe->produce(aggregate);
-  aggregate->consume(joinProbe);
-
-  aggregate->produce(collate);
-  collate->consume(aggregate);
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(dateFilters[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	mgr->put(lineOrderFilters[u]);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
-  mgr->put(aggregate);
   mgr->put(collate);
 
   return mgr;

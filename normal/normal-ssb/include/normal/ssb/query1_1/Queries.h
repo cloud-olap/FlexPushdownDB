@@ -32,25 +32,22 @@ class Queries {
 
 public:
 
-  static std::shared_ptr<OperatorManager> query1_1LineOrderScanS3PullUp(const std::string &s3Bucket,
-																		const std::string &s3ObjectDir,
-																		int numConcurrentUnits,
-																		AWSClient &client);
 
-  static std::shared_ptr<OperatorManager> query1_1DateFilterFilePullUp(const std::string &dataDir,
-																	   short year,
-																	   int numConcurrentUnits);
 
-  static std::shared_ptr<OperatorManager> query1_1DateFilterS3PullUp(const std::string &s3Bucket,
-																	 const std::string &s3ObjectDir,
-																	 short year,
-																	 int numConcurrentUnits,
-																	 AWSClient &client);
+  static std::shared_ptr<OperatorManager> lineOrderScanS3PullUp(const std::string &s3Bucket,
+																const std::string &s3ObjectDir,
+																int numConcurrentUnits,
+																AWSClient &client);
 
-  static std::shared_ptr<OperatorManager> query1_1LineOrderFilterFilePullUp(const std::string &dataDir,
-																			short discount,
-																			short quantity,
-																			int numConcurrentUnits);
+
+
+  static std::shared_ptr<OperatorManager> dateFilterS3PullUp(const std::string &s3Bucket,
+															 const std::string &s3ObjectDir,
+															 short year,
+															 int numConcurrentUnits,
+															 AWSClient &client);
+
+
 
   static std::shared_ptr<OperatorManager> query1_1LineOrderFilterS3PullUp(const std::string &s3Bucket,
 																		  const std::string &s3ObjectDir,
@@ -59,17 +56,9 @@ public:
 																		  int numConcurrentUnits,
 																		  AWSClient &client);
 
-  static std::shared_ptr<OperatorManager> query1_1JoinFilePullUp(const std::string &dataDir,
-																 short year,
-																 short discount,
-																 short quantity,
-																 int numConcurrentUnits);
 
-  static std::shared_ptr<OperatorManager> query1_1FilePullUp(const std::string &dataDir,
-															 short year,
-															 short discount,
-															 short quantity,
-															 int numConcurrentUnits);
+
+
 
   static std::shared_ptr<OperatorManager> query1_1S3PullUp(const std::string &s3Bucket,
 														   const std::string &s3ObjectDir,

@@ -57,9 +57,9 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderscan-s3-pullup" * doctest::skip(f
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::query1_1LineOrderScanS3PullUp(s3Bucket, s3ObjectDir,
-													numConcurrentUnits,
-													client);
+  auto mgr = Queries::lineOrderScanS3PullUp(s3Bucket, s3ObjectDir,
+											numConcurrentUnits,
+											client);
   auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
 
   SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
@@ -99,10 +99,10 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-datefilter-s3-pullup" * doctest::skip(fals
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::query1_1DateFilterS3PullUp(s3Bucket, s3ObjectDir,
-												 year,
-												 numConcurrentUnits,
-												 client);
+  auto mgr = Queries::dateFilterS3PullUp(s3Bucket, s3ObjectDir,
+										 year,
+										 numConcurrentUnits,
+										 client);
   auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
 
   SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));

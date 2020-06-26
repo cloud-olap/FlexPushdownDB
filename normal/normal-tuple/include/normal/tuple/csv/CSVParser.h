@@ -56,8 +56,8 @@ private:
 
   std::string filePath_;
   std::optional<std::vector<std::string>> columnNames_;
-  int64_t startOffset_;
-  std::optional<int64_t> finishOffset_;
+  int64_t startPos_;
+  std::optional<int64_t> finishPos_;
   int64_t bufferSize_;
 
   std::optional<std::shared_ptr<::arrow::io::ReadableFile>> inputStream_;

@@ -33,6 +33,7 @@ class SQL {
 
 public:
   static std::string query1_1SQLite(short year, short discount, short quantity, const std::string &catalogue);
+  static std::string query1_1DateScanSQLite(const std::string &catalogue);
   static std::string query1_1LineOrderScanSQLite(const std::string &catalogue);
   static std::string query1_1DateFilterSQLite(short year, const std::string &catalogue);
   static std::string query1_1LineOrderFilterSQLite(short discount, short quantity, const std::string &catalogue);
