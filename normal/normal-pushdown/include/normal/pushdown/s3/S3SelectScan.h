@@ -30,7 +30,7 @@ class S3SelectScan : public normal::core::Operator {
   typedef std::function<void(const std::shared_ptr<TupleSet2> &)> TupleSetEventCallback;
 
 public:
-  bool pushDownFlag_;
+//  bool pushDownFlag_;
   S3SelectScan(std::string name,
 			   std::string s3Bucket,
 			   std::string s3Object,
@@ -62,7 +62,7 @@ private:
   int64_t finishOffset_;
   S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
-  std::vector<std::shared_ptr<Column>> columns_;
+  std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;
 
 
   void onStart();
@@ -70,7 +70,7 @@ private:
   void onComplete(const CompleteMessage &message);
   void onCacheLoadResponse(const LoadResponseMessage &Message);
 
-  [[nodiscard]] tl::expected<void, std::string> s3Select(std::vector<std::string> columnNamesToLoad,const TupleSetEventCallback &tupleSetEventCallback);
+  [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
 
   void requestLoadSegmentsFromCache();
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);

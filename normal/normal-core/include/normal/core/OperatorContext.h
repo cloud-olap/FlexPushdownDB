@@ -39,8 +39,8 @@ public:
   LocalOperatorDirectory &operatorMap();
 
   void tell(std::shared_ptr<message::Message> &msg);
-  void tell_pushDownMode(std::shared_ptr<message::Message> &msg);
-  void tell_pullUpMode(std::shared_ptr<message::Message> &msg);
+//  void tell_pushDownMode(std::shared_ptr<message::Message> &msg);
+//  void tell_pullUpMode(std::shared_ptr<message::Message> &msg);
 
   void notifyComplete();
 

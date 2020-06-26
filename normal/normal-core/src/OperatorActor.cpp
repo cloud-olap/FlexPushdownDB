@@ -30,10 +30,10 @@ caf::behavior behaviour(OperatorActor *self) {
         
 #define __FUNCTION__ functionName
 
-        SPDLOG_DEBUG("Message received  |  recipient: '{}', sender: '{}', type: '{}'",
-                     self->operator_()->name(),
-                     msg.message().sender(),
-                     msg.message().type());
+//        SPDLOG_DEBUG("Message received  |  recipient: '{}', sender: '{}', type: '{}'",
+//                     self->operator_()->name(),
+//                     msg.message().sender(),
+//                     msg.message().type());
 
         if (msg.message().type() == "CompleteMessage") {
           auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());

@@ -94,8 +94,8 @@ void OperatorManager::join() {
 
         allComplete = this->operatorDirectory_.allComplete();
 
-        SPDLOG_DEBUG(fmt::format("Operator directory:\n{}", this->operatorDirectory_.showString()));
-        SPDLOG_DEBUG(fmt::format("All operators complete: {}", allComplete));
+//        SPDLOG_DEBUG(fmt::format("Operator directory:\n{}", this->operatorDirectory_.showString()));
+//        SPDLOG_DEBUG(fmt::format("All operators complete: {}", allComplete));
       },
       handle_err);
 }

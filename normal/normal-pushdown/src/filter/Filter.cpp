@@ -14,6 +14,7 @@
 #include <normal/tuple/Globals.h>
 
 using namespace normal::pushdown::filter;
+using namespace normal::core;
 
 Filter::Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred) :
 	Operator(std::move(Name), "Filter"),
@@ -51,6 +52,7 @@ void Filter::onStart() {
 }
 
 void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
+  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   bufferTuples(Message);
   buildFilter();
   if (received_->numRows() > DefaultBufferSize) {
@@ -60,11 +62,15 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
+  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
   if(received_->getArrowTable().has_value()) {
 	filterTuples();
 	sendTuples();
   }
-  ctx()->notifyComplete();
+
+  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+	ctx()->notifyComplete();
+  }
 }
 
 void Filter::bufferTuples(const normal::core::message::TupleMessage &Message) {
@@ -72,7 +78,10 @@ void Filter::bufferTuples(const normal::core::message::TupleMessage &Message) {
   if(!received_->schema().has_value()) {
 	received_->setSchema(*tupleSet->schema());
   }
-  received_->append(tupleSet);
+  auto result = received_->append(tupleSet);
+  if(!result.has_value()){
+    throw std::runtime_error(result.error());
+  }
   assert(received_->validate());
 }
 
@@ -86,12 +95,12 @@ void Filter::buildFilter() {
 
 void Filter::filterTuples() {
 
-  SPDLOG_DEBUG("Filter Input\n{}", received_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
+//  SPDLOG_DEBUG("Filter Input\n{}", received_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
 
   filtered_ = filter_.value()->evaluate(*received_);
   assert(filtered_->validate());
 
-  SPDLOG_DEBUG("Filter Output\n{}", filtered_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
+//  SPDLOG_DEBUG("Filter Output\n{}", filtered_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
 
   received_->clear();
   assert(received_->validate());

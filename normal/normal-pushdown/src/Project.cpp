@@ -13,6 +13,8 @@
 
 #include "normal/pushdown/Globals.h"
 
+using namespace normal::core;
+
 namespace normal::pushdown {
 
 Project::Project(const std::string &Name,
@@ -107,7 +109,9 @@ void Project::onComplete(const normal::core::message::CompleteMessage &) {
   // Project and send any remaining tuples
   projectAndSendTuples();
 
-  ctx()->notifyComplete();
+  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+	ctx()->notifyComplete();
+  }
 }
 
 }

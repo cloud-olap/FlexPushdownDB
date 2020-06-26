@@ -28,6 +28,8 @@ public:
 
   static std::shared_ptr<Column> make(const std::string &name, const std::shared_ptr<::arrow::ChunkedArray> &array);
 
+  static std::shared_ptr<Column> make(const std::string &name, const ::arrow::ArrayVector &arrays);
+
   /**
    * Makes an empty column of the given type
    */

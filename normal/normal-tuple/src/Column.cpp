@@ -20,6 +20,10 @@ std::shared_ptr<Column> Column::make(const std::string &name, const std::shared_
   return std::make_shared<Column>(name, array);
 }
 
+std::shared_ptr<Column> Column::make(const std::string &name, const ::arrow::ArrayVector &arrays){
+  return make(name, std::make_shared<::arrow::ChunkedArray>(arrays));
+}
+
 std::shared_ptr<Column> Column::make(const std::string &name, const std::shared_ptr<::arrow::DataType> &type) {
   std::vector<std::shared_ptr<::arrow::Array>> arrayVector = {};
   auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(arrayVector, type);

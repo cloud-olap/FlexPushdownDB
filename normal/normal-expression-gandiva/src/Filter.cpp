@@ -79,8 +79,8 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 
 	  auto batchTupleSet = std::make_shared<normal::tuple::TupleSet2>(batchArrowTable);
 
-	  SPDLOG_DEBUG("Filtered batch:\n{}",
-				   batchTupleSet->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
+//	  SPDLOG_DEBUG("Filtered batch:\n{}",
+//				   batchTupleSet->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented)));
 
 	  auto result = filteredTupleSet->append(batchTupleSet);
 	  if(!result.has_value()){
@@ -109,7 +109,7 @@ void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
 
   gandivaCondition_ = ::gandiva::TreeExprBuilder::MakeCondition(pred_->getGandivaExpression());
 
-  SPDLOG_DEBUG("Filter predicate:\n{}", gandivaCondition_->ToString());
+//  SPDLOG_DEBUG("Filter predicate:\n{}", gandivaCondition_->ToString());
 
   // Build a filter for the predicate.
   auto status = ::gandiva::Filter::Make(Schema->getSchema(),

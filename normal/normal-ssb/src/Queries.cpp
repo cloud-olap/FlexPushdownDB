@@ -47,7 +47,7 @@ using namespace normal::expression::gandiva;
 using namespace normal::pushdown::join;
 using namespace normal::connector::s3;
 
-std::string Queries::query1_1SQLite(short year, short discount, short quantity, const std::string& catalogue) {
+std::string Queries::query1_1SQLite(short year, short discount, short quantity, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -69,7 +69,20 @@ std::string Queries::query1_1SQLite(short year, short discount, short quantity, 
   return sql;
 }
 
-std::string Queries::query1_1DateFilterSQLite(short year, const std::string& catalogue) {
+std::string Queries::query1_1LineOrderScanSQLite(const std::string &catalogue) {
+
+  auto sql = fmt::format(
+	  "select "
+	  "* "
+	  "from "
+	  "{0}.lineorder;",
+	  catalogue
+  );
+
+  return sql;
+}
+
+std::string Queries::query1_1DateFilterSQLite(short year, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -85,7 +98,7 @@ std::string Queries::query1_1DateFilterSQLite(short year, const std::string& cat
   return sql;
 }
 
-std::string Queries::query1_1LineOrderFilterSQLite(short discount, short quantity, const std::string& catalogue) {
+std::string Queries::query1_1LineOrderFilterSQLite(short discount, short quantity, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -104,7 +117,7 @@ std::string Queries::query1_1LineOrderFilterSQLite(short discount, short quantit
   return sql;
 }
 
-std::string Queries::query1_1JoinSQLite(short year, short discount, short quantity, const std::string& catalogue) {
+std::string Queries::query1_1JoinSQLite(short year, short discount, short quantity, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -126,249 +139,11 @@ std::string Queries::query1_1JoinSQLite(short year, short discount, short quanti
   return sql;
 }
 
-std::shared_ptr<FileScan> Queries::makeDateFileScan(const std::string &dataDir) {
-  std::vector<std::string> dateColumns =
-	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
-	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
-	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
+std::vector<std::shared_ptr<FileScan>>
+Queries::makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits) {
+
   auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
   auto numBytesDateFile = filesystem::file_size(dateFile);
-  auto dateScan = FileScan::make("dateScan", dateFile, dateColumns, 0, numBytesDateFile);
-  return dateScan;
-}
-
-std::shared_ptr<normal::pushdown::filter::Filter> Queries::makeDateFilter(short year) {
-  auto dateFilter = normal::pushdown::filter::Filter::make(
-	  "dateFilter",
-	  FilterPredicate::make(
-		  eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
-  return dateFilter;
-}
-
-std::shared_ptr<FileScan> Queries::makeLineOrderFileScan(const std::string &dataDir) {
-
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
-	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
-	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-  auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
-  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
-  auto lineOrderScan = FileScan::make("lineOrderScan", lineOrderFile, lineOrderColumns, 0, numBytesLineOrderFile);
-  return lineOrderScan;
-}
-
-std::shared_ptr<normal::pushdown::filter::Filter> Queries::makeLineOrderFilter(short discount, short quantity) {
-
-/**
- * Filter
- * lo_discount (f11) between 1 and 3
- * and lo_quantity (f8) < 25
- */
-  int discountLower = discount - 1;
-  int discountUpper = discount + 1;
-
-  auto lineOrderFilter = normal::pushdown::filter::Filter::make(
-	  "lineOrderFilter",
-	  FilterPredicate::make(
-		  and_(
-			  and_(
-				  gte(cast(col("lo_discount"), integer32Type()), lit<arrow::Int32Type>(discountLower)),
-				  lte(cast(col("lo_discount"), integer32Type()), lit<arrow::Int32Type>(discountUpper))
-			  ),
-			  lt(cast(col("lo_quantity"), integer32Type()), lit<arrow::Int32Type>(quantity))
-		  )
-	  )
-  );
-  return lineOrderFilter;
-}
-
-std::shared_ptr<HashJoinBuild> Queries::makeHashJoinBuild(){
-  return HashJoinBuild::create("join-build", "d_datekey");
-}
-
-std::shared_ptr<HashJoinProbe> Queries::makeHashJoinProbe(){
-  return std::make_shared<HashJoinProbe>("join-probe",
-										 JoinPredicate::create("d_datekey", "lo_orderdate"));
-}
-
-std::shared_ptr<Collate> Queries::makeCollate() { return std::make_shared<Collate>("collate"); }
-
-
-std::shared_ptr<OperatorManager> Queries::query1_1DateFilterFilePullUp(const std::string &dataDir,
-																	   short year) {
-
-  auto mgr = std::make_shared<OperatorManager>();
-
-  auto dateScan = makeDateFileScan(dataDir);
-  auto dateFilter = makeDateFilter(year);
-  auto collate = makeCollate();
-
-  // Wire up
-  dateScan->produce(dateFilter);
-  dateFilter->consume(dateScan);
-
-  dateFilter->produce(collate);
-  collate->consume(dateFilter);
-
-  mgr->put(dateScan);
-  mgr->put(dateFilter);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-
-std::shared_ptr<OperatorManager> Queries::query1_1LineOrderFilterFilePullUp(const std::string &dataDir,
-															 short discount,
-															 short quantity) {
-
-  auto mgr = std::make_shared<OperatorManager>();
-
-  auto lineOrderScan = makeLineOrderFileScan(dataDir);
-  auto lineOrderFilter = makeLineOrderFilter(discount, quantity);
-  auto collate = makeCollate();
-
-  // Wire up
-  lineOrderScan->produce(lineOrderFilter);
-  lineOrderFilter->consume(lineOrderScan);
-
-  lineOrderFilter->produce(collate);
-  collate->consume(lineOrderFilter);
-
-  mgr->put(lineOrderScan);
-  mgr->put(lineOrderFilter);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager> Queries::query1_1JoinFilePullUp(const std::string &dataDir,
-															 short year,
-															 short discount,
-															 short quantity) {
-
-  auto mgr = std::make_shared<OperatorManager>();
-
-  auto dateScan = makeDateFileScan(dataDir);
-  auto lineOrderScan = makeLineOrderFileScan(dataDir);
-  auto dateFilter = makeDateFilter(year);
-  auto lineOrderFilter = makeLineOrderFilter(discount, quantity);
-  auto joinBuild = makeHashJoinBuild();
-  auto joinProbe = makeHashJoinProbe();
-  auto collate = makeCollate();
-
-  // Wire up
-  dateScan->produce(dateFilter);
-  dateFilter->consume(dateScan);
-
-  lineOrderScan->produce(lineOrderFilter);
-  lineOrderFilter->consume(lineOrderScan);
-
-  dateFilter->produce(joinBuild);
-  joinBuild->consume(dateFilter);
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
-
-  lineOrderFilter->produce(joinProbe);
-  joinProbe->consume(lineOrderFilter);
-
-  joinProbe->produce(collate);
-  collate->consume(joinProbe);
-
-  mgr->put(lineOrderScan);
-  mgr->put(dateScan);
-  mgr->put(lineOrderFilter);
-  mgr->put(dateFilter);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager> Queries::query1_1FilePullUp(const std::string &dataDir,
-															 short year,
-															 short discount,
-															 short quantity) {
-
-  auto mgr = std::make_shared<OperatorManager>();
-
-  auto dateScan = makeDateFileScan(dataDir);
-  auto lineOrderScan = makeLineOrderFileScan(dataDir);
-  auto dateFilter = makeDateFilter(year);
-  auto lineOrderFilter = makeLineOrderFilter(discount, quantity);
-
-  /**
-   * Join
-   * lo_orderdate (f5) = d_datekey (f0)
-   */
-  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
-  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-												   JoinPredicate::create("d_datekey", "lo_orderdate"));
-
-  /**
-   * Aggregate
-   * sum(lo_extendedprice (f9) * lo_discount (f11))
-   */
-  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
-  aggregateFunctions->
-	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
-														  cast(col("lo_discount"), float64Type()))
-  ));
-  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
-
-  /**
-   * Collate
-   */
-  auto collate = makeCollate();
-
-  // Wire up
-  dateScan->produce(dateFilter);
-  dateFilter->consume(dateScan);
-
-  lineOrderScan->produce(lineOrderFilter);
-  lineOrderFilter->consume(lineOrderScan);
-
-  dateFilter->produce(joinBuild);
-  joinBuild->consume(dateFilter);
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
-
-  lineOrderFilter->produce(joinProbe);
-  joinProbe->consume(lineOrderFilter);
-
-  joinProbe->produce(aggregate);
-  aggregate->consume(joinProbe);
-
-  aggregate->produce(collate);
-  collate->consume(aggregate);
-
-  mgr->put(lineOrderScan);
-  mgr->put(dateScan);
-  mgr->put(lineOrderFilter);
-  mgr->put(dateFilter);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
-  mgr->put(aggregate);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager> Queries::query1_1FilePullUpParallel(const std::string &dataDir,
-																	 short year,
-																	 short discount,
-																	 short quantity,
-																	 int numPartitions) {
-
-  auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
-  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
-  auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
-  auto numBytesDateFile = filesystem::file_size(dateFile);
-
-  auto mgr = std::make_shared<OperatorManager>();
 
   /**
    * Scan
@@ -379,51 +154,130 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUpParallel(const std::
 	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
 	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
 
-  std::vector<std::shared_ptr<Operator>> dateScanOperators;
-  auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numPartitions);
-  for (int p = 0; p < numPartitions; ++p) {
-	auto dateScan = FileScan::make(fmt::format("dateScan-{}", p),
+  std::vector<std::shared_ptr<FileScan>> dateScanOperators;
+  auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto dateScan = FileScan::make(fmt::format("dateScan-{}", u),
 								   dateFile,
 								   dateColumns,
-								   dateScanRanges[p].first,
-								   dateScanRanges[p].second);
+								   dateScanRanges[u].first,
+								   dateScanRanges[u].second);
 	dateScanOperators.push_back(dateScan);
   }
 
-  /**
-   * Scan
-   * lineorder.tbl
-   */
+  return dateScanOperators;
+}
+
+std::vector<std::shared_ptr<S3SelectScan>>
+Queries::makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
+									   const std::string &s3Bucket,
+									   int numConcurrentUnits,
+									   std::unordered_map<std::string, long> partitionMap,
+									   AWSClient &client) {
+
+  auto dateFile = s3ObjectDir + "/date.tbl";
+  auto numBytesDateFile = partitionMap.find(dateFile)->second;
+
+  std::vector<std::string> dateColumns =
+	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
+	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
+	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
+
+  std::vector<std::shared_ptr<S3SelectScan>> dateScanOperators;
+  auto dateScanRanges = Util::ranges<long>(0, numBytesDateFile, numConcurrentUnits);
+  for (int p = 0; p < numConcurrentUnits; ++p) {
+	auto dateScan = S3SelectScan::make(
+		fmt::format("dateScan-{}", p),
+		s3Bucket,
+		dateFile,
+		"select * from s3object",
+		dateColumns,
+		dateScanRanges[p].first,
+		dateScanRanges[p].second,
+		S3SelectCSVParseOptions(",", "\n"),
+		client.defaultS3Client());
+	dateScanOperators.push_back(dateScan);
+  }
+
+  return dateScanOperators;
+}
+
+std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
+Queries::makeDateFilterOperators(short year, int numConcurrentUnits) {
+
+  std::vector<std::shared_ptr<normal::pushdown::filter::Filter>> dateFilterOperators;
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto dateFilter = normal::pushdown::filter::Filter::make(
+		fmt::format("dateFilter-{}", u),
+		FilterPredicate::make(
+			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
+	dateFilterOperators.push_back(dateFilter);
+  }
+
+  return dateFilterOperators;
+}
+
+std::vector<std::shared_ptr<FileScan>>
+Queries::makeLineOrderFileScanOperators(const std::string &dataDir, int numConcurrentUnits) {
+
+  auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
+  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
+
   std::vector<std::string> lineOrderColumns =
 	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
 	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
 	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
 
-  std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
-  auto lineOrderScanRanges = Util::ranges<int>(0, numBytesLineOrderFile, numPartitions);
-  for (int p = 0; p < numPartitions; ++p) {
-	auto lineOrderScan = FileScan::make(fmt::format("lineOrderScan-{}", p),
+  std::vector<std::shared_ptr<FileScan>> lineOrderScanOperators;
+  auto lineOrderScanRanges = Util::ranges<int>(0, numBytesLineOrderFile, numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto lineOrderScan = FileScan::make(fmt::format("lineOrderScan-{}", u),
 										lineOrderFile,
 										lineOrderColumns,
-										lineOrderScanRanges[p].first,
-										lineOrderScanRanges[p].second);
+										lineOrderScanRanges[u].first,
+										lineOrderScanRanges[u].second);
 	lineOrderScanOperators.push_back(lineOrderScan);
   }
 
-  /**
-   * Filter
-   * d_year (f4) = 1993
-   * and lo_discount (f11) between 1 and 3
-   * and lo_quantity (f8) < 25
-   */
-  std::vector<std::shared_ptr<Operator>> dateFilterOperators;
-  for (int p = 0; p < numPartitions; ++p) {
-	auto dateFilter = normal::pushdown::filter::Filter::make(
-		fmt::format("dateFilter-{}", p),
-		FilterPredicate::make(
-			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
-	dateFilterOperators.push_back(dateFilter);
+  return lineOrderScanOperators;
+}
+
+std::vector<std::shared_ptr<S3SelectScan>>
+Queries::makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
+											const std::string &s3Bucket,
+											int numConcurrentUnits,
+											std::unordered_map<std::string, long> partitionMap,
+											AWSClient &client) {
+
+  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+  auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
+
+  std::vector<std::string> lineOrderColumns =
+	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
+	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
+	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
+
+  std::vector<std::shared_ptr<S3SelectScan>> lineOrderScanOperators;
+  auto lineOrderScanRanges = Util::ranges<long>(0, numBytesLineOrderFile, numConcurrentUnits);
+  for (int p = 0; p < numConcurrentUnits; ++p) {
+	auto lineOrderScan = S3SelectScan::make(
+		fmt::format("lineOrderScan-{}", p),
+		s3Bucket,
+		lineOrderFile,
+		"select * from s3object",
+		lineOrderColumns,
+		lineOrderScanRanges[p].first,
+		lineOrderScanRanges[p].second,
+		S3SelectCSVParseOptions(",", "\n"),
+		client.defaultS3Client());
+	lineOrderScanOperators.push_back(lineOrderScan);
   }
+
+  return lineOrderScanOperators;
+}
+
+std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
+Queries::makeLineOrderFilterOperators(short discount, short quantity, int numConcurrentUnits) {
 
   /**
    * Filter
@@ -433,10 +287,10 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUpParallel(const std::
   int discountLower = discount - 1;
   int discountUpper = discount + 1;
 
-  std::vector<std::shared_ptr<Operator>> lineOrderFilterOperators;
-  for (int p = 0; p < numPartitions; ++p) {
+  std::vector<std::shared_ptr<normal::pushdown::filter::Filter>> lineOrderFilterOperators;
+  for (int u = 0; u < numConcurrentUnits; ++u) {
 	auto lineOrderFilter = normal::pushdown::filter::Filter::make(
-		fmt::format("lineOrderFilter-{}", p),
+		fmt::format("lineOrderFilter-{}", u),
 		FilterPredicate::make(
 			and_(
 				and_(
@@ -450,13 +304,19 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUpParallel(const std::
 	lineOrderFilterOperators.push_back(lineOrderFilter);
   }
 
-  /**
-   * Join
-   * lo_orderdate (f5) = d_datekey (f0)
-   */
-  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
-  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-												   JoinPredicate::create("d_datekey", "lo_orderdate"));
+  return lineOrderFilterOperators;
+}
+
+std::shared_ptr<HashJoinBuild> Queries::makeHashJoinBuildOperators() {
+  return HashJoinBuild::create("join-build", "d_datekey");
+}
+
+std::shared_ptr<HashJoinProbe> Queries::makeHashJoinProbeOperators() {
+  return std::make_shared<HashJoinProbe>("join-probe",
+										 JoinPredicate::create("d_datekey", "lo_orderdate"));
+}
+
+std::shared_ptr<Aggregate> Queries::makeAggregateOperators() {
 
   /**
    * Aggregate
@@ -469,33 +329,293 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUpParallel(const std::
   ));
   auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
 
-  /**
-   * Collate
-   */
+  return aggregate;
+}
+
+std::shared_ptr<Collate> Queries::makeCollate() { return std::make_shared<Collate>("collate"); }
+
+std::shared_ptr<OperatorManager>
+Queries::query1_1DateFilterFilePullUp(const std::string &dataDir, short year, int numConcurrentUnits) {
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto dateScans = makeDateFileScanOperators(dataDir, numConcurrentUnits);
+  auto dateFilters = makeDateFilterOperators(year, numConcurrentUnits);
   auto collate = makeCollate();
 
   // Wire up
-  for (int p = 0; p < numPartitions; ++p) {
-	dateScanOperators[p]->produce(dateFilterOperators[p]);
-	dateFilterOperators[p]->consume(dateScanOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateFilters[u]);
+	dateFilters[u]->consume(dateScans[u]);
   }
 
-  for (int p = 0; p < numPartitions; ++p) {
-	lineOrderScanOperators[p]->produce(lineOrderFilterOperators[p]);
-	lineOrderFilterOperators[p]->consume(lineOrderScanOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateFilters[u]->produce(collate);
+	collate->consume(dateFilters[u]);
   }
 
-  for (int p = 0; p < numPartitions; ++p) {
-	dateFilterOperators[p]->produce(joinBuild);
-	joinBuild->consume(dateFilterOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateFilters[u]);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+std::shared_ptr<OperatorManager> Queries::query1_1DateFilterS3PullUp(const std::string &s3Bucket,
+																	 const std::string &s3ObjectDir,
+																	 short year,
+																	 int numConcurrentUnits,
+																	 AWSClient &client) {
+
+  auto dateFile = s3ObjectDir + "/date.tbl";
+  auto s3Objects = std::vector{dateFile};
+
+  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+
+  SPDLOG_DEBUG("Discovered partitions");
+  for (auto &partition : partitionMap) {
+	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+  }
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto dateScans = makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
+  auto dateFilters = makeDateFilterOperators(year, numConcurrentUnits);
+  auto collate = makeCollate();
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateFilters[u]);
+	dateFilters[u]->consume(dateScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateFilters[u]->produce(collate);
+	collate->consume(dateFilters[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateFilters[u]);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+std::shared_ptr<OperatorManager>
+Queries::query1_1LineOrderScanS3PullUp(const std::string &s3Bucket,
+									   const std::string &s3ObjectDir,
+									   int numConcurrentUnits,
+									   AWSClient &client) {
+
+  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+  auto s3Objects = std::vector{lineOrderFile};
+
+  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+
+  SPDLOG_DEBUG("Discovered partitions");
+  for (auto &partition : partitionMap) {
+	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+  }
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto lineOrderScans =
+	  makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
+  auto collate = makeCollate();
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(collate);
+	collate->consume(lineOrderScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderScans[u]);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+std::shared_ptr<OperatorManager>
+Queries::query1_1LineOrderFilterFilePullUp(const std::string &dataDir,
+										   short discount,
+										   short quantity,
+										   int numConcurrentUnits) {
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto lineOrderScans = makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
+  auto lineOrderFilters = makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
+  auto collate = makeCollate();
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(lineOrderFilters[u]);
+	lineOrderFilters[u]->consume(lineOrderScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderFilters[u]->produce(collate);
+	collate->consume(lineOrderFilters[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderFilters[u]);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+std::shared_ptr<OperatorManager>
+Queries::query1_1LineOrderFilterS3PullUp(const std::string &s3Bucket,
+										 const std::string &s3ObjectDir,
+										 short discount,
+										 short quantity,
+										 int numConcurrentUnits,
+										 AWSClient &client) {
+
+  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+  auto s3Objects = std::vector{lineOrderFile};
+
+  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+
+  SPDLOG_DEBUG("Discovered partitions");
+  for (auto &partition : partitionMap) {
+	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+  }
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto lineOrderScans =
+	  makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
+  auto lineOrderFilters = makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
+  auto collate = makeCollate();
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(lineOrderFilters[u]);
+	lineOrderFilters[u]->consume(lineOrderScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderFilters[u]->produce(collate);
+	collate->consume(lineOrderFilters[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderFilters[u]);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+std::shared_ptr<OperatorManager>
+Queries::query1_1JoinFilePullUp(const std::string &dataDir,
+								short year,
+								short discount,
+								short quantity,
+								int numConcurrentUnits) {
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto dateScans = makeDateFileScanOperators(dataDir, numConcurrentUnits);
+  auto lineOrderScans = makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
+  auto dateFilters = makeDateFilterOperators(year, numConcurrentUnits);
+  auto lineOrderFilters = makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
+  auto joinBuild = makeHashJoinBuildOperators();
+  auto joinProbe = makeHashJoinProbeOperators();
+  auto collate = makeCollate();
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateFilters[u]);
+	dateFilters[u]->consume(dateScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(lineOrderFilters[u]);
+	lineOrderFilters[u]->consume(lineOrderScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateFilters[u]->produce(joinBuild);
+	joinBuild->consume(dateFilters[u]);
   }
 
   joinBuild->produce(joinProbe);
   joinProbe->consume(joinBuild);
 
-  for (int p = 0; p < numPartitions; ++p) {
-	lineOrderFilterOperators[p]->produce(joinProbe);
-	joinProbe->consume(lineOrderFilterOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderFilters[u]->produce(joinProbe);
+	joinProbe->consume(lineOrderFilters[u]);
+  }
+
+  joinProbe->produce(collate);
+  collate->consume(joinProbe);
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateFilters[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderFilters[u]);
+  mgr->put(joinBuild);
+  mgr->put(joinProbe);
+  mgr->put(collate);
+
+  return mgr;
+}
+
+std::shared_ptr<OperatorManager>
+Queries::query1_1FilePullUp(const std::string &dataDir,
+							short year,
+							short discount,
+							short quantity,
+							int numConcurrentUnits) {
+
+  auto mgr = std::make_shared<OperatorManager>();
+
+  auto dateScans = makeDateFileScanOperators(dataDir, numConcurrentUnits);
+  auto lineOrderScans = makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
+  auto dateFilters = makeDateFilterOperators(year, numConcurrentUnits);
+  auto lineOrderFilters = makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
+  auto joinBuild = makeHashJoinBuildOperators();
+  auto joinProbe = makeHashJoinProbeOperators();
+  auto aggregate = makeAggregateOperators();
+  auto collate = makeCollate();
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateFilters[u]);
+	dateFilters[u]->consume(dateScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(lineOrderFilters[u]);
+	lineOrderFilters[u]->consume(lineOrderScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateFilters[u]->produce(joinBuild);
+	joinBuild->consume(dateFilters[u]);
+  }
+
+  joinBuild->produce(joinProbe);
+  joinProbe->consume(joinBuild);
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderFilters[u]->produce(joinProbe);
+	joinProbe->consume(lineOrderFilters[u]);
   }
 
   joinProbe->produce(aggregate);
@@ -504,14 +624,14 @@ std::shared_ptr<OperatorManager> Queries::query1_1FilePullUpParallel(const std::
   aggregate->produce(collate);
   collate->consume(aggregate);
 
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(dateScanOperators[p]);
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(lineOrderScanOperators[p]);
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(dateFilterOperators[p]);
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(lineOrderFilterOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateFilters[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderFilters[u]);
   mgr->put(joinBuild);
   mgr->put(joinProbe);
   mgr->put(aggregate);
@@ -525,6 +645,7 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
 														   short year,
 														   short discount,
 														   short quantity,
+														   int numConcurrentUnits,
 														   AWSClient &client) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
@@ -540,286 +661,38 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  /**
-   * Scan
-   * lineorder.tbl
-   * date.tbl
-   */
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
-	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
-	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-  auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
-  auto lineOrderScan = S3SelectScan::make(
-	  "lineOrderScan",
-	  s3Bucket,
-	  lineOrderFile,
-	  "select * from s3object",
-	  lineOrderColumns,
-	  0,
-	  numBytesLineOrderFile,
-	  S3SelectCSVParseOptions(",", "\n"),
-	  client.defaultS3Client());
-
-  std::vector<std::string> dateColumns =
-	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
-	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
-	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
-
-  auto numBytesDateFile = partitionMap.find(dateFile)->second;
-  auto dateScan = S3SelectScan::make(
-	  "dateScan",
-	  s3Bucket,
-	  dateFile,
-	  "select * from s3object",
-	  dateColumns,
-	  0,
-	  numBytesDateFile,
-	  S3SelectCSVParseOptions(",", "\n"),
-	  client.defaultS3Client());
-
-  /**
-   * Filter
-   * d_year (f4) = 1993
-   * and lo_discount (f11) between 1 and 3
-   * and lo_quantity (f8) < 25
-   */
-  auto dateFilter = normal::pushdown::filter::Filter::make(
-	  "dateFilter",
-	  FilterPredicate::make(
-		  eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
-
-  int discountLower = discount - 1;
-  int discountUpper = discount + 1;
-
-  auto lineOrderFilter = normal::pushdown::filter::Filter::make(
-	  "lineOrderFilter",
-	  FilterPredicate::make(
-		  and_(
-			  and_(
-				  gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-				  lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
-			  ),
-			  lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
-		  )
-	  )
-  );
-
-  /**
-   * Join
-   * lo_orderdate (f5) = d_datekey (f0)
-   */
-  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
-  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-												   JoinPredicate::create("d_datekey", "lo_orderdate"));
-
-  /**
-   * Aggregate
-   * sum(lo_extendedprice (f9) * lo_discount (f11))
-   */
-  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
-  aggregateFunctions->
-	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
-														  cast(col("lo_discount"), float64Type()))
-  ));
-  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
-
-  /**
-   * Collate
-   */
+  auto dateScans = makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
+  auto lineOrderScans = makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket,
+														   numConcurrentUnits, partitionMap, client);
+  auto dateFilters = makeDateFilterOperators(year, numConcurrentUnits);
+  auto lineOrderFilters = makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
+  auto joinBuild = makeHashJoinBuildOperators();
+  auto joinProbe = makeHashJoinProbeOperators();
+  auto aggregate = makeAggregateOperators();
   auto collate = makeCollate();
 
   // Wire up
-  dateScan->produce(dateFilter);
-  dateFilter->consume(dateScan);
-
-  lineOrderScan->produce(lineOrderFilter);
-  lineOrderFilter->consume(lineOrderScan);
-
-  dateFilter->produce(joinBuild);
-  joinBuild->consume(dateFilter);
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
-
-  lineOrderFilter->produce(joinProbe);
-  joinProbe->consume(lineOrderFilter);
-
-  joinProbe->produce(aggregate);
-  aggregate->consume(joinProbe);
-
-  aggregate->produce(collate);
-  collate->consume(aggregate);
-
-  mgr->put(lineOrderScan);
-  mgr->put(dateScan);
-  mgr->put(lineOrderFilter);
-  mgr->put(dateFilter);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
-  mgr->put(aggregate);
-  mgr->put(collate);
-
-  return mgr;
-}
-
-std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::string &s3Bucket,
-																   const std::string &s3ObjectDir,
-																   short year,
-																   short discount,
-																   short quantity,
-																   int numPartitions,
-																   AWSClient &client) {
-
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{lineOrderFile, dateFile};
-
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateFilters[u]);
+	dateFilters[u]->consume(dateScans[u]);
   }
 
-  auto mgr = std::make_shared<OperatorManager>();
-
-  /**
-   * Scan
-   * date.tbl
-   */
-  std::vector<std::string> dateColumns =
-	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
-	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
-	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
-
-  std::vector<std::shared_ptr<Operator>> dateScanOperators;
-  auto dateScanRanges = Util::ranges<long>(0, partitionMap.find(dateFile)->second, numPartitions);
-  for (int p = 0; p < numPartitions; ++p) {
-	auto dateScan = S3SelectScan::make(
-		fmt::format("dateScan-{}", p),
-		s3Bucket,
-		dateFile,
-		"select * from s3object",
-		dateColumns,
-		dateScanRanges[p].first,
-		dateScanRanges[p].second,
-		S3SelectCSVParseOptions(",", "\n"),
-		client.defaultS3Client());
-	dateScan->pushDownFlag_ = false;
-	dateScanOperators.push_back(dateScan);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(lineOrderFilters[u]);
+	lineOrderFilters[u]->consume(lineOrderScans[u]);
   }
 
-  /**
-   * Scan
-   * lineorder.tbl
-   */
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
-	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
-	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-
-  std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
-  auto lineOrderScanRanges = Util::ranges<long>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
-  for (int p = 0; p < numPartitions; ++p) {
-	auto lineOrderScan = S3SelectScan::make(
-		fmt::format("lineOrderScan-{}", p),
-		s3Bucket,
-		lineOrderFile,
-		"select * from s3object",
-		lineOrderColumns,
-		lineOrderScanRanges[p].first,
-		lineOrderScanRanges[p].second,
-		S3SelectCSVParseOptions(",", "\n"),
-		client.defaultS3Client());
-	lineOrderScan->pushDownFlag_ = false;
-	lineOrderScanOperators.push_back(lineOrderScan);
-  }
-
-  /**
-   * Filter
-   * d_year (f4) = 1993
-   */
-  std::vector<std::shared_ptr<Operator>> dateFilterOperators;
-  for (int p = 0; p < numPartitions; ++p) {
-	auto dateFilter = normal::pushdown::filter::Filter::make(
-		fmt::format("dateFilter-{}", p),
-		FilterPredicate::make(
-			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
-	dateFilterOperators.push_back(dateFilter);
-  }
-
-  /**
-   * Filter
-   * lo_discount (f11) between 1 and 3
-   * and lo_quantity (f8) < 25
-   */
-  int discountLower = discount - 1;
-  int discountUpper = discount + 1;
-
-  std::vector<std::shared_ptr<Operator>> lineOrderFilterOperators;
-  for (int p = 0; p < numPartitions; ++p) {
-	auto lineOrderFilter = normal::pushdown::filter::Filter::make(
-		fmt::format("lineOrderFilter-{}", p),
-		FilterPredicate::make(
-			and_(
-				and_(
-					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
-				),
-				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
-			)
-		)
-	);
-	lineOrderFilterOperators.push_back(lineOrderFilter);
-  }
-
-  /**
-   * Join
-   * lo_orderdate (f5) = d_datekey (f0)
-   */
-  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
-  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-												   JoinPredicate::create("d_datekey", "lo_orderdate"));
-
-  /**
-   * Aggregate
-   * sum(lo_extendedprice (f9) * lo_discount (f11))
-   */
-  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
-  aggregateFunctions->
-	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
-														  cast(col("lo_discount"), float64Type()))
-  ));
-  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
-
-  /**
-   * Collate
-   */
-  auto collate = makeCollate();
-
-  // Wire up
-  for (int p = 0; p < numPartitions; ++p) {
-	dateScanOperators[p]->produce(dateFilterOperators[p]);
-	dateFilterOperators[p]->consume(dateScanOperators[p]);
-  }
-
-  for (int p = 0; p < numPartitions; ++p) {
-	lineOrderScanOperators[p]->produce(lineOrderFilterOperators[p]);
-	lineOrderFilterOperators[p]->consume(lineOrderScanOperators[p]);
-  }
-
-  for (int p = 0; p < numPartitions; ++p) {
-	dateFilterOperators[p]->produce(joinBuild);
-	joinBuild->consume(dateFilterOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateFilters[u]->produce(joinBuild);
+	joinBuild->consume(dateFilters[u]);
   }
 
   joinBuild->produce(joinProbe);
   joinProbe->consume(joinBuild);
 
-  for (int p = 0; p < numPartitions; ++p) {
-	lineOrderFilterOperators[p]->produce(joinProbe);
-	joinProbe->consume(lineOrderFilterOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderFilters[u]->produce(joinProbe);
+	joinProbe->consume(lineOrderFilters[u]);
   }
 
   joinProbe->produce(aggregate);
@@ -828,14 +701,14 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::st
   aggregate->produce(collate);
   collate->consume(aggregate);
 
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(dateScanOperators[p]);
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(lineOrderScanOperators[p]);
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(dateFilterOperators[p]);
-  for (int p = 0; p < numPartitions; ++p)
-	mgr->put(lineOrderFilterOperators[p]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateFilters[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderFilters[u]);
   mgr->put(joinBuild);
   mgr->put(joinProbe);
   mgr->put(aggregate);
@@ -844,113 +717,113 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUpParallel(const std::st
   return mgr;
 }
 
-std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &s3Bucket,
-															 const std::string &s3ObjectDir,
-															 short year,
-															 short discount,
-															 short quantity,
-															 AWSClient &client) {
-
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{lineOrderFile, dateFile};
-
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
-  auto mgr = std::make_shared<OperatorManager>();
-
-  /**
-   * Scan
-   * lineorder.tbl
-   * date.tbl
-   */
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
-  auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
-  int discountLower = discount - 1;
-  int discountUpper = discount + 1;
-  auto lineOrderScan = S3SelectScan::make(
-	  "lineOrderScan",
-	  s3Bucket,
-	  lineOrderFile,
-	  fmt::format(
-		  "select LO_ORDERDATE, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE from s3Object where cast(LO_DISCOUNT as int) between {} and {} and cast(LO_QUANTITY as int) < {}",
-		  discountLower,
-		  discountUpper,
-		  quantity),
-	  lineOrderColumns,
-	  0,
-	  numBytesLineOrderFile,
-	  S3SelectCSVParseOptions(",", "\n"),
-	  client.defaultS3Client());
-
-  std::vector<std::string> dateColumns =
-	  {"D_DATEKEY", "D_YEAR",};
-  auto numBytesDateFile = partitionMap.find(dateFile)->second;
-  auto dateScan = S3SelectScan::make(
-	  "dateScan",
-	  s3Bucket,
-	  dateFile,
-	  fmt::format("select D_DATEKEY, D_YEAR from s3Object where cast(D_YEAR as int) = {}", year),
-	  dateColumns,
-	  0,
-	  numBytesDateFile,
-	  S3SelectCSVParseOptions(",", "\n"),
-	  client.defaultS3Client());
-
-  /**
-   * Join
-   * lo_orderdate (f5) = d_datekey (f0)
-   */
-  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
-  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-												   JoinPredicate::create("d_datekey", "lo_orderdate"));
-
-  /**
-   * Aggregate
-   * sum(lo_extendedprice (f9) * lo_discount (f11))
-   */
-  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
-  aggregateFunctions->
-	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
-														  cast(col("lo_discount"), float64Type()))
-  ));
-  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
-
-  /**
-   * Collate
-   */
-  auto collate = makeCollate();
-
-  // Wire up
-  dateScan->produce(joinBuild);
-  joinBuild->consume(dateScan);
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
-
-  lineOrderScan->produce(joinProbe);
-  joinProbe->consume(lineOrderScan);
-
-  joinProbe->produce(aggregate);
-  aggregate->consume(joinProbe);
-
-  aggregate->produce(collate);
-  collate->consume(aggregate);
-
-  mgr->put(lineOrderScan);
-  mgr->put(dateScan);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
-  mgr->put(aggregate);
-  mgr->put(collate);
-
-  return mgr;
-}
+//std::shared_ptr<OperatorManager> Queries::query1_1S3PushDown(const std::string &s3Bucket,
+//															 const std::string &s3ObjectDir,
+//															 short year,
+//															 short discount,
+//															 short quantity,
+//															 AWSClient &client) {
+//
+//  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+//  auto dateFile = s3ObjectDir + "/date.tbl";
+//  auto s3Objects = std::vector{lineOrderFile, dateFile};
+//
+//  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+//
+//  SPDLOG_DEBUG("Discovered partitions");
+//  for (auto &partition : partitionMap) {
+//	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+//  }
+//  auto mgr = std::make_shared<OperatorManager>();
+//
+//  /**
+//   * Scan
+//   * lineorder.tbl
+//   * date.tbl
+//   */
+//  std::vector<std::string> lineOrderColumns =
+//	  {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
+//  auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
+//  int discountLower = discount - 1;
+//  int discountUpper = discount + 1;
+//  auto lineOrderScan = S3SelectScan::make(
+//	  "lineOrderScan",
+//	  s3Bucket,
+//	  lineOrderFile,
+//	  fmt::format(
+//		  "select LO_ORDERDATE, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE from s3Object where cast(LO_DISCOUNT as int) between {} and {} and cast(LO_QUANTITY as int) < {}",
+//		  discountLower,
+//		  discountUpper,
+//		  quantity),
+//	  lineOrderColumns,
+//	  0,
+//	  numBytesLineOrderFile,
+//	  S3SelectCSVParseOptions(",", "\n"),
+//	  client.defaultS3Client());
+//
+//  std::vector<std::string> dateColumns =
+//	  {"D_DATEKEY", "D_YEAR",};
+//  auto numBytesDateFile = partitionMap.find(dateFile)->second;
+//  auto dateScan = S3SelectScan::make(
+//	  "dateScan",
+//	  s3Bucket,
+//	  dateFile,
+//	  fmt::format("select D_DATEKEY, D_YEAR from s3Object where cast(D_YEAR as int) = {}", year),
+//	  dateColumns,
+//	  0,
+//	  numBytesDateFile,
+//	  S3SelectCSVParseOptions(",", "\n"),
+//	  client.defaultS3Client());
+//
+//  /**
+//   * Join
+//   * lo_orderdate (f5) = d_datekey (f0)
+//   */
+//  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
+//  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
+//												   JoinPredicate::create("d_datekey", "lo_orderdate"));
+//
+//  /**
+//   * Aggregate
+//   * sum(lo_extendedprice (f9) * lo_discount (f11))
+//   */
+//  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+//  aggregateFunctions->
+//	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
+//														  cast(col("lo_discount"), float64Type()))
+//  ));
+//  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
+//
+//  /**
+//   * Collate
+//   */
+//  auto collate = makeCollate();
+//
+//  // Wire up
+//  dateScan->produce(joinBuild);
+//  joinBuild->consume(dateScan);
+//
+//  joinBuild->produce(joinProbe);
+//  joinProbe->consume(joinBuild);
+//
+//  lineOrderScan->produce(joinProbe);
+//  joinProbe->consume(lineOrderScan);
+//
+//  joinProbe->produce(aggregate);
+//  aggregate->consume(joinProbe);
+//
+//  aggregate->produce(collate);
+//  collate->consume(aggregate);
+//
+//  mgr->put(lineOrderScan);
+//  mgr->put(dateScan);
+//  mgr->put(joinBuild);
+//  mgr->put(joinProbe);
+//  mgr->put(aggregate);
+//  mgr->put(collate);
+//
+//  return mgr;
+//}
 
 std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::string &s3Bucket,
 																	 const std::string &s3ObjectDir,
@@ -992,7 +865,6 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
 		dateScanRanges[p].second,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
-	dateScan->pushDownFlag_=true;
 	dateScanOperators.push_back(dateScan);
   }
 
@@ -1023,7 +895,6 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
 		lineOrderScanRanges[p].second,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
-      lineOrderScan->pushDownFlag_=true;
 	lineOrderScanOperators.push_back(lineOrderScan);
   }
   /**
@@ -1082,187 +953,183 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PushDownParallel(const std::
   return mgr;
 }
 std::shared_ptr<OperatorManager> Queries::query1_1S3HybridParallel(const std::string &s3Bucket,
-        const std::string &s3ObjectDir,
-        short year,
-        short discount,
-        short quantity,
-        int numPartitions,
-        AWSClient &client) {
-    auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-    auto dateFile = s3ObjectDir + "/date.tbl";
-    auto s3Objects = std::vector{lineOrderFile, dateFile};
+																   const std::string &s3ObjectDir,
+																   short year,
+																   short discount,
+																   short quantity,
+																   int numPartitions,
+																   AWSClient &client) {
+  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+  auto dateFile = s3ObjectDir + "/date.tbl";
+  auto s3Objects = std::vector{lineOrderFile, dateFile};
 
-    auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
 
-    SPDLOG_DEBUG("Discovered partitions");
-    for (auto &partition : partitionMap) {
-        SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-    }
-    auto mgr = std::make_shared<OperatorManager>();
+  SPDLOG_DEBUG("Discovered partitions");
+  for (auto &partition : partitionMap) {
+	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+  }
+  auto mgr = std::make_shared<OperatorManager>();
 
-    /**
-     * Scan
-     * date.tbl
-     */
-    std::vector<std::string> dateColumns =
-            {"D_DATEKEY", "D_YEAR",};
+  /**
+   * Scan
+   * date.tbl
+   */
+  std::vector<std::string> dateColumns =
+	  {"D_DATEKEY", "D_YEAR",};
 
-    std::vector<std::shared_ptr<Operator>> dateScanOperators;
-    auto dateScanRanges = Util::ranges<long>(0, partitionMap.find(dateFile)->second, numPartitions);
-    for (int p = 0; p < numPartitions; ++p) {
-        auto dateScan = S3SelectScan::make(
-                fmt::format("dateScan-{}", p),
-                s3Bucket,
-                dateFile,
-                fmt::format("select D_DATEKEY, D_YEAR from s3Object where cast(D_YEAR as int) = {}", year),
-                dateColumns,
-                dateScanRanges[p].first,
-                dateScanRanges[p].second,
-                S3SelectCSVParseOptions(",", "\n"),
-                client.defaultS3Client());
-        dateScan->pushDownFlag_=true;
-        dateScanOperators.push_back(dateScan);
-    }
-
-
-    /**
-     * Scan
-     * lineorder.tbl
-     */
-    std::vector<std::string> lineOrderColumns =
-            {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
-    int discountLower = discount - 1;
-    int discountUpper = discount + 1;
-
-    std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
-    auto lineOrderScanRanges = Util::ranges<long>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
-    for (int p = 0; p < numPartitions; ++p) {
-        auto lineOrderScan = S3SelectScan::make(
-                fmt::format("lineOrderScan-{}", p),
-                s3Bucket,
-                lineOrderFile,
-                fmt::format(
-                        "select LO_ORDERDATE, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE from s3Object where cast(LO_DISCOUNT as int) between {} and {} and cast(LO_QUANTITY as int) < {}",
-                        discountLower,
-                        discountUpper,
-                        quantity),
-                lineOrderColumns,
-                lineOrderScanRanges[p].first,
-                lineOrderScanRanges[p].second,
-                S3SelectCSVParseOptions(",", "\n"),
-                client.defaultS3Client());
-        lineOrderScan->pushDownFlag_=true;
-        lineOrderScanOperators.push_back(lineOrderScan);
-    }
-    /**
-      * Filter
-      * d_year (f4) = 1993
-      */
-    std::vector<std::shared_ptr<Operator>> dateFilterOperators;
-    for (int p = 0; p < numPartitions; ++p) {
-        auto dateFilter = normal::pushdown::filter::Filter::make(
-                fmt::format("dateFilter-{}", p),
-                FilterPredicate::make(
-                        eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
-        dateFilterOperators.push_back(dateFilter);
-    }
-
-    /**
-     * Filter
-     * lo_discount (f11) between 1 and 3
-     * and lo_quantity (f8) < 25
-     */
-
-    std::vector<std::shared_ptr<Operator>> lineOrderFilterOperators;
-    for (int p = 0; p < numPartitions; ++p) {
-        auto lineOrderFilter = normal::pushdown::filter::Filter::make(
-                fmt::format("lineOrderFilter-{}", p),
-                FilterPredicate::make(
-                        and_(
-                                and_(
-                                        gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-                                        lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
-                                ),
-                                lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
-                        )
-                )
-        );
-        lineOrderFilterOperators.push_back(lineOrderFilter);
-    }
-
-    /**
-     * Join
-     * lo_orderdate (f5) = d_datekey (f0)
-     */
-    auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
-    auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-                                                     JoinPredicate::create("d_datekey", "lo_orderdate"));
-
-    /**
-     * Aggregate
-     * sum(lo_extendedprice (f9) * lo_discount (f11))
-     */
-    auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
-    aggregateFunctions->
-            emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
-                                                                cast(col("lo_discount"), float64Type()))
-    ));
-    auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
-
-    /**
-     * Collate
-     */
-  	auto collate = makeCollate();
-
-    // Wire up
-    for (int p = 0; p < numPartitions; ++p) {
-        dateScanOperators[p]->produce(joinBuild);
-        joinBuild->consume(dateScanOperators[p]);
-    }
-
-    for (int p = 0; p < numPartitions; ++p) {
-        lineOrderScanOperators[p]->produce(joinProbe);
-        joinProbe->consume(lineOrderScanOperators[p]);
-    }
-    for (int p = 0; p < numPartitions; ++p) {
-        dateScanOperators[p]->produce(dateFilterOperators[p]);
-        dateFilterOperators[p]->consume(dateScanOperators[p]);
-    }
-
-    for (int p = 0; p < numPartitions; ++p) {
-        lineOrderScanOperators[p]->produce(lineOrderFilterOperators[p]);
-        lineOrderFilterOperators[p]->consume(lineOrderScanOperators[p]);
-    }
-
-    for (int p = 0; p < numPartitions; ++p) {
-        dateFilterOperators[p]->produce(joinBuild);
-        joinBuild->consume(dateFilterOperators[p]);
-    }
-    joinBuild->produce(joinProbe);
-    joinProbe->consume(joinBuild);
-
-    for (int p = 0; p < numPartitions; ++p) {
-        lineOrderFilterOperators[p]->produce(joinProbe);
-        joinProbe->consume(lineOrderFilterOperators[p]);
-    }
+  std::vector<std::shared_ptr<Operator>> dateScanOperators;
+  auto dateScanRanges = Util::ranges<long>(0, partitionMap.find(dateFile)->second, numPartitions);
+  for (int p = 0; p < numPartitions; ++p) {
+	auto dateScan = S3SelectScan::make(
+		fmt::format("dateScan-{}", p),
+		s3Bucket,
+		dateFile,
+		fmt::format("select D_DATEKEY, D_YEAR from s3Object where cast(D_YEAR as int) = {}", year),
+		dateColumns,
+		dateScanRanges[p].first,
+		dateScanRanges[p].second,
+		S3SelectCSVParseOptions(",", "\n"),
+		client.defaultS3Client());
+	dateScanOperators.push_back(dateScan);
+  }
 
 
+  /**
+   * Scan
+   * lineorder.tbl
+   */
+  std::vector<std::string> lineOrderColumns =
+	  {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
+  int discountLower = discount - 1;
+  int discountUpper = discount + 1;
 
-    joinProbe->produce(aggregate);
-    aggregate->consume(joinProbe);
+  std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
+  auto lineOrderScanRanges = Util::ranges<long>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
+  for (int p = 0; p < numPartitions; ++p) {
+	auto lineOrderScan = S3SelectScan::make(
+		fmt::format("lineOrderScan-{}", p),
+		s3Bucket,
+		lineOrderFile,
+		fmt::format(
+			"select LO_ORDERDATE, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE from s3Object where cast(LO_DISCOUNT as int) between {} and {} and cast(LO_QUANTITY as int) < {}",
+			discountLower,
+			discountUpper,
+			quantity),
+		lineOrderColumns,
+		lineOrderScanRanges[p].first,
+		lineOrderScanRanges[p].second,
+		S3SelectCSVParseOptions(",", "\n"),
+		client.defaultS3Client());
+	lineOrderScanOperators.push_back(lineOrderScan);
+  }
+  /**
+	* Filter
+	* d_year (f4) = 1993
+	*/
+  std::vector<std::shared_ptr<Operator>> dateFilterOperators;
+  for (int p = 0; p < numPartitions; ++p) {
+	auto dateFilter = normal::pushdown::filter::Filter::make(
+		fmt::format("dateFilter-{}", p),
+		FilterPredicate::make(
+			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
+	dateFilterOperators.push_back(dateFilter);
+  }
 
-    aggregate->produce(collate);
-    collate->consume(aggregate);
+  /**
+   * Filter
+   * lo_discount (f11) between 1 and 3
+   * and lo_quantity (f8) < 25
+   */
 
-    for (int p = 0; p < numPartitions; ++p)
-        mgr->put(dateScanOperators[p]);
-    for (int p = 0; p < numPartitions; ++p)
-        mgr->put(lineOrderScanOperators[p]);
-    mgr->put(joinBuild);
-    mgr->put(joinProbe);
-    mgr->put(aggregate);
-    mgr->put(collate);
+  std::vector<std::shared_ptr<Operator>> lineOrderFilterOperators;
+  for (int p = 0; p < numPartitions; ++p) {
+	auto lineOrderFilter = normal::pushdown::filter::Filter::make(
+		fmt::format("lineOrderFilter-{}", p),
+		FilterPredicate::make(
+			and_(
+				and_(
+					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
+					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
+				),
+				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
+			)
+		)
+	);
+	lineOrderFilterOperators.push_back(lineOrderFilter);
+  }
 
-    return mgr;
+  /**
+   * Join
+   * lo_orderdate (f5) = d_datekey (f0)
+   */
+  auto joinBuild = HashJoinBuild::create("join-build", "d_datekey");
+  auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
+												   JoinPredicate::create("d_datekey", "lo_orderdate"));
+
+  /**
+   * Aggregate
+   * sum(lo_extendedprice (f9) * lo_discount (f11))
+   */
+  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  aggregateFunctions->
+	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
+														  cast(col("lo_discount"), float64Type()))
+  ));
+  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
+
+  /**
+   * Collate
+   */
+  auto collate = makeCollate();
+
+  // Wire up
+  for (int p = 0; p < numPartitions; ++p) {
+	dateScanOperators[p]->produce(joinBuild);
+	joinBuild->consume(dateScanOperators[p]);
+  }
+
+  for (int p = 0; p < numPartitions; ++p) {
+	lineOrderScanOperators[p]->produce(joinProbe);
+	joinProbe->consume(lineOrderScanOperators[p]);
+  }
+  for (int p = 0; p < numPartitions; ++p) {
+	dateScanOperators[p]->produce(dateFilterOperators[p]);
+	dateFilterOperators[p]->consume(dateScanOperators[p]);
+  }
+
+  for (int p = 0; p < numPartitions; ++p) {
+	lineOrderScanOperators[p]->produce(lineOrderFilterOperators[p]);
+	lineOrderFilterOperators[p]->consume(lineOrderScanOperators[p]);
+  }
+
+  for (int p = 0; p < numPartitions; ++p) {
+	dateFilterOperators[p]->produce(joinBuild);
+	joinBuild->consume(dateFilterOperators[p]);
+  }
+  joinBuild->produce(joinProbe);
+  joinProbe->consume(joinBuild);
+
+  for (int p = 0; p < numPartitions; ++p) {
+	lineOrderFilterOperators[p]->produce(joinProbe);
+	joinProbe->consume(lineOrderFilterOperators[p]);
+  }
+
+  joinProbe->produce(aggregate);
+  aggregate->consume(joinProbe);
+
+  aggregate->produce(collate);
+  collate->consume(aggregate);
+
+  for (int p = 0; p < numPartitions; ++p)
+	mgr->put(dateScanOperators[p]);
+  for (int p = 0; p < numPartitions; ++p)
+	mgr->put(lineOrderScanOperators[p]);
+  mgr->put(joinBuild);
+  mgr->put(joinProbe);
+  mgr->put(aggregate);
+  mgr->put(collate);
+
+  return mgr;
 
 }
