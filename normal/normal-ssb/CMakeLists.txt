@@ -2,28 +2,40 @@ project(normal-ssb VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# SSB common classes
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_library(normal-ssb
+        include/normal/ssb/Globals.h
+        src/TestUtil.cpp include/normal/ssb/TestUtil.h
+        src/SQLite3.cpp include/normal/ssb/SQLite3.h
+        src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
+        src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
+        src/query1_1/Queries.cpp include/normal/ssb/query1_1/Queries.h)
+
+target_include_directories(normal-ssb PUBLIC include)
+
+target_link_libraries(normal-ssb PRIVATE LLVM-filesystem)
+target_link_libraries(normal-ssb PRIVATE fmt::fmt)
+target_link_libraries(normal-ssb PRIVATE normal-plan)
+target_link_libraries(normal-ssb PRIVATE sqlite3_static)
+target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
+target_link_libraries(normal-ssb PUBLIC normal-core)
+target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Benchmark
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(normal-ssb-benchmark
-        include/normal/ssb/Globals.h
-        src/TestUtil.cpp include/normal/ssb/TestUtil.h
-        src/Queries.cpp include/normal/ssb/Queries.h
-        src/SQLite3.cpp include/normal/ssb/SQLite3.h
         bench/Main.cpp
         bench/SSBBenchmark.cpp bench/SSBNanoBenchmark.cpp)
 
-target_include_directories(normal-ssb-benchmark PUBLIC include)
-
-target_link_libraries(normal-ssb-benchmark PRIVATE spdlog::spdlog)
 target_link_libraries(normal-ssb-benchmark PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-benchmark PRIVATE nanobench::nanobench)
-target_link_libraries(normal-ssb-benchmark PRIVATE LLVM-filesystem)
-target_link_libraries(normal-ssb-benchmark PRIVATE fmt::fmt)
-target_link_libraries(normal-ssb-benchmark PRIVATE normal-plan)
+target_link_libraries(normal-ssb-benchmark PRIVATE normal-ssb)
 target_link_libraries(normal-ssb-benchmark PRIVATE normal-sql)
-target_link_libraries(normal-ssb-benchmark PRIVATE sqlite3_static)
-target_link_libraries(normal-ssb-benchmark PRIVATE sqlite3_csv_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -31,24 +43,13 @@ target_link_libraries(normal-ssb-benchmark PRIVATE sqlite3_csv_static)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(normal-ssb-test
-        include/normal/ssb/Globals.h
-        src/TestUtil.cpp include/normal/ssb/TestUtil.h
-        src/Queries.cpp include/normal/ssb/Queries.h
-        src/SQLite3.cpp include/normal/ssb/SQLite3.h
         test/Main.cpp
-        test/SSBTest.cpp)
+        test/SSBQuery1_1FileTest.cpp
+        test/SSBQuery1_1S3Test.cpp test/SSBQuery1_1SQLTest.cpp)
 
-target_include_directories(normal-ssb-test PUBLIC include)
-
-target_link_libraries(normal-ssb-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
-target_link_libraries(normal-ssb-test PRIVATE LLVM-filesystem)
-target_link_libraries(normal-ssb-test PRIVATE fmt::fmt)
-target_link_libraries(normal-ssb-test PRIVATE normal-plan)
+target_link_libraries(normal-ssb-test PRIVATE normal-ssb)
 target_link_libraries(normal-ssb-test PRIVATE normal-sql)
-target_link_libraries(normal-ssb-test PRIVATE normal-expression-gandiva)
-target_link_libraries(normal-ssb-test PRIVATE sqlite3_static)
-target_link_libraries(normal-ssb-test PRIVATE sqlite3_csv_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

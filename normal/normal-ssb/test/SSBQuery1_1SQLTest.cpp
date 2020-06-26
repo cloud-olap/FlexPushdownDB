@@ -2,13 +2,9 @@
 // Created by matt on 24/4/20.
 //
 
-#include <vector>
-
 #include <doctest/doctest.h>
-#include <nanobench.h>
 
 #include <normal/ssb/TestUtil.h>
-#include <normal/ssb/query1_1/SQL.h>
 #include <normal/sql/Interpreter.h>
 #include <normal/connector/local-fs/LocalFileSystemConnector.h>
 #include <normal/connector/local-fs/LocalFileExplicitPartitioningScheme.h>
@@ -17,12 +13,14 @@
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
 #include <normal/pushdown/Collate.h>
+#include <normal/tuple/TupleSet2.h>
 
-
-#define SKIP_SUITE false
+#include "normal/ssb/query1_1/SQL.h"
 
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
+using namespace normal::pushdown;
+using namespace normal::tuple;
 
 void configureLocalConnector(normal::sql::Interpreter &i) {
 
@@ -31,16 +29,14 @@ void configureLocalConnector(normal::sql::Interpreter &i) {
   auto cat = std::make_shared<normal::connector::Catalogue>("local_fs", conn);
 
   auto partitioningScheme1 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/single-partition/test.csv"));
-  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test",
+  partitioningScheme1->add(std::make_shared<LocalFilePartition>("data/lineorder.csv"));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("lineorder",
 																						partitioningScheme1,
 																						cat));
 
   auto partitioningScheme2 = std::make_shared<LocalFileExplicitPartitioningScheme>();
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test01.csv"));
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test02.csv"));
-  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/multi-partition/test03.csv"));
-  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("test_partitioned",
+  partitioningScheme2->add(std::make_shared<LocalFilePartition>("data/date.csv"));
+  cat->put(std::make_shared<normal::connector::local_fs::LocalFileSystemCatalogueEntry>("date",
 																						partitioningScheme2,
 																						cat));
 
@@ -82,7 +78,7 @@ auto execute(normal::sql::Interpreter &i) {
   return tuples;
 }
 
-auto executeTest(const std::string &sql) {
+std::shared_ptr<TupleSet2> executeSQLTest(const std::string &sql) {
 
   SPDLOG_INFO("SQL:\n{}", sql);
 
@@ -102,16 +98,27 @@ auto executeTest(const std::string &sql) {
 
   SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
 
-  return tuples;
+  auto tupleSet = TupleSet2::create(tuples);
+  return tupleSet;
 }
 
-TEST_CASE ("ssb-benchmark-query01" * doctest::skip(true || SKIP_SUITE)) {
+#define SKIP_SUITE true
+
+TEST_SUITE ("ssb-query1.1-sql" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("ssb-benchmark-sql-query1_1" * doctest::skip(true || SKIP_SUITE)) {
 
   short year = 1993;
   short discount = 2;
   short quantity = 24;
 
-  auto sql = SQL::query1_1SQLite(year, discount, quantity, "local_fs");
+  SPDLOG_INFO("Arguments  |  year: {}, discount: {}, quantity: {}",
+			  year, discount, quantity);
 
-  auto tuples = executeTest(sql);
+  auto sql = SQL::query1_1SQLite(year, discount, quantity, "local_fs");
+  auto tupleSet = executeSQLTest(sql);
+
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
 }

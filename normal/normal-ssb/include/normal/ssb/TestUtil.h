@@ -8,6 +8,7 @@
 #include <experimental/filesystem>
 #include <normal/core/OperatorManager.h>
 #include <normal/plan/LogicalPlan.h>
+#include <normal/tuple/TupleSet2.h>
 
 /*
  * Hack to get the current DocTest test being run. Need to forward declare getCurrentTestName declared in MainTest.
@@ -15,6 +16,8 @@
 const char *getCurrentTestName();
 
 using namespace std::experimental;
+using namespace normal::tuple;
+using namespace normal::core;
 
 namespace normal::ssb {
 
@@ -27,6 +30,8 @@ public:
   static void writeExecutionPlan(normal::core::OperatorManager &mgr);
 
   static void writeExecutionPlan(normal::plan::LogicalPlan &plan);
+
+  static std::shared_ptr<TupleSet2> executeExecutionPlanTest(const std::shared_ptr<OperatorManager> &mgr);
 };
 
 }

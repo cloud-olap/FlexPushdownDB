@@ -4,7 +4,10 @@
 
 #include "normal/ssb/TestUtil.h"
 
+#include <normal/pushdown/Collate.h>
+
 using namespace normal::ssb;
+using namespace normal::pushdown;
 
 filesystem::path TestUtil::getTestScratchDirectory() {
   auto testName = getCurrentTestName();
@@ -28,4 +31,32 @@ void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
 
   auto logicalPlanFile = filesystem::path(testScratchDir).append("logical-execution-plan.svg");
   plan.writeGraph(logicalPlanFile);
+}
+
+std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest(const std::shared_ptr<OperatorManager> &mgr) {
+
+  TestUtil::writeExecutionPlan(*mgr);
+
+  mgr->boot();
+
+  mgr->start();
+  mgr->join();
+
+  auto tuples = std::static_pointer_cast<Collate>(mgr->getOperator("collate"))->tuples();
+
+  mgr->stop();
+//  auto totalExecutionTime1 = mgr->getElapsedTime().value();
+  SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
+//  mgr->start();
+//  mgr->join();
+//
+//  tuples = std::static_pointer_cast<Collate>(mgr->getOperator("collate"))->tuples();
+//
+//  mgr->stop();
+//  auto totalExecutionTime2 = mgr->getElapsedTime().value();
+//  SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
+//  SPDLOG_INFO("Execute for the first and second time:{},{}\n", totalExecutionTime1, totalExecutionTime2);
+
+  auto tupleSet = TupleSet2::create(tuples);
+  return tupleSet;
 }

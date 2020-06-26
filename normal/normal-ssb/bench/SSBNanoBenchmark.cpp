@@ -61,7 +61,10 @@
 #include <aws/s3/model/ListObjectsV2Result.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
+
+
 #define SKIP_SUITE false
+
 using namespace normal::core::type;
 
 
@@ -132,7 +135,6 @@ TEST_CASE ("nanobenchmark-q1.1-lineorderScan" * doctest::skip(false || SKIP_SUIT
                 lineOrderScanRanges[p].second,
                 normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
                 client.defaultS3Client());
-        lineOrderScan->pushDownFlag_=true;
         lineOrderScanOperators.push_back(lineOrderScan);
 
 
