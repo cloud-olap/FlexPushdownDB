@@ -178,8 +178,8 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
 																	  numConcurrentUnits, partitionMap, client);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto joinBuild = Operators::makeHashJoinBuildOperators();
-  auto joinProbe = Operators::makeHashJoinProbeOperators();
+  auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits);
+  auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
   auto aggregate = Operators::makeAggregateOperators();
   auto collate = Operators::makeCollate();
 
@@ -194,21 +194,21 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
 	lineOrderFilters[u]->consume(lineOrderScans[u]);
   }
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(joinBuild);
-	joinBuild->consume(dateFilters[u]);
-  }
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(joinProbe);
-	joinProbe->consume(lineOrderFilters[u]);
-  }
-
-  joinProbe->produce(aggregate);
-  aggregate->consume(joinProbe);
+//  for (int u = 0; u < numConcurrentUnits; ++u) {
+//	dateFilters[u]->produce(joinBuild);
+//	joinBuild->consume(dateFilters[u]);
+//  }
+//
+//  joinBuild->produce(joinProbe);
+//  joinProbe->consume(joinBuild);
+//
+//  for (int u = 0; u < numConcurrentUnits; ++u) {
+//	lineOrderFilters[u]->produce(joinProbe);
+//	joinProbe->consume(lineOrderFilters[u]);
+//  }
+//
+//  joinProbe->produce(aggregate);
+//  aggregate->consume(joinProbe);
 
   aggregate->produce(collate);
   collate->consume(aggregate);
@@ -221,8 +221,8 @@ std::shared_ptr<OperatorManager> Queries::query1_1S3PullUp(const std::string &s3
 	mgr->put(dateFilters[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(lineOrderFilters[u]);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
+//  mgr->put(joinBuild);
+//  mgr->put(joinProbe);
   mgr->put(aggregate);
   mgr->put(collate);
 

@@ -52,7 +52,7 @@ void Filter::onStart() {
 }
 
 void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
-  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
+//  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   bufferTuples(Message);
   buildFilter();
   if (received_->numRows() > DefaultBufferSize) {
@@ -62,7 +62,7 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
-  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
+//  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
   if(received_->getArrowTable().has_value()) {
 	filterTuples();
 	sendTuples();

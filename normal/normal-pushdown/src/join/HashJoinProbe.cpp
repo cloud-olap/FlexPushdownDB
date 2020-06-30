@@ -47,6 +47,8 @@ void HashJoinProbe::onStart() {
 
 void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
 
+
+
   // Add the tuples to the internal buffer
   bufferTuples(msg);
 }
@@ -54,7 +56,7 @@ void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
 void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg) {
 
   auto tupleSet = TupleSet2::create(msg.tuples());
-
+//  SPDLOG_DEBUG("Buffering tupleSet  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 10000)));
   if (!tuples_) {
 	// Initialise tuples buffer with message contents
 	tuples_ = tupleSet;

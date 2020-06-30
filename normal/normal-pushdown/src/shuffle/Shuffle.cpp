@@ -13,7 +13,11 @@ using namespace normal::pushdown::shuffle;
 using namespace normal::tuple;
 
 Shuffle::Shuffle(const std::string &Name, std::string ColumnName) :
-	Operator(Name, "shuffle"), columnName_(std::move(ColumnName)) {}
+	Operator(Name, "Shuffle"), columnName_(std::move(ColumnName)) {}
+
+std::shared_ptr<Shuffle> Shuffle::make(const std::string &Name, std::string ColumnName){
+  return std::make_shared<Shuffle>(Name, ColumnName);
+}
 
 void Shuffle::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
@@ -56,7 +60,7 @@ void Shuffle::onTuple(const TupleMessage &message) {
 
   // Shuffle the tuple set
   auto expectedShuffledTupleSets = Shuffler::shuffle(columnName_, consumers_.size(), tupleSet);
-  if(expectedShuffledTupleSets.has_value()){
+  if(!expectedShuffledTupleSets.has_value()){
     throw std::runtime_error(expectedShuffledTupleSets.error());
   }
   auto shuffledTupleSets = expectedShuffledTupleSets.value();

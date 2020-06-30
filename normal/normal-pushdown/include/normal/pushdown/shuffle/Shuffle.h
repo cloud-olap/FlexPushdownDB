@@ -22,6 +22,8 @@ class Shuffle : public Operator {
 public:
   Shuffle(const std::string &Name, std::string ColumnName);
 
+  static std::shared_ptr<Shuffle> make(const std::string &Name, std::string ColumnName);
+
   /**
    * Operators message handler
    * @param msg

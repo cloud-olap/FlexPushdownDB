@@ -5,6 +5,8 @@
 include(FindPackageHandleStandardArgs)
 include(Paths_SQLite3)
 
+unset(SQLite3_INCLUDE_DIR CACHE)
+
 find_path(
         SQLite3_INCLUDE_DIR
         sqlite3.h

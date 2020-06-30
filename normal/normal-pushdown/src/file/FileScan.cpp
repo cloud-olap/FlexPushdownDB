@@ -124,6 +124,9 @@ void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   }
 
   // Read the columns not present in the cache
+  /*
+   * FIXME: Should support reading the file in pieces
+   */
   auto expectedReadTupleSet = readCSVFile(columnNamesToLoad);
   auto readTupleSet = expectedReadTupleSet.value();
 

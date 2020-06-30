@@ -47,19 +47,22 @@ void HashJoinBuild::onStart() {
 
 void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
   auto tupleSet = TupleSet2::create(msg.tuples());
+
+//  SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
+
   auto putResult = hashtable_->put(columnName_, tupleSet);
 
   if (!putResult.has_value()) {
 	throw std::runtime_error(putResult.error());
   }
 
-  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
+//  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
 }
 
 void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
-	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
+//	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
 
 	std::shared_ptr<normal::core::message::Message>
 		hashTableMessage = std::make_shared<HashTableMessage>(hashtable_, name());

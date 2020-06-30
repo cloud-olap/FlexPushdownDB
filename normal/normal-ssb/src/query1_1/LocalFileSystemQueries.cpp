@@ -129,8 +129,10 @@ LocalFileSystemQueries::joinQuery(const std::string &dataDir,
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto joinBuild = Operators::makeHashJoinBuildOperators();
-  auto joinProbe = Operators::makeHashJoinProbeOperators();
+  auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits);
+  auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits);
+  auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits);
+  auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
   auto collate = Operators::makeCollate();
 
   // Wire up
@@ -145,20 +147,38 @@ LocalFileSystemQueries::joinQuery(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(joinBuild);
-	joinBuild->consume(dateFilters[u]);
+	dateFilters[u]->produce(dateShuffles[u]);
+	dateShuffles[u]->consume(dateFilters[u]);
   }
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(joinProbe);
-	joinProbe->consume(lineOrderFilters[u]);
+	lineOrderFilters[u]->produce(lineOrderShuffles[u]);
+	lineOrderShuffles[u]->consume(lineOrderFilters[u]);
   }
 
-  joinProbe->produce(collate);
-  collate->consume(joinProbe);
+  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
+	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
+	  dateShuffles[u1]->produce(joinBuild[u2]);
+	  joinBuild[u2]->consume(dateShuffles[u1]);
+	}
+  }
+
+  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
+	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
+	  lineOrderShuffles[u1]->produce(joinProbe[u2]);
+	  joinProbe[u2]->consume(lineOrderShuffles[u1]);
+	}
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	joinBuild[u]->produce(joinProbe[u]);
+	joinProbe[u]->consume(joinBuild[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	joinProbe[u]->produce(collate);
+	collate->consume(joinProbe[u]);
+  }
 
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(dateScans[u]);
@@ -168,8 +188,14 @@ LocalFileSystemQueries::joinQuery(const std::string &dataDir,
 	mgr->put(dateFilters[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(lineOrderFilters[u]);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(dateShuffles[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderShuffles[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(joinBuild[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(joinProbe[u]);
   mgr->put(collate);
 
   return mgr;
@@ -188,8 +214,10 @@ LocalFileSystemQueries::fullQuery(const std::string &dataDir,
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto joinBuild = Operators::makeHashJoinBuildOperators();
-  auto joinProbe = Operators::makeHashJoinProbeOperators();
+  auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits);
+  auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits);
+  auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits);
+  auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
   auto aggregate = Operators::makeAggregateOperators();
   auto collate = Operators::makeCollate();
 
@@ -205,20 +233,38 @@ LocalFileSystemQueries::fullQuery(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(joinBuild);
-	joinBuild->consume(dateFilters[u]);
+	dateFilters[u]->produce(dateShuffles[u]);
+	dateShuffles[u]->consume(dateFilters[u]);
   }
-
-  joinBuild->produce(joinProbe);
-  joinProbe->consume(joinBuild);
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(joinProbe);
-	joinProbe->consume(lineOrderFilters[u]);
+	lineOrderFilters[u]->produce(lineOrderShuffles[u]);
+	lineOrderShuffles[u]->consume(lineOrderFilters[u]);
   }
 
-  joinProbe->produce(aggregate);
-  aggregate->consume(joinProbe);
+  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
+	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
+	  dateShuffles[u1]->produce(joinBuild[u2]);
+	  joinBuild[u2]->consume(dateShuffles[u1]);
+	}
+  }
+
+  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
+	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
+	  lineOrderShuffles[u1]->produce(joinProbe[u2]);
+	  joinProbe[u2]->consume(lineOrderShuffles[u1]);
+	}
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	joinBuild[u]->produce(joinProbe[u]);
+	joinProbe[u]->consume(joinBuild[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	joinProbe[u]->produce(aggregate);
+	aggregate->consume(joinProbe[u]);
+  }
 
   aggregate->produce(collate);
   collate->consume(aggregate);
@@ -231,8 +277,14 @@ LocalFileSystemQueries::fullQuery(const std::string &dataDir,
 	mgr->put(dateFilters[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(lineOrderFilters[u]);
-  mgr->put(joinBuild);
-  mgr->put(joinProbe);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+  	mgr->put(dateShuffles[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(lineOrderShuffles[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(joinBuild[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(joinProbe[u]);
   mgr->put(aggregate);
   mgr->put(collate);
 

@@ -20,7 +20,7 @@ namespace normal::core {
 class LocalOperatorDirectory {
 
 private:
-  std::unordered_map <std::string, LocalOperatorDirectoryEntry> entries_;
+  std::map <std::string, LocalOperatorDirectoryEntry> entries_;
 
 public:
   void insert(const LocalOperatorDirectoryEntry &entry);

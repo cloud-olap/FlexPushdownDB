@@ -15,11 +15,13 @@
 #include <normal/pushdown/join/HashJoinProbe.h>
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
+#include <normal/pushdown/shuffle/Shuffle.h>
 
 using namespace normal::core;
 using namespace normal::pushdown;
 using namespace normal::pushdown::filter;
 using namespace normal::pushdown::join;
+using namespace normal::pushdown::shuffle;
 
 namespace normal::ssb::query1_1 {
 
@@ -56,8 +58,18 @@ public:
   static std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
   makeLineOrderFilterOperators(short discount, short quantity, int numConcurrentUnits);
 
-  static std::shared_ptr<HashJoinBuild> makeHashJoinBuildOperators();
-  static std::shared_ptr<HashJoinProbe> makeHashJoinProbeOperators();
+  static std::vector<std::shared_ptr<Shuffle>>
+  makeDateShuffleOperators(int numConcurrentUnits);
+
+  static std::vector<std::shared_ptr<Shuffle>>
+  makeLineOrderShuffleOperators(int numConcurrentUnits);
+
+  static std::vector<std::shared_ptr<HashJoinBuild>>
+  makeHashJoinBuildOperators(int numConcurrentUnits);
+
+  static std::vector<std::shared_ptr<HashJoinProbe>>
+  makeHashJoinProbeOperators(int numConcurrentUnits);
+
   static std::shared_ptr<Aggregate> makeAggregateOperators();
   static std::shared_ptr<Collate> makeCollate();
 

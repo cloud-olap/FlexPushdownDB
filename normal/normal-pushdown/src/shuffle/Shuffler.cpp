@@ -34,7 +34,7 @@ Shuffler::shuffle(const std::string &columnName,
   int rowIndex = 0;
   for (const auto &&columnValue: *shuffleColumn) {
 	auto partitionIndex = columnValue->hash() % numPartitions;
-	SPDLOG_DEBUG("Assigning row to shuffle partition  |  row: {}, columnValue: {}, partitionIndex: {} ", rowIndex, columnValue->toString(), partitionIndex);
+//	SPDLOG_DEBUG("Assigning row to shuffle partition  |  row: {}, columnValue: {}, partitionIndex: {} ", rowIndex, columnValue->toString(), partitionIndex);
 	for (size_t columnIndex = 0; columnIndex < fields.size(); ++columnIndex) {
 	  auto column = tupleSet->getColumnByIndex(columnIndex);
 	  auto scalar = column.value()->element(rowIndex);

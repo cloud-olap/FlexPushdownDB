@@ -26,6 +26,7 @@ using namespace std::experimental;
 using namespace normal::pushdown::aggregate;
 using namespace normal::core::type;
 using namespace normal::expression::gandiva;
+using namespace normal::pushdown::shuffle;
 
 
 std::vector<std::shared_ptr<FileScan>>
@@ -104,6 +105,30 @@ Operators::makeDateFilterOperators(short year, int numConcurrentUnits) {
   }
 
   return dateFilterOperators;
+}
+
+std::vector<std::shared_ptr<Shuffle>>
+Operators::makeDateShuffleOperators(int numConcurrentUnits) {
+
+  std::vector<std::shared_ptr<Shuffle>> shuffleOperators;
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto shuffle = Shuffle::make(fmt::format("dateShuffle-{}", u), "d_datekey");
+	shuffleOperators.emplace_back(shuffle);
+  }
+
+  return shuffleOperators;
+}
+
+std::vector<std::shared_ptr<Shuffle>>
+Operators::makeLineOrderShuffleOperators(int numConcurrentUnits) {
+
+  std::vector<std::shared_ptr<Shuffle>> shuffleOperators;
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto shuffle = Shuffle::make(fmt::format("lineOrderShuffle-{}", u), "lo_orderdate");
+	shuffleOperators.emplace_back(shuffle);
+  }
+
+  return shuffleOperators;
 }
 
 std::vector<std::shared_ptr<FileScan>>
@@ -197,13 +222,22 @@ Operators::makeLineOrderFilterOperators(short discount, short quantity, int numC
   return lineOrderFilterOperators;
 }
 
-std::shared_ptr<HashJoinBuild> Operators::makeHashJoinBuildOperators() {
-  return HashJoinBuild::create("join-build", "d_datekey");
+std::vector<std::shared_ptr<HashJoinBuild>>
+Operators::makeHashJoinBuildOperators(int numConcurrentUnits) {
+  std::vector<std::shared_ptr<HashJoinBuild>> hashJoinBuildOperators;
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	hashJoinBuildOperators.emplace_back(HashJoinBuild::create(fmt::format("join-build-{}", u), "d_datekey"));
+  }
+  return hashJoinBuildOperators;
 }
 
-std::shared_ptr<HashJoinProbe> Operators::makeHashJoinProbeOperators() {
-  return std::make_shared<HashJoinProbe>("join-probe",
-										 JoinPredicate::create("d_datekey", "lo_orderdate"));
+std::vector<std::shared_ptr<HashJoinProbe>> Operators::makeHashJoinProbeOperators(int numConcurrentUnits) {
+  std::vector<std::shared_ptr<HashJoinProbe>> hashJoinProbeOperators;
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	hashJoinProbeOperators.emplace_back(std::make_shared<HashJoinProbe>(fmt::format("join-probe-{}", u),
+										   JoinPredicate::create("d_datekey", "lo_orderdate")));
+  }
+  return hashJoinProbeOperators;
 }
 
 std::shared_ptr<Aggregate> Operators::makeAggregateOperators() {

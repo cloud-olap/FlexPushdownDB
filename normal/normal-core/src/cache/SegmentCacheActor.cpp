@@ -33,18 +33,18 @@ void SegmentCacheActor::load(const LoadRequestMessage &msg) {
 
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments;
 
-  SPDLOG_DEBUG("Handling load request. loadRequestMessage: {}", msg.toString());
+//  SPDLOG_DEBUG("Handling load request. loadRequestMessage: {}", msg.toString());
 
   for(const auto &segmentKey: msg.getSegmentKeys()) {
 
 	auto cacheData = state_->cache->load(segmentKey);
 
 	if (cacheData.has_value()) {
-	  SPDLOG_DEBUG("Cache hit. segmentKey: {}", segmentKey->toString());
+//	  SPDLOG_DEBUG("Cache hit. segmentKey: {}", segmentKey->toString());
 	  segments.insert(std::pair(segmentKey, cacheData.value()));
 
 	} else {
-	  SPDLOG_DEBUG("Cache miss. segmentKey: {}", segmentKey->toString());
+//	  SPDLOG_DEBUG("Cache miss. segmentKey: {}", segmentKey->toString());
 	}
   }
 
@@ -56,7 +56,7 @@ void SegmentCacheActor::load(const LoadRequestMessage &msg) {
 }
 
 void SegmentCacheActor::store(const StoreRequestMessage &msg) {
-  SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
+//  SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
   for(const auto &segmentEntry: msg.getSegments()){
     auto segmentKey = segmentEntry.first;
 	auto segmentData = segmentEntry.second;

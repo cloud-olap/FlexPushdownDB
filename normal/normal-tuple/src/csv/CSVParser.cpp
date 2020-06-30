@@ -129,8 +129,13 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
   auto schema = expectedSchema.value();
 
   std::vector<std::shared_ptr<::arrow::Buffer>> blockBuffers;
+
+  /*
+   * FIXME: max_num_rows is set to max of an int. Feels hacky.
+   */
   arrow::csv::BlockParser blockParser{arrow::csv::ParseOptions::Defaults(),
-									  static_cast<int32_t>(schema->fields().size())};
+									  static_cast<int32_t>(schema->fields().size()),
+									  std::numeric_limits<int>().max()};
 
   bool done = false;
 

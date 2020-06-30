@@ -22,7 +22,7 @@ Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Ex
 
 void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) {
 
-  SPDLOG_DEBUG("Data:\n{}", tuples->toString());
+//  SPDLOG_DEBUG("Data:\n{}", tuples->toString());
 
   // Set the input schema if not yet set
   cacheInputSchema(*tuples);

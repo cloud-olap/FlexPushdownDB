@@ -43,7 +43,7 @@ void LocalOperatorDirectory::setIncomplete() {
 }
 
 bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operatorRelationshipType) {
-  SPDLOG_DEBUG("Local operator directory:\n{}", showString());
+//  SPDLOG_DEBUG("Local operator directory:\n{}", showString());
   for(const auto& entry : entries_){
     if(entry.second.relationshipType() == operatorRelationshipType && !entry.second.complete())
       return false;

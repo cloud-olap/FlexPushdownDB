@@ -24,8 +24,8 @@ Joiner::Joiner(JoinPredicate Pred,
 
 tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::join() {
 
-  SPDLOG_DEBUG("Build hashtable:\n{}", hashtable_->toString());
-  SPDLOG_DEBUG("Probe tuple set:\n{}", tuples_->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+//  SPDLOG_DEBUG("Build hashtable:\n{}", hashtable_->toString());
+//  SPDLOG_DEBUG("Probe tuple set:\n{}", tuples_->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   return processProbeTuples();
 }
@@ -35,7 +35,7 @@ std::shared_ptr<Schema> Joiner::buildJoinedSchema() const {
   auto probeSchema = tuples_->schema().value();
   auto joinedSchema = Schema::concatenate({buildSchema, probeSchema});
 
-  SPDLOG_DEBUG("Joined schema:\n{}", joinedSchema->showString());
+//  SPDLOG_DEBUG("Joined schema:\n{}", joinedSchema->showString());
 
   return joinedSchema;
 }
@@ -49,7 +49,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
   }
   auto probeColumn = expectedProbeColumn.value();
 
-  SPDLOG_DEBUG("Probe column:\n{}", probeColumn->showString());
+//  SPDLOG_DEBUG("Probe column:\n{}", probeColumn->showString());
 
   // Create builders for each column
   auto buildFields = hashtable_->getTupleSet()->schema().value()->fields();
@@ -150,7 +150,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> Joiner::pro
 
   auto joinedTupleSet2 = TupleSet2::make(schema, arrays);
 
-  SPDLOG_DEBUG("Joined tuple set:\n{}", joinedTupleSet2->showString());
+//  SPDLOG_DEBUG("Joined tuple set:\n{}", joinedTupleSet2->showString());
 
   return joinedTupleSet2;
 }
