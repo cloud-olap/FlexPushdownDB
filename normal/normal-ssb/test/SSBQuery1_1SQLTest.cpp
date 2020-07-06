@@ -115,7 +115,7 @@ TEST_CASE ("ssb-benchmark-sql-query1_1" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Arguments  |  year: {}, discount: {}, quantity: {}",
 			  year, discount, quantity);
 
-  auto sql = SQL::query1_1SQLite(year, discount, quantity, "local_fs");
+  auto sql = SQL::full(year, discount, quantity, "local_fs");
   auto tupleSet = executeSQLTest(sql);
 
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));

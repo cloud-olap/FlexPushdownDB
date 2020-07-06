@@ -26,7 +26,6 @@ using namespace std::experimental;
 using namespace normal::pushdown::aggregate;
 using namespace normal::core::type;
 using namespace normal::expression::gandiva;
-using namespace normal::pushdown::shuffle;
 
 
 std::vector<std::shared_ptr<FileScan>>
@@ -60,10 +59,10 @@ Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurre
 
 std::vector<std::shared_ptr<S3SelectScan>>
 Operators::makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
-									   const std::string &s3Bucket,
-									   int numConcurrentUnits,
-									   std::unordered_map<std::string, long> partitionMap,
-									   AWSClient &client) {
+										 const std::string &s3Bucket,
+										 int numConcurrentUnits,
+										 std::unordered_map<std::string, long> partitionMap,
+										 AWSClient &client) {
 
   auto dateFile = s3ObjectDir + "/date.tbl";
   auto numBytesDateFile = partitionMap.find(dateFile)->second;
@@ -159,10 +158,10 @@ Operators::makeLineOrderFileScanOperators(const std::string &dataDir, int numCon
 
 std::vector<std::shared_ptr<S3SelectScan>>
 Operators::makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
-											const std::string &s3Bucket,
-											int numConcurrentUnits,
-											std::unordered_map<std::string, long> partitionMap,
-											AWSClient &client) {
+											  const std::string &s3Bucket,
+											  int numConcurrentUnits,
+											  std::unordered_map<std::string, long> partitionMap,
+											  AWSClient &client) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
@@ -225,6 +224,7 @@ Operators::makeLineOrderFilterOperators(short discount, short quantity, int numC
 std::vector<std::shared_ptr<HashJoinBuild>>
 Operators::makeHashJoinBuildOperators(int numConcurrentUnits) {
   std::vector<std::shared_ptr<HashJoinBuild>> hashJoinBuildOperators;
+  hashJoinBuildOperators.reserve(numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
 	hashJoinBuildOperators.emplace_back(HashJoinBuild::create(fmt::format("join-build-{}", u), "d_datekey"));
   }
@@ -233,27 +233,45 @@ Operators::makeHashJoinBuildOperators(int numConcurrentUnits) {
 
 std::vector<std::shared_ptr<HashJoinProbe>> Operators::makeHashJoinProbeOperators(int numConcurrentUnits) {
   std::vector<std::shared_ptr<HashJoinProbe>> hashJoinProbeOperators;
+  hashJoinProbeOperators.reserve(numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
 	hashJoinProbeOperators.emplace_back(std::make_shared<HashJoinProbe>(fmt::format("join-probe-{}", u),
-										   JoinPredicate::create("d_datekey", "lo_orderdate")));
+																		JoinPredicate::create("d_datekey",
+																							  "lo_orderdate")));
   }
   return hashJoinProbeOperators;
 }
 
-std::shared_ptr<Aggregate> Operators::makeAggregateOperators() {
+std::vector<std::shared_ptr<Aggregate>>
+Operators::makeAggregateOperators(int numConcurrentUnits) {
 
   /**
    * Aggregate
    * sum(lo_extendedprice (f9) * lo_discount (f11))
    */
-  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
-  aggregateFunctions->
-	  emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
-														  cast(col("lo_discount"), float64Type()))
-  ));
-  auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
+  std::vector<std::shared_ptr<Aggregate>> aggregateOperators;
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+	aggregateFunctions->
+		emplace_back(std::make_shared<Sum>("revenue", times(cast(col("lo_extendedprice"), float64Type()),
+															cast(col("lo_discount"), float64Type()))
+	));
+	auto aggregate = std::make_shared<Aggregate>(fmt::format("aggregate-{}", u), aggregateFunctions);
+	aggregateOperators.emplace_back(aggregate);
+  }
 
-  return aggregate;
+  return aggregateOperators;
 }
 
-std::shared_ptr<Collate> Operators::makeCollate() { return std::make_shared<Collate>("collate"); }
+std::shared_ptr<Aggregate> Operators::makeAggregateReduceOperator() {
+
+  auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
+  aggregateFunctions->
+	  emplace_back(std::make_shared<Sum>("revenue", col("revenue"))
+  );
+  auto aggregateReduce = std::make_shared<Aggregate>("aggregate-reduce", aggregateFunctions);
+
+  return aggregateReduce;
+}
+
+std::shared_ptr<Collate> Operators::makeCollateOperator() { return std::make_shared<Collate>("collate"); }

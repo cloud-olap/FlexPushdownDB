@@ -111,7 +111,7 @@ TEST_CASE ("ssb-benchmark-query01" * doctest::skip(true || SKIP_SUITE)) {
   short discount = 2;
   short quantity = 24;
 
-  auto sql = SQL::query1_1SQLite(year, discount, quantity, "local_fs");
+  auto sql = SQL::full(year, discount, quantity, "local_fs");
 
   auto tuples = executeTest(sql);
 }

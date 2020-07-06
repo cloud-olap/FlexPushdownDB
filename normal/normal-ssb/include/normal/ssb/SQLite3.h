@@ -12,9 +12,16 @@
 
 namespace normal::ssb {
 
+/**
+ * SQLLite executor
+ */
 class SQLite3 {
 
 public:
+
+  /**
+   * Runs SQL against the given CSV files
+   */
   static tl::expected<std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>, std::string>
   execute(const std::string& sql, const std::vector<std::string>& files);
 

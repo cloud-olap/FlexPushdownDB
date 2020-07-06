@@ -13,12 +13,12 @@ using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 
 std::shared_ptr<OperatorManager>
-LocalFileSystemQueries::dateScanQuery(const std::string &dataDir, int numConcurrentUnits) {
+LocalFileSystemQueries::dateScan(const std::string &dataDir, int numConcurrentUnits) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
   auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
-  auto collate = Operators::makeCollate();
+  auto collate = Operators::makeCollateOperator();
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -34,13 +34,13 @@ LocalFileSystemQueries::dateScanQuery(const std::string &dataDir, int numConcurr
 }
 
 std::shared_ptr<OperatorManager>
-LocalFileSystemQueries::dateFilterQuery(const std::string &dataDir, short year, int numConcurrentUnits) {
+LocalFileSystemQueries::dateFilter(const std::string &dataDir, short year, int numConcurrentUnits) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
   auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
-  auto collate = Operators::makeCollate();
+  auto collate = Operators::makeCollateOperator();
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -63,13 +63,13 @@ LocalFileSystemQueries::dateFilterQuery(const std::string &dataDir, short year, 
 }
 
 std::shared_ptr<OperatorManager>
-LocalFileSystemQueries::lineOrderScanQuery(const std::string &dataDir,
-										   int numConcurrentUnits) {
+LocalFileSystemQueries::lineOrderScan(const std::string &dataDir,
+									  int numConcurrentUnits) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
-  auto collate = Operators::makeCollate();
+  auto collate = Operators::makeCollateOperator();
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -85,16 +85,16 @@ LocalFileSystemQueries::lineOrderScanQuery(const std::string &dataDir,
 }
 
 std::shared_ptr<OperatorManager>
-LocalFileSystemQueries::lineOrderFilterQuery(const std::string &dataDir,
-											 short discount,
-											 short quantity,
-											 int numConcurrentUnits) {
+LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
+										short discount,
+										short quantity,
+										int numConcurrentUnits) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto collate = Operators::makeCollate();
+  auto collate = Operators::makeCollateOperator();
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -117,11 +117,11 @@ LocalFileSystemQueries::lineOrderFilterQuery(const std::string &dataDir,
 }
 
 std::shared_ptr<OperatorManager>
-LocalFileSystemQueries::joinQuery(const std::string &dataDir,
-								  short year,
-								  short discount,
-								  short quantity,
-								  int numConcurrentUnits) {
+LocalFileSystemQueries::join(const std::string &dataDir,
+							 short year,
+							 short discount,
+							 short quantity,
+							 int numConcurrentUnits) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
@@ -133,7 +133,7 @@ LocalFileSystemQueries::joinQuery(const std::string &dataDir,
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits);
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
-  auto collate = Operators::makeCollate();
+  auto collate = Operators::makeCollateOperator();
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -202,11 +202,11 @@ LocalFileSystemQueries::joinQuery(const std::string &dataDir,
 }
 
 std::shared_ptr<OperatorManager>
-LocalFileSystemQueries::fullQuery(const std::string &dataDir,
-								  short year,
-								  short discount,
-								  short quantity,
-								  int numConcurrentUnits) {
+LocalFileSystemQueries::full(const std::string &dataDir,
+							 short year,
+							 short discount,
+							 short quantity,
+							 int numConcurrentUnits) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
@@ -218,8 +218,9 @@ LocalFileSystemQueries::fullQuery(const std::string &dataDir,
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits);
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
-  auto aggregate = Operators::makeAggregateOperators();
-  auto collate = Operators::makeCollate();
+  auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits);
+  auto aggregateReduce = Operators::makeAggregateReduceOperator();
+  auto collate = Operators::makeCollateOperator();
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -262,12 +263,17 @@ LocalFileSystemQueries::fullQuery(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinProbe[u]->produce(aggregate);
-	aggregate->consume(joinProbe[u]);
+	joinProbe[u]->produce(aggregates[u]);
+	aggregates[u]->consume(joinProbe[u]);
   }
 
-  aggregate->produce(collate);
-  collate->consume(aggregate);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	aggregates[u]->produce(aggregateReduce);
+	aggregateReduce->consume(aggregates[u]);
+  }
+
+  aggregateReduce->produce(collate);
+  collate->consume(aggregateReduce);
 
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(dateScans[u]);
@@ -285,7 +291,9 @@ LocalFileSystemQueries::fullQuery(const std::string &dataDir,
 	mgr->put(joinBuild[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(joinProbe[u]);
-  mgr->put(aggregate);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	mgr->put(aggregates[u]);
+  mgr->put(aggregateReduce);
   mgr->put(collate);
 
   return mgr;

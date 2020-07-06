@@ -5,8 +5,10 @@
 #ifndef NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY_1_1_OPERATORS_H
 #define NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY_1_1_OPERATORS_H
 
-#include <normal/core/OperatorManager.h>
-#include <normal/tuple/TupleSet.h>
+
+#include <vector>
+#include <memory>
+
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/filter/Filter.h>
@@ -17,16 +19,16 @@
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/shuffle/Shuffle.h>
 
-using namespace normal::core;
 using namespace normal::pushdown;
 using namespace normal::pushdown::filter;
 using namespace normal::pushdown::join;
 using namespace normal::pushdown::shuffle;
 
+
 namespace normal::ssb::query1_1 {
 
 /**
- * Normal operators for SSB query 1.1
+ * Normal operator factories for SSB query 1.1
  */
 class Operators {
 
@@ -70,8 +72,12 @@ public:
   static std::vector<std::shared_ptr<HashJoinProbe>>
   makeHashJoinProbeOperators(int numConcurrentUnits);
 
-  static std::shared_ptr<Aggregate> makeAggregateOperators();
-  static std::shared_ptr<Collate> makeCollate();
+  static std::vector<std::shared_ptr<Aggregate>>
+  makeAggregateOperators(int numConcurrentUnits);
+
+  static std::shared_ptr<Aggregate> makeAggregateReduceOperator();
+
+  static std::shared_ptr<Collate> makeCollateOperator();
 
 };
 

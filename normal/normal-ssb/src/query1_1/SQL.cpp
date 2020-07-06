@@ -4,9 +4,11 @@
 
 #include "normal/ssb/query1_1/SQL.h"
 
+#include <fmt/format.h>
+
 using namespace normal::ssb::query1_1;
 
-std::string SQL::query1_1SQLite(short year, short discount, short quantity, const std::string &catalogue) {
+std::string SQL::full(short year, short discount, short quantity, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -28,7 +30,7 @@ std::string SQL::query1_1SQLite(short year, short discount, short quantity, cons
   return sql;
 }
 
-std::string SQL::query1_1DateScanSQLite(const std::string &catalogue) {
+std::string SQL::dateScan(const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -41,7 +43,7 @@ std::string SQL::query1_1DateScanSQLite(const std::string &catalogue) {
   return sql;
 }
 
-std::string SQL::query1_1LineOrderScanSQLite(const std::string &catalogue) {
+std::string SQL::lineOrderScan(const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -54,7 +56,7 @@ std::string SQL::query1_1LineOrderScanSQLite(const std::string &catalogue) {
   return sql;
 }
 
-std::string SQL::query1_1DateFilterSQLite(short year, const std::string &catalogue) {
+std::string SQL::dateFilter(short year, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -70,7 +72,7 @@ std::string SQL::query1_1DateFilterSQLite(short year, const std::string &catalog
   return sql;
 }
 
-std::string SQL::query1_1LineOrderFilterSQLite(short discount, short quantity, const std::string &catalogue) {
+std::string SQL::lineOrderFilter(short discount, short quantity, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "
@@ -89,7 +91,7 @@ std::string SQL::query1_1LineOrderFilterSQLite(short discount, short quantity, c
   return sql;
 }
 
-std::string SQL::query1_1JoinSQLite(short year, short discount, short quantity, const std::string &catalogue) {
+std::string SQL::join(short year, short discount, short quantity, const std::string &catalogue) {
 
   auto sql = fmt::format(
 	  "select "

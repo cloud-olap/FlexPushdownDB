@@ -4,7 +4,10 @@
 
 #include "normal/ssb/TestUtil.h"
 
+#include <doctest/doctest.h>
+
 #include <normal/pushdown/Collate.h>
+#include <normal/ssb/SQLite3.h>
 
 using namespace normal::ssb;
 using namespace normal::pushdown;
@@ -58,5 +61,31 @@ std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest(const std::shared_
 //  SPDLOG_INFO("Execute for the first and second time:{},{}\n", totalExecutionTime1, totalExecutionTime2);
 
   auto tupleSet = TupleSet2::create(tuples);
+  return tupleSet;
+}
+
+/**
+ * Runs the given query in sql lite, returning the results or failing the test on an error
+ */
+std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>
+TestUtil::executeSQLite(const std::string &sql, std::vector<std::string> dataFiles) {
+
+  std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>> expected;
+  auto expectedSQLite3Results = SQLite3::execute(sql, dataFiles);
+  if (!expectedSQLite3Results.has_value()) {
+	FAIL(fmt::format("Error: {}", expectedSQLite3Results.error()));
+  } else {
+	expected = expectedSQLite3Results.value();
+  }
+
+  return expected;
+}
+
+/**
+ * Runs the given Normal execution plan, returning the results or failing the test on an error
+ */
+std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlan(const std::shared_ptr<OperatorManager> &mgr) {
+  auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
+  SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
   return tupleSet;
 }

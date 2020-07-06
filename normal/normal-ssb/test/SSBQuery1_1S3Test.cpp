@@ -16,7 +16,7 @@
 #include <normal/tuple/TupleSet2.h>
 #include <normal/ssb/SQLite3.h>
 
-#include "normal/ssb/query1_1/Queries.h"
+#include "normal/ssb/query1_1/S3SelectQueries.h"
 #include "normal/ssb/query1_1/SQL.h"
 
 using namespace normal::ssb;
@@ -47,7 +47,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderscan-s3-pullup" * doctest::skip(f
 
   std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>> expected;
   auto expectedSQLite3Results = SQLite3::execute(
-	  SQL::query1_1LineOrderScanSQLite("temp"),
+	  SQL::lineOrderScan("temp"),
 	  {filesystem::absolute(dataDir + "/lineorder.tbl")});
   if (!expectedSQLite3Results.has_value()) {
 		FAIL(fmt::format("Error: {}", expectedSQLite3Results.error()));
@@ -57,9 +57,9 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderscan-s3-pullup" * doctest::skip(f
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::lineOrderScanS3PullUp(s3Bucket, s3ObjectDir,
-											numConcurrentUnits,
-											client);
+  auto mgr = S3SelectQueries::lineOrderScanPullUp(s3Bucket, s3ObjectDir,
+												  numConcurrentUnits,
+												  client);
   auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
 
   SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
@@ -89,7 +89,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-datefilter-s3-pullup" * doctest::skip(fals
 
   std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>> expected;
   auto expectedSQLite3Results = SQLite3::execute(
-	  SQL::query1_1DateFilterSQLite(year, "temp"),
+	  SQL::dateFilter(year, "temp"),
 	  {filesystem::absolute(dataDir + "/date.tbl")});
   if (!expectedSQLite3Results.has_value()) {
 		FAIL(fmt::format("Error: {}", expectedSQLite3Results.error()));
@@ -99,10 +99,10 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-datefilter-s3-pullup" * doctest::skip(fals
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::dateFilterS3PullUp(s3Bucket, s3ObjectDir,
-										 year,
-										 numConcurrentUnits,
-										 client);
+  auto mgr = S3SelectQueries::dateFilterPullUp(s3Bucket, s3ObjectDir,
+											   year,
+											   numConcurrentUnits,
+											   client);
   auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
 
   SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
@@ -133,7 +133,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderfilter-s3-pullup" * doctest::skip
 
   std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>> expected;
   auto expectedSQLite3Results = SQLite3::execute(
-	  SQL::query1_1LineOrderFilterSQLite(discount, quantity, "temp"),
+	  SQL::lineOrderFilter(discount, quantity, "temp"),
 	  {filesystem::absolute(dataDir + "/lineorder.tbl")});
   if (!expectedSQLite3Results.has_value()) {
 		FAIL(fmt::format("Error: {}", expectedSQLite3Results.error()));
@@ -143,10 +143,10 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderfilter-s3-pullup" * doctest::skip
 
   AWSClient client;
   client.init();
-  auto mgr = Queries::query1_1LineOrderFilterS3PullUp(s3Bucket, s3ObjectDir,
-													  discount, quantity,
-													  numConcurrentUnits,
-													  client);
+  auto mgr = S3SelectQueries::lineOrderFilterPullUp(s3Bucket, s3ObjectDir,
+													discount, quantity,
+													numConcurrentUnits,
+													client);
   auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
 
   SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
@@ -174,7 +174,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderfilter-s3-pullup" * doctest::skip
 //
 //  AWSClient client;
 //  client.init();
-//  auto mgr = Queries::query1_1S3PullUp(s3Bucket, s3ObjectDir,
+//  auto mgr = S3SelectQueries::query1_1S3PullUp(s3Bucket, s3ObjectDir,
 //									   year, discount, quantity,
 //									   numConcurrentUnits,
 //									   client);
@@ -202,7 +202,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderfilter-s3-pullup" * doctest::skip
 //
 //  AWSClient client;
 //  client.init();
-//  auto mgr = Queries::query1_1S3PullUpParallel(s3Bucket, s3ObjectDir,
+//  auto mgr = S3SelectQueries::query1_1S3PullUpParallel(s3Bucket, s3ObjectDir,
 //											   year, discount, quantity,
 //											   numPartitions, client);
 //  auto tupleSet = executeExecutionPlanTest(mgr);
@@ -223,7 +223,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderfilter-s3-pullup" * doctest::skip
 //
 //  AWSClient client;
 //  client.init();
-//  auto mgr = Queries::query1_1S3PushDown(s3Bucket, s3ObjectDir,
+//  auto mgr = S3SelectQueries::query1_1S3PushDown(s3Bucket, s3ObjectDir,
 //										 year, discount, quantity,
 //										 client);
 //  auto tupleSet = executeExecutionPlanTest(mgr);
@@ -245,7 +245,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderfilter-s3-pullup" * doctest::skip
 //
 //  AWSClient client;
 //  client.init();
-//  auto mgr = Queries::query1_1S3PushDownParallel(s3Bucket, s3ObjectDir,
+//  auto mgr = S3SelectQueries::query1_1S3PushDownParallel(s3Bucket, s3ObjectDir,
 //												 year, discount, quantity,
 //												 numPartitions, client);
 //  auto tupleSet = executeExecutionPlanTest(mgr);
@@ -267,7 +267,7 @@ TEST_CASE ("ssb-benchmark-ep-query1_1-lineorderfilter-s3-pullup" * doctest::skip
 //
 //  AWSClient client;
 //  client.init();
-//  auto mgr = Queries::query1_1S3HybridParallel(s3Bucket, s3ObjectDir,
+//  auto mgr = S3SelectQueries::query1_1S3HybridParallel(s3Bucket, s3ObjectDir,
 //											   year, discount, quantity,
 //											   numPartitions, client);
 //  auto tupleSet = executeExecutionPlanTest(mgr);

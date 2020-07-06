@@ -11,11 +11,13 @@ add_library(normal-ssb
         src/SQLite3.cpp include/normal/ssb/SQLite3.h
         src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
         src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
-        src/query1_1/Queries.cpp include/normal/ssb/query1_1/Queries.h
-        src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h)
+        src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
+        src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
+        src/query1_1/Tests.cpp include/normal/ssb/query1_1/Tests.h)
 
 target_include_directories(normal-ssb PUBLIC include)
 
+target_link_libraries(normal-ssb PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb PRIVATE LLVM-filesystem)
 target_link_libraries(normal-ssb PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb PRIVATE normal-plan)
@@ -45,8 +47,10 @@ target_link_libraries(normal-ssb-benchmark PRIVATE normal-sql)
 
 add_executable(normal-ssb-test
         test/Main.cpp
-        test/SSBQuery1_1FileTest.cpp
-        test/SSBQuery1_1S3Test.cpp test/SSBQuery1_1SQLTest.cpp)
+        test/SSBQuery1_1FileTestSF0_01.cpp
+        test/SSBQuery1_1FileTestSF1.cpp
+        test/SSBQuery1_1S3Test.cpp
+        test/SSBQuery1_1SQLTest.cpp)
 
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-test PRIVATE normal-ssb)
