@@ -4,42 +4,60 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/ssb/query1_1/Tests.h>
+#include <normal/ssb/query1_1/LocalFileSystemTests.h>
 
 using namespace normal::ssb;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
-TEST_SUITE ("ssb-benchmark-query1.1-file-sf0.01" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("ssb-query1.1-file-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("date-scan" * doctest::skip(false || SKIP_SUITE)) {
-  Tests::dateScan("data/ssb-sf0.01", 1, true);
-  Tests::dateScan("data/ssb-sf0.01", 2, true);
+TEST_CASE ("date-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::dateScan("data/ssb-sf0.01", 1, true);
 }
 
-TEST_CASE ("lineorder-scan" * doctest::skip(false || SKIP_SUITE)) {
-  Tests::lineOrderScan("data/ssb-sf0.01", 1, true);
-  Tests::lineOrderScan("data/ssb-sf0.01", 2, true);
+TEST_CASE ("date-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::dateScan("data/ssb-sf0.01", 2, true);
 }
 
-TEST_CASE ("date-filter" * doctest::skip(false || SKIP_SUITE)) {
-  Tests::dateFilter(1992, "data/ssb-sf0.01", 1, true);
-  Tests::dateFilter(1992, "data/ssb-sf0.01", 2, true);
+TEST_CASE ("lineorder-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::lineOrderScan("data/ssb-sf0.01", 1, true);
 }
 
-TEST_CASE ("lineorder-filter" * doctest::skip(false || SKIP_SUITE)) {
-  Tests::lineOrderFilter(2, 25, "data/ssb-sf0.01", 1, true);
-  Tests::lineOrderFilter(2, 25, "data/ssb-sf0.01", 2, true);
+TEST_CASE ("lineorder-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::lineOrderScan("data/ssb-sf0.01", 2, true);
 }
 
-TEST_CASE ("join" * doctest::skip(false || SKIP_SUITE)) {
-  Tests::join(1992, 2, 25, "data/ssb-sf0.01", 1, true);
-  Tests::join(1992, 2, 25, "data/ssb-sf0.01", 2, true);
+TEST_CASE ("date-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::dateFilter(1992, "data/ssb-sf0.01", 1, true);
 }
 
-TEST_CASE ("aggregate" * doctest::skip(false || SKIP_SUITE)) {
-  Tests::full(1992, 2, 25, "data/ssb-sf0.01", 1, true);
-  Tests::full(1992, 2, 25, "data/ssb-sf0.01", 2, true);
+TEST_CASE ("date-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::dateFilter(1992, "data/ssb-sf0.01", 2, true);
+}
+
+TEST_CASE ("lineorder-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::lineOrderFilter(2, 25, "data/ssb-sf0.01", 1, true);
+}
+
+TEST_CASE ("lineorder-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::lineOrderFilter(2, 25, "data/ssb-sf0.01", 2, true);
+}
+
+TEST_CASE ("join-par1" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::join(1992, 2, 25, "data/ssb-sf0.01", 1, true);
+}
+
+TEST_CASE ("join-par2" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::join(1992, 2, 25, "data/ssb-sf0.01", 2, true);
+}
+
+TEST_CASE ("full-par1" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::full(1992, 2, 25, "data/ssb-sf0.01", 1, true);
+}
+
+TEST_CASE ("full-par2" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::full(1992, 2, 25, "data/ssb-sf0.01", 2, true);
 }
 
 }

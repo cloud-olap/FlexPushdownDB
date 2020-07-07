@@ -14,10 +14,12 @@ using namespace normal::pushdown;
 
 filesystem::path TestUtil::getTestScratchDirectory() {
   auto testName = getCurrentTestName();
+  auto testSuite = getCurrentTestSuiteName();
   auto currentPath = filesystem::current_path();
   auto baseTestScratchDir = currentPath.append(std::string("tests"));
   filesystem::create_directories(baseTestScratchDir);
-  auto testScratchDir = baseTestScratchDir.append(testName);
+  auto testSuiteScratchDir = baseTestScratchDir.append(testSuite);
+  auto testScratchDir = testSuiteScratchDir.append(testName);
   filesystem::create_directories(testScratchDir);
   return testScratchDir;
 }

@@ -2,7 +2,7 @@
 // Created by matt on 6/7/20.
 //
 
-#include "normal/ssb/query1_1/Tests.h"
+#include "normal/ssb/query1_1/LocalFileSystemTests.h"
 
 #include <doctest/doctest.h>
 #include <filesystem>
@@ -16,11 +16,11 @@ using namespace normal::ssb::query1_1;
 
 
 /**
- * Tests that SQLLite and Normal produce the same output for date scan component of query 1.1
+ * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan component of query 1.1
  *
  * Only checking row count at moment
  */
-void Tests::dateScan(const std::string &dataDir, int numConcurrentUnits, bool check) {
+void LocalFileSystemTests::dateScan(const std::string &dataDir, int numConcurrentUnits, bool check) {
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
 			  dataDir, numConcurrentUnits);
@@ -38,11 +38,11 @@ void Tests::dateScan(const std::string &dataDir, int numConcurrentUnits, bool ch
 }
 
 /**
- * Tests that SQLLite and Normal produce the same output for date scan and filter component of query 1.1
+ * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan and filter component of query 1.1
  *
  * Only checking row count at moment
  */
-void Tests::dateFilter(short year, const std::string &dataDir, int numConcurrentUnits, bool check) {
+void LocalFileSystemTests::dateFilter(short year, const std::string &dataDir, int numConcurrentUnits, bool check) {
 
   SPDLOG_INFO("Arguments  |  year: {}, dataDir: '{}', numConcurrentUnits: {}",
 			  dataDir, year, numConcurrentUnits);
@@ -61,11 +61,11 @@ void Tests::dateFilter(short year, const std::string &dataDir, int numConcurrent
 }
 
 /**
- * Tests that SQLLite and Normal produce the same output for lineorder scan component of query 1.1
+ * LocalFileSystemTests that SQLLite and Normal produce the same output for lineorder scan component of query 1.1
  *
  * Only checking row count at moment
  */
-void Tests::lineOrderScan(const std::string &dataDir, int numConcurrentUnits, bool check) {
+void LocalFileSystemTests::lineOrderScan(const std::string &dataDir, int numConcurrentUnits, bool check) {
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
 			  dataDir, numConcurrentUnits);
@@ -83,11 +83,11 @@ void Tests::lineOrderScan(const std::string &dataDir, int numConcurrentUnits, bo
 }
 
 /**
- * Tests that SQLLite and Normal produce the same output for lineorder scan and filter component of query 1.1
+ * LocalFileSystemTests that SQLLite and Normal produce the same output for lineorder scan and filter component of query 1.1
  *
  * Only checking row count at moment
  */
-void Tests::lineOrderFilter(short discount, short quantity, const std::string &dataDir, int numConcurrentUnits, bool check) {
+void LocalFileSystemTests::lineOrderFilter(short discount, short quantity, const std::string &dataDir, int numConcurrentUnits, bool check) {
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, discount, quantity, numConcurrentUnits);
@@ -106,11 +106,11 @@ void Tests::lineOrderFilter(short discount, short quantity, const std::string &d
 }
 
 /**
- * Tests that SQLLite and Normal produce the same output for join component of query 1.1
+ * LocalFileSystemTests that SQLLite and Normal produce the same output for join component of query 1.1
  *
  * Only checking row count at moment
  */
-void Tests::join(short year, short discount, short quantity, const std::string &dataDir, int numConcurrentUnits, bool check) {
+void LocalFileSystemTests::join(short year, short discount, short quantity, const std::string &dataDir, int numConcurrentUnits, bool check) {
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, year, discount, quantity, numConcurrentUnits);
@@ -130,12 +130,12 @@ void Tests::join(short year, short discount, short quantity, const std::string &
 }
 
 /**
- * Tests that SQLLite and Normal produce the same output for full query 1.1
+ * LocalFileSystemTests that SQLLite and Normal produce the same output for full query 1.1
  */
-void Tests::full(short year, short discount, short quantity,
-				 const std::string &dataDir,
-				 int numConcurrentUnits,
-				 bool check) {
+void LocalFileSystemTests::full(short year, short discount, short quantity,
+								const std::string &dataDir,
+								int numConcurrentUnits,
+								bool check) {
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, year, discount, quantity, numConcurrentUnits);

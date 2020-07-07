@@ -91,6 +91,38 @@ Operators::makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
   return dateScanOperators;
 }
 
+std::vector<std::shared_ptr<S3SelectScan>>
+Operators::makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
+									  const std::string &s3Bucket,
+									  short year,
+									  int numConcurrentUnits,
+									  std::unordered_map<std::string, long> partitionMap,
+									  AWSClient &client){
+  auto dateFile = s3ObjectDir + "/date.tbl";
+  auto numBytesDateFile = partitionMap.find(dateFile)->second;
+
+  std::vector<std::string> dateColumns =
+	  {"D_DATEKEY", "D_YEAR"};
+
+  std::vector<std::shared_ptr<S3SelectScan>> dateScanOperators;
+  auto dateScanRanges = Util::ranges<long>(0, numBytesDateFile, numConcurrentUnits);
+  for (int p = 0; p < numConcurrentUnits; ++p) {
+	auto dateScan = S3SelectScan::make(
+		fmt::format("dateScan-{}", p),
+		s3Bucket,
+		dateFile,
+		fmt::format("select D_DATEKEY, D_YEAR from s3Object where cast(D_YEAR as int) = {}", year),
+		dateColumns,
+		dateScanRanges[p].first,
+		dateScanRanges[p].second,
+		S3SelectCSVParseOptions(",", "\n"),
+		client.defaultS3Client());
+	dateScanOperators.push_back(dateScan);
+  }
+
+  return dateScanOperators;
+}
+
 std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
 Operators::makeDateFilterOperators(short year, int numConcurrentUnits) {
 
@@ -179,6 +211,45 @@ Operators::makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
 		s3Bucket,
 		lineOrderFile,
 		"select * from s3object",
+		lineOrderColumns,
+		lineOrderScanRanges[p].first,
+		lineOrderScanRanges[p].second,
+		S3SelectCSVParseOptions(",", "\n"),
+		client.defaultS3Client());
+	lineOrderScanOperators.push_back(lineOrderScan);
+  }
+
+  return lineOrderScanOperators;
+}
+
+std::vector<std::shared_ptr<S3SelectScan>>
+Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3ObjectDir,
+										   const std::string &s3Bucket,
+										   short discount, short quantity,
+										   int numConcurrentUnits,
+										   std::unordered_map<std::string, long> partitionMap,
+										   AWSClient &client){
+
+  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+  auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
+
+  std::vector<std::string> lineOrderColumns =
+	  {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
+  int discountLower = discount - 1;
+  int discountUpper = discount + 1;
+
+  std::vector<std::shared_ptr<S3SelectScan>> lineOrderScanOperators;
+  auto lineOrderScanRanges = Util::ranges<long>(0, numBytesLineOrderFile, numConcurrentUnits);
+  for (int p = 0; p < numConcurrentUnits; ++p) {
+	auto lineOrderScan = S3SelectScan::make(
+		fmt::format("lineOrderScan-{}", p),
+		s3Bucket,
+		lineOrderFile,
+		fmt::format(
+			"select LO_ORDERDATE, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE from s3Object where cast(LO_DISCOUNT as int) between {} and {} and cast(LO_QUANTITY as int) < {}",
+			discountLower,
+			discountUpper,
+			quantity),
 		lineOrderColumns,
 		lineOrderScanRanges[p].first,
 		lineOrderScanRanges[p].second,

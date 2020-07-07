@@ -5,7 +5,6 @@
 #ifndef NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY_1_1_OPERATORS_H
 #define NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY_1_1_OPERATORS_H
 
-
 #include <vector>
 #include <memory>
 
@@ -23,7 +22,6 @@ using namespace normal::pushdown;
 using namespace normal::pushdown::filter;
 using namespace normal::pushdown::join;
 using namespace normal::pushdown::shuffle;
-
 
 namespace normal::ssb::query1_1 {
 
@@ -44,6 +42,14 @@ public:
 								std::unordered_map<std::string, long> partitionMap,
 								AWSClient &client);
 
+  static std::vector<std::shared_ptr<S3SelectScan>>
+  makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
+										const std::string &s3Bucket,
+										short year,
+										int numConcurrentUnits,
+										std::unordered_map<std::string, long> partitionMap,
+										AWSClient &client);
+
   static std::vector<std::shared_ptr<FileScan>>
   makeLineOrderFileScanOperators(const std::string &dataDir, int numConcurrentUnits);
 
@@ -53,6 +59,14 @@ public:
 									 int numConcurrentUnits,
 									 std::unordered_map<std::string, long> partitionMap,
 									 AWSClient &client);
+
+  static std::vector<std::shared_ptr<S3SelectScan>>
+  makeLineOrderS3SelectScanPushdownOperators(const std::string &s3ObjectDir,
+											 const std::string &s3Bucket,
+											 short discount, short quantity,
+											 int numConcurrentUnits,
+											 std::unordered_map<std::string, long> partitionMap,
+											 AWSClient &client);
 
   static std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
   makeDateFilterOperators(short year, int numConcurrentUnits);

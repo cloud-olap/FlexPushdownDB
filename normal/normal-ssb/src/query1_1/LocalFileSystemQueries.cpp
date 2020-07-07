@@ -284,7 +284,7 @@ LocalFileSystemQueries::full(const std::string &dataDir,
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(lineOrderFilters[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
-  	mgr->put(dateShuffles[u]);
+	mgr->put(dateShuffles[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	mgr->put(lineOrderShuffles[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)

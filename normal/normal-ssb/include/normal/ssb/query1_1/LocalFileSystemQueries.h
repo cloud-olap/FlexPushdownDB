@@ -5,18 +5,16 @@
 #ifndef NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY1_1_LOCALFILESYSTEMQUERIES_H
 #define NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY1_1_LOCALFILESYSTEMQUERIES_H
 
-
 #include <memory>
 
 #include <normal/core/OperatorManager.h>
 
 using namespace normal::core;
 
-
 namespace normal::ssb::query1_1 {
 
 /**
- * Partial and full query definitions for SSB query 1.1 as Normal execution plans
+ * Partial and full query definitions for SSB query 1.1 as Normal execution plans using local file system data sources
  */
 class LocalFileSystemQueries {
 

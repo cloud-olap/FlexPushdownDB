@@ -13,7 +13,8 @@ add_library(normal-ssb
         src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
         src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
         src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
-        src/query1_1/Tests.cpp include/normal/ssb/query1_1/Tests.h)
+        src/query1_1/LocalFileSystemTests.cpp include/normal/ssb/query1_1/LocalFileSystemTests.h
+        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h)
 
 target_include_directories(normal-ssb PUBLIC include)
 
@@ -49,8 +50,10 @@ add_executable(normal-ssb-test
         test/Main.cpp
         test/SSBQuery1_1FileTestSF0_01.cpp
         test/SSBQuery1_1FileTestSF1.cpp
-        test/SSBQuery1_1S3Test.cpp
-        test/SSBQuery1_1SQLTest.cpp)
+        test/SSBQuery1_1S3PullUpTestSF0_01.cpp
+        test/SSBQuery1_1SQLTest.cpp
+        test/SSBQuery1_1S3PushDownTestSF0_01.cpp
+        test/SSBQuery1_1S3HybridTestSF0_01.cpp)
 
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-test PRIVATE normal-ssb)

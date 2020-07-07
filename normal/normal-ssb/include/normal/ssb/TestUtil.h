@@ -14,6 +14,7 @@
  * Hack to get the current DocTest test being run. Need to forward declare getCurrentTestName declared in MainTest.
  */
 const char *getCurrentTestName();
+const char *getCurrentTestSuiteName();
 
 using namespace std::experimental;
 using namespace normal::tuple;
