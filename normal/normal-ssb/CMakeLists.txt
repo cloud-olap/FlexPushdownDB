@@ -50,6 +50,7 @@ add_executable(normal-ssb-test
         test/Main.cpp
         test/SSBQuery1_1FileTestSF0_01.cpp
         test/SSBQuery1_1FileTestSF1.cpp
+        test/SSBQuery1_1FileHybridSF0_01Test.cpp
         test/SSBQuery1_1S3PullUpTestSF0_01.cpp
         test/SSBQuery1_1SQLTest.cpp
         test/SSBQuery1_1S3PushDownTestSF0_01.cpp
