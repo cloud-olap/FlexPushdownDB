@@ -17,25 +17,29 @@ namespace normal::pushdown {
 class FileScan : public normal::core::Operator {
 
 public:
-  [[deprecated ("Use constructor accepting a byte range")]] FileScan(std::string name, std::string filePath);
+  [[deprecated ("Use constructor accepting a byte range")]] FileScan(std::string name, std::string filePath, long queryId);
 
   FileScan(std::string name,
 		   std::string filePath,
 		   std::vector<std::string> columnNames,
 		   unsigned long startOffset,
-		   unsigned long finishOffset);
+		   unsigned long finishOffset,
+		   long queryId);
 
   static std::shared_ptr<FileScan> make(std::string name,
 										std::string filePath,
 										std::vector<std::string> columnNames,
 										unsigned long startOffset,
-										unsigned long finishOffset);
+										unsigned long finishOffset,
+										long queryId);
 
 private:
   std::string filePath_;
   std::vector<std::string> columnNames_;
   unsigned long startOffset_;
   unsigned long finishOffset_;
+  long queryId_;
+
   void onStart();
   void onReceive(const normal::core::message::Envelope &message) override;
   void onCacheLoadResponse(const normal::core::cache::LoadResponseMessage &Message);

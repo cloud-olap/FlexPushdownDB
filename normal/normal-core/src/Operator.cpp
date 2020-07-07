@@ -51,11 +51,9 @@ std::shared_ptr<OperatorContext> Operator::ctx() {
 void Operator::create(std::shared_ptr<OperatorContext> ctx) {
   assert (ctx);
 
-  SPDLOG_DEBUG("Creating operator '{}'", this->name_);
+  SPDLOG_DEBUG("Creating operator  |  name: '{}'", this->name_);
 
   opContext_ = std::move(ctx);
-
-  SPDLOG_DEBUG("Created operator '{}'", this->name_);
 
   assert (opContext_);
 }

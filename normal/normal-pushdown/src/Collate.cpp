@@ -19,13 +19,15 @@ using namespace normal::core;
 namespace normal::pushdown {
 
 void Collate::onStart() {
-  SPDLOG_DEBUG("Starting");
+  SPDLOG_DEBUG("Starting  |  name: '{}'", this->name());
 
   // FIXME: Not the best way to reset the tuples structure
   this->tuples_ = nullptr;
 }
 
-Collate::Collate(std::string name) : Operator(std::move(name), "Collate") {
+Collate::Collate(std::string name, long queryId) :
+Operator(std::move(name), "Collate"),
+queryId_(queryId) {
 }
 
 void Collate::onReceive(const normal::core::message::Envelope &message) {
@@ -53,7 +55,7 @@ void Collate::show() {
 
   assert(tuples_);
 
-  SPDLOG_DEBUG("{}  |  Show:\n{}", this->name(), tuples_->toString());
+  SPDLOG_DEBUG("Collated  |  tupleSet:\n{}", this->name(), tuples_->toString());
 }
 
 std::shared_ptr<TupleSet> Collate::tuples() {

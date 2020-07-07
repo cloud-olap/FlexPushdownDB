@@ -17,7 +17,9 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/shuffle/Shuffle.h>
+#include <normal/core/graph/OperatorGraph.h>
 
+using namespace normal::core::graph;
 using namespace normal::pushdown;
 using namespace normal::pushdown::filter;
 using namespace normal::pushdown::join;
@@ -33,7 +35,7 @@ class Operators {
 public:
 
   static std::vector<std::shared_ptr<FileScan>>
-  makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits);
+  makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits, std::shared_ptr<OperatorGraph> g);
 
   static std::vector<std::shared_ptr<S3SelectScan>>
   makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
@@ -51,7 +53,7 @@ public:
 										AWSClient &client);
 
   static std::vector<std::shared_ptr<FileScan>>
-  makeLineOrderFileScanOperators(const std::string &dataDir, int numConcurrentUnits);
+  makeLineOrderFileScanOperators(const std::string &dataDir, int numConcurrentUnits, std::shared_ptr<OperatorGraph> g);
 
   static std::vector<std::shared_ptr<S3SelectScan>>
   makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
@@ -91,7 +93,7 @@ public:
 
   static std::shared_ptr<Aggregate> makeAggregateReduceOperator();
 
-  static std::shared_ptr<Collate> makeCollateOperator();
+  static std::shared_ptr<Collate> makeCollateOperator(std::shared_ptr<OperatorGraph> g);
 
 };
 

@@ -7,6 +7,7 @@
 
 #include <experimental/filesystem>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/plan/LogicalPlan.h>
 #include <normal/tuple/TupleSet2.h>
 
@@ -19,6 +20,7 @@ const char *getCurrentTestSuiteName();
 using namespace std::experimental;
 using namespace normal::tuple;
 using namespace normal::core;
+using namespace normal::core::graph;
 
 namespace normal::ssb {
 
@@ -33,15 +35,22 @@ public:
 
   static void writeExecutionPlan(normal::core::OperatorManager &mgr);
 
+  static void writeExecutionPlan2(OperatorGraph &g);
+
   static void writeExecutionPlan(normal::plan::LogicalPlan &plan);
 
   static std::shared_ptr<TupleSet2> executeExecutionPlanTest(const std::shared_ptr<OperatorManager> &mgr);
+
+  static std::shared_ptr<TupleSet2> executeExecutionPlanTest2(const std::shared_ptr<OperatorGraph> &g);
 
   static std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>
   executeSQLite(const std::string &sql, std::vector<std::string> dataFiles);
 
   static std::shared_ptr<TupleSet2>
   executeExecutionPlan(const std::shared_ptr<OperatorManager> &mgr);
+
+  static std::shared_ptr<TupleSet2>
+  executeExecutionPlan2(const std::shared_ptr<OperatorGraph> &g);
 };
 
 }

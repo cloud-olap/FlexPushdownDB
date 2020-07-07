@@ -40,28 +40,31 @@ namespace arrow { class MemoryPool; }
 
 namespace normal::pushdown {
 
-FileScan::FileScan(std::string name, std::string filePath) :
+FileScan::FileScan(std::string name, std::string filePath, long queryId) :
 	Operator(std::move(name), "FileScan"),
 	filePath_(std::move(filePath)),
 	startOffset_(0),
-	finishOffset_(ULONG_MAX) {}
+	finishOffset_(ULONG_MAX),
+queryId_(queryId){}
 
 FileScan::FileScan(std::string name,
 				   std::string filePath,
 				   std::vector<std::string> columnNames,
 				   unsigned long startOffset,
-				   unsigned long finishOffset) :
+				   unsigned long finishOffset,
+long queryId) :
 	Operator(std::move(name), "FileScan"),
 	filePath_(std::move(filePath)),
 	columnNames_(std::move(columnNames)),
 	startOffset_(startOffset),
-	finishOffset_(finishOffset) {}
+	finishOffset_(finishOffset),
+	queryId_(queryId){}
 
 std::shared_ptr<FileScan> FileScan::make(std::string name,
 										 std::string filePath,
 										 std::vector<std::string> columnNames,
 										 unsigned long startOffset,
-										 unsigned long finishOffset) {
+										 unsigned long finishOffset, long queryId) {
 
   auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
@@ -69,7 +72,8 @@ std::shared_ptr<FileScan> FileScan::make(std::string name,
 									filePath,
 									canonicalColumnNames,
 									startOffset,
-									finishOffset);
+									finishOffset,
+									queryId);
 }
 
 void FileScan::onReceive(const Envelope &message) {
@@ -93,7 +97,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> FileScan::readCSVFile(cons
 }
 
 void FileScan::onStart() {
-  SPDLOG_DEBUG("Starting");
+  SPDLOG_DEBUG("Starting '{}'", this->name());
   requestLoadSegmentsFromCache();
 }
 

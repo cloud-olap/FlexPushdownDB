@@ -100,6 +100,8 @@ void OperatorContext::operatorActor(OperatorActor *operatorActor) {
  */
 void OperatorContext::notifyComplete() {
 
+  SPDLOG_DEBUG("Completing  |  name: '{}'", this->operatorActor()->name());
+
   OperatorActor* operatorActor = this->operatorActor();
 
   std::shared_ptr<message::Message> msg = std::make_shared<message::CompleteMessage>(operatorActor->operator_()->name());
@@ -113,6 +115,8 @@ void OperatorContext::notifyComplete() {
 
   // Send message to root actor
   operatorActor->send(rootActor_, e);
+
+  operatorActor->quit();
 }
 
 } // namespace

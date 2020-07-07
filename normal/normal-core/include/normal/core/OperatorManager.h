@@ -13,9 +13,12 @@
 #include <tl/expected.hpp>
 #include <utility>
 #include <normal/core/Globals.h>
+#include <normal/core/cache/SegmentCacheActor.h>
 
 #include "OperatorContext.h"
 #include "OperatorDirectory.h"
+
+using namespace normal::core::cache;
 
 namespace normal::core {
 
@@ -29,13 +32,16 @@ class OperatorManager {
 private:
   std::map<std::string, std::shared_ptr<OperatorContext>> m_operatorMap;
   caf::actor_system_config actorSystemConfig;
-  std::unique_ptr<caf::actor_system> actorSystem;
-  std::map<std::string, caf::actor_id> actorMap;
+  std::shared_ptr<caf::actor_system> actorSystem;
+//  std::map<std::string, caf::actor_id> actorMap;
   std::shared_ptr<caf::scoped_actor> rootActor_;
   OperatorDirectory operatorDirectory_;
+  std::shared_ptr<SegmentCacheActor> segmentCacheActor_;
 
   std::chrono::steady_clock::time_point startTime_;
   std::chrono::steady_clock::time_point stopTime_;
+
+  std::atomic<long> queryCounter_;
 
 public:
   OperatorManager();
@@ -43,16 +49,19 @@ public:
   void put(const std::shared_ptr<Operator> &op);
   std::shared_ptr<Operator> getOperator(const std::string &);
   std::map<std::string, std::shared_ptr<OperatorContext>> getOperators();
+  const std::shared_ptr<SegmentCacheActor> &getSegmentCacheActor() const;
+  const std::shared_ptr<caf::actor_system> &getActorSystem() const;
+  long nextQueryId();
 
   void boot();
   void start();
   void stop();
   void join();
 
-  tl::expected<void, std::string> send(std::shared_ptr<message::Message> message, const std::string& recipientId);
+  tl::expected<void, std::string> send(std::shared_ptr<message::Message> message, const std::string &recipientId);
   std::shared_ptr<normal::core::message::Message> receive();
 
-  void write_graph(const std::string& file);
+  void write_graph(const std::string &file);
 
   tl::expected<long, std::string> getElapsedTime();
 

@@ -24,7 +24,8 @@ std::shared_ptr<normal::core::Operator> FileScanLogicalOperator::toOperator() {
 
 	const std::shared_ptr<pushdown::FileScan> &fileScanOperator =
 		std::make_shared<normal::pushdown::FileScan>(localFilePartition->getPath(),
-													 localFilePartition->getPath());
+													 localFilePartition->getPath(),
+													 0);
 	operators->push_back(fileScanOperator);
   }
 
@@ -38,7 +39,8 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> FileScanLo
 
 	const std::shared_ptr<pushdown::FileScan> &fileScanOperator =
 		std::make_shared<normal::pushdown::FileScan>(localFilePartition->getPath(),
-													 localFilePartition->getPath());
+													 localFilePartition->getPath(),
+													 0);
 
 
 	operators->push_back(fileScanOperator);

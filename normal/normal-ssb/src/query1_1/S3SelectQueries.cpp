@@ -35,7 +35,7 @@ S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
 
   auto dateScans =
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -71,7 +71,7 @@ std::shared_ptr<OperatorManager> S3SelectQueries::dateFilterPullUp(const std::st
   auto dateScans =
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -113,7 +113,7 @@ S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 
   auto lineOrderScans =
 	  Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -151,7 +151,7 @@ S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
   auto lineOrderScans =
 	  Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -203,7 +203,7 @@ std::shared_ptr<OperatorManager> S3SelectQueries::joinPullUp(const std::string &
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits);
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -304,7 +304,7 @@ std::shared_ptr<OperatorManager> S3SelectQueries::fullPullUp(const std::string &
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits);
   auto aggregateReduce = Operators::makeAggregateReduceOperator();
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -419,7 +419,7 @@ std::shared_ptr<OperatorManager> S3SelectQueries::fullPushDown(const std::string
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits);
   auto aggregateReduce = Operators::makeAggregateReduceOperator();
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -520,7 +520,7 @@ std::shared_ptr<OperatorManager> S3SelectQueries::fullHybrid(const std::string &
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits);
   auto aggregateReduce = Operators::makeAggregateReduceOperator();
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {

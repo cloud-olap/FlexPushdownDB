@@ -8,8 +8,10 @@
 #include <memory>
 
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 
 using namespace normal::core;
+using namespace normal::core::graph;
 
 namespace normal::ssb::query1_1 {
 
@@ -22,6 +24,10 @@ public:
 
   static std::shared_ptr<OperatorManager> dateScan(const std::string &dataDir,
 												   int numConcurrentUnits);
+
+  static std::shared_ptr<OperatorGraph> dateScan2(const std::string &dataDir,
+												   int numConcurrentUnits,
+												  std::shared_ptr<OperatorManager>);
 
   static std::shared_ptr<OperatorManager> lineOrderScan(const std::string &dataDir,
 														int numConcurrentUnits);

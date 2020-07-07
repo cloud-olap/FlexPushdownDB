@@ -31,6 +31,13 @@ void TestUtil::writeExecutionPlan(normal::core::OperatorManager &mgr) {
   mgr.write_graph(physicalPlanFile);
 }
 
+void TestUtil::writeExecutionPlan2(OperatorGraph &g) {
+  auto testScratchDir = getTestScratchDirectory();
+
+  auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
+  g.write_graph(physicalPlanFile);
+}
+
 void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
   auto testScratchDir = getTestScratchDirectory();
 
@@ -66,6 +73,23 @@ std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest(const std::shared_
   return tupleSet;
 }
 
+std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest2(const std::shared_ptr<OperatorGraph> &g) {
+
+  TestUtil::writeExecutionPlan2(*g);
+
+  g->boot();
+  g->start();
+  g->join();
+
+  auto tuples = std::static_pointer_cast<Collate>(g->getOperator(fmt::format("/query-{}/collate", g->getId())))->tuples();
+
+//  g->stop();
+  SPDLOG_INFO("Metrics:\n{}", g->showMetrics());
+
+  auto tupleSet = TupleSet2::create(tuples);
+  return tupleSet;
+}
+
 /**
  * Runs the given query in sql lite, returning the results or failing the test on an error
  */
@@ -88,6 +112,12 @@ TestUtil::executeSQLite(const std::string &sql, std::vector<std::string> dataFil
  */
 std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlan(const std::shared_ptr<OperatorManager> &mgr) {
   auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
+  SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  return tupleSet;
+}
+
+std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlan2(const std::shared_ptr<OperatorGraph> &g) {
+  auto tupleSet = TestUtil::executeExecutionPlanTest2(g);
   SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
   return tupleSet;
 }

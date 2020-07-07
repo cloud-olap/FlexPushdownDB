@@ -11,6 +11,7 @@
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/core/type/Integer32Type.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
 #include <normal/expression/gandiva/Literal.h>
@@ -25,11 +26,12 @@ using namespace normal::ssb::query1_1;
 using namespace std::experimental;
 using namespace normal::pushdown::aggregate;
 using namespace normal::core::type;
+using namespace normal::core::graph;
 using namespace normal::expression::gandiva;
 
 
 std::vector<std::shared_ptr<FileScan>>
-Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits) {
+Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits, std::shared_ptr<OperatorGraph> g) {
 
   auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
   auto numBytesDateFile = filesystem::file_size(dateFile);
@@ -46,11 +48,12 @@ Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurre
   std::vector<std::shared_ptr<FileScan>> dateScanOperators;
   auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto dateScan = FileScan::make(fmt::format("dateScan-{}", u),
+	auto dateScan = FileScan::make(fmt::format("/query-{}/date-scan-{}", g->getId(), u),
 								   dateFile,
 								   dateColumns,
 								   dateScanRanges[u].first,
-								   dateScanRanges[u].second);
+								   dateScanRanges[u].second,
+								   g->getId());
 	dateScanOperators.push_back(dateScan);
   }
 
@@ -163,7 +166,7 @@ Operators::makeLineOrderShuffleOperators(int numConcurrentUnits) {
 }
 
 std::vector<std::shared_ptr<FileScan>>
-Operators::makeLineOrderFileScanOperators(const std::string &dataDir, int numConcurrentUnits) {
+Operators::makeLineOrderFileScanOperators(const std::string &dataDir, int numConcurrentUnits, std::shared_ptr<OperatorGraph> g) {
 
   auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
   auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
@@ -181,7 +184,8 @@ Operators::makeLineOrderFileScanOperators(const std::string &dataDir, int numCon
 										lineOrderFile,
 										lineOrderColumns,
 										lineOrderScanRanges[u].first,
-										lineOrderScanRanges[u].second);
+										lineOrderScanRanges[u].second,
+										g->getId());
 	lineOrderScanOperators.push_back(lineOrderScan);
   }
 
@@ -345,4 +349,6 @@ std::shared_ptr<Aggregate> Operators::makeAggregateReduceOperator() {
   return aggregateReduce;
 }
 
-std::shared_ptr<Collate> Operators::makeCollateOperator() { return std::make_shared<Collate>("collate"); }
+std::shared_ptr<Collate> Operators::makeCollateOperator(std::shared_ptr<OperatorGraph> g) {
+  return std::make_shared<Collate>(fmt::format("/query-{}/collate", g->getId()), g->getId());
+}

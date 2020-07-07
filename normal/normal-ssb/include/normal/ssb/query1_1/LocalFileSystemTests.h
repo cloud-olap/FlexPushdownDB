@@ -24,6 +24,7 @@ public:
    * Only checking row count at moment
    */
   static void dateScan(const std::string &dataDir, int numConcurrentUnits, bool check);
+  static void dateScanMulti(const std::string &dataDir, int numConcurrentUnits, bool check);
 
   /**
    * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan and filter component of query 1.1

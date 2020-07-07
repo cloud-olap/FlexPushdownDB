@@ -15,7 +15,7 @@ CollateLogicalOperator::CollateLogicalOperator()
 	: LogicalOperator(type::OperatorTypes::collateOperatorType()) {}
 
 std::shared_ptr<normal::core::Operator> CollateLogicalOperator::toOperator() {
-  return std::make_shared<normal::pushdown::Collate>("collate");
+  return std::make_shared<normal::pushdown::Collate>("collate", 0);
 }
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> CollateLogicalOperator::toOperators() {
   auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();

@@ -7,6 +7,8 @@
 #include <normal/ssb/Globals.h>
 #include <normal/ssb/query1_1/Operators.h>
 
+#include <utility>
+
 using namespace normal::ssb::query1_1;
 using namespace normal::pushdown::aggregate;
 using namespace normal::core::type;
@@ -17,8 +19,8 @@ LocalFileSystemQueries::dateScan(const std::string &dataDir, int numConcurrentUn
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, nullptr);
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -33,14 +35,35 @@ LocalFileSystemQueries::dateScan(const std::string &dataDir, int numConcurrentUn
   return mgr;
 }
 
+std::shared_ptr<OperatorGraph>
+LocalFileSystemQueries::dateScan2(const std::string &dataDir, int numConcurrentUnits, std::shared_ptr<OperatorManager> mgr) {
+
+  auto g = OperatorGraph::make(std::move(mgr));
+
+  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, g);
+  auto collate = Operators::makeCollateOperator(g);
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(collate);
+	collate->consume(dateScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(dateScans[u]);
+  g->put(collate);
+
+  return g;
+}
+
 std::shared_ptr<OperatorManager>
 LocalFileSystemQueries::dateFilter(const std::string &dataDir, short year, int numConcurrentUnits) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
+  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, nullptr);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -68,8 +91,8 @@ LocalFileSystemQueries::lineOrderScan(const std::string &dataDir,
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, nullptr);
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -92,9 +115,9 @@ LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
+  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, nullptr);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -125,15 +148,15 @@ LocalFileSystemQueries::join(const std::string &dataDir,
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
-  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
+  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, nullptr);
+  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, nullptr);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
   auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits);
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits);
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -210,8 +233,8 @@ LocalFileSystemQueries::full(const std::string &dataDir,
 
   auto mgr = std::make_shared<OperatorManager>();
 
-  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits);
-  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits);
+  auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, nullptr);
+  auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, nullptr);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits);
   auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits);
@@ -220,7 +243,7 @@ LocalFileSystemQueries::full(const std::string &dataDir,
   auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits);
   auto aggregateReduce = Operators::makeAggregateReduceOperator();
-  auto collate = Operators::makeCollateOperator();
+  auto collate = Operators::makeCollateOperator(nullptr);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
