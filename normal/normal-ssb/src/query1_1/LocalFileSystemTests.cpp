@@ -43,38 +43,40 @@ void LocalFileSystemTests::dateScan(const std::string &dataDir, int numConcurren
   }
 }
 
-/**
- * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan component of query 1.1
- *
- * Only checking row count at moment
- */
-void LocalFileSystemTests::dateScanMulti(const std::string &dataDir, int numConcurrentUnits, bool check) {
+void LocalFileSystemTests::dateScanMulti(const std::string &dataDir, int numConcurrentUnits, int numIterations, bool check) {
 
-  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
-			  dataDir, numConcurrentUnits);
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}, numIterations: {}",
+			  dataDir, numConcurrentUnits, numIterations);
 
   auto mgr = std::make_shared<OperatorManager>();
   mgr->boot();
   mgr->start();
 
-  auto actual1 = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan(dataDir,
-																				 numConcurrentUnits, mgr));
-  SPDLOG_INFO("Actual 1  |  numRows: {}", actual1->numRows());
-
-  auto actual2 = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan(dataDir,
-																				 numConcurrentUnits, mgr));
+  std::vector<std::shared_ptr<TupleSet2>> actuals;
+  for(int i= 0;i<numIterations;++i) {
+	auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan(dataDir,
+																				   numConcurrentUnits, mgr));
+	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+	actuals.emplace_back(actual);
+  }
 
   mgr->stop();
 
-  SPDLOG_INFO("Actual 2  |  numRows: {}", actual2->numRows());
-
-	  CHECK_EQ(actual1->numRows(), actual2->numRows());
+  std::shared_ptr<TupleSet2> lastActual;
+  for(const auto &actual: actuals){
+    if(!lastActual) {
+	  lastActual = actual;
+	}
+    else {
+      CHECK_EQ(actual->numRows(), lastActual->numRows());
+	}
+  }
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
 											{std::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
-		CHECK_EQ(expected->size(), actual1->numRows());
+		CHECK_EQ(expected->size(), lastActual->numRows());
   }
 }
 
