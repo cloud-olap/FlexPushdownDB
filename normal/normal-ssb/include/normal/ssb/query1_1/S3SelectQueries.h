@@ -8,9 +8,11 @@
 #include <memory>
 
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/AWSClient.h>
 
 using namespace normal::core;
+using namespace normal::core::graph;
 using namespace normal::pushdown;
 
 namespace normal::ssb::query1_1 {
@@ -22,60 +24,68 @@ class S3SelectQueries {
 
 public:
 
-  static std::shared_ptr<OperatorManager> dateScanPullUp(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> dateScanPullUp(const std::string &s3Bucket,
 														 const std::string &s3ObjectDir,
 														 int numConcurrentUnits,
-														 AWSClient &client);
+														 AWSClient &client,
+														 const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> lineOrderScanPullUp(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> lineOrderScanPullUp(const std::string &s3Bucket,
 															  const std::string &s3ObjectDir,
 															  int numConcurrentUnits,
-															  AWSClient &client);
+															  AWSClient &client,
+															  const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> dateFilterPullUp(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> dateFilterPullUp(const std::string &s3Bucket,
 														   const std::string &s3ObjectDir,
 														   short year,
 														   int numConcurrentUnits,
-														   AWSClient &client);
+														   AWSClient &client,
+														   const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> lineOrderFilterPullUp(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> lineOrderFilterPullUp(const std::string &s3Bucket,
 																const std::string &s3ObjectDir,
 																short discount,
 																short quantity,
 																int numConcurrentUnits,
-																AWSClient &client);
+																AWSClient &client,
+																const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> joinPullUp(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> joinPullUp(const std::string &s3Bucket,
 													 const std::string &s3ObjectDir,
 													 short year,
 													 short discount,
 													 short quantity,
 													 int numConcurrentUnits,
-													 AWSClient &client);
+													 AWSClient &client,
+													 const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> fullPullUp(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> fullPullUp(const std::string &s3Bucket,
 													 const std::string &s3ObjectDir,
 													 short year,
 													 short discount,
 													 short quantity,
 													 int numConcurrentUnits,
-													 AWSClient &client);
+													 AWSClient &client,
+													 const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> fullPushDown(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> fullPushDown(const std::string &s3Bucket,
 													   const std::string &s3ObjectDir,
 													   short year,
 													   short discount,
 													   short quantity,
 													   int numPartitions,
-													   AWSClient &client);
+													   AWSClient &client,
+													   const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> fullHybrid(const std::string &s3Bucket,
+  static std::shared_ptr<OperatorGraph> fullHybrid(const std::string &s3Bucket,
 													 const std::string &s3ObjectDir,
 													 short year,
 													 short discount,
 													 short quantity,
 													 int numPartitions,
-													 AWSClient &client);
+													 AWSClient &client,
+													 const std::shared_ptr<OperatorManager> &mgr);
 };
 
 }

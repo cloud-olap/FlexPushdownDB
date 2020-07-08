@@ -22,36 +22,38 @@ class LocalFileSystemQueries {
 
 public:
 
-  static std::shared_ptr<OperatorManager> dateScan(const std::string &dataDir,
-												   int numConcurrentUnits);
+  static std::shared_ptr<OperatorGraph> dateScan(const std::string &dataDir,
+												 int numConcurrentUnits,
+												 const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorGraph> dateScan2(const std::string &dataDir,
-												   int numConcurrentUnits,
-												  std::shared_ptr<OperatorManager>);
+  static std::shared_ptr<OperatorGraph> lineOrderScan(const std::string &dataDir,
+														int numConcurrentUnits,
+														const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> lineOrderScan(const std::string &dataDir,
-														int numConcurrentUnits);
-
-  static std::shared_ptr<OperatorManager> dateFilter(const std::string &dataDir,
+  static std::shared_ptr<OperatorGraph> dateFilter(const std::string &dataDir,
 													 short year,
-													 int numConcurrentUnits);
+													 int numConcurrentUnits,
+													 const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> lineOrderFilter(const std::string &dataDir,
+  static std::shared_ptr<OperatorGraph> lineOrderFilter(const std::string &dataDir,
 														  short discount,
 														  short quantity,
-														  int numConcurrentUnits);
+														  int numConcurrentUnits,
+														  const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> join(const std::string &dataDir,
+  static std::shared_ptr<OperatorGraph> join(const std::string &dataDir,
 											   short year,
 											   short discount,
 											   short quantity,
-											   int numConcurrentUnits);
+											   int numConcurrentUnits,
+											   const std::shared_ptr<OperatorManager> &mgr);
 
-  static std::shared_ptr<OperatorManager> full(const std::string &dataDir,
+  static std::shared_ptr<OperatorGraph> full(const std::string &dataDir,
 											   short year,
 											   short discount,
 											   short quantity,
-											   int numConcurrentUnits);
+											   int numConcurrentUnits,
+											   const std::shared_ptr<OperatorManager> &mgr);
 };
 
 }

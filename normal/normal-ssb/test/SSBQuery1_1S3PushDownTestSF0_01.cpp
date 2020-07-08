@@ -8,7 +8,7 @@
 
 using namespace normal::ssb;
 
-#define SKIP_SUITE true
+#define SKIP_SUITE false
 
 TEST_SUITE ("ssb-query1.1-s3-pushdown-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
