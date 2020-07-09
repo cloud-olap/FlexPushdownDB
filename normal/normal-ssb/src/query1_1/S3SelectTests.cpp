@@ -14,18 +14,14 @@
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
 
-/**
- * Tests that SQLLite and Normal produce the same output for date scan component of query 1.1
- *
- * Only checking row count at moment
- */
 void S3SelectTests::dateScan(const std::string &s3ObjectDir,
 							 const std::string &dataDir,
 							 int numConcurrentUnits,
+							 int numIterations,
 							 bool check) {
 
-  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
-			  dataDir, numConcurrentUnits);
+  SPDLOG_INFO("Arguments  |  s3ObjectDir: '{}', dataDir: '{}', numConcurrentUnits: {}, numIterations: {}",
+			  s3ObjectDir, dataDir, numConcurrentUnits, numIterations);
 
   AWSClient client;
   client.init();
@@ -34,17 +30,72 @@ void S3SelectTests::dateScan(const std::string &s3ObjectDir,
   mgr->boot();
   mgr->start();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateScanPullUp("s3filter", s3ObjectDir,
-																			   numConcurrentUnits, client, mgr));
-  SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+  std::vector<std::shared_ptr<TupleSet2>> actuals;
+  for (int i = 0; i < numIterations; ++i) {
+	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateScanPullUp("s3filter", s3ObjectDir,
+																				  numConcurrentUnits, client, mgr));
+	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+  }
 
   mgr->stop();
+
+  std::shared_ptr<TupleSet2> lastActual;
+  for (const auto &actual: actuals) {
+	if (!lastActual) {
+	  lastActual = actual;
+	} else {
+		  CHECK_EQ(actual->numRows(), lastActual->numRows());
+	}
+  }
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
 											{std::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
-		CHECK_EQ(expected->size(), actual->numRows());
+		CHECK_EQ(expected->size(), lastActual->numRows());
+  }
+}
+
+void S3SelectTests::hybridDateFilter(short year,
+									 const std::string &s3ObjectDir,
+									 const std::string &dataDir,
+									 int numConcurrentUnits,
+									 int numIterations,
+									 bool check) {
+
+  SPDLOG_INFO("Arguments  |  s3ObjectDir: '{}', dataDir: '{}', numConcurrentUnits: {}, numIterations: {}",
+			  s3ObjectDir, dataDir, numConcurrentUnits, numIterations);
+
+  AWSClient client;
+  client.init();
+
+  auto mgr = std::make_shared<OperatorManager>();
+  mgr->boot();
+  mgr->start();
+
+  std::vector<std::shared_ptr<TupleSet2>> actuals;
+  for (int i = 0; i < numIterations; ++i) {
+	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterHybrid("s3filter", s3ObjectDir,
+																					numConcurrentUnits, client, mgr));
+	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+  }
+
+  mgr->stop();
+
+  std::shared_ptr<TupleSet2> lastActual;
+  for (const auto &actual: actuals) {
+	if (!lastActual) {
+	  lastActual = actual;
+	} else {
+		  CHECK_EQ(actual->numRows(), lastActual->numRows());
+	}
+  }
+
+  if (check) {
+	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
+											{std::filesystem::absolute(dataDir + "/date.tbl")});
+	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
+		CHECK_EQ(expected->size(), lastActual->numRows());
   }
 }
 
@@ -70,8 +121,8 @@ void S3SelectTests::dateFilter(short year,
   mgr->start();
 
   auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterPullUp("s3filter", s3ObjectDir,
-																				 year,
-																				 numConcurrentUnits, client, mgr));
+																				  year,
+																				  numConcurrentUnits, client, mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
 
   mgr->stop();
@@ -105,7 +156,7 @@ void S3SelectTests::lineOrderScan(const std::string &s3ObjectDir,
   mgr->start();
 
   auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::lineOrderScanPullUp("s3filter", s3ObjectDir,
-																					numConcurrentUnits, client, mgr));
+																					 numConcurrentUnits, client, mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
 
   mgr->stop();
@@ -140,9 +191,13 @@ void S3SelectTests::lineOrderFilter(short discount,
   mgr->boot();
   mgr->start();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::lineOrderFilterPullUp("s3filter", s3ObjectDir,
-																					  discount, quantity,
-																					  numConcurrentUnits, client, mgr));
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::lineOrderFilterPullUp("s3filter",
+																					   s3ObjectDir,
+																					   discount,
+																					   quantity,
+																					   numConcurrentUnits,
+																					   client,
+																					   mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
 
   mgr->stop();
@@ -179,8 +234,8 @@ void S3SelectTests::join(short year,
   mgr->start();
 
   auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::joinPullUp("s3filter", s3ObjectDir,
-																		   year, discount, quantity,
-																		   numConcurrentUnits, client, mgr));
+																			year, discount, quantity,
+																			numConcurrentUnits, client, mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
 
   mgr->stop();
@@ -213,8 +268,8 @@ void S3SelectTests::full(short year, short discount, short quantity,
   mgr->start();
 
   auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullPullUp("s3filter", s3ObjectDir,
-																		   year, discount, quantity,
-																		   numConcurrentUnits, client, mgr));
+																			year, discount, quantity,
+																			numConcurrentUnits, client, mgr));
 
   auto actualName = actual->getColumnByIndex(0).value()->getName();
   auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<int>();
@@ -254,8 +309,8 @@ void S3SelectTests::fullPushDown(short year, short discount, short quantity,
   mgr->start();
 
   auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullPushDown("s3filter", s3ObjectDir,
-																			 year, discount, quantity,
-																			 numConcurrentUnits, client, mgr));
+																			  year, discount, quantity,
+																			  numConcurrentUnits, client, mgr));
 
   auto actualName = actual->getColumnByIndex(0).value()->getName();
   auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<int>();
@@ -295,8 +350,8 @@ void S3SelectTests::hybrid(short year, short discount, short quantity,
   mgr->start();
 
   auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullHybrid("s3filter", s3ObjectDir,
-																		   year, discount, quantity,
-																		   numConcurrentUnits, client, mgr));
+																			year, discount, quantity,
+																			numConcurrentUnits, client, mgr));
 
   auto actualName = actual->getColumnByIndex(0).value()->getName();
   auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<int>();

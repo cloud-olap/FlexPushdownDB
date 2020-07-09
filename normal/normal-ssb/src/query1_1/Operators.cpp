@@ -21,6 +21,7 @@
 #include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
 #include <normal/expression/gandiva/And.h>
 #include <normal/pushdown/Util.h>
+#include <normal/connector/s3/S3SelectPartition.h>
 
 using namespace normal::ssb::query1_1;
 using namespace std::experimental;
@@ -28,7 +29,6 @@ using namespace normal::pushdown::aggregate;
 using namespace normal::core::type;
 using namespace normal::core::graph;
 using namespace normal::expression::gandiva;
-
 
 std::vector<std::shared_ptr<FileScan>>
 Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
@@ -54,6 +54,37 @@ Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurre
 								   dateScanRanges[u].first,
 								   dateScanRanges[u].second,
 								   g->getId());
+	dateScanOperators.push_back(dateScan);
+  }
+
+  return dateScanOperators;
+}
+
+std::vector<std::shared_ptr<CacheLoad>>
+Operators::makeDateS3SelectCacheLoadOperators(const std::string &s3ObjectDir,
+											  const std::string &s3Bucket,
+											  int numConcurrentUnits,
+											  std::unordered_map<std::string, long> partitionMap,
+											  AWSClient &client,
+											  const std::shared_ptr<OperatorGraph>& g) {
+
+  auto dateFile = s3ObjectDir + "/date.tbl";
+  auto numBytesDateFile = partitionMap.find(dateFile)->second;
+
+  std::vector<std::string> dateColumns =
+	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
+	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
+	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
+
+  std::vector<std::shared_ptr<CacheLoad>> dateScanOperators;
+  auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	std::shared_ptr<Partition> partition = std::make_shared<S3SelectPartition>(s3Bucket, dateFile);
+	auto dateScan = CacheLoad::make(fmt::format("/query-{}/date-cache-load-{}", g->getId(), u),
+									dateColumns,
+									partition,
+									dateScanRanges[u].first,
+									dateScanRanges[u].second);
 	dateScanOperators.push_back(dateScan);
   }
 

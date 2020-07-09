@@ -13,7 +13,28 @@ class S3SelectTests {
 
 public:
 
-  static void dateScan(const std::string &s3ObjectDir, const std::string &dataDir, int numConcurrentUnits, bool check);
+  /**
+   * Tests that SQLLite and Normal produce the same output for date scan component of query 1.1
+   *
+   * Only checking row count at moment
+   */
+  static void dateScan(const std::string &s3ObjectDir,
+					   const std::string &dataDir,
+					   int numConcurrentUnits,
+					   int numIterations,
+					   bool check);
+
+  /**
+   * Tests that SQLLite and Normal produce the same output for date scan component of query 1.1 using hybrid strategy.
+   *
+   * Only checking row count at moment
+   */
+  static void hybridDateFilter(short year,
+							   const std::string &s3ObjectDir,
+							   const std::string &dataDir,
+							   int numConcurrentUnits,
+							   int numIterations,
+							   bool check);
 
   static void dateFilter(short year,
 						 const std::string &s3ObjectDir,

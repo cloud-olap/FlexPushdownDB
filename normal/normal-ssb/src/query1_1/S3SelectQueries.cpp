@@ -96,6 +96,60 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::stri
 }
 
 std::shared_ptr<OperatorGraph>
+S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
+								  const std::string &s3ObjectDir,
+								  short year,
+								  int numConcurrentUnits,
+								  AWSClient &client,
+								  const std::shared_ptr<OperatorManager> &mgr) {
+
+  auto dateFile = s3ObjectDir + "/date.tbl";
+  auto s3Objects = std::vector{dateFile};
+
+  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+
+  SPDLOG_DEBUG("Discovered partitions");
+  for (auto &partition : partitionMap) {
+	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+  }
+
+  auto g = OperatorGraph::make(mgr);
+
+  auto cacheLoads =
+	  Operators::makeDateCacheLoads(s3ObjectDir, s3Bucket,
+													   year,
+													   numConcurrentUnits, partitionMap,
+													   client, g);
+
+  auto dateScans =
+	  Operators::makeDateS3SelectScanPushDownOperators(s3ObjectDir, s3Bucket,
+													   year,
+													   numConcurrentUnits, partitionMap,
+													   client, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
+  auto collate = Operators::makeCollateOperator(g);
+
+  // Wire up
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateFilters[u]);
+	dateFilters[u]->consume(dateScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateFilters[u]->produce(collate);
+	collate->consume(dateFilters[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(dateScans[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(dateFilters[u]);
+  g->put(collate);
+
+  return g;
+}
+
+std::shared_ptr<OperatorGraph>
 S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 									 const std::string &s3ObjectDir,
 									 int numConcurrentUnits,

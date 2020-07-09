@@ -12,12 +12,16 @@ using namespace normal::ssb;
 
 TEST_SUITE ("ssb-query1.1-s3-hybrid-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("full-par1" * doctest::skip(false || SKIP_SUITE)) {
-  S3SelectTests::hybrid(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 1, true);
+TEST_CASE ("date-scan-par1-iter2" * doctest::skip(false || SKIP_SUITE)) {
+  S3SelectTests::hybridDateFilter(1992, "ssb-sf0.01", "data/ssb-sf0.01", 1, 2, true);
 }
 
-TEST_CASE ("full-par2" * doctest::skip(false || SKIP_SUITE)) {
-  S3SelectTests::hybrid(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 2, true);
-}
+//TEST_CASE ("full-par1" * doctest::skip(false || SKIP_SUITE)) {
+//  S3SelectTests::hybrid(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 1, true);
+//}
+//
+//TEST_CASE ("full-par2" * doctest::skip(false || SKIP_SUITE)) {
+//  S3SelectTests::hybrid(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 2, true);
+//}
 
 }

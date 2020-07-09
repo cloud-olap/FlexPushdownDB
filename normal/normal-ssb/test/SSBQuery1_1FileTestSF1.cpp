@@ -13,11 +13,11 @@ using namespace normal::ssb;
 TEST_SUITE ("ssb-query1.1-file-sf1" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("date-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
-  LocalFileSystemTests::dateScan("data/ssb-sf1", 1, true);
+  LocalFileSystemTests::dateScan("data/ssb-sf1", 1, 1, true);
 }
 
 TEST_CASE ("date-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
-  LocalFileSystemTests::dateScan("data/ssb-sf1", 2, true);
+  LocalFileSystemTests::dateScan("data/ssb-sf1", 2, 1, true);
 }
 
 TEST_CASE ("lineorder-scan-par1" * doctest::skip(false || SKIP_SUITE)) {

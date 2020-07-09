@@ -43,6 +43,17 @@ public:
 														   AWSClient &client,
 														   const std::shared_ptr<OperatorManager> &mgr);
 
+  /**
+   * A query plan where records present in the cache are passed to the date filter operator and those not in the cache
+   * are filtered on the s3 side. The results are combined.
+   */
+  static std::shared_ptr<OperatorGraph> dateFilterHybrid(const std::string &s3Bucket,
+														 const std::string &s3ObjectDir,
+														 short year,
+														 int numConcurrentUnits,
+														 AWSClient &client,
+														 const std::shared_ptr<OperatorManager> &mgr);
+
   static std::shared_ptr<OperatorGraph> lineOrderFilterPullUp(const std::string &s3Bucket,
 																const std::string &s3ObjectDir,
 																short discount,

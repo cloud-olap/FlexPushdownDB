@@ -14,36 +14,7 @@
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
 
-
-/**
- * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan component of query 1.1
- *
- * Only checking row count at moment
- */
-void LocalFileSystemTests::dateScan(const std::string &dataDir, int numConcurrentUnits, bool check) {
-
-  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
-			  dataDir, numConcurrentUnits);
-
-  auto mgr = std::make_shared<OperatorManager>();
-  mgr->boot();
-  mgr->start();
-
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan(dataDir,
-																				numConcurrentUnits, mgr));
-  SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
-
-  mgr->stop();
-
-  if (check) {
-	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
-								  {std::filesystem::absolute(dataDir + "/date.tbl")});
-	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
-	CHECK_EQ(expected->size(), actual->numRows());
-  }
-}
-
-void LocalFileSystemTests::dateScanMulti(const std::string &dataDir, int numConcurrentUnits, int numIterations, bool check) {
+void LocalFileSystemTests::dateScan(const std::string &dataDir, int numConcurrentUnits, int numIterations, bool check) {
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}, numIterations: {}",
 			  dataDir, numConcurrentUnits, numIterations);

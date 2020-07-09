@@ -45,34 +45,6 @@ void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
   plan.writeGraph(logicalPlanFile);
 }
 
-std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest(const std::shared_ptr<OperatorManager> &mgr) {
-
-  TestUtil::writeExecutionPlan(*mgr);
-
-  mgr->boot();
-
-  mgr->start();
-  mgr->join();
-
-  auto tuples = std::static_pointer_cast<Collate>(mgr->getOperator("collate"))->tuples();
-
-  mgr->stop();
-//  auto totalExecutionTime1 = mgr->getElapsedTime().value();
-  SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
-//  mgr->start();
-//  mgr->join();
-//
-//  tuples = std::static_pointer_cast<Collate>(mgr->getOperator("collate"))->tuples();
-//
-//  mgr->stop();
-//  auto totalExecutionTime2 = mgr->getElapsedTime().value();
-//  SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
-//  SPDLOG_INFO("Execute for the first and second time:{},{}\n", totalExecutionTime1, totalExecutionTime2);
-
-  auto tupleSet = TupleSet2::create(tuples);
-  return tupleSet;
-}
-
 std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest2(const std::shared_ptr<OperatorGraph> &g) {
 
   TestUtil::writeExecutionPlan2(*g);
@@ -110,12 +82,6 @@ TestUtil::executeSQLite(const std::string &sql, std::vector<std::string> dataFil
 /**
  * Runs the given Normal execution plan, returning the results or failing the test on an error
  */
-std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlan(const std::shared_ptr<OperatorManager> &mgr) {
-  auto tupleSet = TestUtil::executeExecutionPlanTest(mgr);
-  SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  return tupleSet;
-}
-
 std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlan2(const std::shared_ptr<OperatorGraph> &g) {
   auto tupleSet = TestUtil::executeExecutionPlanTest2(g);
   SPDLOG_DEBUG("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));

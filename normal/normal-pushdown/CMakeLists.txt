@@ -34,7 +34,7 @@ add_library(normal-pushdown STATIC
         src/s3/S3SelectCSVParseOptions.cpp include/normal/pushdown/s3/S3SelectCSVParseOptions.h
         src/Util.cpp include/normal/pushdown/Util.h
         src/shuffle/Shuffle.cpp include/normal/pushdown/shuffle/Shuffle.h
-        src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h)
+        src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h src/cache/CacheLoad.cpp include/normal/pushdown/cache/CacheLoad.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
