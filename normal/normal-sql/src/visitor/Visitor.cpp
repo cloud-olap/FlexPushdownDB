@@ -40,21 +40,28 @@ normal::sql::visitor::Visitor::Visitor(
  */
 antlrcpp::Any normal::sql::visitor::Visitor::visitParse(normal::sql::NormalSQLParser::ParseContext *ctx) {
 
-  auto queryPlans = std::make_shared<std::vector<std::shared_ptr<plan::LogicalPlan>>>();
+  auto allQueryPlans = std::make_shared<std::vector<std::shared_ptr<plan::LogicalPlan>>>();
 
   for (const auto &sql_stmt: ctx->sql_stmt_list()) {
-    auto untypedLogicalOperators = visitSql_stmt_list(sql_stmt);
-	auto logicalOperators = untypedLogicalOperators.as<std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>>();
-	auto queryPlan = std::make_shared<plan::LogicalPlan>(logicalOperators);
-	queryPlans->push_back(queryPlan);
+    auto untypedQueryPlans = visitSql_stmt_list(sql_stmt);
+    auto queryPlans = untypedQueryPlans.as<std::shared_ptr<std::vector<std::shared_ptr<plan::LogicalPlan>>>>();
+    allQueryPlans->insert(allQueryPlans->end(), queryPlans->begin(), queryPlans->end());
   }
 
-  return queryPlans;
+  return allQueryPlans;
 }
 
 antlrcpp::Any normal::sql::visitor::Visitor::visitSql_stmt_list(normal::sql::NormalSQLParser::Sql_stmt_listContext *ctx) {
-  auto res = NormalSQLBaseVisitor::visitSql_stmt_list(ctx);
-  return res;
+  auto queryPlans = std::make_shared<std::vector<std::shared_ptr<plan::LogicalPlan>>>();
+
+  for (const auto &sql_stmt: ctx->sql_stmt()) {
+    auto res = visitSql_stmt(sql_stmt);
+    auto logicalOperators = res.as<std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>>();
+    auto queryPlan = std::make_shared<plan::LogicalPlan>(logicalOperators);
+    queryPlans->push_back(queryPlan);
+  }
+
+  return queryPlans;
 }
 
 antlrcpp::Any normal::sql::visitor::Visitor::visitSql_stmt(normal::sql::NormalSQLParser::Sql_stmtContext *ctx) {
@@ -104,12 +111,12 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       simpleScan = true;
     } else if (resultColumn_Result.is<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>()) {
       aggregate = true;
-	  auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
-	  aggregateFunctions->push_back(aggregateFunction);
+	    auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
+	    aggregateFunctions->push_back(aggregateFunction);
     } else if (resultColumn_Result.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
       project = true;
       auto projectExpression = resultColumn_Result.as<std::shared_ptr<normal::expression::gandiva::Expression>>();
-	  projectExpressions->push_back(projectExpression);
+	    projectExpressions->push_back(projectExpression);
     }
     else{
       throw std::runtime_error("Not yet implemented");
@@ -165,17 +172,20 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitTable_or_subquery(normal::sql:
 
   std::shared_ptr<connector::Catalogue> catalogue;
   if(ctx->database_name()){
-	auto catalogueName = ctx->database_name()->any_name()->IDENTIFIER()->getText();
-	auto catalogueIterator = this->catalogues_->find(catalogueName);
-	if (catalogueIterator == this->catalogues_->end())
-	  throw std::runtime_error("Catalogue '" + catalogueName + "' does not exist.");
-	catalogue = catalogueIterator->second;
+    auto catalogueName = ctx->database_name()->any_name()->IDENTIFIER()->getText();
+    auto catalogueIterator = this->catalogues_->find(catalogueName);
+    if (catalogueIterator == this->catalogues_->end())
+      throw std::runtime_error("Catalogue '" + catalogueName + "' does not exist.");
+    catalogue = catalogueIterator->second;
   }
   else{
     // No catalogue specified, use default catalogue
-    // TODO: Implement
-	throw std::runtime_error("Default catalogue not yet implemented.");
-//	catalogue = this->defaultCatalogue();
+    // Let's currently use "s3_select" as default
+    std::string catalogueName = "s3_select";
+    auto catalogueIterator = this->catalogues_->find(catalogueName);
+    if (catalogueIterator == this->catalogues_->end())
+      throw std::runtime_error("Catalogue '" + catalogueName + "' does not exist.");
+    catalogue = catalogueIterator->second;
   }
 
   auto catalogueEntryExpected = catalogue->entry(tableName);

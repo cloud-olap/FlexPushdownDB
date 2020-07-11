@@ -80,27 +80,27 @@ OperatorManager::OperatorManager() : queryCounter_(0){
  */
 void OperatorManager::join() {
 
-//  SPDLOG_DEBUG("Waiting for all operators to complete");
-//
-//  auto handle_err = [&](const caf::error &err) {
-//    aout(*rootActor_) << "AUT (actor under test) failed: "
-//                      << (*rootActor_)->system().render(err) << std::endl;
-//  };
-//
-//  bool allComplete = false;
-//  (*rootActor_)->receive_while([&] { return !allComplete; })(
-//      [&](const normal::core::message::Envelope &msg) {
-//        SPDLOG_DEBUG("Message received  |  actor: 'OperatorManager', messageKind: '{}', from: '{}'",
-//                     msg.message().type(), msg.message().sender());
-//
-//        this->operatorDirectory_.setComplete(msg.message().sender());
-//
-//        allComplete = this->operatorDirectory_.allComplete();
-//
-////        SPDLOG_DEBUG(fmt::format("Operator directory:\n{}", this->operatorDirectory_.showString()));
-////        SPDLOG_DEBUG(fmt::format("All operators complete: {}", allComplete));
-//      },
-//      handle_err);
+  SPDLOG_DEBUG("Waiting for all operators to complete");
+
+  auto handle_err = [&](const caf::error &err) {
+    aout(*rootActor_) << "AUT (actor under test) failed: "
+                      << (*rootActor_)->system().render(err) << std::endl;
+  };
+
+  bool allComplete = false;
+  (*rootActor_)->receive_while([&] { return !allComplete; })(
+      [&](const normal::core::message::Envelope &msg) {
+        SPDLOG_DEBUG("Message received  |  actor: 'OperatorManager', messageKind: '{}', from: '{}'",
+                     msg.message().type(), msg.message().sender());
+
+        this->operatorDirectory_.setComplete(msg.message().sender());
+
+        allComplete = this->operatorDirectory_.allComplete();
+
+//        SPDLOG_DEBUG(fmt::format("Operator directory:\n{}", this->operatorDirectory_.showString()));
+//        SPDLOG_DEBUG(fmt::format("All operators complete: {}", allComplete));
+      },
+      handle_err);
 }
 
 void OperatorManager::boot() {
@@ -124,68 +124,68 @@ void OperatorManager::boot() {
     op->actorHandle(actorHandle);
   }
 
-//  // Tell the actors about the system actors
-//  for (const auto &element: m_operatorMap) {
-//
-//	auto ctx = element.second;
-//	auto op = ctx->op();
-//
-//	auto rootActorEntry = LocalOperatorDirectoryEntry("root",
-//											 std::optional(rootActor_->ptr()),
-//											 OperatorRelationshipType::None,
-//											 false);
-//
-//	ctx->operatorMap().insert(rootActorEntry);
-//
-//	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry(segmentCacheActor_->name(),
-//															  std::optional(segmentCacheActor_->actorHandle()),
-//											 OperatorRelationshipType::None,
-//											 false);
-//
-//	ctx->operatorMap().insert(segmentCacheActorEntry);
-//  }
-//
-//  // Tell the system actors about the other actors
-//  for (const auto &element: m_operatorMap) {
-//
-//	auto ctx = element.second;
-//	auto op = ctx->op();
-//
-//	auto entry = LocalOperatorDirectoryEntry(op->name(),
-//											 op->actorHandle(),
-//											 OperatorRelationshipType::None,
-//											 false);
-//
-//	segmentCacheActor_->ctx()->operatorMap().insert(entry);
-//  }
-//
-//  // Tell the actors who their producers are
-//  for (const auto &element: m_operatorMap) {
-//    auto ctx = element.second;
-//    auto op = ctx->op();
-//    for (const auto &producerEntry: op->producers()) {
-//      auto producer = producerEntry.second;
-//      auto entry = LocalOperatorDirectoryEntry(producer->name(),
-//                                               producer->actorHandle(),
-//                                               OperatorRelationshipType::Producer,
-//                                               false);
-//      ctx->operatorMap().insert(entry);
-//    }
-//  }
-//
-//  // Tell the actors who their consumers are
-//  for (const auto &element: m_operatorMap) {
-//    auto ctx = element.second;
-//    auto op = ctx->op();
-//    for (const auto &consumerEntry: op->consumers()) {
-//      auto consumer = consumerEntry.second;
-//      auto entry = LocalOperatorDirectoryEntry(consumer->name(),
-//                                               consumer->actorHandle(),
-//                                               OperatorRelationshipType::Consumer,
-//                                               false);
-//      ctx->operatorMap().insert(entry);
-//    }
-//  }
+  // Tell the actors about the system actors
+  for (const auto &element: m_operatorMap) {
+
+	auto ctx = element.second;
+	auto op = ctx->op();
+
+	auto rootActorEntry = LocalOperatorDirectoryEntry("root",
+											 std::optional(rootActor_->ptr()),
+											 OperatorRelationshipType::None,
+											 false);
+
+	ctx->operatorMap().insert(rootActorEntry);
+
+	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry(segmentCacheActor_->name(),
+															  std::optional(segmentCacheActor_->actorHandle()),
+											 OperatorRelationshipType::None,
+											 false);
+
+	ctx->operatorMap().insert(segmentCacheActorEntry);
+  }
+
+  // Tell the system actors about the other actors
+  for (const auto &element: m_operatorMap) {
+
+	auto ctx = element.second;
+	auto op = ctx->op();
+
+	auto entry = LocalOperatorDirectoryEntry(op->name(),
+											 op->actorHandle(),
+											 OperatorRelationshipType::None,
+											 false);
+
+	segmentCacheActor_->ctx()->operatorMap().insert(entry);
+  }
+
+  // Tell the actors who their producers are
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+    for (const auto &producerEntry: op->producers()) {
+      auto producer = producerEntry.second;
+      auto entry = LocalOperatorDirectoryEntry(producer->name(),
+                                               producer->actorHandle(),
+                                               OperatorRelationshipType::Producer,
+                                               false);
+      ctx->operatorMap().insert(entry);
+    }
+  }
+
+  // Tell the actors who their consumers are
+  for (const auto &element: m_operatorMap) {
+    auto ctx = element.second;
+    auto op = ctx->op();
+    for (const auto &consumerEntry: op->consumers()) {
+      auto consumer = consumerEntry.second;
+      auto entry = LocalOperatorDirectoryEntry(consumer->name(),
+                                               consumer->actorHandle(),
+                                               OperatorRelationshipType::Consumer,
+                                               false);
+      ctx->operatorMap().insert(entry);
+    }
+  }
 }
 
 void OperatorManager::write_graph(const std::string &file) {

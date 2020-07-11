@@ -33,6 +33,8 @@ using namespace normal::expression::gandiva;
 std::vector<std::shared_ptr<FileScan>>
 Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits, std::shared_ptr<OperatorGraph> g) {
 
+
+
   auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
   auto numBytesDateFile = filesystem::file_size(dateFile);
 
@@ -48,13 +50,16 @@ Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurre
   std::vector<std::shared_ptr<FileScan>> dateScanOperators;
   auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto dateScan = FileScan::make(fmt::format("/query-{}/date-scan-{}", g->getId(), u),
-								   dateFile,
-								   dateColumns,
-								   dateScanRanges[u].first,
-								   dateScanRanges[u].second,
-								   g->getId());
-	dateScanOperators.push_back(dateScan);
+    std::string operator_name = (g == nullptr)? "date-scan" : fmt::format("/query-{}/date-scan-{}", g->getId(), u);
+    long gid = (g == nullptr)? 0 : g->getId();
+
+    auto dateScan = FileScan::make(operator_name,
+                     dateFile,
+                     dateColumns,
+                     dateScanRanges[u].first,
+                     dateScanRanges[u].second,
+                     gid);
+    dateScanOperators.push_back(dateScan);
   }
 
   return dateScanOperators;
@@ -350,5 +355,8 @@ std::shared_ptr<Aggregate> Operators::makeAggregateReduceOperator() {
 }
 
 std::shared_ptr<Collate> Operators::makeCollateOperator(std::shared_ptr<OperatorGraph> g) {
-  return std::make_shared<Collate>(fmt::format("/query-{}/collate", g->getId()), g->getId());
+  std::string operator_name = (g == nullptr)? "collate" : fmt::format("/query-{}/collate", g->getId());
+  long qid = (g == nullptr)? 0 : g->getId();
+
+  return std::make_shared<Collate>(operator_name, qid);
 }

@@ -99,6 +99,29 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl ${CMAKE_CURR
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
 
+#-----------------------------------------------------------------------------------------------------------------------
+# Experiment
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-ssb-experiment
+        experiment/ExperimentMain.cpp
+        experiment/BaseLineTest.cpp
+        experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h)
+
+target_link_libraries(normal-ssb-experiment PRIVATE doctest::doctest)
+target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb)
+target_link_libraries(normal-ssb-experiment PRIVATE normal-sql)
+
+# Copy ssb query files to runtime directory
+
+set(SSB_query_file_list "query1.1.sql" "query1.2.sql" "query1.3.sql"
+        "query2.1.sql" "query2.2.sql" "query2.3.sql"
+        "query3.1.sql" "query3.2.sql" "query3.3.sql" "query3.4.sql"
+        "query4.1.sql" "query4.2.sql" "query4.3.sql")
+
+FOREACH(SSB_query_file ${SSB_query_file_list})
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/sql/${SSB_query_file} ${CMAKE_CURRENT_BINARY_DIR}/sql/${SSB_query_file} COPYONLY)
+ENDFOREACH(SSB_query_file)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

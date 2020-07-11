@@ -1,31 +1,14 @@
 //
-// Created by matt on 24/4/20.
+// Created by Yifei Yang on 7/7/20.
 //
-
 
 #define DOCTEST_CONFIG_IMPLEMENT
 #include <doctest/doctest.h>
-
-#define ANKERL_NANOBENCH_IMPLEMENT
-#include <nanobench.h>
-
 #include "normal/ssb/Globals.h"
 
-/**
- * Returns the name of the current test case
- *
- * @return
- */
 const char* getCurrentTestName() { return doctest::detail::g_cs->currentTest->m_name; }
 const char* getCurrentTestSuiteName() { return doctest::detail::g_cs->currentTest->m_test_suite; }
 
-/**
- * Tests entry point
- *
- * @param argc
- * @param argv
- * @return
- */
 int main(int argc, char **argv) {
 
   spdlog::set_level(spdlog::level::debug);
@@ -34,12 +17,10 @@ int main(int argc, char **argv) {
   doctest::Context context;
 
   context.applyCommandLine(argc, argv);
-  context.addFilter("test-case", "ssb-benchmark-query01");
   int rc = context.run();
 
   if (context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
-	return rc;
+    return rc;
 
   return rc;
 }
-
