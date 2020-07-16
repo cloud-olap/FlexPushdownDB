@@ -15,26 +15,6 @@
 
 using namespace normal::ssb;
 
-//void configureS3Connector(normal::sql::Interpreter &i) {
-//  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
-//  auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
-//
-//  auto partitioningScheme1 = std::make_shared<S3SelectExplicitPartitioningScheme>();
-//  partitioningScheme1->add(std::make_shared<S3SelectPartition>("s3Filter", "tpch-sf1/customer.csv"));
-//  cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>("customer", partitioningScheme1, cat));
-//
-//  // FIXME: Don't think these are the actual partitions, need to look them up
-//  auto partitioningScheme2 = std::make_shared<S3SelectExplicitPartitioningScheme>();
-//  partitioningScheme2->add(std::make_shared<S3SelectPartition>("s3Filter", "tpch-sf1/customer_01.csv"));
-//  partitioningScheme2->add(std::make_shared<S3SelectPartition>("s3Filter", "tpch-sf1/customer_02.csv"));
-//  partitioningScheme2->add(std::make_shared<S3SelectPartition>("s3Filter", "tpch-sf1/customer_03.csv"));
-//  cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>("customer_partitioned",
-//                                                                           partitioningScheme2,
-//                                                                           cat));
-//
-//  i.put(cat);
-//}
-
 void configureS3Connector(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
   auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
   auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);

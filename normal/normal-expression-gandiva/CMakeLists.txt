@@ -21,7 +21,8 @@ add_library(normal-expression-gandiva STATIC
         src/EqualTo.cpp include/normal/expression/gandiva/EqualTo.h
         src/LessThanOrEqualTo.cpp include/normal/expression/gandiva/LessThanOrEqualTo.h
         src/GreaterThanOrEqualTo.cpp include/normal/expression/gandiva/GreaterThanOrEqualTo.h
-        src/And.cpp include/normal/expression/gandiva/And.h)
+        src/GreaterThan.cpp include/normal/expression/gandiva/GreaterThan.h
+        src/And.cpp include/normal/expression/gandiva/And.h src/Or.cpp include/normal/expression/gandiva/Or.h)
 
 target_include_directories(normal-expression-gandiva PUBLIC include)
 

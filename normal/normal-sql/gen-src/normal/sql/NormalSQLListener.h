@@ -1,5 +1,5 @@
 
-// Generated from /home/matt/Work/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
+// Generated from /Users/yyf/Desktop/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
 
 #pragma once
 
@@ -28,26 +28,92 @@ public:
   virtual void enterSql_stmt(NormalSQLParser::Sql_stmtContext *ctx) = 0;
   virtual void exitSql_stmt(NormalSQLParser::Sql_stmtContext *ctx) = 0;
 
-  virtual void enterCompound_select_stmt(NormalSQLParser::Compound_select_stmtContext *ctx) = 0;
-  virtual void exitCompound_select_stmt(NormalSQLParser::Compound_select_stmtContext *ctx) = 0;
-
-  virtual void enterFactored_select_stmt(NormalSQLParser::Factored_select_stmtContext *ctx) = 0;
-  virtual void exitFactored_select_stmt(NormalSQLParser::Factored_select_stmtContext *ctx) = 0;
-
-  virtual void enterSimple_select_stmt(NormalSQLParser::Simple_select_stmtContext *ctx) = 0;
-  virtual void exitSimple_select_stmt(NormalSQLParser::Simple_select_stmtContext *ctx) = 0;
-
   virtual void enterSelect_stmt(NormalSQLParser::Select_stmtContext *ctx) = 0;
   virtual void exitSelect_stmt(NormalSQLParser::Select_stmtContext *ctx) = 0;
 
-  virtual void enterSelect_or_values(NormalSQLParser::Select_or_valuesContext *ctx) = 0;
-  virtual void exitSelect_or_values(NormalSQLParser::Select_or_valuesContext *ctx) = 0;
+  virtual void enterSelect_core(NormalSQLParser::Select_coreContext *ctx) = 0;
+  virtual void exitSelect_core(NormalSQLParser::Select_coreContext *ctx) = 0;
+
+  virtual void enterFrom_clause(NormalSQLParser::From_clauseContext *ctx) = 0;
+  virtual void exitFrom_clause(NormalSQLParser::From_clauseContext *ctx) = 0;
+
+  virtual void enterWhere_clause(NormalSQLParser::Where_clauseContext *ctx) = 0;
+  virtual void exitWhere_clause(NormalSQLParser::Where_clauseContext *ctx) = 0;
+
+  virtual void enterGroupBy_clause(NormalSQLParser::GroupBy_clauseContext *ctx) = 0;
+  virtual void exitGroupBy_clause(NormalSQLParser::GroupBy_clauseContext *ctx) = 0;
 
   virtual void enterType_name(NormalSQLParser::Type_nameContext *ctx) = 0;
   virtual void exitType_name(NormalSQLParser::Type_nameContext *ctx) = 0;
 
-  virtual void enterExpr(NormalSQLParser::ExprContext *ctx) = 0;
-  virtual void exitExpr(NormalSQLParser::ExprContext *ctx) = 0;
+  virtual void enterExpr_comp(NormalSQLParser::Expr_compContext *ctx) = 0;
+  virtual void exitExpr_comp(NormalSQLParser::Expr_compContext *ctx) = 0;
+
+  virtual void enterExpr_case(NormalSQLParser::Expr_caseContext *ctx) = 0;
+  virtual void exitExpr_case(NormalSQLParser::Expr_caseContext *ctx) = 0;
+
+  virtual void enterExpr_raise_function(NormalSQLParser::Expr_raise_functionContext *ctx) = 0;
+  virtual void exitExpr_raise_function(NormalSQLParser::Expr_raise_functionContext *ctx) = 0;
+
+  virtual void enterExpr_parens(NormalSQLParser::Expr_parensContext *ctx) = 0;
+  virtual void exitExpr_parens(NormalSQLParser::Expr_parensContext *ctx) = 0;
+
+  virtual void enterExpr_column(NormalSQLParser::Expr_columnContext *ctx) = 0;
+  virtual void exitExpr_column(NormalSQLParser::Expr_columnContext *ctx) = 0;
+
+  virtual void enterExpr_function(NormalSQLParser::Expr_functionContext *ctx) = 0;
+  virtual void exitExpr_function(NormalSQLParser::Expr_functionContext *ctx) = 0;
+
+  virtual void enterExpr_eq(NormalSQLParser::Expr_eqContext *ctx) = 0;
+  virtual void exitExpr_eq(NormalSQLParser::Expr_eqContext *ctx) = 0;
+
+  virtual void enterExpr_null(NormalSQLParser::Expr_nullContext *ctx) = 0;
+  virtual void exitExpr_null(NormalSQLParser::Expr_nullContext *ctx) = 0;
+
+  virtual void enterExpr_bind_parameter(NormalSQLParser::Expr_bind_parameterContext *ctx) = 0;
+  virtual void exitExpr_bind_parameter(NormalSQLParser::Expr_bind_parameterContext *ctx) = 0;
+
+  virtual void enterExpr_is(NormalSQLParser::Expr_isContext *ctx) = 0;
+  virtual void exitExpr_is(NormalSQLParser::Expr_isContext *ctx) = 0;
+
+  virtual void enterExpr_literal(NormalSQLParser::Expr_literalContext *ctx) = 0;
+  virtual void exitExpr_literal(NormalSQLParser::Expr_literalContext *ctx) = 0;
+
+  virtual void enterExpr_cast(NormalSQLParser::Expr_castContext *ctx) = 0;
+  virtual void exitExpr_cast(NormalSQLParser::Expr_castContext *ctx) = 0;
+
+  virtual void enterExpr_exists(NormalSQLParser::Expr_existsContext *ctx) = 0;
+  virtual void exitExpr_exists(NormalSQLParser::Expr_existsContext *ctx) = 0;
+
+  virtual void enterExpr_mul_div_mod(NormalSQLParser::Expr_mul_div_modContext *ctx) = 0;
+  virtual void exitExpr_mul_div_mod(NormalSQLParser::Expr_mul_div_modContext *ctx) = 0;
+
+  virtual void enterExpr_between(NormalSQLParser::Expr_betweenContext *ctx) = 0;
+  virtual void exitExpr_between(NormalSQLParser::Expr_betweenContext *ctx) = 0;
+
+  virtual void enterExpr_in(NormalSQLParser::Expr_inContext *ctx) = 0;
+  virtual void exitExpr_in(NormalSQLParser::Expr_inContext *ctx) = 0;
+
+  virtual void enterExpr_or(NormalSQLParser::Expr_orContext *ctx) = 0;
+  virtual void exitExpr_or(NormalSQLParser::Expr_orContext *ctx) = 0;
+
+  virtual void enterExpr_bit(NormalSQLParser::Expr_bitContext *ctx) = 0;
+  virtual void exitExpr_bit(NormalSQLParser::Expr_bitContext *ctx) = 0;
+
+  virtual void enterExpr_collate(NormalSQLParser::Expr_collateContext *ctx) = 0;
+  virtual void exitExpr_collate(NormalSQLParser::Expr_collateContext *ctx) = 0;
+
+  virtual void enterExpr_and(NormalSQLParser::Expr_andContext *ctx) = 0;
+  virtual void exitExpr_and(NormalSQLParser::Expr_andContext *ctx) = 0;
+
+  virtual void enterExpr_add_sub(NormalSQLParser::Expr_add_subContext *ctx) = 0;
+  virtual void exitExpr_add_sub(NormalSQLParser::Expr_add_subContext *ctx) = 0;
+
+  virtual void enterExpr_unary(NormalSQLParser::Expr_unaryContext *ctx) = 0;
+  virtual void exitExpr_unary(NormalSQLParser::Expr_unaryContext *ctx) = 0;
+
+  virtual void enterExpr_str_match(NormalSQLParser::Expr_str_matchContext *ctx) = 0;
+  virtual void exitExpr_str_match(NormalSQLParser::Expr_str_matchContext *ctx) = 0;
 
   virtual void enterRaise_function(NormalSQLParser::Raise_functionContext *ctx) = 0;
   virtual void exitRaise_function(NormalSQLParser::Raise_functionContext *ctx) = 0;
@@ -85,9 +151,6 @@ public:
   virtual void enterJoin_constraint(NormalSQLParser::Join_constraintContext *ctx) = 0;
   virtual void exitJoin_constraint(NormalSQLParser::Join_constraintContext *ctx) = 0;
 
-  virtual void enterSelect_core(NormalSQLParser::Select_coreContext *ctx) = 0;
-  virtual void exitSelect_core(NormalSQLParser::Select_coreContext *ctx) = 0;
-
   virtual void enterCompound_operator(NormalSQLParser::Compound_operatorContext *ctx) = 0;
   virtual void exitCompound_operator(NormalSQLParser::Compound_operatorContext *ctx) = 0;
 
@@ -97,8 +160,26 @@ public:
   virtual void enterSigned_number(NormalSQLParser::Signed_numberContext *ctx) = 0;
   virtual void exitSigned_number(NormalSQLParser::Signed_numberContext *ctx) = 0;
 
-  virtual void enterLiteral_value(NormalSQLParser::Literal_valueContext *ctx) = 0;
-  virtual void exitLiteral_value(NormalSQLParser::Literal_valueContext *ctx) = 0;
+  virtual void enterLiteral_value_numeric(NormalSQLParser::Literal_value_numericContext *ctx) = 0;
+  virtual void exitLiteral_value_numeric(NormalSQLParser::Literal_value_numericContext *ctx) = 0;
+
+  virtual void enterLiteral_value_string(NormalSQLParser::Literal_value_stringContext *ctx) = 0;
+  virtual void exitLiteral_value_string(NormalSQLParser::Literal_value_stringContext *ctx) = 0;
+
+  virtual void enterLiteral_value_blob(NormalSQLParser::Literal_value_blobContext *ctx) = 0;
+  virtual void exitLiteral_value_blob(NormalSQLParser::Literal_value_blobContext *ctx) = 0;
+
+  virtual void enterLiteral_value_k_null(NormalSQLParser::Literal_value_k_nullContext *ctx) = 0;
+  virtual void exitLiteral_value_k_null(NormalSQLParser::Literal_value_k_nullContext *ctx) = 0;
+
+  virtual void enterLiteral_value_k_current_time(NormalSQLParser::Literal_value_k_current_timeContext *ctx) = 0;
+  virtual void exitLiteral_value_k_current_time(NormalSQLParser::Literal_value_k_current_timeContext *ctx) = 0;
+
+  virtual void enterLiteral_value_k_current_date(NormalSQLParser::Literal_value_k_current_dateContext *ctx) = 0;
+  virtual void exitLiteral_value_k_current_date(NormalSQLParser::Literal_value_k_current_dateContext *ctx) = 0;
+
+  virtual void enterLiteral_value_k_current_timestamp(NormalSQLParser::Literal_value_k_current_timestampContext *ctx) = 0;
+  virtual void exitLiteral_value_k_current_timestamp(NormalSQLParser::Literal_value_k_current_timestampContext *ctx) = 0;
 
   virtual void enterUnary_operator(NormalSQLParser::Unary_operatorContext *ctx) = 0;
   virtual void exitUnary_operator(NormalSQLParser::Unary_operatorContext *ctx) = 0;

@@ -1,5 +1,5 @@
 
-// Generated from /home/matt/Work/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
+// Generated from /Users/yyf/Desktop/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
 
 #pragma once
 
@@ -13,57 +13,56 @@ namespace normal::sql {
 class  NormalSQLParser : public antlr4::Parser {
 public:
   enum {
-    SCOL = 1, DOT = 2, OPEN_PAR = 3, CLOSE_PAR = 4, COMMA = 5, ASSIGN = 6, 
-    STAR = 7, PLUS = 8, MINUS = 9, TILDE = 10, PIPE2 = 11, DIV = 12, MOD = 13, 
-    LT2 = 14, GT2 = 15, AMP = 16, PIPE = 17, LT = 18, LT_EQ = 19, GT = 20, 
-    GT_EQ = 21, EQ = 22, NOT_EQ1 = 23, NOT_EQ2 = 24, K_ABORT = 25, K_ACTION = 26, 
-    K_ADD = 27, K_AFTER = 28, K_ALL = 29, K_ALTER = 30, K_ANALYZE = 31, 
-    K_AND = 32, K_AS = 33, K_ASC = 34, K_ATTACH = 35, K_AUTOINCREMENT = 36, 
-    K_BEFORE = 37, K_BEGIN = 38, K_BETWEEN = 39, K_BY = 40, K_CASCADE = 41, 
-    K_CASE = 42, K_CAST = 43, K_CHECK = 44, K_COLLATE = 45, K_COLUMN = 46, 
-    K_COMMIT = 47, K_CONFLICT = 48, K_CONSTRAINT = 49, K_CREATE = 50, K_CROSS = 51, 
-    K_CURRENT_DATE = 52, K_CURRENT_TIME = 53, K_CURRENT_TIMESTAMP = 54, 
-    K_DATABASE = 55, K_DEFAULT = 56, K_DEFERRABLE = 57, K_DEFERRED = 58, 
-    K_DELETE = 59, K_DESC = 60, K_DETACH = 61, K_DISTINCT = 62, K_DROP = 63, 
-    K_EACH = 64, K_ELSE = 65, K_END = 66, K_ESCAPE = 67, K_EXCEPT = 68, 
-    K_EXCLUSIVE = 69, K_EXISTS = 70, K_EXPLAIN = 71, K_FAIL = 72, K_FOR = 73, 
-    K_FOREIGN = 74, K_FROM = 75, K_FULL = 76, K_GLOB = 77, K_GROUP = 78, 
-    K_HAVING = 79, K_IF = 80, K_IGNORE = 81, K_IMMEDIATE = 82, K_IN = 83, 
-    K_INDEX = 84, K_INDEXED = 85, K_INITIALLY = 86, K_INNER = 87, K_INSERT = 88, 
-    K_INSTEAD = 89, K_INTERSECT = 90, K_INTO = 91, K_IS = 92, K_ISNULL = 93, 
-    K_JOIN = 94, K_KEY = 95, K_LEFT = 96, K_LIKE = 97, K_LIMIT = 98, K_MATCH = 99, 
-    K_NATURAL = 100, K_NO = 101, K_NOT = 102, K_NOTNULL = 103, K_NULL = 104, 
-    K_OF = 105, K_OFFSET = 106, K_ON = 107, K_OR = 108, K_ORDER = 109, K_OUTER = 110, 
-    K_PLAN = 111, K_PRAGMA = 112, K_PRIMARY = 113, K_QUERY = 114, K_RAISE = 115, 
-    K_RECURSIVE = 116, K_REFERENCES = 117, K_REGEXP = 118, K_REINDEX = 119, 
-    K_RELEASE = 120, K_RENAME = 121, K_REPLACE = 122, K_RESTRICT = 123, 
-    K_RIGHT = 124, K_ROLLBACK = 125, K_ROW = 126, K_SAVEPOINT = 127, K_SELECT = 128, 
-    K_SET = 129, K_TABLE = 130, K_TEMP = 131, K_TEMPORARY = 132, K_THEN = 133, 
-    K_TO = 134, K_TRANSACTION = 135, K_TRIGGER = 136, K_UNION = 137, K_UNIQUE = 138, 
-    K_UPDATE = 139, K_USING = 140, K_VACUUM = 141, K_VALUES = 142, K_VIEW = 143, 
-    K_VIRTUAL = 144, K_WHEN = 145, K_WHERE = 146, K_WITH = 147, K_WITHOUT = 148, 
-    IDENTIFIER = 149, NUMERIC_LITERAL = 150, BIND_PARAMETER = 151, STRING_LITERAL = 152, 
-    BLOB_LITERAL = 153, SINGLE_LINE_COMMENT = 154, MULTILINE_COMMENT = 155, 
-    SPACES = 156, UNEXPECTED_CHAR = 157
+    T__0 = 1, SCOL = 2, DOT = 3, OPEN_PAR = 4, CLOSE_PAR = 5, COMMA = 6, 
+    ASSIGN = 7, STAR = 8, PLUS = 9, MINUS = 10, TILDE = 11, PIPE2 = 12, 
+    DIV = 13, MOD = 14, LT2 = 15, GT2 = 16, AMP = 17, PIPE = 18, LT = 19, 
+    LT_EQ = 20, GT = 21, GT_EQ = 22, EQ = 23, NOT_EQ1 = 24, NOT_EQ2 = 25, 
+    K_ABORT = 26, K_ACTION = 27, K_ADD = 28, K_AFTER = 29, K_ALL = 30, K_ALTER = 31, 
+    K_ANALYZE = 32, K_AND = 33, K_AS = 34, K_ASC = 35, K_ATTACH = 36, K_AUTOINCREMENT = 37, 
+    K_BEFORE = 38, K_BEGIN = 39, K_BETWEEN = 40, K_BY = 41, K_CASCADE = 42, 
+    K_CASE = 43, K_CAST = 44, K_CHECK = 45, K_COLLATE = 46, K_COLUMN = 47, 
+    K_COMMIT = 48, K_CONFLICT = 49, K_CONSTRAINT = 50, K_CREATE = 51, K_CROSS = 52, 
+    K_CURRENT_DATE = 53, K_CURRENT_TIME = 54, K_CURRENT_TIMESTAMP = 55, 
+    K_DATABASE = 56, K_DEFAULT = 57, K_DEFERRABLE = 58, K_DEFERRED = 59, 
+    K_DELETE = 60, K_DESC = 61, K_DETACH = 62, K_DISTINCT = 63, K_DROP = 64, 
+    K_EACH = 65, K_ELSE = 66, K_END = 67, K_ESCAPE = 68, K_EXCEPT = 69, 
+    K_EXCLUSIVE = 70, K_EXISTS = 71, K_EXPLAIN = 72, K_FAIL = 73, K_FOR = 74, 
+    K_FOREIGN = 75, K_FROM = 76, K_FULL = 77, K_GLOB = 78, K_GROUP = 79, 
+    K_HAVING = 80, K_IF = 81, K_IGNORE = 82, K_IMMEDIATE = 83, K_IN = 84, 
+    K_INDEX = 85, K_INDEXED = 86, K_INITIALLY = 87, K_INNER = 88, K_INSERT = 89, 
+    K_INSTEAD = 90, K_INTERSECT = 91, K_INTO = 92, K_IS = 93, K_ISNULL = 94, 
+    K_JOIN = 95, K_KEY = 96, K_LEFT = 97, K_LIKE = 98, K_LIMIT = 99, K_MATCH = 100, 
+    K_NATURAL = 101, K_NO = 102, K_NOT = 103, K_NOTNULL = 104, K_NULL = 105, 
+    K_OF = 106, K_OFFSET = 107, K_ON = 108, K_OR = 109, K_ORDER = 110, K_OUTER = 111, 
+    K_PLAN = 112, K_PRAGMA = 113, K_PRIMARY = 114, K_QUERY = 115, K_RAISE = 116, 
+    K_RECURSIVE = 117, K_REFERENCES = 118, K_REGEXP = 119, K_REINDEX = 120, 
+    K_RELEASE = 121, K_RENAME = 122, K_REPLACE = 123, K_RESTRICT = 124, 
+    K_RIGHT = 125, K_ROLLBACK = 126, K_ROW = 127, K_SAVEPOINT = 128, K_SELECT = 129, 
+    K_SET = 130, K_TABLE = 131, K_TEMP = 132, K_TEMPORARY = 133, K_THEN = 134, 
+    K_TO = 135, K_TRANSACTION = 136, K_TRIGGER = 137, K_UNION = 138, K_UNIQUE = 139, 
+    K_UPDATE = 140, K_USING = 141, K_VACUUM = 142, K_VALUES = 143, K_VIEW = 144, 
+    K_VIRTUAL = 145, K_WHEN = 146, K_WHERE = 147, K_WITH = 148, K_WITHOUT = 149, 
+    IDENTIFIER = 150, NUMERIC_LITERAL = 151, BIND_PARAMETER = 152, STRING_LITERAL = 153, 
+    BLOB_LITERAL = 154, SINGLE_LINE_COMMENT = 155, MULTILINE_COMMENT = 156, 
+    SPACES = 157, UNEXPECTED_CHAR = 158
   };
 
   enum {
     RuleParse = 0, RuleError = 1, RuleSql_stmt_list = 2, RuleSql_stmt = 3, 
-    RuleCompound_select_stmt = 4, RuleFactored_select_stmt = 5, RuleSimple_select_stmt = 6, 
-    RuleSelect_stmt = 7, RuleSelect_or_values = 8, RuleType_name = 9, RuleExpr = 10, 
-    RuleRaise_function = 11, RuleIndexed_column = 12, RuleWith_clause = 13, 
-    RuleQualified_table_name = 14, RuleOrdering_term = 15, RulePragma_value = 16, 
-    RuleCommon_table_expression = 17, RuleResult_column = 18, RuleTable_or_subquery = 19, 
-    RuleJoin_clause = 20, RuleJoin_operator = 21, RuleJoin_constraint = 22, 
-    RuleSelect_core = 23, RuleCompound_operator = 24, RuleCte_table_name = 25, 
-    RuleSigned_number = 26, RuleLiteral_value = 27, RuleUnary_operator = 28, 
-    RuleError_message = 29, RuleColumn_alias = 30, RuleKeyword = 31, RuleName = 32, 
-    RuleFunction_name = 33, RuleDatabase_name = 34, RuleTable_name = 35, 
-    RuleTable_or_index_name = 36, RuleNew_table_name = 37, RuleColumn_name = 38, 
-    RuleCollation_name = 39, RuleForeign_table = 40, RuleIndex_name = 41, 
-    RuleTrigger_name = 42, RuleView_name = 43, RuleModule_name = 44, RulePragma_name = 45, 
-    RuleSavepoint_name = 46, RuleTable_alias = 47, RuleTransaction_name = 48, 
-    RuleAny_name = 49
+    RuleSelect_stmt = 4, RuleSelect_core = 5, RuleFrom_clause = 6, RuleWhere_clause = 7, 
+    RuleGroupBy_clause = 8, RuleType_name = 9, RuleExpr = 10, RuleRaise_function = 11, 
+    RuleIndexed_column = 12, RuleWith_clause = 13, RuleQualified_table_name = 14, 
+    RuleOrdering_term = 15, RulePragma_value = 16, RuleCommon_table_expression = 17, 
+    RuleResult_column = 18, RuleTable_or_subquery = 19, RuleJoin_clause = 20, 
+    RuleJoin_operator = 21, RuleJoin_constraint = 22, RuleCompound_operator = 23, 
+    RuleCte_table_name = 24, RuleSigned_number = 25, RuleLiteral_value = 26, 
+    RuleUnary_operator = 27, RuleError_message = 28, RuleColumn_alias = 29, 
+    RuleKeyword = 30, RuleName = 31, RuleFunction_name = 32, RuleDatabase_name = 33, 
+    RuleTable_name = 34, RuleTable_or_index_name = 35, RuleNew_table_name = 36, 
+    RuleColumn_name = 37, RuleCollation_name = 38, RuleForeign_table = 39, 
+    RuleIndex_name = 40, RuleTrigger_name = 41, RuleView_name = 42, RuleModule_name = 43, 
+    RulePragma_name = 44, RuleSavepoint_name = 45, RuleTable_alias = 46, 
+    RuleTransaction_name = 47, RuleAny_name = 48
   };
 
   NormalSQLParser(antlr4::TokenStream *input);
@@ -80,11 +79,11 @@ public:
   class ErrorContext;
   class Sql_stmt_listContext;
   class Sql_stmtContext;
-  class Compound_select_stmtContext;
-  class Factored_select_stmtContext;
-  class Simple_select_stmtContext;
   class Select_stmtContext;
-  class Select_or_valuesContext;
+  class Select_coreContext;
+  class From_clauseContext;
+  class Where_clauseContext;
+  class GroupBy_clauseContext;
   class Type_nameContext;
   class ExprContext;
   class Raise_functionContext;
@@ -99,7 +98,6 @@ public:
   class Join_clauseContext;
   class Join_operatorContext;
   class Join_constraintContext;
-  class Select_coreContext;
   class Compound_operatorContext;
   class Cte_table_nameContext;
   class Signed_numberContext;
@@ -148,7 +146,7 @@ public:
 
   class  ErrorContext : public antlr4::ParserRuleContext {
   public:
-    antlr4::Token *unexpected_charToken = nullptr;
+    antlr4::Token *unexpected_charToken = nullptr;;
     ErrorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *UNEXPECTED_CHAR();
@@ -184,9 +182,6 @@ public:
   public:
     Sql_stmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    Compound_select_stmtContext *compound_select_stmt();
-    Factored_select_stmtContext *factored_select_stmt();
-    Simple_select_stmtContext *simple_select_stmt();
     Select_stmtContext *select_stmt();
     antlr4::tree::TerminalNode *K_EXPLAIN();
     antlr4::tree::TerminalNode *K_QUERY();
@@ -201,111 +196,12 @@ public:
 
   Sql_stmtContext* sql_stmt();
 
-  class  Compound_select_stmtContext : public antlr4::ParserRuleContext {
-  public:
-    Compound_select_stmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    std::vector<Select_coreContext *> select_core();
-    Select_coreContext* select_core(size_t i);
-    antlr4::tree::TerminalNode *K_WITH();
-    std::vector<Common_table_expressionContext *> common_table_expression();
-    Common_table_expressionContext* common_table_expression(size_t i);
-    antlr4::tree::TerminalNode *K_ORDER();
-    antlr4::tree::TerminalNode *K_BY();
-    std::vector<Ordering_termContext *> ordering_term();
-    Ordering_termContext* ordering_term(size_t i);
-    antlr4::tree::TerminalNode *K_LIMIT();
-    std::vector<ExprContext *> expr();
-    ExprContext* expr(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> K_UNION();
-    antlr4::tree::TerminalNode* K_UNION(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> K_INTERSECT();
-    antlr4::tree::TerminalNode* K_INTERSECT(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> K_EXCEPT();
-    antlr4::tree::TerminalNode* K_EXCEPT(size_t i);
-    antlr4::tree::TerminalNode *K_RECURSIVE();
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *K_OFFSET();
-    std::vector<antlr4::tree::TerminalNode *> K_ALL();
-    antlr4::tree::TerminalNode* K_ALL(size_t i);
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  Compound_select_stmtContext* compound_select_stmt();
-
-  class  Factored_select_stmtContext : public antlr4::ParserRuleContext {
-  public:
-    Factored_select_stmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    std::vector<Select_coreContext *> select_core();
-    Select_coreContext* select_core(size_t i);
-    antlr4::tree::TerminalNode *K_WITH();
-    std::vector<Common_table_expressionContext *> common_table_expression();
-    Common_table_expressionContext* common_table_expression(size_t i);
-    std::vector<Compound_operatorContext *> compound_operator();
-    Compound_operatorContext* compound_operator(size_t i);
-    antlr4::tree::TerminalNode *K_ORDER();
-    antlr4::tree::TerminalNode *K_BY();
-    std::vector<Ordering_termContext *> ordering_term();
-    Ordering_termContext* ordering_term(size_t i);
-    antlr4::tree::TerminalNode *K_LIMIT();
-    std::vector<ExprContext *> expr();
-    ExprContext* expr(size_t i);
-    antlr4::tree::TerminalNode *K_RECURSIVE();
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *K_OFFSET();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  Factored_select_stmtContext* factored_select_stmt();
-
-  class  Simple_select_stmtContext : public antlr4::ParserRuleContext {
-  public:
-    Simple_select_stmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    Select_coreContext *select_core();
-    antlr4::tree::TerminalNode *K_WITH();
-    std::vector<Common_table_expressionContext *> common_table_expression();
-    Common_table_expressionContext* common_table_expression(size_t i);
-    antlr4::tree::TerminalNode *K_ORDER();
-    antlr4::tree::TerminalNode *K_BY();
-    std::vector<Ordering_termContext *> ordering_term();
-    Ordering_termContext* ordering_term(size_t i);
-    antlr4::tree::TerminalNode *K_LIMIT();
-    std::vector<ExprContext *> expr();
-    ExprContext* expr(size_t i);
-    antlr4::tree::TerminalNode *K_RECURSIVE();
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *K_OFFSET();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  Simple_select_stmtContext* simple_select_stmt();
-
   class  Select_stmtContext : public antlr4::ParserRuleContext {
   public:
     Select_stmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<Select_or_valuesContext *> select_or_values();
-    Select_or_valuesContext* select_or_values(size_t i);
+    std::vector<Select_coreContext *> select_core();
+    Select_coreContext* select_core(size_t i);
     antlr4::tree::TerminalNode *K_WITH();
     std::vector<Common_table_expressionContext *> common_table_expression();
     Common_table_expressionContext* common_table_expression(size_t i);
@@ -332,30 +228,25 @@ public:
 
   Select_stmtContext* select_stmt();
 
-  class  Select_or_valuesContext : public antlr4::ParserRuleContext {
+  class  Select_coreContext : public antlr4::ParserRuleContext {
   public:
-    Select_or_valuesContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    Select_coreContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *K_SELECT();
     std::vector<Result_columnContext *> result_column();
     Result_columnContext* result_column(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
     antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *K_FROM();
-    antlr4::tree::TerminalNode *K_WHERE();
-    std::vector<ExprContext *> expr();
-    ExprContext* expr(size_t i);
-    antlr4::tree::TerminalNode *K_GROUP();
-    antlr4::tree::TerminalNode *K_BY();
+    From_clauseContext *from_clause();
+    Where_clauseContext *where_clause();
+    GroupBy_clauseContext *groupBy_clause();
     antlr4::tree::TerminalNode *K_DISTINCT();
     antlr4::tree::TerminalNode *K_ALL();
-    std::vector<Table_or_subqueryContext *> table_or_subquery();
-    Table_or_subqueryContext* table_or_subquery(size_t i);
-    Join_clauseContext *join_clause();
-    antlr4::tree::TerminalNode *K_HAVING();
     antlr4::tree::TerminalNode *K_VALUES();
     std::vector<antlr4::tree::TerminalNode *> OPEN_PAR();
     antlr4::tree::TerminalNode* OPEN_PAR(size_t i);
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
     std::vector<antlr4::tree::TerminalNode *> CLOSE_PAR();
     antlr4::tree::TerminalNode* CLOSE_PAR(size_t i);
 
@@ -366,7 +257,64 @@ public:
    
   };
 
-  Select_or_valuesContext* select_or_values();
+  Select_coreContext* select_core();
+
+  class  From_clauseContext : public antlr4::ParserRuleContext {
+  public:
+    From_clauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_FROM();
+    std::vector<Table_or_subqueryContext *> table_or_subquery();
+    Table_or_subqueryContext* table_or_subquery(size_t i);
+    Join_clauseContext *join_clause();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  From_clauseContext* from_clause();
+
+  class  Where_clauseContext : public antlr4::ParserRuleContext {
+  public:
+    Where_clauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_WHERE();
+    ExprContext *expr();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Where_clauseContext* where_clause();
+
+  class  GroupBy_clauseContext : public antlr4::ParserRuleContext {
+  public:
+    GroupBy_clauseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *K_GROUP();
+    antlr4::tree::TerminalNode *K_BY();
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    antlr4::tree::TerminalNode *K_HAVING();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  GroupBy_clauseContext* groupBy_clause();
 
   class  Type_nameContext : public antlr4::ParserRuleContext {
   public:
@@ -392,76 +340,357 @@ public:
   class  ExprContext : public antlr4::ParserRuleContext {
   public:
     ExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+   
+    ExprContext() = default;
+    void copyFrom(ExprContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
+
     virtual size_t getRuleIndex() const override;
-    Literal_valueContext *literal_value();
-    antlr4::tree::TerminalNode *BIND_PARAMETER();
-    Column_nameContext *column_name();
-    Table_nameContext *table_name();
-    std::vector<antlr4::tree::TerminalNode *> DOT();
-    antlr4::tree::TerminalNode* DOT(size_t i);
-    Database_nameContext *database_name();
-    Unary_operatorContext *unary_operator();
+
+   
+  };
+
+  class  Expr_compContext : public ExprContext {
+  public:
+    Expr_compContext(ExprContext *ctx);
+
     std::vector<ExprContext *> expr();
     ExprContext* expr(size_t i);
-    Function_nameContext *function_name();
-    antlr4::tree::TerminalNode *OPEN_PAR();
-    antlr4::tree::TerminalNode *CLOSE_PAR();
-    antlr4::tree::TerminalNode *STAR();
-    antlr4::tree::TerminalNode *K_DISTINCT();
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *K_CAST();
-    antlr4::tree::TerminalNode *K_AS();
-    Type_nameContext *type_name();
-    Select_stmtContext *select_stmt();
-    antlr4::tree::TerminalNode *K_EXISTS();
-    antlr4::tree::TerminalNode *K_NOT();
+    antlr4::tree::TerminalNode *LT();
+    antlr4::tree::TerminalNode *LT_EQ();
+    antlr4::tree::TerminalNode *GT();
+    antlr4::tree::TerminalNode *GT_EQ();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_caseContext : public ExprContext {
+  public:
+    Expr_caseContext(ExprContext *ctx);
+
     antlr4::tree::TerminalNode *K_CASE();
     antlr4::tree::TerminalNode *K_END();
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
     std::vector<antlr4::tree::TerminalNode *> K_WHEN();
     antlr4::tree::TerminalNode* K_WHEN(size_t i);
     std::vector<antlr4::tree::TerminalNode *> K_THEN();
     antlr4::tree::TerminalNode* K_THEN(size_t i);
     antlr4::tree::TerminalNode *K_ELSE();
-    Raise_functionContext *raise_function();
-    antlr4::tree::TerminalNode *PIPE2();
-    antlr4::tree::TerminalNode *DIV();
-    antlr4::tree::TerminalNode *MOD();
-    antlr4::tree::TerminalNode *PLUS();
-    antlr4::tree::TerminalNode *MINUS();
-    antlr4::tree::TerminalNode *LT2();
-    antlr4::tree::TerminalNode *GT2();
-    antlr4::tree::TerminalNode *AMP();
-    antlr4::tree::TerminalNode *PIPE();
-    antlr4::tree::TerminalNode *LT();
-    antlr4::tree::TerminalNode *LT_EQ();
-    antlr4::tree::TerminalNode *GT();
-    antlr4::tree::TerminalNode *GT_EQ();
-    antlr4::tree::TerminalNode *ASSIGN();
-    antlr4::tree::TerminalNode *EQ();
-    antlr4::tree::TerminalNode *NOT_EQ1();
-    antlr4::tree::TerminalNode *NOT_EQ2();
-    antlr4::tree::TerminalNode *K_IS();
-    antlr4::tree::TerminalNode *K_IN();
-    antlr4::tree::TerminalNode *K_LIKE();
-    antlr4::tree::TerminalNode *K_GLOB();
-    antlr4::tree::TerminalNode *K_MATCH();
-    antlr4::tree::TerminalNode *K_REGEXP();
-    antlr4::tree::TerminalNode *K_AND();
-    antlr4::tree::TerminalNode *K_OR();
-    antlr4::tree::TerminalNode *K_BETWEEN();
-    antlr4::tree::TerminalNode *K_COLLATE();
-    Collation_nameContext *collation_name();
-    antlr4::tree::TerminalNode *K_ESCAPE();
-    antlr4::tree::TerminalNode *K_ISNULL();
-    antlr4::tree::TerminalNode *K_NOTNULL();
-    antlr4::tree::TerminalNode *K_NULL();
-
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
+  };
+
+  class  Expr_raise_functionContext : public ExprContext {
+  public:
+    Expr_raise_functionContext(ExprContext *ctx);
+
+    Raise_functionContext *raise_function();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_parensContext : public ExprContext {
+  public:
+    Expr_parensContext(ExprContext *ctx);
+
+    antlr4::tree::TerminalNode *OPEN_PAR();
+    ExprContext *expr();
+    antlr4::tree::TerminalNode *CLOSE_PAR();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_columnContext : public ExprContext {
+  public:
+    Expr_columnContext(ExprContext *ctx);
+
+    Column_nameContext *column_name();
+    Table_nameContext *table_name();
+    std::vector<antlr4::tree::TerminalNode *> DOT();
+    antlr4::tree::TerminalNode* DOT(size_t i);
+    Database_nameContext *database_name();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_functionContext : public ExprContext {
+  public:
+    Expr_functionContext(ExprContext *ctx);
+
+    Function_nameContext *function_name();
+    antlr4::tree::TerminalNode *OPEN_PAR();
+    antlr4::tree::TerminalNode *CLOSE_PAR();
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *STAR();
+    antlr4::tree::TerminalNode *K_DISTINCT();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_eqContext : public ExprContext {
+  public:
+    Expr_eqContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *ASSIGN();
+    antlr4::tree::TerminalNode *EQ();
+    antlr4::tree::TerminalNode *NOT_EQ1();
+    antlr4::tree::TerminalNode *NOT_EQ2();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_nullContext : public ExprContext {
+  public:
+    Expr_nullContext(ExprContext *ctx);
+
+    ExprContext *expr();
+    antlr4::tree::TerminalNode *K_ISNULL();
+    antlr4::tree::TerminalNode *K_NOTNULL();
+    antlr4::tree::TerminalNode *K_NOT();
+    antlr4::tree::TerminalNode *K_NULL();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_bind_parameterContext : public ExprContext {
+  public:
+    Expr_bind_parameterContext(ExprContext *ctx);
+
+    antlr4::tree::TerminalNode *BIND_PARAMETER();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_isContext : public ExprContext {
+  public:
+    Expr_isContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *K_IS();
+    antlr4::tree::TerminalNode *K_NOT();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_literalContext : public ExprContext {
+  public:
+    Expr_literalContext(ExprContext *ctx);
+
+    Literal_valueContext *literal_value();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_castContext : public ExprContext {
+  public:
+    Expr_castContext(ExprContext *ctx);
+
+    antlr4::tree::TerminalNode *K_CAST();
+    antlr4::tree::TerminalNode *OPEN_PAR();
+    ExprContext *expr();
+    antlr4::tree::TerminalNode *K_AS();
+    Type_nameContext *type_name();
+    antlr4::tree::TerminalNode *CLOSE_PAR();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_existsContext : public ExprContext {
+  public:
+    Expr_existsContext(ExprContext *ctx);
+
+    antlr4::tree::TerminalNode *OPEN_PAR();
+    Select_stmtContext *select_stmt();
+    antlr4::tree::TerminalNode *CLOSE_PAR();
+    antlr4::tree::TerminalNode *K_EXISTS();
+    antlr4::tree::TerminalNode *K_NOT();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_mul_div_modContext : public ExprContext {
+  public:
+    Expr_mul_div_modContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *STAR();
+    antlr4::tree::TerminalNode *DIV();
+    antlr4::tree::TerminalNode *MOD();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_betweenContext : public ExprContext {
+  public:
+    Expr_betweenContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *K_BETWEEN();
+    antlr4::tree::TerminalNode *K_AND();
+    antlr4::tree::TerminalNode *K_NOT();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_inContext : public ExprContext {
+  public:
+    Expr_inContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *K_IN();
+    antlr4::tree::TerminalNode *OPEN_PAR();
+    antlr4::tree::TerminalNode *CLOSE_PAR();
+    Table_nameContext *table_name();
+    antlr4::tree::TerminalNode *K_NOT();
+    Select_stmtContext *select_stmt();
+    Database_nameContext *database_name();
+    antlr4::tree::TerminalNode *DOT();
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_orContext : public ExprContext {
+  public:
+    Expr_orContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *PIPE2();
+    antlr4::tree::TerminalNode *K_OR();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_bitContext : public ExprContext {
+  public:
+    Expr_bitContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *LT2();
+    antlr4::tree::TerminalNode *GT2();
+    antlr4::tree::TerminalNode *AMP();
+    antlr4::tree::TerminalNode *PIPE();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_collateContext : public ExprContext {
+  public:
+    Expr_collateContext(ExprContext *ctx);
+
+    ExprContext *expr();
+    antlr4::tree::TerminalNode *K_COLLATE();
+    Collation_nameContext *collation_name();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_andContext : public ExprContext {
+  public:
+    Expr_andContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *K_AND();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_add_subContext : public ExprContext {
+  public:
+    Expr_add_subContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *PLUS();
+    antlr4::tree::TerminalNode *MINUS();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_unaryContext : public ExprContext {
+  public:
+    Expr_unaryContext(ExprContext *ctx);
+
+    Unary_operatorContext *unary_operator();
+    ExprContext *expr();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_str_matchContext : public ExprContext {
+  public:
+    Expr_str_matchContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *K_LIKE();
+    antlr4::tree::TerminalNode *K_GLOB();
+    antlr4::tree::TerminalNode *K_REGEXP();
+    antlr4::tree::TerminalNode *K_MATCH();
+    antlr4::tree::TerminalNode *K_NOT();
+    antlr4::tree::TerminalNode *K_ESCAPE();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   ExprContext* expr();
@@ -733,42 +962,6 @@ public:
 
   Join_constraintContext* join_constraint();
 
-  class  Select_coreContext : public antlr4::ParserRuleContext {
-  public:
-    Select_coreContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *K_SELECT();
-    std::vector<Result_columnContext *> result_column();
-    Result_columnContext* result_column(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> COMMA();
-    antlr4::tree::TerminalNode* COMMA(size_t i);
-    antlr4::tree::TerminalNode *K_FROM();
-    antlr4::tree::TerminalNode *K_WHERE();
-    std::vector<ExprContext *> expr();
-    ExprContext* expr(size_t i);
-    antlr4::tree::TerminalNode *K_GROUP();
-    antlr4::tree::TerminalNode *K_BY();
-    antlr4::tree::TerminalNode *K_DISTINCT();
-    antlr4::tree::TerminalNode *K_ALL();
-    std::vector<Table_or_subqueryContext *> table_or_subquery();
-    Table_or_subqueryContext* table_or_subquery(size_t i);
-    Join_clauseContext *join_clause();
-    antlr4::tree::TerminalNode *K_HAVING();
-    antlr4::tree::TerminalNode *K_VALUES();
-    std::vector<antlr4::tree::TerminalNode *> OPEN_PAR();
-    antlr4::tree::TerminalNode* OPEN_PAR(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> CLOSE_PAR();
-    antlr4::tree::TerminalNode* CLOSE_PAR(size_t i);
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
-  };
-
-  Select_coreContext* select_core();
-
   class  Compound_operatorContext : public antlr4::ParserRuleContext {
   public:
     Compound_operatorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -828,20 +1021,91 @@ public:
   class  Literal_valueContext : public antlr4::ParserRuleContext {
   public:
     Literal_valueContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NUMERIC_LITERAL();
-    antlr4::tree::TerminalNode *STRING_LITERAL();
-    antlr4::tree::TerminalNode *BLOB_LITERAL();
-    antlr4::tree::TerminalNode *K_NULL();
-    antlr4::tree::TerminalNode *K_CURRENT_TIME();
-    antlr4::tree::TerminalNode *K_CURRENT_DATE();
-    antlr4::tree::TerminalNode *K_CURRENT_TIMESTAMP();
+   
+    Literal_valueContext() = default;
+    void copyFrom(Literal_valueContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
 
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  Literal_value_k_nullContext : public Literal_valueContext {
+  public:
+    Literal_value_k_nullContext(Literal_valueContext *ctx);
+
+    antlr4::tree::TerminalNode *K_NULL();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
+  };
+
+  class  Literal_value_k_current_timeContext : public Literal_valueContext {
+  public:
+    Literal_value_k_current_timeContext(Literal_valueContext *ctx);
+
+    antlr4::tree::TerminalNode *K_CURRENT_TIME();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Literal_value_stringContext : public Literal_valueContext {
+  public:
+    Literal_value_stringContext(Literal_valueContext *ctx);
+
+    antlr4::tree::TerminalNode *STRING_LITERAL();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Literal_value_blobContext : public Literal_valueContext {
+  public:
+    Literal_value_blobContext(Literal_valueContext *ctx);
+
+    antlr4::tree::TerminalNode *BLOB_LITERAL();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Literal_value_numericContext : public Literal_valueContext {
+  public:
+    Literal_value_numericContext(Literal_valueContext *ctx);
+
+    antlr4::tree::TerminalNode *NUMERIC_LITERAL();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Literal_value_k_current_timestampContext : public Literal_valueContext {
+  public:
+    Literal_value_k_current_timestampContext(Literal_valueContext *ctx);
+
+    antlr4::tree::TerminalNode *K_CURRENT_TIMESTAMP();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Literal_value_k_current_dateContext : public Literal_valueContext {
+  public:
+    Literal_value_k_current_dateContext(Literal_valueContext *ctx);
+
+    antlr4::tree::TerminalNode *K_CURRENT_DATE();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Literal_valueContext* literal_value();
@@ -1310,7 +1574,7 @@ public:
 
 
   virtual bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
-  bool exprSempred(ExprContext */*_localctx*/, size_t predicateIndex);
+  bool exprSempred(ExprContext *_localctx, size_t predicateIndex);
 
 private:
   static std::vector<antlr4::dfa::DFA> _decisionToDFA;

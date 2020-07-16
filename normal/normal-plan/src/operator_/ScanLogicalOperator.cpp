@@ -15,3 +15,7 @@ ScanLogicalOperator::ScanLogicalOperator(
 const std::shared_ptr<PartitioningScheme> &ScanLogicalOperator::getPartitioningScheme() const {
   return partitioningScheme_;
 }
+
+void ScanLogicalOperator::predicate(const std::shared_ptr<expression::gandiva::Expression> &predicate) {
+  predicate_ = predicate;
+}

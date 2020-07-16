@@ -11,6 +11,7 @@
 #include "ProjectOperatorType.h"
 #include "AggregateOperatorType.h"
 #include "CollateOperatorType.h"
+#include "JoinOperatorType.h"
 
 namespace normal::plan::operator_::type {
 
@@ -24,6 +25,7 @@ public:
   static std::shared_ptr<ProjectOperatorType> projectOperatorType();
   static std::shared_ptr<AggregateOperatorType> aggregateOperatorType();
   static std::shared_ptr<CollateOperatorType> collateOperatorType();
+  static std::shared_ptr<JoinOperatorType> joinOperatorType();
 
 };
 

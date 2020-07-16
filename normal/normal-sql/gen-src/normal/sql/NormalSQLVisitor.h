@@ -1,5 +1,5 @@
 
-// Generated from /home/matt/Work/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
+// Generated from /Users/yyf/Desktop/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
 
 #pragma once
 
@@ -28,19 +28,63 @@ public:
 
     virtual antlrcpp::Any visitSql_stmt(NormalSQLParser::Sql_stmtContext *context) = 0;
 
-    virtual antlrcpp::Any visitCompound_select_stmt(NormalSQLParser::Compound_select_stmtContext *context) = 0;
-
-    virtual antlrcpp::Any visitFactored_select_stmt(NormalSQLParser::Factored_select_stmtContext *context) = 0;
-
-    virtual antlrcpp::Any visitSimple_select_stmt(NormalSQLParser::Simple_select_stmtContext *context) = 0;
-
     virtual antlrcpp::Any visitSelect_stmt(NormalSQLParser::Select_stmtContext *context) = 0;
 
-    virtual antlrcpp::Any visitSelect_or_values(NormalSQLParser::Select_or_valuesContext *context) = 0;
+    virtual antlrcpp::Any visitSelect_core(NormalSQLParser::Select_coreContext *context) = 0;
+
+    virtual antlrcpp::Any visitFrom_clause(NormalSQLParser::From_clauseContext *context) = 0;
+
+    virtual antlrcpp::Any visitWhere_clause(NormalSQLParser::Where_clauseContext *context) = 0;
+
+    virtual antlrcpp::Any visitGroupBy_clause(NormalSQLParser::GroupBy_clauseContext *context) = 0;
 
     virtual antlrcpp::Any visitType_name(NormalSQLParser::Type_nameContext *context) = 0;
 
-    virtual antlrcpp::Any visitExpr(NormalSQLParser::ExprContext *context) = 0;
+    virtual antlrcpp::Any visitExpr_comp(NormalSQLParser::Expr_compContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_case(NormalSQLParser::Expr_caseContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_raise_function(NormalSQLParser::Expr_raise_functionContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_parens(NormalSQLParser::Expr_parensContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_column(NormalSQLParser::Expr_columnContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_function(NormalSQLParser::Expr_functionContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_eq(NormalSQLParser::Expr_eqContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_null(NormalSQLParser::Expr_nullContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_bind_parameter(NormalSQLParser::Expr_bind_parameterContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_is(NormalSQLParser::Expr_isContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_literal(NormalSQLParser::Expr_literalContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_cast(NormalSQLParser::Expr_castContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_exists(NormalSQLParser::Expr_existsContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_mul_div_mod(NormalSQLParser::Expr_mul_div_modContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_between(NormalSQLParser::Expr_betweenContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_in(NormalSQLParser::Expr_inContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_or(NormalSQLParser::Expr_orContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_bit(NormalSQLParser::Expr_bitContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_collate(NormalSQLParser::Expr_collateContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_and(NormalSQLParser::Expr_andContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_add_sub(NormalSQLParser::Expr_add_subContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_unary(NormalSQLParser::Expr_unaryContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_str_match(NormalSQLParser::Expr_str_matchContext *context) = 0;
 
     virtual antlrcpp::Any visitRaise_function(NormalSQLParser::Raise_functionContext *context) = 0;
 
@@ -66,15 +110,25 @@ public:
 
     virtual antlrcpp::Any visitJoin_constraint(NormalSQLParser::Join_constraintContext *context) = 0;
 
-    virtual antlrcpp::Any visitSelect_core(NormalSQLParser::Select_coreContext *context) = 0;
-
     virtual antlrcpp::Any visitCompound_operator(NormalSQLParser::Compound_operatorContext *context) = 0;
 
     virtual antlrcpp::Any visitCte_table_name(NormalSQLParser::Cte_table_nameContext *context) = 0;
 
     virtual antlrcpp::Any visitSigned_number(NormalSQLParser::Signed_numberContext *context) = 0;
 
-    virtual antlrcpp::Any visitLiteral_value(NormalSQLParser::Literal_valueContext *context) = 0;
+    virtual antlrcpp::Any visitLiteral_value_numeric(NormalSQLParser::Literal_value_numericContext *context) = 0;
+
+    virtual antlrcpp::Any visitLiteral_value_string(NormalSQLParser::Literal_value_stringContext *context) = 0;
+
+    virtual antlrcpp::Any visitLiteral_value_blob(NormalSQLParser::Literal_value_blobContext *context) = 0;
+
+    virtual antlrcpp::Any visitLiteral_value_k_null(NormalSQLParser::Literal_value_k_nullContext *context) = 0;
+
+    virtual antlrcpp::Any visitLiteral_value_k_current_time(NormalSQLParser::Literal_value_k_current_timeContext *context) = 0;
+
+    virtual antlrcpp::Any visitLiteral_value_k_current_date(NormalSQLParser::Literal_value_k_current_dateContext *context) = 0;
+
+    virtual antlrcpp::Any visitLiteral_value_k_current_timestamp(NormalSQLParser::Literal_value_k_current_timestampContext *context) = 0;
 
     virtual antlrcpp::Any visitUnary_operator(NormalSQLParser::Unary_operatorContext *context) = 0;
 

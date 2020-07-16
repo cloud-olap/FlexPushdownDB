@@ -1,5 +1,5 @@
 
-// Generated from /home/matt/Work/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
+// Generated from /Users/yyf/Desktop/pushdownDB/normal/normal-sql/grammar/NormalSQL.g4 by ANTLR 4.8
 
 #pragma once
 
@@ -33,23 +33,23 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitCompound_select_stmt(NormalSQLParser::Compound_select_stmtContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitFactored_select_stmt(NormalSQLParser::Factored_select_stmtContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitSimple_select_stmt(NormalSQLParser::Simple_select_stmtContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitSelect_stmt(NormalSQLParser::Select_stmtContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitSelect_or_values(NormalSQLParser::Select_or_valuesContext *ctx) override {
+  virtual antlrcpp::Any visitSelect_core(NormalSQLParser::Select_coreContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitFrom_clause(NormalSQLParser::From_clauseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitWhere_clause(NormalSQLParser::Where_clauseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitGroupBy_clause(NormalSQLParser::GroupBy_clauseContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -57,7 +57,95 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitExpr(NormalSQLParser::ExprContext *ctx) override {
+  virtual antlrcpp::Any visitExpr_comp(NormalSQLParser::Expr_compContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_case(NormalSQLParser::Expr_caseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_raise_function(NormalSQLParser::Expr_raise_functionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_parens(NormalSQLParser::Expr_parensContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_column(NormalSQLParser::Expr_columnContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_function(NormalSQLParser::Expr_functionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_eq(NormalSQLParser::Expr_eqContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_null(NormalSQLParser::Expr_nullContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_bind_parameter(NormalSQLParser::Expr_bind_parameterContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_is(NormalSQLParser::Expr_isContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_literal(NormalSQLParser::Expr_literalContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_cast(NormalSQLParser::Expr_castContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_exists(NormalSQLParser::Expr_existsContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_mul_div_mod(NormalSQLParser::Expr_mul_div_modContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_between(NormalSQLParser::Expr_betweenContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_in(NormalSQLParser::Expr_inContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_or(NormalSQLParser::Expr_orContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_bit(NormalSQLParser::Expr_bitContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_collate(NormalSQLParser::Expr_collateContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_and(NormalSQLParser::Expr_andContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_add_sub(NormalSQLParser::Expr_add_subContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_unary(NormalSQLParser::Expr_unaryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitExpr_str_match(NormalSQLParser::Expr_str_matchContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -109,10 +197,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitSelect_core(NormalSQLParser::Select_coreContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual antlrcpp::Any visitCompound_operator(NormalSQLParser::Compound_operatorContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -125,7 +209,31 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitLiteral_value(NormalSQLParser::Literal_valueContext *ctx) override {
+  virtual antlrcpp::Any visitLiteral_value_numeric(NormalSQLParser::Literal_value_numericContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitLiteral_value_string(NormalSQLParser::Literal_value_stringContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitLiteral_value_blob(NormalSQLParser::Literal_value_blobContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitLiteral_value_k_null(NormalSQLParser::Literal_value_k_nullContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitLiteral_value_k_current_time(NormalSQLParser::Literal_value_k_current_timeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitLiteral_value_k_current_date(NormalSQLParser::Literal_value_k_current_dateContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitLiteral_value_k_current_timestamp(NormalSQLParser::Literal_value_k_current_timestampContext *ctx) override {
     return visitChildren(ctx);
   }
 

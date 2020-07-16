@@ -16,6 +16,7 @@ add_library(normal-plan STATIC
         src/operator_/FileScanLogicalOperator.cpp include/normal/plan/operator_/FileScanLogicalOperator.h
         src/operator_/S3SelectScanLogicalOperator.cpp include/normal/plan/operator_/S3SelectScanLogicalOperator.h
         src/operator_/ProjectLogicalOperator.cpp include/normal/plan/operator_/ProjectLogicalOperator.h
+        src/operator_/JoinLogicalOperator.cpp include/normal/plan/operator_/JoinLogicalOperator.h
         src/LogicalPlan.cpp include/normal/plan/LogicalPlan.h
         src/Planner.cpp include/normal/plan/Planner.h
         src/PhysicalPlan.cpp include/normal/plan/PhysicalPlan.h
@@ -25,7 +26,8 @@ add_library(normal-plan STATIC
         src/operator_/type/OperatorTypes.cpp include/normal/plan/operator_/type/OperatorTypes.h
         src/operator_/type/ProjectOperatorType.cpp include/normal/plan/operator_/type/ProjectOperatorType.h
         src/operator_/type/AggregateOperatorType.cpp include/normal/plan/operator_/type/AggregateOperatorType.h
-        src/operator_/type/CollateOperatorType.cpp include/normal/plan/operator_/type/CollateOperatorType.h)
+        src/operator_/type/CollateOperatorType.cpp include/normal/plan/operator_/type/CollateOperatorType.h
+        src/operator_/type/JoinOperatorType.cpp include/normal/plan/operator_/type/JoinOperatorType.h src/MiniCatalogue.cpp include/normal/plan/MiniCatalogue.h)
 
 target_include_directories(normal-plan PUBLIC include)
 

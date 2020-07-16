@@ -16,45 +16,34 @@ sql_stmt_list
  ;
 
 sql_stmt
- : ( K_EXPLAIN ( K_QUERY K_PLAN )? )? ( compound_select_stmt
-                                      | factored_select_stmt
-                                      | simple_select_stmt
-                                      | select_stmt)
+ : ( K_EXPLAIN ( K_QUERY K_PLAN )? )? select_stmt
  ;
 
-compound_select_stmt
- : ( K_WITH K_RECURSIVE? common_table_expression ( ',' common_table_expression )* )?
-   select_core ( ( K_UNION K_ALL? | K_INTERSECT | K_EXCEPT ) select_core )+
-   ( K_ORDER K_BY ordering_term ( ',' ordering_term )* )?
-   ( K_LIMIT expr ( ( K_OFFSET | ',' ) expr )? )?
- ;
-
-factored_select_stmt
+select_stmt
  : ( K_WITH K_RECURSIVE? common_table_expression ( ',' common_table_expression )* )?
    select_core ( compound_operator select_core )*
    ( K_ORDER K_BY ordering_term ( ',' ordering_term )* )?
    ( K_LIMIT expr ( ( K_OFFSET | ',' ) expr )? )?
  ;
 
-simple_select_stmt
- : ( K_WITH K_RECURSIVE? common_table_expression ( ',' common_table_expression )* )?
-   select_core ( K_ORDER K_BY ordering_term ( ',' ordering_term )* )?
-   ( K_LIMIT expr ( ( K_OFFSET | ',' ) expr )? )?
- ;
-
-select_stmt
- : ( K_WITH K_RECURSIVE? common_table_expression ( ',' common_table_expression )* )?
-   select_or_values ( compound_operator select_or_values )*
-   ( K_ORDER K_BY ordering_term ( ',' ordering_term )* )?
-   ( K_LIMIT expr ( ( K_OFFSET | ',' ) expr )? )?
- ;
-
-select_or_values
+select_core
  : K_SELECT ( K_DISTINCT | K_ALL )? result_column ( ',' result_column )*
-   ( K_FROM ( table_or_subquery ( ',' table_or_subquery )* | join_clause ) )?
-   ( K_WHERE expr )?
-   ( K_GROUP K_BY expr ( ',' expr )* ( K_HAVING expr )? )?
+   ( from_clause )?
+   ( where_clause )?
+   ( groupBy_clause )?
  | K_VALUES '(' expr ( ',' expr )* ')' ( ',' '(' expr ( ',' expr )* ')' )*
+ ;
+
+from_clause
+ : K_FROM ( table_or_subquery ( ',' table_or_subquery )* | join_clause )
+ ;
+
+where_clause
+ : K_WHERE expr
+ ;
+
+groupBy_clause
+ : K_GROUP K_BY expr ( ',' expr )* ( K_HAVING expr )?
  ;
 
 type_name
@@ -63,34 +52,35 @@ type_name
  ;
 
 expr
- : literal_value
- | BIND_PARAMETER
- | ( ( database_name '.' )? table_name '.' )? column_name
- | unary_operator expr
- | expr '||' expr
- | expr ( '*' | '/' | '%' ) expr
- | expr ( '+' | '-' ) expr
- | expr ( '<<' | '>>' | '&' | '|' ) expr
- | expr ( '<' | '<=' | '>' | '>=' ) expr
- | expr ( '=' | '==' | '!=' | '<>' | K_IS | K_IS K_NOT | K_IN | K_LIKE | K_GLOB | K_MATCH | K_REGEXP ) expr
- | expr K_AND expr
- | expr K_OR expr
- | function_name '(' ( K_DISTINCT? expr ( ',' expr )* | '*' )? ')'
- | '(' expr ')'
- | K_CAST '(' expr K_AS type_name ')'
- | expr K_COLLATE collation_name
- | expr K_NOT? ( K_LIKE | K_GLOB | K_REGEXP | K_MATCH ) expr ( K_ESCAPE expr )?
- | expr ( K_ISNULL | K_NOTNULL | K_NOT K_NULL )
- | expr K_IS K_NOT? expr
- | expr K_NOT? K_BETWEEN expr K_AND expr
+ : literal_value                                                                    # expr_literal
+ | BIND_PARAMETER                                                                   # expr_bind_parameter
+ | ( ( database_name '.' )? table_name '.' )? column_name                           # expr_column
+ | unary_operator expr                                                              # expr_unary
+ | expr '||' expr                                                                   # expr_or
+ | expr '&&' expr                                                                   # expr_and
+ | expr ( '*' | '/' | '%' ) expr                                                    # expr_mul_div_mod
+ | expr ( '+' | '-' ) expr                                                          # expr_add_sub
+ | expr ( '<<' | '>>' | '&' | '|' ) expr                                            # expr_bit
+ | expr ( '<' | '<=' | '>' | '>=' ) expr                                            # expr_comp
+ | expr ( '=' | '==' | '!=' | '<>' ) expr                                           # expr_eq
+ | expr K_AND expr                                                                  # expr_and
+ | expr K_OR expr                                                                   # expr_or
+ | function_name '(' ( K_DISTINCT? expr ( ',' expr )* | '*' )? ')'                  # expr_function
+ | '(' expr ')'                                                                     # expr_parens
+ | K_CAST '(' expr K_AS type_name ')'                                               # expr_cast
+ | expr K_COLLATE collation_name                                                    # expr_collate
+ | expr K_NOT? ( K_LIKE | K_GLOB | K_REGEXP | K_MATCH ) expr ( K_ESCAPE expr )?     # expr_str_match
+ | expr ( K_ISNULL | K_NOTNULL | K_NOT K_NULL )                                     # expr_null
+ | expr K_IS K_NOT? expr                                                            # expr_is
+ | expr K_NOT? K_BETWEEN expr K_AND expr                                            # expr_between
  | expr K_NOT? K_IN ( '(' ( select_stmt
                           | expr ( ',' expr )*
                           )?
                       ')'
-                    | ( database_name '.' )? table_name )
- | ( ( K_NOT )? K_EXISTS )? '(' select_stmt ')'
- | K_CASE expr? ( K_WHEN expr K_THEN expr )+ ( K_ELSE expr )? K_END
- | raise_function
+                    | ( database_name '.' )? table_name )                           # expr_in
+ | ( ( K_NOT )? K_EXISTS )? '(' select_stmt ')'                                     # expr_exists
+ | K_CASE expr? ( K_WHEN expr K_THEN expr )+ ( K_ELSE expr )? K_END                 # expr_case
+ | raise_function                                                                   # expr_raise_function
  ;
 
 raise_function
@@ -156,14 +146,6 @@ join_constraint
    | K_USING '(' column_name ( ',' column_name )* ')' )?
  ;
 
-select_core
- : K_SELECT ( K_DISTINCT | K_ALL )? result_column ( ',' result_column )*
-   ( K_FROM ( table_or_subquery ( ',' table_or_subquery )* | join_clause ) )?
-   ( K_WHERE expr )?
-   ( K_GROUP K_BY expr ( ',' expr )* ( K_HAVING expr )? )?
- | K_VALUES '(' expr ( ',' expr )* ')' ( ',' '(' expr ( ',' expr )* ')' )*
- ;
-
 compound_operator
  : K_UNION
  | K_UNION K_ALL
@@ -180,13 +162,13 @@ signed_number
  ;
 
 literal_value
- : NUMERIC_LITERAL
- | STRING_LITERAL
- | BLOB_LITERAL
- | K_NULL
- | K_CURRENT_TIME
- | K_CURRENT_DATE
- | K_CURRENT_TIMESTAMP
+ : NUMERIC_LITERAL      # literal_value_numeric
+ | STRING_LITERAL       # literal_value_string
+ | BLOB_LITERAL         # literal_value_blob
+ | K_NULL               # literal_value_k_null
+ | K_CURRENT_TIME       # literal_value_k_current_time
+ | K_CURRENT_DATE       # literal_value_k_current_date
+ | K_CURRENT_TIMESTAMP  # literal_value_k_current_timestamp
  ;
 
 unary_operator
@@ -568,8 +550,8 @@ IDENTIFIER
  ;
 
 NUMERIC_LITERAL
- : DIGIT+ ( '.' DIGIT* )? ( E [-+]? DIGIT+ )?
- | '.' DIGIT+ ( E [-+]? DIGIT+ )?
+ : [-]? DIGIT+
+ | [-]? DIGIT* '.' DIGIT+
  ;
 
 BIND_PARAMETER

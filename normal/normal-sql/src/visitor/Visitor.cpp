@@ -7,9 +7,16 @@
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/Multiply.h>
+#include <normal/expression/gandiva/LessThan.h>
+#include <normal/expression/gandiva/GreaterThan.h>
+#include <normal/expression/gandiva/LessThanOrEqualTo.h>
+#include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
+#include <normal/expression/gandiva/EqualTo.h>
+
 #include <normal/core/type/Types.h>
 #include <normal/plan/LogicalPlan.h>
-
+#include <normal/expression/gandiva/Or.h>
+#include <normal/expression/gandiva/Literal.h>
 #include "normal/plan/operator_/ProjectLogicalOperator.h"
 #include "normal/plan/operator_/CollateLogicalOperator.h"
 #include "normal/plan/operator_/AggregateLogicalOperator.h"
@@ -69,8 +76,8 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSql_stmt(normal::sql::NormalSQ
   return res;
 }
 
-antlrcpp::Any normal::sql::visitor::Visitor::visitFactored_select_stmt(normal::sql::NormalSQLParser::Factored_select_stmtContext *ctx) {
-  auto res = NormalSQLBaseVisitor::visitFactored_select_stmt(ctx);
+antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_stmt(normal::sql::NormalSQLParser::Select_stmtContext *ctx) {
+  auto res = NormalSQLBaseVisitor::visitSelect_stmt(ctx);
   return res;
 }
 
@@ -88,18 +95,35 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   collate->setName("collate");
   nodes->emplace_back(collate);
 
-  auto scanNodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>();
-
-  for (const auto &tableOrSubquery: ctx->table_or_subquery()) {
-    antlrcpp::Any tableOrSubquery_Result = visitTable_or_subquery(tableOrSubquery);
-    std::shared_ptr<normal::plan::operator_::LogicalOperator> node = tableOrSubquery_Result.as<std::shared_ptr<normal::plan::operator_::LogicalOperator>>();
-    nodes->emplace_back(tableOrSubquery_Result);
-    scanNodes->emplace_back(tableOrSubquery_Result);
-  }
+  // visit from_clause
+  auto res_from_clause = visitFrom_clause(ctx->from_clause());
+  auto scanNodes = res_from_clause.as<std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>>();
 
   bool simpleScan = false;
   bool project = false;
   bool aggregate = false;
+  bool join = ((*scanNodes).size() > 1) ? true : false;
+
+  // visit where_clause (conjunctive exprs currently)
+  auto andExpr = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
+  auto res_where_clause = visitWhere_clause(ctx->where_clause());
+  if (res_where_clause.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
+    andExpr->emplace_back(res_where_clause);
+  } else if (res_where_clause.is<std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>>()) {
+    andExpr = res_where_clause;
+  }
+
+  // extract filters and join predicates respectively
+  for (auto expr: *andExpr) {
+
+  }
+
+
+
+
+
+
+
 
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>>();
   auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
@@ -107,7 +131,6 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   for (const auto &resultColumn: ctx->result_column()) {
     auto resultColumn_Result = visitResult_column(resultColumn);
     if (resultColumn_Result.is<std::string>()) {
-      // FIXME: Need to project or push down possibly, we'll just connect scan to collate for now
       simpleScan = true;
     } else if (resultColumn_Result.is<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>()) {
       aggregate = true;
@@ -146,18 +169,40 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
 
   // Aggregate query
   if(aggregate){
-	auto aggregateNode = std::make_shared<normal::plan::operator_::AggregateLogicalOperator>(*aggregateFunctions);
-	aggregateNode->setName( "agg");
-	nodes->push_back(aggregateNode);
+    auto aggregateNode = std::make_shared<normal::plan::operator_::AggregateLogicalOperator>(*aggregateFunctions);
+    aggregateNode->setName( "agg");
+    nodes->push_back(aggregateNode);
 
-	for(const auto &scanNode: *scanNodes){
-	  scanNode->setConsumer(aggregateNode);
-	}
+	  for(const auto &scanNode: *scanNodes){
+	    scanNode->setConsumer(aggregateNode);
+	  }
 
-	aggregateNode->setConsumer(collate);
+	  aggregateNode->setConsumer(collate);
   }
 
   return nodes;
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitFrom_clause(normal::sql::NormalSQLParser::From_clauseContext *ctx) {
+  auto scanNodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>();
+
+  for (const auto &tableOrSubquery: ctx->table_or_subquery()) {
+    antlrcpp::Any tableOrSubquery_Result = visitTable_or_subquery(tableOrSubquery);
+    std::shared_ptr<normal::plan::operator_::LogicalOperator> node = tableOrSubquery_Result.as<std::shared_ptr<normal::plan::operator_::LogicalOperator>>();
+    scanNodes->emplace_back(tableOrSubquery_Result);
+  }
+
+  return scanNodes;
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitWhere_clause(normal::sql::NormalSQLParser::Where_clauseContext *ctx) {
+  auto res = visit(ctx->expr());
+  return res;
+}
+
+antlrcpp::Any
+normal::sql::visitor::Visitor::visitGroupBy_clause(normal::sql::NormalSQLParser::GroupBy_clauseContext *ctx) {
+  return NormalSQLBaseVisitor::visitGroupBy_clause(ctx);
 }
 
 /**
@@ -199,36 +244,150 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitTable_or_subquery(normal::sql:
   }
 }
 
-/**
- * An expression can be any element in a select list essentially, including aggregate operations, projections, column
- * functions like cast etc.
- *
- * @param ctx
- * @return
- */
-antlrcpp::Any normal::sql::visitor::Visitor::visitExpr(normal::sql::NormalSQLParser::ExprContext *ctx) {
-  if (ctx->K_CAST()) {
-    auto expressionCtx = ctx->expr(0);
-    auto typeNameCtx = ctx->type_name();
-    std::shared_ptr<normal::expression::gandiva::Expression> expression = visitExpr(expressionCtx);
-    auto type = typed_visitType_name(typeNameCtx);
-    return cast(expression, type);
-  } else if (ctx->column_name()) {
-    return visitColumn_name(ctx->column_name());
-  } else if (ctx->function_name()) {
-	auto function = visitFunction_name(ctx->function_name());
-	auto typedFunction = function.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
-	typedFunction->expression(visitExpr(ctx->expr(0)));
-	return function;
-  } else if(ctx->STAR()){
-	auto leftExprCtx = ctx->expr(0);
-	auto rightExprCtx = ctx->expr(1);
-	std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visitExpr(leftExprCtx);
-	std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visitExpr(rightExprCtx);
-	return times(leftExpression, rightExpression);
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_literal(normal::sql::NormalSQLParser::Expr_literalContext *ctx) {
+  auto value = visit(ctx->literal_value());
+  if (value.is<int>()) {
+    return lit<::arrow::Int32Type>(value);
+  } else if (value.is<float>()) {
+    return lit<::arrow::FloatType>(value);
+  } else if (value.is<std::string>()) {
+    return lit<::arrow::StringType>(value);
   } else {
-    throw std::runtime_error("Cannot parse expression " + ctx->getText());
+    throw std::runtime_error("Unimplemented type");
   }
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_cast(normal::sql::NormalSQLParser::Expr_castContext *ctx) {
+  std::shared_ptr<normal::expression::gandiva::Expression> expression = visit(ctx->expr());
+  auto typeNameCtx = ctx->type_name();
+  auto type = typed_visitType_name(typeNameCtx);
+  return cast(expression, type);
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_column(normal::sql::NormalSQLParser::Expr_columnContext *ctx) {
+  return visitColumn_name(ctx->column_name());
+}
+
+antlrcpp::Any
+normal::sql::visitor::Visitor::visitExpr_function(normal::sql::NormalSQLParser::Expr_functionContext *ctx) {
+  auto function = visitFunction_name(ctx->function_name());
+  auto typedFunction = function.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
+  typedFunction->expression(visit(ctx->expr(0)));
+  return function;
+}
+
+antlrcpp::Any
+normal::sql::visitor::Visitor::visitExpr_mul_div_mod(normal::sql::NormalSQLParser::Expr_mul_div_modContext *ctx) {
+  if(ctx->STAR()){
+    std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(ctx->expr(0));
+    std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(ctx->expr(1));
+    return times(leftExpression, rightExpression);
+  } else {
+    throw std::runtime_error("\"/\" and \"%\" are not implemented");
+  }
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_comp(normal::sql::NormalSQLParser::Expr_compContext *ctx) {
+  auto leftExprCtx = ctx->expr(0);
+  auto rightExprCtx = ctx->expr(1);
+  if(ctx->LT()) {
+    std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(leftExprCtx);
+    std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(rightExprCtx);
+    return lt(leftExpression, rightExpression);
+  }
+  else if(ctx->LT_EQ()) {
+    std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(leftExprCtx);
+    std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(rightExprCtx);
+    return lte(leftExpression, rightExpression);
+  }
+  else if(ctx->GT()) {
+    std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(leftExprCtx);
+    std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(rightExprCtx);
+    return gt(leftExpression, rightExpression);
+  }
+  else {
+    std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(leftExprCtx);
+    std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(rightExprCtx);
+    return gte(leftExpression, rightExpression);
+  }
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_eq(normal::sql::NormalSQLParser::Expr_eqContext *ctx) {
+  auto leftExprCtx = ctx->expr(0);
+  auto rightExprCtx = ctx->expr(1);
+  if (ctx->ASSIGN() || ctx->EQ()) {
+    std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(leftExprCtx);
+    std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(rightExprCtx);
+    return eq(leftExpression, rightExpression);
+  } else {
+    throw std::runtime_error("\"!=\" and \"<>\" are not implemented");
+  }
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_between(normal::sql::NormalSQLParser::Expr_betweenContext *ctx) {
+  auto andExpr = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
+  std::shared_ptr<normal::expression::gandiva::Expression> centerExpression = visit(ctx->expr(0));
+  std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(ctx->expr(1));
+  std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(ctx->expr(2));
+  andExpr->emplace_back(gte(centerExpression, leftExpression));
+  andExpr->emplace_back(lte(centerExpression, rightExpression));
+  return andExpr;
+}
+
+/**
+ * visit "and": return a vector of expressions
+ * visit "or": return an Or_Expression
+ * because ssb only involving "or" of 2, but "and" of more than 2
+ */
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_and(normal::sql::NormalSQLParser::Expr_andContext *ctx) {
+  auto andExpr = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
+  auto res_left = visit(ctx->expr(0));
+  if (res_left.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
+    auto leftExpression = res_left.as<std::shared_ptr<normal::expression::gandiva::Expression>>();
+    andExpr->emplace_back(leftExpression);
+  } else {
+    auto leftExpressions = res_left.as<std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>>();
+    andExpr->insert(andExpr->end(), leftExpressions->begin(), leftExpressions->end());
+  }
+  auto res_right = visit(ctx->expr(1));
+  if (res_right.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
+    auto rightExpression = res_right.as<std::shared_ptr<normal::expression::gandiva::Expression>>();
+    andExpr->emplace_back(rightExpression);
+  } else {
+    auto rightExpressions = res_right.as<std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>>();
+    andExpr->insert(andExpr->end(), rightExpressions->begin(), rightExpressions->end());
+  }
+  return andExpr;
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_or(normal::sql::NormalSQLParser::Expr_orContext *ctx) {
+  std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(ctx->expr(0));
+  std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(ctx->expr(1));
+  return or_(leftExpression, rightExpression);
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_parens(normal::sql::NormalSQLParser::Expr_parensContext *ctx) {
+  return visit(ctx->expr());
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitLiteral_value_numeric(
+        normal::sql::NormalSQLParser::Literal_value_numericContext *ctx) {
+  auto numeric_str = ctx->getText();
+  auto idx = numeric_str.find(".");
+  if (idx == std::string::npos) {
+    int value = std::stoi(numeric_str);
+    return value;
+  } else {
+    float value = std::stof(numeric_str);
+    return value;
+  }
+}
+
+antlrcpp::Any normal::sql::visitor::Visitor::visitLiteral_value_string(
+        normal::sql::NormalSQLParser::Literal_value_stringContext *ctx) {
+  auto raw_str = ctx->getText();
+  std::string str = raw_str.substr(1, raw_str.size() - 2);
+  return str;
 }
 
 /**
@@ -282,7 +441,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitResult_column(normal::sql::Nor
   if (ctx->STAR()) {
     return ctx->STAR()->toString();
   } else if (ctx->expr()) {
-    return visitExpr(ctx->expr());
+    return visit(ctx->expr());
   } else {
     throw std::runtime_error("Cannot parse result column " + ctx->getText());
   }
