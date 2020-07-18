@@ -9,10 +9,11 @@
 #include <memory>
 
 #include "Expression.h"
+#include "BinaryExpression.h"
 
 namespace normal::expression::gandiva {
 
-class GreaterThan : public Expression {
+class GreaterThan : public BinaryExpression {
 
 public:
   GreaterThan(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);
@@ -20,9 +21,6 @@ public:
   void compile(std::shared_ptr<arrow::Schema> schema) override;
   std::string alias() override;
 
-private:
-  std::shared_ptr<Expression> left_;
-  std::shared_ptr<Expression> right_;
 };
 
   std::shared_ptr<Expression> gt(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);

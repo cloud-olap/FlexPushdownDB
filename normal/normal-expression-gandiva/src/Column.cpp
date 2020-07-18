@@ -28,6 +28,10 @@ std::string Column::alias() {
   return columnName_;
 }
 
+const std::string &Column::getColumnName() const {
+  return columnName_;
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::col(const std::string& columnName) {
   auto canonicalColumnName = normal::tuple::ColumnName::canonicalize(columnName);
   return std::make_shared<Column>(canonicalColumnName);

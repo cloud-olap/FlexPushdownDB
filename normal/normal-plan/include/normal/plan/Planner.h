@@ -28,7 +28,7 @@ public:
    * @param logicalPlan
    * @return
    */
-  static PhysicalPlan generate(const LogicalPlan &logicalPlan);
+  static std::shared_ptr<PhysicalPlan> generate(const LogicalPlan &logicalPlan);
 
 };
 

@@ -593,20 +593,6 @@ public:
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  class  Expr_orContext : public ExprContext {
-  public:
-    Expr_orContext(ExprContext *ctx);
-
-    std::vector<ExprContext *> expr();
-    ExprContext* expr(size_t i);
-    antlr4::tree::TerminalNode *PIPE2();
-    antlr4::tree::TerminalNode *K_OR();
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
   class  Expr_bitContext : public ExprContext {
   public:
     Expr_bitContext(ExprContext *ctx);
@@ -617,6 +603,20 @@ public:
     antlr4::tree::TerminalNode *GT2();
     antlr4::tree::TerminalNode *AMP();
     antlr4::tree::TerminalNode *PIPE();
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  Expr_orContext : public ExprContext {
+  public:
+    Expr_orContext(ExprContext *ctx);
+
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
+    antlr4::tree::TerminalNode *K_OR();
+    antlr4::tree::TerminalNode *PIPE2();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
 

@@ -12,7 +12,8 @@ enum OperatorTypeId {
   Project,
   Aggregate,
   Collate,
-  Join
+  Join,
+  Group
 };
 
 }

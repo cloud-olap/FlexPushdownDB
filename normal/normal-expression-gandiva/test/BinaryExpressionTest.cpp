@@ -9,7 +9,7 @@
 
 #include <normal/expression/gandiva/Column.h>
 #include <normal/expression/gandiva/LessThan.h>
-#include <normal/expression/gandiva/Literal.h>
+#include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/tuple/TupleSet2.h>

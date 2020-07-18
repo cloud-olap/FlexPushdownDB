@@ -49,7 +49,7 @@
 #include <normal/pushdown/join/HashJoinProbe.h>
 #include <normal/pushdown/filter/Filter.h>
 #include <normal/pushdown/filter/FilterPredicate.h>
-#include <normal/expression/gandiva/Literal.h>
+#include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/expression/gandiva/LessThan.h>
 #include <normal/expression/gandiva/EqualTo.h>
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>

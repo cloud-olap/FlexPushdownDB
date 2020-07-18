@@ -18,14 +18,13 @@ namespace normal::plan::operator_ {
 class AggregateLogicalOperator : public LogicalOperator {
 
 public:
-  explicit AggregateLogicalOperator(std::vector<std::shared_ptr<function::AggregateLogicalFunction>> functions);
+  explicit AggregateLogicalOperator(std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions);
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
   std::shared_ptr<core::Operator> toOperator() override;
 
 private:
-  // FIXME: This should probably be a pointer
-  std::vector<std::shared_ptr<function::AggregateLogicalFunction>> functions_;
+  std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions_;
 
 };
 

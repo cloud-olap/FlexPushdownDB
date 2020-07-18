@@ -16,6 +16,9 @@ class JoinLogicalOperator : public LogicalOperator{
 public:
   explicit JoinLogicalOperator(const std::string &leftColumnName, const std::string &rightColumnName);
 
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
+  std::shared_ptr<core::Operator> toOperator() override;
+
 private:
   std::string leftColumnName_;
   std::string rightColumnName_;

@@ -19,3 +19,7 @@ const std::shared_ptr<PartitioningScheme> &ScanLogicalOperator::getPartitioningS
 void ScanLogicalOperator::predicate(const std::shared_ptr<expression::gandiva::Expression> &predicate) {
   predicate_ = predicate;
 }
+
+void ScanLogicalOperator::setPredicate(const std::shared_ptr<expression::gandiva::Expression> &predicate) {
+  predicate_ = predicate;
+}

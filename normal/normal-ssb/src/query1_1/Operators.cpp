@@ -14,7 +14,7 @@
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
-#include <normal/expression/gandiva/Literal.h>
+#include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/expression/gandiva/LessThan.h>
 #include <normal/expression/gandiva/EqualTo.h>
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>
@@ -139,7 +139,7 @@ Operators::makeDateFilterOperators(short year, int numConcurrentUnits) {
 	auto dateFilter = normal::pushdown::filter::Filter::make(
 		fmt::format("dateFilter-{}", u),
 		FilterPredicate::make(
-			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
+			eq(cast(col("d_year"), integer32Type()), num_lit<::arrow::Int32Type>(year))));
 	dateFilterOperators.push_back(dateFilter);
   }
 
@@ -288,10 +288,10 @@ Operators::makeLineOrderFilterOperators(short discount, short quantity, int numC
 		FilterPredicate::make(
 			and_(
 				and_(
-					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
+					gte(cast(col("lo_discount"), integer32Type()), num_lit<::arrow::Int32Type>(discountLower)),
+					lte(cast(col("lo_discount"), integer32Type()), num_lit<::arrow::Int32Type>(discountUpper))
 				),
-				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
+				lt(cast(col("lo_quantity"), integer32Type()), num_lit<::arrow::Int32Type>(quantity))
 			)
 		)
 	);

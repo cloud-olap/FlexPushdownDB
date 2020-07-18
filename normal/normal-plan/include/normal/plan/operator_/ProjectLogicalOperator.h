@@ -19,16 +19,15 @@ namespace normal::plan::operator_ {
 class ProjectLogicalOperator : public LogicalOperator {
 
 public:
-  explicit ProjectLogicalOperator(std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> expressions);
+  explicit ProjectLogicalOperator(std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>> expressions);
 
-  [[nodiscard]] const std::vector<std::shared_ptr<expression::gandiva::Expression>> &expressions() const;
+  [[nodiscard]] const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &expressions() const;
 
   std::shared_ptr<core::Operator> toOperator() override;
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
 private:
-  // FIXME: This should probably be a pointer
-  std::vector<std::shared_ptr<expression::gandiva::Expression>> expressions_;
+  std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> expressions_;
 
 };
 

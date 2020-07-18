@@ -121,11 +121,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitExpr_or(NormalSQLParser::Expr_orContext *ctx) override {
+  virtual antlrcpp::Any visitExpr_bit(NormalSQLParser::Expr_bitContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitExpr_bit(NormalSQLParser::Expr_bitContext *ctx) override {
+  virtual antlrcpp::Any visitExpr_or(NormalSQLParser::Expr_orContext *ctx) override {
     return visitChildren(ctx);
   }
 

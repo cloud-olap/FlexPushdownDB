@@ -25,3 +25,7 @@ std::shared_ptr<CollateOperatorType> OperatorTypes::collateOperatorType() {
 std::shared_ptr<JoinOperatorType> OperatorTypes::joinOperatorType() {
   return std::make_shared<JoinOperatorType>();
 }
+
+std::shared_ptr<GroupOperatorType> OperatorTypes::groupOperatorType() {
+  return std::shared_ptr<GroupOperatorType>();
+}

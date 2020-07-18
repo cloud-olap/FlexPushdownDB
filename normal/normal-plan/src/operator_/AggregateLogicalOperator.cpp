@@ -13,7 +13,7 @@ using namespace normal::core::type;
 using namespace normal::expression;
 
 AggregateLogicalOperator::AggregateLogicalOperator(
-	std::vector<std::shared_ptr<function::AggregateLogicalFunction>> functions)
+	std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions)
     : LogicalOperator(type::OperatorTypes::aggregateOperatorType()),
     functions_(std::move(functions)) {}
 
@@ -21,7 +21,7 @@ std::shared_ptr<normal::core::Operator> AggregateLogicalOperator::toOperator() {
 
   auto expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
 
-  for (const auto &function: functions_) {
+  for (const auto function: *functions_) {
     expressions->push_back(function->toExecutorFunction());
   }
 

@@ -94,11 +94,11 @@ public:
   virtual void enterExpr_in(NormalSQLParser::Expr_inContext *ctx) = 0;
   virtual void exitExpr_in(NormalSQLParser::Expr_inContext *ctx) = 0;
 
-  virtual void enterExpr_or(NormalSQLParser::Expr_orContext *ctx) = 0;
-  virtual void exitExpr_or(NormalSQLParser::Expr_orContext *ctx) = 0;
-
   virtual void enterExpr_bit(NormalSQLParser::Expr_bitContext *ctx) = 0;
   virtual void exitExpr_bit(NormalSQLParser::Expr_bitContext *ctx) = 0;
+
+  virtual void enterExpr_or(NormalSQLParser::Expr_orContext *ctx) = 0;
+  virtual void exitExpr_or(NormalSQLParser::Expr_orContext *ctx) = 0;
 
   virtual void enterExpr_collate(NormalSQLParser::Expr_collateContext *ctx) = 0;
   virtual void exitExpr_collate(NormalSQLParser::Expr_collateContext *ctx) = 0;

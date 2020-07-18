@@ -72,9 +72,9 @@ public:
 
     virtual antlrcpp::Any visitExpr_in(NormalSQLParser::Expr_inContext *context) = 0;
 
-    virtual antlrcpp::Any visitExpr_or(NormalSQLParser::Expr_orContext *context) = 0;
-
     virtual antlrcpp::Any visitExpr_bit(NormalSQLParser::Expr_bitContext *context) = 0;
+
+    virtual antlrcpp::Any visitExpr_or(NormalSQLParser::Expr_orContext *context) = 0;
 
     virtual antlrcpp::Any visitExpr_collate(NormalSQLParser::Expr_collateContext *context) = 0;
 

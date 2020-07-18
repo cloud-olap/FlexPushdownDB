@@ -12,6 +12,7 @@
 #include "AggregateOperatorType.h"
 #include "CollateOperatorType.h"
 #include "JoinOperatorType.h"
+#include "GroupOperatorType.h"
 
 namespace normal::plan::operator_::type {
 
@@ -26,6 +27,7 @@ public:
   static std::shared_ptr<AggregateOperatorType> aggregateOperatorType();
   static std::shared_ptr<CollateOperatorType> collateOperatorType();
   static std::shared_ptr<JoinOperatorType> joinOperatorType();
+  static std::shared_ptr<GroupOperatorType> groupOperatorType();
 
 };
 

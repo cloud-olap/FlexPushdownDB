@@ -22,7 +22,7 @@ void configureS3Connector(normal::sql::Interpreter &i, std::string bucket_name, 
   // look up tables
   std::vector<std::string> object_keys = ExperimentUtil::list_objects(*conn->getAwsClient(), bucket_name, dir_prefix);
   std::vector<std::string> table_names;
-  for (auto object_key: object_keys) {
+  for (const auto &object_key: object_keys) {
     std::string table_name = object_key.substr(dir_prefix.size(), object_key.size());
     if (table_name.size() > 0) {
       table_names.push_back(table_name);
@@ -30,7 +30,7 @@ void configureS3Connector(normal::sql::Interpreter &i, std::string bucket_name, 
   }
 
   // configure s3Connector
-  for (auto table_name: table_names) {
+  for (const auto &table_name: table_names) {
     auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
     partitioningScheme->add(std::make_shared<S3SelectPartition>("s3filter", dir_prefix + table_name));
     cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(table_name.substr(0, table_name.size() - 4), partitioningScheme, cat));
@@ -71,7 +71,7 @@ auto executeSql(normal::sql::Interpreter i, const std::string &sql) {
 TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {
-          "query1.1.sql"
+          "query3.4.sql"
   };
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");
@@ -83,7 +83,7 @@ TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   configureS3Connector(i, bucket_name, dir_prefix);
 
   // execute
-  for (std::string sql_file_name: sql_file_names) {
+  for (const auto &sql_file_name: sql_file_names) {
     // read sql file
     auto sql_file_path = sql_file_dir_path.append(sql_file_name);
     auto sql = ExperimentUtil::read_file(sql_file_path.string());

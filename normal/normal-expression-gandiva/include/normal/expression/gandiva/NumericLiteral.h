@@ -2,8 +2,8 @@
 // Created by matt on 28/4/20.
 //
 
-#ifndef NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_LITERAL_H
-#define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_LITERAL_H
+#ifndef NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_NUMERICLITERAL_H
+#define NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_NUMERICLITERAL_H
 
 #include <string>
 #include <memory>
@@ -17,10 +17,10 @@
 namespace normal::expression::gandiva {
 
 template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
-class Literal : public Expression {
+class NumericLiteral : public Expression {
 
 public:
-  explicit Literal(C_TYPE value) : value_(value) {}
+  explicit NumericLiteral(C_TYPE value) : value_(value) {}
 
   void compile(std::shared_ptr<arrow::Schema>) override {
 	auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
@@ -39,8 +39,8 @@ private:
 };
 
 template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
-std::shared_ptr<Expression> lit(C_TYPE value){
-  return std::make_shared<Literal<ARROW_TYPE>>(value);
+std::shared_ptr<Expression> num_lit(C_TYPE value){
+  return std::make_shared<NumericLiteral<ARROW_TYPE>>(value);
 }
 
 }

@@ -11,3 +11,11 @@ JoinLogicalOperator::JoinLogicalOperator(const std::string &leftColumnName, cons
         : LogicalOperator(type::OperatorTypes::joinOperatorType()),
           leftColumnName_(leftColumnName), rightColumnName_(rightColumnName) {}
 
+std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogicalOperator::toOperators() {
+  return std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>>();
+}
+
+std::shared_ptr<normal::core::Operator> JoinLogicalOperator::toOperator() {
+  return std::shared_ptr<core::Operator>();
+}
+

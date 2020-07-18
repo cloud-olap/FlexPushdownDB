@@ -56,15 +56,12 @@ expr
  | BIND_PARAMETER                                                                   # expr_bind_parameter
  | ( ( database_name '.' )? table_name '.' )? column_name                           # expr_column
  | unary_operator expr                                                              # expr_unary
- | expr '||' expr                                                                   # expr_or
- | expr '&&' expr                                                                   # expr_and
  | expr ( '*' | '/' | '%' ) expr                                                    # expr_mul_div_mod
  | expr ( '+' | '-' ) expr                                                          # expr_add_sub
  | expr ( '<<' | '>>' | '&' | '|' ) expr                                            # expr_bit
  | expr ( '<' | '<=' | '>' | '>=' ) expr                                            # expr_comp
+ | expr K_NOT? K_BETWEEN expr K_AND expr                                            # expr_between
  | expr ( '=' | '==' | '!=' | '<>' ) expr                                           # expr_eq
- | expr K_AND expr                                                                  # expr_and
- | expr K_OR expr                                                                   # expr_or
  | function_name '(' ( K_DISTINCT? expr ( ',' expr )* | '*' )? ')'                  # expr_function
  | '(' expr ')'                                                                     # expr_parens
  | K_CAST '(' expr K_AS type_name ')'                                               # expr_cast
@@ -72,7 +69,6 @@ expr
  | expr K_NOT? ( K_LIKE | K_GLOB | K_REGEXP | K_MATCH ) expr ( K_ESCAPE expr )?     # expr_str_match
  | expr ( K_ISNULL | K_NOTNULL | K_NOT K_NULL )                                     # expr_null
  | expr K_IS K_NOT? expr                                                            # expr_is
- | expr K_NOT? K_BETWEEN expr K_AND expr                                            # expr_between
  | expr K_NOT? K_IN ( '(' ( select_stmt
                           | expr ( ',' expr )*
                           )?
@@ -81,6 +77,10 @@ expr
  | ( ( K_NOT )? K_EXISTS )? '(' select_stmt ')'                                     # expr_exists
  | K_CASE expr? ( K_WHEN expr K_THEN expr )+ ( K_ELSE expr )? K_END                 # expr_case
  | raise_function                                                                   # expr_raise_function
+ | expr K_AND expr                                                                  # expr_and
+ | expr '&&' expr                                                                   # expr_and
+ | expr K_OR expr                                                                   # expr_or
+ | expr '||' expr                                                                   # expr_or
  ;
 
 raise_function

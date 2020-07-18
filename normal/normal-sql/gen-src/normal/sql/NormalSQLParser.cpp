@@ -1959,43 +1959,6 @@ antlrcpp::Any NormalSQLParser::Expr_inContext::accept(tree::ParseTreeVisitor *vi
   else
     return visitor->visitChildren(this);
 }
-//----------------- Expr_orContext ------------------------------------------------------------------
-
-std::vector<NormalSQLParser::ExprContext *> NormalSQLParser::Expr_orContext::expr() {
-  return getRuleContexts<NormalSQLParser::ExprContext>();
-}
-
-NormalSQLParser::ExprContext* NormalSQLParser::Expr_orContext::expr(size_t i) {
-  return getRuleContext<NormalSQLParser::ExprContext>(i);
-}
-
-tree::TerminalNode* NormalSQLParser::Expr_orContext::PIPE2() {
-  return getToken(NormalSQLParser::PIPE2, 0);
-}
-
-tree::TerminalNode* NormalSQLParser::Expr_orContext::K_OR() {
-  return getToken(NormalSQLParser::K_OR, 0);
-}
-
-NormalSQLParser::Expr_orContext::Expr_orContext(ExprContext *ctx) { copyFrom(ctx); }
-
-void NormalSQLParser::Expr_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<NormalSQLListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterExpr_or(this);
-}
-void NormalSQLParser::Expr_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<NormalSQLListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitExpr_or(this);
-}
-
-antlrcpp::Any NormalSQLParser::Expr_orContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<NormalSQLVisitor*>(visitor))
-    return parserVisitor->visitExpr_or(this);
-  else
-    return visitor->visitChildren(this);
-}
 //----------------- Expr_bitContext ------------------------------------------------------------------
 
 std::vector<NormalSQLParser::ExprContext *> NormalSQLParser::Expr_bitContext::expr() {
@@ -2038,6 +2001,43 @@ void NormalSQLParser::Expr_bitContext::exitRule(tree::ParseTreeListener *listene
 antlrcpp::Any NormalSQLParser::Expr_bitContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<NormalSQLVisitor*>(visitor))
     return parserVisitor->visitExpr_bit(this);
+  else
+    return visitor->visitChildren(this);
+}
+//----------------- Expr_orContext ------------------------------------------------------------------
+
+std::vector<NormalSQLParser::ExprContext *> NormalSQLParser::Expr_orContext::expr() {
+  return getRuleContexts<NormalSQLParser::ExprContext>();
+}
+
+NormalSQLParser::ExprContext* NormalSQLParser::Expr_orContext::expr(size_t i) {
+  return getRuleContext<NormalSQLParser::ExprContext>(i);
+}
+
+tree::TerminalNode* NormalSQLParser::Expr_orContext::K_OR() {
+  return getToken(NormalSQLParser::K_OR, 0);
+}
+
+tree::TerminalNode* NormalSQLParser::Expr_orContext::PIPE2() {
+  return getToken(NormalSQLParser::PIPE2, 0);
+}
+
+NormalSQLParser::Expr_orContext::Expr_orContext(ExprContext *ctx) { copyFrom(ctx); }
+
+void NormalSQLParser::Expr_orContext::enterRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<NormalSQLListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->enterExpr_or(this);
+}
+void NormalSQLParser::Expr_orContext::exitRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<NormalSQLListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->exitExpr_or(this);
+}
+
+antlrcpp::Any NormalSQLParser::Expr_orContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<NormalSQLVisitor*>(visitor))
+    return parserVisitor->visitExpr_or(this);
   else
     return visitor->visitChildren(this);
 }
@@ -2640,41 +2640,13 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
         _errHandler->sync(this);
         switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 52, _ctx)) {
         case 1: {
-          auto newContext = _tracker.createInstance<Expr_orContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<Expr_mul_div_modContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
           setState(361);
 
           if (!(precpred(_ctx, 21))) throw FailedPredicateException(this, "precpred(_ctx, 21)");
           setState(362);
-          match(NormalSQLParser::PIPE2);
-          setState(363);
-          expr(22);
-          break;
-        }
-
-        case 2: {
-          auto newContext = _tracker.createInstance<Expr_andContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
-          _localctx = newContext;
-          pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(364);
-
-          if (!(precpred(_ctx, 20))) throw FailedPredicateException(this, "precpred(_ctx, 20)");
-          setState(365);
-          match(NormalSQLParser::T__0);
-          setState(366);
-          expr(21);
-          break;
-        }
-
-        case 3: {
-          auto newContext = _tracker.createInstance<Expr_mul_div_modContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
-          _localctx = newContext;
-          pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(367);
-
-          if (!(precpred(_ctx, 19))) throw FailedPredicateException(this, "precpred(_ctx, 19)");
-          setState(368);
           _la = _input->LA(1);
           if (!((((_la & ~ 0x3fULL) == 0) &&
             ((1ULL << _la) & ((1ULL << NormalSQLParser::STAR)
@@ -2686,19 +2658,19 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(369);
-          expr(20);
+          setState(363);
+          expr(22);
           break;
         }
 
-        case 4: {
+        case 2: {
           auto newContext = _tracker.createInstance<Expr_add_subContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(370);
+          setState(364);
 
-          if (!(precpred(_ctx, 18))) throw FailedPredicateException(this, "precpred(_ctx, 18)");
-          setState(371);
+          if (!(precpred(_ctx, 20))) throw FailedPredicateException(this, "precpred(_ctx, 20)");
+          setState(365);
           _la = _input->LA(1);
           if (!(_la == NormalSQLParser::PLUS
 
@@ -2709,19 +2681,19 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(372);
-          expr(19);
+          setState(366);
+          expr(21);
           break;
         }
 
-        case 5: {
+        case 3: {
           auto newContext = _tracker.createInstance<Expr_bitContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(373);
+          setState(367);
 
-          if (!(precpred(_ctx, 17))) throw FailedPredicateException(this, "precpred(_ctx, 17)");
-          setState(374);
+          if (!(precpred(_ctx, 19))) throw FailedPredicateException(this, "precpred(_ctx, 19)");
+          setState(368);
           _la = _input->LA(1);
           if (!((((_la & ~ 0x3fULL) == 0) &&
             ((1ULL << _la) & ((1ULL << NormalSQLParser::LT2)
@@ -2734,19 +2706,19 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(375);
-          expr(18);
+          setState(369);
+          expr(20);
           break;
         }
 
-        case 6: {
+        case 4: {
           auto newContext = _tracker.createInstance<Expr_compContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(376);
+          setState(370);
 
-          if (!(precpred(_ctx, 16))) throw FailedPredicateException(this, "precpred(_ctx, 16)");
-          setState(377);
+          if (!(precpred(_ctx, 18))) throw FailedPredicateException(this, "precpred(_ctx, 18)");
+          setState(371);
           _la = _input->LA(1);
           if (!((((_la & ~ 0x3fULL) == 0) &&
             ((1ULL << _la) & ((1ULL << NormalSQLParser::LT)
@@ -2759,19 +2731,45 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(378);
-          expr(17);
+          setState(372);
+          expr(19);
           break;
         }
 
-        case 7: {
+        case 5: {
+          auto newContext = _tracker.createInstance<Expr_betweenContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
+          _localctx = newContext;
+          pushNewRecursionContext(newContext, startState, RuleExpr);
+          setState(373);
+
+          if (!(precpred(_ctx, 17))) throw FailedPredicateException(this, "precpred(_ctx, 17)");
+          setState(375);
+          _errHandler->sync(this);
+
+          _la = _input->LA(1);
+          if (_la == NormalSQLParser::K_NOT) {
+            setState(374);
+            match(NormalSQLParser::K_NOT);
+          }
+          setState(377);
+          match(NormalSQLParser::K_BETWEEN);
+          setState(378);
+          expr(0);
+          setState(379);
+          match(NormalSQLParser::K_AND);
+          setState(380);
+          expr(18);
+          break;
+        }
+
+        case 6: {
           auto newContext = _tracker.createInstance<Expr_eqContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(379);
+          setState(382);
 
-          if (!(precpred(_ctx, 15))) throw FailedPredicateException(this, "precpred(_ctx, 15)");
-          setState(380);
+          if (!(precpred(_ctx, 16))) throw FailedPredicateException(this, "precpred(_ctx, 16)");
+          setState(383);
           _la = _input->LA(1);
           if (!((((_la & ~ 0x3fULL) == 0) &&
             ((1ULL << _la) & ((1ULL << NormalSQLParser::ASSIGN)
@@ -2784,8 +2782,33 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(381);
-          expr(16);
+          setState(384);
+          expr(17);
+          break;
+        }
+
+        case 7: {
+          auto newContext = _tracker.createInstance<Expr_isContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
+          _localctx = newContext;
+          pushNewRecursionContext(newContext, startState, RuleExpr);
+          setState(385);
+
+          if (!(precpred(_ctx, 9))) throw FailedPredicateException(this, "precpred(_ctx, 9)");
+          setState(386);
+          match(NormalSQLParser::K_IS);
+          setState(388);
+          _errHandler->sync(this);
+
+          switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 43, _ctx)) {
+          case 1: {
+            setState(387);
+            match(NormalSQLParser::K_NOT);
+            break;
+          }
+
+          }
+          setState(390);
+          expr(10);
           break;
         }
 
@@ -2793,78 +2816,55 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
           auto newContext = _tracker.createInstance<Expr_andContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(382);
+          setState(391);
 
-          if (!(precpred(_ctx, 14))) throw FailedPredicateException(this, "precpred(_ctx, 14)");
-          setState(383);
+          if (!(precpred(_ctx, 4))) throw FailedPredicateException(this, "precpred(_ctx, 4)");
+          setState(392);
           match(NormalSQLParser::K_AND);
-          setState(384);
-          expr(15);
+          setState(393);
+          expr(5);
           break;
         }
 
         case 9: {
-          auto newContext = _tracker.createInstance<Expr_orContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
-          _localctx = newContext;
-          pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(385);
-
-          if (!(precpred(_ctx, 13))) throw FailedPredicateException(this, "precpred(_ctx, 13)");
-          setState(386);
-          match(NormalSQLParser::K_OR);
-          setState(387);
-          expr(14);
-          break;
-        }
-
-        case 10: {
-          auto newContext = _tracker.createInstance<Expr_isContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
-          _localctx = newContext;
-          pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(388);
-
-          if (!(precpred(_ctx, 6))) throw FailedPredicateException(this, "precpred(_ctx, 6)");
-          setState(389);
-          match(NormalSQLParser::K_IS);
-          setState(391);
-          _errHandler->sync(this);
-
-          switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 42, _ctx)) {
-          case 1: {
-            setState(390);
-            match(NormalSQLParser::K_NOT);
-            break;
-          }
-
-          }
-          setState(393);
-          expr(7);
-          break;
-        }
-
-        case 11: {
-          auto newContext = _tracker.createInstance<Expr_betweenContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
+          auto newContext = _tracker.createInstance<Expr_andContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
           setState(394);
 
-          if (!(precpred(_ctx, 5))) throw FailedPredicateException(this, "precpred(_ctx, 5)");
+          if (!(precpred(_ctx, 3))) throw FailedPredicateException(this, "precpred(_ctx, 3)");
+          setState(395);
+          match(NormalSQLParser::T__0);
           setState(396);
-          _errHandler->sync(this);
+          expr(4);
+          break;
+        }
 
-          _la = _input->LA(1);
-          if (_la == NormalSQLParser::K_NOT) {
-            setState(395);
-            match(NormalSQLParser::K_NOT);
-          }
+        case 10: {
+          auto newContext = _tracker.createInstance<Expr_orContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
+          _localctx = newContext;
+          pushNewRecursionContext(newContext, startState, RuleExpr);
+          setState(397);
+
+          if (!(precpred(_ctx, 2))) throw FailedPredicateException(this, "precpred(_ctx, 2)");
           setState(398);
-          match(NormalSQLParser::K_BETWEEN);
+          match(NormalSQLParser::K_OR);
           setState(399);
-          expr(0);
+          expr(3);
+          break;
+        }
+
+        case 11: {
+          auto newContext = _tracker.createInstance<Expr_orContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
+          _localctx = newContext;
+          pushNewRecursionContext(newContext, startState, RuleExpr);
           setState(400);
-          match(NormalSQLParser::K_AND);
+
+          if (!(precpred(_ctx, 1))) throw FailedPredicateException(this, "precpred(_ctx, 1)");
           setState(401);
-          expr(6);
+          match(NormalSQLParser::PIPE2);
+          setState(402);
+          expr(2);
           break;
         }
 
@@ -2874,7 +2874,7 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
           pushNewRecursionContext(newContext, startState, RuleExpr);
           setState(403);
 
-          if (!(precpred(_ctx, 9))) throw FailedPredicateException(this, "precpred(_ctx, 9)");
+          if (!(precpred(_ctx, 12))) throw FailedPredicateException(this, "precpred(_ctx, 12)");
           setState(404);
           match(NormalSQLParser::K_COLLATE);
           setState(405);
@@ -2888,7 +2888,7 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
           pushNewRecursionContext(newContext, startState, RuleExpr);
           setState(406);
 
-          if (!(precpred(_ctx, 8))) throw FailedPredicateException(this, "precpred(_ctx, 8)");
+          if (!(precpred(_ctx, 11))) throw FailedPredicateException(this, "precpred(_ctx, 11)");
           setState(408);
           _errHandler->sync(this);
 
@@ -2934,7 +2934,7 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
           pushNewRecursionContext(newContext, startState, RuleExpr);
           setState(416);
 
-          if (!(precpred(_ctx, 7))) throw FailedPredicateException(this, "precpred(_ctx, 7)");
+          if (!(precpred(_ctx, 10))) throw FailedPredicateException(this, "precpred(_ctx, 10)");
           setState(421);
           _errHandler->sync(this);
           switch (_input->LA(1)) {
@@ -2970,7 +2970,7 @@ NormalSQLParser::ExprContext* NormalSQLParser::expr(int precedence) {
           pushNewRecursionContext(newContext, startState, RuleExpr);
           setState(423);
 
-          if (!(precpred(_ctx, 4))) throw FailedPredicateException(this, "precpred(_ctx, 4)");
+          if (!(precpred(_ctx, 8))) throw FailedPredicateException(this, "precpred(_ctx, 8)");
           setState(425);
           _errHandler->sync(this);
 
@@ -7379,15 +7379,15 @@ bool NormalSQLParser::exprSempred(ExprContext *_localctx, size_t predicateIndex)
     case 3: return precpred(_ctx, 18);
     case 4: return precpred(_ctx, 17);
     case 5: return precpred(_ctx, 16);
-    case 6: return precpred(_ctx, 15);
-    case 7: return precpred(_ctx, 14);
-    case 8: return precpred(_ctx, 13);
-    case 9: return precpred(_ctx, 6);
-    case 10: return precpred(_ctx, 5);
-    case 11: return precpred(_ctx, 9);
-    case 12: return precpred(_ctx, 8);
-    case 13: return precpred(_ctx, 7);
-    case 14: return precpred(_ctx, 4);
+    case 6: return precpred(_ctx, 9);
+    case 7: return precpred(_ctx, 4);
+    case 8: return precpred(_ctx, 3);
+    case 9: return precpred(_ctx, 2);
+    case 10: return precpred(_ctx, 1);
+    case 11: return precpred(_ctx, 12);
+    case 12: return precpred(_ctx, 11);
+    case 13: return precpred(_ctx, 10);
+    case 14: return precpred(_ctx, 8);
 
   default:
     break;
@@ -7530,10 +7530,10 @@ NormalSQLParser::Initializer::Initializer() {
     0xc, 0x165, 0xa, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x5, 0xc, 0x16a, 
     0xa, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
     0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
+    0x3, 0xc, 0x5, 0xc, 0x17a, 0xa, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 
+    0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 
+    0xc, 0x5, 0xc, 0x187, 0xa, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
     0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
-    0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
-    0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x5, 0xc, 0x18a, 0xa, 0xc, 0x3, 0xc, 0x3, 
-    0xc, 0x3, 0xc, 0x5, 0xc, 0x18f, 0xa, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
     0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
     0x5, 0xc, 0x19b, 0xa, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x5, 
     0xc, 0x1a1, 0xa, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 0x3, 0xc, 
@@ -7773,40 +7773,40 @@ NormalSQLParser::Initializer::Initializer() {
     0x2, 0x169, 0x144, 0x3, 0x2, 0x2, 0x2, 0x169, 0x14f, 0x3, 0x2, 0x2, 
     0x2, 0x169, 0x155, 0x3, 0x2, 0x2, 0x2, 0x169, 0x168, 0x3, 0x2, 0x2, 
     0x2, 0x16a, 0x1c5, 0x3, 0x2, 0x2, 0x2, 0x16b, 0x16c, 0xc, 0x17, 0x2, 
-    0x2, 0x16c, 0x16d, 0x7, 0xe, 0x2, 0x2, 0x16d, 0x1c4, 0x5, 0x16, 0xc, 
-    0x18, 0x16e, 0x16f, 0xc, 0x16, 0x2, 0x2, 0x16f, 0x170, 0x7, 0x3, 0x2, 
+    0x2, 0x16c, 0x16d, 0x9, 0x4, 0x2, 0x2, 0x16d, 0x1c4, 0x5, 0x16, 0xc, 
+    0x18, 0x16e, 0x16f, 0xc, 0x16, 0x2, 0x2, 0x16f, 0x170, 0x9, 0x5, 0x2, 
     0x2, 0x170, 0x1c4, 0x5, 0x16, 0xc, 0x17, 0x171, 0x172, 0xc, 0x15, 0x2, 
-    0x2, 0x172, 0x173, 0x9, 0x4, 0x2, 0x2, 0x173, 0x1c4, 0x5, 0x16, 0xc, 
-    0x16, 0x174, 0x175, 0xc, 0x14, 0x2, 0x2, 0x175, 0x176, 0x9, 0x5, 0x2, 
-    0x2, 0x176, 0x1c4, 0x5, 0x16, 0xc, 0x15, 0x177, 0x178, 0xc, 0x13, 0x2, 
-    0x2, 0x178, 0x179, 0x9, 0x6, 0x2, 0x2, 0x179, 0x1c4, 0x5, 0x16, 0xc, 
-    0x14, 0x17a, 0x17b, 0xc, 0x12, 0x2, 0x2, 0x17b, 0x17c, 0x9, 0x7, 0x2, 
-    0x2, 0x17c, 0x1c4, 0x5, 0x16, 0xc, 0x13, 0x17d, 0x17e, 0xc, 0x11, 0x2, 
-    0x2, 0x17e, 0x17f, 0x9, 0x8, 0x2, 0x2, 0x17f, 0x1c4, 0x5, 0x16, 0xc, 
-    0x12, 0x180, 0x181, 0xc, 0x10, 0x2, 0x2, 0x181, 0x182, 0x7, 0x23, 0x2, 
-    0x2, 0x182, 0x1c4, 0x5, 0x16, 0xc, 0x11, 0x183, 0x184, 0xc, 0xf, 0x2, 
-    0x2, 0x184, 0x185, 0x7, 0x6f, 0x2, 0x2, 0x185, 0x1c4, 0x5, 0x16, 0xc, 
-    0x10, 0x186, 0x187, 0xc, 0x8, 0x2, 0x2, 0x187, 0x189, 0x7, 0x5f, 0x2, 
-    0x2, 0x188, 0x18a, 0x7, 0x69, 0x2, 0x2, 0x189, 0x188, 0x3, 0x2, 0x2, 
-    0x2, 0x189, 0x18a, 0x3, 0x2, 0x2, 0x2, 0x18a, 0x18b, 0x3, 0x2, 0x2, 
-    0x2, 0x18b, 0x1c4, 0x5, 0x16, 0xc, 0x9, 0x18c, 0x18e, 0xc, 0x7, 0x2, 
-    0x2, 0x18d, 0x18f, 0x7, 0x69, 0x2, 0x2, 0x18e, 0x18d, 0x3, 0x2, 0x2, 
-    0x2, 0x18e, 0x18f, 0x3, 0x2, 0x2, 0x2, 0x18f, 0x190, 0x3, 0x2, 0x2, 
-    0x2, 0x190, 0x191, 0x7, 0x2a, 0x2, 0x2, 0x191, 0x192, 0x5, 0x16, 0xc, 
-    0x2, 0x192, 0x193, 0x7, 0x23, 0x2, 0x2, 0x193, 0x194, 0x5, 0x16, 0xc, 
-    0x8, 0x194, 0x1c4, 0x3, 0x2, 0x2, 0x2, 0x195, 0x196, 0xc, 0xb, 0x2, 
+    0x2, 0x172, 0x173, 0x9, 0x6, 0x2, 0x2, 0x173, 0x1c4, 0x5, 0x16, 0xc, 
+    0x16, 0x174, 0x175, 0xc, 0x14, 0x2, 0x2, 0x175, 0x176, 0x9, 0x7, 0x2, 
+    0x2, 0x176, 0x1c4, 0x5, 0x16, 0xc, 0x15, 0x177, 0x179, 0xc, 0x13, 0x2, 
+    0x2, 0x178, 0x17a, 0x7, 0x69, 0x2, 0x2, 0x179, 0x178, 0x3, 0x2, 0x2, 
+    0x2, 0x179, 0x17a, 0x3, 0x2, 0x2, 0x2, 0x17a, 0x17b, 0x3, 0x2, 0x2, 
+    0x2, 0x17b, 0x17c, 0x7, 0x2a, 0x2, 0x2, 0x17c, 0x17d, 0x5, 0x16, 0xc, 
+    0x2, 0x17d, 0x17e, 0x7, 0x23, 0x2, 0x2, 0x17e, 0x17f, 0x5, 0x16, 0xc, 
+    0x14, 0x17f, 0x1c4, 0x3, 0x2, 0x2, 0x2, 0x180, 0x181, 0xc, 0x12, 0x2, 
+    0x2, 0x181, 0x182, 0x9, 0x8, 0x2, 0x2, 0x182, 0x1c4, 0x5, 0x16, 0xc, 
+    0x13, 0x183, 0x184, 0xc, 0xb, 0x2, 0x2, 0x184, 0x186, 0x7, 0x5f, 0x2, 
+    0x2, 0x185, 0x187, 0x7, 0x69, 0x2, 0x2, 0x186, 0x185, 0x3, 0x2, 0x2, 
+    0x2, 0x186, 0x187, 0x3, 0x2, 0x2, 0x2, 0x187, 0x188, 0x3, 0x2, 0x2, 
+    0x2, 0x188, 0x1c4, 0x5, 0x16, 0xc, 0xc, 0x189, 0x18a, 0xc, 0x6, 0x2, 
+    0x2, 0x18a, 0x18b, 0x7, 0x23, 0x2, 0x2, 0x18b, 0x1c4, 0x5, 0x16, 0xc, 
+    0x7, 0x18c, 0x18d, 0xc, 0x5, 0x2, 0x2, 0x18d, 0x18e, 0x7, 0x3, 0x2, 
+    0x2, 0x18e, 0x1c4, 0x5, 0x16, 0xc, 0x6, 0x18f, 0x190, 0xc, 0x4, 0x2, 
+    0x2, 0x190, 0x191, 0x7, 0x6f, 0x2, 0x2, 0x191, 0x1c4, 0x5, 0x16, 0xc, 
+    0x5, 0x192, 0x193, 0xc, 0x3, 0x2, 0x2, 0x193, 0x194, 0x7, 0xe, 0x2, 
+    0x2, 0x194, 0x1c4, 0x5, 0x16, 0xc, 0x4, 0x195, 0x196, 0xc, 0xe, 0x2, 
     0x2, 0x196, 0x197, 0x7, 0x30, 0x2, 0x2, 0x197, 0x1c4, 0x5, 0x4e, 0x28, 
-    0x2, 0x198, 0x19a, 0xc, 0xa, 0x2, 0x2, 0x199, 0x19b, 0x7, 0x69, 0x2, 
+    0x2, 0x198, 0x19a, 0xc, 0xd, 0x2, 0x2, 0x199, 0x19b, 0x7, 0x69, 0x2, 
     0x2, 0x19a, 0x199, 0x3, 0x2, 0x2, 0x2, 0x19a, 0x19b, 0x3, 0x2, 0x2, 
     0x2, 0x19b, 0x19c, 0x3, 0x2, 0x2, 0x2, 0x19c, 0x19d, 0x9, 0x9, 0x2, 
     0x2, 0x19d, 0x1a0, 0x5, 0x16, 0xc, 0x2, 0x19e, 0x19f, 0x7, 0x46, 0x2, 
     0x2, 0x19f, 0x1a1, 0x5, 0x16, 0xc, 0x2, 0x1a0, 0x19e, 0x3, 0x2, 0x2, 
     0x2, 0x1a0, 0x1a1, 0x3, 0x2, 0x2, 0x2, 0x1a1, 0x1c4, 0x3, 0x2, 0x2, 
-    0x2, 0x1a2, 0x1a7, 0xc, 0x9, 0x2, 0x2, 0x1a3, 0x1a8, 0x7, 0x60, 0x2, 
+    0x2, 0x1a2, 0x1a7, 0xc, 0xc, 0x2, 0x2, 0x1a3, 0x1a8, 0x7, 0x60, 0x2, 
     0x2, 0x1a4, 0x1a8, 0x7, 0x6a, 0x2, 0x2, 0x1a5, 0x1a6, 0x7, 0x69, 0x2, 
     0x2, 0x1a6, 0x1a8, 0x7, 0x6b, 0x2, 0x2, 0x1a7, 0x1a3, 0x3, 0x2, 0x2, 
     0x2, 0x1a7, 0x1a4, 0x3, 0x2, 0x2, 0x2, 0x1a7, 0x1a5, 0x3, 0x2, 0x2, 
-    0x2, 0x1a8, 0x1c4, 0x3, 0x2, 0x2, 0x2, 0x1a9, 0x1ab, 0xc, 0x6, 0x2, 
+    0x2, 0x1a8, 0x1c4, 0x3, 0x2, 0x2, 0x2, 0x1a9, 0x1ab, 0xc, 0xa, 0x2, 
     0x2, 0x1aa, 0x1ac, 0x7, 0x69, 0x2, 0x2, 0x1ab, 0x1aa, 0x3, 0x2, 0x2, 
     0x2, 0x1ab, 0x1ac, 0x3, 0x2, 0x2, 0x2, 0x1ac, 0x1ad, 0x3, 0x2, 0x2, 
     0x2, 0x1ad, 0x1c1, 0x7, 0x56, 0x2, 0x2, 0x1ae, 0x1b8, 0x7, 0x6, 0x2, 
@@ -7825,9 +7825,9 @@ NormalSQLParser::Initializer::Initializer() {
     0x2, 0x1c2, 0x1c4, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x16b, 0x3, 0x2, 0x2, 
     0x2, 0x1c3, 0x16e, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x171, 0x3, 0x2, 0x2, 
     0x2, 0x1c3, 0x174, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x177, 0x3, 0x2, 0x2, 
-    0x2, 0x1c3, 0x17a, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x17d, 0x3, 0x2, 0x2, 
     0x2, 0x1c3, 0x180, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x183, 0x3, 0x2, 0x2, 
-    0x2, 0x1c3, 0x186, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x18c, 0x3, 0x2, 0x2, 
+    0x2, 0x1c3, 0x189, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x18c, 0x3, 0x2, 0x2, 
+    0x2, 0x1c3, 0x18f, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x192, 0x3, 0x2, 0x2, 
     0x2, 0x1c3, 0x195, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x198, 0x3, 0x2, 0x2, 
     0x2, 0x1c3, 0x1a2, 0x3, 0x2, 0x2, 0x2, 0x1c3, 0x1a9, 0x3, 0x2, 0x2, 
     0x2, 0x1c4, 0x1c7, 0x3, 0x2, 0x2, 0x2, 0x1c5, 0x1c3, 0x3, 0x2, 0x2, 
@@ -7999,8 +7999,8 @@ NormalSQLParser::Initializer::Initializer() {
     0x2, 0x5f, 0x66, 0x68, 0x73, 0x7a, 0x7f, 0x85, 0x8b, 0x8d, 0x93, 0x9a, 
     0x9d, 0xa5, 0xaf, 0xb2, 0xb8, 0xba, 0xbe, 0xc5, 0xc9, 0xcc, 0xcf, 0xd8, 
     0xe3, 0xea, 0xed, 0xf5, 0xf9, 0x105, 0x10a, 0x10f, 0x11b, 0x123, 0x128, 
-    0x131, 0x138, 0x13c, 0x14c, 0x14f, 0x157, 0x160, 0x164, 0x169, 0x189, 
-    0x18e, 0x19a, 0x1a0, 0x1a7, 0x1ab, 0x1b5, 0x1b8, 0x1be, 0x1c1, 0x1c3, 
+    0x131, 0x138, 0x13c, 0x14c, 0x14f, 0x157, 0x160, 0x164, 0x169, 0x179, 
+    0x186, 0x19a, 0x1a0, 0x1a7, 0x1ab, 0x1b5, 0x1b8, 0x1be, 0x1c1, 0x1c3, 
     0x1c5, 0x1ce, 0x1d5, 0x1d8, 0x1dc, 0x1ec, 0x1f2, 0x1fa, 0x1ff, 0x202, 
     0x207, 0x210, 0x215, 0x223, 0x226, 0x228, 0x22d, 0x231, 0x234, 0x23b, 
     0x243, 0x247, 0x24b, 0x24e, 0x254, 0x257, 0x259, 0x262, 0x267, 0x26b, 

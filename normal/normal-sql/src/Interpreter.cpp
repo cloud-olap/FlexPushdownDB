@@ -45,7 +45,7 @@ void Interpreter::parse(const std::string &sql) {
   auto physicalPlan = plan::Planner::generate(*logicalPlan_);
 
   // Add the plan to the operator manager
-  for(const auto& physicalOperator: *physicalPlan.getOperators()){
+  for(const auto& physicalOperator: *physicalPlan->getOperators()){
     operatorManager_->put(physicalOperator.second);
   }
 

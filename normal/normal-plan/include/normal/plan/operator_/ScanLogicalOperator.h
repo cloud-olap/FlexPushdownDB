@@ -23,9 +23,12 @@ public:
 
   void predicate(const std::shared_ptr<expression::gandiva::Expression> &predicate);
 
+  void setPredicate(const std::shared_ptr<expression::gandiva::Expression> &predicate);
+
 private:
   std::shared_ptr<PartitioningScheme> partitioningScheme_;
 
+  // ssb can push all filters to scan nodes, we can also make it more general: filterLogicalOperator
   std::shared_ptr<expression::gandiva::Expression> predicate_;
 };
 
