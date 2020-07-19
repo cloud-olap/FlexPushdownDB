@@ -53,27 +53,27 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   for (const auto &partition: *getPartitioningScheme()->partitions()) {
 
-	auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
+    auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
 
-	// FIXME: Still unsure what to do with m_col? col could be an expression or an aggregate, or something else?
+    // FIXME: Still unsure what to do with m_col? col could be an expression or an aggregate, or something else?
 
-	// FIXME: Feels like there is a conceptual difference between a s3 select scan that contains
-	//  push down operators vs one that simply brings back raw data?
+    // FIXME: Feels like there is a conceptual difference between a s3 select scan that contains
+    //  push down operators vs one that simply brings back raw data?
 
-	std::vector<std::string> columns = {"A"};
+    std::vector<std::string> columns = {"A"};
 
-	auto scanOp = std::make_shared<normal::pushdown::S3SelectScan>(
-		s3Partition->getBucket() + "/" + s3Partition->getObject(),
-		s3Partition->getBucket(),
-		s3Partition->getObject(),
-		"select * from S3Object",
-		columns,
-		0,
-		1023,
-		S3SelectCSVParseOptions(",", "\n"),
-		this->awsClient_->defaultS3Client());
+    auto scanOp = std::make_shared<normal::pushdown::S3SelectScan>(
+      s3Partition->getBucket() + "/" + s3Partition->getObject(),
+      s3Partition->getBucket(),
+      s3Partition->getObject(),
+      "select * from S3Object",
+      columns,
+      0,
+      1023,
+      S3SelectCSVParseOptions(",", "\n"),
+      this->awsClient_->defaultS3Client());
 
-	operators->push_back(scanOp);
+    operators->push_back(scanOp);
   }
 
   return operators;

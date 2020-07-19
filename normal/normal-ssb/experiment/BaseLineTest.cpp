@@ -6,9 +6,12 @@
 #include <normal/sql/Interpreter.h>
 #include <normal/ssb/TestUtil.h>
 #include <normal/pushdown/Collate.h>
+#include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
+#include <normal/connector/s3/S3Util.h>
+#include <normal/pushdown/Util.h>
 #include "ExperimentUtil.h"
 
 #define SKIP_SUITE false
@@ -93,6 +96,47 @@ TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
     executeSql(i, sql);
   }
 
+  SPDLOG_INFO("Finish");
+}
+
+TEST_CASE ("SimpleScan" * doctest::skip(false || SKIP_SUITE)) {
+  normal::pushdown::AWSClient client;
+  client.init();
+
+  // operators
+  auto s3Bucket = "s3filter";
+  auto s3Object = "ssb-sf0.01/lineorder.tbl";
+  std::vector<std::string> s3Objects = {s3Object};
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto numBytes = partitionMap.find(s3Object)->second;
+  auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
+  std::vector<std::string> columns = {"LO_ORDERKEY, LO_LINENUMBER", "LO_ORDERDATE"};
+  auto lineorderScan = normal::pushdown::S3SelectScan::make(
+          "SimpleScan",
+          "s3filter",
+          s3Object,
+          "select * from s3object",
+          columns,
+          scanRanges[0].first,
+          scanRanges[0].second,
+          normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
+          client.defaultS3Client());
+
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
+
+  // wire up
+  auto mgr = std::make_shared<OperatorManager>();
+  lineorderScan->produce(collate);
+  collate->consume(lineorderScan);
+  mgr->put(lineorderScan);
+  mgr->put(collate);
+
+  // execute
+  mgr->boot();
+  mgr->start();
+  mgr->join();
+  auto tuples = std::static_pointer_cast<normal::pushdown::Collate>(mgr->getOperator("collate"))->tuples();
+  mgr->stop();
 
   SPDLOG_INFO("Finish");
 }
