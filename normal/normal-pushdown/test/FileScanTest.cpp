@@ -9,6 +9,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/aggregate/Sum.h>
@@ -24,6 +25,7 @@ using namespace normal::expression;
 using namespace normal::expression::gandiva;
 using namespace normal::pushdown::aggregate;
 using namespace normal::pushdown::test;
+using namespace normal::core::graph;
 
 #define SKIP_SUITE true
 
@@ -31,9 +33,14 @@ TEST_SUITE ("filescan" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("filescan-sum-collate" * doctest::skip(true || SKIP_SUITE)) {
 
+  auto testFile = filesystem::absolute("data/filescan/single-partition/test.csv");
+  auto numBytesTestFile = filesystem::file_size(testFile);
+
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/filescan/single-partition/test.csv");
+  auto g = OperatorGraph::make(mgr);
+
+  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/filescan/single-partition/test.csv", std::vector<std::string>{"A"}, 0, numBytesTestFile, g->getId());
 
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
 
@@ -43,7 +50,7 @@ TEST_CASE ("filescan-sum-collate" * doctest::skip(true || SKIP_SUITE)) {
 														 cast(normal::expression::gandiva::col("A"), float64Type())));
 
   auto aggregate = std::make_shared<normal::pushdown::Aggregate>("aggregate", aggregateFunctions);
-  auto collate = std::make_shared<normal::pushdown::Collate>("collate");
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate", g->getId());
 
   fileScan->produce(aggregate);
   aggregate->consume(fileScan);
@@ -77,14 +84,16 @@ TEST_CASE ("filescan-project-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
+  auto g = OperatorGraph::make(mgr);
+
   std::vector<std::string> columnNames = {"a","b","c"};
-  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/filescan/single-partition/test.csv", columnNames , 0, 18);
+  auto fileScan = std::make_shared<normal::pushdown::FileScan>("fileScan", "data/filescan/single-partition/test.csv", columnNames , 0, 18, g->getId());
   auto expressions = {
 	  cast(normal::expression::gandiva::col("A"), float64Type()),
 	  normal::expression::gandiva::col("B")
   };
   auto project = std::make_shared<normal::pushdown::Project>("project", expressions);
-  auto collate = std::make_shared<normal::pushdown::Collate>("collate");
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate", g->getId());
 
   fileScan->produce(project);
   project->consume(fileScan);
@@ -129,11 +138,22 @@ TEST_CASE ("filescan-project-collate" * doctest::skip(false || SKIP_SUITE)) {
 
 TEST_CASE ("filescan-sum-collate-parallel" * doctest::skip(true || SKIP_SUITE)) {
 
+  auto test01File = filesystem::absolute("data/filescan/multi-partition/test01.csv");
+  auto numBytesTest01File = filesystem::file_size(test01File);
+
+  auto test02File = filesystem::absolute("data/filescan/multi-partition/test02.csv");
+  auto numBytesTest02File = filesystem::file_size(test02File);
+
+  auto test03File = filesystem::absolute("data/filescan/multi-partition/test03.csv");
+  auto numBytesTest03File = filesystem::file_size(test03File);
+
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto fileScan01 = std::make_shared<normal::pushdown::FileScan>("fileScan01", "data/filescan/multi-partition/test01.csv");
-  auto fileScan02 = std::make_shared<normal::pushdown::FileScan>("fileScan02", "data/filescan/multi-partition/test02.csv");
-  auto fileScan03 = std::make_shared<normal::pushdown::FileScan>("fileScan03", "data/filescan/multi-partition/test03.csv");
+  auto g = OperatorGraph::make(mgr);
+
+  auto fileScan01 = std::make_shared<normal::pushdown::FileScan>("fileScan01", "data/filescan/multi-partition/test01.csv", std::vector<std::string>{"A"}, 0, numBytesTest01File, g->getId());
+  auto fileScan02 = std::make_shared<normal::pushdown::FileScan>("fileScan02", "data/filescan/multi-partition/test02.csv", std::vector<std::string>{"A"}, 0, numBytesTest02File, g->getId());
+  auto fileScan03 = std::make_shared<normal::pushdown::FileScan>("fileScan03", "data/filescan/multi-partition/test03.csv", std::vector<std::string>{"A"}, 0, numBytesTest03File, g->getId());
 
   auto expressions01 = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
   expressions01->emplace_back(std::make_shared<Sum>("sum(A)",
@@ -154,7 +174,7 @@ TEST_CASE ("filescan-sum-collate-parallel" * doctest::skip(true || SKIP_SUITE)) 
   reduceAggregateExpressions->emplace_back(std::make_shared<Sum>("sum(A)", col("sum(A)")));
   auto reduceAggregate = std::make_shared<normal::pushdown::Aggregate>("reduceAggregate", reduceAggregateExpressions);
 
-  auto collate = std::make_shared<normal::pushdown::Collate>("collate");
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate", g->getId());
 
   fileScan01->produce(aggregate01);
   aggregate01->consume(fileScan01);

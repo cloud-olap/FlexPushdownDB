@@ -9,6 +9,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/filter/Filter.h>
 #include <normal/pushdown/filter/FilterPredicate.h>
@@ -22,6 +23,7 @@ using namespace normal::pushdown::test;
 using namespace normal::pushdown::filter;
 using namespace normal::tuple;
 using namespace normal::expression::gandiva;
+using namespace normal::core::graph;
 
 #define SKIP_SUITE true
 
@@ -29,11 +31,16 @@ TEST_SUITE ("filter" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("filescan-filter-collate" * doctest::skip(false || SKIP_SUITE)) {
 
+  auto aFile = filesystem::absolute("data/filter/a.csv");
+  auto numBytesAFile = filesystem::file_size(aFile);
+
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto scan = std::make_shared<FileScan>("fileScan", "data/filter/a.csv");
+  auto g = OperatorGraph::make(mgr);
+
+  auto scan = std::make_shared<FileScan>("fileScan", "data/filter/a.csv", std::vector<std::string>{"AA"}, 0, numBytesAFile, g->getId());
   auto filter = Filter::make("filter", FilterPredicate::make(lt(col("AA"), lit<::arrow::Int64Type>(11))));
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = std::make_shared<Collate>("collate", g->getId());
 
   scan->produce(filter);
   filter->consume(scan);

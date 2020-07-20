@@ -10,6 +10,7 @@
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/Aggregate.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/aggregate/Sum.h>
@@ -22,6 +23,7 @@
 using namespace normal::pushdown;
 using namespace normal::pushdown::test;
 using namespace normal::core;
+using namespace normal::core::graph;
 using namespace normal::core::type;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
@@ -36,6 +38,8 @@ TEST_CASE ("s3selectscan-sum-collate" * doctest::skip(false || SKIP_SUITE)) {
   client.init();
 
   auto mgr = std::make_shared<OperatorManager>();
+
+  auto g = OperatorGraph::make(mgr);
 
   std::vector<std::string> columns = {"c_acctbal"};
 
@@ -55,7 +59,7 @@ TEST_CASE ("s3selectscan-sum-collate" * doctest::skip(false || SKIP_SUITE)) {
   expressions2->push_back(sumExpr);
 
   auto aggregate = std::make_shared<Aggregate>("aggregate", expressions2);
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = std::make_shared<Collate>("collate", g->getId());
 
   s3selectScan->produce(aggregate);
   aggregate->consume(s3selectScan);

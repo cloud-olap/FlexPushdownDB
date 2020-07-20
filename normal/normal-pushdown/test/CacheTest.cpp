@@ -8,6 +8,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/file/FileScan.h>
 #include "TestUtil.h"
 
@@ -15,6 +16,7 @@ using namespace normal::pushdown;
 using namespace normal::pushdown::test;
 using namespace normal::tuple;
 using namespace normal::core;
+using namespace normal::core::graph;
 
 #define SKIP_SUITE true
 
@@ -27,12 +29,15 @@ TEST_CASE ("multi-filescan-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto mgr = std::make_shared<OperatorManager>();
 
+  auto g = OperatorGraph::make(mgr);
+
   auto fileScan = FileScan::make("fileScan",
 								 "data/cache/test.csv",
 								 {"a", "b", "c"},
 								 0,
-								 1023);
-  auto collate = std::make_shared<Collate>("collate");
+								 1023,
+								 g->getId());
+  auto collate = std::make_shared<Collate>("collate", g->getId());
 
   fileScan->produce(collate);
   collate->consume(fileScan);
