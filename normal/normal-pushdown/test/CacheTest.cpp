@@ -25,25 +25,14 @@ using namespace normal::pushdown::merge;
 
 #define SKIP_SUITE false
 
-/**
- * Test running a query multiple times to test cache hits on second run
- */
-TEST_SUITE ("cache" * doctest::skip(SKIP_SUITE)) {
-
-TEST_CASE ("multi-filescan-collate" * doctest::skip(false || SKIP_SUITE)) {
+std::shared_ptr<OperatorGraph> makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<OperatorManager> &mgr) {
 
   auto testFile = filesystem::absolute("data/cache/test.csv");
   auto numBytesTestFile = filesystem::file_size(testFile);
 
-  auto mgr = std::make_shared<OperatorManager>();
-  mgr->boot();
-  mgr->start();
-
   auto g = OperatorGraph::make(mgr);
 
   std::shared_ptr<Partition> partition = std::make_shared<LocalFilePartition>(testFile);
-
-  std::vector<std::string> columnNames{"a", "b", "c"};
 
   auto cacheLoad = CacheLoad::make(fmt::format("/query-{}/cache-load", g->getId()),
 								   columnNames,
@@ -79,18 +68,55 @@ TEST_CASE ("multi-filescan-collate" * doctest::skip(false || SKIP_SUITE)) {
   g->put(merge);
   g->put(collate);
 
-  TestUtil::writeExecutionPlan(*g);
+  return g;
+}
 
-  g->boot();
-  g->start();
-  g->join();
+/**
+ * Test running a query multiple times to test cache hits on second run
+ */
+TEST_SUITE ("cache" * doctest::skip(SKIP_SUITE)) {
 
-  auto tuples = collate->tuples();
+TEST_CASE ("multi-filescan-collate" * doctest::skip(false || SKIP_SUITE)) {
 
-  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
+  auto mgr = std::make_shared<OperatorManager>();
+  mgr->boot();
+  mgr->start();
 
-	  CHECK(tuples->numRows() == 3);
-	  CHECK(tuples->numColumns() == 3);
+  /**
+   * Run query 1 which should ensure columns a and b are in the cache
+   */
+  auto g1 = makeQuery({"a", "b"}, mgr);
+  TestUtil::writeExecutionPlan(*g1);
+  auto collate1 = std::static_pointer_cast<Collate>(g1->getOperator(fmt::format("/query-{}/collate", g1->getId())));
+
+  g1->boot();
+  g1->start();
+  g1->join();
+
+  auto tuples1 = collate1->tuples();
+
+  SPDLOG_DEBUG("Output:\n{}", tuples1->toString());
+
+	  CHECK(tuples1->numRows() == 3);
+	  CHECK(tuples1->numColumns() == 2);
+
+  /**
+    * Run query 2 which should use columns a and b from the cache and load column c from the file
+	*/
+  auto g2 = makeQuery({"a", "b", "c"}, mgr);
+  TestUtil::writeExecutionPlan(*g2);
+  auto collate2 = std::static_pointer_cast<Collate>(g2->getOperator(fmt::format("/query-{}/collate", g2->getId())));
+
+  g2->boot();
+  g2->start();
+  g2->join();
+
+  auto tuples2 = collate2->tuples();
+
+  SPDLOG_DEBUG("Output:\n{}", tuples2->toString());
+
+	  CHECK(tuples2->numRows() == 3);
+	  CHECK(tuples2->numColumns() == 3);
 
   mgr->stop();
 }

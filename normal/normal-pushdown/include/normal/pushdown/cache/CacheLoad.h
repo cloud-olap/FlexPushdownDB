@@ -20,15 +20,15 @@ class CacheLoad : public Operator {
 
 public:
   explicit CacheLoad(std::string name,
-					 const std::vector<std::string> &columnNames,
-					 const std::shared_ptr<Partition> &partition,
+					 std::vector<std::string> columnNames,
+					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset);
   ~CacheLoad() override = default;
 
   static std::shared_ptr<CacheLoad> make(const std::string &name,
-										 std::vector<std::string> &columnNames,
-										 std::shared_ptr<Partition> &partition,
+										 const std::vector<std::string>& columnNames,
+										 const std::shared_ptr<Partition>& partition,
 										 int64_t startOffset,
 										 int64_t finishOffset);
 
@@ -39,8 +39,8 @@ public:
   void setMissOperator(const std::shared_ptr<Operator> &op);
 
 private:
-  const std::vector<std::string> &columnNames_;
-  const std::shared_ptr<Partition> &partition_;
+  std::vector<std::string> columnNames_;
+  std::shared_ptr<Partition> partition_;
   int64_t startOffset_;
   int64_t finishOffset_;
 //  std::optional<LocalOperatorDirectoryEntry> missOperatorEntry_;

@@ -135,7 +135,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
    */
   arrow::csv::BlockParser blockParser{arrow::csv::ParseOptions::Defaults(),
 									  static_cast<int32_t>(schema->fields().size()),
-									  std::numeric_limits<int>().max()};
+									  std::numeric_limits<int>::max()};
 
   bool done = false;
 
@@ -212,12 +212,27 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
   if (!status.ok())
 	return tl::unexpected(status.ToString());
 
+  // Create the destination schema
+  std::vector<std::shared_ptr<::arrow::Field>> destinationFields;
+  for(const auto &field: schema->fields()){
+	if(!columnNames_.has_value()) {
+	  destinationFields.emplace_back(field);
+	}
+	else{
+	  auto it = std::find(columnNames_->begin(), columnNames_->end(), field->name());
+	  if(it != columnNames_->end()){
+		destinationFields.emplace_back(field);
+	  }
+	}
+  }
+  auto destinationSchema = std::make_shared<::arrow::Schema>(destinationFields);
+
   // Get the parsed arrays
-  auto expectedArrays = extractArrays(blockParser);
+  auto expectedArrays = extractArrays(blockParser, schema, columnNames_);
   if (!expectedArrays.has_value())
 	return tl::unexpected(expectedArrays.error());
 
-  return TupleSet2::make(schema->getSchema(), expectedArrays.value());
+  return TupleSet2::make(destinationSchema, expectedArrays.value());
 }
 
 tl::expected<std::shared_ptr<::arrow::Buffer>, std::string>
@@ -294,41 +309,56 @@ std::shared_ptr<Schema> CSVParser::extractSchema(const arrow::csv::BlockParser &
   return Schema::make(std::make_shared<::arrow::Schema>(fields));
 }
 
-tl::expected<std::vector<std::shared_ptr<::arrow::Array>>, std::string>
-CSVParser::extractArrays(const arrow::csv::BlockParser &blockParser) {
+tl::expected<std::vector<std::shared_ptr<::arrow::Array>>,
+			 std::string>
+CSVParser::extractArrays(const arrow::csv::BlockParser &blockParser,
+						 const std::shared_ptr<Schema>& csvFileSchema,
+						 const std::optional<std::vector<std::string>> &columnNamesToRead) {
 
   ::arrow::Status status;
   std::vector<std::shared_ptr<::arrow::Array>> arrays;
 
   for (int i = 0; i < blockParser.num_cols(); ++i) {
 
-	::arrow::StringBuilder arrayBuilder;
+    bool readColumn = false;
+    auto csvFileField = csvFileSchema->fields()[i];
+    if(!columnNamesToRead.has_value()) {
+	  readColumn = true;
+	}
+    else{
+      auto it = std::find(columnNamesToRead->begin(), columnNamesToRead->end(), csvFileField->name());
+	  readColumn = it != columnNamesToRead->end();
+    }
 
-	status = blockParser.VisitColumn(i, [&](const uint8_t *data, uint32_t size, bool /*quoted*/) -> arrow::Status {
-	  std::string cell{reinterpret_cast<const char *>(data), size};
+    if(readColumn) {
+	  ::arrow::StringBuilder arrayBuilder;
 
-	  // TODO: Seems quotes are already removed, need to figure out why the quoted flag is passed in?
-	  // Remove quotes
-//	  if (quoted) {
-//		cell.erase(0, 1);
-//		cell.erase(cell.length() - 1, cell.length());
-//	  }
+	  status = blockParser.VisitColumn(i, [&](const uint8_t *data, uint32_t size, bool /*quoted*/) -> arrow::Status {
+		std::string cell{reinterpret_cast<const char *>(data), size};
 
-	  // Append cell
-	  status = arrayBuilder.Append(cell);
+		// TODO: Seems quotes are already removed, need to figure out why the quoted flag is passed in?
+		// Remove quotes
+		//	  if (quoted) {
+		//		cell.erase(0, 1);
+		//		cell.erase(cell.length() - 1, cell.length());
+		//	  }
+
+		// Append cell
+		status = arrayBuilder.Append(cell);
+		if (!status.ok())
+		  return status;
+		return arrow::Status::OK();
+	  });
+
 	  if (!status.ok())
-		return status;
-	  return arrow::Status::OK();
-	});
+		return tl::unexpected(status.message());
 
-	if (!status.ok())
-	  return tl::unexpected(status.message());
-
-	std::shared_ptr<arrow::StringArray> array;
-	status = arrayBuilder.Finish(&array);
-	if (!status.ok())
-	  return tl::unexpected(status.message());
-	arrays.push_back(array);
+	  std::shared_ptr<arrow::StringArray> array;
+	  status = arrayBuilder.Finish(&array);
+	  if (!status.ok())
+		return tl::unexpected(status.message());
+	  arrays.push_back(array);
+	}
   }
 
   return arrays;

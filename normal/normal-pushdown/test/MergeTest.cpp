@@ -13,7 +13,7 @@ using namespace normal::tuple;
 using namespace normal::pushdown;
 using namespace normal::pushdown::merge;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 std::shared_ptr<TupleSet2> makeTupleSet_3x3_1() {
   auto stringType = arrow::utf8();

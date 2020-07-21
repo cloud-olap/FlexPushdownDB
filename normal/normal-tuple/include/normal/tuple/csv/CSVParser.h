@@ -94,8 +94,11 @@ private:
    * @param blockParser
    * @return
    */
-  static tl::expected<std::vector<std::shared_ptr<::arrow::Array>>, std::string>
-  extractArrays(const arrow::csv::BlockParser &blockParser);
+  static tl::expected<std::vector<std::shared_ptr<::arrow::Array>>,
+					  std::string>
+  extractArrays(const arrow::csv::BlockParser &blockParser,
+				const std::shared_ptr<Schema>& csvFileSchema,
+				const std::optional<std::vector<std::string>> &columnNamesToRead);
 
   /**
    * Concatenates the two given buffers

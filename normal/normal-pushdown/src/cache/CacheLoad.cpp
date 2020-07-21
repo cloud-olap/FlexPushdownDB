@@ -8,23 +8,25 @@
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/pushdown/scan/ScanMessage.h>
 
+#include <utility>
+
 using namespace normal::pushdown::cache;
 using namespace normal::core::message;
 using namespace normal::pushdown::scan;
 
 CacheLoad::CacheLoad(std::string name,
-					 const std::vector<std::string> &ColumnNames,
-					 const std::shared_ptr<Partition> &Partition,
+					 std::vector<std::string> ColumnNames,
+					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
 					 int64_t FinishOffset) : Operator(std::move(name), "CacheLoad"),
-											 columnNames_(ColumnNames), partition_(Partition),
+											 columnNames_(std::move(ColumnNames)), partition_(std::move(Partition)),
 											 startOffset_(StartOffset), finishOffset_(FinishOffset) {
 
 }
 
 std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
-										   std::vector<std::string> &columnNames,
-										   std::shared_ptr<Partition> &partition,
+										   const std::vector<std::string>& columnNames,
+										   const std::shared_ptr<Partition>& partition,
 										   int64_t startOffset,
 										   int64_t finishOffset) {
   return std::make_shared<CacheLoad>(name,
@@ -61,6 +63,8 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
   std::vector<std::shared_ptr<Column>> hitSegmentColumns;
 
   auto hitSegments = Message.getSegments();
+
+  SPDLOG_DEBUG("Loaded segments from cache  |  numRequested: {}, numHit: {}", columnNames_.size(), hitSegments.size());
 
   // Gather the hit segment columns and missed segment columns
   for (const auto &columnName: columnNames_) {
