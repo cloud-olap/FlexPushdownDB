@@ -12,6 +12,10 @@ MergeOperator::MergeOperator(const std::string &Name) :
 	Operator(Name, "Merge") {
 }
 
+std::shared_ptr<MergeOperator> MergeOperator::make(const std::string &Name) {
+  return std::make_shared<MergeOperator>(Name);
+}
+
 void MergeOperator::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
 	this->onStart();
@@ -33,7 +37,7 @@ void MergeOperator::onStart() {
   leftProducer_ = producers_[0];
   rightProducer_ = producers_[1];
 
-  SPDLOG_DEBUG("Starting '{}'  |  leftProducer: {}, rightProducer: {}",
+  SPDLOG_DEBUG("Starting operator  |  name: '{}', leftProducer: {}, rightProducer: {}",
 			   name(),
 			   leftProducer_->name(),
 			   rightProducer_->name());
@@ -49,14 +53,11 @@ void MergeOperator::onTuple(const TupleMessage &message) {
 
   // Get the tuple set
   const auto &tupleSet = TupleSet2::create(message.tuples());
-  if (tupleSet->numRows() == 0) {
-	return;
-  }
 
   // Add the tupleset to a slot in left or right producers tuple queue
   if (message.sender() == leftProducer_->name()) {
 	leftTupleSets_.emplace_back(tupleSet);
-  } else if (message.sender() == leftProducer_->name()) {
+  } else if (message.sender() == rightProducer_->name()) {
 	rightTupleSets_.emplace_back(tupleSet);
   } else {
 	throw std::runtime_error(fmt::format("Unrecognized producer {}", message.sender()));
@@ -88,5 +89,3 @@ void MergeOperator::onTuple(const TupleMessage &message) {
   }
 
 }
-
-

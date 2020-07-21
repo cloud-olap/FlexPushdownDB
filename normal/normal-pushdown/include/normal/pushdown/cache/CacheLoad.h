@@ -35,13 +35,19 @@ public:
   void onStart();
   void onReceive(const Envelope &msg) override;
 
+  void setHitOperator(const std::shared_ptr<Operator> &op);
+  void setMissOperator(const std::shared_ptr<Operator> &op);
+
 private:
   const std::vector<std::string> &columnNames_;
   const std::shared_ptr<Partition> &partition_;
   int64_t startOffset_;
   int64_t finishOffset_;
-  std::optional<LocalOperatorDirectoryEntry> missOperatorEntry_;
-  std::optional<LocalOperatorDirectoryEntry> hitOperatorEntry_;
+//  std::optional<LocalOperatorDirectoryEntry> missOperatorEntry_;
+//  std::optional<LocalOperatorDirectoryEntry> hitOperatorEntry_;
+
+  std::shared_ptr<Operator> missOperator_;
+  std::shared_ptr<Operator> hitOperator_;
 
   void requestLoadSegmentsFromCache();
   void onCacheLoadResponse(const LoadResponseMessage &Message);

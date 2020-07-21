@@ -60,7 +60,7 @@ TEST_CASE ("group" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(group);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 

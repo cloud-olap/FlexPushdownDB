@@ -50,7 +50,7 @@ TEST_CASE ("SortTest" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(sort);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 

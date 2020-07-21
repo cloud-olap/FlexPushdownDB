@@ -62,7 +62,7 @@ TEST_CASE ("filescan-sum-collate" * doctest::skip(true || SKIP_SUITE)) {
   mgr->put(aggregate);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 
@@ -105,7 +105,7 @@ TEST_CASE ("filescan-project-collate" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(project);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 
@@ -206,7 +206,7 @@ TEST_CASE ("filescan-sum-collate-parallel" * doctest::skip(true || SKIP_SUITE)) 
   mgr->put(reduceAggregate);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 

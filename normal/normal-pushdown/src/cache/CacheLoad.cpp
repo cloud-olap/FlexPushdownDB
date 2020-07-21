@@ -6,9 +6,11 @@
 
 #include <normal/pushdown/cache/CacheHelper.h>
 #include <normal/pushdown/TupleMessage.h>
+#include <normal/pushdown/scan/ScanMessage.h>
 
 using namespace normal::pushdown::cache;
 using namespace normal::core::message;
+using namespace normal::pushdown::scan;
 
 CacheLoad::CacheLoad(std::string name,
 					 const std::vector<std::string> &ColumnNames,
@@ -45,6 +47,7 @@ void CacheLoad::onReceive(const Envelope &message) {
 }
 
 void CacheLoad::onStart() {
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   requestLoadSegmentsFromCache();
 }
 
@@ -74,11 +77,23 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
   // Create a tuple set from the hit segments
   auto hitTupleSet = TupleSet2::make(hitSegmentColumns);
 
-  // Send the missed column names to the miss operator
-  auto missMessage = std::make_shared<TupleMessage>(hitTupleSet->toTupleSetV1(), this->name());
-  ctx()->send(missMessage, missOperatorEntry_->name());
-
   // Send the hit columns to the hit operator
   auto hitMessage = std::make_shared<TupleMessage>(hitTupleSet->toTupleSetV1(), this->name());
-  ctx()->send(hitMessage, hitOperatorEntry_->name());
+  ctx()->send(hitMessage, hitOperator_->name());
+
+  // Send the missed column names to the miss operator
+  auto missMessage = std::make_shared<ScanMessage>(missedSegmentColumnNames, this->name());
+  ctx()->send(missMessage, missOperator_->name());
+
+  ctx()->notifyComplete();
+}
+
+void CacheLoad::setHitOperator(const std::shared_ptr<Operator> &op) {
+  this->hitOperator_ = op;
+  this->produce(op);
+}
+
+void CacheLoad::setMissOperator(const std::shared_ptr<Operator> &op) {
+	this->missOperator_ = op;
+	this->produce(op);
 }

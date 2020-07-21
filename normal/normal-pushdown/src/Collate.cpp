@@ -19,7 +19,7 @@ using namespace normal::core;
 namespace normal::pushdown {
 
 void Collate::onStart() {
-  SPDLOG_DEBUG("Starting  |  name: '{}'", this->name());
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
   // FIXME: Not the best way to reset the tuples structure
   this->tuples_ = nullptr;

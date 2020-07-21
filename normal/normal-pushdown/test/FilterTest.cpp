@@ -52,7 +52,7 @@ TEST_CASE ("filescan-filter-collate" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(filter);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 

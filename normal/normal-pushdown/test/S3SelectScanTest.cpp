@@ -71,7 +71,7 @@ TEST_CASE ("s3selectscan-sum-collate" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(aggregate);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 

@@ -37,7 +37,7 @@ add_library(normal-pushdown STATIC
         src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h
         src/cache/CacheLoad.cpp include/normal/pushdown/cache/CacheLoad.h
         src/merge/MergeOperator.cpp include/normal/pushdown/merge/MergeOperator.h
-        src/merge/MergeKernel.cpp include/normal/pushdown/merge/MergeKernel.h)
+        src/merge/MergeKernel.cpp include/normal/pushdown/merge/MergeKernel.h include/normal/pushdown/scan/ScanMessage.cpp include/normal/pushdown/scan/ScanMessage.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

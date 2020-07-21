@@ -21,6 +21,8 @@ public:
 
   explicit MergeOperator(const std::string &Name);
 
+  static std::shared_ptr<MergeOperator> make(const std::string &Name);
+
   void onReceive(const Envelope &msg) override;
 
   void onStart();

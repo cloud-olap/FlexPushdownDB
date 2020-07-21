@@ -25,6 +25,7 @@
 #include <normal/cache/SegmentKey.h>
 #include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
+
 #include <normal/core/cache/StoreRequestMessage.h>
 #include "normal/pushdown/Globals.h"
 #include <normal/tuple/csv/CSVParser.h>
@@ -35,6 +36,7 @@ using namespace normal::tuple::csv;
 using namespace normal::core::cache;
 using namespace normal::core::message;
 using namespace normal::pushdown::cache;
+
 
 namespace arrow { class MemoryPool; }
 
@@ -79,9 +81,9 @@ std::shared_ptr<FileScan> FileScan::make(std::string name,
 void FileScan::onReceive(const Envelope &message) {
   if (message.message().type() == "StartMessage") {
 	this->onStart();
-  } else if (message.message().type() == "LoadResponseMessage") {
-	auto loadResponseMessage = dynamic_cast<const LoadResponseMessage &>(message.message());
-	this->onCacheLoadResponse(loadResponseMessage);
+  } else if (message.message().type() == "ScanMessage") {
+	auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
+	this->onCacheLoadResponse(scanMessage);
   } else {
 	// FIXME: Propagate error properly
 	throw std::runtime_error("Unrecognized message type " + message.message().type());
@@ -97,58 +99,58 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> FileScan::readCSVFile(cons
 }
 
 void FileScan::onStart() {
-  SPDLOG_DEBUG("Starting '{}'", this->name());
-  requestLoadSegmentsFromCache();
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
+//  requestLoadSegmentsFromCache();
 }
 
-void FileScan::requestLoadSegmentsFromCache() {
-  auto partition = std::make_shared<LocalFilePartition>(filePath_);
-  CacheHelper::requestLoadSegmentsFromCache(columnNames_, partition, startOffset_, finishOffset_, name(), ctx());
-}
+//void FileScan::requestLoadSegmentsFromCache() {
+//  auto partition = std::make_shared<LocalFilePartition>(filePath_);
+//  CacheHelper::requestLoadSegmentsFromCache(columnNames_, partition, startOffset_, finishOffset_, name(), ctx());
+//}
 
-void FileScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
+void FileScan::onCacheLoadResponse(const ScanMessage &Message) {
 
-  std::vector<std::shared_ptr<Column>> columns;
-  std::vector<std::shared_ptr<Column>> cachedColumns;
-  std::vector<std::string> columnNamesToLoad;
-  auto segments = Message.getSegments();
-
-  auto partition = std::make_shared<LocalFilePartition>(filePath_);
-
-  for(const auto &columnName: columnNames_){
-	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
-
-	auto segment = segments.find(segmentKey);
-	if (segment != segments.end()) {
-	  cachedColumns.push_back(segment->second->getColumn());
-	}
-	else{
-	  columnNamesToLoad.push_back(columnName);
-	}
-  }
+//  std::vector<std::shared_ptr<Column>> columns;
+//  std::vector<std::shared_ptr<Column>> cachedColumns;
+//  std::vector<std::string> columnNamesToLoad;
+//  auto segments = Message.getSegments();
+//
+//  auto partition = std::make_shared<LocalFilePartition>(filePath_);
+//
+//  for(const auto &columnName: columnNames_){
+//	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
+//
+//	auto segment = segments.find(segmentKey);
+//	if (segment != segments.end()) {
+//	  cachedColumns.push_back(segment->second->getColumn());
+//	}
+//	else{
+//	  columnNamesToLoad.push_back(columnName);
+//	}
+//  }
 
   // Read the columns not present in the cache
   /*
    * FIXME: Should support reading the file in pieces
    */
-  auto expectedReadTupleSet = readCSVFile(columnNamesToLoad);
+  auto expectedReadTupleSet = readCSVFile(Message.getColumnNames());
   auto readTupleSet = expectedReadTupleSet.value();
 
   // Store the read columns in the cache
   requestStoreSegmentsInCache(readTupleSet);
 
-  // Combine the read columns with the columns present in the cache
-  columns.reserve(cachedColumns.size());
-  for(const auto &column: cachedColumns){
-    columns.push_back(column);
-  }
-  for(int c = 0;c < readTupleSet->numColumns();++c){
-	columns.push_back(readTupleSet->getColumnByIndex(c).value());
-  }
+//  // Combine the read columns with the columns present in the cache
+//  columns.reserve(cachedColumns.size());
+//  for(const auto &column: cachedColumns){
+//    columns.push_back(column);
+//  }
+//  for(int c = 0;c < readTupleSet->numColumns();++c){
+//	columns.push_back(readTupleSet->getColumnByIndex(c).value());
+//  }
+//
+//  auto tupleSet = TupleSet2::make(columns);
 
-  auto tupleSet = TupleSet2::make(columns);
-
-  std::shared_ptr<normal::core::message::Message> message = std::make_shared<TupleMessage>(tupleSet->toTupleSetV1(), this->name());
+  std::shared_ptr<normal::core::message::Message> message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
   ctx()->tell(message);
 
   ctx()->notifyComplete();
