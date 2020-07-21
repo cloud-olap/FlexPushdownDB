@@ -12,20 +12,17 @@
 #include <gandiva/node.h>
 
 #include "Expression.h"
+#include "BinaryExpression.h"
 
 namespace normal::expression::gandiva {
 
-class Add : public Expression {
+class Add : public BinaryExpression {
 
 public:
   Add(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
 
   void compile(std::shared_ptr<arrow::Schema> schema) override;
   std::string alias() override;
-
-private:
-  std::shared_ptr<Expression> left_;
-  std::shared_ptr<Expression> right_;
 
 };
 

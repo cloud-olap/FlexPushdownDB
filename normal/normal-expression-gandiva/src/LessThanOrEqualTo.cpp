@@ -32,7 +32,7 @@ void LessThanOrEqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
 }
 
 std::string LessThanOrEqualTo::alias() {
-  return "?column?";
+  return genAliasForComparison("<=");
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::lte(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right) {

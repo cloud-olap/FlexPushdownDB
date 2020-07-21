@@ -23,14 +23,20 @@ public:
   explicit NumericLiteral(C_TYPE value) : value_(value) {}
 
   void compile(std::shared_ptr<arrow::Schema>) override {
-	auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
+    auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
 
-	gandivaExpression_ = literal;
-	returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
+    gandivaExpression_ = literal;
+    returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
   }
 
   std::string alias() override {
-	return std::to_string(value_);
+    if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type)) {
+      return prefixInt_ + std::to_string(value_);
+    } else if (typeid(ARROW_TYPE) == typeid(arrow::FloatType)) {
+      return prefixFloat_ + std::to_string(value_);
+    } else {
+      std::runtime_error("Numeric literal type not implemented");
+    }
   }
 
 private:

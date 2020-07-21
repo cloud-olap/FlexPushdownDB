@@ -42,6 +42,7 @@ public:
   antlrcpp::Any visitExpr_literal(NormalSQLParser::Expr_literalContext *ctx) override;
   antlrcpp::Any visitExpr_column(NormalSQLParser::Expr_columnContext *ctx) override;
   antlrcpp::Any visitExpr_function(NormalSQLParser::Expr_functionContext *ctx) override;
+  antlrcpp::Any visitExpr_add_sub(NormalSQLParser::Expr_add_subContext *ctx) override;
   antlrcpp::Any visitExpr_mul_div_mod(NormalSQLParser::Expr_mul_div_modContext *ctx) override;
   antlrcpp::Any visitExpr_and(NormalSQLParser::Expr_andContext *ctx) override;
   antlrcpp::Any visitExpr_or(NormalSQLParser::Expr_orContext *ctx) override;

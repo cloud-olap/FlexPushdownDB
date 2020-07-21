@@ -25,11 +25,19 @@ public:
 
   void setPredicate(const std::shared_ptr<expression::gandiva::Expression> &predicate);
 
-private:
-  std::shared_ptr<PartitioningScheme> partitioningScheme_;
+  void setProjectedColumnNames(const std::shared_ptr<std::vector<std::string>> &projectedColumnNames);
+
+protected:
+  // projected columns, not final projection, but columns that downstream operators need
+  // don't include columns that filters need, currently filters are integrated together with scan in logical plan
+  std::shared_ptr<std::vector<std::string>> projectedColumnNames_;
 
   // ssb can push all filters to scan nodes, we can also make it more general: filterLogicalOperator
   std::shared_ptr<expression::gandiva::Expression> predicate_;
+
+private:
+  std::shared_ptr<PartitioningScheme> partitioningScheme_;
+
 };
 
 }

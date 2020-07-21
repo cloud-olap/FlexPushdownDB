@@ -27,7 +27,7 @@ void Or::compile(std::shared_ptr<arrow::Schema> schema) {
 }
 
 std::string Or::alias() {
-  return "?column?";
+  return "(" + left_->alias() + " or " + right_->alias() + ")";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::or_(std::shared_ptr<Expression> left,

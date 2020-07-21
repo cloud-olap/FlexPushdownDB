@@ -23,3 +23,8 @@ void ScanLogicalOperator::predicate(const std::shared_ptr<expression::gandiva::E
 void ScanLogicalOperator::setPredicate(const std::shared_ptr<expression::gandiva::Expression> &predicate) {
   predicate_ = predicate;
 }
+
+void
+ScanLogicalOperator::setProjectedColumnNames(const std::shared_ptr<std::vector<std::string>> &projectedColumnNames) {
+  projectedColumnNames_ = projectedColumnNames;
+}

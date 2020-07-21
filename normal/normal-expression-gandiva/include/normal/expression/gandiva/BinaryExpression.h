@@ -29,6 +29,7 @@ protected:
   std::shared_ptr<Expression> left_;
   std::shared_ptr<Expression> right_;
 
+  std::string genAliasForComparison(std::string compOp);
 };
 
 }

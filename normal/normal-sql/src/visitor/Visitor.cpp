@@ -22,6 +22,9 @@
 #include <normal/plan/operator_/JoinLogicalOperator.h>
 #include <normal/plan/operator_/GroupLogicalOperator.h>
 #include <normal/expression/gandiva/And.h>
+#include <normal/expression/gandiva/Divide.h>
+#include <normal/expression/gandiva/Add.h>
+#include <normal/expression/gandiva/Subtract.h>
 #include "normal/plan/operator_/ProjectLogicalOperator.h"
 #include "normal/plan/operator_/CollateLogicalOperator.h"
 #include "normal/plan/operator_/AggregateLogicalOperator.h"
@@ -87,6 +90,75 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_stmt(normal::sql::Norma
   return res;
 }
 
+std::shared_ptr<std::vector<std::string>> columnsNeededForAggregate(
+        std::shared_ptr<normal::plan::function::AggregateLogicalFunction> function) {
+  auto columnNames = std::make_shared<std::vector<std::string>>();
+  auto expression = function->expression();
+  if (typeid(*expression) == typeid(normal::expression::gandiva::Column)) {
+    auto colExpr = dynamic_cast<normal::expression::gandiva::Column &>(*expression);
+    columnNames->emplace_back(colExpr.getColumnName());
+    return columnNames;
+  } else if (typeid(*expression) == typeid(normal::expression::gandiva::Add)){
+    auto biExpr = dynamic_cast<normal::expression::gandiva::Add &>(*expression);
+    auto leftExpr = biExpr.getLeft();
+    auto rightExpr = biExpr.getRight();
+    if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
+        typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
+      auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
+      auto rightColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*rightExpr);
+      columnNames->emplace_back(leftColExpr.getColumnName());
+      columnNames->emplace_back(rightColExpr.getColumnName());
+      return columnNames;
+    } else {
+      throw std::runtime_error("Aggregation function not implemented (not in ssb)");
+    }
+  } else if (typeid(*expression) == typeid(normal::expression::gandiva::Subtract)){
+    auto biExpr = dynamic_cast<normal::expression::gandiva::Subtract &>(*expression);
+    auto leftExpr = biExpr.getLeft();
+    auto rightExpr = biExpr.getRight();
+    if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
+        typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
+      auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
+      auto rightColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*rightExpr);
+      columnNames->emplace_back(leftColExpr.getColumnName());
+      columnNames->emplace_back(rightColExpr.getColumnName());
+      return columnNames;
+    } else {
+      throw std::runtime_error("Aggregation function not implemented (not in ssb)");
+    }
+  } else if (typeid(*expression) == typeid(normal::expression::gandiva::Multiply)){
+    auto biExpr = dynamic_cast<normal::expression::gandiva::Multiply &>(*expression);
+    auto leftExpr = biExpr.getLeft();
+    auto rightExpr = biExpr.getRight();
+    if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
+        typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
+      auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
+      auto rightColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*rightExpr);
+      columnNames->emplace_back(leftColExpr.getColumnName());
+      columnNames->emplace_back(rightColExpr.getColumnName());
+      return columnNames;
+    } else {
+      throw std::runtime_error("Aggregation function not implemented (not in ssb)");
+    }
+  } else if (typeid(*expression) == typeid(normal::expression::gandiva::Divide)){
+    auto biExpr = dynamic_cast<normal::expression::gandiva::Divide &>(*expression);
+    auto leftExpr = biExpr.getLeft();
+    auto rightExpr = biExpr.getRight();
+    if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
+        typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
+      auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
+      auto rightColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*rightExpr);
+      columnNames->emplace_back(leftColExpr.getColumnName());
+      columnNames->emplace_back(rightColExpr.getColumnName());
+      return columnNames;
+    } else {
+      throw std::runtime_error("Aggregation function not implemented (not in ssb)");
+    }
+  } else {
+    throw std::runtime_error("Aggregation function not implemented (not in ssb)");
+  }
+}
+
 /**
  * Select_core is the root of the select statement.
  *
@@ -103,7 +175,6 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   collate->setName("collate");
   nodes->emplace_back(collate);
 
-
   /**
    * Visit from_clause
    */
@@ -117,6 +188,12 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
   /**
    * Visit select
    */
+  // projected columns of each table in scan
+  auto projectedColumnNames_map = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
+  for (const auto &tableName: *(miniCatalogue->tables())) {
+    projectedColumnNames_map->insert({tableName, std::make_shared<std::vector<std::string>>()});
+  }
+
   // flags
   bool simpleScan = false;
   bool project = false;
@@ -134,10 +211,19 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       aggregate = true;
       auto aggregateFunction = resultColumn_Result.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
       aggregateFunctions->push_back(aggregateFunction);
+      auto columnNames = columnsNeededForAggregate(aggregateFunction);
+      for (const auto &columnName: *columnNames) {
+        auto tableName = miniCatalogue->findTableOfColumn(columnName);
+        projectedColumnNames_map->find(tableName)->second->emplace_back(columnName);
+      }
     } else if (resultColumn_Result.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
       project = true;
       auto projectExpression = resultColumn_Result.as<std::shared_ptr<normal::expression::gandiva::Expression>>();
       projectExpressions->push_back(projectExpression);
+      auto colExpr = dynamic_cast<normal::expression::gandiva::Column &>(*projectExpression);
+      auto columnName = colExpr.getColumnName();
+      auto tableName = miniCatalogue->findTableOfColumn(columnName);
+      projectedColumnNames_map->find(tableName)->second->emplace_back(columnName);
     }
     else{
       throw std::runtime_error("Not yet implemented");
@@ -198,15 +284,18 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
         std::string leftColumnName = leftColExpr.getColumnName();
         std::string rightColumnName = rightColExpr.getColumnName();
         std::string leftTableName = miniCatalogue->findTableOfColumn(leftColumnName);
+        std::string rightTableName = miniCatalogue->findTableOfColumn(rightColumnName);
         if (leftTableName == "lineorder") {
-          std::string rightTableName = miniCatalogue->findTableOfColumn(rightColumnName);
           auto columnPair = std::make_shared<std::pair<std::string, std::string>>(rightColumnName, leftColumnName);
           joinPredicate_map->insert({rightTableName, columnPair});
         } else {
           auto columnPair = std::make_shared<std::pair<std::string, std::string>>(leftColumnName, rightColumnName);
           joinPredicate_map->insert({leftTableName, columnPair});
         }
-      } else {
+        projectedColumnNames_map->find(leftTableName)->second->emplace_back(leftColumnName);
+        projectedColumnNames_map->find(rightTableName)->second->emplace_back(rightColumnName);
+      }
+      else {
         // filter
         std::string columnName;
         if (typeid(*leftExpression) == typeid(normal::expression::gandiva::Column)) {
@@ -237,6 +326,27 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     }
   }
 
+  /**
+   * Visit groupBy_clause
+   */
+  auto groupColumnNames = std::make_shared<std::vector<std::string>>();
+  if (ctx->groupBy_clause()) {
+    auto res_groupBy_clause = visitGroupBy_clause(ctx->groupBy_clause());
+    auto groupColumns = res_groupBy_clause.as<std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>>();
+    for (const auto &groupColumn: *groupColumns) {
+      auto groupColumnName = dynamic_cast<normal::expression::gandiva::Column &>(*groupColumn).getColumnName();
+      groupColumnNames->emplace_back(groupColumnName);
+      // group may have extra projectedColumns
+      auto tableName = miniCatalogue->findTableOfColumn(groupColumnName);
+      auto projectedColumnNames = projectedColumnNames_map->find(tableName)->second;
+      if (std::find(projectedColumnNames->begin(), projectedColumnNames->end(), groupColumnName) == projectedColumnNames->end()) {
+        projectedColumnNames->emplace_back(groupColumnName);
+      }
+    }
+  }
+
+
+  // set filter predicates and projected columns for scan nodes
   for (const auto &scanNode_pair: *scanNodes_map) {
     auto tableName = scanNode_pair.first;
     auto scanNode = scanNode_pair.second;
@@ -251,18 +361,18 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       lastExpr = andExpr;
     }
     scanNode->setPredicate(lastExpr);
-  }
 
-  /**
-   * Visit groupBy_clause
-   */
-  auto groupColumnNames = std::make_shared<std::vector<std::string>>();
-  if (ctx->groupBy_clause()) {
-    auto res_groupBy_clause = visitGroupBy_clause(ctx->groupBy_clause());
-    auto groupColumns = res_groupBy_clause.as<std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>>();
-    for (const auto &groupColumn: *groupColumns) {
-      auto groupColumnName = dynamic_cast<normal::expression::gandiva::Column &>(*groupColumn).getColumnName();
-      groupColumnNames->emplace_back(groupColumnName);
+    if (simpleScan) {
+      for(const auto &scanNode_pair: *scanNodes_map){
+        scanNode_pair.second->setProjectedColumnNames(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"*"}));
+      }
+    } else {
+      for(const auto &scanNode_pair: *scanNodes_map){
+        auto tableName = scanNode_pair.first;
+        auto scanNode = scanNode_pair.second;
+        auto projectedColumnNames = projectedColumnNames_map->find(tableName)->second;
+        scanNode->setProjectedColumnNames(projectedColumnNames);
+      }
     }
   }
 
@@ -452,14 +562,30 @@ normal::sql::visitor::Visitor::visitExpr_function(normal::sql::NormalSQLParser::
   return function;
 }
 
+antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_add_sub(normal::sql::NormalSQLParser::Expr_add_subContext *ctx) {
+  std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(ctx->expr(0));
+  std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(ctx->expr(1));
+  if(ctx->PLUS()){
+    return plus(leftExpression, rightExpression);
+  } else if(ctx->MINUS()) {
+    return minus(leftExpression, rightExpression);
+  }
+  else {
+    throw std::runtime_error("Illegal operator");
+  }
+}
+
 antlrcpp::Any
 normal::sql::visitor::Visitor::visitExpr_mul_div_mod(normal::sql::NormalSQLParser::Expr_mul_div_modContext *ctx) {
+  std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(ctx->expr(0));
+  std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(ctx->expr(1));
   if(ctx->STAR()){
-    std::shared_ptr<normal::expression::gandiva::Expression> leftExpression = visit(ctx->expr(0));
-    std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(ctx->expr(1));
     return times(leftExpression, rightExpression);
-  } else {
-    throw std::runtime_error("\"/\" and \"%\" are not implemented");
+  } else if(ctx->DIV()) {
+    return divide(leftExpression, rightExpression);
+  }
+  else {
+    throw std::runtime_error("\"%\" are not implemented");
   }
 }
 
@@ -622,4 +748,3 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitResult_column(normal::sql::Nor
     throw std::runtime_error("Cannot parse result column " + ctx->getText());
   }
 }
-

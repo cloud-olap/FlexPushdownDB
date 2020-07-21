@@ -32,7 +32,7 @@ void GreaterThan::compile(std::shared_ptr<arrow::Schema> schema) {
 }
 
 std::string normal::expression::gandiva::GreaterThan::alias() {
-  return "?column?";
+  return genAliasForComparison(">");
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::gt(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right) {

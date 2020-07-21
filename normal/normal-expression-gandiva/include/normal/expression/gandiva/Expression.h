@@ -28,6 +28,12 @@ public:
 protected:
   ::gandiva::NodePtr gandivaExpression_;
 
+  const static inline std::string prefixInt_ = "int:";
+  const static inline std::string prefixFloat_ = "float:";
+
+  static std::shared_ptr<std::string> removePrefixInt(std::string);
+  static std::shared_ptr<std::string> removePrefixFloat(std::string);
+
 };
 
 }

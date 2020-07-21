@@ -28,6 +28,8 @@ public:
 private:
   std::shared_ptr<pushdown::AWSClient> awsClient_;
 
+  std::string genSql();
+
 };
 
 }
