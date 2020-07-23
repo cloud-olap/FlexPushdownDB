@@ -53,7 +53,8 @@ add_executable(normal-ssb-test
         test/SSBQuery1_1S3PullUpTestSF0_01.cpp
         test/SSBQuery1_1SQLTest.cpp
         test/SSBQuery1_1S3PushDownTestSF0_01.cpp
-        test/SSBQuery1_1S3HybridTestSF0_01.cpp)
+        test/SSBQuery1_1S3HybridTestSF0_01.cpp
+        test/MiscTest.cpp)
 
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-test PRIVATE normal-ssb)

@@ -23,7 +23,7 @@ using namespace normal::core::graph;
 using namespace normal::pushdown::cache;
 using namespace normal::pushdown::merge;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 std::shared_ptr<OperatorGraph> makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<OperatorManager> &mgr) {
 

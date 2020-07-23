@@ -43,8 +43,10 @@ void Project::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Project::projectAndSendTuples() {
-  auto projectedTuples = projector_.value()->evaluate(*tuples_);
-  sendTuples(projectedTuples);
+  if(tuples_) {
+	auto projectedTuples = projector_.value()->evaluate(*tuples_);
+	sendTuples(projectedTuples);
+  }
 }
 
 void Project::onTuple(const core::message::TupleMessage &message) {

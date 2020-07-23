@@ -8,7 +8,7 @@
 
 using namespace normal::ssb;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 /**
  * NOTE: SQLite cannot execute queries on lineorder on sf=1, too big
