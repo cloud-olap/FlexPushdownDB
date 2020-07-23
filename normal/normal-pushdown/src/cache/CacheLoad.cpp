@@ -25,12 +25,18 @@ CacheLoad::CacheLoad(std::string name,
 }
 
 std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
-										   const std::vector<std::string>& columnNames,
-										   const std::shared_ptr<Partition>& partition,
+										   const std::vector<std::string> &columnNames,
+										   const std::shared_ptr<Partition> &partition,
 										   int64_t startOffset,
 										   int64_t finishOffset) {
+
+  std::vector<std::string> canonicalColumnNames;
+  std::transform(columnNames.begin(), columnNames.end(),
+				 std::back_inserter(canonicalColumnNames),
+				 [](auto name) -> auto { return ColumnName::canonicalize(name); });
+
   return std::make_shared<CacheLoad>(name,
-									 columnNames,
+									 canonicalColumnNames,
 									 partition,
 									 startOffset,
 									 finishOffset);
@@ -49,7 +55,17 @@ void CacheLoad::onReceive(const Envelope &message) {
 }
 
 void CacheLoad::onStart() {
-  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
+
+  if (!hitOperator_)
+	throw std::runtime_error("Hit consumer not set ");
+
+  if (!missOperator_)
+	throw std::runtime_error("Miss consumer not set");
+
+  SPDLOG_DEBUG("Starting operator  |  name: '{}', hitOperator: '{}', missOperator: '{}'",
+			   this->name(),
+			   hitOperator_->name(),
+			   missOperator_->name());
   requestLoadSegmentsFromCache();
 }
 
@@ -98,6 +114,6 @@ void CacheLoad::setHitOperator(const std::shared_ptr<Operator> &op) {
 }
 
 void CacheLoad::setMissOperator(const std::shared_ptr<Operator> &op) {
-	this->missOperator_ = op;
-	this->produce(op);
+  this->missOperator_ = op;
+  this->produce(op);
 }

@@ -34,6 +34,10 @@ void MergeOperator::onReceive(const Envelope &msg) {
 void MergeOperator::onStart() {
 
   auto producers_ = this->ctx()->operatorMap().get(OperatorRelationshipType::Producer);
+
+  if (producers_.size() < 2)
+	throw std::runtime_error("Left and right producer not set");
+
   leftProducer_ = producers_[0];
   rightProducer_ = producers_[1];
 

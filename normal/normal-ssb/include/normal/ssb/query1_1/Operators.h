@@ -19,6 +19,7 @@
 #include <normal/pushdown/shuffle/Shuffle.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/cache/CacheLoad.h>
+#include <normal/pushdown/merge/MergeOperator.h>
 
 using namespace normal::core::graph;
 using namespace normal::pushdown;
@@ -26,6 +27,7 @@ using namespace normal::pushdown::filter;
 using namespace normal::pushdown::join;
 using namespace normal::pushdown::shuffle;
 using namespace normal::pushdown::cache;
+using namespace normal::pushdown::merge;
 
 namespace normal::ssb::query1_1 {
 
@@ -44,10 +46,19 @@ public:
 									 AWSClient &client,
 									 const std::shared_ptr<OperatorGraph> &g);
 
+  static std::vector<std::shared_ptr<CacheLoad>>
+  makeDateFileCacheLoadOperators(const std::string &dataDir,
+								 int numConcurrentUnits,
+								 const std::shared_ptr<OperatorGraph> &g);
+
   static std::vector<std::shared_ptr<FileScan>>
   makeDateFileScanOperators(const std::string &dataDir,
 							int numConcurrentUnits,
 							const std::shared_ptr<OperatorGraph> &g);
+
+  static std::vector<std::shared_ptr<MergeOperator>>
+  makeDateMergeOperators(int numConcurrentUnits,
+						 const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<S3SelectScan>>
   makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
@@ -66,10 +77,19 @@ public:
 										AWSClient &client,
 										const std::shared_ptr<OperatorGraph> &g);
 
+  static std::vector<std::shared_ptr<CacheLoad>>
+  makeLineOrderFileCacheLoadOperators(const std::string &dataDir,
+									  int numConcurrentUnits,
+									  const std::shared_ptr<OperatorGraph> &g);
+
   static std::vector<std::shared_ptr<FileScan>>
   makeLineOrderFileScanOperators(const std::string &dataDir,
 								 int numConcurrentUnits,
 								 const std::shared_ptr<OperatorGraph> &g);
+
+  static std::vector<std::shared_ptr<MergeOperator>>
+  makeLineOrderMergeOperators(int numConcurrentUnits,
+							  const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<S3SelectScan>>
   makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,

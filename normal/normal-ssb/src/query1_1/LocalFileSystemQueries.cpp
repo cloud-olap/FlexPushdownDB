@@ -17,15 +17,36 @@ LocalFileSystemQueries::dateScan(const std::string &dataDir, int numConcurrentUn
 
   auto g = OperatorGraph::make(mgr);
 
+  auto dateCacheLoads = Operators::makeDateFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, g);
+  auto dateMerges = Operators::makeDateMergeOperators(numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(collate);
-	collate->consume(dateScans[u]);
+	dateCacheLoads[u]->setHitOperator(dateMerges[u]);
+	dateMerges[u]->consume(dateCacheLoads[u]);
   }
 
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateCacheLoads[u]->setMissOperator(dateScans[u]);
+	dateScans[u]->consume(dateCacheLoads[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateMerges[u]);
+	dateMerges[u]->consume(dateScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateMerges[u]->produce(collate);
+	collate->consume(dateMerges[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(dateCacheLoads[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(dateMerges[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	g->put(dateScans[u]);
   g->put(collate);
@@ -39,14 +60,31 @@ LocalFileSystemQueries::dateFilter(const std::string &dataDir, short year, int n
 
   auto g = OperatorGraph::make(mgr);
 
+  auto dateCacheLoads = Operators::makeDateFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, g);
+  auto dateMerges = Operators::makeDateMergeOperators(numConcurrentUnits, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
+	dateCacheLoads[u]->setHitOperator(dateMerges[u]);
+	dateMerges[u]->consume(dateCacheLoads[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateCacheLoads[u]->setMissOperator(dateScans[u]);
+	dateScans[u]->consume(dateCacheLoads[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateScans[u]->produce(dateMerges[u]);
+	dateMerges[u]->consume(dateScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	dateMerges[u]->produce(dateFilters[u]);
+	dateFilters[u]->consume(dateMerges[u]);
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -54,6 +92,10 @@ LocalFileSystemQueries::dateFilter(const std::string &dataDir, short year, int n
 	collate->consume(dateFilters[u]);
   }
 
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(dateCacheLoads[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(dateMerges[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	g->put(dateScans[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
@@ -70,15 +112,36 @@ LocalFileSystemQueries::lineOrderScan(const std::string &dataDir,
 
   auto g = OperatorGraph::make(mgr);
 
+  auto lineOrderCacheLoads = Operators::makeLineOrderFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, g);
+  auto lineOrderMerges = Operators::makeLineOrderMergeOperators(numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
-  // Wire up
+	// Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(collate);
-	collate->consume(lineOrderScans[u]);
+	lineOrderCacheLoads[u]->setHitOperator(lineOrderMerges[u]);
+	lineOrderMerges[u]->consume(lineOrderCacheLoads[u]);
   }
 
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderCacheLoads[u]->setMissOperator(lineOrderScans[u]);
+	lineOrderScans[u]->consume(lineOrderCacheLoads[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(lineOrderMerges[u]);
+	lineOrderMerges[u]->consume(lineOrderScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderMerges[u]->produce(collate);
+	collate->consume(lineOrderMerges[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(lineOrderCacheLoads[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(lineOrderMerges[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	g->put(lineOrderScans[u]);
   g->put(collate);
@@ -95,14 +158,31 @@ LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
 
   auto g = OperatorGraph::make(mgr);
 
+  auto lineOrderCacheLoads = Operators::makeLineOrderFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, g);
+  auto lineOrderMerges = Operators::makeLineOrderMergeOperators(numConcurrentUnits, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderFilters[u]);
-	lineOrderFilters[u]->consume(lineOrderScans[u]);
+	lineOrderCacheLoads[u]->setHitOperator(lineOrderMerges[u]);
+	lineOrderMerges[u]->consume(lineOrderCacheLoads[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderCacheLoads[u]->setMissOperator(lineOrderScans[u]);
+	lineOrderScans[u]->consume(lineOrderCacheLoads[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderScans[u]->produce(lineOrderMerges[u]);
+	lineOrderMerges[u]->consume(lineOrderScans[u]);
+  }
+
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	lineOrderMerges[u]->produce(lineOrderFilters[u]);
+	lineOrderFilters[u]->consume(lineOrderMerges[u]);
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -110,6 +190,10 @@ LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
 	collate->consume(lineOrderFilters[u]);
   }
 
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(lineOrderCacheLoads[u]);
+  for (int u = 0; u < numConcurrentUnits; ++u)
+	g->put(lineOrderMerges[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	g->put(lineOrderScans[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
