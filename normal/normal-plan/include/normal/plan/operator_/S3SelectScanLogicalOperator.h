@@ -23,7 +23,6 @@ public:
 							  std::shared_ptr<pushdown::AWSClient> AwsClient);
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
-  std::shared_ptr<core::Operator> toOperator() override;
 
 private:
   std::shared_ptr<pushdown::AWSClient> awsClient_;

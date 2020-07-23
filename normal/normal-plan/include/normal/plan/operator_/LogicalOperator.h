@@ -21,7 +21,6 @@ public:
 
   std::shared_ptr<type::OperatorType> type();
 
-  virtual std::shared_ptr<core::Operator> toOperator() = 0;
   virtual std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() = 0;
 
   const std::string &getName() const;

@@ -14,12 +14,11 @@ using namespace normal::plan::operator_;
 CollateLogicalOperator::CollateLogicalOperator()
 	: LogicalOperator(type::OperatorTypes::collateOperatorType()) {}
 
-std::shared_ptr<normal::core::Operator> CollateLogicalOperator::toOperator() {
-  return std::make_shared<normal::pushdown::Collate>("collate", 0);
-}
+
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> CollateLogicalOperator::toOperators() {
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
   auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();
-  operators->push_back(this->toOperator());
+  operators->push_back(collate);
   return operators;
 }
 

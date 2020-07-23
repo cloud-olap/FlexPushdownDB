@@ -106,7 +106,8 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRE
 add_executable(normal-ssb-experiment
         experiment/ExperimentMain.cpp
         experiment/BaseLineTest.cpp
-        experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h)
+        experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h
+        experiment/HardcodedPlanTest.cpp)
 
 target_link_libraries(normal-ssb-experiment PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb)

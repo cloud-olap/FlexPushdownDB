@@ -6,103 +6,182 @@
 
 #include <normal/plan/operator_/type/OperatorTypes.h>
 #include <normal/plan/operator_/ScanLogicalOperator.h>
+#include <normal/plan/operator_/JoinLogicalOperator.h>
+#include <normal/pushdown/shuffle/Shuffle.h>
+#include <normal/plan/operator_/AggregateLogicalOperator.h>
 
 using namespace normal::plan;
 
-//std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> getRootOperators(const LogicalPlan &logicalPlan){
-//  auto rootOperators = std::make_shared<std::vector<std::shared_ptr<operator_::LogicalOperator>>>();
-//  for (const auto &logicalOperator: *logicalPlan.getOperators()) {
-//	if (logicalOperator->type()->is(operator_::type::OperatorTypes::scanOperatorType())) {
-//	  rootOperators->push_back(logicalOperator);
-//	}
-//  }
-//  return rootOperators;
-//}
-
-//void visit(const std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>>& operators,
-//		   const std::vector<std::shared_ptr<normal::core::Operator>>& producers,
-//		   PhysicalPlan &physicalPlan) {
-//
-//  for (const auto &logicalOperator: *operators) {
-//
-//	if (logicalOperator->type()->is(operator_::type::OperatorTypes::scanOperatorType())) {
-//
-//	  // Examine the partitioning scheme of the scan operator
-//	  auto scanOp = std::static_pointer_cast<operator_::ScanLogicalOperator>(logicalOperator);
-//	  auto partitioningScheme = scanOp->getPartitioningScheme();
-//	  auto partitions = partitioningScheme->partitions();
-//
-//	  // Create a physical scan operator for each partition
-//	  auto physicalOperators = logicalOperator->toOperators();
-//	  for (const auto &physicalOperator: *physicalOperators) {
-//		// Add the physical scan operator to the plan
-//		physicalPlan.put(physicalOperator);
-//	  }
-//
-//	  // Visit the consumers of this operator
-//	  if (logicalOperator->getConsumer() != nullptr) {
-//		auto consumers = std::make_shared<std::vector<std::shared_ptr<operator_::LogicalOperator>>>();
-//		consumers->push_back(logicalOperator->getConsumer());
-//		visit(consumers, *physicalOperators, physicalPlan);
-//	  }
-//	} else if (logicalOperator->type()->is(operator_::type::OperatorTypes::collateOperatorType())) {
-//
-//	  // Create a single collate operator, collate operators are never multi-partition
-//	  auto physicalCollateOperator = logicalOperator->toOperator();
-//
-//	  // Connect all producers to the single collate
-//	  for (const auto &producer: producers) {
-//		producer->produce(physicalCollateOperator);
-//		physicalCollateOperator->consume(producer);
-//	  }
-//
-//	  // Add the collate operator to the plan
-//	  physicalPlan.put(physicalCollateOperator);
-//	} else {
-//
-//	  // Create a physical operator for each producer
-//	  auto physicalOperators = std::vector<std::shared_ptr<normal::core::Operator>>();
-//	  for (const auto &producer: producers) {
-//		auto physicalOperator = logicalOperator->toOperator();
-//
-//		// FIXME: A hack to make sure the op is named after its partition
-//		physicalOperator->setName(physicalOperator->name() + "/" + producer->name());
-//
-//		physicalOperators.push_back(physicalOperator);
-//
-//		// Connect this operator to its producer
-//		producer->produce(physicalOperator);
-//		physicalOperator->consume(producer);
-//
-//		// Add the physical scan operator to the plan
-//		physicalPlan.put(physicalOperator);
-//	  }
-//
-//	  // Visit the consumers of this operator
-//	  if (logicalOperator->getConsumer() != nullptr) {
-//		auto consumers = std::make_shared<std::vector<std::shared_ptr<operator_::LogicalOperator>>>();
-//		consumers->push_back(logicalOperator->getConsumer());
-//		visit(consumers, physicalOperators, physicalPlan);
-//	  }
-//	}
-//  }
-//
-//}
-
+// Not applicable for aggregate, project and group logical operators (their physical operators depend on their producers)
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> toPhysicalOperators (
         std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalOperator,
         std::shared_ptr<std::unordered_map<
           std::shared_ptr<normal::plan::operator_::LogicalOperator>,
-          std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>>> &logicalToPhysical_map) {
+          std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>>> &logicalToPhysical_map,
+        std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &allPhysicalOperators) {
 
   auto existPhysicalOperators = logicalToPhysical_map->find(logicalOperator);
   if (existPhysicalOperators == logicalToPhysical_map->end()) {
     auto physicalOperators = logicalOperator->toOperators();
     logicalToPhysical_map->insert({logicalOperator, physicalOperators});
+    allPhysicalOperators->insert(allPhysicalOperators->end(), physicalOperators->begin(), physicalOperators->end());
     return physicalOperators;
   } else {
     return existPhysicalOperators->second;
   }
+}
+
+void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalProducer,
+             std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalConsumer,
+             std::shared_ptr<std::unordered_map<
+                     std::shared_ptr<normal::plan::operator_::LogicalOperator>,
+                     std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>>> &logicalToPhysical_map,
+             std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>> &wiredLogicalProducers,
+             std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> allPhysicalOperators){
+
+  // if logicalProducer is already wired, return
+  if (std::find(wiredLogicalProducers->begin(), wiredLogicalProducers->end(), logicalProducer) != wiredLogicalProducers->end()) {
+    return;
+  }
+
+  // extract stream-out physical operators
+  std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> streamOutPhysicalOperators;
+
+  if (logicalProducer->type()->is(operator_::type::OperatorTypes::joinOperatorType())){
+    // get join physical operators
+    auto joinPhysicalOperators = toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
+
+    // joinProbes are stream-out operators
+    streamOutPhysicalOperators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>(
+            joinPhysicalOperators->begin() + joinPhysicalOperators->size() / 2, joinPhysicalOperators->end());
+  }
+
+  else if (logicalProducer->type()->is(operator_::type::OperatorTypes::aggregateOperatorType())) {
+    // get aggregate physical operators
+    std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> aggregatePhysicalOperators;
+    auto aggregatePhysicalOperators_pair = logicalToPhysical_map->find(logicalProducer);
+    if (aggregatePhysicalOperators_pair == logicalToPhysical_map->end()) {
+      auto aggregateLogicalOperator = std::static_pointer_cast<normal::plan::operator_::AggregateLogicalOperator>(logicalProducer);
+      auto producerOfAggregateLogicalOperator = aggregateLogicalOperator->getProducer();
+      wireUp(producerOfAggregateLogicalOperator, logicalProducer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
+      aggregatePhysicalOperators = logicalToPhysical_map->find(logicalProducer)->second;
+    } else {
+      aggregatePhysicalOperators = aggregatePhysicalOperators_pair->second;
+    }
+
+    // the single aggregate or aggregateReduce is stream-out operator
+    if (aggregatePhysicalOperators->size() == 1) {
+      streamOutPhysicalOperators = aggregatePhysicalOperators;
+    } else {
+      streamOutPhysicalOperators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+      streamOutPhysicalOperators->emplace_back(aggregatePhysicalOperators->back());
+    }
+  }
+
+  else if (logicalProducer->type()->is(operator_::type::OperatorTypes::groupOperatorType())) {
+
+  }
+
+  else if (logicalProducer->type()->is(operator_::type::OperatorTypes::projectOperatorType())) {
+
+  }
+
+  else {
+    streamOutPhysicalOperators = toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
+  }
+
+
+  // wire up to stream-in physical operators
+  if (logicalConsumer->type()->is(operator_::type::OperatorTypes::joinOperatorType())) {
+    auto joinPhysicalOperators = toPhysicalOperators(logicalConsumer, logicalToPhysical_map, allPhysicalOperators);
+    auto joinLogicalOperator = std::static_pointer_cast<normal::plan::operator_::JoinLogicalOperator>(logicalConsumer);
+    auto leftColumnName = joinLogicalOperator->getLeftColumnName();
+    auto rightColumnName = joinLogicalOperator->getRightColumnName();
+
+    // joinBuilds and joinProbes
+    auto joinBuilds = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>(
+            joinPhysicalOperators->begin(), joinPhysicalOperators->begin() + joinPhysicalOperators->size() / 2);
+    auto joinProbes = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>(
+            joinPhysicalOperators->begin() + joinPhysicalOperators->size() / 2, joinPhysicalOperators->end());
+
+    // check logicalComsumer is left consumer or right consumer
+    if (logicalProducer == joinLogicalOperator->getLeftProducer()) {
+      // construct a shuffle physical operator for each stream-out operator
+      auto shuffles = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::shuffle::Shuffle>>>();
+      for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+        auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
+                                                                leftColumnName);
+        // wire up
+        streamOutPhysicalOperator->produce(shuffle);
+        shuffle->consume(streamOutPhysicalOperator);
+        for (const auto &joinBuild: *joinBuilds) {
+          shuffle->produce(joinBuild);
+          joinBuild->consume(shuffle);
+        }
+        allPhysicalOperators->emplace_back(shuffle);
+      }
+    } else {
+      // construct a shuffle physical operator for each stream-out operator
+      for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+        auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
+                                                                rightColumnName);
+        // wire up
+        streamOutPhysicalOperator->produce(shuffle);
+        shuffle->consume(streamOutPhysicalOperator);
+        for (const auto &joinProbe: *joinProbes) {
+          shuffle->produce(joinProbe);
+          joinProbe->consume(shuffle);
+        }
+        allPhysicalOperators->emplace_back(shuffle);
+      }
+    }
+  }
+
+  else if (logicalConsumer->type()->is(operator_::type::OperatorTypes::aggregateOperatorType())){
+    // get aggregate physical operators
+    auto numConcurrentUnits = streamOutPhysicalOperators->size();
+    std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> aggregatePhysicalOperators;
+    auto aggregatePhysicalOperators_pair = logicalToPhysical_map->find(logicalConsumer);
+    if (aggregatePhysicalOperators_pair == logicalToPhysical_map->end()) {
+      auto aggregateLogicalOperator = std::static_pointer_cast<normal::plan::operator_::AggregateLogicalOperator>(logicalConsumer);
+      aggregateLogicalOperator->setNumConcurrentUnits(numConcurrentUnits);
+      aggregatePhysicalOperators = aggregateLogicalOperator->toOperators();
+      logicalToPhysical_map->insert({aggregateLogicalOperator, aggregatePhysicalOperators});
+      allPhysicalOperators->insert(allPhysicalOperators->end(), aggregatePhysicalOperators->begin(), aggregatePhysicalOperators->end());
+    } else {
+      aggregatePhysicalOperators = aggregatePhysicalOperators_pair->second;
+    }
+
+    // wire up to all except aggregateReduce
+    for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+      for (auto index = 0; index < numConcurrentUnits; index++) {
+        auto streamInPhysicalOperator = aggregatePhysicalOperators->at(index);
+        streamOutPhysicalOperator->produce(streamInPhysicalOperator);
+        streamInPhysicalOperator->consume(streamOutPhysicalOperator);
+      }
+    }
+  }
+
+  else if (logicalConsumer->type()->is(operator_::type::OperatorTypes::groupOperatorType())) {
+
+  }
+
+  else if (logicalConsumer->type()->is(operator_::type::OperatorTypes::projectOperatorType())) {
+
+  }
+
+  else if (logicalConsumer->type()->is(operator_::type::OperatorTypes::collateOperatorType())){
+    auto collatePhysicalOperator = toPhysicalOperators(logicalConsumer, logicalToPhysical_map, allPhysicalOperators)->at(0);
+    for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+      streamOutPhysicalOperator->produce(collatePhysicalOperator);
+      collatePhysicalOperator->consume(streamOutPhysicalOperator);
+    }
+  }
+
+  else {
+    std::runtime_error("Bad logicalConsumer type, check logical plan");
+  }
+
 }
 
 std::shared_ptr<PhysicalPlan> Planner::generate(const LogicalPlan &logicalPlan) {
@@ -111,32 +190,18 @@ std::shared_ptr<PhysicalPlan> Planner::generate(const LogicalPlan &logicalPlan) 
   auto logicalToPhysical_map = std::make_shared<std::unordered_map<
           std::shared_ptr<normal::plan::operator_::LogicalOperator>,
           std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>>>();
+  auto wiredLogicalProducers = std::make_shared<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>();
+  auto allPhysicalOperators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
-  for (const auto &logicalOperator: *logicalOperators) {
-    auto logicalProducer = logicalOperator;
-    auto logicalConsumer = logicalOperator->getConsumer();
-    auto physicalProducers = toPhysicalOperators(logicalProducer, logicalToPhysical_map);
-
-    while (logicalConsumer) {
-      // check if this logical operator has been visited
-      if (logicalToPhysical_map->find(logicalConsumer) != logicalToPhysical_map->end()) {
-        break;
-      }
-
-      auto physicalConsumers = toPhysicalOperators(logicalConsumer, logicalToPhysical_map);
-
-      // wire up
-      for (const auto &physicalProducer: *physicalProducers) {
-        for (const auto &physicalConsumer: *physicalConsumers) {
-          physicalProducer->produce(physicalConsumer);
-          physicalConsumer->produce(physicalProducer);
-        }
-      }
-
-      logicalProducer = logicalConsumer;
-      logicalConsumer = logicalProducer->getConsumer();
-      physicalProducers = physicalConsumers;
+  for (auto &logicalProducer: *logicalOperators) {
+    auto logicalConsumer = logicalProducer->getConsumer();
+    if (logicalConsumer) {
+      wireUp(logicalProducer, logicalConsumer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
     }
+  }
+
+  for (const auto &physicalOperator: *allPhysicalOperators) {
+    physicalPlan->put(physicalOperator);
   }
 
   return physicalPlan;

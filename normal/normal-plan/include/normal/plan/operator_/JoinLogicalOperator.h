@@ -14,15 +14,24 @@ namespace normal::plan::operator_ {
 class JoinLogicalOperator : public LogicalOperator{
 
 public:
-  explicit JoinLogicalOperator(const std::string &leftColumnName, const std::string &rightColumnName);
+  explicit JoinLogicalOperator(const std::string &leftColumnName, const std::string &rightColumnName,
+          const std::shared_ptr<LogicalOperator> &leftProducer,
+          const std::shared_ptr<LogicalOperator> &rightProducer);
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
-  std::shared_ptr<core::Operator> toOperator() override;
+
+  const std::string &getLeftColumnName() const;
+  const std::string &getRightColumnName() const;
+
+  const std::shared_ptr<LogicalOperator> &getLeftProducer() const;
+  const std::shared_ptr<LogicalOperator> &getRightProducer() const;
 
 private:
   std::string leftColumnName_;
   std::string rightColumnName_;
 
+  std::shared_ptr<LogicalOperator> leftProducer_;
+  std::shared_ptr<LogicalOperator> rightProducer_;
 };
 
 }

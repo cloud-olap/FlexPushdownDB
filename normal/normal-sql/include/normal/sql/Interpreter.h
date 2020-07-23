@@ -22,13 +22,12 @@ public:
   [[nodiscard]] const std::shared_ptr<core::OperatorManager> &getOperatorManager() const;
   void parse(const std::string& sql);
   void put(const std::shared_ptr<connector::Catalogue> &catalogue);
+  const std::shared_ptr<plan::LogicalPlan> &getLogicalPlan() const;
+  void clearOperatorManager();
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>> catalogues_;
   std::shared_ptr<plan::LogicalPlan> logicalPlan_;
-public:
-  const std::shared_ptr<plan::LogicalPlan> &getLogicalPlan() const;
-private:
   std::shared_ptr<core::OperatorManager> operatorManager_;
 
 };

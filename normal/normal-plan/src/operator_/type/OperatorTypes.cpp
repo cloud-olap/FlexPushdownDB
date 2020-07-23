@@ -27,5 +27,5 @@ std::shared_ptr<JoinOperatorType> OperatorTypes::joinOperatorType() {
 }
 
 std::shared_ptr<GroupOperatorType> OperatorTypes::groupOperatorType() {
-  return std::shared_ptr<GroupOperatorType>();
+  return std::make_shared<GroupOperatorType>();
 }

@@ -19,6 +19,7 @@ public:
 
   std::shared_ptr<pushdown::aggregate::AggregationFunction> toExecutorFunction() override;
 
+  std::shared_ptr<pushdown::aggregate::AggregationFunction> toExecutorReduceFunction() override;
 };
 
 }

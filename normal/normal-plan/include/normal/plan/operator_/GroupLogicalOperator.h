@@ -16,15 +16,22 @@ class GroupLogicalOperator : public LogicalOperator {
 public:
   GroupLogicalOperator(const std::shared_ptr<std::vector<std::string>> &groupColumnNames,
                        const std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> &functions,
-                       const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &projectExpression);
+                       const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &projectExpression,
+                       const std::shared_ptr<LogicalOperator> &producer);
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
-  std::shared_ptr<core::Operator> toOperator() override;
+
+  const std::shared_ptr<LogicalOperator> &getProducer() const;
+
+  void setNumConcurrentUnits(int numConcurrentUnits);
 
 private:
   std::shared_ptr<std::vector<std::string>> groupColumnNames_;
   std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions_;
   std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> projectExpression_;
+
+  std::shared_ptr<LogicalOperator> producer_;
+  int numConcurrentUnits;
 };
 
 }

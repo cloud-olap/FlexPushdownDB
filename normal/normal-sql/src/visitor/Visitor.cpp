@@ -385,7 +385,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       scanNode_pair.second->setConsumer(collate);
     }
   } else {
-    auto finalConsumerNodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>();
+    std::shared_ptr<normal::plan::operator_::LogicalOperator> finalConsumerNode;
     if (join) {
       // naive join ordering, left-deep join
       std::shared_ptr<normal::plan::operator_::JoinLogicalOperator> lastJoinNode = nullptr;
@@ -398,56 +398,56 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
         if (lastJoinNode == nullptr) {
           auto leftColumnName = joinPredicate_pair->first;
           auto rightColumnName = joinPredicate_pair->second;
-          auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(leftColumnName, rightColumnName);
-          nodes->emplace_back(joinNode);
           auto leftScanNode = scanNodes_map->find(joinTable)->second;
           auto rightScanNode = scanNodes_map->find("lineorder")->second;
+          auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(
+                  leftColumnName, rightColumnName, leftScanNode, rightScanNode);
+          nodes->emplace_back(joinNode);
           leftScanNode->setConsumer(joinNode);
           rightScanNode->setConsumer(joinNode);
           lastJoinNode = joinNode;
         } else {
           auto leftColumnName = joinPredicate_pair->second;
           auto rightColumnName = joinPredicate_pair->first;
-          auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(leftColumnName, rightColumnName);
-          nodes->emplace_back(joinNode);
           auto rightScanNode = scanNodes_map->find(joinTable)->second;
+          auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(
+                  leftColumnName, rightColumnName, lastJoinNode, rightScanNode);
+          nodes->emplace_back(joinNode);
           lastJoinNode->setConsumer(joinNode);
           rightScanNode->setConsumer(joinNode);
           lastJoinNode = joinNode;
         }
       }
-      finalConsumerNodes->emplace_back(lastJoinNode);
+      finalConsumerNode = lastJoinNode;
     } else {
+      // no join -> only one table
       for(const auto &scanNode_pair: *scanNodes_map){
-        finalConsumerNodes->emplace_back(scanNode_pair.second);
+        finalConsumerNode = scanNode_pair.second;
+        break;
       }
     }
     if (aggregate) {
       if (project) {
         // group by
         auto groupNode = std::make_shared<normal::plan::operator_::GroupLogicalOperator>(
-                groupColumnNames, aggregateFunctions, projectExpressions);
+                groupColumnNames, aggregateFunctions, projectExpressions, finalConsumerNode);
         nodes->emplace_back(groupNode);
-        for (const auto &finalConsumerNode: *finalConsumerNodes) {
-          finalConsumerNode->setConsumer(groupNode);
-        }
+        finalConsumerNode->setConsumer(groupNode);
         groupNode->setConsumer(collate);
       } else {
         // aggregation
-        auto aggregateNode = std::make_shared<normal::plan::operator_::AggregateLogicalOperator>(aggregateFunctions);
+        auto aggregateNode = std::make_shared<normal::plan::operator_::AggregateLogicalOperator>(aggregateFunctions,
+                                                                                                 finalConsumerNode);
         nodes->emplace_back(aggregateNode);
-        for (const auto &finalConsumerNode: *finalConsumerNodes) {
-          finalConsumerNode->setConsumer(aggregateNode);
-        }
+        finalConsumerNode->setConsumer(aggregateNode);
         aggregateNode->setConsumer(collate);
       }
     } else {
       // project
-      auto projectNode = std::make_shared<normal::plan::operator_::ProjectLogicalOperator>(projectExpressions);
+      auto projectNode = std::make_shared<normal::plan::operator_::ProjectLogicalOperator>(projectExpressions,
+                                                                                           finalConsumerNode);
       nodes->emplace_back(projectNode);
-      for (const auto &finalConsumerNode: *finalConsumerNodes) {
-        finalConsumerNode->setConsumer(projectNode);
-      }
+      finalConsumerNode->setConsumer(projectNode);
       projectNode->setConsumer(collate);
     }
   }

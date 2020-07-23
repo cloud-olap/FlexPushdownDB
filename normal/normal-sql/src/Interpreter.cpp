@@ -64,4 +64,8 @@ const std::shared_ptr<normal::plan::LogicalPlan> &Interpreter::getLogicalPlan() 
   return logicalPlan_;
 }
 
+void Interpreter::clearOperatorManager() {
+  operatorManager_ = std::make_shared<normal::core::OperatorManager>();
+}
+
 

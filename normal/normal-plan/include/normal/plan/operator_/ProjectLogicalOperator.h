@@ -19,16 +19,22 @@ namespace normal::plan::operator_ {
 class ProjectLogicalOperator : public LogicalOperator {
 
 public:
-  explicit ProjectLogicalOperator(std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>> expressions);
+  explicit ProjectLogicalOperator(std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>> expressions,
+                                  std::shared_ptr<LogicalOperator> producer_);
 
   [[nodiscard]] const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &expressions() const;
 
-  std::shared_ptr<core::Operator> toOperator() override;
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
+
+  const std::shared_ptr<LogicalOperator> &getProducer() const;
+
+  void setNumConcurrentUnits(int numConcurrentUnits);
 
 private:
   std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> expressions_;
 
+  std::shared_ptr<LogicalOperator> producer_;
+  int numConcurrentUnits;
 };
 
 }

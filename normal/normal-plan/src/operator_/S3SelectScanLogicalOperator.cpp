@@ -28,14 +28,11 @@ S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
 	ScanLogicalOperator(partitioningScheme),
 	awsClient_(std::move(AwsClient)) {}
 
-std::shared_ptr<normal::core::Operator> S3SelectScanLogicalOperator::toOperator() {
-  return toOperators()->at(0);
-}
 
 std::string S3SelectScanLogicalOperator::genSql(){
   // projected columns
   std::string colStr = "";
-  for (int colIndex = 0; colIndex < projectedColumnNames_->size(); colIndex++) {
+  for (auto colIndex = 0; colIndex < projectedColumnNames_->size(); colIndex++) {
     if (colIndex == 0) {
       colStr += projectedColumnNames_->at(colIndex);
     } else {
