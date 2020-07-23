@@ -75,7 +75,7 @@ void S3SelectTests::hybridDateFilter(short year,
 
   std::vector<std::shared_ptr<TupleSet2>> actuals;
   for (int i = 0; i < numIterations; ++i) {
-	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterHybrid("s3filter", s3ObjectDir,
+	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterHybrid("s3filter", s3ObjectDir, year,
 																					numConcurrentUnits, client, mgr));
 	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
   }

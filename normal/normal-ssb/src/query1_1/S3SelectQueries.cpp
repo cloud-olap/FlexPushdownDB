@@ -116,8 +116,7 @@ S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
   auto g = OperatorGraph::make(mgr);
 
   auto cacheLoads =
-	  Operators::makeDateCacheLoads(s3ObjectDir, s3Bucket,
-													   year,
+	  Operators::makeDateS3SelectCacheLoadOperators(s3ObjectDir, s3Bucket,
 													   numConcurrentUnits, partitionMap,
 													   client, g);
 
