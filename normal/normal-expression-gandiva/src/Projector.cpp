@@ -6,6 +6,8 @@
 
 #include <gandiva/tree_expr_builder.h>
 #include <normal/tuple/TupleSet.h>
+#include <normal/tuple/Column.h>
+#include <normal/tuple/Schema.h>
 
 using namespace normal::expression::gandiva;
 
@@ -73,27 +75,40 @@ std::shared_ptr<arrow::ArrayVector> Projector::evaluate(const arrow::RecordBatch
 
 std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
 
-  // Read the table in batches
-  std::shared_ptr<arrow::RecordBatch> batch;
-  arrow::TableBatchReader reader(*tupleSet.table());
-  reader.set_chunksize(tuple::DefaultChunkSize);
-  auto res = reader.ReadNext(&batch);
-  std::shared_ptr<TupleSet> resultTuples = nullptr;
-  while (res.ok() && batch) {
-
-	// Evaluate expressions against a batch
-	std::shared_ptr<arrow::ArrayVector> outputs = evaluate(*batch);
-	auto batchResultTuples = TupleSet::make(getResultSchema(), *outputs);
-
-	// Concatenate the batch result to the full results
-	if (resultTuples)
-	  resultTuples = tupleSet.concatenate(batchResultTuples, resultTuples);
-	else
-	  resultTuples = batchResultTuples;
-
-	res = reader.ReadNext(&batch);
+  /*
+   * Check if the tupleset is valid (has columns) but is empty (0 rows). In this case we want to create
+   * and return an empty tupleset
+   */
+  if(tupleSet.table()->num_columns() > 0 && tupleSet.table()->num_rows() == 0){
+    auto resultSchema = normal::tuple::Schema::make(getResultSchema());
+	auto resultColumns = resultSchema->makeColumns();
+	auto resultArrays = Column::columnVectorToArrowChunkedArrayVector(resultColumns);
+    auto resultTable = ::arrow::Table::Make(getResultSchema(), resultArrays);
+	auto resultTupleSet = TupleSet::make(resultTable);
+	return resultTupleSet;
   }
+  else{
+	// Read the table in batches
+	std::shared_ptr<arrow::RecordBatch> batch;
+	arrow::TableBatchReader reader(*tupleSet.table());
+	reader.set_chunksize(tuple::DefaultChunkSize);
+	auto res = reader.ReadNext(&batch);
+	std::shared_ptr<TupleSet> resultTuples = nullptr;
+	while (res.ok() && batch) {
 
-  return resultTuples;
+	  // Evaluate expressions against a batch
+	  std::shared_ptr<arrow::ArrayVector> outputs = evaluate(*batch);
+	  auto batchResultTuples = TupleSet::make(getResultSchema(), *outputs);
 
+	  // Concatenate the batch result to the full results
+	  if (resultTuples)
+		resultTuples = tupleSet.concatenate(batchResultTuples, resultTuples);
+	  else
+		resultTuples = batchResultTuples;
+
+	  res = reader.ReadNext(&batch);
+	}
+
+	return resultTuples;
+  }
 }

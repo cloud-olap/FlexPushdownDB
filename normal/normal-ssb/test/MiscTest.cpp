@@ -34,7 +34,10 @@ using namespace normal::ssb;
 
 TEST_SUITE ("aggregate" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("sum" * doctest::skip(false || SKIP_SUITE)) {
+/**
+ * Tests aggregation over large lineorder file with a project operator that ensures tuples are delivered in batches
+ */
+TEST_CASE ("large" * doctest::skip(false || SKIP_SUITE)) {
 
   auto aFile = filesystem::absolute("data/ssb-sf1/lineorder.tbl");
   auto numBytesAFile = filesystem::file_size(aFile);
@@ -52,7 +55,9 @@ TEST_CASE ("sum" * doctest::skip(false || SKIP_SUITE)) {
 								 numBytesAFile,
 								 g->getId(),
 								 true);
-  auto project = std::make_shared<Project>("project", std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{col("LO_EXTENDEDPRICE")});
+  auto project = std::make_shared<Project>("project",
+										   std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
+											   col("LO_EXTENDEDPRICE")});
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
   aggregateFunctions->
 	  emplace_back(std::make_shared<Sum>("sum", cast(col("LO_EXTENDEDPRICE"), float64Type()))
@@ -87,7 +92,7 @@ TEST_CASE ("sum" * doctest::skip(false || SKIP_SUITE)) {
 
 	  CHECK(tuples->numRows() == 1);
 	  CHECK(tuples->numColumns() == 1);
-	  CHECK_EQ(33.0, val.value());
+	  CHECK_EQ(22952182236037.0, val.value());
 
   mgr->stop();
 

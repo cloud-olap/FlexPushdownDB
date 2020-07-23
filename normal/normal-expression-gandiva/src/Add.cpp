@@ -15,7 +15,7 @@ void Add::compile(std::shared_ptr<arrow::Schema> /* schema */) {
 }
 
 std::string Add::alias() {
-  return "add";
+  return "?column?";
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::plus(std::shared_ptr<Expression> left,

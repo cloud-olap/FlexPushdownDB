@@ -23,6 +23,7 @@ Project::Project(const std::string &Name,
       expressions_(std::move(Expressions)) {}
 
 void Project::onStart() {
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   // FIXME: Either set tuples to size 0 or use an optional
   tuples_ = nullptr;
 }
@@ -46,6 +47,9 @@ void Project::projectAndSendTuples() {
   if(tuples_) {
 	auto projectedTuples = projector_.value()->evaluate(*tuples_);
 	sendTuples(projectedTuples);
+
+	// FIXME: Either set tuples to size 0 or use an optional
+	tuples_ = nullptr;
   }
 }
 
@@ -80,13 +84,16 @@ void Project::cacheInputSchema(const core::message::TupleMessage &message) {
 }
 
 void Project::sendTuples(std::shared_ptr<TupleSet> &projected) {
+  // Send the tuples in batches
+  for(int i=0;i<projected->numRows();i+= DefaultBufferSize){
+    int64_t length =  std::min<int64_t>(projected->table()->num_rows() - i, DefaultBufferSize);
+    auto batch = projected->table()->Slice(i, length);
+    auto batchTupleSet = TupleSet::make(batch);
 
-  std::shared_ptr<core::message::Message>
-      tupleMessage = std::make_shared<core::message::TupleMessage>(projected, name());
-  ctx()->tell(tupleMessage);
-
-  // FIXME: Either set tuples to size 0 or use an optional
-  tuples_ = nullptr;
+	std::shared_ptr<core::message::Message>
+		tupleMessage = std::make_shared<core::message::TupleMessage>(batchTupleSet, name());
+	ctx()->tell(tupleMessage);
+  }
 }
 
 void Project::bufferTuples(const core::message::TupleMessage &message) {

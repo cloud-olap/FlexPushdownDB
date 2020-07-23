@@ -43,6 +43,33 @@ public:
 
 	return tuples;
   }
+
+  static std::shared_ptr<TupleSet> prepareEmptyTupleSet() {
+	auto schema = arrow::schema({});
+	auto tuples = TupleSet::make(schema, {});
+	return tuples;
+  }
+
+  static std::shared_ptr<TupleSet> prepare3x0TupleSet() {
+	auto column1 = std::vector<std::string>{};
+	auto column2 = std::vector<std::string>{};
+	auto column3 = std::vector<std::string>{};
+
+	auto stringType = arrow::TypeTraits<arrow::StringType>::type_singleton();
+
+	auto fieldA = field("a", stringType);
+	auto fieldB = field("b", stringType);
+	auto fieldC = field("c", stringType);
+	auto schema = arrow::schema({fieldA, fieldB, fieldC});
+
+	auto arrowColumn1 = Arrays::make<arrow::StringType>(column1).value();
+	auto arrowColumn2 = Arrays::make<arrow::StringType>(column2).value();
+	auto arrowColumn3 = Arrays::make<arrow::StringType>(column3).value();
+
+	auto tuples = TupleSet::make(schema, {arrowColumn1, arrowColumn2, arrowColumn3});
+
+	return tuples;
+  }
 };
 
 }
