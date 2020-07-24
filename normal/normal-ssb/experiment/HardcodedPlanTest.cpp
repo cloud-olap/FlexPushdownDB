@@ -572,12 +572,12 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(false || SKIP_SUITE)) {
   // lineorder scan
   auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  std::vector<std::string> columns = {"lo_extendedprice", "lo_discount", "lo_orderdate"};
+  std::vector<std::string> columns = {"lo_extendedprice", "lo_discount", "lo_orderdate", "lo_shipmode"};
   auto lineorderScan = normal::pushdown::S3SelectScan::make(
           "s3filter/ssb-sf0.01/lineorder.tbl",
           "s3filter",
           "ssb-sf0.01/lineorder.tbl",
-          fmt::format("select lo_extendedprice, lo_discount, lo_orderdate from s3Object "
+          fmt::format("select lo_extendedprice, lo_discount, lo_orderdate, lo_shipmode from s3Object "
                       "where cast(lo_discount as int) between 1 and 3 and cast(lo_quantity as int) < 25"),
           columns,
           scanRanges[0].first,
@@ -616,7 +616,7 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(false || SKIP_SUITE)) {
                                                         times(cast(col("lo_extendedprice"), normal::core::type::float64Type()),
                                                               cast(col("lo_discount"), normal::core::type::float64Type()))
   ));
-  std::vector<std::string> groupColumns = {"d_weeknuminyear"};
+  std::vector<std::string> groupColumns = {"d_weeknuminyear", "lo_shipmode"};
   auto group = std::make_shared<normal::pushdown::group::Group>("group", groupColumns, aggregateFunctions);
 
   // collate

@@ -35,11 +35,10 @@ size_t GroupKey::hash() {
 }
 
 bool GroupKey::operator==(const GroupKey &other) {
-  for (const auto &attribute: attributes_) {
-	for (const auto &otherAttribute: other.attributes_) {
-	  if (*attribute != *otherAttribute)
-		return false;
-	}
+  for (int attr_id = 0; attr_id < attributes_.size(); attr_id++) {
+    if (*attributes_.at(attr_id) != *other.attributes_.at(attr_id)) {
+      return false;
+    }
   }
   return true;
 }
