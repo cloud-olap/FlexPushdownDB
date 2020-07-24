@@ -73,7 +73,7 @@ TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
 
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {
-          "query2.1.sql"
+          "query1.1.sql", "query1.2.sql", "query1.3.sql"
   };
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");

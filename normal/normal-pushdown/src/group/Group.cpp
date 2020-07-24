@@ -5,8 +5,6 @@
 #include <normal/pushdown/group/Group.h>
 #include <normal/tuple/TupleSet2.h>
 
-#include <utility>
-
 #include <normal/pushdown/group/GroupKey.h>
 
 using namespace normal::pushdown::group;
@@ -73,9 +71,21 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
 		  auto value = ::arrow::MakeScalar(typedColumn->Value(r));
 		  auto scalar = std::make_shared<normal::tuple::Scalar>(value);
 		  groupKey->append(columnName, scalar);
-		} else {
-		  throw std::runtime_error("Group for column of type '" + column->type()->ToString() + "' not implemented yet");
-		}
+		} else if (column->type()->id() == ::arrow::StringType::type_id) {
+		  /* FIXME: Two problems here:
+		   *   1. Directly invoking arrow::MakeScalar gives me "EXC_BAD_ACCESS" exception, don't know why ???
+		   *      so instead I cast string to int and make Int32Scalar
+		   *   2. Columns from s3 are in default parsed as string type,
+		   *      should we add a group column type parameter to specify the type to cast for each group column?
+		   */
+      auto typedColumn = std::static_pointer_cast<::arrow::StringArray>(column);
+		  auto str = typedColumn->GetString(r);
+		  auto value = ::arrow::MakeScalar(std::stoi(str));
+      auto scalar = std::make_shared<normal::tuple::Scalar>(value);
+      groupKey->append(columnName, scalar);
+    } else {
+		    throw std::runtime_error("Group for column of type '" + column->type()->ToString() + "' not implemented yet");
+		  }
 	  }
 
 	  // Get or initialise the tuple set for the current group

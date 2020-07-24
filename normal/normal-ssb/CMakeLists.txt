@@ -115,7 +115,8 @@ target_link_libraries(normal-ssb-experiment PRIVATE normal-sql)
 
 # Copy ssb query files to runtime directory
 
-set(SSB_query_file_list "query1.1.sql" "query1.2.sql" "query1.3.sql"
+set(SSB_query_file_list
+        "query1.1.sql" "query1.2.sql" "query1.3.sql" "query1.1.1.sql"
         "query2.1.sql" "query2.2.sql" "query2.3.sql"
         "query3.1.sql" "query3.2.sql" "query3.3.sql" "query3.4.sql"
         "query4.1.sql" "query4.2.sql" "query4.3.sql")

@@ -15,6 +15,7 @@
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/Aggregate.h>
+#include <normal/pushdown/Project.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
@@ -587,12 +588,12 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(false || SKIP_SUITE)) {
   // date scan
   numBytes = partitionMap.find("ssb-sf0.01/date.tbl")->second;
   scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  columns = {"d_datekey", "d_year"};
+  columns = {"d_datekey", "d_weeknuminyear"};
   auto dateScan = normal::pushdown::S3SelectScan::make(
           "s3filter/ssb-sf0.01/date.tbl",
           "s3filter",
           "ssb-sf0.01/date.tbl",
-          fmt::format("select d_datekey, d_year from s3Object where cast(d_year as int) = 1992"),
+          fmt::format("select d_datekey, d_weeknuminyear from s3Object where cast(d_year as int) = 1992"),
           columns,
           scanRanges[0].first,
           scanRanges[0].second,
@@ -615,7 +616,7 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(false || SKIP_SUITE)) {
                                                         times(cast(col("lo_extendedprice"), normal::core::type::float64Type()),
                                                               cast(col("lo_discount"), normal::core::type::float64Type()))
   ));
-  std::vector<std::string> groupColumns = {"d_year"};
+  std::vector<std::string> groupColumns = {"d_weeknuminyear"};
   auto group = std::make_shared<normal::pushdown::group::Group>("group", groupColumns, aggregateFunctions);
 
   // collate
@@ -652,6 +653,112 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(joinBuild);
   mgr->put(joinProbe);
   mgr->put(group);
+  mgr->put(collate);
+
+  // execute
+  mgr->boot();
+  mgr->start();
+  mgr->join();
+  auto tuples = std::static_pointer_cast<normal::pushdown::Collate>(mgr->getOperator("collate"))->tuples();
+  mgr->stop();
+
+  auto tupleSet = TupleSet2::create(tuples);
+
+  SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Finish");
+}
+
+TEST_CASE ("Join_Two_Project" * doctest::skip(true || SKIP_SUITE)) {
+  normal::pushdown::AWSClient client;
+  client.init();
+
+  // operators
+  auto s3Bucket = "s3filter";
+  std::vector<std::string> s3Objects = {"ssb-sf0.01/date.tbl", "ssb-sf0.01/lineorder.tbl"};
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+
+  // lineorder scan
+  auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;
+  auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
+  std::vector<std::string> columns = {"lo_orderdate", "lo_quantity"};
+  auto lineorderScan = normal::pushdown::S3SelectScan::make(
+          "s3filter/ssb-sf0.01/lineorder.tbl",
+          "s3filter",
+          "ssb-sf0.01/lineorder.tbl",
+          fmt::format("select lo_orderdate, lo_quantity from s3Object "
+                      "where cast(lo_discount as int) between 1 and 3 and cast(lo_quantity as int) < 25"),
+          columns,
+          scanRanges[0].first,
+          scanRanges[0].second,
+          normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
+          client.defaultS3Client());
+
+  // date scan
+  numBytes = partitionMap.find("ssb-sf0.01/date.tbl")->second;
+  scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
+  columns = {"d_datekey", "d_weeknuminyear"};
+  auto dateScan = normal::pushdown::S3SelectScan::make(
+          "s3filter/ssb-sf0.01/date.tbl",
+          "s3filter",
+          "ssb-sf0.01/date.tbl",
+          fmt::format("select d_datekey, d_weeknuminyear from s3Object where cast(d_year as int) = 1992"),
+          columns,
+          scanRanges[0].first,
+          scanRanges[0].second,
+          normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
+          client.defaultS3Client());
+
+  // shuffle
+  auto dateShuffle = normal::pushdown::shuffle::Shuffle::make("dateShuffle", "d_datekey");
+  auto lineorderShuffle = normal::pushdown::shuffle::Shuffle::make("lineorderShuffle", "lo_orderdate");
+
+  // join
+  auto joinBuild = std::make_shared<normal::pushdown::join::HashJoinBuild>("join-build", "d_datekey");
+  auto joinProbe = std::make_shared<normal::pushdown::join::HashJoinProbe>("join-probe",
+                                                                           normal::pushdown::join::JoinPredicate::create("d_datekey","lo_orderdate"));
+
+  // project
+  auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
+  projectExpressions->emplace_back(col("lo_orderdate"));
+  projectExpressions->emplace_back(col("lo_quantity"));
+  projectExpressions->emplace_back(col("d_weeknuminyear"));
+  auto project = std::make_shared<normal::pushdown::Project>("project", *projectExpressions);
+
+  // collate
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
+
+  // wire up
+  auto mgr = std::make_shared<OperatorManager>();
+
+  dateScan->produce(dateShuffle);
+  dateShuffle->consume(dateScan);
+
+  lineorderScan->produce(lineorderShuffle);
+  lineorderShuffle->consume(lineorderScan);
+
+  dateShuffle->produce(joinBuild);
+  joinBuild->consume(dateShuffle);
+
+  lineorderShuffle->produce(joinProbe);
+  joinProbe->consume(lineorderShuffle);
+
+  joinBuild->produce(joinProbe);
+  joinProbe->consume(joinBuild);
+
+  joinProbe->produce(project);
+  project->consume(joinProbe);
+
+  project->produce(collate);
+  collate->consume(project);
+
+  mgr->put(dateScan);
+  mgr->put(lineorderScan);
+  mgr->put(dateShuffle);
+  mgr->put(lineorderShuffle);
+  mgr->put(joinBuild);
+  mgr->put(joinProbe);
+  mgr->put(project);
   mgr->put(collate);
 
   // execute
