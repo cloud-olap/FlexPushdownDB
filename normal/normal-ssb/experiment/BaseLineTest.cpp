@@ -68,12 +68,15 @@ auto executeSql(normal::sql::Interpreter i, const std::string &sql) {
   return tupleSet;
 }
 
-TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
-  spdlog::set_level(spdlog::level::info);
+TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
+//  spdlog::set_level(spdlog::level::info);
 
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {
-          "query1.1.sql", "query1.2.sql", "query1.3.sql"
+          "query1.1.sql", "query1.2.sql", "query1.3.sql",
+          "query2.1.sql", "query2.2.sql", "query2.3.sql",
+          "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
+          "query4.1.sql", "query4.2.sql", "query4.3.sql"
   };
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");

@@ -34,14 +34,14 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> AggregateL
   }
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();
-  for (auto index = 0; index < numConcurrentUnits; index++) {
+  for (auto index = 0; index < numConcurrentUnits_; index++) {
     // FIXME: Defaulting to name -> aggregation
     auto aggregate = std::make_shared<normal::pushdown::Aggregate>(fmt::format("aggregate-{}", index), expressions);
     operators->emplace_back(aggregate);
   }
 
   // add aggregate reduce if needed
-  if (numConcurrentUnits > 1) {
+  if (numConcurrentUnits_ > 1) {
     auto reduceExpressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
     for (const auto &function: *functions_) {
       reduceExpressions->emplace_back(function->toExecutorReduceFunction());
@@ -64,7 +64,7 @@ const std::shared_ptr<LogicalOperator> &AggregateLogicalOperator::getProducer() 
 }
 
 void AggregateLogicalOperator::setNumConcurrentUnits(int numConcurrentUnits) {
-  AggregateLogicalOperator::numConcurrentUnits = numConcurrentUnits;
+  numConcurrentUnits_ = numConcurrentUnits;
 }
 
 std::shared_ptr<normal::expression::gandiva::Expression> normal::plan::operator_::castToFloat64Type(

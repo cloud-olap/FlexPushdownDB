@@ -338,13 +338,16 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       groupColumnNames->emplace_back(groupColumnName);
       // group may have extra projectedColumns
       auto tableName = miniCatalogue->findTableOfColumn(groupColumnName);
-      auto projectedColumnNames = projectedColumnNames_map->find(tableName)->second;
-      if (std::find(projectedColumnNames->begin(), projectedColumnNames->end(), groupColumnName) == projectedColumnNames->end()) {
-        projectedColumnNames->emplace_back(groupColumnName);
-      }
+      auto projectedColumnNames = projectedColumnNames_map->find(tableName)->second->emplace_back(groupColumnName);
     }
   }
 
+  // deduplicate projected columns in projectedColumnNames_map
+  for (const auto &projectedColumnNames_pair: *projectedColumnNames_map) {
+    auto projectedColumnNameVector = projectedColumnNames_pair.second;
+    auto projectedColumnNameSet = std::make_shared<std::set<std::string>>(projectedColumnNameVector->begin(), projectedColumnNameVector->end());
+    projectedColumnNameVector->assign(projectedColumnNameSet->begin(), projectedColumnNameSet->end());
+  }
 
   // set filter predicates and projected columns for scan nodes
   for (const auto &scanNode_pair: *scanNodes_map) {
@@ -434,6 +437,10 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
         nodes->emplace_back(groupNode);
         finalConsumerNode->setConsumer(groupNode);
         groupNode->setConsumer(collate);
+        // check if an extra project is needed after the group by
+        if (projectExpressions->size() < groupColumnNames->size()) {
+          // TODO: not implemented currently, because not involved in ssb queries
+        }
       } else {
         // aggregation
         auto aggregateNode = std::make_shared<normal::plan::operator_::AggregateLogicalOperator>(aggregateFunctions,

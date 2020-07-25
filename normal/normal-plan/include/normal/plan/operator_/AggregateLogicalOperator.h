@@ -34,7 +34,7 @@ private:
 
   std::shared_ptr<LogicalOperator> producer_;
 
-  int numConcurrentUnits;
+  int numConcurrentUnits_;
 
 };
 

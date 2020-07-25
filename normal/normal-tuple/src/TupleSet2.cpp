@@ -160,8 +160,13 @@ std::string TupleSet2::showString(TupleSetShowOptions options) {
 
 	  // Column types
 	  for (const auto &field: table_.value()->schema()->fields()) {
-		ss << std::left << std::setw(columnWidth) << std::setfill(' ');
-		ss << "| " + field->type()->ToString();
+      ss << std::left << std::setw(columnWidth) << std::setfill(' ');
+      auto fieldType = field->type();
+      if (fieldType) {
+        ss << "| " + field->type()->ToString();
+      } else {
+        ss << "| unknown";
+      }
 	  }
 	  ss << std::endl;
 

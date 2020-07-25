@@ -9,6 +9,8 @@
 #include <normal/plan/operator_/JoinLogicalOperator.h>
 #include <normal/pushdown/shuffle/Shuffle.h>
 #include <normal/plan/operator_/AggregateLogicalOperator.h>
+#include <normal/plan/operator_/ProjectLogicalOperator.h>
+#include <normal/plan/operator_/GroupLogicalOperator.h>
 
 using namespace normal::plan;
 
@@ -79,11 +81,42 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
   }
 
   else if (logicalProducer->type()->is(operator_::type::OperatorTypes::groupOperatorType())) {
+    // get group physical operators
+    std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> groupPhysicalOperators;
+    auto groupPhysicalOperators_pair = logicalToPhysical_map->find(logicalProducer);
+    if (groupPhysicalOperators_pair == logicalToPhysical_map->end()) {
+      auto groupLogicalOperator = std::static_pointer_cast<normal::plan::operator_::GroupLogicalOperator>(logicalProducer);
+      auto producerOfGroupLogicalOperator = groupLogicalOperator->getProducer();
+      wireUp(producerOfGroupLogicalOperator, logicalProducer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
+      groupPhysicalOperators = logicalToPhysical_map->find(logicalProducer)->second;
+    } else {
+      groupPhysicalOperators = groupPhysicalOperators_pair->second;
+    }
 
+    // the single group or groupReduce is stream-out operator
+    if (groupPhysicalOperators->size() == 1) {
+      streamOutPhysicalOperators = groupPhysicalOperators;
+    } else {
+      streamOutPhysicalOperators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+      streamOutPhysicalOperators->emplace_back(groupPhysicalOperators->back());
+    }
   }
 
   else if (logicalProducer->type()->is(operator_::type::OperatorTypes::projectOperatorType())) {
+    // get project physical operators
+    std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> projectPhysicalOperators;
+    auto projectPhysicalOperators_pair = logicalToPhysical_map->find(logicalProducer);
+    if (projectPhysicalOperators_pair == logicalToPhysical_map->end()) {
+      auto projectLogicalOperator = std::static_pointer_cast<normal::plan::operator_::ProjectLogicalOperator>(logicalProducer);
+      auto producerOfProjectLogicalOperator = projectLogicalOperator->getProducer();
+      wireUp(producerOfProjectLogicalOperator, logicalProducer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
+      projectPhysicalOperators = logicalToPhysical_map->find(logicalProducer)->second;
+    } else {
+      projectPhysicalOperators = projectPhysicalOperators_pair->second;
+    }
 
+    // all project physical operators are stream-out operators
+    streamOutPhysicalOperators = projectPhysicalOperators;
   }
 
   else {
@@ -152,22 +185,61 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
       aggregatePhysicalOperators = aggregatePhysicalOperators_pair->second;
     }
 
-    // wire up to all except aggregateReduce
-    for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
-      for (auto index = 0; index < numConcurrentUnits; index++) {
-        auto streamInPhysicalOperator = aggregatePhysicalOperators->at(index);
-        streamOutPhysicalOperator->produce(streamInPhysicalOperator);
-        streamInPhysicalOperator->consume(streamOutPhysicalOperator);
-      }
+    // One-to-one wire up for all except aggregateReduce
+    for (auto index = 0; index < numConcurrentUnits; index++) {
+      auto streamOutPhysicalOperator = streamOutPhysicalOperators->at(index);
+      auto streamInPhysicalOperator = aggregatePhysicalOperators->at(index);
+      streamOutPhysicalOperator->produce(streamInPhysicalOperator);
+      streamInPhysicalOperator->consume(streamOutPhysicalOperator);
     }
   }
 
   else if (logicalConsumer->type()->is(operator_::type::OperatorTypes::groupOperatorType())) {
+    // get group physical operators
+    auto numConcurrentUnits = streamOutPhysicalOperators->size();
+    std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> groupPhysicalOperators;
+    auto groupPhysicalOperators_pair = logicalToPhysical_map->find(logicalConsumer);
+    if (groupPhysicalOperators_pair == logicalToPhysical_map->end()) {
+      auto groupLogicalOperator = std::static_pointer_cast<normal::plan::operator_::GroupLogicalOperator>(logicalConsumer);
+      groupLogicalOperator->setNumConcurrentUnits(numConcurrentUnits);
+      groupPhysicalOperators = groupLogicalOperator->toOperators();
+      logicalToPhysical_map->insert({groupLogicalOperator, groupPhysicalOperators});
+      allPhysicalOperators->insert(allPhysicalOperators->end(), groupPhysicalOperators->begin(), groupPhysicalOperators->end());
+    } else {
+      groupPhysicalOperators = groupPhysicalOperators_pair->second;
+    }
 
+    // One-to-one wire up for all except groupReduce
+    for (auto index = 0; index < numConcurrentUnits; index++) {
+      auto streamOutPhysicalOperator = streamOutPhysicalOperators->at(index);
+      auto streamInPhysicalOperator = groupPhysicalOperators->at(index);
+      streamOutPhysicalOperator->produce(streamInPhysicalOperator);
+      streamInPhysicalOperator->consume(streamOutPhysicalOperator);
+    }
   }
 
   else if (logicalConsumer->type()->is(operator_::type::OperatorTypes::projectOperatorType())) {
+    // get project physical operators
+    auto numConcurrentUnits = streamOutPhysicalOperators->size();
+    std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> projectPhysicalOperators;
+    auto projectPhysicalOperators_pair = logicalToPhysical_map->find(logicalConsumer);
+    if (projectPhysicalOperators_pair == logicalToPhysical_map->end()) {
+      auto projectLogicalOperator = std::static_pointer_cast<normal::plan::operator_::ProjectLogicalOperator>(logicalConsumer);
+      projectLogicalOperator->setNumConcurrentUnits(numConcurrentUnits);
+      projectPhysicalOperators = projectLogicalOperator->toOperators();
+      logicalToPhysical_map->insert({projectLogicalOperator, projectPhysicalOperators});
+      allPhysicalOperators->insert(allPhysicalOperators->end(), projectPhysicalOperators->begin(), projectPhysicalOperators->end());
+    } else {
+      projectPhysicalOperators = projectPhysicalOperators_pair->second;
+    }
 
+    // One-to-one wire up for all
+    for (auto index = 0; index < numConcurrentUnits; index++) {
+      auto streamOutPhysicalOperator = streamOutPhysicalOperators->at(index);
+      auto streamInPhysicalOperator = projectPhysicalOperators->at(index);
+      streamOutPhysicalOperator->produce(streamInPhysicalOperator);
+      streamInPhysicalOperator->consume(streamOutPhysicalOperator);
+    }
   }
 
   else if (logicalConsumer->type()->is(operator_::type::OperatorTypes::collateOperatorType())){

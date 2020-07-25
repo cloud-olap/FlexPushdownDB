@@ -31,7 +31,7 @@ private:
   std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> projectExpression_;
 
   std::shared_ptr<LogicalOperator> producer_;
-  int numConcurrentUnits;
+  int numConcurrentUnits_;
 };
 
 }

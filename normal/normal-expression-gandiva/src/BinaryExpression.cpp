@@ -38,7 +38,7 @@ std::string BinaryExpression::genAliasForComparison(std::string compOp) {
     } else if(rightAlias_removePrefixFloat != nullptr) {
       return "cast(" + leftAlias + " as float) " + compOp + " " + *rightAlias_removePrefixFloat;
     } else {
-      return leftAlias + " = " + rightAlias;
+      return leftAlias + compOp + rightAlias;
     }
   } else if (leftAlias_removePrefixInt != nullptr) {
     return *leftAlias_removePrefixInt + " " + compOp + " cast(" + rightAlias + " as int)";

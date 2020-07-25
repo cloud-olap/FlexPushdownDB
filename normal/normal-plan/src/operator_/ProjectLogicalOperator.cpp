@@ -25,7 +25,7 @@ const std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::E
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> ProjectLogicalOperator::toOperators() {
   auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();
 
-  for (auto index = 0; index < numConcurrentUnits; index++) {
+  for (auto index = 0; index < numConcurrentUnits_; index++) {
     // FIXME: Defaulting to name -> proj
     auto project = std::make_shared<normal::pushdown::Project>(fmt::format("proj-{}", index), *expressions_);
     operators->emplace_back(project);
@@ -39,5 +39,5 @@ const std::shared_ptr<LogicalOperator> &ProjectLogicalOperator::getProducer() co
 }
 
 void ProjectLogicalOperator::setNumConcurrentUnits(int numConcurrentUnits) {
-  ProjectLogicalOperator::numConcurrentUnits = numConcurrentUnits;
+  numConcurrentUnits_ = numConcurrentUnits;
 }

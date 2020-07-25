@@ -40,12 +40,12 @@ TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
   auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
   auto numBytes = partitionMap.find(s3Object)->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  std::vector<std::string> columns = {"p_partkey"};
+  std::vector<std::string> columns = {"p_brand1", "p_partkey"};
   auto lineorderScan = normal::pushdown::S3SelectScan::make(
           "SimpleScan",
           "s3filter",
           s3Object,
-          fmt::format("select p_partkey from s3Object where (p_mfgr = 'MFGR#1' or p_mfgr = 'MFGR#2')"),
+          fmt::format("select p_brand1, p_partkey from s3Object where (p_brand1 = 'MFGR#2221' and p_brand1 = 'MFGR#2228')"),
           columns,
           scanRanges[0].first,
           scanRanges[0].second,
@@ -560,7 +560,7 @@ TEST_CASE ("Join_Three_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Finish");
 }
 
-TEST_CASE ("Join_Two_Group" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("Join_Two_Group" * doctest::skip(true || SKIP_SUITE)) {
   normal::pushdown::AWSClient client;
   client.init();
 

@@ -9,7 +9,7 @@ from customer,
 where lo_custkey = c_custkey
   and lo_suppkey = s_suppkey
   and lo_orderdate = d_datekey
-  and c_nation = 'UNITED STATES'
+  and c_nation = 'CHINA'
   and s_nation = 'UNITED STATES'
   and d_year >= 1992
   and d_year <= 1997
