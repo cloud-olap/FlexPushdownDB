@@ -49,9 +49,9 @@ void Shuffle::onTuple(const TupleMessage &message) {
 
   // Get the tuple set
   auto &&tupleSet = TupleSet2::create(message.tuples());
-  if(tupleSet->numRows() == 0){
-	return;
-  }
+//  if(tupleSet->numRows() == 0){
+//	return;
+//  }
 
   // Check there are consumers
   if(consumers_.size() == 0){

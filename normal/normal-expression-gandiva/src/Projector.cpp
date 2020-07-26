@@ -94,6 +94,23 @@ std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
 	res = reader.ReadNext(&batch);
   }
 
+  // if no tuples
+  if (!resultTuples) {
+    auto outputs = std::make_shared<arrow::ArrayVector>();
+    auto outputSchema = getResultSchema();
+    // Use StringType for all empty columns
+    for (int col_id = 0; col_id < outputSchema->fields().size(); col_id++) {
+      auto builder = std::make_shared<::arrow::StringBuilder>();
+      std::shared_ptr<arrow::Array> array;
+      auto status = builder->Finish(&array);
+      if (!status.ok()) {
+        throw std::runtime_error(status.message());
+      }
+      outputs->emplace_back(array);
+    }
+    resultTuples = TupleSet::make(getResultSchema(), *outputs);
+  }
+
   return resultTuples;
 
 }

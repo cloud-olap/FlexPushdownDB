@@ -405,6 +405,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
           auto rightScanNode = scanNodes_map->find("lineorder")->second;
           auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(
                   leftColumnName, rightColumnName, leftScanNode, rightScanNode);
+          joinNode->setName(leftColumnName + ", " + rightColumnName);
           nodes->emplace_back(joinNode);
           leftScanNode->setConsumer(joinNode);
           rightScanNode->setConsumer(joinNode);
@@ -415,6 +416,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
           auto rightScanNode = scanNodes_map->find(joinTable)->second;
           auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(
                   leftColumnName, rightColumnName, lastJoinNode, rightScanNode);
+          joinNode->setName(leftColumnName + ", " + rightColumnName);
           nodes->emplace_back(joinNode);
           lastJoinNode->setConsumer(joinNode);
           rightScanNode->setConsumer(joinNode);
@@ -434,6 +436,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
         // group by
         auto groupNode = std::make_shared<normal::plan::operator_::GroupLogicalOperator>(
                 groupColumnNames, aggregateFunctions, projectExpressions, finalConsumerNode);
+        groupNode->setName("group");
         nodes->emplace_back(groupNode);
         finalConsumerNode->setConsumer(groupNode);
         groupNode->setConsumer(collate);
@@ -445,6 +448,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
         // aggregation
         auto aggregateNode = std::make_shared<normal::plan::operator_::AggregateLogicalOperator>(aggregateFunctions,
                                                                                                  finalConsumerNode);
+        aggregateNode->setName("aggregate");
         nodes->emplace_back(aggregateNode);
         finalConsumerNode->setConsumer(aggregateNode);
         aggregateNode->setConsumer(collate);
@@ -453,6 +457,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       // project
       auto projectNode = std::make_shared<normal::plan::operator_::ProjectLogicalOperator>(projectExpressions,
                                                                                            finalConsumerNode);
+      projectNode->setName("project");
       nodes->emplace_back(projectNode);
       finalConsumerNode->setConsumer(projectNode);
       projectNode->setConsumer(collate);
@@ -527,6 +532,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitTable_or_subquery(normal::sql:
   }
   else{
 	  auto scanOp = catalogueEntryExpected.value()->toLogicalOperator();
+	  scanOp->setName(tableName);
     auto scanOp_pair = std::pair<std::string, std::shared_ptr<normal::plan::operator_::ScanLogicalOperator>>({
       tableName, scanOp
     });

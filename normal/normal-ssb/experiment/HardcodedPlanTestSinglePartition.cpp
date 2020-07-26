@@ -29,23 +29,25 @@ using namespace normal::ssb;
 using namespace normal::pushdown;
 using namespace normal::expression::gandiva;
 
+TEST_SUITE ("Hardcoded-plan-test-single-partition" * doctest::skip(SKIP_SUITE)) {
+
 TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
   normal::pushdown::AWSClient client;
   client.init();
 
   // operators
   auto s3Bucket = "s3filter";
-  auto s3Object = "ssb-sf0.01/part.tbl";
+  auto s3Object = "ssb-sf0.01/date.tbl";
   std::vector<std::string> s3Objects = {s3Object};
   auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
   auto numBytes = partitionMap.find(s3Object)->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  std::vector<std::string> columns = {"p_brand1", "p_partkey"};
+  std::vector<std::string> columns = {"d_datekey", "d_year"};
   auto lineorderScan = normal::pushdown::S3SelectScan::make(
           "SimpleScan",
           "s3filter",
           s3Object,
-          fmt::format("select p_brand1, p_partkey from s3Object where (p_brand1 = 'MFGR#2221' and p_brand1 = 'MFGR#2228')"),
+          fmt::format("select d_datekey, d_year from s3Object where cast(d_year as int) = 1993"),
           columns,
           scanRanges[0].first,
           scanRanges[0].second,
@@ -68,6 +70,9 @@ TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
   auto tuples = std::static_pointer_cast<normal::pushdown::Collate>(mgr->getOperator("collate"))->tuples();
   mgr->stop();
 
+  auto tupleSet = TupleSet2::create(tuples);
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
   SPDLOG_INFO("Finish");
 }
 
@@ -104,7 +109,7 @@ TEST_CASE ("Join_Two" * doctest::skip(true || SKIP_SUITE)) {
           "s3filter/ssb-sf0.01/part.tbl",
           "s3filter",
           "ssb-sf0.01/part.tbl",
-          fmt::format("select p_partkey, p_name from s3Object where (p_mfgr = 'MFGR#1' or p_mfgr = 'MFGR#2')"),
+          fmt::format("select p_partkey, p_name from s3Object where (p_mfgr = 'MFGR#1' and p_mfgr = 'MFGR#2')"),
           columns,
           scanRanges[0].first,
           scanRanges[0].second,
@@ -116,9 +121,9 @@ TEST_CASE ("Join_Two" * doctest::skip(true || SKIP_SUITE)) {
   auto lineorderShuffle = normal::pushdown::shuffle::Shuffle::make("lineorderShuffle", "lo_partkey");
 
   // join
-  auto joinBuild = std::make_shared<normal::pushdown::join::HashJoinBuild>("join-build", "p_partkey");
+  auto joinBuild = std::make_shared<normal::pushdown::join::HashJoinBuild>("join-build", "lo_partkey");
   auto joinProbe = std::make_shared<normal::pushdown::join::HashJoinProbe>("join-probe-{}",
-                                                                           normal::pushdown::join::JoinPredicate::create("p_partkey","lo_partkey"));
+                                                                           normal::pushdown::join::JoinPredicate::create("lo_partkey","p_partkey"));
 
   // collate
   auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
@@ -132,11 +137,11 @@ TEST_CASE ("Join_Two" * doctest::skip(true || SKIP_SUITE)) {
   lineorderScan->produce(lineorderShuffle);
   lineorderShuffle->produce(lineorderScan);
 
-  partShuffle->produce(joinBuild);
-  joinBuild->consume(partShuffle);
+  lineorderShuffle->produce(joinBuild);
+  joinBuild->consume(lineorderShuffle);
 
-  lineorderShuffle->produce(joinProbe);
-  joinProbe->consume(lineorderShuffle);
+  partShuffle->produce(joinProbe);
+  joinProbe->consume(partShuffle);
 
   joinBuild->produce(joinProbe);
   joinProbe->consume(joinBuild);
@@ -773,4 +778,6 @@ TEST_CASE ("Join_Two_Project" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Metrics:\n{}", mgr->showMetrics());
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
   SPDLOG_INFO("Finish");
+}
+
 }

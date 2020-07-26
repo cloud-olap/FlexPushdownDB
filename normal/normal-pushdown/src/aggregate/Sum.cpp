@@ -89,10 +89,13 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::Aggregat
   auto currentSum = result->get(SUM_RESULT_KEY, arrow::MakeScalar(0.0));
 
   auto currentSumWrapped = ScalarHelperBuilder::make(currentSum).value();
-  auto batchSumWrapped = ScalarHelperBuilder::make(batchSum).value();
 
-  // FIXME: Implement this operator properly
-  currentSumWrapped->operator+=(batchSumWrapped);
+  if (batchSum) {
+    auto batchSumWrapped = ScalarHelperBuilder::make(batchSum).value();
+
+    // FIXME: Implement this operator properly
+    currentSumWrapped->operator+=(batchSumWrapped);
+  }
 
   // Store the current running sum away again for the next batch of tuples
   result->put(SUM_RESULT_KEY, currentSumWrapped->asScalar());

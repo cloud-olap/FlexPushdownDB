@@ -19,6 +19,8 @@ std::string OperatorType::toString() {
   case OperatorTypeId::Project: return "project";
   case OperatorTypeId::Aggregate: return "aggregate";
   case OperatorTypeId::Collate: return "collate";
+  case OperatorTypeId::Join: return "join";
+  case OperatorTypeId::Group: return "group";
   default:
     /*
      * Shouldn't occur, but we'll throw a serious-ish exception if it ever does

@@ -55,8 +55,8 @@ auto executeSql(normal::sql::Interpreter i, const std::string &sql) {
   i.clearOperatorManager();
   i.parse(sql);
 
-//  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
-//  TestUtil::writeExecutionPlan(*i.getOperatorManager());
+  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
+  TestUtil::writeExecutionPlan(*i.getOperatorManager());
 
   auto tuples = execute(i);
 
@@ -69,7 +69,7 @@ auto executeSql(normal::sql::Interpreter i, const std::string &sql) {
 }
 
 TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
-//  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::info);
 
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {

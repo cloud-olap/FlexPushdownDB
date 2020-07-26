@@ -233,7 +233,7 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
 	}
   }
 
-  SPDLOG_DEBUG("Reading From S3");
+  SPDLOG_DEBUG(fmt::format("Reading From S3: {}/{}", s3Bucket_, s3Object_));
 
   // Read the columns not present in the cache
   auto result = s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
@@ -265,8 +265,20 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   }
 
   std::vector<std::shared_ptr<Column>> readColumns;
-  for(const auto& arrays: columns_){
-	readColumns.emplace_back(Column::make(arrays->first, arrays->second));
+  for(int col_id = 0; col_id < columns_.size(); col_id++){
+    auto& arrays = columns_.at(col_id);
+    if (arrays) {
+      readColumns.emplace_back(Column::make(arrays->first, arrays->second));
+    } else {
+      // Use StringType for all empty columns
+      auto builder = std::make_shared<::arrow::StringBuilder>();
+      std::shared_ptr<arrow::Array> array;
+      auto status = builder->Finish(&array);
+      if(!status.ok()){
+        throw std::runtime_error(status.message());
+      }
+      readColumns.emplace_back(Column::make(columnNames_.at(cachedColumns.size() + col_id), array));
+    }
   }
 
   auto readTupleSet = TupleSet2::make(readColumns);
@@ -289,7 +301,7 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
 	  message = std::make_shared<TupleMessage>(completeTupleSet->toTupleSetV1(), this->name());
   ctx()->tell(message);
 
-  SPDLOG_DEBUG("Finished Reading");
+  SPDLOG_DEBUG(fmt::format("Finished Reading: {}/{}", s3Bucket_, s3Object_));
 
   ctx()->notifyComplete();
 }
