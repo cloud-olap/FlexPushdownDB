@@ -31,6 +31,8 @@ public:
 
 private:
 
+  void Merge();
+
   std::optional<LocalOperatorDirectoryEntry> leftProducer_  = std::nullopt;
   std::optional<LocalOperatorDirectoryEntry> rightProducer_  = std::nullopt;
 

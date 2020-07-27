@@ -47,9 +47,39 @@ void MergeOperator::onStart() {
 			   rightProducer_->name());
 }
 
+void MergeOperator::Merge() {
+  // Check if we have merge-able tuple sets
+  while (!leftTupleSets_.empty() && !rightTupleSets_.empty()) {
+
+    // Take next left and right tuplesets from the queues
+    auto leftTupleSet = leftTupleSets_.front();
+    auto rightTupleSet = rightTupleSets_.front();
+
+    // Merge tuplesets
+    auto expectedMergedTupleSet = MergeKernel::merge(leftTupleSet, rightTupleSet);
+
+    if (!expectedMergedTupleSet.has_value()) {
+      throw std::runtime_error(expectedMergedTupleSet.error());
+    } else {
+      // Send merged tupleset
+      auto mergedTupleSet = expectedMergedTupleSet.value();
+      std::shared_ptr<core::message::Message>
+              tupleMessage = std::make_shared<core::message::TupleMessage>(mergedTupleSet->toTupleSetV1(), name());
+      ctx()->tell(tupleMessage);
+    }
+
+    // Pop the processed tuple sets from the queues
+    leftTupleSets_.pop_front();
+    rightTupleSets_.pop_front();
+  }
+}
+
 void MergeOperator::onComplete(const CompleteMessage &) {
   if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
-	ctx()->notifyComplete();
+    // Merge if still has tuples in queues
+    Merge();
+    // Notify
+	  ctx()->notifyComplete();
   }
 }
 
@@ -67,29 +97,6 @@ void MergeOperator::onTuple(const TupleMessage &message) {
 	throw std::runtime_error(fmt::format("Unrecognized producer {}", message.sender()));
   }
 
-  // Check if we have merge-able tuple sets
-  while (!leftTupleSets_.empty() && !rightTupleSets_.empty()) {
-
-    // Take next left and right tuplesets from the queues
-	auto leftTupleSet = leftTupleSets_.front();
-	auto rightTupleSet = rightTupleSets_.front();
-
-	// Merge tuplesets
-	auto expectedMergedTupleSet = MergeKernel::merge(leftTupleSet, rightTupleSet);
-
-	if (!expectedMergedTupleSet.has_value()) {
-	  throw std::runtime_error(expectedMergedTupleSet.error());
-	} else {
-	  // Send merged tupleset
-	  auto mergedTupleSet = expectedMergedTupleSet.value();
-	  std::shared_ptr<core::message::Message>
-		  tupleMessage = std::make_shared<core::message::TupleMessage>(mergedTupleSet->toTupleSetV1(), name());
-	  ctx()->tell(tupleMessage);
-	}
-
-	// Pop the processed tuple sets from the queues
-	leftTupleSets_.pop_front();
-	rightTupleSets_.pop_front();
-  }
-
+  // Merge
+  Merge();
 }
