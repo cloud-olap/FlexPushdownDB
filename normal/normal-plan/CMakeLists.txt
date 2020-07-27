@@ -29,7 +29,12 @@ add_library(normal-plan STATIC
         src/operator_/type/CollateOperatorType.cpp include/normal/plan/operator_/type/CollateOperatorType.h
         src/operator_/type/JoinOperatorType.cpp include/normal/plan/operator_/type/JoinOperatorType.h
         src/operator_/GroupLogicalOperator.cpp include/normal/plan/operator_/GroupLogicalOperator.h
-        src/operator_/type/GroupOperatorType.cpp include/normal/plan/operator_/type/GroupOperatorType.h)
+        src/operator_/type/GroupOperatorType.cpp include/normal/plan/operator_/type/GroupOperatorType.h
+        include/normal/plan/mode/ModeId.h
+        src/mode/Mode.cpp include/normal/plan/mode/Mode.h
+        src/mode/FullPushdownMode.cpp include/normal/plan/mode/FullPushdownMode.h
+        src/mode/PullupCachingMode.cpp include/normal/plan/mode/PullupCachingMode.h
+        src/mode/HybridCachingMode.cpp include/normal/plan/mode/HybridCachingMode.h src/mode/Modes.cpp include/normal/plan/mode/Modes.h)
 
 target_include_directories(normal-plan PUBLIC include)
 

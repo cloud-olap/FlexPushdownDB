@@ -57,13 +57,15 @@ void Shuffle::onTuple(const TupleMessage &message) {
   if(consumers_.size() == 0){
 	return;
   }
-
+  auto startTime = std::chrono::steady_clock::now();
   // Shuffle the tuple set
   auto expectedShuffledTupleSets = Shuffler::shuffle(columnName_, consumers_.size(), tupleSet);
   if(!expectedShuffledTupleSets.has_value()){
     throw std::runtime_error(expectedShuffledTupleSets.error());
   }
   auto shuffledTupleSets = expectedShuffledTupleSets.value();
+  auto stopTime = std::chrono::steady_clock::now();
+  SPDLOG_INFO("shuffle time: {}, size: {}", std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count(), tupleSet->numRows());
 
   // Send the shuffled tuple sets to consumers
   size_t partitionIndex = 0;

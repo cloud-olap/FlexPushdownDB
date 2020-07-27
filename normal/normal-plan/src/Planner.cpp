@@ -139,33 +139,49 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
 
     // check logicalComsumer is left consumer or right consumer
     if (logicalProducer == joinLogicalOperator->getLeftProducer()) {
-      // construct a shuffle physical operator for each stream-out operator
-      auto shuffles = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::shuffle::Shuffle>>>();
-      for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
-        auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
-                                                                leftColumnName);
-        // wire up
-        streamOutPhysicalOperator->produce(shuffle);
-        shuffle->consume(streamOutPhysicalOperator);
-        for (const auto &joinBuild: *joinBuilds) {
-          shuffle->produce(joinBuild);
-          joinBuild->consume(shuffle);
+      // if more than 1 join build/probe, need shuffle. Construct a shuffle physical operator for each stream-out operator
+      if (joinBuilds->size() > 1) {
+        for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+          auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
+                                                                  leftColumnName);
+          // wire up
+          streamOutPhysicalOperator->produce(shuffle);
+          shuffle->consume(streamOutPhysicalOperator);
+          for (const auto &joinBuild: *joinBuilds) {
+            shuffle->produce(joinBuild);
+            joinBuild->consume(shuffle);
+          }
+          allPhysicalOperators->emplace_back(shuffle);
         }
-        allPhysicalOperators->emplace_back(shuffle);
+      } else {
+        auto joinBuild = joinBuilds->at(0);
+        for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+          streamOutPhysicalOperator->produce(joinBuild);
+          joinBuild->consume(streamOutPhysicalOperator);
+        }
       }
-    } else {
-      // construct a shuffle physical operator for each stream-out operator
-      for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
-        auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
-                                                                rightColumnName);
-        // wire up
-        streamOutPhysicalOperator->produce(shuffle);
-        shuffle->consume(streamOutPhysicalOperator);
-        for (const auto &joinProbe: *joinProbes) {
-          shuffle->produce(joinProbe);
-          joinProbe->consume(shuffle);
+    }
+    else {
+      // if more than 1 join build/probe, need shuffle. Construct a shuffle physical operator for each stream-out operator
+      if (joinProbes->size() > 1) {
+        for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+          auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
+                                                                  rightColumnName);
+          // wire up
+          streamOutPhysicalOperator->produce(shuffle);
+          shuffle->consume(streamOutPhysicalOperator);
+          for (const auto &joinProbe: *joinProbes) {
+            shuffle->produce(joinProbe);
+            joinProbe->consume(shuffle);
+          }
+          allPhysicalOperators->emplace_back(shuffle);
         }
-        allPhysicalOperators->emplace_back(shuffle);
+      } else {
+        auto joinProbe = joinProbes->at(0);
+        for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
+          streamOutPhysicalOperator->produce(joinProbe);
+          joinProbe->consume(streamOutPhysicalOperator);
+        }
       }
     }
   }

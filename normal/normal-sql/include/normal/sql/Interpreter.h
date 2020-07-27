@@ -12,13 +12,14 @@
 #include <normal/connector/Catalogue.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/plan/LogicalPlan.h>
+#include <normal/plan/mode/Mode.h>
 
 namespace normal::sql {
 
 class Interpreter{
 
 public:
-  Interpreter();
+  Interpreter(std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
   [[nodiscard]] const std::shared_ptr<core::OperatorManager> &getOperatorManager() const;
   void parse(const std::string& sql);
   void put(const std::shared_ptr<connector::Catalogue> &catalogue);
@@ -29,6 +30,8 @@ private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>> catalogues_;
   std::shared_ptr<plan::LogicalPlan> logicalPlan_;
   std::shared_ptr<core::OperatorManager> operatorManager_;
+
+  std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
 
 };
 

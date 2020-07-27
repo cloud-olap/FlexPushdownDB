@@ -149,7 +149,13 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
       fields.emplace_back(field);
     }
     for (const auto &function: *aggregateFunctions_) {
-      std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), function->returnType());
+      auto returnType = function->returnType();
+      if (!returnType) {
+        // FIXME: if no tuple to group by, the return type is missing, here use DoubleType, but not a good way
+        auto doubleScalar = ::arrow::MakeScalar(1.01);
+        returnType = doubleScalar->type;
+      }
+      std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), returnType);
       fields.emplace_back(field);
     }
     auto schema = std::make_shared<Schema>(::arrow::schema(fields));

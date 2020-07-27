@@ -30,7 +30,7 @@ using namespace normal::expression::gandiva;
 using namespace std::experimental;
 using namespace normal::ssb;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 TEST_SUITE ("aggregate" * doctest::skip(SKIP_SUITE)) {
 

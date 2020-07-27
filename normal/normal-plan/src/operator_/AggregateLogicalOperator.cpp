@@ -28,13 +28,14 @@ AggregateLogicalOperator::AggregateLogicalOperator(
 
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> AggregateLogicalOperator::toOperators() {
-  auto expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  for (const auto &function: *functions_) {
-    expressions->emplace_back(function->toExecutorFunction());
-  }
-
   auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();
+
   for (auto index = 0; index < numConcurrentUnits_; index++) {
+    auto expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
+    for (const auto &function: *functions_) {
+      expressions->emplace_back(function->toExecutorFunction());
+    }
+
     // FIXME: Defaulting to name -> aggregation
     auto aggregate = std::make_shared<normal::pushdown::Aggregate>(fmt::format("aggregate-{}", index), expressions);
     operators->emplace_back(aggregate);

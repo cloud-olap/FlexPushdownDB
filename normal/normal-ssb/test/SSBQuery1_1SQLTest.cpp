@@ -16,6 +16,7 @@
 #include <normal/tuple/TupleSet2.h>
 
 #include "normal/ssb/query1_1/SQL.h"
+#include <normal/plan/mode/Modes.h>
 
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
@@ -82,7 +83,7 @@ std::shared_ptr<TupleSet2> executeSQLTest(const std::string &sql) {
 
   SPDLOG_INFO("SQL:\n{}", sql);
 
-  normal::sql::Interpreter i;
+  normal::sql::Interpreter i(normal::plan::operator_::mode::Modes::fullPushdownMode());
 
   configureLocalConnector(i);
   configureS3Connector(i);

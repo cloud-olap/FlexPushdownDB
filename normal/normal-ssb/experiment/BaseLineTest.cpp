@@ -10,6 +10,7 @@
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
 #include <normal/pushdown/Util.h>
+#include <normal/plan/mode/Modes.h>
 #include "ExperimentUtil.h"
 
 #define SKIP_SUITE false
@@ -71,6 +72,9 @@ auto executeSql(normal::sql::Interpreter i, const std::string &sql) {
 TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
+  // choose mode: FullPushDown
+  auto mode = normal::plan::operator_::mode::Modes::fullPushdownMode();
+
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {
           "query1.1.sql", "query1.2.sql", "query1.3.sql",
@@ -84,7 +88,7 @@ TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   std::string dir_prefix = "ssb-sf0.01/";
 
   // configure interpreter
-  normal::sql::Interpreter i;
+  normal::sql::Interpreter i(mode);
   configureS3Connector(i, bucket_name, dir_prefix);
 
   // execute

@@ -14,7 +14,8 @@
 
 using namespace normal::sql;
 
-Interpreter::Interpreter() :
+Interpreter::Interpreter(std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
+    mode_(mode),
     catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
     operatorManager_(std::make_shared<normal::core::OperatorManager>())
 {}
@@ -42,7 +43,19 @@ void Interpreter::parse(const std::string &sql) {
   logicalPlan_ = logicalPlans->at(0);
 
   // Create physical plan
-  auto physicalPlan = plan::Planner::generateFullPushdown(*logicalPlan_);
+  std::shared_ptr<plan::PhysicalPlan> physicalPlan;
+  switch (mode_->id()) {
+    case plan::operator_::mode::FullPushdown:
+      physicalPlan = plan::Planner::generateFullPushdown(*logicalPlan_);
+      break;
+    case plan::operator_::mode::PullupCaching:
+      physicalPlan = plan::Planner::generatePullupCaching(*logicalPlan_);
+      break;
+    case plan::operator_::mode::HybridCaching:
+      throw std::runtime_error("Hybrid caching not implemented yet");
+    default:
+      throw std::domain_error("Unrecognized mode '" + mode_->toString() + "'");
+  }
 
   // Add the plan to the operator manager
   for(const auto& physicalOperator: *physicalPlan->getOperators()){

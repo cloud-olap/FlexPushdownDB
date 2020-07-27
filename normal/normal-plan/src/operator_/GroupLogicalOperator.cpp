@@ -19,13 +19,14 @@ normal::plan::operator_::GroupLogicalOperator::GroupLogicalOperator(const std::s
         producer_(std::move(producer)) {}
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> GroupLogicalOperator::toOperators() {
-  auto expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
-  for (const auto &function: *functions_) {
-    expressions->emplace_back(function->toExecutorFunction());
-  }
-
   auto operators = std::make_shared<std::vector<std::shared_ptr<core::Operator>>>();
+
   for (auto index = 0; index < numConcurrentUnits_; index++) {
+    auto expressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
+    for (const auto &function: *functions_) {
+      expressions->emplace_back(function->toExecutorFunction());
+    }
+
     // FIXME: Defaulting to name -> group
     auto group = std::make_shared<normal::pushdown::group::Group>(fmt::format("group-{}", index), *groupColumnNames_, expressions);
     operators->emplace_back(group);

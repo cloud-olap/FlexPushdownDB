@@ -377,17 +377,23 @@ TEST_CASE ("Join_Two_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
   // wire up
   auto mgr = std::make_shared<OperatorManager>();
 
-  dateScan->produce(dateShuffle);
-  dateShuffle->consume(dateScan);
+//  dateScan->produce(dateShuffle);
+//  dateShuffle->consume(dateScan);
+//
+//  lineorderScan->produce(lineorderShuffle);
+//  lineorderShuffle->consume(lineorderScan);
+//
+//  dateShuffle->produce(joinBuild);
+//  joinBuild->consume(dateShuffle);
+//
+//  lineorderShuffle->produce(joinProbe);
+//  joinProbe->consume(lineorderShuffle);
 
-  lineorderScan->produce(lineorderShuffle);
-  lineorderShuffle->consume(lineorderScan);
+  dateScan->produce(joinBuild);
+  joinBuild->consume(dateScan);
 
-  dateShuffle->produce(joinBuild);
-  joinBuild->consume(dateShuffle);
-
-  lineorderShuffle->produce(joinProbe);
-  joinProbe->consume(lineorderShuffle);
+  lineorderScan->produce(joinProbe);
+  joinProbe->consume(lineorderScan);
 
   joinBuild->produce(joinProbe);
   joinProbe->consume(joinBuild);
@@ -400,8 +406,8 @@ TEST_CASE ("Join_Two_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
 
   mgr->put(dateScan);
   mgr->put(lineorderScan);
-  mgr->put(dateShuffle);
-  mgr->put(lineorderShuffle);
+//  mgr->put(dateShuffle);
+//  mgr->put(lineorderShuffle);
   mgr->put(joinBuild);
   mgr->put(joinProbe);
   mgr->put(aggregate);

@@ -2,7 +2,7 @@
 // Created by matt on 21/7/20.
 //
 
-#include "ScanMessage.h"
+#include "normal/pushdown/scan/ScanMessage.h"
 
 using namespace normal::pushdown::scan;
 
