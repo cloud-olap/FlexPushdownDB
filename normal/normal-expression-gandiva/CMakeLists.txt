@@ -44,7 +44,8 @@ add_executable(normal-expression-gandiva-test
         test/CastTest.cpp
         test/TestUtil.cpp test/TestUtil.h
         test/BinaryExpressionTest.cpp
-        test/GandivaFunctionRegistryTest.cpp)
+        test/GandivaFunctionRegistryTest.cpp
+        test/MultiplyTest.cpp)
 
 target_include_directories(normal-expression-gandiva-test PRIVATE include)
 

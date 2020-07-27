@@ -34,7 +34,10 @@ add_library(normal-pushdown STATIC
         src/s3/S3SelectCSVParseOptions.cpp include/normal/pushdown/s3/S3SelectCSVParseOptions.h
         src/Util.cpp include/normal/pushdown/Util.h
         src/shuffle/Shuffle.cpp include/normal/pushdown/shuffle/Shuffle.h
-        src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h)
+        src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h
+        src/cache/CacheLoad.cpp include/normal/pushdown/cache/CacheLoad.h
+        src/merge/MergeOperator.cpp include/normal/pushdown/merge/MergeOperator.h
+        src/merge/MergeKernel.cpp include/normal/pushdown/merge/MergeKernel.h include/normal/pushdown/scan/ScanMessage.cpp include/normal/pushdown/scan/ScanMessage.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -67,7 +70,7 @@ add_executable(normal-pushdown-test
         test/FileScanTest.cpp
         test/CacheTest.cpp
         test/S3SelectScanTest.cpp
-        test/ShuffleTest.cpp)
+        test/ShuffleTest.cpp test/MergeTest.cpp)
 
 
 target_include_directories(normal-pushdown-test PRIVATE include)

@@ -10,7 +10,8 @@
 namespace normal::ssb {
 
 /**
- * Test executors for partial and full queries using Normal and SQLLite. Compares the results of each.
+ * Test executors for partial and full queries using Normal and SQLLite against local file system data sources.
+ * Compares the results of each.
  *
  * TODO: This can be refactored once SQLLite produces tuple sets that can automatically compared.
  */
@@ -19,12 +20,11 @@ class LocalFileSystemTests {
 public:
 
   /**
-   * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan component of query 1.1
+   * Tests that SQLLite and Normal produce the same output for date scan component of query 1.1
    *
    * Only checking row count at moment
    */
-  static void dateScan(const std::string &dataDir, int numConcurrentUnits, bool check);
-  static void dateScanMulti(const std::string &dataDir, int numConcurrentUnits, bool check);
+  static void dateScan(const std::string &dataDir, int numConcurrentUnits, int numIterations, bool check);
 
   /**
    * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan and filter component of query 1.1

@@ -8,11 +8,13 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
 #include "TestUtil.h"
 
+using namespace normal::core::graph;
 using namespace normal::pushdown;
 using namespace normal::pushdown::join;
 using namespace normal::pushdown::test;
@@ -23,14 +25,22 @@ TEST_SUITE ("join" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("filescan-join-collate" * doctest::skip(false || SKIP_SUITE)) {
 
+  auto aFile = filesystem::absolute("data/join/a.csv");
+  auto numBytesAFile = filesystem::file_size(aFile);
+
+  auto bFile = filesystem::absolute("data/join/b.csv");
+  auto numBytesBFile = filesystem::file_size(aFile);
+
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto aScan = std::make_shared<FileScan>("fileScanA", "data/join/a.csv");
-  auto bScan = std::make_shared<FileScan>("fileScanB", "data/join/b.csv");
+  auto g = OperatorGraph::make(mgr);
+
+  auto aScan = std::make_shared<FileScan>("fileScanA", "data/join/a.csv", std::vector<std::string>{"AA"}, 0, numBytesAFile, g->getId());
+  auto bScan = std::make_shared<FileScan>("fileScanB", "data/join/b.csv", std::vector<std::string>{"BA"}, 0, numBytesBFile, g->getId());
   auto joinBuild = HashJoinBuild::create("join-build", "AA");
   auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
 												   JoinPredicate::create("AA", "BA"));
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = std::make_shared<Collate>("collate", g->getId());
 
   aScan->produce(joinBuild);
   joinBuild->consume(aScan);
@@ -50,7 +60,7 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(joinProbe);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 

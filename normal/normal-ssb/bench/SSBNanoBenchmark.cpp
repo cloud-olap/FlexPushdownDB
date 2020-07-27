@@ -68,92 +68,92 @@
 using namespace normal::core::type;
 
 
-std::shared_ptr<normal::core::cache::LoadResponseMessage> prepareResponseMessage(){
-    auto cache = normal::cache::SegmentCache::make(normal::cache::LRUCachingPolicy::make(100));
-    auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
-    auto segment1Key1 = normal::cache::SegmentKey::make(segment1Partition1, "a",normal::cache::SegmentRange::make(0, 1023));
-
-    auto segment1Column1 = Column::make("a", ::arrow::utf8());
-    auto segment1Data1 = normal::cache::SegmentData::make(segment1Column1);
-    std::unordered_map<std::shared_ptr<normal::cache::SegmentKey>, std::shared_ptr<normal::cache::SegmentData>> segments;
-    segments.insert(std::pair(segment1Key1, segment1Data1));
-    auto responseMessage = normal::core::cache::LoadResponseMessage::make(segments,"cache");
-    return responseMessage;
-
-}
-
-
-TEST_CASE ("nanobenchmark-q1.1-lineorderScan" * doctest::skip(false || SKIP_SUITE)) {
-    short year = 1992;
-    short discount = 2;
-    short quantity = 24;
-    std::string s3Bucket = "s3filter";
-    std::string s3ObjectDir = "ssb-sf0.01";
-    short numPartitions = 2;
-
-    SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",
-                s3Bucket, s3ObjectDir, numPartitions, year, discount, quantity);
-
-    normal::pushdown::AWSClient client;
-    client.init();
-    auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-    auto dateFile = s3ObjectDir + "/date.tbl";
-    auto s3Objects = std::vector{lineOrderFile, dateFile};
-
-    auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-    SPDLOG_DEBUG("Discovered partitions");
-    for (auto &partition : partitionMap) {
-        SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-    }
-
-    /**
-   * Scan
-   * lineorder.tbl
-   */
-    std::vector<std::string> lineOrderColumns =
-            {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
-    int discountLower = discount - 1;
-    int discountUpper = discount + 1;
-
-    std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
-    auto lineOrderScanRanges = normal::pushdown::Util::ranges<long>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
-    auto msg = prepareResponseMessage();
-    normal::core::message::Envelope e(msg);
-    for (int p = 0; p < numPartitions; ++p) {
-        auto lineOrderScan = normal::pushdown::S3SelectScan::make(
-                fmt::format("lineOrderScan-{}", p),
-                s3Bucket,
-                lineOrderFile,
-                fmt::format(
-                        "select LO_ORDERDATE, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE from s3Object where cast(LO_DISCOUNT as int) between {} and {} and cast(LO_QUANTITY as int) < {}",
-                        discountLower,
-                        discountUpper,
-                        quantity),
-                lineOrderColumns,
-                lineOrderScanRanges[p].first,
-                lineOrderScanRanges[p].second,
-                normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-                client.defaultS3Client());
-        lineOrderScanOperators.push_back(lineOrderScan);
-
-
-    }
-    auto mgr = std::make_shared<OperatorManager>();
-    for (int p = 0; p < numPartitions; ++p)
-        mgr->put(lineOrderScanOperators[p]);
-    mgr->boot();
-
-    for (int p = 0; p < numPartitions; ++p) {
-        ankerl::nanobench::Config().minEpochIterations(10).run(
-                "evaluate-linrorderscan", [&] {
-                    lineOrderScanOperators[p]->onReceive(e);
-                });
-    }
-
-
-
-
-}
+//std::shared_ptr<normal::core::cache::LoadResponseMessage> prepareResponseMessage(){
+//    auto cache = normal::cache::SegmentCache::make(normal::cache::LRUCachingPolicy::make(100));
+//    auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
+//    auto segment1Key1 = normal::cache::SegmentKey::make(segment1Partition1, "a",normal::cache::SegmentRange::make(0, 1023));
+//
+//    auto segment1Column1 = Column::make("a", ::arrow::utf8());
+//    auto segment1Data1 = normal::cache::SegmentData::make(segment1Column1);
+//    std::unordered_map<std::shared_ptr<normal::cache::SegmentKey>, std::shared_ptr<normal::cache::SegmentData>> segments;
+//    segments.insert(std::pair(segment1Key1, segment1Data1));
+//    auto responseMessage = normal::core::cache::LoadResponseMessage::make(segments,"cache");
+//    return responseMessage;
+//
+//}
+//
+//
+//TEST_CASE ("nanobenchmark-q1.1-lineorderScan" * doctest::skip(false || SKIP_SUITE)) {
+//    short year = 1992;
+//    short discount = 2;
+//    short quantity = 24;
+//    std::string s3Bucket = "s3filter";
+//    std::string s3ObjectDir = "ssb-sf0.01";
+//    short numPartitions = 2;
+//
+//    SPDLOG_INFO("Arguments  |  s3Bucket: '{}', s3ObjectDir: '{}', numPartitions: {}, year: {}, discount: {}, quantity: {}",
+//                s3Bucket, s3ObjectDir, numPartitions, year, discount, quantity);
+//
+//    normal::pushdown::AWSClient client;
+//    client.init();
+//    auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
+//    auto dateFile = s3ObjectDir + "/date.tbl";
+//    auto s3Objects = std::vector{lineOrderFile, dateFile};
+//
+//    auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+//
+//    SPDLOG_DEBUG("Discovered partitions");
+//    for (auto &partition : partitionMap) {
+//        SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+//    }
+//
+//    /**
+//   * Scan
+//   * lineorder.tbl
+//   */
+//    std::vector<std::string> lineOrderColumns =
+//            {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
+//    int discountLower = discount - 1;
+//    int discountUpper = discount + 1;
+//
+//    std::vector<std::shared_ptr<Operator>> lineOrderScanOperators;
+//    auto lineOrderScanRanges = normal::pushdown::Util::ranges<long>(0, partitionMap.find(lineOrderFile)->second, numPartitions);
+//    auto msg = prepareResponseMessage();
+//    normal::core::message::Envelope e(msg);
+//    for (int p = 0; p < numPartitions; ++p) {
+//        auto lineOrderScan = normal::pushdown::S3SelectScan::make(
+//                fmt::format("lineOrderScan-{}", p),
+//                s3Bucket,
+//                lineOrderFile,
+//                fmt::format(
+//                        "select LO_ORDERDATE, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE from s3Object where cast(LO_DISCOUNT as int) between {} and {} and cast(LO_QUANTITY as int) < {}",
+//                        discountLower,
+//                        discountUpper,
+//                        quantity),
+//                lineOrderColumns,
+//                lineOrderScanRanges[p].first,
+//                lineOrderScanRanges[p].second,
+//                normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
+//                client.defaultS3Client());
+//        lineOrderScanOperators.push_back(lineOrderScan);
+//
+//
+//    }
+//    auto mgr = std::make_shared<OperatorManager>();
+//    for (int p = 0; p < numPartitions; ++p)
+//        mgr->put(lineOrderScanOperators[p]);
+//    mgr->boot();
+//
+//    for (int p = 0; p < numPartitions; ++p) {
+//        ankerl::nanobench::Config().minEpochIterations(10).run(
+//                "evaluate-linrorderscan", [&] {
+//                    lineOrderScanOperators[p]->onReceive(e);
+//                });
+//    }
+//
+//
+//
+//
+//}
 
 

@@ -25,7 +25,7 @@ using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 using namespace normal::expression::gandiva::test;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 TEST_SUITE ("cast" * doctest::skip(SKIP_SUITE)) {
 

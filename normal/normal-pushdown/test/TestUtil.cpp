@@ -4,7 +4,9 @@
 
 #include "TestUtil.h"
 
+
 using namespace normal::pushdown::test;
+
 
 filesystem::path TestUtil::getTestScratchDirectory() {
   auto testName = getCurrentTestName();
@@ -16,11 +18,11 @@ filesystem::path TestUtil::getTestScratchDirectory() {
   return testScratchDir;
 }
 
-void TestUtil::writeExecutionPlan(normal::core::OperatorManager &mgr) {
+void TestUtil::writeExecutionPlan(OperatorGraph &g) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
-  mgr.write_graph(physicalPlanFile);
+  g.write_graph(physicalPlanFile);
 }
 
 void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {

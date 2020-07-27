@@ -8,6 +8,7 @@
 
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/group/Group.h>
 #include <normal/tuple/TupleSet2.h>
@@ -22,6 +23,7 @@ using namespace normal::pushdown::test;
 using namespace normal::pushdown::group;
 using namespace normal::tuple;
 using namespace normal::core::type;
+using namespace normal::core::graph;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
 
@@ -31,9 +33,14 @@ TEST_SUITE ("group" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("group" * doctest::skip(false || SKIP_SUITE)) {
 
+  auto aFile = filesystem::absolute("data/group/a.csv");
+  auto numBytesAFile = filesystem::file_size(aFile);
+
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
-  auto scan = std::make_shared<FileScan>("fileScan", "data/group/a.csv");
+  auto g = OperatorGraph::make(mgr);
+
+  auto scan = std::make_shared<FileScan>("fileScan", "data/group/a.csv", std::vector<std::string>{"AA", "AB"}, 0, numBytesAFile, g->getId());
   auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum",
 																	cast(col("AB"), float64Type()));
   auto
@@ -41,7 +48,7 @@ TEST_CASE ("group" * doctest::skip(false || SKIP_SUITE)) {
   expressions2->push_back(sumExpr);
 
   auto group = Group::make("group", {"AA"}, expressions2);
-  auto collate = std::make_shared<Collate>("collate");
+  auto collate = std::make_shared<Collate>("collate", g->getId());
 
   scan->produce(group);
   group->consume(scan);
@@ -53,7 +60,7 @@ TEST_CASE ("group" * doctest::skip(false || SKIP_SUITE)) {
   mgr->put(group);
   mgr->put(collate);
 
-  TestUtil::writeExecutionPlan(*mgr);
+  TestUtil::writeExecutionPlan(*g);
 
   mgr->boot();
 

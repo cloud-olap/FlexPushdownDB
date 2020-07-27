@@ -6,19 +6,19 @@
 
 using namespace normal::core::cache;
 
-LoadResponseMessage::LoadResponseMessage(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
+LoadResponseMessage::LoadResponseMessage(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments,
 										 const std::string &sender) :
 	Message("LoadResponseMessage", sender),
 	segments_(std::move(segments)) {}
 
 std::shared_ptr<LoadResponseMessage>
 
-LoadResponseMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
+LoadResponseMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments,
 						  const std::string &sender) {
   return std::make_shared<LoadResponseMessage>(std::move(segments), sender);
 }
 
-[[maybe_unused]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &LoadResponseMessage::getSegments() const {
+[[maybe_unused]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> &LoadResponseMessage::getSegments() const {
   return segments_;
 }
 

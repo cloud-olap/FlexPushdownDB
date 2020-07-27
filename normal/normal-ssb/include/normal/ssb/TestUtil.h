@@ -39,15 +39,10 @@ public:
 
   static void writeExecutionPlan(normal::plan::LogicalPlan &plan);
 
-  static std::shared_ptr<TupleSet2> executeExecutionPlanTest(const std::shared_ptr<OperatorManager> &mgr);
-
   static std::shared_ptr<TupleSet2> executeExecutionPlanTest2(const std::shared_ptr<OperatorGraph> &g);
 
   static std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>
   executeSQLite(const std::string &sql, std::vector<std::string> dataFiles);
-
-  static std::shared_ptr<TupleSet2>
-  executeExecutionPlan(const std::shared_ptr<OperatorManager> &mgr);
 
   static std::shared_ptr<TupleSet2>
   executeExecutionPlan2(const std::shared_ptr<OperatorGraph> &g);

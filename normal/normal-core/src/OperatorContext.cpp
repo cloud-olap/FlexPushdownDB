@@ -100,7 +100,7 @@ void OperatorContext::operatorActor(OperatorActor *operatorActor) {
  */
 void OperatorContext::notifyComplete() {
 
-  SPDLOG_DEBUG("Completing  |  name: '{}'", this->operatorActor()->name());
+  SPDLOG_DEBUG("Completing operator  |  name: '{}'", this->operator_->name());
 
   OperatorActor* operatorActor = this->operatorActor();
 

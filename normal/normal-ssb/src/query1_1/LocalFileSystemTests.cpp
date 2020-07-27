@@ -14,61 +14,40 @@
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
 
+void LocalFileSystemTests::dateScan(const std::string &dataDir, int numConcurrentUnits, int numIterations, bool check) {
 
-/**
- * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan component of query 1.1
- *
- * Only checking row count at moment
- */
-void LocalFileSystemTests::dateScan(const std::string &dataDir, int numConcurrentUnits, bool check) {
-
-  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
-			  dataDir, numConcurrentUnits);
-
-  auto actual = TestUtil::executeExecutionPlan(LocalFileSystemQueries::dateScan(dataDir,
-																				numConcurrentUnits));
-  SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
-
-  if (check) {
-	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
-								  {std::filesystem::absolute(dataDir + "/date.tbl")});
-	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
-	CHECK_EQ(expected->size(), actual->numRows());
-  }
-}
-
-/**
- * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan component of query 1.1
- *
- * Only checking row count at moment
- */
-void LocalFileSystemTests::dateScanMulti(const std::string &dataDir, int numConcurrentUnits, bool check) {
-
-  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
-			  dataDir, numConcurrentUnits);
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}, numIterations: {}",
+			  dataDir, numConcurrentUnits, numIterations);
 
   auto mgr = std::make_shared<OperatorManager>();
   mgr->boot();
   mgr->start();
 
-  auto actual1 = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan2(dataDir,
-																				 numConcurrentUnits, mgr));
-  SPDLOG_INFO("Actual 1  |  numRows: {}", actual1->numRows());
-
-  auto actual2 = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan2(dataDir,
-																				 numConcurrentUnits, mgr));
+  std::vector<std::shared_ptr<TupleSet2>> actuals;
+  for(int i= 0;i<numIterations;++i) {
+	auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan(dataDir,
+																				   numConcurrentUnits, mgr));
+	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+	actuals.emplace_back(actual);
+  }
 
   mgr->stop();
 
-  SPDLOG_INFO("Actual 2  |  numRows: {}", actual2->numRows());
-
-	  CHECK_EQ(actual1->numRows(), actual2->numRows());
+  std::shared_ptr<TupleSet2> lastActual;
+  for(const auto &actual: actuals){
+    if(!lastActual) {
+	  lastActual = actual;
+	}
+    else {
+      CHECK_EQ(actual->numRows(), lastActual->numRows());
+	}
+  }
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
 											{std::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
-		CHECK_EQ(expected->size(), actual1->numRows());
+		CHECK_EQ(expected->size(), lastActual->numRows());
   }
 }
 
@@ -82,10 +61,16 @@ void LocalFileSystemTests::dateFilter(short year, const std::string &dataDir, in
   SPDLOG_INFO("Arguments  |  year: {}, dataDir: '{}', numConcurrentUnits: {}",
 			  dataDir, year, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan(LocalFileSystemQueries::dateFilter(dataDir,
+  auto mgr = std::make_shared<OperatorManager>();
+  mgr->boot();
+  mgr->start();
+
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateFilter(dataDir,
 																				  year,
-																				  numConcurrentUnits));
+																				  numConcurrentUnits, mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+
+  mgr->stop();
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateFilter(year, "temp"),
@@ -105,9 +90,15 @@ void LocalFileSystemTests::lineOrderScan(const std::string &dataDir, int numConc
   SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}",
 			  dataDir, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan(LocalFileSystemQueries::lineOrderScan(dataDir,
-																					 numConcurrentUnits));
+  auto mgr = std::make_shared<OperatorManager>();
+  mgr->boot();
+  mgr->start();
+
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::lineOrderScan(dataDir,
+																					 numConcurrentUnits, mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+
+  mgr->stop();
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::lineOrderScan("temp"),
@@ -127,10 +118,16 @@ void LocalFileSystemTests::lineOrderFilter(short discount, short quantity, const
   SPDLOG_INFO("Arguments  |  dataDir: '{}', discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, discount, quantity, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan(LocalFileSystemQueries::lineOrderFilter(dataDir,
+  auto mgr = std::make_shared<OperatorManager>();
+  mgr->boot();
+  mgr->start();
+
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::lineOrderFilter(dataDir,
 																					   discount, quantity,
-																					   numConcurrentUnits));
+																					   numConcurrentUnits, mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+
+  mgr->stop();
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::lineOrderFilter(discount, quantity, "temp"),
@@ -150,10 +147,16 @@ void LocalFileSystemTests::join(short year, short discount, short quantity, cons
   SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, year, discount, quantity, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan(LocalFileSystemQueries::join(dataDir,
+  auto mgr = std::make_shared<OperatorManager>();
+  mgr->boot();
+  mgr->start();
+
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::join(dataDir,
 																			year, discount, quantity,
-																			numConcurrentUnits));
+																			numConcurrentUnits, mgr));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+
+  mgr->stop();
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::join(year, discount, quantity, "temp"),
@@ -175,14 +178,20 @@ void LocalFileSystemTests::full(short year, short discount, short quantity,
   SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, year, discount, quantity, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan(LocalFileSystemQueries::full(dataDir,
+  auto mgr = std::make_shared<OperatorManager>();
+  mgr->boot();
+  mgr->start();
+
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::full(dataDir,
 																			year, discount, quantity,
-																			numConcurrentUnits));
+																			numConcurrentUnits, mgr));
 
   auto actualName = actual->getColumnByIndex(0).value()->getName();
   auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<int>();
 
   SPDLOG_INFO("Actual  |  {} = {}", actualName, actualValue);
+
+  mgr->stop();
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::full(year, discount, quantity, "temp"),

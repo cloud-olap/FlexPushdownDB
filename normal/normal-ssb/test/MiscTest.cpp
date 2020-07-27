@@ -1,8 +1,9 @@
 //
-// Created by matt on 13/5/20.
+// Created by matt on 23/7/20.
 //
 
 #include <memory>
+#include <experimental/filesystem>
 
 #include <doctest/doctest.h>
 
@@ -16,24 +17,29 @@
 #include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/pushdown/Aggregate.h>
-#include "TestUtil.h"
+#include <normal/ssb/TestUtil.h>
+#include <normal/pushdown/Project.h>
 
 using namespace normal::pushdown;
-using namespace normal::pushdown::test;
 using namespace normal::pushdown::aggregate;
 using namespace normal::tuple;
 using namespace normal::core::type;
 using namespace normal::core::graph;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
+using namespace std::experimental;
+using namespace normal::ssb;
 
 #define SKIP_SUITE false
 
 TEST_SUITE ("aggregate" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("sum" * doctest::skip(false || SKIP_SUITE)) {
+/**
+ * Tests aggregation over large lineorder file with a project operator that ensures tuples are delivered in batches
+ */
+TEST_CASE ("large" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto aFile = filesystem::absolute("data/aggregate/a.csv");
+  auto aFile = filesystem::absolute("data/ssb-sf1/lineorder.tbl");
   auto numBytesAFile = filesystem::file_size(aFile);
 
   auto mgr = std::make_shared<OperatorManager>();
@@ -43,30 +49,37 @@ TEST_CASE ("sum" * doctest::skip(false || SKIP_SUITE)) {
   auto g = OperatorGraph::make(mgr);
 
   auto fileScan = FileScan::make("fileScan",
-								 "data/aggregate/a.csv",
-								 std::vector<std::string>{"AA"},
+								 aFile,
+								 std::vector<std::string>{"LO_EXTENDEDPRICE"},
 								 0,
 								 numBytesAFile,
 								 g->getId(),
 								 true);
+  auto project = std::make_shared<Project>("project",
+										   std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
+											   col("LO_EXTENDEDPRICE")});
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();
   aggregateFunctions->
-	  emplace_back(std::make_shared<Sum>("sum", cast(col("AA"), float64Type()))
+	  emplace_back(std::make_shared<Sum>("sum", cast(col("LO_EXTENDEDPRICE"), float64Type()))
   );
   auto aggregate = std::make_shared<Aggregate>("aggregate", aggregateFunctions);
   auto collate = std::make_shared<Collate>("collate", g->getId());
 
-  fileScan->produce(aggregate);
-  aggregate->consume(fileScan);
+  fileScan->produce(project);
+  project->consume(fileScan);
+
+  project->produce(aggregate);
+  aggregate->consume(project);
 
   aggregate->produce(collate);
   collate->consume(aggregate);
 
   g->put(fileScan);
+  g->put(project);
   g->put(aggregate);
   g->put(collate);
 
-  TestUtil::writeExecutionPlan(*g);
+  TestUtil::writeExecutionPlan2(*g);
 
   g->boot();
 
@@ -79,7 +92,7 @@ TEST_CASE ("sum" * doctest::skip(false || SKIP_SUITE)) {
 
 	  CHECK(tuples->numRows() == 1);
 	  CHECK(tuples->numColumns() == 1);
-	  CHECK_EQ(33.0, val.value());
+	  CHECK_EQ(22952182236037.0, val.value());
 
   mgr->stop();
 
