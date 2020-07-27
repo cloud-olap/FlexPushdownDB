@@ -81,7 +81,8 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
               scanRange.first,
               scanRange.second,
               S3SelectCSVParseOptions(",", "\n"),
-              this->awsClient_->defaultS3Client());
+              this->awsClient_->defaultS3Client(),
+              true);
       operators->push_back(scanOp);
     }
   }

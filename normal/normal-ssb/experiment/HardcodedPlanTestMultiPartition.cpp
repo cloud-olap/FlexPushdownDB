@@ -52,7 +52,8 @@ TEST_CASE ("SimpleScan" * doctest::skip(false || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
 
@@ -105,7 +106,8 @@ TEST_CASE ("SimpleScan-partitioned" * doctest::skip(false || SKIP_SUITE)) {
             scanRanges[0].first,
             scanRanges[0].second,
             normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-            client.defaultS3Client());
+            client.defaultS3Client(),
+            true);
     lineorderScans.emplace_back(lineorderScan);
   }
 

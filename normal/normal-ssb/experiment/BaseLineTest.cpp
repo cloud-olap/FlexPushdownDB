@@ -93,7 +93,7 @@ TEST_CASE ("FullPushdown-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
     auto sql_file_path = sql_file_dir_path.append(sql_file_name);
     SPDLOG_DEBUG(sql_file_dir_path.string());
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
-    SPDLOG_INFO("Sql: \n{}", sql);
+    SPDLOG_INFO("{}: \n{}", sql_file_name, sql);
 
     // execute sql
     executeSql(i, sql);

@@ -256,7 +256,7 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
 
 }
 
-std::shared_ptr<PhysicalPlan> Planner::generate(const LogicalPlan &logicalPlan) {
+std::shared_ptr<PhysicalPlan> Planner::generateFullPushdown(const LogicalPlan &logicalPlan) {
   auto physicalPlan = std::make_shared<PhysicalPlan>();
   auto logicalOperators = logicalPlan.getOperators();
   auto logicalToPhysical_map = std::make_shared<std::unordered_map<
@@ -275,6 +275,14 @@ std::shared_ptr<PhysicalPlan> Planner::generate(const LogicalPlan &logicalPlan) 
   for (const auto &physicalOperator: *allPhysicalOperators) {
     physicalPlan->put(physicalOperator);
   }
+
+  return physicalPlan;
+}
+
+std::shared_ptr<PhysicalPlan> Planner::generatePullupCaching(const LogicalPlan &logicalPlan) {
+  auto physicalPlan = std::make_shared<PhysicalPlan>();
+
+
 
   return physicalPlan;
 }

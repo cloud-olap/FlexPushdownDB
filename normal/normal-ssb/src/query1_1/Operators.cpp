@@ -14,7 +14,6 @@
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
-#include <normal/expression/gandiva/Literal.h>
 #include <normal/expression/gandiva/LessThan.h>
 #include <normal/expression/gandiva/EqualTo.h>
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>
@@ -23,6 +22,7 @@
 #include <normal/pushdown/Util.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/connector/local-fs/LocalFilePartition.h>
+#include <normal/expression/gandiva/NumericLiteral.h>
 
 using namespace normal::ssb::query1_1;
 using namespace std::experimental;
@@ -157,7 +157,8 @@ Operators::makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
 		dateScanRanges[u].first,
 		dateScanRanges[u].second,
 		S3SelectCSVParseOptions(",", "\n"),
-		client.defaultS3Client());
+		client.defaultS3Client(),
+		true);
 	dateScanOperators.push_back(dateScan);
   }
 
@@ -189,7 +190,8 @@ Operators::makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
 		dateScanRanges[u].first,
 		dateScanRanges[u].second,
 		S3SelectCSVParseOptions(",", "\n"),
-		client.defaultS3Client());
+		client.defaultS3Client(),
+		true);
 	dateScanOperators.push_back(dateScan);
   }
 
@@ -204,7 +206,7 @@ Operators::makeDateFilterOperators(short year, int numConcurrentUnits, const std
 	auto dateFilter = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/date-filter-{}", g->getId(), u),
 		FilterPredicate::make(
-			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
+			eq(cast(col("d_year"), integer32Type()), num_lit<::arrow::Int32Type>(year))));
 	dateFilterOperators.push_back(dateFilter);
   }
 
@@ -327,7 +329,8 @@ Operators::makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
 		lineOrderScanRanges[u].first,
 		lineOrderScanRanges[u].second,
 		S3SelectCSVParseOptions(",", "\n"),
-		client.defaultS3Client());
+		client.defaultS3Client(),
+		true);
 	lineOrderScanOperators.push_back(lineOrderScan);
   }
 
@@ -366,7 +369,8 @@ Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3Objec
 		lineOrderScanRanges[u].first,
 		lineOrderScanRanges[u].second,
 		S3SelectCSVParseOptions(",", "\n"),
-		client.defaultS3Client());
+		client.defaultS3Client(),
+		true);
 	lineOrderScanOperators.push_back(lineOrderScan);
   }
 
@@ -391,10 +395,10 @@ Operators::makeLineOrderFilterOperators(short discount, short quantity, int numC
 		FilterPredicate::make(
 			and_(
 				and_(
-					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
+					gte(cast(col("lo_discount"), integer32Type()), num_lit<::arrow::Int32Type>(discountLower)),
+					lte(cast(col("lo_discount"), integer32Type()), num_lit<::arrow::Int32Type>(discountUpper))
 				),
-				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
+				lt(cast(col("lo_quantity"), integer32Type()), num_lit<::arrow::Int32Type>(quantity))
 			)
 		)
 	);

@@ -42,7 +42,7 @@ void Interpreter::parse(const std::string &sql) {
   logicalPlan_ = logicalPlans->at(0);
 
   // Create physical plan
-  auto physicalPlan = plan::Planner::generate(*logicalPlan_);
+  auto physicalPlan = plan::Planner::generateFullPushdown(*logicalPlan_);
 
   // Add the plan to the operator manager
   for(const auto& physicalOperator: *physicalPlan->getOperators()){

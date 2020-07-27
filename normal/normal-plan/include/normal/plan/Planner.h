@@ -15,7 +15,9 @@ namespace normal::plan {
 /**
  * Query planner, takes a logical plan and produces a physical one
  *
- * At the moment, this just means adding parallelism
+ * It has two functionalities:
+ * 1) add parallelism
+ * 2) add hybrid framework (pushdown + caching)
  *
  */
 class Planner {
@@ -23,12 +25,21 @@ class Planner {
 public:
 
   /**
-   * Generates the physical plan from the logical plan
+   * Generate the full-pushdown physical plan from the logical plan
    *
    * @param logicalPlan
-   * @return
+   * @return physicalPlan
    */
-  static std::shared_ptr<PhysicalPlan> generate(const LogicalPlan &logicalPlan);
+  static std::shared_ptr<PhysicalPlan> generateFullPushdown(const LogicalPlan &logicalPlan);
+
+  /**
+   * Generate the pullup-caching physical plan from the logical plan
+   * Currently use LRU replacement policy, note LRU leads to pullup-caching, cause every segment to be accessed will always be least recently used
+   *
+   * @param logicalPlan
+   * @return physicalPlan
+   */
+  static std::shared_ptr<PhysicalPlan> generatePullupCaching(const LogicalPlan &logicalPlan);
 
 };
 

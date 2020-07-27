@@ -52,7 +52,8 @@ TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
 
@@ -99,7 +100,8 @@ TEST_CASE ("Join_Two" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // part scan
   numBytes = partitionMap.find("ssb-sf0.01/part.tbl")->second;
@@ -114,7 +116,8 @@ TEST_CASE ("Join_Two" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // shuffle
   auto partShuffle = normal::pushdown::shuffle::Shuffle::make("partShuffle", "p_partkey");
@@ -193,7 +196,8 @@ TEST_CASE ("Join_Three" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // part scan
   numBytes = partitionMap.find("ssb-sf0.01/part.tbl")->second;
@@ -208,7 +212,8 @@ TEST_CASE ("Join_Three" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // supplier scan
   numBytes = partitionMap.find("ssb-sf0.01/supplier.tbl")->second;
@@ -223,7 +228,8 @@ TEST_CASE ("Join_Three" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // shuffle
   auto partShuffle = normal::pushdown::shuffle::Shuffle::make("partShuffle", "p_partkey");
@@ -328,7 +334,8 @@ TEST_CASE ("Join_Two_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // date scan
   numBytes = partitionMap.find("ssb-sf0.01/date.tbl")->second;
@@ -343,7 +350,8 @@ TEST_CASE ("Join_Two_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // shuffle
   auto dateShuffle = normal::pushdown::shuffle::Shuffle::make("dateShuffle", "d_datekey");
@@ -435,7 +443,8 @@ TEST_CASE ("Join_Three_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // date scan
   numBytes = partitionMap.find("ssb-sf0.01/date.tbl")->second;
@@ -450,7 +459,8 @@ TEST_CASE ("Join_Three_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // part scan
   numBytes = partitionMap.find("ssb-sf0.01/part.tbl")->second;
@@ -465,7 +475,8 @@ TEST_CASE ("Join_Three_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // shuffle
   auto dateShuffle = normal::pushdown::shuffle::Shuffle::make("dateShuffle", "d_datekey");
@@ -588,7 +599,8 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // date scan
   numBytes = partitionMap.find("ssb-sf0.01/date.tbl")->second;
@@ -603,7 +615,8 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // shuffle
   auto dateShuffle = normal::pushdown::shuffle::Shuffle::make("dateShuffle", "d_datekey");
@@ -697,7 +710,8 @@ TEST_CASE ("Join_Two_Project" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // date scan
   numBytes = partitionMap.find("ssb-sf0.01/date.tbl")->second;
@@ -712,7 +726,8 @@ TEST_CASE ("Join_Two_Project" * doctest::skip(true || SKIP_SUITE)) {
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client());
+          client.defaultS3Client(),
+          true);
 
   // shuffle
   auto dateShuffle = normal::pushdown::shuffle::Shuffle::make("dateShuffle", "d_datekey");

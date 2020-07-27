@@ -76,7 +76,8 @@ S3SelectScan::S3SelectScan(std::string name,
 						   int64_t startOffset,
 						   int64_t finishOffset,
 						   S3SelectCSVParseOptions parseOptions,
-						   std::shared_ptr<Aws::S3::S3Client> s3Client) :
+						   std::shared_ptr<Aws::S3::S3Client> s3Client,
+						   bool scanOnStart) :
 	Operator(std::move(name), "S3SelectScan"),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
@@ -86,7 +87,8 @@ S3SelectScan::S3SelectScan(std::string name,
 	finishOffset_(finishOffset),
 	parseOptions_(parseOptions),
 	s3Client_(std::move(s3Client)),
-	columns_(columnNames_.size()) {
+	columns_(columnNames_.size()),
+	scanOnStart_(scanOnStart) {
 }
 
 std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
@@ -97,7 +99,8 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 int64_t startOffset,
 												 int64_t finishOffset,
 												 S3SelectCSVParseOptions parseOptions,
-												 std::shared_ptr<Aws::S3::S3Client> s3Client) {
+												 std::shared_ptr<Aws::S3::S3Client> s3Client,
+												 bool scanOnstart) {
   return std::make_shared<S3SelectScan>(name,
 										s3Bucket,
 										s3Object,
@@ -106,12 +109,14 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										startOffset,
 										finishOffset,
 										parseOptions,
-										s3Client);
+										s3Client,
+										scanOnstart);
 
 }
 
 tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallback &tupleSetEventCallback) {
 
+  // s3select request
   std::optional<std::string> optionalErrorMessage;
 
   Aws::String bucketName = Aws::String(s3Bucket_);
@@ -125,23 +130,8 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
   scanRange.SetEnd(finishOffset_);
 
   selectObjectContentRequest.SetScanRange(scanRange);
-
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
-
   selectObjectContentRequest.SetExpression(sql_.c_str());
-//  std::string pullUpSql = "select ";
-//  for (auto colName:columnNamesToLoad){
-//      pullUpSql += colName + ", ";
-//  }
-//  pullUpSql.pop_back();
-//  pullUpSql.pop_back();
-//  pullUpSql += " from s3Object";
-//  if (pushDownFlag_) {
-//      selectObjectContentRequest.SetExpression(sql_.c_str());
-//  }
-//  else {
-//      selectObjectContentRequest.SetExpression(pullUpSql.c_str());
-//  }
 
   CSVInput csvInput;
   csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
@@ -204,34 +194,12 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 
 void S3SelectScan::onStart() {
   SPDLOG_DEBUG("Starting");
-  requestLoadSegmentsFromCache();
-}
-
-void S3SelectScan::requestLoadSegmentsFromCache() {
-  auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
-  CacheHelper::requestLoadSegmentsFromCache(columnNames_, partition, startOffset_, finishOffset_, name(), ctx());
-}
-
-void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
-
-  std::vector<std::shared_ptr<Column>> columns;
-  std::vector<std::shared_ptr<Column>> cachedColumns;
-  std::vector<std::string> columnNamesToLoad;
-
-  auto cachedSegments = Message.getSegments();
-
-  // Gather the columns that were in the cache plus the columns we need to load
-  auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
-  for (const auto &columnName: columnNames_) {
-	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset_, finishOffset_));
-
-	auto segment = cachedSegments.find(segmentKey);
-	if (segment != cachedSegments.end()) {
-	  cachedColumns.push_back(segment->second->getColumn());
-	} else {
-	  columnNamesToLoad.push_back(columnName);
-	}
+  if (scanOnStart_) {
+    readAndSendTuples();
   }
+}
+
+void S3SelectScan::readAndSendTuples() {
 
   SPDLOG_DEBUG(fmt::format("Reading From S3: {}/{}", s3Bucket_, s3Object_));
 
@@ -277,28 +245,14 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
       if(!status.ok()){
         throw std::runtime_error(status.message());
       }
-      readColumns.emplace_back(Column::make(columnNames_.at(cachedColumns.size() + col_id), array));
+      readColumns.emplace_back(Column::make(columnNames_.at(col_id), array));
     }
   }
 
   auto readTupleSet = TupleSet2::make(readColumns);
 
-  // Store the read columns in the cache
-  requestStoreSegmentsInCache(readTupleSet);
-
-  // Combine the read columns with the columns that were loaded from the cache
-  columns.reserve(cachedColumns.size());
-  for (const auto &column: cachedColumns) {
-	columns.push_back(column);
-  }
-  for (const auto &readColumn: readColumns) {
-	columns.push_back(readColumn);
-  }
-
-  auto completeTupleSet = TupleSet2::make(columns);
-
   std::shared_ptr<normal::core::message::Message>
-	  message = std::make_shared<TupleMessage>(completeTupleSet->toTupleSetV1(), this->name());
+	  message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
   ctx()->tell(message);
 
   SPDLOG_DEBUG(fmt::format("Finished Reading: {}/{}", s3Bucket_, s3Object_));
@@ -306,37 +260,16 @@ void S3SelectScan::onCacheLoadResponse(const LoadResponseMessage &Message) {
   ctx()->notifyComplete();
 }
 
-void S3SelectScan::onTuple(const core::message::TupleMessage &message) {
-  std::shared_ptr<normal::core::message::Message>
-	  tupleMessage = std::make_shared<normal::core::message::TupleMessage>(message.tuples(), this->name());
-  ctx()->tell(tupleMessage);
-}
-
 void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
   if (message.message().type() == "StartMessage") {
 	this->onStart();
-  } else if (message.message().type() == "TupleMessage") {
-	auto tupleMessage = dynamic_cast<const normal::core::message::TupleMessage &>(message.message());
-	this->onTuple(tupleMessage);
-  } else if (message.message().type() == "LoadResponseMessage") {
-	auto loadResponseMessage = dynamic_cast<const LoadResponseMessage &>(message.message());
-	this->onCacheLoadResponse(loadResponseMessage);
-  } else if (message.message().type() == "CompleteMessage") {
-	auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message.message());
-	onComplete(completeMessage);
+  } else if (message.message().type() == "ScanMessage") {
+    // TODO
+
   } else {
 	// FIXME: Propagate error properly
 	throw std::runtime_error("Unrecognized message type " + message.message().type());
   }
-}
-
-void S3SelectScan::onComplete(const normal::core::message::CompleteMessage &) {
-  ctx()->notifyComplete();
-}
-
-void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
-  auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_);
-  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
 }

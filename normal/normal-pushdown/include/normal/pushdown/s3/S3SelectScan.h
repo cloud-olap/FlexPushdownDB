@@ -30,7 +30,6 @@ class S3SelectScan : public normal::core::Operator {
   typedef std::function<void(const std::shared_ptr<TupleSet2> &)> TupleSetEventCallback;
 
 public:
-//  bool pushDownFlag_;
   S3SelectScan(std::string name,
 			   std::string s3Bucket,
 			   std::string s3Object,
@@ -39,7 +38,8 @@ public:
 			   int64_t startOffset,
 			   int64_t finishOffset,
 			   S3SelectCSVParseOptions parseOptions,
-			   std::shared_ptr<Aws::S3::S3Client> s3Client);
+			   std::shared_ptr<Aws::S3::S3Client> s3Client,
+			   bool scanOnStart);
 
   static std::shared_ptr<S3SelectScan> make(std::string name,
 											std::string s3Bucket,
@@ -49,7 +49,8 @@ public:
 											int64_t startOffset,
 											int64_t finishOffset,
 											S3SelectCSVParseOptions parseOptions,
-											std::shared_ptr<Aws::S3::S3Client> s3Client);
+											std::shared_ptr<Aws::S3::S3Client> s3Client,
+											bool scanOnStart);
 
   void onReceive(const Envelope &message) override;
 
@@ -63,17 +64,14 @@ private:
   S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;
-
+  bool scanOnStart_;
+//  bool pushDownFlag_;
 
   void onStart();
-  void onTuple(const TupleMessage &message);
-  void onComplete(const CompleteMessage &message);
-  void onCacheLoadResponse(const LoadResponseMessage &Message);
 
   [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
 
-  void requestLoadSegmentsFromCache();
-  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
+  void readAndSendTuples();
 
 };
 
