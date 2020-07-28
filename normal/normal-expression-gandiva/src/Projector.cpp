@@ -3,6 +3,7 @@
 //
 
 #include "normal/expression/gandiva/Projector.h"
+#include "Globals.h"
 
 #include <gandiva/tree_expr_builder.h>
 #include <normal/tuple/TupleSet.h>
@@ -15,6 +16,8 @@ Projector::Projector(std::vector<std::shared_ptr<Expression>> Expressions) :
 	expressions_(std::move(Expressions)) {}
 
 void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
+
+//  std::lock_guard<std::mutex> g(BigGlobalLock);
 
   // Compile the expressions
   gandivaExpressions_.reserve(expressions_.size());
@@ -60,55 +63,110 @@ std::string Projector::showString() {
   return ss.str();
 }
 
-std::shared_ptr<arrow::ArrayVector> Projector::evaluate(const arrow::RecordBatch &recordBatch) {
+arrow::ArrayVector Projector::evaluate(const arrow::RecordBatch &recordBatch) {
+
+#ifndef NDEBUG
+  {
+	auto res = recordBatch.ValidateFull();
+	if (!res.ok()) {
+	  throw std::runtime_error(res.message());
+	}
+  }
+#endif
+
+  assert(gandivaProjector_);
 
   // Evaluate the expressions
-  auto outputs = std::make_shared<arrow::ArrayVector>();
-  auto status = gandivaProjector_->Evaluate(recordBatch, arrow::default_memory_pool(), outputs.get());
+  arrow::ArrayVector outputs;
+  auto status = gandivaProjector_->Evaluate(recordBatch, arrow::default_memory_pool(), &outputs);
 
   if (!status.ok()) {
 	throw std::runtime_error(status.message());
   }
+
+#ifndef NDEBUG
+  {
+	for (const auto &array: outputs) {
+	  auto res = array->ValidateFull();
+	  if (!res.ok()) {
+		throw std::runtime_error(res.message());
+	  }
+	}
+  }
+#endif
 
   return outputs;
 }
 
 std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
 
+//  std::lock_guard<std::mutex> g(BigGlobalLock);
+
+#ifndef NDEBUG
+  {
+	auto res = tupleSet.table()->ValidateFull();
+	if (!res.ok()) {
+	  throw std::runtime_error(res.message());
+	}
+  }
+#endif
+
+	std::shared_ptr<TupleSet> resultTupleSet;
+
   /*
    * Check if the tupleset is valid (has columns) but is empty (0 rows). In this case we want to create
    * and return an empty tupleset
    */
-  if(tupleSet.table()->num_columns() > 0 && tupleSet.table()->num_rows() == 0){
-    auto resultSchema = normal::tuple::Schema::make(getResultSchema());
+  if (tupleSet.table()->num_columns() > 0 && tupleSet.table()->num_rows() == 0) {
+	auto resultSchema = normal::tuple::Schema::make(getResultSchema());
 	auto resultColumns = resultSchema->makeColumns();
 	auto resultArrays = Column::columnVectorToArrowChunkedArrayVector(resultColumns);
-    auto resultTable = ::arrow::Table::Make(getResultSchema(), resultArrays);
-	auto resultTupleSet = TupleSet::make(resultTable);
-	return resultTupleSet;
-  }
-  else{
+	auto resultTable = ::arrow::Table::Make(getResultSchema(), resultArrays);
+	resultTupleSet = TupleSet::make(resultTable);
+  } else {
 	// Read the table in batches
 	std::shared_ptr<arrow::RecordBatch> batch;
-	arrow::TableBatchReader reader(*tupleSet.table());
-	reader.set_chunksize(tuple::DefaultChunkSize);
+	arrow::TableBatchReader reader(*(tupleSet.table()));
+//	reader.set_chunksize(tuple::DefaultChunkSize);
 	auto res = reader.ReadNext(&batch);
-	std::shared_ptr<TupleSet> resultTuples = nullptr;
-	while (res.ok() && batch) {
 
-	  // Evaluate expressions against a batch
-	  std::shared_ptr<arrow::ArrayVector> outputs = evaluate(*batch);
-	  auto batchResultTuples = TupleSet::make(getResultSchema(), *outputs);
-
-	  // Concatenate the batch result to the full results
-	  if (resultTuples)
-		resultTuples = tupleSet.concatenate(batchResultTuples, resultTuples);
-	  else
-		resultTuples = batchResultTuples;
-
-	  res = reader.ReadNext(&batch);
+	if (!res.ok()) {
+	  throw std::runtime_error(res.message());
 	}
 
-	return resultTuples;
+	while (batch) {
+
+	  res = batch->ValidateFull();
+	  if (!res.ok()) {
+		throw std::runtime_error(res.message());
+	  }
+
+	  // Evaluate expressions against a batch
+	  arrow::ArrayVector outputs = evaluate(*batch);
+	  auto batchResultTuples = TupleSet::make(getResultSchema(), outputs);
+
+	  // Concatenate the batch result to the full results
+	  if (resultTupleSet)
+		resultTupleSet = normal::tuple::TupleSet::concatenate(batchResultTuples, resultTupleSet);
+	  else
+		resultTupleSet = batchResultTuples;
+
+	  res = reader.ReadNext(&batch);
+
+	  if (!res.ok()) {
+		throw std::runtime_error(res.message());
+	  }
+	}
   }
+
+#ifndef NDEBUG
+  {
+	auto res = tupleSet.table()->ValidateFull();
+	if (!res.ok()) {
+	  throw std::runtime_error(res.message());
+	}
+  }
+#endif
+
+  return resultTupleSet;
 }

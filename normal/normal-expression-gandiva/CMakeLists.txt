@@ -21,7 +21,8 @@ add_library(normal-expression-gandiva STATIC
         src/EqualTo.cpp include/normal/expression/gandiva/EqualTo.h
         src/LessThanOrEqualTo.cpp include/normal/expression/gandiva/LessThanOrEqualTo.h
         src/GreaterThanOrEqualTo.cpp include/normal/expression/gandiva/GreaterThanOrEqualTo.h
-        src/And.cpp include/normal/expression/gandiva/And.h)
+        src/And.cpp include/normal/expression/gandiva/And.h
+        src/Globals.cpp)
 
 target_include_directories(normal-expression-gandiva PUBLIC include)
 
@@ -44,7 +45,7 @@ add_executable(normal-expression-gandiva-test
         test/TestUtil.cpp test/TestUtil.h
         test/BinaryExpressionTest.cpp
         test/GandivaFunctionRegistryTest.cpp
-        test/MultiplyTest.cpp)
+        test/MultiplyTest.cpp test/ThreadTest.cpp)
 
 target_include_directories(normal-expression-gandiva-test PRIVATE include)
 

@@ -8,6 +8,7 @@
 #include <normal/tuple/Globals.h>
 
 #include "normal/expression/gandiva/Filter.h"
+#include "Globals.h"
 
 using namespace normal::expression::gandiva;
 
@@ -18,6 +19,8 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
 }
 
 std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::TupleSet2 &tupleSet) {
+
+//  std::lock_guard<std::mutex> g(BigGlobalLock);
 
   if (tupleSet.schema().has_value()) {
 
@@ -30,15 +33,15 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 
 	std::shared_ptr<arrow::RecordBatch> batch;
 	arrow::TableBatchReader reader(*arrowTable);
-	reader.set_chunksize(normal::tuple::DefaultChunkSize);
+	reader.set_chunksize(normal::tuple::DefaultChunkSize); // FIXME: Fails if this is not set, not sure why???
 	arrowStatus = reader.ReadNext(&batch);
 	if (!arrowStatus.ok()) {
 	  throw std::runtime_error(arrowStatus.message());
 	}
 
-	assert(batch->ValidateFull().ok());
-
 	while (batch != nullptr) {
+
+	  assert(batch->ValidateFull().ok());
 
 	  std::shared_ptr<::gandiva::SelectionVector> selection_vector;
 	  auto status = ::gandiva::SelectionVector::MakeInt16(batch->num_rows(), ::arrow::default_memory_pool(), &selection_vector);
@@ -103,6 +106,8 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 }
 
 void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
+
+//  std::lock_guard<std::mutex> g(BigGlobalLock);
 
   // Compile the expressions
   pred_->compile(Schema->getSchema());

@@ -8,7 +8,7 @@
 
 using namespace normal::ssb;
 
-#define SKIP_SUITE true
+#define SKIP_SUITE false
 
 /**
  * NOTE: SQLite cannot execute queries on lineorder on sf=1, too big
@@ -47,12 +47,12 @@ TEST_CASE ("lineorder-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
   LocalFileSystemTests::lineOrderFilter(2, 25, "data/ssb-sf1", 2, false);
 }
 
-TEST_CASE ("join-par8" * doctest::skip(false || SKIP_SUITE)) {
-  LocalFileSystemTests::join(1992, 2, 25, "data/ssb-sf1", 8, false);
+TEST_CASE ("join-par32" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::join(1992, 2, 25, "data/ssb-sf1", 32, false);
 }
 
-TEST_CASE ("full-par8" * doctest::skip(false || SKIP_SUITE)) {
-  LocalFileSystemTests::full(1992, 2, 25, "data/ssb-sf1", 8, false);
+TEST_CASE ("full-par32" * doctest::skip(false || SKIP_SUITE)) {
+  LocalFileSystemTests::full(1992, 2, 25, "data/ssb-sf1", 32, false);
 }
 
 }

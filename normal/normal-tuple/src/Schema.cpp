@@ -10,7 +10,7 @@ using namespace normal::tuple;
 
 Schema::Schema(std::shared_ptr<::arrow::Schema> schema) : schema_(std::move(schema)) {}
 
-std::shared_ptr<Schema> Schema::make(std::shared_ptr<::arrow::Schema> schema) {
+std::shared_ptr<Schema> Schema::make(const std::shared_ptr<::arrow::Schema> &schema) {
   return std::make_shared<Schema>(schema);
 }
 
@@ -48,6 +48,6 @@ const std::vector<std::shared_ptr<::arrow::Field>> &Schema::fields() const {
   return schema_->fields();
 }
 
-int Schema::getFieldIndexByName(std::string name) {
+int Schema::getFieldIndexByName(const std::string& name) {
   return schema_->GetFieldIndex(name);
 }

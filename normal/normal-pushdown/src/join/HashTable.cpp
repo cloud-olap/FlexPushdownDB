@@ -66,7 +66,7 @@ std::string HashTable::toString() {
   return s;
 }
 
-tl::expected<void, std::string> HashTable::put(std::string &columnName, std::shared_ptr<TupleSet2> &tupleSet) {
+tl::expected<void, std::string> HashTable::put(const std::string &columnName, const std::shared_ptr<TupleSet2> &tupleSet) {
 
   // Get the column from the build tuple set we are joining on
   auto expectedJoinColumn = tupleSet->getColumnByName(columnName);
