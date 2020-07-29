@@ -8,6 +8,7 @@
 
 #include <normal/tuple/Column.h>
 #include <normal/tuple/ColumnName.h>
+#include <normal/expression/gandiva/Cast.h>
 
 using namespace normal::expression::gandiva;
 
@@ -30,6 +31,12 @@ std::string Column::alias() {
 
 const std::string &Column::getColumnName() const {
   return columnName_;
+}
+
+std::shared_ptr<std::vector<std::string> > Column::involvedColumnNames() {
+  auto involvedColumnNames = std::make_shared<std::vector<std::string>>();
+  involvedColumnNames->emplace_back(columnName_);
+  return involvedColumnNames;
 }
 
 std::shared_ptr<Expression> normal::expression::gandiva::col(const std::string& columnName) {

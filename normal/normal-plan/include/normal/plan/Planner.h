@@ -25,21 +25,14 @@ class Planner {
 public:
 
   /**
-   * Generate the full-pushdown physical plan from the logical plan
+   * Generate the baseline physical plan from the logical plan
    *
    * @param logicalPlan
-   * @return physicalPlan
+   * @param mode: full pushdown or pullup caching
+   * @return baseline physicalPlan
    */
-  static std::shared_ptr<PhysicalPlan> generateFullPushdown(const LogicalPlan &logicalPlan);
-
-  /**
-   * Generate the pullup-caching physical plan from the logical plan
-   * Currently use LRU replacement policy, note LRU leads to pullup-caching, cause every segment to be accessed will always be least recently used
-   *
-   * @param logicalPlan
-   * @return physicalPlan
-   */
-  static std::shared_ptr<PhysicalPlan> generatePullupCaching(const LogicalPlan &logicalPlan);
+  static std::shared_ptr<PhysicalPlan> generateBaseline(const LogicalPlan &logicalPlan,
+                                                        std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
 
 };
 

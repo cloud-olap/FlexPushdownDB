@@ -9,7 +9,7 @@
 
 namespace normal::plan::operator_::mode {
 
-class HybridCachingMode: Mode {
+class HybridCachingMode: public Mode {
 
 public:
   HybridCachingMode();

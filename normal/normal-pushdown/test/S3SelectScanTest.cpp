@@ -51,7 +51,8 @@ TEST_CASE ("s3selectscan-sum-collate" * doctest::skip(false || SKIP_SUITE)) {
 													 0,
 													 1023,
 													 S3SelectCSVParseOptions("|", "|\n"),
-													 client.defaultS3Client());
+													 client.defaultS3Client(),
+													 true);
 
   auto sumExpr = std::make_shared<aggregate::Sum>("sum", cast(col("c_acctbal"), float64Type()));
   auto expressions2 =

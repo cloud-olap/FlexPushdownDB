@@ -46,3 +46,18 @@ std::string BinaryExpression::genAliasForComparison(std::string compOp) {
     return *leftAlias_removePrefixFloat + " " + compOp + " cast(" + rightAlias + " as float)";
   }
 }
+
+std::shared_ptr<std::vector<std::string> > BinaryExpression::involvedColumnNames() {
+  auto leftInvolvedColumnNames = getLeft()->involvedColumnNames();
+  auto rightInvolvedColumnNames = getRight()->involvedColumnNames();
+  leftInvolvedColumnNames->insert(leftInvolvedColumnNames->end(), rightInvolvedColumnNames->begin(), rightInvolvedColumnNames->end());
+  return leftInvolvedColumnNames;
+}
+
+void BinaryExpression::setLeft(const std::shared_ptr<Expression> &left) {
+  left_ = left;
+}
+
+void BinaryExpression::setRight(const std::shared_ptr<Expression> &right) {
+  right_ = right;
+}

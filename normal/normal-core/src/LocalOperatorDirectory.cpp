@@ -9,6 +9,11 @@
 namespace normal::core {
 
 void LocalOperatorDirectory::insert(const LocalOperatorDirectoryEntry& entry) {
+  // map insert cannot cover the value for the same key, need to delete first
+  auto iter = entries_.find(entry.name());
+  if (iter != entries_.end()) {
+    entries_.erase(iter);
+  }
   entries_.emplace(entry.name(), entry);
 }
 

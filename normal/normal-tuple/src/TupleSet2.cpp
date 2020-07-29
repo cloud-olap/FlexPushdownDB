@@ -233,6 +233,12 @@ std::shared_ptr<TupleSet2> TupleSet2::make() {
   return tupleSet;
 }
 
+std::shared_ptr<TupleSet2> TupleSet2::make2() {
+  std::vector<std::shared_ptr<arrow::Field>> fields;
+  auto schema = std::make_shared<Schema>(::arrow::schema(fields));
+  return normal::tuple::TupleSet2::make(schema);
+}
+
 tl::expected<std::shared_ptr<Column>, std::string> TupleSet2::getColumnByName(const std::string &name) {
 
   auto canonicalColumnName = ColumnName::canonicalize(name);

@@ -39,6 +39,10 @@ public:
     }
   }
 
+  std::shared_ptr<std::vector<std::string>> involvedColumnNames() override{
+    return std::make_shared<std::vector<std::string>>();
+  }
+
 private:
   C_TYPE value_;
 

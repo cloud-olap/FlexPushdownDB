@@ -71,7 +71,7 @@ namespace normal::pushdown {
 S3SelectScan::S3SelectScan(std::string name,
 						   std::string s3Bucket,
 						   std::string s3Object,
-						   std::string sql,
+						   std::string filterSql,
 						   std::vector<std::string> columnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
@@ -81,7 +81,7 @@ S3SelectScan::S3SelectScan(std::string name,
 	Operator(std::move(name), "S3SelectScan"),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
-	sql_(std::move(sql)),
+	filterSql_(std::move(filterSql)),
 	columnNames_(std::move(columnNames)),
 	startOffset_(startOffset),
 	finishOffset_(finishOffset),
@@ -94,7 +94,7 @@ S3SelectScan::S3SelectScan(std::string name,
 std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::string s3Bucket,
 												 std::string s3Object,
-												 std::string sql,
+												 std::string filterSql,
 												 std::vector<std::string> columnNames,
 												 int64_t startOffset,
 												 int64_t finishOffset,
@@ -104,7 +104,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
   return std::make_shared<S3SelectScan>(name,
 										s3Bucket,
 										s3Object,
-										sql,
+										filterSql,
 										columnNames,
 										startOffset,
 										finishOffset,
@@ -131,7 +131,19 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 
   selectObjectContentRequest.SetScanRange(scanRange);
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
-  selectObjectContentRequest.SetExpression(sql_.c_str());
+
+  // combine columns with filterSql
+  std::string sql = "";
+  for (auto colIndex = 0; colIndex < columnNames_.size(); colIndex++) {
+    if (colIndex == 0) {
+      sql += columnNames_[colIndex];
+    } else {
+      sql += ", " + columnNames_[colIndex];
+    }
+  }
+  sql = "select " + sql + " from s3Object" + filterSql_;
+
+  selectObjectContentRequest.SetExpression(sql.c_str());
 
   CSVInput csvInput;
   csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
@@ -200,56 +212,66 @@ void S3SelectScan::onStart() {
 }
 
 void S3SelectScan::readAndSendTuples() {
+  std::shared_ptr<TupleSet2> readTupleSet;
 
-  SPDLOG_DEBUG(fmt::format("Reading From S3: {}/{}", s3Bucket_, s3Object_));
+  if (columnNames_.empty()) {
+    readTupleSet = TupleSet2::make2();
+  } else {
 
-  // Read the columns not present in the cache
-  auto result = s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
+    SPDLOG_DEBUG(fmt::format("Reading From S3: {}/{}", s3Bucket_, s3Object_));
 
-	for (int columnIndex = 0; columnIndex < tupleSet->numColumns(); ++columnIndex) {
+    // Read the columns not present in the cache
+    auto result = s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
 
-	  auto columnName = columnNames_.at(columnIndex);
-	  auto readColumn = tupleSet->getColumnByIndex(columnIndex).value();
-	  auto canonicalColumnName = ColumnName::canonicalize(columnName);
-	  readColumn->setName(canonicalColumnName);
+        for (int columnIndex = 0; columnIndex < tupleSet->numColumns(); ++columnIndex) {
 
-	  auto bufferedColumnArrays = columns_[columnIndex];
+          auto columnName = columnNames_.at(columnIndex);
+          auto readColumn = tupleSet->getColumnByIndex(columnIndex).value();
+          auto canonicalColumnName = ColumnName::canonicalize(columnName);
+          readColumn->setName(canonicalColumnName);
 
-	  if (bufferedColumnArrays == nullptr) {
-		bufferedColumnArrays = std::make_shared<std::pair<std::string, ::arrow::ArrayVector>>(readColumn->getName(), readColumn->getArrowArray()->chunks());
-		columns_[columnIndex] = bufferedColumnArrays;
-	  } else {
-		// Add the read chunks to this buffered columns chunk vector
-		for (int chunkIndex = 0; chunkIndex < readColumn->getArrowArray()->num_chunks(); ++chunkIndex) {
-		  auto readChunk = readColumn->getArrowArray()->chunk(chunkIndex);
-		  bufferedColumnArrays->second.emplace_back(readChunk);
-		}
-	  }
-	}
-  });
+          auto bufferedColumnArrays = columns_[columnIndex];
 
-  if (!result.has_value()) {
-	throw std::runtime_error(result.error());
-  }
+          if (bufferedColumnArrays == nullptr) {
+            bufferedColumnArrays = std::make_shared<std::pair<std::string, ::arrow::ArrayVector>>(readColumn->getName(),
+                                                                                                  readColumn->getArrowArray()->chunks());
+            columns_[columnIndex] = bufferedColumnArrays;
+          } else {
+            // Add the read chunks to this buffered columns chunk vector
+            for (int chunkIndex = 0; chunkIndex < readColumn->getArrowArray()->num_chunks(); ++chunkIndex) {
+              auto readChunk = readColumn->getArrowArray()->chunk(chunkIndex);
+              bufferedColumnArrays->second.emplace_back(readChunk);
+            }
+          }
+        }
+    });
 
-  std::vector<std::shared_ptr<Column>> readColumns;
-  for(int col_id = 0; col_id < columns_.size(); col_id++){
-    auto& arrays = columns_.at(col_id);
-    if (arrays) {
-      readColumns.emplace_back(Column::make(arrays->first, arrays->second));
-    } else {
-      // Use StringType for all empty columns
-      auto builder = std::make_shared<::arrow::StringBuilder>();
-      std::shared_ptr<arrow::Array> array;
-      auto status = builder->Finish(&array);
-      if(!status.ok()){
-        throw std::runtime_error(status.message());
-      }
-      readColumns.emplace_back(Column::make(columnNames_.at(col_id), array));
+    if (!result.has_value()) {
+      throw std::runtime_error(result.error());
     }
-  }
 
-  auto readTupleSet = TupleSet2::make(readColumns);
+    std::vector<std::shared_ptr<Column>> readColumns;
+    for (int col_id = 0; col_id < columns_.size(); col_id++) {
+      auto &arrays = columns_.at(col_id);
+      if (arrays) {
+        readColumns.emplace_back(Column::make(arrays->first, arrays->second));
+      } else {
+        // Use StringType for all empty columns
+        auto builder = std::make_shared<::arrow::StringBuilder>();
+        std::shared_ptr<arrow::Array> array;
+        auto status = builder->Finish(&array);
+        if (!status.ok()) {
+          throw std::runtime_error(status.message());
+        }
+        readColumns.emplace_back(Column::make(columnNames_.at(col_id), array));
+      }
+    }
+
+    readTupleSet = TupleSet2::make(readColumns);
+
+    // Store the read columns in the cache
+    requestStoreSegmentsInCache(readTupleSet);
+  }
 
   std::shared_ptr<normal::core::message::Message>
 	  message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
@@ -262,14 +284,25 @@ void S3SelectScan::readAndSendTuples() {
 
 void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
   if (message.message().type() == "StartMessage") {
-	this->onStart();
+	  this->onStart();
   } else if (message.message().type() == "ScanMessage") {
-    // TODO
-
+    auto scanMessage = dynamic_cast<const scan::ScanMessage &>(message.message());
+    this->onCacheLoadResponse(scanMessage);
   } else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + message.message().type());
+    // FIXME: Propagate error properly
+    throw std::runtime_error("Unrecognized message type " + message.message().type());
   }
+}
+
+void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
+  columnNames_ = message.getColumnNames();
+  columns_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames_.size());
+  readAndSendTuples();
+}
+
+void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
+  auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_, finishOffset_ - startOffset_);
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
 }

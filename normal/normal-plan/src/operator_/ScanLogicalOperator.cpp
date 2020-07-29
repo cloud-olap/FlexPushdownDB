@@ -28,3 +28,8 @@ void
 ScanLogicalOperator::setProjectedColumnNames(const std::shared_ptr<std::vector<std::string>> &projectedColumnNames) {
   projectedColumnNames_ = projectedColumnNames;
 }
+
+const std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &
+ScanLogicalOperator::streamOutPhysicalOperators() const {
+  return streamOutPhysicalOperators_;
+}

@@ -101,6 +101,10 @@ std::string Cast::alias() {
   return expr_->alias();
 }
 
+std::shared_ptr<std::vector<std::string> > Cast::involvedColumnNames() {
+  return expr_->involvedColumnNames();
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::cast(std::shared_ptr<Expression> expr,
 															  std::shared_ptr<normal::core::type::Type> type) {
   return std::make_shared<Cast>(std::move(expr), std::move(type));

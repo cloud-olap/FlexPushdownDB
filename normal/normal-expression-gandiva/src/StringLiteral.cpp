@@ -19,6 +19,10 @@ std::string StringLiteral::alias(){
   return "\'" + value_ + "\'";
 }
 
+std::shared_ptr<std::vector<std::string> > StringLiteral::involvedColumnNames() {
+  return std::make_shared<std::vector<std::string>>();
+}
+
 std::shared_ptr<Expression> normal::expression::gandiva::str_lit(std::string value){
   return std::make_shared<StringLiteral>(value);
 }

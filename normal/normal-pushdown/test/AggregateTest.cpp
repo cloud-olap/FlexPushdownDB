@@ -27,7 +27,7 @@ using namespace normal::core::graph;
 using namespace normal::expression;
 using namespace normal::expression::gandiva;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 TEST_SUITE ("aggregate" * doctest::skip(SKIP_SUITE)) {
 

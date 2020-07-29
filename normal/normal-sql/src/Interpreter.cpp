@@ -16,8 +16,7 @@ using namespace normal::sql;
 
 Interpreter::Interpreter(std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
     mode_(mode),
-    catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
-    operatorManager_(std::make_shared<normal::core::OperatorManager>())
+    catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>())
 {}
 
 void Interpreter::parse(const std::string &sql) {
@@ -42,14 +41,17 @@ void Interpreter::parse(const std::string &sql) {
   // TODO: Perhaps support multiple statements in future
   logicalPlan_ = logicalPlans->at(0);
 
+  // Set mode
+  for (auto const &logicalOperator: *logicalPlan_->getOperators()) {
+    logicalOperator->setMode(mode_);
+  }
+
   // Create physical plan
   std::shared_ptr<plan::PhysicalPlan> physicalPlan;
   switch (mode_->id()) {
     case plan::operator_::mode::FullPushdown:
-      physicalPlan = plan::Planner::generateFullPushdown(*logicalPlan_);
-      break;
     case plan::operator_::mode::PullupCaching:
-      physicalPlan = plan::Planner::generatePullupCaching(*logicalPlan_);
+      physicalPlan = plan::Planner::generateBaseline(*logicalPlan_, mode_);
       break;
     case plan::operator_::mode::HybridCaching:
       throw std::runtime_error("Hybrid caching not implemented yet");
@@ -57,9 +59,9 @@ void Interpreter::parse(const std::string &sql) {
       throw std::domain_error("Unrecognized mode '" + mode_->toString() + "'");
   }
 
-  // Add the plan to the operator manager
+  // Add the plan to the operatorGraph
   for(const auto& physicalOperator: *physicalPlan->getOperators()){
-    operatorManager_->put(physicalOperator.second);
+    operatorGraph_->put(physicalOperator.second);
   }
 
   SPDLOG_DEBUG("Finished");
@@ -77,8 +79,22 @@ const std::shared_ptr<normal::plan::LogicalPlan> &Interpreter::getLogicalPlan() 
   return logicalPlan_;
 }
 
-void Interpreter::clearOperatorManager() {
+void Interpreter::clearOperatorGraph() {
+  operatorGraph_ = graph::OperatorGraph::make(operatorManager_);
+}
+
+const std::shared_ptr<normal::core::graph::OperatorGraph> &Interpreter::getOperatorGraph() const {
+  return operatorGraph_;
+}
+
+void Interpreter::boot() {
   operatorManager_ = std::make_shared<normal::core::OperatorManager>();
+  operatorManager_->boot();
+  operatorManager_->start();
+}
+
+void Interpreter::stop() {
+  operatorManager_->stop();
 }
 
 

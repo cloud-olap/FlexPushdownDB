@@ -21,6 +21,8 @@ public:
 
   [[nodiscard]] virtual std::string alias() = 0;
 
+  [[nodiscard]] virtual std::shared_ptr<std::vector<std::string>> involvedColumnNames() = 0;
+
   [[nodiscard]] const ::gandiva::NodePtr &getGandivaExpression() const;
 
   std::string showString();

@@ -11,6 +11,8 @@
 #include <normal/plan/operator_/AggregateLogicalOperator.h>
 #include <normal/plan/operator_/ProjectLogicalOperator.h>
 #include <normal/plan/operator_/GroupLogicalOperator.h>
+#include <normal/pushdown/Collate.h>
+#include <normal/plan/mode/Modes.h>
 
 using namespace normal::plan;
 
@@ -39,7 +41,8 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
                      std::shared_ptr<normal::plan::operator_::LogicalOperator>,
                      std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>>> &logicalToPhysical_map,
              std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>> &wiredLogicalProducers,
-             std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> allPhysicalOperators){
+             std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &allPhysicalOperators,
+             std::shared_ptr<normal::plan::operator_::mode::Mode> mode){
 
   // if logicalProducer is already wired, return
   if (std::find(wiredLogicalProducers->begin(), wiredLogicalProducers->end(), logicalProducer) != wiredLogicalProducers->end()) {
@@ -65,7 +68,12 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
     if (aggregatePhysicalOperators_pair == logicalToPhysical_map->end()) {
       auto aggregateLogicalOperator = std::static_pointer_cast<normal::plan::operator_::AggregateLogicalOperator>(logicalProducer);
       auto producerOfAggregateLogicalOperator = aggregateLogicalOperator->getProducer();
-      wireUp(producerOfAggregateLogicalOperator, logicalProducer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
+      wireUp(producerOfAggregateLogicalOperator,
+             logicalProducer,
+             logicalToPhysical_map,
+             wiredLogicalProducers,
+             allPhysicalOperators,
+             mode);
       aggregatePhysicalOperators = logicalToPhysical_map->find(logicalProducer)->second;
     } else {
       aggregatePhysicalOperators = aggregatePhysicalOperators_pair->second;
@@ -87,7 +95,12 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
     if (groupPhysicalOperators_pair == logicalToPhysical_map->end()) {
       auto groupLogicalOperator = std::static_pointer_cast<normal::plan::operator_::GroupLogicalOperator>(logicalProducer);
       auto producerOfGroupLogicalOperator = groupLogicalOperator->getProducer();
-      wireUp(producerOfGroupLogicalOperator, logicalProducer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
+      wireUp(producerOfGroupLogicalOperator,
+             logicalProducer,
+             logicalToPhysical_map,
+             wiredLogicalProducers,
+             allPhysicalOperators,
+             mode);
       groupPhysicalOperators = logicalToPhysical_map->find(logicalProducer)->second;
     } else {
       groupPhysicalOperators = groupPhysicalOperators_pair->second;
@@ -109,7 +122,7 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
     if (projectPhysicalOperators_pair == logicalToPhysical_map->end()) {
       auto projectLogicalOperator = std::static_pointer_cast<normal::plan::operator_::ProjectLogicalOperator>(logicalProducer);
       auto producerOfProjectLogicalOperator = projectLogicalOperator->getProducer();
-      wireUp(producerOfProjectLogicalOperator, logicalProducer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
+      wireUp(producerOfProjectLogicalOperator, logicalProducer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators, mode);
       projectPhysicalOperators = logicalToPhysical_map->find(logicalProducer)->second;
     } else {
       projectPhysicalOperators = projectPhysicalOperators_pair->second;
@@ -119,8 +132,32 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
     streamOutPhysicalOperators = projectPhysicalOperators;
   }
 
+  else if (logicalProducer->type()->is(operator_::type::OperatorTypes::scanOperatorType())) {
+    switch (mode->id()) {
+      case normal::plan::operator_::mode::FullPushdown:
+        streamOutPhysicalOperators = toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
+        break;
+
+      case normal::plan::operator_::mode::PullupCaching: {
+        // get scan physical operators
+        toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
+        // get stream-out operators
+        auto scanLogicalOperator = std::static_pointer_cast<operator_::ScanLogicalOperator>(logicalProducer);
+        streamOutPhysicalOperators = scanLogicalOperator->streamOutPhysicalOperators();
+        break;
+      }
+
+      case normal::plan::operator_::mode::HybridCaching:
+        throw std::runtime_error("Hybrid caching not implemented yet");
+
+      default:
+        throw std::domain_error("Unrecognized mode '" + mode->toString() + "'");
+    }
+
+  }
+
   else {
-    streamOutPhysicalOperators = toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
+    std::runtime_error("Bad logicalProducer type: '" + logicalProducer->type()->toString() + "', check logical plan");
   }
 
 
@@ -267,12 +304,13 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
   }
 
   else {
-    std::runtime_error("Bad logicalConsumer type, check logical plan");
+    std::runtime_error("Bad logicalConsumer type: '" + logicalConsumer->type()->toString() + "', check logical plan");
   }
 
 }
 
-std::shared_ptr<PhysicalPlan> Planner::generateFullPushdown(const LogicalPlan &logicalPlan) {
+std::shared_ptr<PhysicalPlan> Planner::generateBaseline (const LogicalPlan &logicalPlan,
+                                                         std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
   auto physicalPlan = std::make_shared<PhysicalPlan>();
   auto logicalOperators = logicalPlan.getOperators();
   auto logicalToPhysical_map = std::make_shared<std::unordered_map<
@@ -284,21 +322,18 @@ std::shared_ptr<PhysicalPlan> Planner::generateFullPushdown(const LogicalPlan &l
   for (auto &logicalProducer: *logicalOperators) {
     auto logicalConsumer = logicalProducer->getConsumer();
     if (logicalConsumer) {
-      wireUp(logicalProducer, logicalConsumer, logicalToPhysical_map, wiredLogicalProducers, allPhysicalOperators);
+      wireUp(logicalProducer,
+             logicalConsumer,
+             logicalToPhysical_map,
+             wiredLogicalProducers,
+             allPhysicalOperators,
+             mode);
     }
   }
 
   for (const auto &physicalOperator: *allPhysicalOperators) {
     physicalPlan->put(physicalOperator);
   }
-
-  return physicalPlan;
-}
-
-std::shared_ptr<PhysicalPlan> Planner::generatePullupCaching(const LogicalPlan &logicalPlan) {
-  auto physicalPlan = std::make_shared<PhysicalPlan>();
-
-
 
   return physicalPlan;
 }

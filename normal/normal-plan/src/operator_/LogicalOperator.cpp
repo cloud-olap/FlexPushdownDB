@@ -27,3 +27,11 @@ void LogicalOperator::setName(const std::string &Name) {
 void LogicalOperator::setConsumer(const std::shared_ptr<LogicalOperator> &Consumer) {
   consumer_ = Consumer;
 }
+
+void LogicalOperator::setMode(const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode) {
+  mode_ = mode;
+}
+
+const std::shared_ptr<normal::plan::operator_::mode::Mode> &LogicalOperator::getMode() const {
+  return mode_;
+}

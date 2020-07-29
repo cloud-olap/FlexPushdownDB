@@ -14,6 +14,7 @@
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/core/cache/LoadResponseMessage.h>
+#include <normal/pushdown/scan/ScanMessage.h>
 
 #include "normal/core/Operator.h"
 #include "normal/tuple/TupleSet.h"
@@ -33,7 +34,7 @@ public:
   S3SelectScan(std::string name,
 			   std::string s3Bucket,
 			   std::string s3Object,
-			   std::string sql,
+			   std::string filterSql,
 			   std::vector<std::string> columnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
@@ -44,7 +45,7 @@ public:
   static std::shared_ptr<S3SelectScan> make(std::string name,
 											std::string s3Bucket,
 											std::string s3Object,
-											std::string sql,
+											std::string filterSql,
 											std::vector<std::string> columnNames,
 											int64_t startOffset,
 											int64_t finishOffset,
@@ -52,12 +53,11 @@ public:
 											std::shared_ptr<Aws::S3::S3Client> s3Client,
 											bool scanOnStart);
 
-  void onReceive(const Envelope &message) override;
 
 private:
   std::string s3Bucket_;
   std::string s3Object_;
-  std::string sql_;
+  std::string filterSql_;   // "where ...."
   std::vector<std::string> columnNames_;
   int64_t startOffset_;
   int64_t finishOffset_;
@@ -68,9 +68,12 @@ private:
 //  bool pushDownFlag_;
 
   void onStart();
+  void onReceive(const Envelope &message) override;
+  void onCacheLoadResponse(const scan::ScanMessage &message);
 
   [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
 
+  void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
   void readAndSendTuples();
 
 };

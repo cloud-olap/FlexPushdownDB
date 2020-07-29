@@ -76,6 +76,12 @@ public:
   static std::shared_ptr<TupleSet2> make();
 
   /**
+   * Creates an empty tupleset, but with an empty table (0x0)
+   * @return
+   */
+  static std::shared_ptr<TupleSet2> make2();
+
+  /**
    * Gets the tuple set as a v1 tuple set
    * @return
    */

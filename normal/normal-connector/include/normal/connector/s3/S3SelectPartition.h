@@ -12,10 +12,11 @@
 
 class S3SelectPartition: public Partition {
 public:
-  explicit S3SelectPartition(std::string bucket, std::string object);
+  explicit S3SelectPartition(std::string bucket, std::string object, long numBytes);
 
   const std::string &getBucket() const;
   const std::string &getObject() const;
+  const long &getNumBytes() const;
 
   std::string toString() override;
   size_t hash() override;
@@ -27,6 +28,7 @@ public:
 private:
   std::string bucket_;
   std::string object_;
+  long numBytes_;
 
 };
 

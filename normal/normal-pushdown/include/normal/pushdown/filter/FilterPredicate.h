@@ -20,6 +20,9 @@ public:
 
   const std::shared_ptr<normal::expression::gandiva::Expression> &expression() const;
 
+  // FIXME: only applicable for ssb queries
+  void simpleCast(std::shared_ptr<normal::expression::gandiva::Expression> expr);
+
 private:
   std::shared_ptr<normal::expression::gandiva::Expression> expr_;
 

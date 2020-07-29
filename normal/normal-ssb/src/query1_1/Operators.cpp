@@ -118,7 +118,7 @@ Operators::makeDateS3SelectCacheLoadOperators(const std::string &s3ObjectDir,
   std::vector<std::shared_ptr<CacheLoad>> dateScanOperators;
   auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	std::shared_ptr<Partition> partition = std::make_shared<S3SelectPartition>(s3Bucket, dateFile);
+	std::shared_ptr<Partition> partition = std::make_shared<S3SelectPartition>(s3Bucket, dateFile, 0);
 	auto dateScan = CacheLoad::make(fmt::format("/query-{}/date-cache-load-{}", g->getId(), u),
 									dateColumns,
 									partition,

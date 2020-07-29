@@ -9,7 +9,7 @@
 
 namespace normal::plan::operator_::mode {
 
-class PullupCachingMode: Mode {
+class PullupCachingMode: public Mode {
 
 public:
   PullupCachingMode();
