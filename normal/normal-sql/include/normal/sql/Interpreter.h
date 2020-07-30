@@ -20,7 +20,8 @@ namespace normal::sql {
 class Interpreter{
 
 public:
-  Interpreter(std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
+  Interpreter(const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
+              const std::shared_ptr<CachingPolicy>& cachingPolicy);
   [[nodiscard]] const std::shared_ptr<core::OperatorManager> &getOperatorManager() const;
   [[nodiscard]] const std::shared_ptr<core::graph::OperatorGraph> &getOperatorGraph() const;
   void parse(const std::string& sql);
@@ -36,7 +37,7 @@ private:
   std::shared_ptr<core::OperatorManager> operatorManager_;
   std::shared_ptr<core::graph::OperatorGraph> operatorGraph_;
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
-
+  std::shared_ptr<CachingPolicy> cachingPolicy_;
 };
 
 }

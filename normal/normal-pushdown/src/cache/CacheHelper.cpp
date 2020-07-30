@@ -47,6 +47,7 @@ void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &
 	auto column = tupleSet->getColumnByIndex(c).value();
 	auto segmentKey = SegmentKey::make(partition, column->getName(), SegmentRange::make(startOffset, finishOffset));
 	auto segmentData = SegmentData::make(column);
+//	SPDLOG_INFO("Segment size: {}", segmentData->size());
 
 	segmentsToStore.emplace(segmentKey, segmentData);
   }

@@ -8,7 +8,11 @@ using namespace normal::core::cache;
 
 SegmentCacheActor::SegmentCacheActor(const std::string &Name) :
 	Operator(Name, "SegmentCache"),
-	state_(std::make_shared<SegmentCacheActorState>()) {}
+	state_(make()) {}
+
+SegmentCacheActor::SegmentCacheActor(const std::string &Name, const std::shared_ptr<CachingPolicy>& cachingPolicy) :
+        Operator(Name, "SegmentCache"),
+        state_(make(cachingPolicy)) {}
 
 void SegmentCacheActor::onReceive(const Envelope &message) {
   if (message.message().type() == "StoreRequestMessage") {

@@ -15,3 +15,7 @@ std::shared_ptr <SegmentData> SegmentData::make(const std::shared_ptr <Column> &
 const std::shared_ptr<Column> &SegmentData::getColumn() const {
   return column_;
 }
+
+long SegmentData::size() {
+  return column_->size();
+}

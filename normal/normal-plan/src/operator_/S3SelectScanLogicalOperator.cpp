@@ -53,20 +53,6 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
 
 }
 
-std::shared_ptr<std::vector<std::shared_ptr<normal::pushdown::cache::CacheLoad>>>
-S3SelectScanLogicalOperator::toCacheLoadOperators() {
-  auto cacheLoadOperators = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::cache::CacheLoad>>>();
-
-  // construct CacheLoad operators
-  for (const auto &partition: *getPartitioningScheme()->partitions()) {
-
-  }
-}
-
-std::shared_ptr<normal::pushdown::filter::Filter> S3SelectScanLogicalOperator::toFilterOperator() {
-  return std::shared_ptr<normal::pushdown::filter::Filter>();
-}
-
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 S3SelectScanLogicalOperator::toOperatorsFullPushDown(int numRanges) {
 
@@ -105,12 +91,18 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto scanColumnNames = projectedColumnNames_;
+  std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
   if (predicate_) {
+    // get filterColumnNames -> + projectedColumnNames = scanColumnNames
     auto filterColumnNames = predicate_->involvedColumnNames();
     scanColumnNames->insert(scanColumnNames->end(), filterColumnNames->begin(), filterColumnNames->end());
     // deduplicate
     auto scanColumnNameSet = std::make_shared<std::set<std::string>>(scanColumnNames->begin(), scanColumnNames->end());
     scanColumnNames->assign(scanColumnNameSet->begin(), scanColumnNameSet->end());
+
+    // simpleCast
+    filterPredicate = filter::FilterPredicate::make(predicate_);
+    filterPredicate->simpleCast(filterPredicate->expression());
   }
 
   /**
@@ -131,7 +123,7 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
 
       // S3SelectScan
       auto scanOp = S3SelectScan::make(
-              "s3scan - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
+              "s3select - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
               "",
@@ -159,17 +151,18 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
 
       // wire up internally
       cacheLoad->setHitOperator(mergeOperator);
-      mergeOperator->consume(cacheLoad);
+//      mergeOperator->consume(cacheLoad);
+      mergeOperator->setLeftProducer(cacheLoad);
 
       cacheLoad->setMissOperator(scanOp);
       scanOp->consume(cacheLoad);
 
       scanOp->produce(mergeOperator);
-      mergeOperator->consume(scanOp);
+//      mergeOperator->consume(scanOp);
+      mergeOperator->setRightProducer(scanOp);
 
       // Filter if it has filterPredicate
       if (predicate_) {
-        auto filterPredicate = filter::FilterPredicate::make(predicate_);
         auto filter = filter::Filter::make(
                 fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
                 filterPredicate);

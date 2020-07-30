@@ -12,13 +12,14 @@
 #include <normal/pushdown/Util.h>
 #include <normal/plan/mode/Modes.h>
 #include <normal/connector/s3/S3Util.h>
+#include <normal/cache/LRUCachingPolicy.h>
 #include "ExperimentUtil.h"
 
 #define SKIP_SUITE false
 
 using namespace normal::ssb;
 
-void configureS3Connector(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
+void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
   auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
   auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
 
@@ -40,6 +41,50 @@ void configureS3Connector(normal::sql::Interpreter &i, std::string bucket_name, 
     auto numBytes = objectNumBytes_Map.find(s3Object)->second;
     auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
     partitioningScheme->add(std::make_shared<S3SelectPartition>("s3filter", s3Object, numBytes));
+    cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
+  }
+  i.put(cat);
+}
+
+void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
+  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
+  auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
+
+  // s3Objects map
+  auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
+  auto lineorderS3Objects = std::make_shared<std::vector<std::string>>();
+  for (int i = 0; i < 10; i++) {
+    lineorderS3Objects->emplace_back(fmt::format("{}lineorder_sharded/lineorder.tbl.{}", dir_prefix, i));
+  }
+  auto dateS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "date.tbl"}));
+  auto customerS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "customer.tbl"}));
+  auto supplierS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "supplier.tbl"}));
+  auto partS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "part.tbl"}));
+  s3ObjectsMap->insert({"lineorder", lineorderS3Objects});
+  s3ObjectsMap->insert({"date", dateS3Objects});
+  s3ObjectsMap->insert({"customer", customerS3Objects});
+  s3ObjectsMap->insert({"supplier", supplierS3Objects});
+  s3ObjectsMap->insert({"part", partS3Objects});
+
+  // look up tables
+  auto s3Objects = std::make_shared<std::vector<std::string>>();
+  for (auto const &s3ObjectPair: *s3ObjectsMap) {
+    auto objects = s3ObjectPair.second;
+    s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
+  }
+  auto client = conn->getAwsClient();
+  client->init();
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, client->defaultS3Client());
+
+  // configure s3Connector
+  for (auto const &s3ObjectPair: *s3ObjectsMap) {
+    auto tableName = s3ObjectPair.first;
+    auto objects = s3ObjectPair.second;
+    auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
+    for (auto const &s3Object: *objects) {
+      auto numBytes = objectNumBytes_Map.find(s3Object)->second;
+      partitioningScheme->add(std::make_shared<S3SelectPartition>("s3filter", s3Object, numBytes));
+    }
     cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
   }
   i.put(cat);
@@ -75,6 +120,9 @@ auto executeSql(normal::sql::Interpreter i, const std::string &sql) {
 TEST_CASE ("Baseline-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
+  // chosse whether to use partitioned lineorder
+  bool partitioned = true;
+
   // choose mode: FullPushDown or PullupCaching
   auto mode1 = normal::plan::operator_::mode::Modes::fullPushdownMode();
   auto mode2 = normal::plan::operator_::mode::Modes::pullupCachingMode();
@@ -85,16 +133,21 @@ TEST_CASE ("Baseline-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
           "query2.1.sql", "query2.2.sql", "query2.3.sql",
           "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
           "query4.1.sql", "query4.2.sql", "query4.3.sql"
-//"query1.1.sql", "query1.2.sql"
+//"query4.1.sql","query4.2.sql","query4.3.sql"
   };
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf0.01/";
+  auto cachingPolicy = LRUCachingPolicy::make(100);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode2);
-  configureS3Connector(i, bucket_name, dir_prefix);
+  normal::sql::Interpreter i(mode2, cachingPolicy);
+  if (partitioned) {
+    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
+  } else {
+    configureS3ConnectorSinglePartition(i, bucket_name, dir_prefix);
+  }
 
   // execute
   i.boot();

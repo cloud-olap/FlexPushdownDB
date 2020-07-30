@@ -19,10 +19,8 @@ using namespace normal::core;
 Filter::Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred) :
 	Operator(std::move(Name), "Filter"),
 	received_(normal::tuple::TupleSet2::make()),
-	filtered_(normal::tuple::TupleSet2::make()){
-  Pred->simpleCast(Pred->expression());
-  pred_ = Pred;
-}
+	filtered_(normal::tuple::TupleSet2::make()),
+	pred_(Pred) {}
 
 std::shared_ptr<Filter> Filter::make(std::string Name, std::shared_ptr<FilterPredicate> Pred) {
   return std::make_shared<Filter>(Name, Pred);

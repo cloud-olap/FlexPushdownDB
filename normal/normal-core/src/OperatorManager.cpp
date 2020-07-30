@@ -75,6 +75,15 @@ OperatorManager::OperatorManager() : queryCounter_(0){
   rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
 }
 
+OperatorManager::OperatorManager(const std::shared_ptr<CachingPolicy>& cachingPolicy) :
+  cachingPolicy_(cachingPolicy),
+  queryCounter_(0) {
+  actorSystemConfig.load<caf::io::middleman>();
+  actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
+  rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
+}
+
+
 /**
  * TODO: Remove this, it no longer applies. Individual queries are now joined.
  */
@@ -106,7 +115,7 @@ void OperatorManager::join() {
 void OperatorManager::boot() {
 
   // Create the system actors
-  segmentCacheActor_ = std::make_shared<SegmentCacheActor>("SegmentCache");
+  segmentCacheActor_ = std::make_shared<SegmentCacheActor>("SegmentCache", cachingPolicy_);
   put(segmentCacheActor_);
 
   // Create the operators

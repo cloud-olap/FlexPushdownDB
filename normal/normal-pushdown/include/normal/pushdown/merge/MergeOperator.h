@@ -29,12 +29,15 @@ public:
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
 
+  void setLeftProducer(const std::shared_ptr<Operator> &leftProducer);
+  void setRightProducer(const std::shared_ptr<Operator> &rightProducer);
+
 private:
 
   void Merge();
 
-  std::optional<LocalOperatorDirectoryEntry> leftProducer_  = std::nullopt;
-  std::optional<LocalOperatorDirectoryEntry> rightProducer_  = std::nullopt;
+  std::shared_ptr<Operator> leftProducer_;
+  std::shared_ptr<Operator> rightProducer_;
 
   std::list<std::shared_ptr<TupleSet2>> leftTupleSets_;
   std::list<std::shared_ptr<TupleSet2>> rightTupleSets_;

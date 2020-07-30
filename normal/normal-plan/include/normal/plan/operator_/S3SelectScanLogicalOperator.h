@@ -30,10 +30,6 @@ public:
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsPullupCaching(int numRanges);
 
-  std::shared_ptr<std::vector<std::shared_ptr<normal::pushdown::cache::CacheLoad>>> toCacheLoadOperators();
-
-  std::shared_ptr<normal::pushdown::filter::Filter> toFilterOperator();
-
 private:
   std::shared_ptr<pushdown::AWSClient> awsClient_;
 

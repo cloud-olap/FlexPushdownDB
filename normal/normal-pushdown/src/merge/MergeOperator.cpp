@@ -33,13 +33,18 @@ void MergeOperator::onReceive(const Envelope &msg) {
 
 void MergeOperator::onStart() {
 
+  /**
+   * This can cause bugs occasionally (1/10 chance):
+   *    when "TupleMessage" arrives earlier than "StartMessage"
+   * Fix: set producers before start in planner
+   */
   auto producers_ = this->ctx()->operatorMap().get(OperatorRelationshipType::Producer);
-
-  if (producers_.size() < 2)
-	throw std::runtime_error("Left and right producer not set");
-
-  leftProducer_ = producers_[0];
-  rightProducer_ = producers_[1];
+//
+//  if (producers_.size() < 2)
+//	throw std::runtime_error("Left and right producer not set");
+//
+//  leftProducer_ = producers_[0];
+//  rightProducer_ = producers_[1];
 
   SPDLOG_DEBUG("Starting operator  |  name: '{}', leftProducer: {}, rightProducer: {}",
 			   name(),
@@ -94,9 +99,20 @@ void MergeOperator::onTuple(const TupleMessage &message) {
   } else if (message.sender() == rightProducer_->name()) {
 	rightTupleSets_.emplace_back(tupleSet);
   } else {
-	throw std::runtime_error(fmt::format("Unrecognized producer {}", message.sender()));
+	throw std::runtime_error(fmt::format("Unrecognized producer {}, left: {}, right: {}",
+	        message.sender(), leftProducer_->name(), rightProducer_->name()));
   }
 
   // Merge
   Merge();
+}
+
+void MergeOperator::setLeftProducer(const std::shared_ptr<Operator> &leftProducer) {
+  leftProducer_ = leftProducer;
+  consume(leftProducer);
+}
+
+void MergeOperator::setRightProducer(const std::shared_ptr<Operator> &rightProducer) {
+  rightProducer_ = rightProducer;
+  consume(rightProducer);
 }

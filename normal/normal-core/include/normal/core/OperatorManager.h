@@ -37,6 +37,7 @@ private:
   std::shared_ptr<caf::scoped_actor> rootActor_;
   OperatorDirectory operatorDirectory_;
   std::shared_ptr<SegmentCacheActor> segmentCacheActor_;
+  std::shared_ptr<CachingPolicy> cachingPolicy_;
 
   std::chrono::steady_clock::time_point startTime_;
   std::chrono::steady_clock::time_point stopTime_;
@@ -45,6 +46,7 @@ private:
 
 public:
   OperatorManager();
+  OperatorManager(const std::shared_ptr<CachingPolicy>& cachingPolicy);
 
   void put(const std::shared_ptr<Operator> &op);
   std::shared_ptr<Operator> getOperator(const std::string &);

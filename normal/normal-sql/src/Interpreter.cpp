@@ -14,9 +14,11 @@
 
 using namespace normal::sql;
 
-Interpreter::Interpreter(std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
+Interpreter::Interpreter(const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
+                         const std::shared_ptr<CachingPolicy>& cachingPolicy) :
+    catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
     mode_(mode),
-    catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>())
+    cachingPolicy_(cachingPolicy)
 {}
 
 void Interpreter::parse(const std::string &sql) {
@@ -88,7 +90,7 @@ const std::shared_ptr<normal::core::graph::OperatorGraph> &Interpreter::getOpera
 }
 
 void Interpreter::boot() {
-  operatorManager_ = std::make_shared<normal::core::OperatorManager>();
+  operatorManager_ = std::make_shared<normal::core::OperatorManager>(cachingPolicy_);
   operatorManager_->boot();
   operatorManager_->start();
 }

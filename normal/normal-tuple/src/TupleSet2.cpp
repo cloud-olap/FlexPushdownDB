@@ -46,22 +46,44 @@ tl::expected<std::shared_ptr<TupleSet2>,
 
   // Make sure the tuple sets are valid and have the same schema
   std::shared_ptr<TupleSet2> tupleSet1;
-  for(const auto& tupleSet: tupleSets){
-	if(!tupleSet->getArrowTable().has_value()){
-	  return tl::make_unexpected("Cannot concatenate empty tuple sets");
-	}
+  std::vector<std::shared_ptr<TupleSet2>> tupleSets1;
+  for(int i = 0; i < tupleSets.size(); i++){
+    auto &tupleSet = tupleSets[i];
+    if(!tupleSet->getArrowTable().has_value()){
+      return tl::make_unexpected("Cannot concatenate empty tuple sets");
+    }
     if(tupleSet1 == nullptr){
-	  tupleSet1 = tupleSet;
+    tupleSet1 = tupleSet;
+    tupleSets1.emplace_back(tupleSet);
     }
     else{
+      /**
+       * Need to make two schemas in the same order first, then compare
+       */
       if(!tupleSet->getArrowTable().value()->schema()->Equals(tupleSet1->getArrowTable().value()->schema())){
-        return tl::make_unexpected("Cannot concatenate tuple sets with different schemas");
+        // try to reorder the second table according the schema of the first table
+        auto reorderedColumns = std::make_shared<std::vector<std::shared_ptr<Column>>>();
+        auto schemaMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<::arrow::Field>>>();
+        for (auto const &field: tupleSet->schema().value()->fields()) {
+          schemaMap->insert({field->name(), field});
+        }
+
+        for (auto const &field1: tupleSet1->schema().value()->fields()) {
+          if (schemaMap->find(field1->name()) == schemaMap->end()) {
+            return tl::make_unexpected("Cannot concatenate tuple sets with different schemas");
+          } else {
+            reorderedColumns->emplace_back(tupleSet->getColumnByName(field1->name()).value());
+          }
+        }
+        tupleSets1.emplace_back(make(*reorderedColumns));
+      } else {
+        tupleSets1.emplace_back(tupleSet);
       }
     }
   }
 
   // Create a vector of arrow tables to concatenate
-  std::vector<std::shared_ptr<::arrow::Table>> tableVector = tupleSetVectorToArrowTableVector(tupleSets);
+  std::vector<std::shared_ptr<::arrow::Table>> tableVector = tupleSetVectorToArrowTableVector(tupleSets1);
 
   // Concatenate
   auto tableResult = arrow::ConcatenateTables(tableVector);

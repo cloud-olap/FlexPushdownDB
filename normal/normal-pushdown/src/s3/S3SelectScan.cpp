@@ -269,8 +269,10 @@ void S3SelectScan::readAndSendTuples() {
 
     readTupleSet = TupleSet2::make(readColumns);
 
-    // Store the read columns in the cache
-    requestStoreSegmentsInCache(readTupleSet);
+    // Store the read columns in the cache, if not in full-pushdown mode
+    if (!scanOnStart_) {
+      requestStoreSegmentsInCache(readTupleSet);
+    }
   }
 
   std::shared_ptr<normal::core::message::Message>

@@ -29,6 +29,7 @@ class SegmentCacheActor : public normal::core::Operator {
 public:
 
   SegmentCacheActor(const std::string &Name);
+  SegmentCacheActor(const std::string &Name, const std::shared_ptr<CachingPolicy>& cachingPolicy);
 
   void onReceive(const message::Envelope &message) override;
 
