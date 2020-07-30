@@ -35,7 +35,7 @@ std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
   // Read the table in batches
   std::shared_ptr<arrow::RecordBatch> batch;
   arrow::TableBatchReader reader(*tupleSet.table());
-  reader.set_chunksize(tuple::DefaultChunkSize);
+//  reader.set_chunksize(tuple::DefaultChunkSize);
   auto res = reader.ReadNext(&batch);
   std::shared_ptr<TupleSet> resultTuples = nullptr;
   while (res.ok() && batch) {

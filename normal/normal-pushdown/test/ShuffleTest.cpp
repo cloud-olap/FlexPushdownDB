@@ -7,7 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/shuffle/Shuffler.h>
+#include <normal/pushdown/shuffle/ATTIC/Shuffler.h>
 
 using namespace normal::tuple;
 using namespace normal::pushdown;

@@ -18,6 +18,7 @@ std::shared_ptr<Scalar> Scalar::make(const std::shared_ptr<::arrow::Scalar> &sca
   return std::make_shared<Scalar>(scalar);
 }
 
+
 size_t Scalar::hash() {
   if (scalar_->type->id() == arrow::Int64Type::type_id) {
 	auto typedScalar = std::static_pointer_cast<::arrow::Int64Scalar>(scalar_);
@@ -27,10 +28,10 @@ size_t Scalar::hash() {
 	auto typedScalar = std::static_pointer_cast<::arrow::Int32Scalar>(scalar_);
 	return std::hash<int>()(typedScalar->value);
   }
-	else if (scalar_->type->id() == arrow::StringType::type_id) {
-	  // FIXME: This is a bit of a hack, need to go to arrow 0.0.17 which properly implements hashes on scalars
-	  auto typedScalar = std::static_pointer_cast<::arrow::StringScalar>(scalar_);
-	  return std::hash<std::string>()(typedScalar->value->ToString());
+  else if (scalar_->type->id() == arrow::StringType::type_id) {
+	// FIXME: This is a bit of a hack, need to go to arrow 0.0.17 which properly implements hashes on scalars
+	auto typedScalar = std::static_pointer_cast<::arrow::StringScalar>(scalar_);
+	return std::hash<std::string_view>()(reinterpret_cast<const char*>(typedScalar->value->data()));
   } else {
 	throw std::runtime_error(
 		"Hash on scalar type '" + scalar_->type->ToString() + "' not implemented yet");

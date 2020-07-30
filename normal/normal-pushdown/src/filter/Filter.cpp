@@ -10,7 +10,7 @@
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/pushdown/Globals.h>
 #include <normal/expression/gandiva/Filter.h>
-#include <normal/tuple/TupleSetShowOptions.h>
+//#include <normal/tuple/TupleSetShowOptions.h>
 #include <normal/tuple/Globals.h>
 
 using namespace normal::pushdown::filter;
@@ -22,7 +22,7 @@ Filter::Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred) :
 	received_(normal::tuple::TupleSet2::make()),
 	filtered_(normal::tuple::TupleSet2::make()){}
 
-std::shared_ptr<Filter> Filter::make(std::string Name, std::shared_ptr<FilterPredicate> Pred) {
+std::shared_ptr<Filter> Filter::make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred) {
   return std::make_shared<Filter>(Name, Pred);
 }
 

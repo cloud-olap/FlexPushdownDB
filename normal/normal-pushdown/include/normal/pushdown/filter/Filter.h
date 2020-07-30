@@ -21,7 +21,7 @@ class Filter : public normal::core::Operator {
 public:
   explicit Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred);
 
-  static std::shared_ptr<Filter> make(std::string Name, std::shared_ptr<FilterPredicate> Pred);
+  static std::shared_ptr<Filter> make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred);
 
   void onReceive(const core::message::Envelope &Envelope) override;
 

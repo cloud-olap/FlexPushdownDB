@@ -20,7 +20,7 @@ private:
 public:
   void init();
   void shutdown();
-  std::shared_ptr<Aws::S3::S3Client> defaultS3Client();
+  static std::shared_ptr<Aws::S3::S3Client> defaultS3Client();
 };
 }
 #endif //NORMAL_NORMAL_PUSHDOWN_SRC_AWSCLIENT_H

@@ -187,7 +187,7 @@ void LocalFileSystemTests::full(short year, short discount, short quantity,
 																			numConcurrentUnits, mgr));
 
   auto actualName = actual->getColumnByIndex(0).value()->getName();
-  auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<int>();
+  auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<double>();
 
   SPDLOG_INFO("Actual  |  {} = {}", actualName, actualValue);
 

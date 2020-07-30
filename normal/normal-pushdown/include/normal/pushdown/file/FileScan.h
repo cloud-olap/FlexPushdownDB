@@ -10,6 +10,7 @@
 #include <normal/core/Operator.h>
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/pushdown/scan/ScanMessage.h>
+#include <normal/core/message/CompleteMessage.h>
 
 using namespace normal::tuple;
 using namespace normal::pushdown::scan;
@@ -48,6 +49,7 @@ private:
   void onStart();
   void onReceive(const normal::core::message::Envelope &message) override;
   void onCacheLoadResponse(const ScanMessage &Message);
+  void onComplete(const normal::core::message::CompleteMessage &message);
 
   tl::expected<std::shared_ptr<TupleSet2>, std::string> readCSVFile(const std::vector<std::string> &columnNames);
 

@@ -30,11 +30,11 @@ static tl::expected<std::shared_ptr<ARROW_ARRAY_TYPE>, std::string> makeArgh(con
   ARROW_BUILDER_TYPE builder(arrow::default_memory_pool());
   auto res = builder.Append(scalar->value);
   if(!res.ok())
-    abort();
+	throw std::runtime_error(res.message());
   std::shared_ptr<ARROW_ARRAY_TYPE> col;
   res = builder.Finish(&col);
   if(!res.ok())
-    abort();
+	throw std::runtime_error(res.message());
   return col;
 }
 

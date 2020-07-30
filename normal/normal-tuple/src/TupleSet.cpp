@@ -25,7 +25,7 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::Table
   auto result = tableReader->Read();
   if (!result.ok()) {
     // FIXME
-    abort();
+    throw std::runtime_error(result.status().message());
   }
 
   auto tupleSet = std::make_shared<TupleSet>();
@@ -39,10 +39,10 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::Table
   return tupleSet;
 }
 
-std::shared_ptr<TupleSet> TupleSet::make(std::shared_ptr<arrow::Table> table) {
+std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::Table> &table) {
 
   auto tupleSet = std::make_shared<TupleSet>();
-  tupleSet->table_ = std::move(table);
+  tupleSet->table_ = table;
 
   return tupleSet;
 }
@@ -57,46 +57,68 @@ void TupleSet::table(const std::shared_ptr<arrow::Table> &table) {
 
 std::shared_ptr<TupleSet> TupleSet::concatenate(const std::shared_ptr<TupleSet> &tp1,
                                                 const std::shared_ptr<TupleSet> &tp2) {
+
+
+#ifndef NDEBUG
+  {
+	assert(tp1);
+	assert(tp2);
+	assert(tp1->table_);
+	assert(tp2->table_);
+
+	auto res = tp1->table_->ValidateFull();
+	if (!res.ok()) {
+	  throw std::runtime_error(res.message());
+	}
+
+	res = tp2->table_->ValidateFull();
+	if (!res.ok()) {
+	  throw std::runtime_error(res.message());
+	}
+
+  }
+#endif
+
   std::shared_ptr<arrow::Table> tb1 = tp1->table_;
   std::shared_ptr<arrow::Table> tb2 = tp2->table_;
   std::vector<std::shared_ptr<arrow::Table>> tblVector = {tb1, tb2};
 
   auto res = arrow::ConcatenateTables(tblVector);
   if (!res.ok())
-    abort();
+    throw std::runtime_error(res.status().message());
   auto resTupleSet = make(*res);
   return resTupleSet;
 }
-void TupleSet::addColumn(const std::string &name, int position, std::vector<std::string> data) {
-  arrow::Status arrowStatus;
-
-  arrow::MemoryPool *pool = arrow::default_memory_pool();
-  arrow::StringBuilder colBuilder(pool);
-
-  for (int64_t r = 0; r < table_->num_rows(); ++r) {
-    std::string s = data.at(r);
-    arrowStatus = colBuilder.Append(s.c_str()); // FIXME: Not sure if this is safe
-
-    if (!arrowStatus.ok())
-      abort();
-  }
-
-  std::shared_ptr<arrow::StringArray> col;
-  arrowStatus = colBuilder.Finish(&col);
-
-  if (!arrowStatus.ok())
-    abort();
-
-  auto chunked_col = std::make_shared<arrow::ChunkedArray>(col);
-
-  std::shared_ptr<arrow::Field> field;
-  field = arrow::field(name, arrow::utf8());
-
-  arrowStatus = table_->AddColumn(position, field, chunked_col, &table_);
-
-  if (!arrowStatus.ok())
-    abort();
-}
+//void TupleSet::addColumn(const std::string &name, int position, std::vector<std::string> data) {
+//  arrow::Status arrowStatus;
+//
+//  arrow::MemoryPool *pool = arrow::default_memory_pool();
+//  arrow::StringBuilder colBuilder(pool);
+//
+//  for (int64_t r = 0; r < table_->num_rows(); ++r) {
+//    std::string s = data.at(r);
+//    arrowStatus = colBuilder.Append(s.c_str()); // FIXME: Not sure if this is safe
+//
+//    if (!arrowStatus.ok())
+//      abort();
+//  }
+//
+//  std::shared_ptr<arrow::StringArray> col;
+//  arrowStatus = colBuilder.Finish(&col);
+//
+//  if (!arrowStatus.ok())
+//    abort();
+//
+//  auto chunked_col = std::make_shared<arrow::ChunkedArray>(col);
+//
+//  std::shared_ptr<arrow::Field> field;
+//  field = arrow::field(name, arrow::utf8());
+//
+//  arrowStatus = table_->AddColumn(position, field, chunked_col, &table_);
+//
+//  if (!arrowStatus.ok())
+//    abort();
+//}
 
 int64_t TupleSet::numRows() {
   return table_->num_rows();
@@ -112,7 +134,7 @@ std::shared_ptr<arrow::Scalar> TupleSet::visit(const std::function<std::shared_p
 
   std::shared_ptr<arrow::RecordBatch> batch;
   arrow::TableBatchReader reader(*table_);
-  reader.set_chunksize(tuple::DefaultChunkSize);
+//  reader.set_chunksize(tuple::DefaultChunkSize);
   arrowStatus = reader.ReadNext(&batch);
 
   std::shared_ptr<arrow::Scalar> result;
@@ -135,7 +157,7 @@ std::string TupleSet::toString() {
 
   if (!arrowStatus.ok()) {
     // FIXME
-    abort();
+	throw std::runtime_error(arrowStatus.message());
   }
 
   return ss.str();

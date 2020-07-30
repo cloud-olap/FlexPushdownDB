@@ -304,6 +304,9 @@ std::shared_ptr<Schema> CSVParser::extractSchema(const arrow::csv::BlockParser &
 
 	  return arrow::Status::OK();
 	});
+
+	if (!status.ok())
+	  throw std::runtime_error(status.message());
   }
 
   return Schema::make(std::make_shared<::arrow::Schema>(fields));

@@ -22,6 +22,11 @@ void ColumnIterator::advance() {
 	  // Chunk index at end of chunk, advance chunk and reset chunk index
 	  index_.setChunk(index_.getChunk() + 1);
 	  index_.setChunkIndex(0);
+
+	  // Advance again if we're not at the end and ve've advanced to an empty chunk
+	  if(index_.getChunk() < chunkedArray_->num_chunks() &&
+	  chunkedArray_->chunk(index_.getChunk())->length() == 0)
+		advance();
 	}
   }
 }
@@ -71,13 +76,13 @@ std::shared_ptr<::arrow::Scalar> ColumnIterator::getArrowScalar() const {
 
   // Need to cast to the array type to be able to use the element accessors
   if (chunkedArray_->type()->id() == arrow::int64()->id()) {
-	auto typedArray = std::static_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
+	auto typedArray = std::dynamic_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
 	auto value = typedArray->Value(index_.getChunkIndex());
 	auto arrowScalar = arrow::MakeScalar(value);
 	return arrowScalar;
   }
   else if (chunkedArray_->type()->id() == arrow::utf8()->id()) {
-	auto typedArray = std::static_pointer_cast<arrow::StringArray>(chunkedArray_->chunk(index_.getChunk()));
+	auto typedArray = std::dynamic_pointer_cast<arrow::StringArray>(chunkedArray_->chunk(index_.getChunk()));
 	auto value = typedArray->GetString(index_.getChunkIndex());
 	auto arrowScalar = arrow::MakeScalar(value);
 	return arrowScalar;

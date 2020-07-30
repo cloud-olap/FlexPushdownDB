@@ -26,6 +26,17 @@ public:
   static std::shared_ptr<TupleSet2> sample3x3String();
 
   static std::shared_ptr<Column> sample3String();
+
+  /**
+   * Creates a  numCols x numRows tuple set of random decimal strings between 0.0 and 100.0
+   *
+   * Each column is named "c_<column index>"
+   *
+   * @param numCols
+   * @param numRows
+   * @return
+   */
+  static std::shared_ptr<TupleSet2> sampleCxRString(int numCols, int numRows);
 };
 
 }
