@@ -43,7 +43,7 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet){
 
   ankerl::nanobench::Config().minEpochIterations(1).run(
 	  fmt::format("shuffle3-{}-rows", tupleSet->numRows()), [&] {
-		shuffledTupleSets = ShuffleKernel2::shuffle("c_0", 2, tupleSet).value();
+		shuffledTupleSets = ShuffleKernel2::shuffle("c_0", 2, *tupleSet).value();
 	  });
 
 //  for(const auto &shuffledTupleSet: shuffledTupleSets){
