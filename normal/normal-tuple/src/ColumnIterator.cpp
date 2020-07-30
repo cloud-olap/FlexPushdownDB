@@ -71,13 +71,13 @@ std::shared_ptr<::arrow::Scalar> ColumnIterator::getArrowScalar() const {
 
   // Need to cast to the array type to be able to use the element accessors
   if (chunkedArray_->type()->id() == arrow::int64()->id()) {
-	auto typedArray = std::static_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
+	auto typedArray = std::dynamic_pointer_cast<arrow::Int64Array>(chunkedArray_->chunk(index_.getChunk()));
 	auto value = typedArray->Value(index_.getChunkIndex());
 	auto arrowScalar = arrow::MakeScalar(value);
 	return arrowScalar;
   }
   else if (chunkedArray_->type()->id() == arrow::utf8()->id()) {
-	auto typedArray = std::static_pointer_cast<arrow::StringArray>(chunkedArray_->chunk(index_.getChunk()));
+	auto typedArray = std::dynamic_pointer_cast<arrow::StringArray>(chunkedArray_->chunk(index_.getChunk()));
 	auto value = typedArray->GetString(index_.getChunkIndex());
 	auto arrowScalar = arrow::MakeScalar(value);
 	return arrowScalar;

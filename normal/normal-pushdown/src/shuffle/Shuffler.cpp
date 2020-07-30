@@ -13,11 +13,11 @@ Shuffler::shuffle(const std::string &columnName,
 				  const std::shared_ptr<TupleSet2> &tupleSet) {
 
   // Get the shuffle column
-  auto &&expectedShuffleColumn = tupleSet->getColumnByName(columnName);
+  auto expectedShuffleColumn = tupleSet->getColumnByName(columnName);
   if (!expectedShuffleColumn.has_value()) {
 	return tl::unexpected(expectedShuffleColumn.error());
   }
-  auto &&shuffleColumn = expectedShuffleColumn.value();
+  auto shuffleColumn = expectedShuffleColumn.value();
 
   // Create builders for each column for each partition
   auto fields = tupleSet->schema().value()->fields();
@@ -32,7 +32,7 @@ Shuffler::shuffle(const std::string &columnName,
 
   // Shuffle the tuple set
   int rowIndex = 0;
-  for (const auto &&columnValue: *shuffleColumn) {
+  for (const auto &columnValue: *shuffleColumn) {
 	auto partitionIndex = columnValue->hash() % numPartitions;
 //	SPDLOG_DEBUG("Assigning row to shuffle partition  |  row: {}, columnValue: {}, partitionIndex: {} ", rowIndex, columnValue->toString(), partitionIndex);
 	for (size_t columnIndex = 0; columnIndex < fields.size(); ++columnIndex) {
@@ -61,4 +61,5 @@ Shuffler::shuffle(const std::string &columnName,
   }
 
   return shuffledTupleSets;
+
 }
