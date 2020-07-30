@@ -2,7 +2,9 @@
 // Created by matt on 30/7/20.
 //
 
-#include "Int64ArrayAppender.h"
+#include "normal/pushdown/shuffle/Int64ArrayAppender.h"
+
+using namespace normal::pushdown::shuffle;
 
 Int64ArrayAppender::Int64ArrayAppender(size_t expectedSize) :
 	ArrayAppender(::arrow::int64(), std::make_shared<::arrow::Int64Builder>(), expectedSize) {
@@ -19,6 +21,8 @@ tl::expected<std::shared_ptr<arrow::Array>, std::string> Int64ArrayAppender::fin
   ::arrow::Status status;
   std::shared_ptr<::arrow::Int64Array> array;
 
+  buffer_.shrink_to_fit();
+
   status = int64Builder_->AppendValues(buffer_);
   if (!status.ok()) {
 	return tl::make_unexpected(status.message());
@@ -28,6 +32,8 @@ tl::expected<std::shared_ptr<arrow::Array>, std::string> Int64ArrayAppender::fin
   if (!status.ok()) {
 	return tl::make_unexpected(status.message());
   }
+
+  buffer_.clear();
 
   return array;
 }

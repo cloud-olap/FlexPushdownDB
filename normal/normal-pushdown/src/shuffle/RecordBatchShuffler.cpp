@@ -2,13 +2,15 @@
 // Created by matt on 29/7/20.
 //
 
-#include "RecordBatchShuffler.h"
-#include "ArrayHasher.h"
-#include "ArrayAppender.h"
+#include "normal/pushdown/shuffle/RecordBatchShuffler.h"
+#include "normal/pushdown/shuffle/ArrayHasher.h"
+#include "normal/pushdown/shuffle/ArrayAppender.h"
 
 #include <fmt/format.h>
 
 #include <utility>
+
+using namespace normal::pushdown::shuffle;
 
 RecordBatchShuffler::RecordBatchShuffler(int shuffleColumnIndex,
 										 size_t numSlots,
@@ -20,7 +22,8 @@ RecordBatchShuffler::RecordBatchShuffler(int shuffleColumnIndex,
 
   // Initialise the destination vectors of arrays
   for (size_t s = 0; s < numSlots; ++s) {
-	shuffledArraysVector_[s] = ::arrow::ArrayVector{static_cast<size_t>(schema_->num_fields())};
+	shuffledArraysVector_[s] =
+		std::vector<std::vector<std::shared_ptr<::arrow::Array>>>{static_cast<size_t>(schema_->num_fields())};
   }
 }
 
@@ -88,7 +91,7 @@ tl::expected<void, std::string> RecordBatchShuffler::shuffle(const std::shared_p
 	  if (!expectedArray.has_value())
 		return tl::make_unexpected(status.message());
 	  else
-		shuffledArraysVector_[s][c] = expectedArray.value();
+		shuffledArraysVector_[s][c].emplace_back(expectedArray.value());
 	}
   }
 
@@ -101,9 +104,16 @@ tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> RecordBatchSh
 
   // Create TupleSets from the destination vectors of arrays
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSetVector{numSlots_};
-  for (size_t i = 0; i < shuffledArraysVector_.size(); ++i) {
-	std::shared_ptr<::arrow::Table> shuffledTable = ::arrow::Table::Make(schema_, shuffledArraysVector_[i]);
-	shuffledTupleSetVector[i] = TupleSet2::make(shuffledTable);
+  for (size_t s = 0; s < shuffledArraysVector_.size(); ++s) {
+
+	std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
+	for (const auto &columnArrays : shuffledArraysVector_[s]) {
+	  auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(columnArrays);
+	  chunkedArrays.emplace_back(chunkedArray);
+	}
+
+	std::shared_ptr<::arrow::Table> shuffledTable = ::arrow::Table::Make(schema_, chunkedArrays);
+	shuffledTupleSetVector[s] = TupleSet2::make(shuffledTable);
   }
 
   return shuffledTupleSetVector;

@@ -7,6 +7,8 @@
 
 #include "ArrayAppender.h"
 
+namespace normal::pushdown::shuffle {
+
 /**
  * Builder for string arrays.
  */
@@ -23,5 +25,7 @@ private:
   std::shared_ptr<::arrow::StringBuilder> stringBuilder_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_STRINGARRAYAPPENDER_H

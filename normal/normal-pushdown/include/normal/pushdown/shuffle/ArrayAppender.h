@@ -8,6 +8,8 @@
 #include <arrow/api.h>
 #include <tl/expected.hpp>
 
+namespace normal::pushdown::shuffle {
+
 /**
  * Class for building arrays from another array.
  *
@@ -37,5 +39,7 @@ protected:
   size_t expectedSize_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYAPPENDER_H

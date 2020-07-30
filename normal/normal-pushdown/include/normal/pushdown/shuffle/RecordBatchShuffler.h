@@ -12,6 +12,8 @@
 
 using namespace normal::tuple;
 
+namespace normal::pushdown::shuffle {
+
 /**
  * Class to shuffle a record batch into N tuple sets.
  */
@@ -31,8 +33,10 @@ protected:
   int shuffleColumnIndex_;
   size_t numSlots_;
   std::shared_ptr<::arrow::Schema> schema_;
-  std::vector<::arrow::ArrayVector> shuffledArraysVector_;
+  std::vector<std::vector<std::vector<std::shared_ptr<::arrow::Array>>>> shuffledArraysVector_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_RECORDBATCHSHUFFLER_H

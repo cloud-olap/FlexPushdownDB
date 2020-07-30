@@ -12,6 +12,8 @@
 #include <tl/expected.hpp>
 #include <fmt/format.h>
 
+namespace normal::pushdown::shuffle {
+
 /**
  * Class for obtaining hashes from arrays. Subclassed for each tupe of array.
  */
@@ -30,5 +32,7 @@ protected:
   std::shared_ptr<::arrow::Array> array_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYHASHER_H

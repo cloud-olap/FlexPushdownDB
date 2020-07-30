@@ -34,19 +34,20 @@ add_library(normal-pushdown STATIC
         src/s3/S3SelectCSVParseOptions.cpp include/normal/pushdown/s3/S3SelectCSVParseOptions.h
         src/Util.cpp include/normal/pushdown/Util.h
         src/shuffle/Shuffle.cpp include/normal/pushdown/shuffle/Shuffle.h
-        src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h
+        src/shuffle/ATTIC/Shuffler.cpp include/normal/pushdown/shuffle/ATTIC/Shuffler.h
         src/cache/CacheLoad.cpp include/normal/pushdown/cache/CacheLoad.h
         src/merge/MergeOperator.cpp include/normal/pushdown/merge/MergeOperator.h
         src/merge/MergeKernel.cpp include/normal/pushdown/merge/MergeKernel.h
         include/normal/pushdown/scan/ScanMessage.cpp include/normal/pushdown/scan/ScanMessage.h
-        src/shuffle/ShuffleKernel.cpp include/normal/pushdown/shuffle/ShuffleKernel.h
-        include/normal/pushdown/shuffle/RecordBatchShuffler.cpp include/normal/pushdown/shuffle/RecordBatchShuffler.h
-        include/normal/pushdown/shuffle/ShuffleKernel2.cpp include/normal/pushdown/shuffle/ShuffleKernel2.h
-        include/normal/pushdown/shuffle/ArrayAppender.cpp include/normal/pushdown/shuffle/ArrayAppender.h
-        include/normal/pushdown/shuffle/StringArrayAppender.cpp include/normal/pushdown/shuffle/StringArrayAppender.h
-        include/normal/pushdown/shuffle/Int64ArrayAppender.cpp include/normal/pushdown/shuffle/Int64ArrayAppender.h
-        include/normal/pushdown/shuffle/ArrayHasher.cpp include/normal/pushdown/shuffle/ArrayHasher.h
-        include/normal/pushdown/shuffle/StringArrayHasher.cpp include/normal/pushdown/shuffle/StringArrayHasher.h include/normal/pushdown/shuffle/Int64ArrayHasher.cpp include/normal/pushdown/shuffle/Int64ArrayHasher.h)
+        src/shuffle/ATTIC/ShuffleKernel.cpp include/normal/pushdown/shuffle/ATTIC/ShuffleKernel.h
+        src/shuffle/RecordBatchShuffler.cpp include/normal/pushdown/shuffle/RecordBatchShuffler.h
+        src/shuffle/ShuffleKernel2.cpp include/normal/pushdown/shuffle/ShuffleKernel2.h
+        src/shuffle/ArrayAppender.cpp include/normal/pushdown/shuffle/ArrayAppender.h
+        src/shuffle/StringArrayAppender.cpp include/normal/pushdown/shuffle/StringArrayAppender.h
+        src/shuffle/Int64ArrayAppender.cpp include/normal/pushdown/shuffle/Int64ArrayAppender.h
+        src/shuffle/ArrayHasher.cpp include/normal/pushdown/shuffle/ArrayHasher.h
+        src/shuffle/StringArrayHasher.cpp include/normal/pushdown/shuffle/StringArrayHasher.h
+        src/shuffle/Int64ArrayHasher.cpp include/normal/pushdown/shuffle/Int64ArrayHasher.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

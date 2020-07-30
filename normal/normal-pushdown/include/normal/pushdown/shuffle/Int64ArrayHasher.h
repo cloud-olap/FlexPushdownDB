@@ -7,6 +7,8 @@
 
 #include "ArrayHasher.h"
 
+namespace normal::pushdown::shuffle {
+
 /**
  * Hasher for string arrays.
  */
@@ -22,5 +24,7 @@ private:
   std::hash<long> hash_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_INT64ARRAYHASHER_H

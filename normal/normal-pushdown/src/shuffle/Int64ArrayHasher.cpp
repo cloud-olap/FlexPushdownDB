@@ -2,7 +2,9 @@
 // Created by matt on 30/7/20.
 //
 
-#include "Int64ArrayHasher.h"
+#include "normal/pushdown/shuffle/Int64ArrayHasher.h"
+
+using namespace normal::pushdown::shuffle;
 
 Int64ArrayHasher::Int64ArrayHasher(const std::shared_ptr<::arrow::Array> &array) :
 	ArrayHasher(array) {

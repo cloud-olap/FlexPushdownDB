@@ -7,7 +7,8 @@
 #include <utility>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/tuple/ColumnBuilder.h>
-#include <normal/pushdown/shuffle/Shuffler.h>
+#include <normal/pushdown/shuffle/ATTIC/Shuffler.h>
+#include <normal/pushdown/shuffle/ShuffleKernel2.h>
 
 using namespace normal::pushdown::shuffle;
 using namespace normal::tuple;
@@ -54,12 +55,12 @@ void Shuffle::onTuple(const TupleMessage &message) {
   }
 
   // Check there are consumers
-  if(consumers_.size() == 0){
+  if(consumers_.empty()){
 	return;
   }
 
   // Shuffle the tuple set
-  auto expectedShuffledTupleSets = Shuffler::shuffle(columnName_, consumers_.size(), tupleSet);
+  auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
   if(!expectedShuffledTupleSets.has_value()){
     throw std::runtime_error(expectedShuffledTupleSets.error());
   }

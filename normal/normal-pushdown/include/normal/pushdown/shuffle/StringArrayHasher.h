@@ -7,6 +7,8 @@
 
 #include "ArrayHasher.h"
 
+namespace normal::pushdown::shuffle {
+
 /**
  * Hasher for string arrays.
  */
@@ -21,5 +23,7 @@ private:
   std::shared_ptr<::arrow::StringArray> stringArray_;
   std::hash<::arrow::util::string_view> hash_;
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYHASHER_CPP_STRINGARRAYHASHER_H

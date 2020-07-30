@@ -8,6 +8,8 @@
 #include <cstdint>
 #include "ArrayAppender.h"
 
+namespace normal::pushdown::shuffle {
+
 /**
  * Builder for int64 arrays.
  */
@@ -24,5 +26,7 @@ private:
   std::shared_ptr<::arrow::Int64Builder> int64Builder_;
 
 };
+
+}
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_INT64ARRAYAPPENDER_H

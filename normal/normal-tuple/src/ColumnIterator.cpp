@@ -22,6 +22,11 @@ void ColumnIterator::advance() {
 	  // Chunk index at end of chunk, advance chunk and reset chunk index
 	  index_.setChunk(index_.getChunk() + 1);
 	  index_.setChunkIndex(0);
+
+	  // Advance again if we're not at the end and ve've advanced to an empty chunk
+	  if(index_.getChunk() < chunkedArray_->num_chunks() &&
+	  chunkedArray_->chunk(index_.getChunk())->length() == 0)
+		advance();
 	}
   }
 }

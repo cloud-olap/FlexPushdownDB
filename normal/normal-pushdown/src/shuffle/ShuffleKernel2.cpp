@@ -3,7 +3,7 @@
 //
 
 #include "normal/pushdown/shuffle/ShuffleKernel2.h"
-#include "RecordBatchShuffler.h"
+#include "normal/pushdown/shuffle/RecordBatchShuffler.h"
 
 #include <string>
 
@@ -14,15 +14,15 @@ using namespace normal::pushdown::shuffle;
 tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string>
 ShuffleKernel2::shuffle(const std::string &columnName,
 						size_t numSlots,
-						const std::shared_ptr<TupleSet2> &tupleSet) {
+						const TupleSet2 &tupleSet) {
 
   ::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
 
   // Get the arrow table, checking the tupleset is defined FIXME: This is dumb :(
   std::shared_ptr<::arrow::Table> table;
-  if (tupleSet->getArrowTable().has_value()) {
-	table = tupleSet->getArrowTable().value();
+  if (tupleSet.getArrowTable().has_value()) {
+	table = tupleSet.getArrowTable().value();
   } else {
 	return tl::make_unexpected(fmt::format("TupleSet is undefined"));
   }
@@ -61,5 +61,22 @@ ShuffleKernel2::shuffle(const std::string &columnName,
 	recordBatch = *recordBatchResult;
   }
 
-  return shuffler->toTupleSets();
+  auto expectedShuffledTupleSets = shuffler->toTupleSets();
+
+#ifndef NDEBUG
+
+  assert(expectedShuffledTupleSets.has_value());
+
+  size_t totalNumRows = 0;
+  for(const auto &shuffledTupleSet: expectedShuffledTupleSets.value()){
+	assert(shuffledTupleSet->getArrowTable().has_value());
+	assert(shuffledTupleSet->getArrowTable().value()->ValidateFull().ok());
+	totalNumRows += shuffledTupleSet->numRows();
+  }
+
+  assert(totalNumRows == static_cast<size_t>(tupleSet.numRows()));
+
+#endif
+
+	return expectedShuffledTupleSets;
 }

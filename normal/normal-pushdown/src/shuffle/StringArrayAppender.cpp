@@ -2,7 +2,9 @@
 // Created by matt on 29/7/20.
 //
 
-#include "StringArrayAppender.h"
+#include "normal/pushdown/shuffle/StringArrayAppender.h"
+
+using namespace normal::pushdown::shuffle;
 
 StringArrayAppender::StringArrayAppender(int64_t expectedSize) :
 	ArrayAppender(::arrow::utf8(), std::make_shared<::arrow::StringBuilder>(), expectedSize) {
@@ -19,6 +21,8 @@ tl::expected<std::shared_ptr<arrow::Array>, std::string> StringArrayAppender::fi
   ::arrow::Status status;
   std::shared_ptr<::arrow::StringArray> array;
 
+  buffer_.shrink_to_fit();
+
   status = stringBuilder_->AppendValues(buffer_);
   if (!status.ok()) {
 	return tl::make_unexpected(status.message());
@@ -28,6 +32,8 @@ tl::expected<std::shared_ptr<arrow::Array>, std::string> StringArrayAppender::fi
   if (!status.ok()) {
 	return tl::make_unexpected(status.message());
   }
+
+  buffer_.clear();
 
   return array;
 }
