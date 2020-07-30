@@ -88,9 +88,20 @@ void FileScan::onReceive(const Envelope &message) {
   } else if (message.message().type() == "ScanMessage") {
 	auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
 	this->onCacheLoadResponse(scanMessage);
-  } else {
+  }
+  else if (message.message().type() == "CompleteMessage") {
+	auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message.message());
+	this->onComplete(completeMessage);
+  }
+  else {
 	// FIXME: Propagate error properly
 	throw std::runtime_error("Unrecognized message type " + message.message().type());
+  }
+}
+
+void FileScan::onComplete(const normal::core::message::CompleteMessage &) {
+  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+	ctx()->notifyComplete();
   }
 }
 
@@ -106,6 +117,7 @@ void FileScan::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   if(scanOnStart_){
 	readAndSendTuples(columnNames_);
+	ctx()->notifyComplete();
   }
 }
 
@@ -128,8 +140,6 @@ void FileScan::readAndSendTuples(const std::vector<std::string> &columnNames){
 
   std::shared_ptr<normal::core::message::Message> message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
   ctx()->tell(message);
-
-  ctx()->notifyComplete();
 }
 
 void FileScan::onCacheLoadResponse(const ScanMessage &Message) {

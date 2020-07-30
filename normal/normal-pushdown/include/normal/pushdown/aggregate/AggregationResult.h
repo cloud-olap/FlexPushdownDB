@@ -26,10 +26,10 @@ class AggregationResult {
 public:
   AggregationResult();
 
-  void put(const std::string &key, std::shared_ptr<arrow::Scalar> value);
+  void put(const std::string &key, const std::shared_ptr<arrow::Scalar> &value);
   std::shared_ptr<arrow::Scalar> get(const std::string &key);
-  std::shared_ptr<arrow::Scalar> get(const std::string &key, std::shared_ptr<arrow::Scalar> defaultValue);
-  void finalize(std::shared_ptr<arrow::Scalar> value);
+  std::shared_ptr<arrow::Scalar> get(const std::string &key, const std::shared_ptr<arrow::Scalar> &defaultValue);
+  void finalize(const std::shared_ptr<arrow::Scalar> &value);
   std::shared_ptr<arrow::Scalar> evaluate();
   void reset();
 

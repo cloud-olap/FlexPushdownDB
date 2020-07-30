@@ -5,10 +5,10 @@
 #include "normal/pushdown/join/Joiner.h"
 
 #include <arrow/api.h>
-#include <arrow/table.h>
+//#include <arrow/table.h>
 
 #include <normal/tuple/Column.h>
-#include <normal/pushdown/Globals.h>
+//#include <normal/pushdown/Globals.h>
 
 #include <utility>
 #include <normal/tuple/ColumnBuilder.h>

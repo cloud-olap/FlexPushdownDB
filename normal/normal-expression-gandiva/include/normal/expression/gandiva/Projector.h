@@ -23,7 +23,7 @@ public:
   explicit Projector(std::vector<std::shared_ptr<Expression>> Expressions);
 
   std::shared_ptr<TupleSet> evaluate(const TupleSet &tupleSet) override;
-  std::shared_ptr<arrow::ArrayVector> evaluate(const arrow::RecordBatch &recordBatch) override;
+  arrow::ArrayVector evaluate(const arrow::RecordBatch &recordBatch) override;
   void compile(const std::shared_ptr<arrow::Schema>& schema) override;
   [[nodiscard]] std::shared_ptr<arrow::Schema> getResultSchema() override;
 

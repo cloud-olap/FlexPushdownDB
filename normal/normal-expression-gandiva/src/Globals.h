@@ -10,6 +10,10 @@
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
 #include <spdlog/spdlog.h>
 
-namespace normal::expression::gandiva {}
+namespace normal::expression::gandiva {
+
+extern std::mutex BigGlobalLock;
+
+}
 
 #endif //NORMAL_NORMAL_EXPRESSION_GANDIVA_SRC_GLOBALS_H

@@ -34,11 +34,20 @@ add_library(normal-pushdown STATIC
         src/s3/S3SelectCSVParseOptions.cpp include/normal/pushdown/s3/S3SelectCSVParseOptions.h
         src/Util.cpp include/normal/pushdown/Util.h
         src/shuffle/Shuffle.cpp include/normal/pushdown/shuffle/Shuffle.h
-        src/shuffle/Shuffler.cpp include/normal/pushdown/shuffle/Shuffler.h
+        src/shuffle/ATTIC/Shuffler.cpp include/normal/pushdown/shuffle/ATTIC/Shuffler.h
         src/cache/CacheLoad.cpp include/normal/pushdown/cache/CacheLoad.h
         src/merge/MergeOperator.cpp include/normal/pushdown/merge/MergeOperator.h
         src/merge/MergeKernel.cpp include/normal/pushdown/merge/MergeKernel.h
-        src/scan/ScanMessage.cpp include/normal/pushdown/scan/ScanMessage.h)
+        src/scan/ScanMessage.cpp include/normal/pushdown/scan/ScanMessage.h
+        src/shuffle/ATTIC/ShuffleKernel.cpp include/normal/pushdown/shuffle/ATTIC/ShuffleKernel.h
+        src/shuffle/RecordBatchShuffler.cpp include/normal/pushdown/shuffle/RecordBatchShuffler.h
+        src/shuffle/ShuffleKernel2.cpp include/normal/pushdown/shuffle/ShuffleKernel2.h
+        src/shuffle/ArrayAppender.cpp include/normal/pushdown/shuffle/ArrayAppender.h
+        src/shuffle/StringArrayAppender.cpp include/normal/pushdown/shuffle/StringArrayAppender.h
+        src/shuffle/Int64ArrayAppender.cpp include/normal/pushdown/shuffle/Int64ArrayAppender.h
+        src/shuffle/ArrayHasher.cpp include/normal/pushdown/shuffle/ArrayHasher.h
+        src/shuffle/StringArrayHasher.cpp include/normal/pushdown/shuffle/StringArrayHasher.h
+        src/shuffle/Int64ArrayHasher.cpp include/normal/pushdown/shuffle/Int64ArrayHasher.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -79,6 +88,25 @@ target_include_directories(normal-pushdown-test PRIVATE include)
 target_link_libraries(normal-pushdown-test PRIVATE spdlog::spdlog)
 target_link_libraries(normal-pushdown-test PRIVATE doctest::doctest)
 target_link_libraries(normal-pushdown-test PRIVATE normal-pushdown)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Micro Benchmark
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-pushdown-benchmark
+        bench/Globals.h
+        bench/MainBenchmark.cpp
+        bench/ShuffleBenchmark.cpp)
+
+
+target_include_directories(normal-pushdown-benchmark PRIVATE include)
+
+target_link_libraries(normal-pushdown-benchmark PRIVATE spdlog::spdlog)
+target_link_libraries(normal-pushdown-benchmark PRIVATE doctest::doctest)
+target_link_libraries(normal-pushdown-benchmark PRIVATE nanobench::nanobench)
+target_link_libraries(normal-pushdown-benchmark PRIVATE normal-tuple)
+target_link_libraries(normal-pushdown-benchmark PRIVATE normal-pushdown)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

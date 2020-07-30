@@ -5,16 +5,8 @@
 #include "normal/tuple/TupleSet2.h"
 
 #include <utility>
-
-#include <arrow/api.h>
-#include <arrow/pretty_print.h>
 #include <iomanip>
-
-#include <normal/tuple/arrow/TableHelper.h>
-#include <normal/tuple/arrow/Arrays.h>
-#include <string>
 #include <sstream>
-#include <iostream>
 
 using namespace normal::tuple;
 
@@ -237,15 +229,15 @@ const std::optional<std::shared_ptr<::arrow::Table>> &TupleSet2::getArrowTable()
   return table_;
 }
 
-std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<Schema> &Schema) {
-  auto columns = Schema->makeColumns();
-  return make(Schema, columns);
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<Schema> &schema) {
+  auto columns = schema->makeColumns();
+  return make(schema, columns);
 }
 
-std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<Schema> &Schema,
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<Schema> &schema,
 										   const std::vector<std::shared_ptr<Column>> &columns) {
   auto chunkedArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-  auto arrowTable = ::arrow::Table::Make(Schema->getSchema(), chunkedArrays);
+  auto arrowTable = ::arrow::Table::Make(schema->getSchema(), chunkedArrays);
   auto tupleSet = std::make_shared<TupleSet2>(arrowTable);
   return tupleSet;
 }
@@ -332,7 +324,7 @@ tl::expected<std::string, std::string> TupleSet2::getString(const std::string &c
   }
 }
 
-std::shared_ptr<TupleSet2> TupleSet2::make(std::vector<std::shared_ptr<Column>> columns) {
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::vector<std::shared_ptr<Column>>& columns) {
 
   std::vector<std::shared_ptr<::arrow::ChunkedArray>> arrays;
   std::vector<std::shared_ptr<::arrow::Field>> fields;

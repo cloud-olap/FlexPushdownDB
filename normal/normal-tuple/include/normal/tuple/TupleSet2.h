@@ -53,7 +53,7 @@ public:
    */
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Table> arrowTable);
 
-  static std::shared_ptr<TupleSet2> make(const std::vector<std::shared_ptr<Column>> columns);
+  static std::shared_ptr<TupleSet2> make(const std::vector<std::shared_ptr<Column>>& columns);
 
   /**
    * Creates an empty tuple set with the given schema
@@ -61,9 +61,9 @@ public:
    * @param tuples
    * @return
    */
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema);
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& schema);
 
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& Schema, const std::vector<std::shared_ptr<Column>>& columns);
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& schema, const std::vector<std::shared_ptr<Column>>& columns);
 
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays);
 

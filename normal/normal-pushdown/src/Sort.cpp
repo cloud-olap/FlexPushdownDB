@@ -124,13 +124,13 @@ namespace normal::pushdown{
 
 
             auto arrayVector = projector_.value()->evaluate(batch);
-            auto array = arrayVector->at(0);
-            int numOfFields = arrayVector->size();
+            auto array = arrayVector.at(0);
+            int numOfFields = arrayVector.size();
             int lenOfBatch = array->length();
             for (int i=0; i<lenOfBatch; ++i){
                 std::vector<Cell> row;
                 for (int j=0; j<numOfFields; ++j){
-                    array = arrayVector->at(j);
+                    array = arrayVector.at(j);
                     auto colType = array->type();
                     Cell cell;
                     if (colType->Equals(arrow::Int32Type())) {
