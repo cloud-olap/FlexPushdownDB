@@ -43,7 +43,7 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet){
 
   ankerl::nanobench::Config().minEpochIterations(1).run(
 	  fmt::format("shuffle3-{}-rows", tupleSet->numRows()), [&] {
-		shuffledTupleSets = ShuffleKernel2::shuffle("c_0", 2, tupleSet).value();
+		shuffledTupleSets = ShuffleKernel2::shuffle("c_0", 2, *tupleSet).value();
 	  });
 
 //  for(const auto &shuffledTupleSet: shuffledTupleSets){
@@ -53,7 +53,7 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet){
 
 TEST_SUITE ("shuffle-benchmark" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("scaling" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("shuffle-benchmark-scaling" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet100 = Sample::sampleCxRString(10, 100);
   auto tupleSet1000 = Sample::sampleCxRString(10, 1000);

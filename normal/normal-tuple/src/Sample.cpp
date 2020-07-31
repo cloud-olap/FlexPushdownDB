@@ -64,7 +64,7 @@ std::shared_ptr<TupleSet2> Sample::sampleCxRRealString(int numCols, int numRows,
 std::shared_ptr<TupleSet2> Sample::sampleCxRIntString(int numCols, int numRows, std::uniform_int_distribution<int> dist) {
   std::random_device rd;
   std::mt19937 gen(rd());
-  return sampleCxRString(numCols, numRows, [&]() -> auto { return fmt::format("{:.{}i}", dist(gen), 2); });
+  return sampleCxRString(numCols, numRows, [&]() -> auto { return fmt::format("{}", dist(gen)); });
 }
 
 std::shared_ptr<TupleSet2> Sample::sampleCxRString(int numCols, int numRows, const std::function<std::string()> &valueGenerator) {
@@ -74,7 +74,7 @@ std::shared_ptr<TupleSet2> Sample::sampleCxRString(int numCols, int numRows, con
 	std::vector<std::string> row;
 	row.reserve(numRows);
 	for (int r = 0; r < numRows; ++r) {
-	  row.emplace_back(fmt::format("{:.{}f}", valueGenerator(), 2));
+	  row.emplace_back(valueGenerator());
 	}
 	data.emplace_back(row);
   }
