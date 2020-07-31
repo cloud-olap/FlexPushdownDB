@@ -21,8 +21,6 @@ public:
   static std::shared_ptr<SegmentData> make(const std::shared_ptr<Column> &column);
   [[nodiscard]] const std::shared_ptr<Column> &getColumn() const;
 
-  long size();
-
 private:
   std::shared_ptr<Column> column_;
 

@@ -17,3 +17,7 @@ std::shared_ptr<normal::expression::gandiva::Expression> AggregateLogicalFunctio
 void AggregateLogicalFunction::expression(const std::shared_ptr<normal::expression::gandiva::Expression> &expression) {
   expression_ = expression;
 }
+
+void AggregateLogicalFunction::setName(const std::string &name) {
+  name_ = name;
+}

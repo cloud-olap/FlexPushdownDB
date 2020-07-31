@@ -147,7 +147,12 @@ void Column::setName(const std::string &Name) {
   name_ = Name;
 }
 
-long Column::size() {
-//  array_->chunk(0).get()->length();
-  return sizeof(*array_) + sizeof(name_);
+size_t Column::size() {
+  size_t size = 0;
+  for (auto const &chunk: array_->chunks()) {
+    for (auto const &buffer: chunk->data()->buffers) {
+      size += buffer->size();
+    }
+  }
+  return size;
 }

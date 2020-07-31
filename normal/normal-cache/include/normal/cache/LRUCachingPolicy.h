@@ -22,12 +22,13 @@ public:
   static std::shared_ptr<LRUCachingPolicy> make();
   static std::shared_ptr<LRUCachingPolicy> make(size_t maxSize);
 
-  std::optional<std::shared_ptr<SegmentKey>> onStore(const std::shared_ptr<SegmentKey> &key) override;
+  std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
 
 private:
   size_t maxSize_;
+  size_t freeSize_;
   std::list<std::shared_ptr<SegmentKey>> usageQueue_;
   std::unordered_map<std::shared_ptr<SegmentKey>, std::list<std::shared_ptr<SegmentKey>>::iterator, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keyIndexMap_;
 

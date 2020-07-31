@@ -6,13 +6,38 @@
 
 using namespace normal::cache;
 
-SegmentKey::SegmentKey(std::shared_ptr<Partition> Partition, std::string columnName, SegmentRange Range)
-	: partition_(std::move(Partition)), columnName_(std::move(columnName)), range_(Range) {}
+SegmentKey::SegmentKey(std::shared_ptr<Partition> Partition,
+                       std::string columnName,
+                       SegmentRange Range)
+        : partition_(std::move(Partition)),
+          columnName_(std::move(columnName)),
+          range_(Range) {}
+
+SegmentKey::SegmentKey(std::shared_ptr<Partition> Partition,
+                       std::string columnName,
+                       SegmentRange Range,
+                       std::shared_ptr<SegmentMetadata> metadata)
+	: partition_(std::move(Partition)),
+	  columnName_(std::move(columnName)),
+	  range_(Range),
+	  metadata_(std::move(metadata)) {}
 
 std::shared_ptr<SegmentKey> SegmentKey::make(const std::shared_ptr<Partition> &Partition,
-											 std::string columnName,
-											 SegmentRange Range) {
-  return std::make_shared<SegmentKey>(std::move(Partition), std::move(columnName), Range);
+                                             std::string columnName,
+                                             SegmentRange Range) {
+  return std::make_shared<SegmentKey>(std::move(Partition),
+                                      std::move(columnName),
+                                      Range);
+}
+
+std::shared_ptr<SegmentKey> SegmentKey::make(const std::shared_ptr<Partition> &Partition,
+                                             std::string columnName,
+                                             SegmentRange Range,
+                                             std::shared_ptr<SegmentMetadata> metadata) {
+  return std::make_shared<SegmentKey>(std::move(Partition),
+                                      std::move(columnName),
+                                      Range,
+                                      std::move(metadata));
 }
 
 const std::shared_ptr<Partition> &SegmentKey::getPartition() const {
@@ -39,4 +64,8 @@ bool SegmentKey::operator!=(const SegmentKey &other) const {
 
 size_t SegmentKey::hash() {
   return partition_->hash() + range_.hash();
+}
+
+const std::shared_ptr<SegmentMetadata> &SegmentKey::getMetadata() const {
+  return metadata_;
 }

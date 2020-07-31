@@ -29,9 +29,9 @@ public:
     * Fired on storage of an entry
     *
     * @param key
-    * @return An optional key to remove from the cache
+    * @return A vector of keys to remove from the cache, nullptr if segment cannot be stored
     */
-  virtual std::optional<std::shared_ptr<SegmentKey>> onStore(const std::shared_ptr<SegmentKey> &key) = 0;
+  virtual std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) = 0;
 
   /**
    * Fired on removal of on entry

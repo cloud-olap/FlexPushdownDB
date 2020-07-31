@@ -26,7 +26,7 @@ using namespace normal::core::graph;
 using namespace normal::pushdown::cache;
 using namespace normal::pushdown::merge;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 void makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<OperatorGraph> &g) {
 
@@ -77,13 +77,13 @@ void makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<Oper
   auto collate = std::make_shared<Collate>(fmt::format("/query-{}/collate", g->getId()), g->getId());
 
   cacheLoad->setHitOperator(merge);
-  merge->consume(cacheLoad);
+  merge->setLeftProducer(cacheLoad);
 
   cacheLoad->setMissOperator(fileScan);
   fileScan->consume(cacheLoad);
 
   fileScan->produce(merge);
-  merge->consume(fileScan);
+  merge->setRightProducer(fileScan);
 
   merge->produce(collate);
   collate->consume(merge);

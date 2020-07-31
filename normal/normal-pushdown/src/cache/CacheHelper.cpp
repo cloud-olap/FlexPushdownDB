@@ -45,9 +45,11 @@ void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segmentsToStore;
   for (int64_t c = 0; c < tupleSet->numColumns(); ++c) {
 	auto column = tupleSet->getColumnByIndex(c).value();
-	auto segmentKey = SegmentKey::make(partition, column->getName(), SegmentRange::make(startOffset, finishOffset));
+	auto segmentKey = SegmentKey::make(partition,
+	                                   column->getName(),
+	                                   SegmentRange::make(startOffset, finishOffset),
+	                                   SegmentMetadata::make(column->size()));
 	auto segmentData = SegmentData::make(column);
-//	SPDLOG_INFO("Segment size: {}", segmentData->size());
 
 	segmentsToStore.emplace(segmentKey, segmentData);
   }

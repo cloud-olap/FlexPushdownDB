@@ -11,7 +11,7 @@ add_library(normal-cache STATIC
         src/SegmentKey.cpp include/normal/cache/SegmentKey.h
         src/SegmentData.cpp include/normal/cache/SegmentData.h
         src/SegmentRange.cpp include/normal/cache/SegmentRange.h
-        src/LRUCachingPolicy.cpp include/normal/cache/LRUCachingPolicy.h src/CachingPolicy.cpp include/normal/cache/CachingPolicy.h)
+        src/LRUCachingPolicy.cpp include/normal/cache/LRUCachingPolicy.h src/CachingPolicy.cpp include/normal/cache/CachingPolicy.h src/SegmentMetadata.cpp include/normal/cache/SegmentMetadata.h)
 
 target_include_directories(normal-cache PUBLIC include)
 

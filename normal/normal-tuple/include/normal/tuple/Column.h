@@ -43,7 +43,7 @@ public:
   std::shared_ptr<::arrow::DataType> type();
 
   long numRows();
-  long size();
+  size_t size();
 
   std::string showString();
   [[nodiscard]] std::string toString() const;

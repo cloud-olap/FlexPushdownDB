@@ -756,7 +756,16 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitResult_column(normal::sql::Nor
   if (ctx->STAR()) {
     return ctx->STAR()->toString();
   } else if (ctx->expr()) {
-    return visit(ctx->expr());
+    auto res = visit(ctx->expr());
+    if (res.is<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>()) {
+      auto function = res.as<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>();
+      if (ctx->column_alias()) {
+        function->setName(ctx->column_alias()->getText());
+      }
+    } else {
+      // TODO: column_alias for projection
+    }
+    return res;
   } else {
     throw std::runtime_error("Cannot parse result column " + ctx->getText());
   }

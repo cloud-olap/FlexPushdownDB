@@ -10,19 +10,35 @@
 #include <normal/connector/partition/Partition.h>
 
 #include "SegmentRange.h"
+#include "SegmentMetadata.h"
 
 namespace normal::cache {
 
 class SegmentKey {
 
 public:
-  SegmentKey(std::shared_ptr<Partition> Partition, std::string columnName, SegmentRange Range);
+  SegmentKey(std::shared_ptr<Partition> Partition,
+             std::string columnName,
+             SegmentRange Range);
 
-  static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition, std::string columnName, SegmentRange Range);
+  SegmentKey(std::shared_ptr<Partition> Partition,
+             std::string columnName,
+             SegmentRange Range,
+             std::shared_ptr<SegmentMetadata> metadata);
+
+  static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition,
+                                          std::string columnName,
+                                          SegmentRange Range);
+
+  static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition,
+                                          std::string columnName,
+                                          SegmentRange Range,
+                                          std::shared_ptr<SegmentMetadata> metadata);
 
   [[nodiscard]] const std::shared_ptr<Partition> &getPartition() const;
 //  [[nodiscard]] const std::string &getColumnName() const;
   [[maybe_unused]] [[nodiscard]] const SegmentRange &getRange() const;
+  [[nodiscard]] const std::shared_ptr<SegmentMetadata> &getMetadata() const;
 
   std::string toString();
 
@@ -36,6 +52,8 @@ private:
   std::string columnName_;
   SegmentRange range_;
 
+  // FIXME: maybe not a good way to store metadata inside the SegmentKey
+  std::shared_ptr<SegmentMetadata> metadata_;
 };
 
 struct SegmentKeyPointerHash {

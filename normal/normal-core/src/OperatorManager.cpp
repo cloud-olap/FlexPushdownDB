@@ -115,7 +115,11 @@ void OperatorManager::join() {
 void OperatorManager::boot() {
 
   // Create the system actors
-  segmentCacheActor_ = std::make_shared<SegmentCacheActor>("SegmentCache", cachingPolicy_);
+  if (cachingPolicy_) {
+    segmentCacheActor_ = std::make_shared<SegmentCacheActor>("SegmentCache", cachingPolicy_);
+  } else {
+    segmentCacheActor_ = std::make_shared<SegmentCacheActor>("SegmentCache");
+  }
   put(segmentCacheActor_);
 
   // Create the operators

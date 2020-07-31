@@ -22,13 +22,14 @@ std::shared_ptr<SegmentCache> SegmentCache::make(const std::shared_ptr<CachingPo
 }
 
 void SegmentCache::store(const std::shared_ptr<SegmentKey> &key, const std::shared_ptr<SegmentData> &data) {
+  auto removableKeys = cachingPolicy_->onStore(key);
 
-  auto removableKey = cachingPolicy_->onStore(key);
-  if(removableKey.has_value()) {
-	map_.erase(removableKey.value());
+  if (removableKeys.has_value()) {
+    for (auto const &removableKey: *removableKeys.value()) {
+      map_.erase(removableKey);
+    }
+    map_.emplace(key, data);
   }
-
-  map_.emplace(key, data);
 }
 
 tl::expected<std::shared_ptr<SegmentData>,

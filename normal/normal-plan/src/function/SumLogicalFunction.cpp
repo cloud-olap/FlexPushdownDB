@@ -16,13 +16,17 @@ normal::plan::function::SumLogicalFunction::SumLogicalFunction() : normal::plan:
 
 std::shared_ptr<normal::pushdown::aggregate::AggregationFunction> normal::plan::function::SumLogicalFunction::toExecutorFunction() {
   // FIXME: Defaulting name to sum-{expression.alias()}; Currently only support to cast to Float64Type
-  auto aggregateName = fmt::format("sum-{}",this->expression()->alias());
-  return std::make_shared<normal::pushdown::aggregate::Sum>(aggregateName, operator_::castToFloat64Type(this->expression()));
+  if (name_ == "") {
+    name_ = fmt::format("sum-{}", this->expression()->alias());
+  }
+  return std::make_shared<normal::pushdown::aggregate::Sum>(name_, operator_::castToFloat64Type(this->expression()));
 }
 
 std::shared_ptr<normal::pushdown::aggregate::AggregationFunction> normal::plan::function::SumLogicalFunction::toExecutorReduceFunction() {
-  auto aggregateName = fmt::format("sum-{}",this->expression()->alias());
-  return std::make_shared<normal::pushdown::aggregate::Sum>(aggregateName, col(aggregateName));
+  if (name_ == "") {
+    name_ = fmt::format("sum-{}", this->expression()->alias());
+  }
+  return std::make_shared<normal::pushdown::aggregate::Sum>(name_, col(name_));
 }
 
 
