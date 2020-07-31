@@ -48,7 +48,7 @@ add_library(normal-pushdown STATIC
         src/shuffle/ArrayHasher.cpp include/normal/pushdown/shuffle/ArrayHasher.h
         src/shuffle/StringArrayHasher.cpp include/normal/pushdown/shuffle/StringArrayHasher.h
         src/shuffle/Int64ArrayHasher.cpp include/normal/pushdown/shuffle/Int64ArrayHasher.h
-        include/normal/pushdown/join/HashJoinBuildKernel.cpp include/normal/pushdown/join/HashJoinBuildKernel.h)
+        include/normal/pushdown/join/HashJoinBuildKernel.cpp include/normal/pushdown/join/HashJoinBuildKernel.h include/normal/pushdown/join/HashJoinProbeKernel.cpp include/normal/pushdown/join/HashJoinProbeKernel.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

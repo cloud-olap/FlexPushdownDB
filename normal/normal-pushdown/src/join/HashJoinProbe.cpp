@@ -16,8 +16,8 @@ using namespace normal::pushdown::join;
 
 HashJoinProbe::HashJoinProbe(const std::string &name, JoinPredicate pred) :
 	Operator(name, "HashJoinProbe"),
-	pred_(std::move(pred)),
-	hashtable_(std::make_shared<HashTable>()) {
+	hashtable_(std::make_shared<HashTable>()),
+	kernel_(HashJoinProbeKernel::make(std::move(pred))){
 }
 
 void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
@@ -46,9 +46,6 @@ void HashJoinProbe::onStart() {
 }
 
 void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
-
-
-
   // Add the tuples to the internal buffer
   bufferTuples(msg);
 }
@@ -85,9 +82,11 @@ void HashJoinProbe::joinAndSendTuples() {
 }
 
 tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinProbe::join() {
-  Joiner joiner(pred_, hashtable_, tuples_);
-  auto joinedTuplesExpected = joiner.join();
-  return joinedTuplesExpected;
+  kernel_.putHashTable(hashtable_);
+  kernel_.putTupleSet(tuples_);
+  auto joinedTuplesExpected2 = kernel_.join();
+
+  return joinedTuplesExpected2;
 }
 
 void HashJoinProbe::sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &joined) {

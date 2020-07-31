@@ -12,6 +12,7 @@
 #include "JoinPredicate.h"
 #include "HashTableMessage.h"
 #include "HashTable.h"
+#include "HashJoinProbeKernel.h"
 
 namespace normal::pushdown::join {
 
@@ -32,11 +33,6 @@ public:
 private:
 
   /**
-   * The join predicate
-   */
-  JoinPredicate pred_;
-
-  /**
    * A buffer of received tuples that are not joined until enough hashtable entries and tuples have been received
    */
   std::shared_ptr<normal::tuple::TupleSet2> tuples_;
@@ -45,6 +41,8 @@ private:
    * The hashtable
    */
   std::shared_ptr<HashTable> hashtable_;
+
+  HashJoinProbeKernel kernel_;
 
   void onStart();
   void onTuple(const core::message::TupleMessage &msg);
