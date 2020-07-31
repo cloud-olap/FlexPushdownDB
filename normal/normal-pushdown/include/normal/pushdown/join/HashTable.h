@@ -51,13 +51,13 @@ public:
   HashTable();
 
   [[nodiscard]] const std::shared_ptr<TupleSet2> &getTupleSet() const;
-  [[nodiscard]] const std::shared_ptr<ValueRowMap> &
-  getValueRowMap() const;
+  [[nodiscard]] const std::shared_ptr<ValueRowMap> &getValueRowMap() const;
 
   void clear();
   void merge(const std::shared_ptr<HashTable> &other);
   [[nodiscard]] tl::expected<void, std::string> put(const std::string &columnName, const std::shared_ptr<TupleSet2> &tupleSet);
   std::string toString();
+  size_t size();
 
 private:
 

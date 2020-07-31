@@ -96,3 +96,6 @@ tl::expected<void, std::string> HashTable::put(const std::string &columnName, co
   return {};
 }
 
+size_t HashTable::size() {
+  return this->tuples_->numRows();
+}

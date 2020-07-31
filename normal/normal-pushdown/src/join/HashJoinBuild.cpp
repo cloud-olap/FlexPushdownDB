@@ -18,7 +18,7 @@ using namespace normal::core;
 HashJoinBuild::HashJoinBuild(const std::string &name, std::string columnName) :
 	Operator(name, "HashJoinBuild"),
 	columnName_(std::move(columnName)),
-	hashtable_(std::make_shared<HashTable>()) {
+	kernel_(HashJoinBuildKernel::make(columnName_)){
 }
 
 std::shared_ptr<HashJoinBuild> HashJoinBuild::create(const std::string &name, const std::string &columnName) {
@@ -42,7 +42,7 @@ void HashJoinBuild::onReceive(const normal::core::message::Envelope &msg) {
 }
 
 void HashJoinBuild::onStart() {
-  hashtable_->clear();
+  kernel_.clear();
 }
 
 void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
@@ -50,11 +50,7 @@ void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
 
 //  SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
 
-  auto putResult = hashtable_->put(columnName_, tupleSet);
-
-  if (!putResult.has_value()) {
-	throw std::runtime_error(putResult.error());
-  }
+  kernel_.put(tupleSet);
 
 //  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
 }
@@ -65,7 +61,7 @@ void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 //	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
 
 	std::shared_ptr<normal::core::message::Message>
-		hashTableMessage = std::make_shared<HashTableMessage>(hashtable_, name());
+		hashTableMessage = std::make_shared<HashTableMessage>(kernel_.getHashTable(), name());
 
 	ctx()->tell(hashTableMessage);
 
