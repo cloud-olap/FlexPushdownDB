@@ -46,7 +46,7 @@ tl::expected<void, std::string> RecordBatchShuffler::shuffle(const std::shared_p
   arrow::Status status;
 
   // Get an reference to the array to shuffle on
-  const auto &shuffleColumn = std::static_pointer_cast<::arrow::StringArray>(recordBatch->column(shuffleColumnIndex_));
+  const auto &shuffleColumn = recordBatch->column(shuffleColumnIndex_);
 
   // Create a hasher for the shuffle array
   std::shared_ptr<ArrayHasher> shuffleColumnHasher;
