@@ -55,7 +55,10 @@ add_library(normal-pushdown STATIC
         include/normal/pushdown/join/ArraySet.cpp include/normal/pushdown/join/ArraySet.h
         include/normal/pushdown/join/ArraySetIndex.cpp include/normal/pushdown/join/ArraySetIndex.h
         include/normal/pushdown/join/TypedArraySetIndex.cpp include/normal/pushdown/join/TypedArraySetIndex.h
-        include/normal/pushdown/join/ArraySetIndexBuilder.cpp include/normal/pushdown/join/ArraySetIndexBuilder.h)
+        include/normal/pushdown/join/ArraySetIndexBuilder.cpp include/normal/pushdown/join/ArraySetIndexBuilder.h
+        include/normal/pushdown/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
+        include/normal/pushdown/join/ArraySetIndexFinder.cpp include/normal/pushdown/join/ArraySetIndexFinder.h
+        include/normal/pushdown/join/ArraySetIndexFinderWrapper.cpp include/normal/pushdown/join/ArraySetIndexFinderWrapper.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

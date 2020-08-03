@@ -44,33 +44,42 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet1, const std::shared_ptr<Tupl
 
   TupleSet2 joinedTupleSet;
 
+//  SPDLOG_DEBUG("BUILD RELATION:\n{}", tupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+//  SPDLOG_DEBUG("PROBE RELATION:\n{}", tupleSet2->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+
+//  ankerl::nanobench::Config().minEpochIterations(1).run(
+//	  fmt::format("join-{}-{}-rows", tupleSet1->numRows(), tupleSet2->numRows()), [&] {
+//		auto buildKernel = HashJoinBuildKernel::make("c_0");
+//		buildKernel.put(tupleSet1);
+//		auto hashTable = buildKernel.getHashTable();
+//
+//		auto probeKernel = HashJoinProbeKernel::make(JoinPredicate("c_0", "c_0"));
+//		probeKernel.putHashTable(hashTable);
+//		probeKernel.putTupleSet(tupleSet2);
+//		joinedTupleSet = *probeKernel.join().value();
+//	  });
+
+//  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+
   ankerl::nanobench::Config().minEpochIterations(1).run(
-	  fmt::format("join-{}-{}-rows", tupleSet1->numRows(), tupleSet2->numRows()), [&] {
-		auto buildKernel = HashJoinBuildKernel::make("c_0");
+	  fmt::format("join2-{}-{}-rows", tupleSet1->numRows(), tupleSet2->numRows()), [&] {
+
+		auto buildKernel = HashJoinBuildKernel2::make("c_0");
 		buildKernel.put(tupleSet1);
-		auto hashTable = buildKernel.getHashTable();
+		auto index = buildKernel.getArraySetIndex();
 
-		auto probeKernel = HashJoinProbeKernel::make(JoinPredicate("c_0", "c_0"));
-		probeKernel.putHashTable(hashTable);
-		probeKernel.putTupleSet(tupleSet2);
-		joinedTupleSet = *probeKernel.join().value();
-	  });
+		auto indexTupleSet = TupleSet2::make(index->getTable());
 
-  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-
-  ankerl::nanobench::Config().minEpochIterations(1).run(
-	  fmt::format("join-{}-{}-rows", tupleSet1->numRows(), tupleSet2->numRows()), [&] {
-		auto buildKernel = HashJoinBuildKernel::make("c_0");
-		buildKernel.put(tupleSet1);
-		auto hashTable = buildKernel.getHashTable();
+		SPDLOG_DEBUG("INDEX MAP:\n{}", index->toString());
+		SPDLOG_DEBUG("INDEX TUPLESET:\n{}", indexTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 		auto probeKernel = HashJoinProbeKernel2::make(JoinPredicate("c_0", "c_0"));
-		probeKernel.putHashTable(hashTable);
+		probeKernel.putArraySetIndex(index);
 		probeKernel.putTupleSet(tupleSet2);
 		joinedTupleSet = *probeKernel.join().value();
 	  });
 
-  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+//  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
 TEST_SUITE ("join-benchmark" * doctest::skip(SKIP_SUITE)) {
@@ -90,17 +99,17 @@ TEST_CASE ("join-build-benchmark" * doctest::skip(false || SKIP_SUITE)) {
   runJoinBuild(tupleSet100000);
 }
 
-TEST_CASE ("join-benchmark-scaling" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("join-build-probe-benchmark" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet10 = Sample::sampleCxRIntString(10, 10);
   auto tupleSet100 = Sample::sampleCxRIntString(10, 100);
   auto tupleSet1000 = Sample::sampleCxRIntString(10, 1000);
-//  auto tupleSet10000 = Sample::sampleCxRIntString(10, 10000);
+  auto tupleSet10000 = Sample::sampleCxRIntString(10, 10000);
 //  auto tupleSet100000 = Sample::sampleCxRIntString(10, 100000);
 
   run(tupleSet10, tupleSet100);
   run(tupleSet100, tupleSet1000);
-//  run(tupleSet1000, tupleSet10000);
+  run(tupleSet1000, tupleSet10000);
 //  run(tupleSet10000, tupleSet100000);
 }
 

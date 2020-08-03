@@ -18,7 +18,13 @@ public:
 
   virtual ~ArraySetIndex() = default;
 
+  std::shared_ptr<::arrow::DataType> type(){
+    return table_->column(arrayPos_)->type();
+  }
+
   virtual tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) = 0;
+
+  virtual tl::expected<void, std::string> merge(const std::shared_ptr<ArraySetIndex> &other) = 0;
 
   int64_t size(){
     return table_->num_rows();
@@ -28,10 +34,18 @@ public:
     table_ = nullptr;
   }
 
+  std::vector<std::shared_ptr<::arrow::ChunkedArray>> columns(){
+    return table_->columns();
+  }
+
+  [[nodiscard]] const std::shared_ptr<::arrow::Table> &getTable() const;
+
+  virtual std::string toString() = 0;
+
 protected:
-  std::shared_ptr<::arrow::Table> table_;
   size_t arrayPos_;
 
+  std::shared_ptr<::arrow::Table> table_;
 };
 
 

@@ -9,6 +9,8 @@
 
 #include <arrow/api.h>
 
+#include <normal/pushdown/join/RecordBatchJoiner.h>
+
 using namespace normal::pushdown::join;
 
 HashJoinProbeKernel2::HashJoinProbeKernel2(JoinPredicate pred) :
@@ -18,11 +20,11 @@ HashJoinProbeKernel2 HashJoinProbeKernel2::make(JoinPredicate pred) {
   return HashJoinProbeKernel2(std::move(pred));
 }
 
-void HashJoinProbeKernel2::putHashTable(const std::shared_ptr<HashTable> &hashTable) {
-  if (!hashTable_.has_value()) {
-	hashTable_ = hashTable;
+void HashJoinProbeKernel2::putArraySetIndex(const std::shared_ptr<ArraySetIndex> &arraySetIndex) {
+  if (!arraySetIndex_.has_value()) {
+	arraySetIndex_ = arraySetIndex;
   } else {
-	hashTable_.value()->merge(hashTable);
+	arraySetIndex_.value()->merge(arraySetIndex);
   }
 }
 
@@ -40,12 +42,31 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   ::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
 
-  if (!hashTable_.has_value())
-	return tl::make_unexpected("HashTable not set");
+  if (!arraySetIndex_.has_value())
+	return tl::make_unexpected("ArraySetIndex not set");
   if (!tupleSet_.has_value())
 	return tl::make_unexpected("TupleSet not set");
 
+  auto buildTable = arraySetIndex_.value()->getTable();
   auto probeTable = tupleSet_.value()->getArrowTable().value();
+
+  // Create the output schema
+  std::vector<std::shared_ptr<::arrow::Field>> outputFields;
+  outputFields.reserve(buildTable->schema()->num_fields() + probeTable->schema()->num_fields());
+  for (int c = 0; c < buildTable->schema()->num_fields(); ++c) {
+	outputFields.emplace_back(buildTable->schema()->fields()[c]);
+  }
+  for (int c = 0; c < probeTable->schema()->num_fields(); ++c) {
+	outputFields.emplace_back(probeTable->schema()->fields()[c]);
+  }
+  auto outputSchema = std::make_shared<::arrow::Schema>(outputFields);
+
+  // Create the joiner
+  auto expectedJoiner = RecordBatchJoiner::make(arraySetIndex_.value(), pred_.getRightColumnName(), outputSchema);
+  if (!expectedJoiner.has_value()) {
+	return tl::make_unexpected(expectedJoiner.error());
+  }
+  auto joiner = expectedJoiner.value();
 
   // Read the table a batch at a time
   ::arrow::TableBatchReader reader{*probeTable};
@@ -61,7 +82,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   while (recordBatch) {
 
 	// Shuffle batch
-	joinRecordBatch(recordBatch);
+	joiner->join(recordBatch);
 
 	// Read a batch
 	recordBatchResult = reader.Next();
@@ -70,11 +91,18 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
 	}
 	recordBatch = *recordBatchResult;
   }
-}
 
-void HashJoinProbeKernel2::joinRecordBatch(const std::shared_ptr<arrow::RecordBatch> &recordBatch) {
-  auto joinColumn = recordBatch->GetColumnByName(pred_.getRightColumnName());
+  auto expectedJoinedTupleSet = joiner->toTupleSet();
 
-  for (int64_t r = 0; r < joinColumn->length(); ++r) {
-  }
+#ifndef NDEBUG
+
+  assert(expectedJoinedTupleSet.has_value());
+  assert(expectedJoinedTupleSet.value()->getArrowTable().has_value());
+  auto result = expectedJoinedTupleSet.value()->getArrowTable().value()->ValidateFull();
+  if(!result.ok())
+    throw std::runtime_error(result.message());
+
+#endif
+
+  return expectedJoinedTupleSet;
 }

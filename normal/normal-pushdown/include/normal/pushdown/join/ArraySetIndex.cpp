@@ -6,4 +6,8 @@
 
 #include <utility>
 ArraySetIndex::ArraySetIndex(size_t ArrayPos,
-							 std::shared_ptr<::arrow::Table> Table) : table_(std::move(Table)), arrayPos_(ArrayPos) {}
+							 std::shared_ptr<::arrow::Table> Table) : arrayPos_(ArrayPos), table_(std::move(Table))  {}
+
+const std::shared_ptr<::arrow::Table> &ArraySetIndex::getTable() const {
+  return table_;
+}

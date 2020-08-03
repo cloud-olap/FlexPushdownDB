@@ -13,7 +13,7 @@ class ArraySetIndexBuilder {
 public:
   static std::shared_ptr<ArraySetIndex> make(const std::shared_ptr<::arrow::Table>& table, const std::string& arrayName){
 	size_t arrayPos = table->schema()->GetFieldIndex(arrayName);
-	return TypedArraySetIndex<::arrow::util::string_view, ::arrow::StringType>::make(table, arrayPos);
+	return TypedArraySetIndex<std::string, ::arrow::StringType>::make(table, arrayPos);
   }
 };
 

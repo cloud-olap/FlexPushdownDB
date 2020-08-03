@@ -22,7 +22,7 @@ public:
 
   TypedArraySetIndex(const std::shared_ptr<::arrow::Table> &Table,
 					 size_t arrayPos,
-					 std::unordered_map<CType, int64_t> ValueIndexMap)
+					 std::unordered_multimap<CType, int64_t> ValueIndexMap)
 	  : ArraySetIndex(arrayPos, Table), valueIndexMap_(std::move(ValueIndexMap)) {}
 
   static std::shared_ptr<TypedArraySetIndex> make(const std::shared_ptr<::arrow::Table> &Table, size_t arrayPos) {
@@ -31,14 +31,14 @@ public:
 	return std::make_shared<TypedArraySetIndex>(Table, arrayPos, valueIndexMap.value());
   }
 
-  static tl::expected<std::unordered_map<CType, int64_t>, std::string> build(size_t arrayPos,
+  static tl::expected<std::unordered_multimap<CType, int64_t>, std::string> build(size_t arrayPos,
 																			 int64_t rowNumOffset,
 																			 const std::shared_ptr<::arrow::Table> &table) {
 
 	::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
 	::arrow::Status status;
 
-	std::unordered_map<CType, int64_t> valueIndexMap{};
+	std::unordered_multimap<CType, int64_t> valueIndexMap{};
 
 	// Read the table a batch at a time
 	::arrow::TableBatchReader reader{*table};
@@ -57,7 +57,7 @@ public:
 
 	  auto typedArray = std::static_pointer_cast<ArrowArrayType>(array);
 	  for (int64_t r = 0; r < typedArray->length(); ++r) {
-		valueIndexMap.emplace(typedArray->GetView(r), r + rowNumOffset);
+		valueIndexMap.emplace(typedArray->GetString(r), r + rowNumOffset);
 	  }
 
 	  // Read a batch
@@ -69,6 +69,28 @@ public:
 	}
 
 	return valueIndexMap;
+  }
+
+  tl::expected<void, std::string> merge(const std::shared_ptr<ArraySetIndex> &other) override {
+
+    auto typedOther = std::static_pointer_cast<TypedArraySetIndex<CType, ArrowType>>(other);
+
+	long rowOffset = table_->num_rows();
+
+	// Add the other rows to hashtable, offsetting their row numbers
+	for (auto valueIndexMapIterator = typedOther->valueIndexMap_.begin();
+		 valueIndexMapIterator != typedOther->valueIndexMap_.end(); valueIndexMapIterator++) {
+	  valueIndexMap_.emplace(valueIndexMapIterator->first, valueIndexMapIterator->second + rowOffset);
+	}
+
+	// Add the other hashtable table to the table
+	auto appendResult = ::arrow::ConcatenateTables({table_, typedOther->table_});
+	if(!appendResult.ok()){
+	  return tl::make_unexpected(appendResult.status().message());
+	}
+	table_ = *appendResult;
+
+	return {};
   }
 
   tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) override {
@@ -86,8 +108,25 @@ public:
 	return {};
   }
 
+  std::vector<int64_t> find(CType value) {
+	std::vector<int64_t> indexes;
+	auto range = valueIndexMap_.equal_range(value);
+	for(auto it = range.first; it != range.second; ++it){
+	  indexes.emplace_back(it->second);
+	}
+	return indexes;
+  }
+
+  std::string toString() override {
+    std::string s;
+	for(const auto &x: valueIndexMap_){
+	  s += fmt::format("{} : {}\n", std::string(x.first), x.second);
+	}
+	return s;
+  }
+
 private:
-  std::unordered_map<CType, int64_t> valueIndexMap_;
+  std::unordered_multimap<CType, int64_t> valueIndexMap_;
 
 };
 
