@@ -51,7 +51,16 @@ public:
 	auto indexFinder = expectedIndexFinder.value();
 
 	// Create references to each array in the index
-	std::vector<std::shared_ptr<::arrow::ChunkedArray>> buildColumns = buildArraySetIndex_->columns();
+
+	std::shared_ptr<::arrow::Table> buildTable;
+	buildArraySetIndex_->getTable()->CombineChunks(::arrow::default_memory_pool(), &buildTable);
+
+	::arrow::ArrayVector buildColumns;
+	for(const auto &column: buildTable->columns()){
+	  buildColumns.emplace_back(column->chunk(0));
+	}
+
+//	std::vector<std::shared_ptr<::arrow::ChunkedArray>> buildColumns = buildArraySetIndex_->columns();
 
 	// Create references to each array in the record batch
 	std::vector<std::shared_ptr<::arrow::Array>> probeColumns{static_cast<size_t>(recordBatch->num_columns())};
@@ -89,7 +98,7 @@ public:
 		for (size_t c = 0; c < buildColumns.size(); ++c) {
 
 		  // Append each row from the build column
-		  buildAppenders[c]->appendValue(buildColumns[c]->Slice(br, br + 1)->chunk(0), 0);
+		  buildAppenders[c]->appendValue(buildColumns[c], br);
 		}
 
 		// Iterate the probe columns

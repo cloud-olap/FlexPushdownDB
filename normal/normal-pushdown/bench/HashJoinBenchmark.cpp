@@ -70,8 +70,8 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet1, const std::shared_ptr<Tupl
 
 		auto indexTupleSet = TupleSet2::make(index->getTable());
 
-		SPDLOG_DEBUG("INDEX MAP:\n{}", index->toString());
-		SPDLOG_DEBUG("INDEX TUPLESET:\n{}", indexTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+//		SPDLOG_DEBUG("INDEX MAP:\n{}", index->toString());
+//		SPDLOG_DEBUG("INDEX TUPLESET:\n{}", indexTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 		auto probeKernel = HashJoinProbeKernel2::make(JoinPredicate("c_0", "c_0"));
 		probeKernel.putArraySetIndex(index);

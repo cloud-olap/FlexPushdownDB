@@ -23,7 +23,7 @@ public:
 	  : arraySetIndex_(std::move(ArraySetIndex)), array_(std::move(Array)) {}
 
   std::vector<int64_t> find(int64_t i) override {
-	auto value = array_->GetView(i);
+	auto value = array_->GetString(i);
 	return arraySetIndex_->find(value);
   }
 private:
