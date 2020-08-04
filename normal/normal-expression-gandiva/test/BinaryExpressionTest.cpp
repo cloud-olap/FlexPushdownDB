@@ -35,9 +35,9 @@ TEST_CASE ("less-than" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   auto expressions = std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
-	  lt(cast(col("a"), integer32Type()), lit<::arrow::Int32Type>(2)),
-	  lt(cast(col("b"), integer32Type()), lit<::arrow::Int32Type>(5)),
-	  lt(cast(col("c"), integer32Type()), lit<::arrow::Int32Type>(8)),
+	  lt(cast(col("a"), integer32Type()), num_lit<::arrow::Int32Type>(2)),
+	  lt(cast(col("b"), integer32Type()), num_lit<::arrow::Int32Type>(5)),
+	  lt(cast(col("c"), integer32Type()), num_lit<::arrow::Int32Type>(8)),
   };
 
   auto projector = std::make_shared<Projector>(expressions);

@@ -15,28 +15,43 @@ using namespace normal::core::message;
 using namespace normal::pushdown::scan;
 
 CacheLoad::CacheLoad(std::string name,
-					 std::vector<std::string> ColumnNames,
+           std::vector<std::string> projectedColumnNames,
+           std::vector<std::string> predicateColumnNames,
 					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
-					 int64_t FinishOffset) : Operator(std::move(name), "CacheLoad"),
-											 columnNames_(std::move(ColumnNames)), partition_(std::move(Partition)),
-											 startOffset_(StartOffset), finishOffset_(FinishOffset) {
-
+					 int64_t FinishOffset) :
+					 Operator(std::move(name), "CacheLoad"),
+					 projectedColumnNames_(projectedColumnNames),
+					 predicateColumnNames_(predicateColumnNames),
+					 partition_(std::move(Partition)),
+					 startOffset_(StartOffset),
+					 finishOffset_(FinishOffset) {
+  auto allColumnNames_ = std::make_shared<std::vector<std::string>>();
+  allColumnNames_->insert(allColumnNames_->end(), projectedColumnNames.begin(), projectedColumnNames.end());
+  allColumnNames_->insert(allColumnNames_->end(), predicateColumnNames.begin(), predicateColumnNames.end());
+  auto columnNameSet = std::make_shared<std::set<std::string>>(allColumnNames_->begin(), allColumnNames_->end());
+  columnNames_.assign(columnNameSet->begin(), columnNameSet->end());
 }
 
 std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
-										   const std::vector<std::string> &columnNames,
+                       std::vector<std::string> projectedColumnNames,
+                       std::vector<std::string> predicateColumnNames,
 										   const std::shared_ptr<Partition> &partition,
 										   int64_t startOffset,
 										   int64_t finishOffset) {
 
-  std::vector<std::string> canonicalColumnNames;
-  std::transform(columnNames.begin(), columnNames.end(),
-				 std::back_inserter(canonicalColumnNames),
-				 [](auto name) -> auto { return ColumnName::canonicalize(name); });
+  std::vector<std::string> canonicalProjectedColumnNames;
+  std::vector<std::string> canonicalPredicateColumnNames;
+  std::transform(projectedColumnNames.begin(), projectedColumnNames.end(),
+                 std::back_inserter(canonicalProjectedColumnNames),
+                 [](auto name) -> auto { return ColumnName::canonicalize(name); });
+  std::transform(predicateColumnNames.begin(), predicateColumnNames.end(),
+                 std::back_inserter(canonicalPredicateColumnNames),
+                 [](auto name) -> auto { return ColumnName::canonicalize(name); });
 
   return std::make_shared<CacheLoad>(name,
-									 canonicalColumnNames,
+									 canonicalProjectedColumnNames,
+									 canonicalPredicateColumnNames,
 									 partition,
 									 startOffset,
 									 finishOffset);
@@ -55,17 +70,30 @@ void CacheLoad::onReceive(const Envelope &message) {
 }
 
 void CacheLoad::onStart() {
+  /**
+   * We always have hitOperator_ and missOperatorToCache_
+   * In hybrid caching, we also have missOperatorToPushdown_; in pullup caching, we don't
+   */
 
   if (!hitOperator_)
 	throw std::runtime_error("Hit consumer not set ");
 
-  if (!missOperator_)
-	throw std::runtime_error("Miss consumer not set");
+  if (!missOperatorToCache_)
+	throw std::runtime_error("Miss caching consumer not set");
 
-  SPDLOG_DEBUG("Starting operator  |  name: '{}', hitOperator: '{}', missOperator: '{}'",
-			   this->name(),
-			   hitOperator_->name(),
-			   missOperator_->name());
+  if (missOperatorToPushdown_) {
+    SPDLOG_DEBUG("Starting operator  |  name: '{}', hitOperator: '{}', missOperatorToCache: '{}', missOperatorToPushdown: '{}'",
+                 this->name(),
+                 hitOperator_->name(),
+                 missOperatorToCache_->name(),
+                 missOperatorToPushdown_->name());
+  } else {
+    SPDLOG_DEBUG("Starting operator  |  name: '{}', hitOperator: '{}', missOperatorToCache: '{}'",
+                 this->name(),
+                 hitOperator_->name(),
+                 missOperatorToCache_->name());
+  }
+
   requestLoadSegmentsFromCache();
 }
 
@@ -74,36 +102,81 @@ void CacheLoad::requestLoadSegmentsFromCache() {
 }
 
 void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
+  std::vector<std::shared_ptr<Column>> hitColumns;
+  std::vector<std::string> hitColumnNames;
+  std::vector<std::string> missedCachingColumnNames;
+  std::vector<std::string> missedPushdownColumnNames;
 
-  std::vector<std::string> missedSegmentColumnNames;
-  std::vector<std::shared_ptr<Column>> hitSegmentColumns;
+  // Gather missed caching segment columns
+  auto segmentKeysToCache = Message.getSegmentKeysToCache();
+  for (auto const &segmentKey: segmentKeysToCache) {
+    missedCachingColumnNames.emplace_back(segmentKey->getColumnName());
+  }
 
   auto hitSegments = Message.getSegments();
-
   SPDLOG_DEBUG("Loaded segments from cache  |  numRequested: {}, numHit: {}", columnNames_.size(), hitSegments.size());
 
-  // Gather the hit segment columns and missed segment columns
+  // Gather hit segment columns and missed pushdown segment columns
   for (const auto &columnName: columnNames_) {
-	auto segmentKey = SegmentKey::make(partition_, columnName, SegmentRange::make(startOffset_, finishOffset_));
-
-	auto segment = hitSegments.find(segmentKey);
-	if (segment != hitSegments.end()) {
-	  hitSegmentColumns.push_back(segment->second->getColumn());
-	} else {
-	  missedSegmentColumnNames.push_back(columnName);
-	}
+    auto segmentKey = SegmentKey::make(partition_, columnName, SegmentRange::make(startOffset_, finishOffset_));
+    auto segment = hitSegments.find(segmentKey);
+    if (segment != hitSegments.end()) {
+      hitColumns.emplace_back(segment->second->getColumn());
+      hitColumnNames.emplace_back(columnName);
+    } else if (std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), columnName)
+               == missedCachingColumnNames.end()){
+      /* A trick here: no need to check whether it's in projectedColumnNames_,
+       * because if resultNeeded = true, missedPushdownColumnNames are all in projectedColumnNames_,
+       * otherwise we make missedPushdownColumnNames as all projectedColumnNames_
+       */
+      missedPushdownColumnNames.emplace_back(columnName);
+	  }
   }
 
   // Create a tuple set from the hit segments
-  auto hitTupleSet = TupleSet2::make(hitSegmentColumns);
+  auto hitTupleSet = TupleSet2::make(hitColumns);
 
   // Send the hit columns to the hit operator
   auto hitMessage = std::make_shared<TupleMessage>(hitTupleSet->toTupleSetV1(), this->name());
   ctx()->send(hitMessage, hitOperator_->name());
 
-  // Send the missed column names to the miss operator
-  auto missMessage = std::make_shared<ScanMessage>(missedSegmentColumnNames, this->name());
-  ctx()->send(missMessage, missOperator_->name());
+  // Send the missed caching column names to the miss caching operator
+  /**
+   * result is not needed when:
+   *    hitColumns + missCachingColumns don't cover all predicateColumns or
+   *    hitColumns + missCachingColumns cover no projectedColumns
+   */
+  bool cachingResultNeeded = true;
+  for (auto const &predicateColumnName: predicateColumnNames_) {
+    if (std::find(hitColumnNames.begin(), hitColumnNames.end(), predicateColumnName) == hitColumnNames.end() &&
+        std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), predicateColumnName) == missedCachingColumnNames.end()) {
+      cachingResultNeeded = false;
+      break;
+    }
+  }
+  if (cachingResultNeeded) {
+    cachingResultNeeded = false;
+    for (auto const &projectedColumnName: projectedColumnNames_) {
+      if (std::find(hitColumnNames.begin(), hitColumnNames.end(), projectedColumnName) != hitColumnNames.end() ||
+          std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), projectedColumnName) != missedCachingColumnNames.end()) {
+        cachingResultNeeded = true;
+        break;
+      }
+    }
+  }
+  auto missCachingMessage = std::make_shared<ScanMessage>(missedCachingColumnNames, this->name(), cachingResultNeeded);
+  ctx()->send(missCachingMessage, missOperatorToCache_->name());
+
+  // Send the missed pushdown column names to the miss pushdown operator
+  if (missOperatorToPushdown_) {
+    std::shared_ptr<ScanMessage> missPushdownMessage;
+    if (cachingResultNeeded) {
+      missPushdownMessage = std::make_shared<ScanMessage>(missedPushdownColumnNames, this->name(), true);
+    } else {
+      missPushdownMessage = std::make_shared<ScanMessage>(projectedColumnNames_, this->name(), true);
+    }
+    ctx()->send(missPushdownMessage, missOperatorToPushdown_->name());
+  }
 
   ctx()->notifyComplete();
 }
@@ -113,7 +186,12 @@ void CacheLoad::setHitOperator(const std::shared_ptr<Operator> &op) {
   this->produce(op);
 }
 
-void CacheLoad::setMissOperator(const std::shared_ptr<Operator> &op) {
-  this->missOperator_ = op;
+void CacheLoad::setMissOperatorToCache(const std::shared_ptr<Operator> &op) {
+  this->missOperatorToCache_ = op;
+  this->produce(op);
+}
+
+void CacheLoad::setMissOperatorToPushdown(const std::shared_ptr<Operator> &op) {
+  this->missOperatorToPushdown_ = op;
   this->produce(op);
 }

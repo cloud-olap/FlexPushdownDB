@@ -77,7 +77,8 @@ S3SelectScan::S3SelectScan(std::string name,
 						   int64_t finishOffset,
 						   S3SelectCSVParseOptions parseOptions,
 						   std::shared_ptr<Aws::S3::S3Client> s3Client,
-						   bool scanOnStart) :
+						   bool scanOnStart,
+               bool toCache) :
 	Operator(std::move(name), "S3SelectScan"),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
@@ -88,8 +89,8 @@ S3SelectScan::S3SelectScan(std::string name,
 	parseOptions_(parseOptions),
 	s3Client_(std::move(s3Client)),
 	columns_(columnNames_.size()),
-	scanOnStart_(scanOnStart) {
-}
+	scanOnStart_(scanOnStart),
+	toCache_(toCache) {}
 
 std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::string s3Bucket,
@@ -100,7 +101,8 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 int64_t finishOffset,
 												 S3SelectCSVParseOptions parseOptions,
 												 std::shared_ptr<Aws::S3::S3Client> s3Client,
-												 bool scanOnstart) {
+												 bool scanOnstart,
+												 bool toCache) {
   return std::make_shared<S3SelectScan>(name,
 										s3Bucket,
 										s3Object,
@@ -110,7 +112,8 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										finishOffset,
 										parseOptions,
 										s3Client,
-										scanOnstart);
+										scanOnstart,
+										toCache);
 
 }
 
@@ -212,6 +215,14 @@ void S3SelectScan::onStart() {
 }
 
 void S3SelectScan::readAndSendTuples() {
+  auto readTupleSet = readTuples();
+  std::shared_ptr<normal::core::message::Message>
+          message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
+  ctx()->tell(message);
+  ctx()->notifyComplete();
+}
+
+std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
   std::shared_ptr<TupleSet2> readTupleSet;
 
   if (columnNames_.empty()) {
@@ -270,18 +281,13 @@ void S3SelectScan::readAndSendTuples() {
     readTupleSet = TupleSet2::make(readColumns);
 
     // Store the read columns in the cache, if not in full-pushdown mode
-    if (!scanOnStart_) {
+    if (toCache_) {
       requestStoreSegmentsInCache(readTupleSet);
     }
   }
 
-  std::shared_ptr<normal::core::message::Message>
-	  message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
-  ctx()->tell(message);
-
   SPDLOG_DEBUG(fmt::format("Finished Reading: {}/{}", s3Bucket_, s3Object_));
-
-  ctx()->notifyComplete();
+  return readTupleSet;
 }
 
 void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
@@ -299,7 +305,22 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
 void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
   columnNames_ = message.getColumnNames();
   columns_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames_.size());
-  readAndSendTuples();
+
+  if (message.isResultNeeded()) {
+    readAndSendTuples();
+  }
+
+  else {
+    auto emptyTupleSet = TupleSet2::make2();
+    std::shared_ptr<normal::core::message::Message>
+            message = std::make_shared<TupleMessage>(emptyTupleSet->toTupleSetV1(), this->name());
+    ctx()->tell(message);
+    SPDLOG_DEBUG(fmt::format("Finished because result not needed: {}/{}", s3Bucket_, s3Object_));
+    ctx()->notifyComplete();
+
+    //just to cache
+    readTuples();
+  }
 }
 
 void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {

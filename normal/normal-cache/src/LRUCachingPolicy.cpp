@@ -7,8 +7,7 @@
 using namespace normal::cache;
 
 LRUCachingPolicy::LRUCachingPolicy(size_t maxSize) :
-  maxSize_(maxSize),
-  freeSize_(maxSize) {}
+  CachingPolicy(maxSize) {}
 
 std::shared_ptr<LRUCachingPolicy> LRUCachingPolicy::make() {
   return std::make_shared<LRUCachingPolicy>(std::numeric_limits<size_t>::max());
@@ -61,6 +60,12 @@ void LRUCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
 
 void LRUCachingPolicy::onRemove(const std::shared_ptr<SegmentKey> &key) {
   erase(key);
+}
+
+std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
+LRUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+  // new segments are always those to cache next
+  return segmentKeys;
 }
 
 

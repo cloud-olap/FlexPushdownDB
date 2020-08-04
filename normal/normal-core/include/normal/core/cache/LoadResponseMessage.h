@@ -27,18 +27,21 @@ class LoadResponseMessage : public Message {
 
 public:
   LoadResponseMessage(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments,
-					  const std::string &sender);
+					            const std::string &sender,
+                      std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache);
 
-  static std::shared_ptr<LoadResponseMessage> make(
-  	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments,
-												   const std::string &sender);
+  static std::shared_ptr<LoadResponseMessage> make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments,
+												                           const std::string &sender,
+                                                   std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache);
 
   [[maybe_unused]] [[nodiscard]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> &getSegments() const;
+  [[nodiscard]] const std::vector<std::shared_ptr<SegmentKey>> &getSegmentKeysToCache() const;
 
   [[nodiscard]] std::string toString() const;
 
 private:
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments_;
+  std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache_;
 
 };
 

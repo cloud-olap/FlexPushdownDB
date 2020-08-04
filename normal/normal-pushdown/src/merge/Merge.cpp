@@ -3,20 +3,20 @@
 //
 
 #include <normal/tuple/TupleSet2.h>
-#include "normal/pushdown/merge/MergeOperator.h"
+#include "normal/pushdown/merge/Merge.h"
 #include "normal/pushdown/merge/MergeKernel.h"
 
 using namespace normal::pushdown::merge;
 
-MergeOperator::MergeOperator(const std::string &Name) :
+Merge::Merge(const std::string &Name) :
 	Operator(Name, "Merge") {
 }
 
-std::shared_ptr<MergeOperator> MergeOperator::make(const std::string &Name) {
-  return std::make_shared<MergeOperator>(Name);
+std::shared_ptr<Merge> Merge::make(const std::string &Name) {
+  return std::make_shared<Merge>(Name);
 }
 
-void MergeOperator::onReceive(const Envelope &msg) {
+void Merge::onReceive(const Envelope &msg) {
   if (msg.message().type() == "StartMessage") {
 	this->onStart();
   } else if (msg.message().type() == "TupleMessage") {
@@ -31,7 +31,7 @@ void MergeOperator::onReceive(const Envelope &msg) {
   }
 }
 
-void MergeOperator::onStart() {
+void Merge::onStart() {
 
   /**
    * This can cause bugs occasionally (1/10 chance):
@@ -52,7 +52,7 @@ void MergeOperator::onStart() {
 			   rightProducer_->name());
 }
 
-void MergeOperator::Merge() {
+void Merge::merge() {
   // Check if we have merge-able tuple sets
   while (!leftTupleSets_.empty() && !rightTupleSets_.empty()) {
 
@@ -79,16 +79,16 @@ void MergeOperator::Merge() {
   }
 }
 
-void MergeOperator::onComplete(const CompleteMessage &) {
+void Merge::onComplete(const CompleteMessage &) {
   if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
     // Merge if still has tuples in queues
-    Merge();
+    merge();
     // Notify
 	  ctx()->notifyComplete();
   }
 }
 
-void MergeOperator::onTuple(const TupleMessage &message) {
+void Merge::onTuple(const TupleMessage &message) {
 
   // Get the tuple set
   const auto &tupleSet = TupleSet2::create(message.tuples());
@@ -104,15 +104,15 @@ void MergeOperator::onTuple(const TupleMessage &message) {
   }
 
   // Merge
-  Merge();
+  merge();
 }
 
-void MergeOperator::setLeftProducer(const std::shared_ptr<Operator> &leftProducer) {
+void Merge::setLeftProducer(const std::shared_ptr<Operator> &leftProducer) {
   leftProducer_ = leftProducer;
   consume(leftProducer);
 }
 
-void MergeOperator::setRightProducer(const std::shared_ptr<Operator> &rightProducer) {
+void Merge::setRightProducer(const std::shared_ptr<Operator> &rightProducer) {
   rightProducer_ = rightProducer;
   consume(rightProducer);
 }

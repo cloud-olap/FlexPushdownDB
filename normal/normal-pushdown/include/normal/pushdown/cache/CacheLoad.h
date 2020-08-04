@@ -20,14 +20,16 @@ class CacheLoad : public Operator {
 
 public:
   explicit CacheLoad(std::string name,
-					 std::vector<std::string> columnNames,
+					 std::vector<std::string> projectedColumnNames,
+					 std::vector<std::string> predicateColumnNames,
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset);
   ~CacheLoad() override = default;
 
   static std::shared_ptr<CacheLoad> make(const std::string &name,
-										 const std::vector<std::string>& columnNames,
+                     std::vector<std::string> projectedColumnNames,
+                     std::vector<std::string> predicateColumnNames,
 										 const std::shared_ptr<Partition>& partition,
 										 int64_t startOffset,
 										 int64_t finishOffset);
@@ -36,18 +38,24 @@ public:
   void onReceive(const Envelope &msg) override;
 
   void setHitOperator(const std::shared_ptr<Operator> &op);
-  void setMissOperator(const std::shared_ptr<Operator> &op);
+  void setMissOperatorToCache(const std::shared_ptr<Operator> &op);
+  void setMissOperatorToPushdown(const std::shared_ptr<Operator> &op);
 
 private:
+  /**
+   * columnNames = projectedColumnNames + predicateColumnNames
+   */
   std::vector<std::string> columnNames_;
+  std::vector<std::string> projectedColumnNames_;
+  std::vector<std::string> predicateColumnNames_;
+
   std::shared_ptr<Partition> partition_;
   int64_t startOffset_;
   int64_t finishOffset_;
-//  std::optional<LocalOperatorDirectoryEntry> missOperatorEntry_;
-//  std::optional<LocalOperatorDirectoryEntry> hitOperatorEntry_;
 
-  std::shared_ptr<Operator> missOperator_;
   std::shared_ptr<Operator> hitOperator_;
+  std::shared_ptr<Operator> missOperatorToCache_;
+  std::shared_ptr<Operator> missOperatorToPushdown_;
 
   void requestLoadSegmentsFromCache();
   void onCacheLoadResponse(const LoadResponseMessage &Message);

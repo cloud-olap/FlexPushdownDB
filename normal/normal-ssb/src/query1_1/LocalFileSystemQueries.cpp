@@ -29,7 +29,7 @@ LocalFileSystemQueries::dateScan(const std::string &dataDir, int numConcurrentUn
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateCacheLoads[u]->setMissOperator(dateScans[u]);
+	dateCacheLoads[u]->setMissOperatorToCache(dateScans[u]);
 	dateScans[u]->consume(dateCacheLoads[u]);
   }
 
@@ -73,7 +73,7 @@ LocalFileSystemQueries::dateFilter(const std::string &dataDir, short year, int n
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateCacheLoads[u]->setMissOperator(dateScans[u]);
+	dateCacheLoads[u]->setMissOperatorToCache(dateScans[u]);
 	dateScans[u]->consume(dateCacheLoads[u]);
   }
 
@@ -124,7 +124,7 @@ LocalFileSystemQueries::lineOrderScan(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderCacheLoads[u]->setMissOperator(lineOrderScans[u]);
+	lineOrderCacheLoads[u]->setMissOperatorToCache(lineOrderScans[u]);
 	lineOrderScans[u]->consume(lineOrderCacheLoads[u]);
   }
 
@@ -171,7 +171,7 @@ LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderCacheLoads[u]->setMissOperator(lineOrderScans[u]);
+	lineOrderCacheLoads[u]->setMissOperatorToCache(lineOrderScans[u]);
 	lineOrderScans[u]->consume(lineOrderCacheLoads[u]);
   }
 
@@ -234,7 +234,7 @@ LocalFileSystemQueries::join(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateCacheLoads[u]->setMissOperator(dateScans[u]);
+	dateCacheLoads[u]->setMissOperatorToCache(dateScans[u]);
 	dateScans[u]->consume(dateCacheLoads[u]);
   }
 
@@ -254,7 +254,7 @@ LocalFileSystemQueries::join(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderCacheLoads[u]->setMissOperator(lineOrderScans[u]);
+	lineOrderCacheLoads[u]->setMissOperatorToCache(lineOrderScans[u]);
 	lineOrderScans[u]->consume(lineOrderCacheLoads[u]);
   }
 
@@ -364,7 +364,7 @@ LocalFileSystemQueries::full(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateCacheLoads[u]->setMissOperator(dateScans[u]);
+	dateCacheLoads[u]->setMissOperatorToCache(dateScans[u]);
 	dateScans[u]->consume(dateCacheLoads[u]);
   }
 
@@ -384,7 +384,7 @@ LocalFileSystemQueries::full(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderCacheLoads[u]->setMissOperator(lineOrderScans[u]);
+	lineOrderCacheLoads[u]->setMissOperatorToCache(lineOrderScans[u]);
 	lineOrderScans[u]->consume(lineOrderCacheLoads[u]);
   }
 

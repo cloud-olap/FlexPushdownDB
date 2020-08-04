@@ -16,6 +16,8 @@ class CachingPolicy {
 
 public:
 
+  CachingPolicy(size_t maxSize);
+
   virtual ~CachingPolicy() = default;
 
   /**
@@ -40,6 +42,17 @@ public:
    */
   virtual void onRemove(const std::shared_ptr<SegmentKey> &key) = 0;
 
+  /**
+   * Decide what segments to cache next
+   *
+   * @param keys of segments to access
+   * @return keys of segments to cache next
+   */
+  virtual std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) = 0;
+
+protected:
+  size_t maxSize_;
+  size_t freeSize_;
 };
 
 }

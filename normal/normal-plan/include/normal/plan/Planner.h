@@ -25,13 +25,13 @@ class Planner {
 public:
 
   /**
-   * Generate the baseline physical plan from the logical plan
+   * Generate the physical plan from the logical plan
    *
    * @param logicalPlan
-   * @param mode: full pushdown or pullup caching
-   * @return baseline physicalPlan
+   * @param mode: full pushdown, pullup caching, hybrid caching
+   * @return physicalPlan
    */
-  static std::shared_ptr<PhysicalPlan> generateBaseline(const LogicalPlan &logicalPlan,
+  static std::shared_ptr<PhysicalPlan> generate(const LogicalPlan &logicalPlan,
                                                         std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
 
 };

@@ -44,10 +44,17 @@ private:
   void onTuple(const normal::core::message::TupleMessage& Message);
   void onComplete(const normal::core::message::CompleteMessage& Message);
 
-  void bufferTuples(const core::message::TupleMessage &Message);
+  void bufferTuples(std::shared_ptr<normal::tuple::TupleSet2> tupleSet);
   void buildFilter();
   void filterTuples();
   void sendTuples();
+
+  /**
+   * Whether all predicate columns are covered in the schema of received tuples
+   */
+  std::shared_ptr<bool> applicable_;
+
+  bool isApplicable(std::shared_ptr<normal::tuple::TupleSet2> tupleSet);
 };
 
 }

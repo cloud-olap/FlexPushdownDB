@@ -36,7 +36,7 @@ public:
                                           std::shared_ptr<SegmentMetadata> metadata);
 
   [[nodiscard]] const std::shared_ptr<Partition> &getPartition() const;
-//  [[nodiscard]] const std::string &getColumnName() const;
+  [[nodiscard]] const std::string &getColumnName() const;
   [[maybe_unused]] [[nodiscard]] const SegmentRange &getRange() const;
   [[nodiscard]] const std::shared_ptr<SegmentMetadata> &getMetadata() const;
 

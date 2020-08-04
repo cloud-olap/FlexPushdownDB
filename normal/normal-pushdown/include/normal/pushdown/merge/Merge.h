@@ -15,13 +15,13 @@ using namespace normal::core::message;
 
 namespace normal::pushdown::merge {
 
-class MergeOperator : public Operator {
+class Merge : public Operator {
 
 public:
 
-  explicit MergeOperator(const std::string &Name);
+  explicit Merge(const std::string &Name);
 
-  static std::shared_ptr<MergeOperator> make(const std::string &Name);
+  static std::shared_ptr<Merge> make(const std::string &Name);
 
   void onReceive(const Envelope &msg) override;
 
@@ -34,7 +34,7 @@ public:
 
 private:
 
-  void Merge();
+  void merge();
 
   std::shared_ptr<Operator> leftProducer_;
   std::shared_ptr<Operator> rightProducer_;

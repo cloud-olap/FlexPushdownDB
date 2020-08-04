@@ -36,24 +36,28 @@ void SegmentCacheActor::onReceive(const Envelope &message) {
 void SegmentCacheActor::load(const LoadRequestMessage &msg) {
 
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments;
+//  std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache;
+  auto missSegmentKeys = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
 //  SPDLOG_DEBUG("Handling load request. loadRequestMessage: {}", msg.toString());
 
   for(const auto &segmentKey: msg.getSegmentKeys()) {
 
-	auto cacheData = state_->cache->load(segmentKey);
+    auto cacheData = state_->cache->load(segmentKey);
 
-	if (cacheData.has_value()) {
-	  SPDLOG_DEBUG("Cache hit  |  segmentKey: {}", segmentKey->toString());
-	  segments.insert(std::pair(segmentKey, cacheData.value()));
+    if (cacheData.has_value()) {
+      SPDLOG_DEBUG("Cache hit  |  segmentKey: {}", segmentKey->toString());
+      segments.insert(std::pair(segmentKey, cacheData.value()));
 
-	} else {
-	  SPDLOG_DEBUG("Cache miss  |  segmentKey: {}", segmentKey->toString());
-	}
+    } else {
+      SPDLOG_DEBUG("Cache miss  |  segmentKey: {}", segmentKey->toString());
+      missSegmentKeys->emplace_back(segmentKey);
+    }
   }
 
-  auto responseMessage = LoadResponseMessage::make(segments,
-											  name());
+  auto segmentKeysToCache = state_->cache->toCache(missSegmentKeys);
+
+  auto responseMessage = LoadResponseMessage::make(segments, name(), *segmentKeysToCache);
 
   ctx()->send(responseMessage, msg.sender())
 	  .map_error([](auto err) { throw std::runtime_error(err); });

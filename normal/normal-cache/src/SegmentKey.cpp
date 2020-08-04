@@ -69,3 +69,7 @@ size_t SegmentKey::hash() {
 const std::shared_ptr<SegmentMetadata> &SegmentKey::getMetadata() const {
   return metadata_;
 }
+
+const std::string &SegmentKey::getColumnName() const {
+  return columnName_;
+}

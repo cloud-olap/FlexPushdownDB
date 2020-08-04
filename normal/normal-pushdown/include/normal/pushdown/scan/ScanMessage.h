@@ -20,11 +20,13 @@ namespace normal::pushdown::scan {
 class ScanMessage : public Message {
 
 public:
-  ScanMessage(const std::vector<std::string> &columnNames_, const std::string &sender);
+  ScanMessage(const std::vector<std::string> &columnNames_, const std::string &sender, bool resultNeeded);
   const std::vector<std::string> &getColumnNames() const;
+  bool isResultNeeded() const;
 
 private:
   std::vector<std::string> columnNames_;
+  bool resultNeeded_;
 
 };
 

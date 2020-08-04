@@ -19,7 +19,7 @@
 #include <normal/pushdown/shuffle/Shuffle.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/cache/CacheLoad.h>
-#include <normal/pushdown/merge/MergeOperator.h>
+#include <normal/pushdown/merge/Merge.h>
 
 using namespace normal::core::graph;
 using namespace normal::pushdown;
@@ -56,7 +56,7 @@ public:
 							int numConcurrentUnits,
 							const std::shared_ptr<OperatorGraph> &g);
 
-  static std::vector<std::shared_ptr<MergeOperator>>
+  static std::vector<std::shared_ptr<Merge>>
   makeDateMergeOperators(int numConcurrentUnits,
 						 const std::shared_ptr<OperatorGraph> &g);
 
@@ -87,7 +87,7 @@ public:
 								 int numConcurrentUnits,
 								 const std::shared_ptr<OperatorGraph> &g);
 
-  static std::vector<std::shared_ptr<MergeOperator>>
+  static std::vector<std::shared_ptr<Merge>>
   makeLineOrderMergeOperators(int numConcurrentUnits,
 							  const std::shared_ptr<OperatorGraph> &g);
 

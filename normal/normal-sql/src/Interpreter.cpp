@@ -50,16 +50,7 @@ void Interpreter::parse(const std::string &sql) {
 
   // Create physical plan
   std::shared_ptr<plan::PhysicalPlan> physicalPlan;
-  switch (mode_->id()) {
-    case plan::operator_::mode::FullPushdown:
-    case plan::operator_::mode::PullupCaching:
-      physicalPlan = plan::Planner::generateBaseline(*logicalPlan_, mode_);
-      break;
-    case plan::operator_::mode::HybridCaching:
-      throw std::runtime_error("Hybrid caching not implemented yet");
-    default:
-      throw std::domain_error("Unrecognized mode '" + mode_->toString() + "'");
-  }
+  physicalPlan = plan::Planner::generate(*logicalPlan_, mode_);
 
   // Add the plan to the operatorGraph
   for(const auto& physicalOperator: *physicalPlan->getOperators()){

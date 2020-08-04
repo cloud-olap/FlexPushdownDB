@@ -65,3 +65,8 @@ unsigned long SegmentCache::remove(const std::function<bool(const SegmentKey &)>
 size_t SegmentCache::getSize() const {
   return map_.size();
 }
+
+std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
+SegmentCache::toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+  return cachingPolicy_->onToCache(segmentKeys);
+}

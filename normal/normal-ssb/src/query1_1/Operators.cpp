@@ -48,6 +48,7 @@ Operators::makeDateFileCacheLoadOperators(const std::string &dataDir, int numCon
 	std::shared_ptr<Partition> partition = std::make_shared<LocalFilePartition>(dateFile);
 	auto o = CacheLoad::make(fmt::format("/query-{}/date-cache-load-{}", g->getId(), u),
 									dateColumns,
+									std::vector<std::string>(),
 									partition,
 									dateScanRanges[u].first,
 									dateScanRanges[u].second);
@@ -87,12 +88,12 @@ Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurre
   return dateScanOperators;
 }
 
-std::vector<std::shared_ptr<MergeOperator>>
+std::vector<std::shared_ptr<Merge>>
 Operators::makeDateMergeOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
-  std::vector<std::shared_ptr<MergeOperator>> os;
+  std::vector<std::shared_ptr<Merge>> os;
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = MergeOperator::make(fmt::format("/query-{}/date-merge-{}", g->getId(), u));
+	auto o = Merge::make(fmt::format("/query-{}/date-merge-{}", g->getId(), u));
 	os.push_back(o);
   }
 
@@ -121,6 +122,7 @@ Operators::makeDateS3SelectCacheLoadOperators(const std::string &s3ObjectDir,
 	std::shared_ptr<Partition> partition = std::make_shared<S3SelectPartition>(s3Bucket, dateFile, 0);
 	auto dateScan = CacheLoad::make(fmt::format("/query-{}/date-cache-load-{}", g->getId(), u),
 									dateColumns,
+                  std::vector<std::string>(),
 									partition,
 									dateScanRanges[u].first,
 									dateScanRanges[u].second);
@@ -254,6 +256,7 @@ Operators::makeLineOrderFileCacheLoadOperators(const std::string &dataDir, int n
 	std::shared_ptr<Partition> partition = std::make_shared<LocalFilePartition>(file);
 	auto o = CacheLoad::make(fmt::format("/query-{}/lineorder-cache-load-{}", g->getId(), u),
 							 lineOrderColumns,
+               std::vector<std::string>(),
 							 partition,
 							 scanRanges[u].first,
 							 scanRanges[u].second);
@@ -290,12 +293,12 @@ Operators::makeLineOrderFileScanOperators(const std::string &dataDir, int numCon
   return lineOrderScanOperators;
 }
 
-std::vector<std::shared_ptr<MergeOperator>>
+std::vector<std::shared_ptr<Merge>>
 Operators::makeLineOrderMergeOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
-  std::vector<std::shared_ptr<MergeOperator>> os;
+  std::vector<std::shared_ptr<Merge>> os;
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = MergeOperator::make(fmt::format("/query-{}/lineorder-merge-{}", g->getId(), u));
+	auto o = Merge::make(fmt::format("/query-{}/lineorder-merge-{}", g->getId(), u));
 	os.push_back(o);
   }
 

@@ -36,8 +36,10 @@ void Filter::onReceive(const normal::core::message::Envelope &Envelope) {
 	auto tupleMessage = dynamic_cast<const normal::core::message::TupleMessage &>(message);
 	this->onTuple(tupleMessage);
   } else if (message.type() == "CompleteMessage") {
-	auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message);
-	this->onComplete(completeMessage);
+    if (*applicable_) {
+      auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message);
+      this->onComplete(completeMessage);
+    }
   } else {
 	// FIXME: Propagate error properly
 	throw std::runtime_error("Unrecognized message type " + message.type());
@@ -53,11 +55,32 @@ void Filter::onStart() {
 
 void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
 //  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
-  bufferTuples(Message);
-  buildFilter();
-  if (received_->numRows() > DefaultBufferSize) {
-	filterTuples();
-	sendTuples();
+  /**
+   * Check if this filter is applicable, if not, just send an empty table and complete
+   */
+  auto tupleSet = normal::tuple::TupleSet2::create(Message.tuples());
+  if (applicable_ == nullptr) {
+    applicable_ = std::make_shared<bool>(isApplicable(tupleSet));
+  }
+
+  if (*applicable_) {
+    bufferTuples(tupleSet);
+    buildFilter();
+    if (received_->numRows() > DefaultBufferSize) {
+      filterTuples();
+      sendTuples();
+    }
+  } else {
+    // empty table
+    auto emptyTupleSet = normal::tuple::TupleSet2::make2();
+    std::shared_ptr<core::message::Message> tupleMessage =
+            std::make_shared<core::message::TupleMessage>(emptyTupleSet->toTupleSetV1(), name());
+    ctx()->tell(tupleMessage);
+    // complete
+    std::shared_ptr<core::message::Message> completeMessage =
+            std::make_shared<core::message::CompleteMessage>(name());
+    ctx()->tell(completeMessage);
+    ctx()->notifyComplete();
   }
 }
 
@@ -68,13 +91,16 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 	sendTuples();
   }
 
+  std::shared_ptr<core::message::Message> completeMessage =
+          std::make_shared<core::message::CompleteMessage>(name());
+  ctx()->tell(completeMessage);
+
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
 	ctx()->notifyComplete();
   }
 }
 
-void Filter::bufferTuples(const normal::core::message::TupleMessage &Message) {
-  auto tupleSet = normal::tuple::TupleSet2::create(Message.tuples());
+void Filter::bufferTuples(std::shared_ptr<normal::tuple::TupleSet2> tupleSet) {
   if(!received_->schema().has_value()) {
 	received_->setSchema(*tupleSet->schema());
   }
@@ -83,6 +109,21 @@ void Filter::bufferTuples(const normal::core::message::TupleMessage &Message) {
     throw std::runtime_error(result.error());
   }
   assert(received_->validate());
+}
+
+bool Filter::isApplicable(std::shared_ptr<normal::tuple::TupleSet2> tupleSet) {
+  auto predicateColumnNames = pred_->expression()->involvedColumnNames();
+  auto tupleColumnNames = std::make_shared<std::vector<std::string>>();
+  for (auto const &field: tupleSet->schema()->get()->fields()) {
+    tupleColumnNames->emplace_back(field->name());
+  }
+
+  for (auto const &columnName: *predicateColumnNames) {
+    if (std::find(tupleColumnNames->begin(), tupleColumnNames->end(), columnName) == tupleColumnNames->end()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void Filter::buildFilter() {

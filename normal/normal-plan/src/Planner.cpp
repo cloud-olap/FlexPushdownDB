@@ -138,7 +138,8 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
         streamOutPhysicalOperators = toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
         break;
 
-      case normal::plan::operator_::mode::PullupCaching: {
+      case normal::plan::operator_::mode::PullupCaching:
+      case normal::plan::operator_::mode::HybridCaching: {
         // get scan physical operators
         toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
         // get stream-out operators
@@ -147,13 +148,9 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
         break;
       }
 
-      case normal::plan::operator_::mode::HybridCaching:
-        throw std::runtime_error("Hybrid caching not implemented yet");
-
       default:
         throw std::domain_error("Unrecognized mode '" + mode->toString() + "'");
     }
-
   }
 
   else {
@@ -309,7 +306,7 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
 
 }
 
-std::shared_ptr<PhysicalPlan> Planner::generateBaseline (const LogicalPlan &logicalPlan,
+std::shared_ptr<PhysicalPlan> Planner::generate (const LogicalPlan &logicalPlan,
                                                          std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
   auto physicalPlan = std::make_shared<PhysicalPlan>();
   auto logicalOperators = logicalPlan.getOperators();

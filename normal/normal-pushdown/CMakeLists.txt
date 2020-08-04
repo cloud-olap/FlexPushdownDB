@@ -36,7 +36,7 @@ add_library(normal-pushdown STATIC
         src/shuffle/Shuffle.cpp include/normal/pushdown/shuffle/Shuffle.h
         src/shuffle/ATTIC/Shuffler.cpp include/normal/pushdown/shuffle/ATTIC/Shuffler.h
         src/cache/CacheLoad.cpp include/normal/pushdown/cache/CacheLoad.h
-        src/merge/MergeOperator.cpp include/normal/pushdown/merge/MergeOperator.h
+        src/merge/Merge.cpp include/normal/pushdown/merge/Merge.h
         src/merge/MergeKernel.cpp include/normal/pushdown/merge/MergeKernel.h
         src/scan/ScanMessage.cpp include/normal/pushdown/scan/ScanMessage.h
         src/shuffle/ATTIC/ShuffleKernel.cpp include/normal/pushdown/shuffle/ATTIC/ShuffleKernel.h

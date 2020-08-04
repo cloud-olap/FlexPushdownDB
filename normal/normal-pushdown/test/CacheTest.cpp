@@ -13,7 +13,7 @@
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/connector/local-fs/LocalFilePartition.h>
-#include <normal/pushdown/merge/MergeOperator.h>
+#include <normal/pushdown/merge/Merge.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/pushdown/AWSClient.h>
 #include "TestUtil.h"
@@ -79,7 +79,7 @@ void makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<Oper
   cacheLoad->setHitOperator(merge);
   merge->setLeftProducer(cacheLoad);
 
-  cacheLoad->setMissOperator(fileScan);
+  cacheLoad->setMissOperatorToCache(fileScan);
   fileScan->consume(cacheLoad);
 
   fileScan->produce(merge);

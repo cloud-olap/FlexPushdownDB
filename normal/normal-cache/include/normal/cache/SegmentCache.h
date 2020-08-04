@@ -26,6 +26,7 @@ public:
   tl::expected<std::shared_ptr<SegmentData>, std::string> load(const std::shared_ptr<SegmentKey>& key);
   unsigned long remove(const std::shared_ptr<SegmentKey>& key);
   unsigned long remove(const std::function<bool(const SegmentKey& entry)>& predicate);
+  std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys);
 
   size_t getSize() const;
 

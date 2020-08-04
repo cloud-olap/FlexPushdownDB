@@ -30,6 +30,8 @@ public:
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsPullupCaching(int numRanges);
 
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsHybridCaching(int numRanges);
+
 private:
   std::shared_ptr<pushdown::AWSClient> awsClient_;
 

@@ -40,7 +40,8 @@ public:
 			   int64_t finishOffset,
 			   S3SelectCSVParseOptions parseOptions,
 			   std::shared_ptr<Aws::S3::S3Client> s3Client,
-			   bool scanOnStart);
+			   bool scanOnStart,
+			   bool toCache);
 
   static std::shared_ptr<S3SelectScan> make(std::string name,
 											std::string s3Bucket,
@@ -51,7 +52,8 @@ public:
 											int64_t finishOffset,
 											S3SelectCSVParseOptions parseOptions,
 											std::shared_ptr<Aws::S3::S3Client> s3Client,
-											bool scanOnStart);
+											bool scanOnStart = true,
+											bool toCache = false);
 
 
 private:
@@ -64,8 +66,14 @@ private:
   S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;
+
+  /**
+   * Flags:
+   * 1) scanOnStart_: send request to s3 at the beginning
+   * 2) toCache_: whether the segments are to be cached
+   */
   bool scanOnStart_;
-//  bool pushDownFlag_;
+  bool toCache_;
 
   void onStart();
   void onReceive(const Envelope &message) override;
@@ -74,6 +82,7 @@ private:
   [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
 
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
+  std::shared_ptr<TupleSet2> readTuples();
   void readAndSendTuples();
 
 };
