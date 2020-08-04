@@ -35,7 +35,7 @@ public:
 	  : TupleSetIndex(columnIndex, table), valueRowMap_(std::move(valueRowMap)) {}
 
   static std::shared_ptr<TupleSetIndexWrapper> make(const std::shared_ptr<::arrow::Table> &table, size_t columnIndex) {
-	assert(table->schema()->field(arrayPos)->type()->id() == (::arrow::TypeTraits<ArrowType>::type_singleton()->id()));
+	assert(table->schema()->field(columnIndex)->type()->id() == (::arrow::TypeTraits<ArrowType>::type_singleton()->id()));
 	auto valueRowMap = build(columnIndex, 0, table);
 	return std::make_shared<TupleSetIndexWrapper>(table, columnIndex, valueRowMap.value());
   }

@@ -39,7 +39,7 @@ private:
   std::shared_ptr<TupleSetIndex> buildTupleSetIndex_;
   std::string probeJoinColumnName_;
   std::shared_ptr<::arrow::Schema> outputSchema_;
-  std::vector<std::shared_ptr<::arrow::Array>> joinedArrayVector_;
+  std::vector<::arrow::ArrayVector> joinedArrayVectors_;
 
 };
 

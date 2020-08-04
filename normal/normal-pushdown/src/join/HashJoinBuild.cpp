@@ -9,6 +9,7 @@
 #include <normal/pushdown/Globals.h>
 #include <normal/pushdown/join/HashTableMessage.h>
 #include <normal/tuple/TupleSet2.h>
+#include <normal/pushdown/join/TupleSetIndexMessage.h>
 
 using namespace normal::pushdown;
 using namespace normal::pushdown::join;
@@ -18,7 +19,7 @@ using namespace normal::core;
 HashJoinBuild::HashJoinBuild(const std::string &name, std::string columnName) :
 	Operator(name, "HashJoinBuild"),
 	columnName_(std::move(columnName)),
-	kernel_(HashJoinBuildKernel::make(columnName_)){
+	kernel_(HashJoinBuildKernel2::make(columnName_)){
 }
 
 std::shared_ptr<HashJoinBuild> HashJoinBuild::create(const std::string &name, const std::string &columnName) {
@@ -50,7 +51,8 @@ void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
 
 //  SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
 
-  kernel_.put(tupleSet);
+  auto result = kernel_.put(tupleSet);
+  if(!result) throw std::runtime_error(result.error());
 
 //  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
 }
@@ -60,10 +62,13 @@ void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
 //	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
 
-	std::shared_ptr<normal::core::message::Message>
-		hashTableMessage = std::make_shared<HashTableMessage>(kernel_.getHashTable(), name());
+//	std::shared_ptr<normal::core::message::Message>
+//		hashTableMessage = std::make_shared<HashTableMessage>(kernel_.getHashTable(), name());
 
-	ctx()->tell(hashTableMessage);
+	std::shared_ptr<normal::core::message::Message>
+		message = std::make_shared<TupleSetIndexMessage>(kernel_.getTupleSetIndex().value(), name());
+
+	ctx()->tell(message);
 
 	ctx()->notifyComplete();
   }

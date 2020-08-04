@@ -12,8 +12,7 @@ RecordBatchJoiner::RecordBatchJoiner(std::shared_ptr<TupleSetIndex> buildTupleSe
 	buildTupleSetIndex_(std::move(buildTupleSetIndex)),
 	probeJoinColumnName_(std::move(probeJoinColumnName)),
 	outputSchema_(std::move(outputSchema)),
-	joinedArrayVector_{} {
-  joinedArrayVector_.reserve(static_cast<size_t>(outputSchema_->num_fields()));
+	joinedArrayVectors_{static_cast<size_t>(outputSchema_->num_fields())} {
 }
 
 tl::expected<std::shared_ptr<RecordBatchJoiner>, std::string>
@@ -99,20 +98,20 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   }
 
   // Create arrays from the appenders
-  for (auto &buildAppender : buildAppenders) {
-	auto expectedArray = buildAppender->finalize();
+  for (size_t c=0; c<buildAppenders.size();++c) {
+	auto expectedArray = buildAppenders[c]->finalize();
 	if (!expectedArray.has_value())
 	  return tl::make_unexpected(status.message());
 	else
-	  joinedArrayVector_.emplace_back(expectedArray.value());
+	  joinedArrayVectors_[c].emplace_back(expectedArray.value());
   }
 
-  for (auto &probeAppender : probeAppenders) {
-	auto expectedArray = probeAppender->finalize();
+  for (size_t c=0; c<probeAppenders.size();++c) {
+	auto expectedArray = probeAppenders[c]->finalize();
 	if (!expectedArray.has_value())
 	  return tl::make_unexpected(status.message());
 	else
-	  joinedArrayVector_.emplace_back(expectedArray.value());
+	  joinedArrayVectors_[buildAppenders.size() + c].emplace_back(expectedArray.value());
   }
 
   return {};
@@ -122,7 +121,14 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string>
 RecordBatchJoiner::toTupleSet() {
   arrow::Status status;
 
-  auto joinedTable = ::arrow::Table::Make(outputSchema_, joinedArrayVector_);
+  // Make chunked arrays
+  std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
+  for(const auto &joinedArrayVector: joinedArrayVectors_){
+    auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(joinedArrayVector);
+	chunkedArrays.emplace_back(chunkedArray);
+  }
+
+  auto joinedTable = ::arrow::Table::Make (outputSchema_, chunkedArrays);
   auto joinedTupleSet = TupleSet2::make(joinedTable);
 
   return joinedTupleSet;

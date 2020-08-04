@@ -14,6 +14,7 @@
 #include <normal/core/message/CompleteMessage.h>
 #include "HashTable.h"
 #include "HashJoinBuildKernel.h"
+#include "HashJoinBuildKernel2.h"
 
 namespace normal::pushdown::join {
 
@@ -40,7 +41,7 @@ private:
    */
   std::string columnName_;
 
-  HashJoinBuildKernel kernel_;
+  HashJoinBuildKernel2 kernel_;
 
   void onStart();
   void onTuple(const core::message::TupleMessage &msg);

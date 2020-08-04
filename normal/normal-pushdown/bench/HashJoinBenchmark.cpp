@@ -45,8 +45,8 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet1, const std::shared_ptr<Tupl
 
   TupleSet2 joinedTupleSet;
 
-//  SPDLOG_DEBUG("BUILD RELATION:\n{}", tupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-//  SPDLOG_DEBUG("PROBE RELATION:\n{}", tupleSet2->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_DEBUG("BUILD RELATION:\n{}", tupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_DEBUG("PROBE RELATION:\n{}", tupleSet2->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   ankerl::nanobench::Config().minEpochIterations(1).run(
 	  fmt::format("join-{}-{}-rows", tupleSet1->numRows(), tupleSet2->numRows()), [&] {
@@ -60,7 +60,7 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet1, const std::shared_ptr<Tupl
 		joinedTupleSet = *probeKernel.join().value();
 	  });
 
-//  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   ankerl::nanobench::Config().minEpochIterations(1).run(
 	  fmt::format("join2-{}-{}-rows", tupleSet1->numRows(), tupleSet2->numRows()), [&] {
@@ -84,7 +84,7 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet1, const std::shared_ptr<Tupl
 		joinedTupleSet = *probeKernel.join().value();
 	  });
 
-//  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
 TEST_SUITE ("join-benchmark" * doctest::skip(SKIP_SUITE)) {
@@ -112,9 +112,9 @@ TEST_CASE ("join-build-probe-benchmark" * doctest::skip(false || SKIP_SUITE)) {
   auto tupleSet10000 = Sample::sampleCxRIntString(10, 10000);
 //  auto tupleSet100000 = Sample::sampleCxRIntString(10, 100000);
 
-  run(tupleSet10, tupleSet100);
+//  run(tupleSet10, tupleSet100);
   run(tupleSet100, tupleSet1000);
-  run(tupleSet1000, tupleSet10000);
+//  run(tupleSet1000, tupleSet10000);
 //  run(tupleSet10000, tupleSet100000);
 }
 

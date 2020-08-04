@@ -13,6 +13,8 @@
 #include "HashTableMessage.h"
 #include "HashTable.h"
 #include "HashJoinProbeKernel.h"
+#include "HashJoinProbeKernel2.h"
+#include "TupleSetIndexMessage.h"
 
 namespace normal::pushdown::join {
 
@@ -35,22 +37,22 @@ private:
   /**
    * A buffer of received tuples that are not joined until enough hashtable entries and tuples have been received
    */
-  std::shared_ptr<normal::tuple::TupleSet2> tuples_;
+//  std::shared_ptr<normal::tuple::TupleSet2> tuples_;
 
   /**
    * The hashtable
    */
-  std::shared_ptr<HashTable> hashtable_;
+//  std::shared_ptr<TupleSetIndex> hashtable_;
 
-  HashJoinProbeKernel kernel_;
+  HashJoinProbeKernel2 kernel_;
 
   void onStart();
   void onTuple(const core::message::TupleMessage &msg);
-  void onHashTable(const HashTableMessage &msg);
+  void onHashTable(const TupleSetIndexMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
 
   void bufferTuples(const core::message::TupleMessage &msg);
-  void bufferHashTable(const HashTableMessage &msg);
+  void bufferHashTable(const TupleSetIndexMessage &msg);
   void joinAndSendTuples();
   tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> join();
   void sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &tuples);

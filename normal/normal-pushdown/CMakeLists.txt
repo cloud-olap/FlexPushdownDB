@@ -56,7 +56,8 @@ add_library(normal-pushdown STATIC
         include/normal/pushdown/join/TupleSetIndexWrapper.cpp include/normal/pushdown/join/TupleSetIndexWrapper.h
         include/normal/pushdown/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
         include/normal/pushdown/join/TupleSetIndexFinder.cpp include/normal/pushdown/join/TupleSetIndexFinder.h
-        include/normal/pushdown/join/TupleSetIndexFinderWrapper.cpp include/normal/pushdown/join/TupleSetIndexFinderWrapper.h)
+        include/normal/pushdown/join/TupleSetIndexFinderWrapper.cpp include/normal/pushdown/join/TupleSetIndexFinderWrapper.h
+        include/normal/pushdown/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
