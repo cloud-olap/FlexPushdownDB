@@ -8,7 +8,7 @@
 #include <memory>
 #include <list>
 #include <forward_list>
-#include <unordered_map>
+#include <unordered_set>
 
 #include "SegmentKey.h"
 #include "CachingPolicy.h"
@@ -23,9 +23,15 @@ public:
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
-  std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey> > > > onStore(const std::shared_ptr<SegmentKey> &key) override;
-  std::shared_ptr<std::vector<std::shared_ptr<SegmentKey> > > onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey> > > segmentKeys) override;
+  std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
+  std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey> > > segmentKeys) override;
 
+private:
+  std::vector<std::shared_ptr<SegmentKey>> usageHeap_;
+  std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keySet_;
+
+  void eraseFBR();
+  void erase(const std::shared_ptr<SegmentKey> &key);
 };
 
 }

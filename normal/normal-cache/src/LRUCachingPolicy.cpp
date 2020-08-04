@@ -46,6 +46,7 @@ LRUCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
     freeSize_ += removableKey->getMetadata()->size();
   }
   usageQueue_.emplace_front(key);
+  keyIndexMap_.emplace(key, usageQueue_.begin());
   freeSize_ -= segmentSize;
 
   return std::optional(removableKeys);

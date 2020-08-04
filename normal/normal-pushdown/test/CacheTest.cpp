@@ -55,6 +55,7 @@ void makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<Oper
   auto partition = std::make_shared<S3SelectPartition>("s3filter", "ssb-sf0.01/lineorder.tbl", numBytesTestFile);
   auto cacheLoad = CacheLoad::make(fmt::format("/query-{}/cache-load", g->getId()),
 								   columnNamess,
+                   std::vector<std::string>(),
 								   partition,
 								   0,
 								   numBytesTestFile);
@@ -72,7 +73,7 @@ void makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<Oper
                                      client.defaultS3Client(),
                                      false);
 
-  auto merge = MergeOperator::make(fmt::format("/query-{}/merge", g->getId()));
+  auto merge = Merge::make(fmt::format("/query-{}/merge", g->getId()));
 
   auto collate = std::make_shared<Collate>(fmt::format("/query-{}/collate", g->getId()), g->getId());
 

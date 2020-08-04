@@ -43,7 +43,7 @@ TEST_CASE ("s3selectscan-sum-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   std::vector<std::string> columns = {"c_acctbal"};
 
-  auto s3selectScan = std::make_shared<S3SelectScan>("s3SelectScan",
+  auto s3selectScan = S3SelectScan::make("s3SelectScan",
 													 "s3filter",
 													 "tpch-sf1/customer.csv",
 													 "select c_acctbal from S3Object",

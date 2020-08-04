@@ -13,6 +13,7 @@
 #include <normal/plan/mode/Modes.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
+#include <normal/cache/FBRCachingPolicy.h>
 #include "ExperimentUtil.h"
 
 #define SKIP_SUITE false
@@ -130,20 +131,21 @@ TEST_CASE ("Baseline-SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
 
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {
-          "query1.1.sql", "query1.2.sql", "query1.3.sql",
-          "query2.1.sql", "query2.2.sql", "query2.3.sql",
-          "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
-          "query4.1.sql", "query4.2.sql", "query4.3.sql"
-//"query1.1.sql"
+//          "query1.1.sql", "query1.2.sql", "query1.3.sql",
+//          "query2.1.sql", "query2.2.sql", "query2.3.sql",
+//          "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
+//          "query4.1.sql", "query4.2.sql", "query4.3.sql"
+"query2.1.sql", "query2.1.sql", "query2.1.sql"
   };
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf0.01/";
-  auto cachingPolicy = LRUCachingPolicy::make(10000000);
+  auto lru = LRUCachingPolicy::make(2000000);
+  auto fbr = FBRCachingPolicy::make(2000000);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode3, cachingPolicy);
+  normal::sql::Interpreter i(mode3, fbr);
   if (partitioned) {
     configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
   } else {
