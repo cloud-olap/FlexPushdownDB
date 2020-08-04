@@ -43,12 +43,11 @@ void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
 }
 
 void HashJoinProbe::onStart() {
-  SPDLOG_DEBUG("Starting  |  Local operator directory:\n{}", ctx()->operatorMap().showString());
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
 void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
   // Add the tuples to the internal buffer
-  SPDLOG_DEBUG("{} Received {} ", name(), msg.tuples()->numRows());
   bufferTuples(msg);
 }
 
@@ -86,16 +85,7 @@ void HashJoinProbe::joinAndSendTuples() {
 }
 
 tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinProbe::join() {
-//  kernel_.putBuildTupleSetIndex(hashtable_);
-//  kernel_.putProbeTupleSet(tuples_);
-
-  SPDLOG_DEBUG("{} About to join", name());
-
-  auto joinedTuplesExpected2 = kernel_.join();
-
-  SPDLOG_DEBUG("{} Joined {} ", name(), joinedTuplesExpected2.value()->numRows());
-
-  return joinedTuplesExpected2;
+  return kernel_.join();
 }
 
 void HashJoinProbe::sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &joined) {

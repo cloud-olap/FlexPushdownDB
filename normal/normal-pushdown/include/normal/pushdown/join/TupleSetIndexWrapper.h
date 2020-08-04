@@ -81,6 +81,8 @@ public:
 	  recordBatch = *recordBatchResult;
 	}
 
+	assert(valueIndexMap.size() == static_cast<size_t>(table->num_rows()));
+
 	return valueIndexMap;
   }
 
@@ -103,20 +105,26 @@ public:
 	}
 	table_ = *appendResult;
 
+	assert(valueRowMap_.size() == static_cast<size_t>(table_->num_rows()));
+
 	return {};
   }
 
   [[nodiscard]] tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) override {
 
-	auto expectedValueIndexMap = build(columnIndex_, table_->num_rows(), table);
-	if (!expectedValueIndexMap.has_value())
-	  return tl::make_unexpected(expectedValueIndexMap.error());
-	valueRowMap_ = expectedValueIndexMap.value();
+	auto expectedValueRowIndexMap = build(columnIndex_, table_->num_rows(), table);
+	if (!expectedValueRowIndexMap.has_value())
+	  return tl::make_unexpected(expectedValueRowIndexMap.error());
+	auto valueRowIndexMap = expectedValueRowIndexMap.value();
+
+	valueRowMap_.merge(valueRowIndexMap);
 
 	auto result = ::arrow::ConcatenateTables({table_, table});
 	if (!result.ok())
 	  return tl::make_unexpected(result.status().message());
 	table_ = *result;
+
+	assert(valueRowMap_.size() == static_cast<size_t>(table_->num_rows()));
 
 	return {};
   }

@@ -98,19 +98,19 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   }
 
   // Create arrays from the appenders
-  for (size_t c=0; c<buildAppenders.size();++c) {
+  for (size_t c = 0; c < buildAppenders.size(); ++c) {
 	auto expectedArray = buildAppenders[c]->finalize();
 	if (!expectedArray.has_value())
 	  return tl::make_unexpected(status.message());
-	else
+	if (expectedArray.value()->length() > 0)
 	  joinedArrayVectors_[c].emplace_back(expectedArray.value());
   }
 
-  for (size_t c=0; c<probeAppenders.size();++c) {
+  for (size_t c = 0; c < probeAppenders.size(); ++c) {
 	auto expectedArray = probeAppenders[c]->finalize();
 	if (!expectedArray.has_value())
 	  return tl::make_unexpected(status.message());
-	else
+	if (expectedArray.value()->length() > 0)
 	  joinedArrayVectors_[buildAppenders.size() + c].emplace_back(expectedArray.value());
   }
 
@@ -123,12 +123,12 @@ RecordBatchJoiner::toTupleSet() {
 
   // Make chunked arrays
   std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
-  for(const auto &joinedArrayVector: joinedArrayVectors_){
-    auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(joinedArrayVector);
+  for (const auto &joinedArrayVector: joinedArrayVectors_) {
+	auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(joinedArrayVector);
 	chunkedArrays.emplace_back(chunkedArray);
   }
 
-  auto joinedTable = ::arrow::Table::Make (outputSchema_, chunkedArrays);
+  auto joinedTable = ::arrow::Table::Make(outputSchema_, chunkedArrays);
   auto joinedTupleSet = TupleSet2::make(joinedTable);
 
   return joinedTupleSet;

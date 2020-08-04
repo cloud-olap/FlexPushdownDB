@@ -49,8 +49,6 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   auto buildTable = buildTupleSetIndex_.value()->getTable();
   auto probeTable = probeTupleSet_.value()->getArrowTable().value();
 
-  SPDLOG_DEBUG("Joining {} to {}", buildTable->num_rows(), probeTable->num_rows());
-
   // Create the output schema
   std::vector<std::shared_ptr<::arrow::Field>> outputFields;
   outputFields.reserve(buildTable->schema()->num_fields() + probeTable->schema()->num_fields());
@@ -94,8 +92,6 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   }
 
   auto expectedJoinedTupleSet = joiner->toTupleSet();
-
-  SPDLOG_DEBUG("Joining {} to {} - Joined {}", buildTable->num_rows(), probeTable->num_rows(), expectedJoinedTupleSet.value()->numRows());
 
 #ifndef NDEBUG
 
