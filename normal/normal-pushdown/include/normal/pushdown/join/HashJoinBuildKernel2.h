@@ -9,22 +9,23 @@
 #include <memory>
 
 #include <normal/pushdown/join/HashTable.h>
-#include "ArraySetIndex.h"
+#include "TupleSetIndex.h"
 
 namespace normal::pushdown::join {
 
+/**
+ * Kernel for creating the hash table on the build relation in a hash join
+ */
 class HashJoinBuildKernel2 {
 
 public:
   explicit HashJoinBuildKernel2(std::string columnName);
-
   static HashJoinBuildKernel2 make(const std::string &columnName);
 
-  tl::expected<void,std::string> put(const std::shared_ptr<TupleSet2> &tupleSet);
+  [[nodiscard]] tl::expected<void,std::string> put(const std::shared_ptr<TupleSet2> &tupleSet);
   size_t size();
   void clear();
-
-  std::shared_ptr<ArraySetIndex> getArraySetIndex();
+  std::optional<std::shared_ptr<TupleSetIndex>> getTupleSetIndex();
 
 private:
 
@@ -34,9 +35,9 @@ private:
   std::string columnName_;
 
   /**
-   * The hashtable
+   * The hashtable as an indexed tupleset
    */
-  std::optional<std::shared_ptr<ArraySetIndex>> arraySetIndex_;
+  std::optional<std::shared_ptr<TupleSetIndex>> tupleSetIndex_;
 
 };
 

@@ -3,7 +3,7 @@
 //
 
 #include "HashJoinBuildKernel2.h"
-#include "ArraySetIndexBuilder.h"
+#include "TupleSetIndexWrapper.h"
 
 #include <utility>
 
@@ -24,23 +24,28 @@ tl::expected<void, std::string> HashJoinBuildKernel2::put(const std::shared_ptr<
 
   assert(tupleSet);
 
-  if(!arraySetIndex_.has_value()){
-	arraySetIndex_ = ArraySetIndexBuilder::make(tupleSet->getArrowTable().value(), columnName_);
+  if(!tupleSetIndex_.has_value()){
+	auto expectedTupleSetIndex = TupleSetIndexBuilder::make(tupleSet->getArrowTable().value(), columnName_);
+	if(!expectedTupleSetIndex.has_value()){
+	  return tl::make_unexpected(expectedTupleSetIndex.error());
+	}
+	tupleSetIndex_ = expectedTupleSetIndex.value();
 	return {};
   }
-  else{
-	return arraySetIndex_.value()->put(tupleSet->getArrowTable().value());
-  }
+  return tupleSetIndex_.value()->put(tupleSet->getArrowTable().value());
 }
 
 size_t HashJoinBuildKernel2::size() {
-  return arraySetIndex_.value()->size();
+  if(!tupleSetIndex_.has_value()){
+    return 0;
+  }
+  return tupleSetIndex_.value()->size();
 }
 
 void HashJoinBuildKernel2::clear() {
-  arraySetIndex_.value()->clear();
+  tupleSetIndex_ = std::nullopt;
 }
 
-std::shared_ptr<ArraySetIndex> HashJoinBuildKernel2::getArraySetIndex() {
-  return arraySetIndex_.value();
+std::optional<std::shared_ptr<TupleSetIndex>> HashJoinBuildKernel2::getTupleSetIndex() {
+  return tupleSetIndex_;
 }

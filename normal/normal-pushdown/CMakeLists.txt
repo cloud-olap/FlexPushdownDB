@@ -52,13 +52,11 @@ add_library(normal-pushdown STATIC
         include/normal/pushdown/join/HashJoinProbeKernel.cpp include/normal/pushdown/join/HashJoinProbeKernel.h
         include/normal/pushdown/join/HashJoinProbeKernel2.cpp include/normal/pushdown/join/HashJoinProbeKernel2.h
         include/normal/pushdown/join/HashJoinBuildKernel2.cpp include/normal/pushdown/join/HashJoinBuildKernel2.h
-        include/normal/pushdown/join/ArraySet.cpp include/normal/pushdown/join/ArraySet.h
-        include/normal/pushdown/join/ArraySetIndex.cpp include/normal/pushdown/join/ArraySetIndex.h
-        include/normal/pushdown/join/TypedArraySetIndex.cpp include/normal/pushdown/join/TypedArraySetIndex.h
-        include/normal/pushdown/join/ArraySetIndexBuilder.cpp include/normal/pushdown/join/ArraySetIndexBuilder.h
+        include/normal/pushdown/join/TupleSetIndex.cpp include/normal/pushdown/join/TupleSetIndex.h
+        include/normal/pushdown/join/TupleSetIndexWrapper.cpp include/normal/pushdown/join/TupleSetIndexWrapper.h
         include/normal/pushdown/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
-        include/normal/pushdown/join/ArraySetIndexFinder.cpp include/normal/pushdown/join/ArraySetIndexFinder.h
-        include/normal/pushdown/join/ArraySetIndexFinderWrapper.cpp include/normal/pushdown/join/ArraySetIndexFinderWrapper.h)
+        include/normal/pushdown/join/TupleSetIndexFinder.cpp include/normal/pushdown/join/TupleSetIndexFinder.h
+        include/normal/pushdown/join/TupleSetIndexFinderWrapper.cpp include/normal/pushdown/join/TupleSetIndexFinderWrapper.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

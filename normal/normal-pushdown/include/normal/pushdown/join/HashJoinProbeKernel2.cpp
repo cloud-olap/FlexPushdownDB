@@ -20,21 +20,20 @@ HashJoinProbeKernel2 HashJoinProbeKernel2::make(JoinPredicate pred) {
   return HashJoinProbeKernel2(std::move(pred));
 }
 
-void HashJoinProbeKernel2::putArraySetIndex(const std::shared_ptr<ArraySetIndex> &arraySetIndex) {
-  if (!arraySetIndex_.has_value()) {
-	arraySetIndex_ = arraySetIndex;
-  } else {
-	arraySetIndex_.value()->merge(arraySetIndex);
+tl::expected<void, std::string> HashJoinProbeKernel2::putBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex> &tupleSetIndex) {
+  if (!buildTupleSetIndex_.has_value()) {
+	buildTupleSetIndex_ = tupleSetIndex;
+	return {};
   }
+  return buildTupleSetIndex_.value()->merge(tupleSetIndex);
 }
 
-tl::expected<void, std::string> HashJoinProbeKernel2::putTupleSet(const std::shared_ptr<TupleSet2> &tupleSet) {
-  if (!tupleSet_.has_value()) {
-	tupleSet_ = tupleSet;
+tl::expected<void, std::string> HashJoinProbeKernel2::putProbeTupleSet(const std::shared_ptr<TupleSet2> &tupleSet) {
+  if (!probeTupleSet_.has_value()) {
+	probeTupleSet_ = tupleSet;
 	return {};
-  } else {
-	return tupleSet_.value()->append(tupleSet);
   }
+  return probeTupleSet_.value()->append(tupleSet);
 }
 
 tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinProbeKernel2::join() {
@@ -42,13 +41,13 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   ::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
   ::arrow::Status status;
 
-  if (!arraySetIndex_.has_value())
+  if (!buildTupleSetIndex_.has_value())
 	return tl::make_unexpected("ArraySetIndex not set");
-  if (!tupleSet_.has_value())
+  if (!probeTupleSet_.has_value())
 	return tl::make_unexpected("TupleSet not set");
 
-  auto buildTable = arraySetIndex_.value()->getTable();
-  auto probeTable = tupleSet_.value()->getArrowTable().value();
+  auto buildTable = buildTupleSetIndex_.value()->getTable();
+  auto probeTable = probeTupleSet_.value()->getArrowTable().value();
 
   // Create the output schema
   std::vector<std::shared_ptr<::arrow::Field>> outputFields;
@@ -62,7 +61,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   auto outputSchema = std::make_shared<::arrow::Schema>(outputFields);
 
   // Create the joiner
-  auto expectedJoiner = RecordBatchJoiner::make(arraySetIndex_.value(), pred_.getRightColumnName(), outputSchema);
+  auto expectedJoiner = RecordBatchJoiner::make(buildTupleSetIndex_.value(), pred_.getRightColumnName(), outputSchema);
   if (!expectedJoiner.has_value()) {
 	return tl::make_unexpected(expectedJoiner.error());
   }
