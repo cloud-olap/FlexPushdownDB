@@ -22,7 +22,7 @@ public:
   tl::expected<std::shared_ptr<arrow::Array>, std::string> finalize() override;
 
 private:
-  std::vector<long> buffer_;
+  std::vector<::arrow::Int64Type::c_type> buffer_;
   std::shared_ptr<::arrow::Int64Builder> int64Builder_;
 
 };
