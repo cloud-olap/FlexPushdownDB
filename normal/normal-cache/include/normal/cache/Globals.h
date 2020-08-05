@@ -11,6 +11,8 @@
 #include "spdlog/spdlog.h"
 
 namespace normal::cache {
+
+  extern std::mutex replacementGlobalLock;
 }
 
 #endif //NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_GLOBALS_H

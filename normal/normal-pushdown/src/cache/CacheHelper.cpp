@@ -21,7 +21,10 @@ void CacheHelper::requestLoadSegmentsFromCache(const std::vector<std::string> &c
 
   std::vector<std::shared_ptr<SegmentKey>> segmentKeys;
   for(const auto &columnName: columnNames){
-	auto segmentKey = SegmentKey::make(partition, columnName, SegmentRange::make(startOffset, finishOffset));
+	auto segmentKey = SegmentKey::make(partition,
+	                                   columnName,
+	                                   SegmentRange::make(startOffset, finishOffset),
+	                                   SegmentMetadata::make());
 	segmentKeys.emplace_back(segmentKey);
   }
 

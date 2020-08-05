@@ -141,7 +141,7 @@ MergeKernel::merge(const std::shared_ptr<TupleSet2> &tupleSet1,
 	const auto &mergedTupleSet = TupleSet2::make(mergedTable);
 	return mergedTupleSet;
   } else {
-	const auto &mergedTupleSet = TupleSet2::make();
+	const auto &mergedTupleSet = TupleSet2::make2();
 	return mergedTupleSet;
   }
 

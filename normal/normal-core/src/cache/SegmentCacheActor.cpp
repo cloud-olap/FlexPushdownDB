@@ -3,6 +3,7 @@
 //
 
 #include "normal/core/cache/SegmentCacheActor.h"
+#include <normal/cache/Globals.h>
 
 using namespace normal::core::cache;
 
@@ -55,7 +56,12 @@ void SegmentCacheActor::load(const LoadRequestMessage &msg) {
     }
   }
 
+  /*
+   * Decision making should be locked
+   */
+  normal::cache::replacementGlobalLock.lock();
   auto segmentKeysToCache = state_->cache->toCache(missSegmentKeys);
+  normal::cache::replacementGlobalLock.unlock();
 
   auto responseMessage = LoadResponseMessage::make(segments, name(), *segmentKeysToCache);
 

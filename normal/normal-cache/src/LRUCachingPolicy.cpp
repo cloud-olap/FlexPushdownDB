@@ -65,7 +65,9 @@ void LRUCachingPolicy::onRemove(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 LRUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  // new segments are always those to cache next
+  /* TODO: here LRU is only used in pullup caching, so we cache every segment
+   *  need to decouple pullup caching and hybrid caching later
+   */
   return segmentKeys;
 }
 

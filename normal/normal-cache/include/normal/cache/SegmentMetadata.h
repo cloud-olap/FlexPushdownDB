@@ -12,11 +12,15 @@ namespace normal::cache {
 class SegmentMetadata {
 
 public:
+  SegmentMetadata();
   SegmentMetadata(size_t size);
   static std::shared_ptr<SegmentMetadata> make(size_t size);
+  static std::shared_ptr<SegmentMetadata> make();
 
   size_t size() const;
   int hitNum() const;
+
+  void setSize(size_t size);
 
   void incHitNum();
 

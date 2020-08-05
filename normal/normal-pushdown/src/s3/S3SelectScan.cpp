@@ -166,9 +166,8 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
-	SPDLOG_DEBUG("S3 Select RecordsEvent  |  partition: s3://{}/{}, size: {}",
-				 s3Bucket_,
-				 s3Object_,
+	SPDLOG_DEBUG("S3 Select RecordsEvent  |  name: {}, size: {}",
+				 name(),
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
 	std::shared_ptr<TupleSet> tupleSetV1 = s3SelectParser.parsePayload(payload);
@@ -176,22 +175,19 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 	tupleSetEventCallback(tupleSet);
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
-	SPDLOG_DEBUG("S3 Select StatsEvent  |  partition: s3://{}/{}, scanned: {}, processed: {}, returned: {}",
-				 s3Bucket_,
-				 s3Object_,
+	SPDLOG_DEBUG("S3 Select StatsEvent  |  name: {}, scanned: {}, processed: {}, returned: {}",
+				 name(),
 				 statsEvent.GetDetails().GetBytesScanned(),
 				 statsEvent.GetDetails().GetBytesProcessed(),
 				 statsEvent.GetDetails().GetBytesReturned());
   });
   handler.SetEndEventCallback([&]() {
-	SPDLOG_DEBUG("S3 Select EndEvent  |  partition: s3://{}/{}",
-				 s3Bucket_,
-				 s3Object_);
+	SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",
+				 name());
   });
   handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
-	SPDLOG_DEBUG("S3 Select Error  |  partition: s3://{}/{}, message: {}",
-				 s3Bucket_,
-				 s3Object_,
+	SPDLOG_DEBUG("S3 Select Error  |  name: {}, message: {}",
+				 name(),
 				 std::string(errors.GetMessage()));
 	optionalErrorMessage = std::optional(errors.GetMessage());
   });
@@ -229,7 +225,7 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
     readTupleSet = TupleSet2::make2();
   } else {
 
-    SPDLOG_DEBUG(fmt::format("Reading From S3: {}/{}", s3Bucket_, s3Object_));
+    SPDLOG_DEBUG(fmt::format("Reading From S3: {}", name()));
 
     // Read the columns not present in the cache
     auto result = s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
@@ -286,7 +282,7 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
     }
   }
 
-  SPDLOG_DEBUG(fmt::format("Finished Reading: {}/{}", s3Bucket_, s3Object_));
+  SPDLOG_DEBUG(fmt::format("Finished Reading: {}", name()));
   return readTupleSet;
 }
 
@@ -316,10 +312,10 @@ void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
             message = std::make_shared<TupleMessage>(emptyTupleSet->toTupleSetV1(), this->name());
     ctx()->tell(message);
     SPDLOG_DEBUG(fmt::format("Finished because result not needed: {}/{}", s3Bucket_, s3Object_));
-    ctx()->notifyComplete();
 
     //just to cache
     readTuples();
+    ctx()->notifyComplete();
   }
 }
 
