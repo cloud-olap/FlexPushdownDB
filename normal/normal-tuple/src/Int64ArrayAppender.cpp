@@ -2,9 +2,9 @@
 // Created by matt on 30/7/20.
 //
 
-#include "normal/pushdown/shuffle/Int64ArrayAppender.h"
+#include "normal/tuple/Int64ArrayAppender.h"
 
-using namespace normal::pushdown::shuffle;
+using namespace normal::tuple;
 
 Int64ArrayAppender::Int64ArrayAppender(size_t expectedSize) :
 	ArrayAppender(::arrow::int64(), std::make_shared<::arrow::Int64Builder>(), expectedSize) {

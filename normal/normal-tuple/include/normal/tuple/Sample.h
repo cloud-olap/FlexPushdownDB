@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_SAMPLE_H
 
 #include <memory>
+#include <random>
 
 #include "TupleSet2.h"
 
@@ -37,6 +38,9 @@ public:
    * @return
    */
   static std::shared_ptr<TupleSet2> sampleCxRString(int numCols, int numRows);
+  static std::shared_ptr<TupleSet2> sampleCxRRealString(int numCols, int numRows, std::uniform_real_distribution<double> dis = std::uniform_real_distribution(0.0, 9.0));
+  static std::shared_ptr<TupleSet2> sampleCxRIntString(int numCols, int numRows, std::uniform_int_distribution<int> dis = std::uniform_int_distribution(0, 9));
+  static std::shared_ptr<TupleSet2> sampleCxRString(int numCols, int numRows, const std::function<std::string()> &valueGenerator);
 };
 
 }

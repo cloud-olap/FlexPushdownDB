@@ -2,8 +2,8 @@
 // Created by matt on 30/7/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYHASHER_H
-#define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYHASHER_H
+#ifndef NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_ARRAYHASHER_H
+#define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_ARRAYHASHER_H
 
 #include <memory>
 #include <utility>
@@ -12,7 +12,7 @@
 #include <tl/expected.hpp>
 #include <fmt/format.h>
 
-namespace normal::pushdown::shuffle {
+namespace normal::tuple {
 
 /**
  * Class for obtaining hashes from arrays. Subclassed for each tupe of array.
@@ -35,4 +35,4 @@ protected:
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYHASHER_H
+#endif //NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_ARRAYHASHER_H

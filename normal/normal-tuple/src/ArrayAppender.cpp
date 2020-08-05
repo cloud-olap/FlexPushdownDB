@@ -2,16 +2,16 @@
 // Created by matt on 29/7/20.
 //
 
-#include "normal/pushdown/shuffle/ArrayAppender.h"
+#include "normal/tuple/ArrayAppender.h"
 
 #include <utility>
 
 #include <fmt/format.h>
 
-#include "normal/pushdown/shuffle/StringArrayAppender.h"
-#include "normal/pushdown/shuffle/Int64ArrayAppender.h"
+#include "normal/tuple/StringArrayAppender.h"
+#include "normal/tuple/Int64ArrayAppender.h"
 
-using namespace normal::pushdown::shuffle;
+using namespace normal::tuple;
 
 ArrayAppender::ArrayAppender(std::shared_ptr<::arrow::DataType> type,
 							 std::shared_ptr<::arrow::ArrayBuilder> builder,

@@ -20,9 +20,9 @@ add_library(normal-pushdown STATIC
         src/join/JoinPredicate.cpp include/normal/pushdown/join/JoinPredicate.h
         src/join/HashJoinProbe.cpp include/normal/pushdown/join/HashJoinProbe.h
         src/join/HashJoinBuild.cpp include/normal/pushdown/join/HashJoinBuild.h
-        src/join/HashTableMessage.cpp include/normal/pushdown/join/HashTableMessage.h
-        src/join/HashTable.cpp include/normal/pushdown/join/HashTable.h
-        src/join/Joiner.cpp include/normal/pushdown/join/Joiner.h
+        src/join/ATTIC/HashTableMessage.cpp include/normal/pushdown/join/ATTIC/HashTableMessage.h
+        src/join/ATTIC/HashTable.cpp include/normal/pushdown/join/ATTIC/HashTable.h
+        src/join/ATTIC/Joiner.cpp include/normal/pushdown/join/ATTIC/Joiner.h
         src/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
         src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
         src/Sort.cpp include/normal/pushdown/Sort.h
@@ -42,12 +42,12 @@ add_library(normal-pushdown STATIC
         src/shuffle/ATTIC/ShuffleKernel.cpp include/normal/pushdown/shuffle/ATTIC/ShuffleKernel.h
         src/shuffle/RecordBatchShuffler.cpp include/normal/pushdown/shuffle/RecordBatchShuffler.h
         src/shuffle/ShuffleKernel2.cpp include/normal/pushdown/shuffle/ShuffleKernel2.h
-        src/shuffle/ArrayAppender.cpp include/normal/pushdown/shuffle/ArrayAppender.h
-        src/shuffle/StringArrayAppender.cpp include/normal/pushdown/shuffle/StringArrayAppender.h
-        src/shuffle/Int64ArrayAppender.cpp include/normal/pushdown/shuffle/Int64ArrayAppender.h
-        src/shuffle/ArrayHasher.cpp include/normal/pushdown/shuffle/ArrayHasher.h
-        src/shuffle/StringArrayHasher.cpp include/normal/pushdown/shuffle/StringArrayHasher.h
-        src/shuffle/Int64ArrayHasher.cpp include/normal/pushdown/shuffle/Int64ArrayHasher.h)
+        src/join/ATTIC/HashJoinBuildKernel.cpp include/normal/pushdown/join/ATTIC/HashJoinBuildKernel.h
+        src/join/ATTIC/HashJoinProbeKernel.cpp include/normal/pushdown/join/ATTIC/HashJoinProbeKernel.h
+        src/join/HashJoinProbeKernel2.cpp include/normal/pushdown/join/HashJoinProbeKernel2.h
+        src/join/HashJoinBuildKernel2.cpp include/normal/pushdown/join/HashJoinBuildKernel2.h
+        src/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
+        src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -97,7 +97,7 @@ target_link_libraries(normal-pushdown-test PRIVATE normal-pushdown)
 add_executable(normal-pushdown-benchmark
         bench/Globals.h
         bench/MainBenchmark.cpp
-        bench/ShuffleBenchmark.cpp)
+        bench/ShuffleBenchmark.cpp bench/HashJoinBenchmark.cpp)
 
 
 target_include_directories(normal-pushdown-benchmark PRIVATE include)

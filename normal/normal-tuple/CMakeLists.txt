@@ -25,7 +25,17 @@ add_library(normal-tuple STATIC
         include/normal/tuple/arrow/ScalarHelperBuilder.h
         include/normal/tuple/arrow/ScalarHelper.h
         src/arrow/SchemaHelper.cpp include/normal/tuple/arrow/SchemaHelper.h
-        src/csv/CSVParser.cpp include/normal/tuple/csv/CSVParser.h)
+        src/csv/CSVParser.cpp include/normal/tuple/csv/CSVParser.h
+        src/ArrayAppender.cpp include/normal/tuple/ArrayAppender.h
+        src/StringArrayAppender.cpp include/normal/tuple/StringArrayAppender.h
+        src/Int64ArrayAppender.cpp include/normal/tuple/Int64ArrayAppender.h
+        src/ArrayHasher.cpp include/normal/tuple/ArrayHasher.h
+        src/StringArrayHasher.cpp include/normal/tuple/StringArrayHasher.h
+        src/Int64ArrayHasher.cpp include/normal/tuple/Int64ArrayHasher.h
+        src/TupleSetIndex.cpp include/normal/tuple/TupleSetIndex.h
+        src/TupleSetIndexWrapper.cpp include/normal/tuple/TupleSetIndexWrapper.h
+        src/TupleSetIndexFinder.cpp include/normal/tuple/TupleSetIndexFinder.h
+        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 

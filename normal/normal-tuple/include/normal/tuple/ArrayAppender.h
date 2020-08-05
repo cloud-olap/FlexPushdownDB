@@ -2,13 +2,13 @@
 // Created by matt on 29/7/20.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYAPPENDER_H
-#define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYAPPENDER_H
+#ifndef NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_ARRAYAPPENDER_H
+#define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_ARRAYAPPENDER_H
 
 #include <arrow/api.h>
 #include <tl/expected.hpp>
 
-namespace normal::pushdown::shuffle {
+namespace normal::tuple {
 
 /**
  * Class for building arrays from another array.
@@ -42,4 +42,4 @@ protected:
 
 }
 
-#endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_SHUFFLE_ARRAYAPPENDER_H
+#endif //NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_ARRAYAPPENDER_H

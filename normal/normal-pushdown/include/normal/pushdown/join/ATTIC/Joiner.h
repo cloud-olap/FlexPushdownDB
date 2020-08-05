@@ -9,10 +9,9 @@
 
 #include <normal/tuple/TupleSet.h>
 
-#include "arrow/api.h"
-#include "arrow/table.h"
+#include <arrow/api.h>
 
-#include "HashTable.h"
+#include "normal/pushdown/join/ATTIC/HashTable.h"
 
 namespace normal::pushdown::join {
 

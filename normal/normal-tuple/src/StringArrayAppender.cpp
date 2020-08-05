@@ -2,9 +2,9 @@
 // Created by matt on 29/7/20.
 //
 
-#include "normal/pushdown/shuffle/StringArrayAppender.h"
+#include "normal/tuple/StringArrayAppender.h"
 
-using namespace normal::pushdown::shuffle;
+using namespace normal::tuple;
 
 StringArrayAppender::StringArrayAppender(int64_t expectedSize) :
 	ArrayAppender(::arrow::utf8(), std::make_shared<::arrow::StringBuilder>(), expectedSize) {

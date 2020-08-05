@@ -18,13 +18,13 @@ std::shared_ptr<arrow::Schema> Projector::getResultSchema() {
   return arrow::schema(resultFields);
 }
 
-std::shared_ptr<arrow::ArrayVector> Projector::evaluate(const arrow::RecordBatch &batch) {
+arrow::ArrayVector Projector::evaluate(const arrow::RecordBatch &batch) {
 
   // Evaluate the expressions
-  auto outputs = std::make_shared<arrow::ArrayVector>();
+  arrow::ArrayVector outputs;
 
   for (const auto &expression: expressions_) {
-	expression->evaluate(batch);
+	outputs.emplace_back(expression->evaluate(batch).value());
   }
 
   return outputs;
@@ -41,12 +41,12 @@ std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
   while (res.ok() && batch) {
 
 	// Evaluate expressions against a batch
-	std::shared_ptr<arrow::ArrayVector> outputs = evaluate(*batch);
-	auto batchResultTuples = TupleSet::make(getResultSchema(), *outputs);
+	arrow::ArrayVector outputs = evaluate(*batch);
+	auto batchResultTuples = TupleSet::make(getResultSchema(), outputs);
 
 	// Concatenate the batch result to the full results
 	if (resultTuples)
-	  resultTuples = tupleSet.concatenate(batchResultTuples, resultTuples);
+	  resultTuples = TupleSet::concatenate(batchResultTuples, resultTuples);
 	else
 	  resultTuples = batchResultTuples;
 

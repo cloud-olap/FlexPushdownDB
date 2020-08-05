@@ -2,9 +2,9 @@
 // Created by matt on 30/7/20.
 //
 
-#include "normal/pushdown/shuffle/StringArrayHasher.h"
+#include "normal/tuple/StringArrayHasher.h"
 
-using namespace normal::pushdown::shuffle;
+using namespace normal::tuple;
 
 StringArrayHasher::StringArrayHasher(const std::shared_ptr<::arrow::Array> &array) :
 	ArrayHasher(array) {

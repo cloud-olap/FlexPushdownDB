@@ -8,16 +8,17 @@
 
 #include <normal/tuple/arrow/SchemaHelper.h>
 
-#include <normal/pushdown/join/HashTableMessage.h>
+#include <normal/pushdown/join/ATTIC/HashTableMessage.h>
 #include <normal/pushdown/Globals.h>
-#include <normal/pushdown/join/Joiner.h>
+#include <normal/pushdown/join/ATTIC/Joiner.h>
+#include <normal/tuple/TupleSetIndexWrapper.h>
+#include <normal/pushdown/join/TupleSetIndexMessage.h>
 
 using namespace normal::pushdown::join;
 
 HashJoinProbe::HashJoinProbe(const std::string &name, JoinPredicate pred) :
 	Operator(name, "HashJoinProbe"),
-	pred_(std::move(pred)),
-	hashtable_(std::make_shared<HashTable>()) {
+	kernel_(HashJoinProbeKernel2::make(std::move(pred))){
 }
 
 void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
@@ -29,8 +30,8 @@ void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
   } else if (msg.message().type() == "TupleMessage") {
 	auto tupleMessage = dynamic_cast<const normal::core::message::TupleMessage &>(msg.message());
 	this->onTuple(tupleMessage);
-  } else if (msg.message().type() == "HashTableMessage") {
-	auto hashTableMessage = dynamic_cast<const HashTableMessage &>(msg.message());
+  } else if (msg.message().type() == "TupleSetIndexMessage") {
+	auto hashTableMessage = dynamic_cast<const TupleSetIndexMessage &>(msg.message());
 	this->onHashTable(hashTableMessage);
   } else if (msg.message().type() == "CompleteMessage") {
 	auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(msg.message());
@@ -42,13 +43,10 @@ void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
 }
 
 void HashJoinProbe::onStart() {
-  SPDLOG_DEBUG("Starting  |  Local operator directory:\n{}", ctx()->operatorMap().showString());
+  SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 }
 
 void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
-
-
-
   // Add the tuples to the internal buffer
   bufferTuples(msg);
 }
@@ -56,15 +54,17 @@ void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
 void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg) {
 
   auto tupleSet = TupleSet2::create(msg.tuples());
+  auto result = kernel_.putProbeTupleSet(tupleSet);
+  if(!result) throw std::runtime_error(result.error());
 //  SPDLOG_DEBUG("Buffering tupleSet  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 10000)));
-  if (!tuples_) {
-	// Initialise tuples buffer with message contents
-	tuples_ = tupleSet;
-  } else {
-	auto result = tuples_->append(tupleSet);
-	if(!result.has_value())
-	  throw std::runtime_error(result.error());
-  }
+//  if (!tuples_) {
+//	// Initialise tuples buffer with message contents
+//	tuples_ = tupleSet;
+//  } else {
+//	auto result = tuples_->append(tupleSet);
+//	if(!result.has_value())
+//	  throw std::runtime_error(result.error());
+//  }
 }
 
 void HashJoinProbe::onComplete(const normal::core::message::CompleteMessage &) {
@@ -85,9 +85,7 @@ void HashJoinProbe::joinAndSendTuples() {
 }
 
 tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinProbe::join() {
-  Joiner joiner(pred_, hashtable_, tuples_);
-  auto joinedTuplesExpected = joiner.join();
-  return joinedTuplesExpected;
+  return kernel_.join();
 }
 
 void HashJoinProbe::sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &joined) {
@@ -99,11 +97,12 @@ void HashJoinProbe::sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &
   ctx()->tell(tupleMessage);
 }
 
-void HashJoinProbe::onHashTable(const HashTableMessage &msg) {
+void HashJoinProbe::onHashTable(const TupleSetIndexMessage &msg) {
   // Add the hashtable to the internal buffer
   bufferHashTable(msg);
 }
 
-void HashJoinProbe::bufferHashTable(const HashTableMessage &msg) {
-  hashtable_->merge(msg.getHashtable());
+void HashJoinProbe::bufferHashTable(const TupleSetIndexMessage &msg) {
+  auto result = kernel_.putBuildTupleSetIndex(msg.getTupleSetIndex());
+  if(!result) throw std::runtime_error(result.error());
 }

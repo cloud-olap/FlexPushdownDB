@@ -12,7 +12,9 @@
 #include <normal/core/Operator.h>
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
-#include "HashTable.h"
+#include "normal/pushdown/join/ATTIC/HashTable.h"
+#include "normal/pushdown/join/ATTIC/HashJoinBuildKernel.h"
+#include "HashJoinBuildKernel2.h"
 
 namespace normal::pushdown::join {
 
@@ -39,12 +41,7 @@ private:
    */
   std::string columnName_;
 
-  /**
-   * The hashtable
-   *
-   * FIXME: This probably doesn't need to use a pointer
-   */
-  std::shared_ptr<HashTable> hashtable_;
+  HashJoinBuildKernel2 kernel_;
 
   void onStart();
   void onTuple(const core::message::TupleMessage &msg);
