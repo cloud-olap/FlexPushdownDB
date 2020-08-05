@@ -10,9 +10,9 @@
 #include <normal/core/message/CompleteMessage.h>
 
 #include "JoinPredicate.h"
-#include "HashTableMessage.h"
-#include "HashTable.h"
-#include "HashJoinProbeKernel.h"
+#include "normal/pushdown/join/ATTIC/HashTableMessage.h"
+#include "normal/pushdown/join/ATTIC/HashTable.h"
+#include "normal/pushdown/join/ATTIC/HashJoinProbeKernel.h"
 #include "HashJoinProbeKernel2.h"
 #include "TupleSetIndexMessage.h"
 

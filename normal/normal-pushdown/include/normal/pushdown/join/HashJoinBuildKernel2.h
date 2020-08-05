@@ -8,8 +8,8 @@
 #include <string>
 #include <memory>
 
-#include <normal/pushdown/join/HashTable.h>
-#include "TupleSetIndex.h"
+#include <normal/pushdown/join/ATTIC/HashTable.h>
+#include "normal/tuple/TupleSetIndex.h"
 
 namespace normal::pushdown::join {
 

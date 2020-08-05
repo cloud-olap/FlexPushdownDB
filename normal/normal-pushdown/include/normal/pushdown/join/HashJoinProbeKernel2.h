@@ -9,8 +9,8 @@
 #include <memory>
 
 #include "JoinPredicate.h"
-#include "HashTable.h"
-#include "TupleSetIndex.h"
+#include "normal/pushdown/join/ATTIC/HashTable.h"
+#include "normal/tuple/TupleSetIndex.h"
 
 #include <normal/tuple/TupleSet2.h>
 

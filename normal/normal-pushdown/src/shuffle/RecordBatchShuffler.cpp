@@ -3,14 +3,15 @@
 //
 
 #include "normal/pushdown/shuffle/RecordBatchShuffler.h"
-#include "normal/pushdown/shuffle/ArrayHasher.h"
-#include "normal/pushdown/shuffle/ArrayAppender.h"
+#include "normal/tuple/ArrayHasher.h"
+#include "normal/tuple/ArrayAppender.h"
 
 #include <fmt/format.h>
 
 #include <utility>
 
 using namespace normal::pushdown::shuffle;
+using namespace normal::tuple;
 
 RecordBatchShuffler::RecordBatchShuffler(int shuffleColumnIndex,
 										 size_t numSlots,

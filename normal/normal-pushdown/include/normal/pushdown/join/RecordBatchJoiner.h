@@ -8,14 +8,14 @@
 #include <memory>
 #include <utility>
 
-#include <normal/pushdown/join/TupleSetIndexWrapper.h>
-#include <normal/pushdown/join/TupleSetIndexFinder.h>
-#include <normal/pushdown/shuffle/ArrayAppender.h>
+#include <normal/tuple/TupleSetIndexWrapper.h>
+#include <normal/tuple/TupleSetIndexFinder.h>
+#include <normal/tuple/ArrayAppender.h>
 #include <normal/tuple/ColumnName.h>
 #include <normal/tuple/TupleSet2.h>
-#include "TupleSetIndexFinderWrapper.h"
+#include "normal/tuple/TupleSetIndexFinderWrapper.h"
 
-using namespace normal::pushdown::shuffle;
+using namespace normal::tuple;
 
 namespace normal::pushdown::join {
 

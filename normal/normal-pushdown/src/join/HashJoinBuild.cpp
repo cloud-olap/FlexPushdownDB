@@ -7,7 +7,7 @@
 #include <utility>
 
 #include <normal/pushdown/Globals.h>
-#include <normal/pushdown/join/HashTableMessage.h>
+#include <normal/pushdown/join/ATTIC/HashTableMessage.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/pushdown/join/TupleSetIndexMessage.h>
 

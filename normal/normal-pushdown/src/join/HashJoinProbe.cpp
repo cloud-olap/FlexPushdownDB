@@ -8,10 +8,10 @@
 
 #include <normal/tuple/arrow/SchemaHelper.h>
 
-#include <normal/pushdown/join/HashTableMessage.h>
+#include <normal/pushdown/join/ATTIC/HashTableMessage.h>
 #include <normal/pushdown/Globals.h>
-#include <normal/pushdown/join/Joiner.h>
-#include <normal/pushdown/join/TupleSetIndexWrapper.h>
+#include <normal/pushdown/join/ATTIC/Joiner.h>
+#include <normal/tuple/TupleSetIndexWrapper.h>
 #include <normal/pushdown/join/TupleSetIndexMessage.h>
 
 using namespace normal::pushdown::join;

@@ -8,9 +8,10 @@
 #include <memory>
 
 #include <normal/core/message/Message.h>
-#include "TupleSetIndex.h"
+#include "normal/tuple/TupleSetIndex.h"
 
 using namespace normal::core::message;
+using namespace normal::tuple;
 
 namespace normal::pushdown::join {
 

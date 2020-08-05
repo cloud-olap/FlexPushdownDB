@@ -9,8 +9,8 @@
 #include <nanobench.h>
 
 #include <normal/tuple/Sample.h>
-#include <normal/pushdown/join/HashJoinBuildKernel.h>
-#include <normal/pushdown/join/HashJoinProbeKernel.h>
+#include <normal/pushdown/join/ATTIC/HashJoinBuildKernel.h>
+#include <normal/pushdown/join/ATTIC/HashJoinProbeKernel.h>
 #include <normal/pushdown/join/HashJoinProbeKernel2.h>
 #include <normal/pushdown/join/HashJoinBuildKernel2.h>
 
