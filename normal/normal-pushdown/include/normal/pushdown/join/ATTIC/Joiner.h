@@ -9,8 +9,7 @@
 
 #include <normal/tuple/TupleSet.h>
 
-#include "../../../../../../cmake-build-debug-llvm-7-ninja/_deps/arrow_ep/install/include/arrow/api.h"
-#include "../../../../../../cmake-build-debug-llvm-7-ninja/_deps/arrow_ep/install/include/arrow/table.h"
+#include <arrow/api.h>
 
 #include "normal/pushdown/join/ATTIC/HashTable.h"
 

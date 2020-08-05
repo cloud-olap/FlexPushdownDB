@@ -34,7 +34,10 @@ target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
 
 add_executable(normal-ssb-benchmark
         bench/Main.cpp
-        bench/SSBBenchmark.cpp bench/SSBNanoBenchmark.cpp)
+        bench/ATTIC/SSBBenchmark.cpp
+        bench/ATTIC/SSBNanoBenchmark.cpp
+        bench/SSBBenchmarkQuery1_1FileSF0_01.cpp
+        bench/SSBBenchmarkQuery1_1FileSF1.cpp)
 
 target_link_libraries(normal-ssb-benchmark PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-benchmark PRIVATE nanobench::nanobench)

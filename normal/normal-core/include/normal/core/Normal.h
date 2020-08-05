@@ -5,6 +5,13 @@
 #ifndef NORMAL_NORMAL_CORE_SRC_NORMAL_H
 #define NORMAL_NORMAL_CORE_SRC_NORMAL_H
 
+#include <memory>
+
+#include <normal/core/OperatorManager.h>
+#include <normal/core/graph/OperatorGraph.h>
+
+using namespace normal::core::graph;
+
 namespace normal::core {
 
 /**
@@ -12,12 +19,16 @@ namespace normal::core {
  */
 class Normal {
 
-private:
+public:
   Normal();
 
-public:
-  static Normal create();
-  static void start();
+  static std::shared_ptr<Normal> start();
+  void stop();
+
+  std::shared_ptr<OperatorGraph> createQuery();
+  const std::shared_ptr<OperatorManager> &getOperatorManager() const;
+private:
+  std::shared_ptr<OperatorManager> operatorManager_;
 
 };
 
