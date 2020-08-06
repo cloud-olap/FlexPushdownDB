@@ -47,7 +47,13 @@ add_library(normal-pushdown STATIC
         src/join/HashJoinProbeKernel2.cpp include/normal/pushdown/join/HashJoinProbeKernel2.h
         src/join/HashJoinBuildKernel2.cpp include/normal/pushdown/join/HashJoinBuildKernel2.h
         src/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
-        src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h)
+        src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h
+        include/normal/pushdown/bloomjoin/BloomCreateOperator.cpp include/normal/pushdown/bloomjoin/BloomCreateOperator.h
+        include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.h
+        include/normal/pushdown/bloomjoin/BloomCreateKernel.cpp include/normal/pushdown/bloomjoin/BloomCreateKernel.h
+        include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.h
+        include/normal/pushdown/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
+        include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -58,6 +64,7 @@ target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-pushdown PUBLIC arrow_static)
 target_link_libraries(normal-pushdown PUBLIC gandiva_static)
 target_link_libraries(normal-pushdown PUBLIC fmt::fmt)
+target_link_libraries(normal-pushdown PRIVATE primesieve::primesieveStatic)
 target_link_libraries(normal-pushdown PUBLIC normal-core)
 target_link_libraries(normal-pushdown PUBLIC normal-tuple)
 target_link_libraries(normal-pushdown PUBLIC normal-expression)
@@ -80,7 +87,7 @@ add_executable(normal-pushdown-test
         test/FileScanTest.cpp
         test/CacheTest.cpp
         test/S3SelectScanTest.cpp
-        test/ShuffleTest.cpp test/MergeTest.cpp)
+        test/ShuffleTest.cpp test/MergeTest.cpp test/BloomJoinTest.cpp)
 
 
 target_include_directories(normal-pushdown-test PRIVATE include)
@@ -128,6 +135,9 @@ configure_file(data/filescan/multi-partition/test02.csv ${CMAKE_CURRENT_BINARY_D
 configure_file(data/filescan/multi-partition/test03.csv ${CMAKE_CURRENT_BINARY_DIR}/data/filescan/multi-partition/test03.csv COPYONLY)
 
 configure_file(data/cache/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/cache/test.csv COPYONLY)
+
+configure_file(data/bloomjoin/right.csv ${CMAKE_CURRENT_BINARY_DIR}/data/bloomjoin/right.csv COPYONLY)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
