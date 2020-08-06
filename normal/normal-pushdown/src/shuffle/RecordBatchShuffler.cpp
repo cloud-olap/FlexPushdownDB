@@ -105,15 +105,26 @@ tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> RecordBatchSh
   // Create TupleSets from the destination vectors of arrays
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSetVector{numSlots_};
   for (size_t s = 0; s < shuffledArraysVector_.size(); ++s) {
+    std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
 
-	std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
-	for (const auto &columnArrays : shuffledArraysVector_[s]) {
-	  auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(columnArrays);
-	  chunkedArrays.emplace_back(chunkedArray);
-	}
+    // handle empty columnArrays
+    bool empty = false;
 
-	std::shared_ptr<::arrow::Table> shuffledTable = ::arrow::Table::Make(schema_, chunkedArrays);
-	shuffledTupleSetVector[s] = TupleSet2::make(shuffledTable);
+    for (const auto &columnArrays : shuffledArraysVector_[s]) {
+      if (columnArrays.size() == 0) {
+        empty = true;
+        break;
+      }
+      auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(columnArrays);
+      chunkedArrays.emplace_back(chunkedArray);
+    }
+
+    if (empty) {
+      shuffledTupleSetVector[s] = TupleSet2::make(Schema::make(schema_));
+    } else {
+      std::shared_ptr<::arrow::Table> shuffledTable = ::arrow::Table::Make(schema_, chunkedArrays);
+      shuffledTupleSetVector[s] = TupleSet2::make(shuffledTable);
+    }
   }
 
   return shuffledTupleSetVector;

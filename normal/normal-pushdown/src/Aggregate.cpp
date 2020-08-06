@@ -71,25 +71,29 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
 
     // Create output tuples
     std::vector<std::shared_ptr<arrow::Array>> columns;
-	for(size_t i=0;i<functions_->size();++i){
-	  auto function = functions_->at(i);
-	  auto result = results_->at(i);
+    for(size_t i=0;i<functions_->size();++i){
+      auto function = functions_->at(i);
+      auto result = results_->at(i);
 
-	  function->finalize(result);
+      function->finalize(result);
 
       if(function->returnType() == arrow::float64()){
         auto scalar = std::static_pointer_cast<arrow::DoubleScalar>(result->evaluate());
         auto colArgh = makeArgh<arrow::DoubleType>(scalar);
         columns.emplace_back(colArgh.value());
       }
-	  else if(function->returnType() == arrow::int32()){
-		auto scalar = std::static_pointer_cast<arrow::Int32Scalar>(result->evaluate());
-		auto colArgh = makeArgh<arrow::Int32Type>(scalar);
-		columns.emplace_back(colArgh.value());
-	  }
-	  else{
-	    throw std::runtime_error("Unrecognized type " + function->returnType()->name());
-	  }
+      else if(function->returnType() == arrow::int32()){
+        auto scalar = std::static_pointer_cast<arrow::Int32Scalar>(result->evaluate());
+        auto colArgh = makeArgh<arrow::Int32Type>(scalar);
+        columns.emplace_back(colArgh.value());
+      } else if(function->returnType() == arrow::int64()){
+        auto scalar = std::static_pointer_cast<arrow::Int64Scalar>(result->evaluate());
+        auto colArgh = makeArgh<arrow::Int64Type>(scalar);
+        columns.emplace_back(colArgh.value());
+      }
+      else{
+        throw std::runtime_error("Unrecognized type " + function->returnType()->name());
+      }
     }
 
     std::shared_ptr<arrow::Table> table;

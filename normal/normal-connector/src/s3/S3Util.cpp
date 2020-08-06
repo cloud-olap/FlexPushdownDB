@@ -35,7 +35,10 @@ S3Util::listObjects(std::string s3Bucket,
 	if (res.IsSuccess()) {
 	  Aws::Vector<Aws::S3::Model::Object> objectList = res.GetResult().GetContents();
 	  for (auto const &object : objectList) {
-		partitionMap.find(object.GetKey().c_str())->second = object.GetSize();
+	    auto partitionEntry = partitionMap.find(object.GetKey().c_str());
+	    if (partitionEntry != partitionMap.end()) {
+        partitionEntry->second = object.GetSize();
+      }
 	  }
 	}
   }

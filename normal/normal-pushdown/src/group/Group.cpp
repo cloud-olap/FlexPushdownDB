@@ -54,6 +54,11 @@ void Group::onStart() {
 void Group::onTuple(const normal::core::message::TupleMessage &message) {
   auto tupleSet = normal::tuple::TupleSet2::create(message.tuples());
 
+//  // empty tuple
+//  if (tupleSet->numRows() == 0) {
+//    return;
+//  }
+
   // Set the input schema if not yet set
   cacheInputSchema(*message.tuples());
 
@@ -127,6 +132,9 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
       aggregateFunction->apply(aggregateResult, groupTupleSet->toTupleSetV1());
     }
   }
+
+  // clear computed groupedTuples
+  groupedTuples_.clear();
 }
 
 void Group::onComplete(const normal::core::message::CompleteMessage&) {
@@ -151,10 +159,18 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
     for (const auto &function: *aggregateFunctions_) {
       auto returnType = function->returnType();
       if (!returnType) {
-        // FIXME: if no tuple to group by, the return type is missing, here use DoubleType, but not a good way
-        auto doubleScalar = ::arrow::MakeScalar(1.01);
-        returnType = doubleScalar->type;
+        // FIXME: if no tuple to group by, the return type is missing, here use DoubleType
+        returnType = std::make_shared<::arrow::DoubleType>();
       }
+//      if (!returnType) {
+//        auto emptyTupleSet = TupleSet2::make2();
+//        std::shared_ptr<normal::core::message::Message>
+//                tupleMessage = std::make_shared<normal::core::message::TupleMessage>(emptyTupleSet->toTupleSetV1(), this->name());
+//        ctx()->tell(tupleMessage);
+//
+//        ctx()->notifyComplete();
+//        return;
+//      }
       std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), returnType);
       fields.emplace_back(field);
     }
@@ -227,9 +243,10 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
     // Create the aggregate function columns
     std::vector<std::shared_ptr<arrow::Array>> aggregateFunctionColumns;
     for(size_t c = 0;c<aggregateFunctions_->size();++c){
-
       std::shared_ptr<arrow::Array> array;
-      ::arrow::Int64Builder builder;
+
+      // FIXME: default aggregateResult type is double
+      ::arrow::DoubleBuilder builder;
 
       auto field = schema->getSchema()->field(c);
       for(const auto &groupAggregateResults: aggregateResults_){
@@ -237,7 +254,7 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
       auto groupResultValue = groupResults.at(c);
       auto groupResultValueArrowScalar = groupResultValue->evaluate();
       auto groupResultValueScalar = Scalar::make(groupResultValueArrowScalar);
-      auto arrowStatus = builder.Append(groupResultValueScalar->value<long>());
+      auto arrowStatus = builder.Append(groupResultValueScalar->value<double>());
       if(!arrowStatus.ok()){
         // FIXME
         throw std::runtime_error(arrowStatus.message());
@@ -259,7 +276,6 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
     auto table = arrow::Table::Make(schema->getSchema(), columns);
 
     const std::shared_ptr<TupleSet> &groupedTupleSet = TupleSet::make(table);
-    auto tupleSetV2 = TupleSet2::create(groupedTupleSet);
 
     std::shared_ptr<normal::core::message::Message>
       tupleMessage = std::make_shared<normal::core::message::TupleMessage>(groupedTupleSet, this->name());
