@@ -2,7 +2,7 @@
 // Created by matt on 30/4/20.
 //
 
-#include "normal/pushdown/join/HashTable.h"
+#include "normal/pushdown/join/ATTIC/HashTable.h"
 
 #include <arrow/array.h>
 #include <normal/pushdown/Globals.h>
@@ -96,3 +96,6 @@ tl::expected<void, std::string> HashTable::put(const std::string &columnName, co
   return {};
 }
 
+size_t HashTable::size() {
+  return this->tuples_->numRows();
+}

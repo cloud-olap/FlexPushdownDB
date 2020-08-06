@@ -2,7 +2,7 @@
 // Created by matt on 29/4/20.
 //
 
-#include "normal/pushdown/join/HashTableMessage.h"
+#include "normal/pushdown/join/ATTIC/HashTableMessage.h"
 
 using namespace normal::pushdown;
 using namespace normal::pushdown::join;

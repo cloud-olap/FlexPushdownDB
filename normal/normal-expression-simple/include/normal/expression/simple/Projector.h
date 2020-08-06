@@ -19,7 +19,7 @@ public:
   void compile(const std::shared_ptr<arrow::Schema> &schema) override;
   [[nodiscard]] std::shared_ptr<arrow::Schema> getResultSchema() override;
 
-  std::shared_ptr<arrow::ArrayVector> evaluate(const arrow::RecordBatch &batch) override;
+  arrow::ArrayVector evaluate(const arrow::RecordBatch &batch) override;
   std::shared_ptr<TupleSet> evaluate(const TupleSet &tupleSet) override;
 
 private:

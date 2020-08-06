@@ -52,17 +52,29 @@ std::shared_ptr<TupleSet2> Sample::sample3x3String() {
 }
 
 std::shared_ptr<TupleSet2> Sample::sampleCxRString(int numCols, int numRows) {
+  sampleCxRRealString(numCols, numRows, std::uniform_real_distribution(0.0, 100.0));
+}
 
+std::shared_ptr<TupleSet2> Sample::sampleCxRRealString(int numCols, int numRows, std::uniform_real_distribution<double> dist) {
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_real_distribution dis(0.0, 100.0);
+  return sampleCxRString(numCols, numRows, [&]() -> auto { return fmt::format("{:.{}f}", dist(gen), 2); });
+}
+
+std::shared_ptr<TupleSet2> Sample::sampleCxRIntString(int numCols, int numRows, std::uniform_int_distribution<int> dist) {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  return sampleCxRString(numCols, numRows, [&]() -> auto { return fmt::format("{}", dist(gen)); });
+}
+
+std::shared_ptr<TupleSet2> Sample::sampleCxRString(int numCols, int numRows, const std::function<std::string()> &valueGenerator) {
 
   std::vector<std::vector<std::string>> data;
   for (int c = 0; c < numCols; ++c) {
 	std::vector<std::string> row;
 	row.reserve(numRows);
 	for (int r = 0; r < numRows; ++r) {
-	  row.emplace_back(fmt::format("{:.{}f}", dis(gen), 2));
+	  row.emplace_back(valueGenerator());
 	}
 	data.emplace_back(row);
   }

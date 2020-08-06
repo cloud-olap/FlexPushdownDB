@@ -2,12 +2,12 @@
 // Created by matt on 30/7/20.
 //
 
-#include "normal/pushdown/shuffle/ArrayHasher.h"
+#include "normal/tuple/ArrayHasher.h"
 
 #include <utility>
-#include "normal/pushdown/shuffle/StringArrayHasher.h"
+#include "normal/tuple/StringArrayHasher.h"
 
-using namespace normal::pushdown::shuffle;
+using namespace normal::tuple;
 
 ArrayHasher::ArrayHasher(std::shared_ptr<::arrow::Array> array) : array_(std::move(array)) {}
 

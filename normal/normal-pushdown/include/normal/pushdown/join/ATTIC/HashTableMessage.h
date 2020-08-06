@@ -11,7 +11,7 @@
 #include <arrow/scalar.h>
 
 #include <normal/core/message/Message.h>
-#include "HashTable.h"
+#include "normal/pushdown/join/ATTIC/HashTable.h"
 
 namespace normal::pushdown::join {
 
