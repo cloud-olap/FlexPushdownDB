@@ -92,7 +92,7 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
         columns.emplace_back(colArgh.value());
       }
       else{
-        throw std::runtime_error("Unrecognized type " + function->returnType()->name());
+        throw std::runtime_error("Unrecognized aggregation type " + function->returnType()->name());
       }
     }
 

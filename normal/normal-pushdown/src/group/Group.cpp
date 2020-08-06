@@ -179,7 +179,6 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
     // Create the group field columns
     std::vector<std::shared_ptr<arrow::Array>> groupFieldColumns;
     for(size_t c = 0; c < columnNames_.size(); c++){
-
       std::shared_ptr<arrow::Array> array;
       std::shared_ptr<::arrow::ArrayBuilder> builder;
 
@@ -244,28 +243,58 @@ void Group::onComplete(const normal::core::message::CompleteMessage&) {
     std::vector<std::shared_ptr<arrow::Array>> aggregateFunctionColumns;
     for(size_t c = 0;c<aggregateFunctions_->size();++c){
       std::shared_ptr<arrow::Array> array;
+      std::shared_ptr<::arrow::ArrayBuilder> builder;
+      auto function = aggregateFunctions_->at(c);
 
-      // FIXME: default aggregateResult type is double
-      ::arrow::DoubleBuilder builder;
-
-      auto field = schema->getSchema()->field(c);
-      for(const auto &groupAggregateResults: aggregateResults_){
-      auto groupResults = groupAggregateResults.second;
-      auto groupResultValue = groupResults.at(c);
-      auto groupResultValueArrowScalar = groupResultValue->evaluate();
-      auto groupResultValueScalar = Scalar::make(groupResultValueArrowScalar);
-      auto arrowStatus = builder.Append(groupResultValueScalar->value<double>());
-      if(!arrowStatus.ok()){
-        // FIXME
-        throw std::runtime_error(arrowStatus.message());
-      }
+      if (!function->returnType()) {
+        // FIXME: no tuple, double type in default
+        builder = std::make_shared<::arrow::DoubleBuilder>();
+        auto arrowStatus = builder->Finish(&array);
       }
 
-      auto arrowStatus = builder.Finish(&array);
-      if(!arrowStatus.ok()){
-      // FIXME
-      throw std::runtime_error(arrowStatus.message());
+      else {
+        if (function->returnType()->id() == arrow::Int32Type::type_id) {
+          builder = std::make_shared<::arrow::Int32Builder>();
+        } else if (function->returnType()->id() == arrow::Int64Type::type_id) {
+          builder = std::make_shared<::arrow::Int64Builder>();
+        } else if (function->returnType()->id() == arrow::DoubleType::type_id) {
+          builder = std::make_shared<::arrow::DoubleBuilder>();
+        } else {
+          throw std::runtime_error("Unrecognized aggregation type " + function->returnType()->name());
+        }
+
+        auto field = schema->getSchema()->field(c);
+        for (const auto &groupAggregateResults: aggregateResults_) {
+          auto groupResults = groupAggregateResults.second;
+          auto groupResultValue = groupResults.at(c);
+          auto groupResultValueArrowScalar = groupResultValue->evaluate();
+          auto groupResultValueScalar = Scalar::make(groupResultValueArrowScalar);
+
+          ::arrow::Status arrowStatus;
+          if (function->returnType()->id() == arrow::Int32Type::type_id) {
+            auto int32Builder = std::static_pointer_cast<::arrow::Int32Builder>(builder);
+            arrowStatus = int32Builder->Append(groupResultValueScalar->value<int>());
+          } else if (function->returnType()->id() == arrow::Int64Type::type_id) {
+            auto int64Builder = std::static_pointer_cast<::arrow::Int64Builder>(builder);
+            arrowStatus = int64Builder->Append(groupResultValueScalar->value<long>());
+          } else if (function->returnType()->id() == arrow::DoubleType::type_id) {
+            auto doubleBuilder = std::static_pointer_cast<::arrow::DoubleBuilder>(builder);
+            arrowStatus = doubleBuilder->Append(groupResultValueScalar->value<double>());
+          }
+
+          if (!arrowStatus.ok()) {
+            // FIXME
+            throw std::runtime_error(arrowStatus.message());
+          }
+        }
+
+        auto arrowStatus = builder->Finish(&array);
+        if (!arrowStatus.ok()) {
+          // FIXME
+          throw std::runtime_error(arrowStatus.message());
+        }
       }
+
       aggregateFunctionColumns.emplace_back(array);
     }
 
