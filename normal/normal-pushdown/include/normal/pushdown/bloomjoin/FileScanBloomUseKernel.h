@@ -27,15 +27,14 @@ public:
 	  columnNames_(std::move(columnNames)),
 	  startOffset_(startOffset),
 	  finishOffset_(finishOffset),
-	  bloomFilterColumnName_(std::move(bloomFilterColumnName)),
-	  parser_(filePath_, columnNames_, startOffset_, finishOffset_) {
+	  bloomFilterColumnName_(std::move(bloomFilterColumnName)) {
   }
 
   static std::shared_ptr<FileScanBloomUseKernel> make(const std::string &filePath,
 													  const std::vector<std::string> &columnNames,
 													  unsigned long startOffset,
 													  unsigned long finishOffset,
-													  const std::string& bloomFilterColumnName) {
+													  const std::string &bloomFilterColumnName) {
 	return std::make_shared<FileScanBloomUseKernel>(filePath,
 													columnNames,
 													startOffset,
@@ -52,13 +51,16 @@ public:
 	return {};
   }
 
-  [[nodiscard]] tl::expected<void, std::string> scan() {
+  [[nodiscard]] tl::expected<void, std::string> scan(const std::vector<std::string> &columnNames) {
+
+	CSVParser parser_(filePath_, columnNames, startOffset_, finishOffset_);
 
 	auto expectedTupleSet = parser_.parse();
 	if (!expectedTupleSet)
 	  return tl::make_unexpected(expectedTupleSet.error());
 
 	tupleSet_ = expectedTupleSet.value();
+
 	return {};
   }
 
@@ -67,6 +69,73 @@ public:
 	  return 0;
 	else
 	  return tupleSet_.value()->numRows();
+  }
+
+  template<typename ArrowArrayType>
+  void filterRecordBatch(const ::arrow::RecordBatch &recordBatch,
+						 int keyColumnIndex,
+						 const std::vector<std::shared_ptr<ArrayAppender>>& appenders) {
+	std::vector<std::shared_ptr<::arrow::Array>> columns(recordBatch.num_columns());
+	for (int c = 0; c < recordBatch.num_columns(); ++c) {
+	  columns[c] = recordBatch.column(c);
+	}
+
+	auto columnArray = std::static_pointer_cast<ArrowArrayType>(recordBatch.column(keyColumnIndex));
+
+	for (int r = 0; r < recordBatch.num_rows(); ++r) {
+	  if (bloomFilter_.value()->contains(columnArray->Value(r))) {
+		for (size_t c = 0; c < appenders.size(); ++c) {
+		  appenders[c]->appendValue(columns[c], r);
+		}
+	  }
+	}
+  }
+
+  template<>
+  void filterRecordBatch<::arrow::StringArray>(const ::arrow::RecordBatch &recordBatch,
+											   int keyColumnIndex,
+											   const std::vector<std::shared_ptr<ArrayAppender>>& appenders) {
+	std::vector<std::shared_ptr<::arrow::Array>> columns(recordBatch.num_columns());
+	for (int c = 0; c < recordBatch.num_columns(); ++c) {
+	  columns[c] = recordBatch.column(c);
+	}
+
+	auto columnArray = std::static_pointer_cast<::arrow::StringArray>(recordBatch.column(keyColumnIndex));
+
+	for (int r = 0; r < recordBatch.num_rows(); ++r) {
+	  if (bloomFilter_.value()->contains(std::stoi(columnArray->GetString(r)))) {
+		for (size_t c = 0; c < appenders.size(); ++c) {
+		  appenders[c]->appendValue(columns[c], r);
+		}
+	  }
+	}
+  }
+
+  [[nodiscard]] tl::expected<void, std::string> filterRecordBatch(const ::arrow::RecordBatch &recordBatch,
+																  int keyColumnIndex,
+																  const std::vector<std::shared_ptr<ArrayAppender>>& appenders) {
+	auto columnTypeId = recordBatch.column(keyColumnIndex)->type_id();
+
+	switch (columnTypeId) {
+	case arrow::Type::BOOL: filterRecordBatch<::arrow::BooleanArray>(recordBatch, keyColumnIndex, appenders);
+	  break;
+	case arrow::Type::INT8: filterRecordBatch<::arrow::Int8Array>(recordBatch, keyColumnIndex, appenders);
+	  break;
+	case arrow::Type::INT16: filterRecordBatch<::arrow::Int16Array>(recordBatch, keyColumnIndex, appenders);
+	  break;
+	case arrow::Type::INT32: filterRecordBatch<::arrow::Int32Array>(recordBatch, keyColumnIndex, appenders);
+	  break;
+	case arrow::Type::INT64: filterRecordBatch<::arrow::Int64Array>(recordBatch, keyColumnIndex, appenders);
+	  break;
+	case arrow::Type::STRING: filterRecordBatch<::arrow::StringArray>(recordBatch, keyColumnIndex, appenders);
+	  break;
+	default:
+	  return tl::make_unexpected(fmt::format(
+		  "Filter is not implemented for arrays of type {}",
+		  columnTypeId));
+	}
+
+	return {};
   }
 
   [[nodiscard]] tl::expected<void, std::string> filter() {
@@ -86,24 +155,10 @@ public:
 	auto result = reader.Next();
 
 	while (*result) {
-
 	  auto recordBatch = *result;
-
-	  std::vector<std::shared_ptr<::arrow::Array>> columns(recordBatch->num_columns());
-	  for (int c = 0; c < recordBatch->num_columns(); ++c) {
-		columns[c] = recordBatch->column(c);
-	  }
-
-	  auto columnIntArray = std::static_pointer_cast<::arrow::Int64Array>(recordBatch->column(filterColumnIndex));
-
-	  for (int r = 0; r < recordBatch->num_rows(); ++r) {
-		if (bloomFilter_.value()->contains(columnIntArray->Value(r))) {
-		  for (int c = 0; c < table->num_columns(); ++c) {
-			appenders[c]->appendValue(columns[c], r);
-		  }
-		}
-	  }
-
+	  auto filterResult = filterRecordBatch(*recordBatch, filterColumnIndex, appenders);
+	  if (!filterResult)
+		return tl::make_unexpected(filterResult.error());
 	  result = reader.Next();
 	}
 
@@ -132,8 +187,6 @@ private:
   unsigned long startOffset_;
   unsigned long finishOffset_;
   std::string bloomFilterColumnName_;
-
-  CSVParser parser_;
 
   std::optional<std::shared_ptr<SlicedBloomFilter>> bloomFilter_;
 

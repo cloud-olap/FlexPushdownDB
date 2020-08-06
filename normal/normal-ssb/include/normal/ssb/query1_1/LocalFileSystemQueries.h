@@ -9,6 +9,7 @@
 
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
+#include <normal/core/Normal.h>
 
 using namespace normal::core;
 using namespace normal::core::graph;
@@ -54,6 +55,13 @@ public:
 											   short quantity,
 											   int numConcurrentUnits,
 											   const std::shared_ptr<OperatorManager> &mgr);
+
+  static std::shared_ptr<OperatorGraph> bloom(const std::string &dataDir,
+									   short year,
+									   short discount,
+									   short quantity,
+									   int numConcurrentUnits,
+									   const std::shared_ptr<Normal> &n);
 };
 
 }

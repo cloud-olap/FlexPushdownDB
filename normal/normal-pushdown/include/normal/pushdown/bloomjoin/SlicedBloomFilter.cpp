@@ -16,7 +16,7 @@ SlicedBloomFilter::SlicedBloomFilter(int capacity, double falsePositiveRate) :
 	hashFunctions_(makeHashFunctions()),
 	bitArrays_(makeBitArrays()) {
 
-  assert(capacity > 0);
+//  assert(capacity > 0);
   assert(falsePositiveRate > 0.0 && falsePositiveRate < 1.0);
 }
 
@@ -126,7 +126,8 @@ std::vector<bool> SlicedBloomFilter::hashes(int key) {
   std::vector<bool> hashes(hashFunctions_.size());
 
   for(size_t i=0;i<hashFunctions_.size();++i){
-	hashes[i] = bitArrays_[i][hashFunctions_[i]->hash(key)];
+    auto h = hashFunctions_[i]->hash(key);
+	hashes[i] = bitArrays_[i][h];
   }
 
   return hashes;

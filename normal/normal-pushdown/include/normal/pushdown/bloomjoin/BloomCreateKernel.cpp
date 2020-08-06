@@ -57,7 +57,7 @@ tl::expected<void, std::string> BloomCreateKernel::buildBloomFilter() {
   if(!expectedBestFalsePositiveRate.has_value())
     return tl::make_unexpected(expectedBestFalsePositiveRate.error());
 
-  bloomFilter_ = SlicedBloomFilter::make(receivedTupleSet_.value()->numRows(), expectedBestFalsePositiveRate.value());
+  bloomFilter_ = SlicedBloomFilter::make(std::max(1L, receivedTupleSet_.value()->numRows()), expectedBestFalsePositiveRate.value());
 
   int keyColumnIndex = receivedTupleSet_.value()->schema().value()->getFieldIndexByName(columnName_);
   auto table = receivedTupleSet_.value()->getArrowTable().value();

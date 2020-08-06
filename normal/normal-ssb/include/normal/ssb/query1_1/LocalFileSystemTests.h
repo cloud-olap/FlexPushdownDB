@@ -72,6 +72,13 @@ public:
 				   bool check,
 				   const std::shared_ptr<Normal> &n);
 
+  static void bloom(short year,
+			 short discount,
+			 short quantity,
+			 const std::string &dataDir,
+			 int numConcurrentUnits,
+			 bool check,
+			 const std::shared_ptr<Normal> &n);
 };
 }
 
