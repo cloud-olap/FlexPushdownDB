@@ -6,6 +6,7 @@
 #include <normal/tuple/TupleSet2.h>
 
 #include <normal/pushdown/group/GroupKey.h>
+#include <normal/tuple/ArrayAppender.h>
 
 using namespace normal::pushdown::group;
 using namespace normal::tuple;
@@ -62,49 +63,114 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
   // Set the input schema if not yet set
   cacheInputSchema(*message.tuples());
 
-  // Fill the groupedTuples
-  for (int row_id = 0; row_id < tupleSet->numRows(); row_id++) {
-
-    // Build the group key
-    auto groupKey = GroupKey::make();
-    for (const auto &columnName: columnNames_) {
-      auto &&expectedColumn = tupleSet->getColumnByName(columnName);
-      if (!expectedColumn.has_value()) {
-        throw(tl::unexpected(expectedColumn.error()));
-      }
-      auto &&groupColumn = expectedColumn.value();
-      auto &&expectedScalar = groupColumn->element(row_id);
-      if (!expectedScalar.has_value()) {
-        throw(tl::unexpected(expectedScalar.error()));
-      }
-      auto &&scalar = expectedScalar.value();
-      groupKey->append(columnName, scalar);
-    }
-
-    // Get or initialise the tuple set for the current group
-    std::shared_ptr<normal::tuple::TupleSet2> currentTupleSet;
-    auto currentTupleSetIt = groupedTuples_.find(groupKey);
-    if (currentTupleSetIt == groupedTuples_.end()) {
-      currentTupleSet = normal::tuple::TupleSet2::make (std::make_shared<normal::tuple::Schema>(inputSchema_.value()));
-      groupedTuples_.emplace(groupKey, currentTupleSet);
-    } else {
-      currentTupleSet = currentTupleSetIt->second;
-    }
-
-    // Get the current row as a tuple set
-    auto arrowTable = tupleSet->getArrowTable();
-    auto arrowTableSlice = arrowTable.value()->Slice(row_id, 1);
-    auto arrowSliceColumns = arrowTableSlice->columns();
-    auto arrowSliceTable = ::arrow::Table::Make(inputSchema_.value(), arrowSliceColumns);
-    auto sliceTupleSet = normal::tuple::TupleSet2::make(arrowSliceTable);
-
-    // Append the current row to the current group tuple set
-    auto result = currentTupleSet->append(sliceTupleSet);
-    if(!result.has_value()){
-      // FIXME
-      throw std::runtime_error(result.error());
-    }
+  // Fill the groupedTuples using record batch
+  auto startTime = std::chrono::steady_clock::now();
+  std::shared_ptr<::arrow::Table> table;
+  if (tupleSet->getArrowTable().has_value()) {
+    table = tupleSet->getArrowTable().value();
+  } else {
+    throw std::runtime_error("TupleSet is undefined");
   }
+  auto arrowSchema = table->schema();
+
+  arrow::TableBatchReader reader{*table};
+  reader.set_chunksize(DefaultChunkSize);
+  arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult = reader.Next();
+  if (!recordBatchResult.ok()) {
+    throw std::runtime_error(recordBatchResult.status().message());
+  }
+  auto recordBatch = *recordBatchResult;
+
+  // temporary grouped arrays
+  std::unordered_map<std::shared_ptr<GroupKey>, std::shared_ptr<std::vector<std::shared_ptr<ArrayAppender>>>, GroupKeyPointerHash, GroupKeyPointerPredicate> tempGroupedArrays;
+
+  while (recordBatch) {
+    std::vector<std::shared_ptr<arrow::Array>> batchArrays;
+    for (int col_id = 0; col_id < recordBatch->num_columns(); ++col_id) {
+      batchArrays.emplace_back(recordBatch->column(col_id));
+    }
+    auto batchTupleSet = TupleSet2::make(arrowSchema, batchArrays);
+
+    // process for each tuple
+    for (int row_id = 0; row_id < batchTupleSet->numRows(); ++row_id) {
+      // build the group key
+      auto groupKey = GroupKey::make();
+      for (const auto &columnName: columnNames_) {
+//        auto groupColumn = recordBatch->GetColumnByName(columnName);
+//        if (groupColumn->type()->id() == arrow::Int64Type::type_id) {
+//          auto typedColumn = std::static_pointer_cast<::arrow::Int64Array>(groupColumn);
+//          auto value = ::arrow::MakeScalar(typedColumn->Value(row_id));
+//          auto scalar = std::make_shared<normal::tuple::Scalar>(value);
+//          groupKey->append(columnName, scalar);
+//        } else if (groupColumn->type()->id() == arrow::DoubleType::type_id) {
+//          auto typedColumn = std::static_pointer_cast<::arrow::DoubleArray>(groupColumn);
+//          auto value = ::arrow::MakeScalar(typedColumn->Value(row_id));
+//          auto scalar = std::make_shared<normal::tuple::Scalar>(value);
+//        } else if (groupColumn->type()->id() == arrow::StringType::type_id) {
+//          auto typedColumn = std::static_pointer_cast<::arrow::StringArray>(groupColumn);
+//          auto value = ::arrow::MakeScalar(typedColumn->GetString(row_id));
+//          auto scalar = std::make_shared<normal::tuple::Scalar>(::arrow::MakeScalar(1));
+//        }
+
+        auto &&expectedColumn = batchTupleSet->getColumnByName(columnName);
+        if (!expectedColumn.has_value()) {
+          throw (tl::unexpected(expectedColumn.error()));
+        }
+        auto &&groupColumn = expectedColumn.value();
+        auto &&expectedScalar = groupColumn->element(row_id);
+        if (!expectedScalar.has_value()) {
+          throw (tl::unexpected(expectedScalar.error()));
+        }
+        auto &&scalar = expectedScalar.value();
+        groupKey->append(columnName, scalar);
+      }
+
+      // get or initialize temporary grouped arrays (arrayAppenders)
+      std::shared_ptr<std::vector<std::shared_ptr<ArrayAppender>>> arrayAppenders;
+      auto currentArrayAppendersIt = tempGroupedArrays.find(groupKey);
+      if (currentArrayAppendersIt == tempGroupedArrays.end()) {
+        arrayAppenders = std::make_shared<std::vector<std::shared_ptr<ArrayAppender>>>();
+        for (int col_id = 0; col_id < recordBatch->num_columns(); ++col_id) {
+          auto expectedAppender = ArrayAppender::make(arrowSchema->field(col_id)->type(), recordBatch->num_rows());
+          if (!expectedAppender.has_value()) {
+            throw std::runtime_error(expectedAppender.error());
+          }
+          arrayAppenders->emplace_back(expectedAppender.value());
+        }
+        tempGroupedArrays.emplace(groupKey, arrayAppenders);
+      } else {
+        arrayAppenders = currentArrayAppendersIt->second;
+      }
+
+      // append values of the current tuple
+      for (int col_id = 0; col_id < recordBatch->num_columns(); ++col_id) {
+        arrayAppenders->at(col_id)->appendValue(recordBatch->column(col_id), row_id);
+      }
+    }
+
+    // next batch
+    recordBatchResult = reader.Next();
+    if (!recordBatchResult.ok()) {
+      throw std::runtime_error(recordBatchResult.status().message());
+    }
+    recordBatch = *recordBatchResult;
+  }
+
+  // finalize temporary grouped arrays
+  for (auto const &arrayAppendersIt: tempGroupedArrays) {
+    auto groupKey = arrayAppendersIt.first;
+    auto arrayAppenders = arrayAppendersIt.second;
+    auto arrays = std::vector<std::shared_ptr<arrow::Array>>();
+    for (auto const &arrayAppender: *arrayAppenders) {
+      arrays.emplace_back(arrayAppender->finalize().value());
+    }
+    groupedTuples_.emplace(groupKey, TupleSet2::make(arrowSchema, arrays));
+  }
+  auto endTime = std::chrono::steady_clock::now();
+  SPDLOG_INFO("Group key time: {}, size: {}",
+          std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count(),
+          tupleSet->numRows());
+  startTime = endTime;
 
   // Compute aggregate results for each groupTupleSetPair
   for(const auto &groupTupleSetPair: groupedTuples_){
@@ -132,6 +198,10 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
       aggregateFunction->apply(aggregateResult, groupTupleSet->toTupleSetV1());
     }
   }
+  endTime = std::chrono::steady_clock::now();
+  SPDLOG_INFO("Aggregate time: {}, size: {}",
+          std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count(),
+          tupleSet->numRows());
 
   // clear computed groupedTuples
   groupedTuples_.clear();

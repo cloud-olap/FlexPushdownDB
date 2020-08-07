@@ -111,7 +111,8 @@ add_executable(normal-ssb-experiment
         experiment/BaseLineTest.cpp
         experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h
         experiment/HardcodedPlanTestSinglePartition.cpp
-        experiment/HardcodedPlanTestMultiPartition.cpp)
+        experiment/HardcodedPlanTestMultiPartition.cpp
+        experiment/SqliteTest.cpp)
 
 target_link_libraries(normal-ssb-experiment PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb)

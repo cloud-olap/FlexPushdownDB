@@ -7,6 +7,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <normal/tuple/DoubleArrayAppender.h>
 
 #include "normal/tuple/StringArrayAppender.h"
 #include "normal/tuple/Int64ArrayAppender.h"
@@ -26,7 +27,9 @@ ArrayAppender::make(const std::shared_ptr<::arrow::DataType> &type, size_t expec
   if (type->id() == ::arrow::StringType::type_id) {
 	return std::make_shared<StringArrayAppender>(expectedSize);
   } else if (type->id() == ::arrow::Int64Type::type_id) {
-	return std::make_shared<Int64ArrayAppender>(expectedSize);
+    return std::make_shared<Int64ArrayAppender>(expectedSize);
+  } else if (type->id() == ::arrow::DoubleType::type_id) {
+    return std::make_shared<DoubleArrayAppender>(expectedSize);
   } else {
 	return tl::make_unexpected(
 		fmt::format("Appender for type '{}' not implemented yet", type->id()));

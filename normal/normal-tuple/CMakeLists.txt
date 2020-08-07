@@ -35,7 +35,8 @@ add_library(normal-tuple STATIC
         src/TupleSetIndex.cpp include/normal/tuple/TupleSetIndex.h
         src/TupleSetIndexWrapper.cpp include/normal/tuple/TupleSetIndexWrapper.h
         src/TupleSetIndexFinder.cpp include/normal/tuple/TupleSetIndexFinder.h
-        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h)
+        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
+        src/DoubleArrayAppender.cpp include/normal/tuple/DoubleArrayAppender.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 
