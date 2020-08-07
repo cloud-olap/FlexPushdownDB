@@ -17,7 +17,6 @@ SlicedBloomFilter::SlicedBloomFilter(int capacity, double falsePositiveRate) :
 	hashFunctions_(makeHashFunctions()),
 	bitArrays_(makeBitArrays()) {
 
-  assert(capacity > 0);
   assert(falsePositiveRate >= 0.0 && falsePositiveRate <= 1.0);
 }
 
@@ -26,27 +25,19 @@ std::shared_ptr<SlicedBloomFilter> SlicedBloomFilter::make(long capacity, double
 }
 
 int SlicedBloomFilter::calculateNumSlices() const {
-  auto k = k_from_p(falsePositiveRate_);
-  assert(k > 0);
-  return k;
+  return k_from_np(capacity_, falsePositiveRate_);
 }
 
 int SlicedBloomFilter::calculateNumBitsPerSlice() const {
-  auto o = o_from_npk(capacity_, falsePositiveRate_, numSlices_);
-  assert(o > 0);
-  return o;
+  return o_from_npk(capacity_, falsePositiveRate_, numSlices_);
 }
 
 int SlicedBloomFilter::calculateNumBits() const {
-  auto m = m_from_ko(numSlices_, numBitsPerSlice_);
-  assert(m > 0);
-  return m;
+  return m_from_ko(numSlices_, numBitsPerSlice_);
 }
 
 double SlicedBloomFilter::calculateFalsePositiveRate(int bits, int capacity) {
-  auto p = p_from_mn(bits, capacity);
-  assert(p >= 0.0 && p <= 1.0);
-  return p;
+  return p_from_mn(bits, capacity);
 }
 
 std::vector<std::vector<bool>> SlicedBloomFilter::makeBitArrays() const {
@@ -63,6 +54,8 @@ std::vector<std::shared_ptr<UniversalHashFunction>> SlicedBloomFilter::makeHashF
 }
 
 bool SlicedBloomFilter::add(int key) {
+
+  assert(capacity_ > 0);
 
   auto hs = hashes(key);
   bool foundAllBits = true;
@@ -96,6 +89,9 @@ std::vector<bool> SlicedBloomFilter::hashes(int key) {
 
 bool SlicedBloomFilter::contains(int key) {
 
+  if(capacity_ == 0)
+    return false;
+
   auto hs = hashes(key);
 
   for (size_t i = 0; i < hs.size(); ++i) {
@@ -113,15 +109,17 @@ size_t SlicedBloomFilter::size() const {
 
 int SlicedBloomFilter::o_from_npk(int n, double p, int k) {
 
-  assert(n > 0);
+  int o;
 
-  if (k == 0) {
-	return 0;
-  } else {
-	return std::ceil(
-		(n * std::abs(std::log(p))) /
-			(k * (std::pow(std::log(2), 2))));
-  }
+	if (k == 0) {
+	  o = 0;
+	} else {
+	  o = std::ceil(
+		  (n * std::abs(std::log(p))) /
+			  (k * (std::pow(std::log(2), 2))));
+	}
+
+  return o;
 }
 
 int SlicedBloomFilter::k_from_p(double p) {
@@ -129,9 +127,6 @@ int SlicedBloomFilter::k_from_p(double p) {
 }
 
 double SlicedBloomFilter::r_from_mn(int m, int n) {
-
-  assert(n > 0);
-
   return static_cast<double>(m) / static_cast<double>(n);
 }
 
@@ -157,20 +152,50 @@ int SlicedBloomFilter::m_from_ko(int k, int o) {
 
 std::pair<int, double> SlicedBloomFilter::kp_from_mn(int m, int n) {
 
-  assert(n > 0);
-
   double r = SlicedBloomFilter::r_from_mn(m, n);
   int k = SlicedBloomFilter::k_from_r(r);
   int p = SlicedBloomFilter::p_from_kr(k, r);
   return std::pair(k, p);
 }
 
-double SlicedBloomFilter::p_from_mn(int m, int n) {
-
-  assert(n > 0);
+int SlicedBloomFilter::k_from_mn(int m, int n) {
 
   double r = SlicedBloomFilter::r_from_mn(m, n);
   int k = SlicedBloomFilter::k_from_r(r);
-  double p = SlicedBloomFilter::p_from_kr(k, r);
+
+  return k;
+}
+
+double SlicedBloomFilter::p_from_mn(int m, int n) {
+
+  double p;
+
+  if (n == 0) {
+    // If capacity = 0, then all filter tests will be false with 100% accuracy
+	p = 0.0;
+  } else {
+	double r = SlicedBloomFilter::r_from_mn(m, n);
+	int k = SlicedBloomFilter::k_from_r(r);
+	p = SlicedBloomFilter::p_from_kr(k, r);
+  }
+
+  assert(p >= 0.0 && p <= 1.0);
+
   return p;
+}
+
+int SlicedBloomFilter::k_from_np(int n, double p) {
+
+  int k;
+
+  if(n == 0) {
+	k = 0;
+  }
+  else {
+	auto m = std::ceil(n * std::log(p) / std::log(1 / std::pow(2, std::log(2))));
+	auto r = r_from_mn(m, n);
+	k = k_from_r(r);
+  }
+
+  return k;
 }

@@ -79,6 +79,14 @@ private:
 
   /**
    *
+   * @param m
+   * @param n
+   * @return
+   */
+  static int k_from_mn(int m, int n);
+
+  /**
+   *
    * @param p False positive rate
    * @return k Number of slices
    */
@@ -91,7 +99,7 @@ private:
    * @return r Ratio of bits to capacity
    */
   static double r_from_mn(int m, int n);
-//
+
   /**
    *
    * @param k Number of slices
@@ -131,6 +139,14 @@ private:
    * @return kp (Number of slices, False positive rate)
    */
   static std::pair<int, double> kp_from_mn(int m, int n);
+
+  /**
+   *
+   * @param n Capacity
+   * @param p False positive rate
+   * @return k Number of slices
+   */
+  static int k_from_np(int n, double p);
 
 };
 
