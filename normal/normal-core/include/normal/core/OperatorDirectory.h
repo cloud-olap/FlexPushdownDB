@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <tl/expected.hpp>
-#include <fmt/format.h>
+
 #include "OperatorDirectoryEntry.h"
 
 namespace normal::core {
@@ -24,15 +24,7 @@ private:
 
 public:
   void insert(const OperatorDirectoryEntry& entry);
-  tl::expected<OperatorDirectoryEntry, std::string> get(std::string operatorId){
-	auto entryIt = entries_.find(operatorId);
-	if(entryIt == entries_.end()){
-	  return tl::unexpected(fmt::format("Operator with id '{}' not found", operatorId));
-	}
-	else{
-	  return entryIt->second;
-	}
-  }
+  tl::expected<OperatorDirectoryEntry, std::string> get(std::string operatorId);
   void setComplete(const std::string& name);
   bool allComplete();
   std::string showString() const;

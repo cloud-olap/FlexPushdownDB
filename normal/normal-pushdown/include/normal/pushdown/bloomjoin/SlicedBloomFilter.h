@@ -9,7 +9,7 @@
 #include <vector>
 #include <cmath>
 
-#include "UniversalSQLHashFunction.h"
+#include "UniversalHashFunction.h"
 
 class SlicedBloomFilter {
 public:
@@ -20,7 +20,14 @@ public:
   bool contains(int key);
   [[nodiscard]] size_t size() const;
 
-  static double p_from_mn(int m, long n);
+  /**
+   * Calculates the achievable false positive rate for the given number of bits and capacity of the bloom filter
+   * @param bits
+   * @param capacity
+   * @return
+   */
+  static double calculateFalsePositiveRate(int bits, int capacity);
+
 private:
   int capacity_;
   double falsePositiveRate_;
@@ -30,14 +37,14 @@ private:
   int numBits_;
   int count_;
 
-  std::vector<std::shared_ptr<UniversalSQLHashFunction>> hashFunctions_;
+  std::vector<std::shared_ptr<UniversalHashFunction>> hashFunctions_;
   std::vector<std::vector<bool>> bitArrays_;
 
   [[nodiscard]] int calculateNumBitsPerSlice() const;
   [[nodiscard]] int calculateNumSlices() const;
   [[nodiscard]] int calculateNumBits() const;
 
-  [[nodiscard]] std::vector<std::shared_ptr<UniversalSQLHashFunction>> makeHashFunctions() const;
+  [[nodiscard]] std::vector<std::shared_ptr<UniversalHashFunction>> makeHashFunctions() const;
   [[nodiscard]] std::vector<std::vector<bool>> makeBitArrays() const;
 
   std::vector<bool> hashes(int key);
@@ -50,7 +57,7 @@ private:
    * k Number of slices
    * o Bits per slice
    * m Number of bits
-   * r ???
+   * r Ratio of bits to capacity
    */
 
   /**
@@ -64,6 +71,14 @@ private:
 
   /**
    *
+   * @param m Number of bits
+   * @param n Capacity
+   * @return
+   */
+  static double p_from_mn(int m, int n);
+
+  /**
+   *
    * @param p False positive rate
    * @return k Number of slices
    */
@@ -73,10 +88,10 @@ private:
    *
    * @param m Number of bits
    * @param n Capacity
-   * @return r ???
+   * @return r Ratio of bits to capacity
    */
   static double r_from_mn(int m, int n);
-
+//
   /**
    *
    * @param k Number of slices

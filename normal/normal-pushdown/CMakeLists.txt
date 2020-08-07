@@ -48,23 +48,25 @@ add_library(normal-pushdown STATIC
         src/join/HashJoinBuildKernel2.cpp include/normal/pushdown/join/HashJoinBuildKernel2.h
         src/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
         src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h
-        include/normal/pushdown/bloomjoin/BloomCreateOperator.cpp include/normal/pushdown/bloomjoin/BloomCreateOperator.h
-        include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.h
-        include/normal/pushdown/bloomjoin/BloomCreateKernel.cpp include/normal/pushdown/bloomjoin/BloomCreateKernel.h
-        include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.h
-        include/normal/pushdown/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
-        include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h include/normal/pushdown/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h)
+        src/bloomjoin/BloomCreateOperator.cpp include/normal/pushdown/bloomjoin/BloomCreateOperator.h
+        src/bloomjoin/FileScanBloomUseOperator.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.h
+        src/bloomjoin/BloomCreateKernel.cpp include/normal/pushdown/bloomjoin/BloomCreateKernel.h
+        src/bloomjoin/FileScanBloomUseKernel.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.h
+        src/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
+        src/bloomjoin/UniversalHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalHashFunction.h
+        src/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h
+        src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
 target_link_libraries(normal-pushdown PUBLIC pthread)
 target_link_libraries(normal-pushdown PRIVATE spdlog::spdlog)
+target_link_libraries(normal-pushdown PRIVATE primesieve::libprimesieve-static)
+target_link_libraries(normal-pushdown PRIVATE fmt::fmt)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-core)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-pushdown PUBLIC arrow_static)
 target_link_libraries(normal-pushdown PUBLIC gandiva_static)
-target_link_libraries(normal-pushdown PUBLIC fmt::fmt)
-target_link_libraries(normal-pushdown PRIVATE primesieve::primesieveStatic)
 target_link_libraries(normal-pushdown PUBLIC normal-core)
 target_link_libraries(normal-pushdown PUBLIC normal-tuple)
 target_link_libraries(normal-pushdown PUBLIC normal-expression)

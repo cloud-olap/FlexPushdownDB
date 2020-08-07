@@ -1,5 +1,5 @@
 //
-// Created by matt on 5/8/20.
+// Created by matt on 7/8/20.
 //
 
 #ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_BLOOMJOIN_UNIVERSALSQLHASHFUNCTION_H
@@ -7,20 +7,18 @@
 
 #include <memory>
 
-class UniversalSQLHashFunction {
+#include "UniversalHashFunction.h"
+
+/**
+ * Additionally defines a sql method for generating SQL predicates from the hash function
+ */
+class UniversalSQLHashFunction : public UniversalHashFunction {
 
 public:
-  explicit UniversalSQLHashFunction(int numBits);
-  [[nodiscard]] static std::shared_ptr<UniversalSQLHashFunction> make(int numBits);
+  explicit UniversalSQLHashFunction(int m);
+  [[nodiscard]] static std::shared_ptr<UniversalSQLHashFunction> make(int m);
 
-  [[nodiscard]] size_t hash(int k) const;
-  [[nodiscard]] std::string sql(int x, int m);
-
-private:
-  int m_;
-  int p_;
-  int a_;
-  int b_;
+  [[nodiscard]] std::string sql(int x);
 
 };
 

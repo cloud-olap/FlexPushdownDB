@@ -2,7 +2,7 @@
 // Created by matt on 5/8/20.
 //
 
-#include "BloomCreateKernel.h"
+#include "normal/pushdown/bloomjoin/BloomCreateKernel.h"
 
 #include <utility>
 
@@ -38,7 +38,7 @@ tl::expected<double, std::string> BloomCreateKernel::calculateBestFalsePositiveR
   }
 
   ulong m = MaxS3SelectExpressionLength - (maxBloomJoinUseSQLTemplateSize + MaxBloomFilterPredicateSQLTemplateLength);
-  auto requiredFalsePositiveRate = SlicedBloomFilter::p_from_mn(m, receivedTupleSet_.value()->numRows());
+  auto requiredFalsePositiveRate = SlicedBloomFilter::calculateFalsePositiveRate(m, (int)receivedTupleSet_.value()->numRows());
 
   if (requiredFalsePositiveRate > desiredFalsePositiveRate_) {
 	return requiredFalsePositiveRate;

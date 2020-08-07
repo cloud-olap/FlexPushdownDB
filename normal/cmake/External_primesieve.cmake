@@ -25,7 +25,7 @@ ExternalProject_Add(${PRIMESIEVE_BASE}
         GIT_PROGRESS ON
         GIT_SHALLOW ON
         UPDATE_DISCONNECTED TRUE
-        BUILD_BYPRODUCTS ${PRIMESIEVE_STATIC_LIB} ${PRIMESIEVE_SHARED_LIB}
+        BUILD_BYPRODUCTS ${PRIMESIEVE_SHARED_LIB} ${PRIMESIEVE_STATIC_LIB}
         CMAKE_ARGS
         -DBUILD_PRIMESIEVE=OFF
         -DBUILD_SHARED_LIBS=ON
@@ -35,6 +35,7 @@ ExternalProject_Add(${PRIMESIEVE_BASE}
         -DBUILD_EXAMPLES=OFF
         -DBUILD_TESTS=OFF
         -DCMAKE_INSTALL_MESSAGE=NEVER
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${PRIMESIEVE_INSTALL_DIR}
@@ -43,16 +44,17 @@ ExternalProject_Add(${PRIMESIEVE_BASE}
 
 file(MAKE_DIRECTORY ${PRIMESIEVE_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 
+add_library(primesieve_shared SHARED IMPORTED)
+set_target_properties(primesieve_shared PROPERTIES IMPORTED_LOCATION "${PRIMESIEVE_SHARED_LIB}")
+target_include_directories(primesieve_shared INTERFACE "${PRIMESIEVE_INCLUDE_DIR}")
+target_link_libraries(primesieve_shared INTERFACE pthread)
+add_dependencies(primesieve_shared ${PRIMESIEVE_BASE})
 
-add_library(primesieve::primesieveStatic STATIC IMPORTED)
-set_target_properties(primesieve::primesieveStatic PROPERTIES IMPORTED_LOCATION ${PRIMESIEVE_STATIC_LIB})
-target_include_directories(primesieve::primesieveStatic INTERFACE ${PRIMESIEVE_INCLUDE_DIR})
-add_dependencies(primesieve::primesieveStatic ${PRIMESIEVE_BASE})
-
-add_library(primesieve::primesieveShared SHARED IMPORTED)
-set_target_properties(primesieve::primesieveShared PROPERTIES IMPORTED_LOCATION ${PRIMESIEVE_SHARED_LIB})
-target_include_directories(primesieve::primesieveShared INTERFACE ${PRIMESIEVE_INCLUDE_DIR})
-add_dependencies(primesieve::primesieveShared ${PRIMESIEVE_BASE})
+add_library(primesieve::libprimesieve-static STATIC IMPORTED)
+set_target_properties(primesieve::libprimesieve-static PROPERTIES IMPORTED_LOCATION "${PRIMESIEVE_STATIC_LIB}")
+target_include_directories(primesieve::libprimesieve-static INTERFACE "${PRIMESIEVE_INCLUDE_DIR}")
+target_link_libraries(primesieve::libprimesieve-static INTERFACE pthread)
+add_dependencies(primesieve::libprimesieve-static ${PRIMESIEVE_BASE})
 
 
-#showTargetProps(primesieve::primesieve)
+#showTargetProps(primesieve::libprimesieve-static)

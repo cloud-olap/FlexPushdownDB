@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_EVICTREQUESTMESSAGE_H
 
 #include <caf/all.hpp>
-#include <fmt/format.h>
+
 #include <normal/core/message/Message.h>
 
 #include "EvictionPolicyType.h"

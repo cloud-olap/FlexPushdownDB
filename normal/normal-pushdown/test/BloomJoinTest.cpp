@@ -20,7 +20,7 @@ TEST_SUITE ("bloom-join" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("bloom-join-create" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto inputTupleSet = Sample::sampleCxRInt<int, ::arrow::Int32Type>(5, 10);
+  auto inputTupleSet = Sample::sampleCxRInt<int, ::arrow::Int32Type>(5, 1000, std::uniform_int_distribution<int>(0,1000000));
 
   SPDLOG_DEBUG("Input:\n{}", inputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 10)));
 
@@ -66,7 +66,7 @@ TEST_CASE ("bloom-join-create-use" * doctest::skip(false || SKIP_SUITE)) {
 												numBytesRightFile,
 												"r_0");
 	  CHECK(useKernel->setBloomFilter(bloomFilter));
-	  CHECK(useKernel->scan());
+	  CHECK(useKernel->scan({"r_0", "r_1", "r_2"}));
 
   auto expectedRightInputTupleSet = useKernel->getTupleSet();
 	  CHECK(expectedRightInputTupleSet.has_value());
