@@ -117,7 +117,7 @@ public:
 	  return tl::make_unexpected(expectedValueRowIndexMap.error());
 	auto valueRowIndexMap = expectedValueRowIndexMap.value();
 
-	valueRowMap_.merge(valueRowIndexMap);
+	valueRowMap_.insert(valueRowIndexMap.begin(), valueRowIndexMap.end());
 
 	auto result = ::arrow::ConcatenateTables({table_, table});
 	if (!result.ok())
