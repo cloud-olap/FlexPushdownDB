@@ -461,18 +461,16 @@ std::shared_ptr<Collate> Operators::makeCollateOperator(const std::shared_ptr<Op
   return std::make_shared<Collate>(fmt::format("/query-{}/collate", g->getId()), g->getId());
 }
 
-std::vector<std::shared_ptr<BloomCreateOperator>>
-Operators::makeDateBloomCreateOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-  std::vector<std::shared_ptr<BloomCreateOperator>> os;
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = BloomCreateOperator::make(fmt::format("/query-{}/date-bloom-create-{}", g->getId(), u),
+std::shared_ptr<BloomCreateOperator>
+Operators::makeDateBloomCreateOperators(const std::shared_ptr<OperatorGraph>& g) {
+
+	auto o = BloomCreateOperator::make(fmt::format("/query-{}/date-bloom-create", g->getId()),
 									   "d_datekey",
 									   0.3,
 									   {});
-	os.emplace_back(o);
-  }
 
-  return os;
+
+  return o;
 }
 
 std::vector<std::shared_ptr<FileScanBloomUseOperator>>

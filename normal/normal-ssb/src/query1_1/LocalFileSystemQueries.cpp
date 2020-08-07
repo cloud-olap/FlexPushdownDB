@@ -486,7 +486,7 @@ LocalFileSystemQueries::bloom(const std::string &dataDir,
   auto dateCacheLoads = Operators::makeDateFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, g);
   auto dateMerges = Operators::makeDateMergeOperators(numConcurrentUnits, g);
-  auto dateBloomCreates = Operators::makeDateBloomCreateOperators(numConcurrentUnits, g);
+  auto dateBloomCreate = Operators::makeDateBloomCreateOperators(g);
   auto lineOrderCacheLoads = Operators::makeLineOrderFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderScanBloomUses = Operators::makeLineOrderFileScanBloomUseOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = Operators::makeLineOrderMergeOperators(numConcurrentUnits, g);
@@ -522,8 +522,8 @@ LocalFileSystemQueries::bloom(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(dateBloomCreates[u]);
-	dateBloomCreates[u]->consume(dateFilters[u]);
+	dateFilters[u]->produce(dateBloomCreate);
+	dateBloomCreate->consume(dateFilters[u]);
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -537,8 +537,8 @@ LocalFileSystemQueries::bloom(const std::string &dataDir,
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateBloomCreates[u]->produce(lineOrderScanBloomUses[u]);
-	lineOrderScanBloomUses[u]->consume(dateBloomCreates[u]);
+	dateBloomCreate->produce(lineOrderScanBloomUses[u]);
+	lineOrderScanBloomUses[u]->consume(dateBloomCreate);
   }
 
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -599,8 +599,7 @@ LocalFileSystemQueries::bloom(const std::string &dataDir,
 	g->put(dateMerges[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	g->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateBloomCreates[u]);
+  g->put(dateBloomCreate);
   for (int u = 0; u < numConcurrentUnits; ++u)
 	g->put(lineOrderCacheLoads[u]);
   for (int u = 0; u < numConcurrentUnits; ++u)

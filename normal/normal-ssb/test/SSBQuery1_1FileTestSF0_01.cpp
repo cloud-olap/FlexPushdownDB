@@ -67,4 +67,10 @@ TEST_CASE ("bloom-par1" * doctest::skip(false || SKIP_SUITE)) {
   n->stop();
 }
 
+TEST_CASE ("bloom-par2" * doctest::skip(false || SKIP_SUITE)) {
+  auto n = Normal::start();
+  LocalFileSystemTests::bloom(1992, 2, 25, "data/ssb-sf0.01", 2, true, n);
+  n->stop();
+}
+
 }
