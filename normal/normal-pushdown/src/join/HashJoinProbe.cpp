@@ -89,7 +89,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
 }
 
 void HashJoinProbe::sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &joined) {
-
+//  SPDLOG_INFO("Join result: \n{}", joined->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
   auto v1TupleSet = joined->toTupleSetV1();
 
   std::shared_ptr<core::message::Message>

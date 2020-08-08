@@ -50,20 +50,36 @@ void Shuffle::onTuple(const TupleMessage &message) {
 
   // Get the tuple set
   auto &&tupleSet = TupleSet2::create(message.tuples());
-//  if(tupleSet->numRows() == 0){
-//	return;
-//  }
 
   // Check there are consumers
   if(consumers_.empty()){
-	return;
+    return;
   }
-  // Shuffle the tuple set
-  auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
-  if(!expectedShuffledTupleSets.has_value()){
-    throw std::runtime_error(expectedShuffledTupleSets.error());
+
+  std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;
+  auto startTime = std::chrono::steady_clock::now();
+
+  // Check empty
+  if(tupleSet->numRows() == 0){
+    for (size_t s = 0; s < consumers_.size(); ++s) {
+      shuffledTupleSets.emplace_back(TupleSet2::make(tupleSet->schema().value()));
+    }
   }
-  auto shuffledTupleSets = expectedShuffledTupleSets.value();
+
+  else {
+    // Shuffle the tuple set
+    auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
+    if (!expectedShuffledTupleSets.has_value()) {
+      throw std::runtime_error(expectedShuffledTupleSets.error());
+    }
+    shuffledTupleSets = expectedShuffledTupleSets.value();
+  }
+
+  auto endTime = std::chrono::steady_clock::now();
+//  SPDLOG_INFO("Shuffle time: {}, size: {}, name: {}",
+//        std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count(),
+//        tupleSet->numRows(),
+//        name());
 
   // Send the shuffled tuple sets to consumers
   size_t partitionIndex = 0;

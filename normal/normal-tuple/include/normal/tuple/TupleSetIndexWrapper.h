@@ -64,6 +64,20 @@ public:
 	}
 	auto recordBatch = *recordBatchResult;
 
+//  /**
+//   * compute the size of batch
+//   */
+//  size_t size = 0;
+//  for (int col_id = 0; col_id < recordBatch->num_columns(); col_id++) {
+//    auto array = recordBatch->column(col_id);
+//    for (auto const &buffer: array->data()->buffers) {
+//      size += buffer->size();
+//    }
+//  }
+//  /**
+//   * end
+//   */
+
 	while (recordBatch) {
 
 	  auto array = recordBatch->column(columnIndex);
@@ -73,6 +87,7 @@ public:
 		valueIndexMap.emplace(Value(typedArray, r), r + rowIndexOffset);
 	  }
 
+//    SPDLOG_INFO("Join index built for {} tuples, column: {}, bytesize: {}", recordBatch->num_rows(), recordBatch->column_name(columnIndex), size);
 	  // Read a batch
 	  recordBatchResult = reader.Next();
 	  if (!recordBatchResult.ok()) {

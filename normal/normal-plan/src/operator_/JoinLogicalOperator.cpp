@@ -17,7 +17,7 @@ JoinLogicalOperator::JoinLogicalOperator(const std::string &leftColumnName, cons
           leftProducer_(leftProducer), rightProducer_(rightProducer){}
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogicalOperator::toOperators() {
-  const int numConcurrentUnits = 10;
+  const int numConcurrentUnits = 16;
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
   // join build

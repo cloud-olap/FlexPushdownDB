@@ -60,6 +60,11 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   }
   auto outputSchema = std::make_shared<::arrow::Schema>(outputFields);
 
+  // check empty
+  if (buildTable->num_rows() == 0 || probeTable->num_rows() == 0) {
+    return TupleSet2::make(Schema::make(outputSchema));
+  }
+
   // Create the joiner
   auto expectedJoiner = RecordBatchJoiner::make(buildTupleSetIndex_.value(), pred_.getRightColumnName(), outputSchema);
   if (!expectedJoiner.has_value()) {
@@ -78,12 +83,30 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   }
   auto recordBatch = *recordBatchResult;
 
+//  /**
+//   * compute the size of batch
+//   */
+//
+//  size_t size = 0;
+//  for (int col_id = 0; col_id < recordBatch->num_columns(); col_id++) {
+//    auto array = recordBatch->column(col_id);
+//    for (auto const &buffer: array->data()->buffers) {
+//      size += buffer->size();
+//    }
+//  }
+//  /**
+//   * end
+//   */
+
   while (recordBatch) {
+
+//  SPDLOG_INFO("Join probed for {} tuples, column: {}, bytesize: {}", recordBatch->num_rows(), pred_.getRightColumnName(), size);
 
 	// Shuffle batch
 	joiner->join(recordBatch);
 
-	// Read a batch
+
+    // Read a batch
 	recordBatchResult = reader.Next();
 	if (!recordBatchResult.ok()) {
 	  return tl::make_unexpected(recordBatchResult.status().message());

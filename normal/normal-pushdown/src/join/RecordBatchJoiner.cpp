@@ -124,8 +124,13 @@ RecordBatchJoiner::toTupleSet() {
   // Make chunked arrays
   std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
   for (const auto &joinedArrayVector: joinedArrayVectors_) {
-	auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(joinedArrayVector);
-	chunkedArrays.emplace_back(chunkedArray);
+    // check empty
+    if (joinedArrayVector.size() == 0) {
+      return TupleSet2::make(Schema::make(outputSchema_));
+    }
+
+    auto chunkedArray = std::make_shared<::arrow::ChunkedArray>(joinedArrayVector);
+    chunkedArrays.emplace_back(chunkedArray);
   }
 
   auto joinedTable = ::arrow::Table::Make(outputSchema_, chunkedArrays);
