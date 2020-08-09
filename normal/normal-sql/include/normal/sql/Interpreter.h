@@ -20,6 +20,7 @@ namespace normal::sql {
 class Interpreter{
 
 public:
+  Interpreter();
   Interpreter(const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
               const std::shared_ptr<CachingPolicy>& cachingPolicy);
   [[nodiscard]] const std::shared_ptr<core::OperatorManager> &getOperatorManager() const;

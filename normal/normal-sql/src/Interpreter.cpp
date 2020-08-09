@@ -9,16 +9,24 @@
 #include <normal/sql/Globals.h>
 #include <normal/plan/LogicalPlan.h>
 #include <normal/plan/Planner.h>
+#include <normal/plan/mode/Modes.h>
+#include <normal/cache/LRUCachingPolicy.h>
 
 #include "visitor/Visitor.h"
 
 using namespace normal::sql;
 
+Interpreter::Interpreter() :
+  catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
+  mode_(normal::plan::operator_::mode::Modes::fullPushdownMode()),
+  cachingPolicy_(LRUCachingPolicy::make())
+{}
+
 Interpreter::Interpreter(const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
                          const std::shared_ptr<CachingPolicy>& cachingPolicy) :
-    catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
-    mode_(mode),
-    cachingPolicy_(cachingPolicy)
+  catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
+  mode_(mode),
+  cachingPolicy_(cachingPolicy)
 {}
 
 void Interpreter::parse(const std::string &sql) {

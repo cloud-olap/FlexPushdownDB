@@ -14,7 +14,7 @@ add_library(normal-ssb
         src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
         src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
         src/query1_1/LocalFileSystemTests.cpp include/normal/ssb/query1_1/LocalFileSystemTests.h
-        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h)
+        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h)
 
 target_include_directories(normal-ssb PUBLIC include)
 
@@ -103,12 +103,22 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_B
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Query generator
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_library(normal-ssb-query-generate
+        src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h)
+
+target_link_libraries(normal-ssb-query-generate PRIVATE doctest::doctest)
+target_link_libraries(normal-ssb-query-generate PRIVATE normal-ssb)
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Experiment
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_executable(normal-ssb-experiment
         experiment/ExperimentMain.cpp
-        experiment/BaseLineTest.cpp
+        experiment/Tests.cpp
         experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h
         experiment/HardcodedPlanTestSinglePartition.cpp
         experiment/HardcodedPlanTestMultiPartition.cpp
@@ -117,6 +127,7 @@ add_executable(normal-ssb-experiment
 target_link_libraries(normal-ssb-experiment PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb)
 target_link_libraries(normal-ssb-experiment PRIVATE normal-sql)
+target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb-query-generate)
 
 # Copy ssb query files to runtime directory
 
@@ -129,6 +140,7 @@ set(SSB_query_file_list
 FOREACH(SSB_query_file ${SSB_query_file_list})
     configure_file(${CMAKE_CURRENT_LIST_DIR}/sql/${SSB_query_file} ${CMAKE_CURRENT_BINARY_DIR}/sql/${SSB_query_file} COPYONLY)
 ENDFOREACH(SSB_query_file)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

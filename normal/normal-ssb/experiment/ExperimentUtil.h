@@ -10,6 +10,8 @@
 #include <fstream>
 #include <sstream>
 
+namespace normal::ssb {
+
 class ExperimentUtil {
 
 public:
@@ -19,6 +21,6 @@ public:
   static std::vector<std::string> list_objects(normal::pushdown::AWSClient, std::string bucket_name, std::string dir_prefix);
 
 };
-
+}
 
 #endif //NORMAL_EXPERIMENTUTIL_H
