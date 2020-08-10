@@ -235,3 +235,33 @@ void LocalFileSystemTests::full2(short year, short discount, short quantity,
 		CHECK_EQ(expectedValue, actualValue);
   }
 }
+
+void LocalFileSystemTests::bloom(short year, short discount, short quantity,
+								 const std::string &dataDir,
+								 int numConcurrentUnits,
+								 bool check,
+								 const std::shared_ptr<Normal>& n) {
+
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}, numConcurrentUnits: {}",
+			  dataDir, year, discount, quantity, numConcurrentUnits);
+
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::bloom(dataDir,
+																			 year, discount, quantity,
+																			 numConcurrentUnits, n));
+
+  auto actualName = actual->getColumnByIndex(0).value()->getName();
+  auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<double>();
+
+  SPDLOG_INFO("Actual  |  {} = {}", actualName, actualValue);
+
+  if (check) {
+	auto expected = TestUtil::executeSQLite(SQL::full(year, discount, quantity, "temp"),
+											{filesystem::absolute(dataDir + "/date.tbl"),
+											 filesystem::absolute(dataDir + "/lineorder.tbl")});
+	auto expectedName = expected->at(0).at(0).first;
+	auto expectedValue = std::stod(expected->at(0).at(0).second);
+	SPDLOG_INFO("Expected  |  {} = {}", expectedName, expectedValue);
+		CHECK_EQ(expectedName, actualName);
+		CHECK_EQ(expectedValue, actualValue);
+  }
+}

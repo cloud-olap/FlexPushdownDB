@@ -55,4 +55,11 @@ TEST_CASE ("full-par32" * doctest::skip(false || SKIP_SUITE)) {
   LocalFileSystemTests::full(1992, 2, 25, "data/ssb-sf1", 32, false);
 }
 
+// FIXME: Not yet working, something bad with the hash function math
+TEST_CASE ("bloom-par32" * doctest::skip(false || SKIP_SUITE)) {
+  auto n = Normal::start();
+  LocalFileSystemTests::bloom(1992, 2, 25, "data/ssb-sf1", 32, false, n);
+  n->stop();
+}
+
 }

@@ -14,7 +14,12 @@ add_library(normal-ssb
         src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
         src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
         src/query1_1/LocalFileSystemTests.cpp include/normal/ssb/query1_1/LocalFileSystemTests.h
-        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h)
+        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
+        src/query2_1/Operators.cpp  include/normal/ssb/query2_1/Operators.h
+        src/query2_1/LocalFileSystemTests.cpp include/normal/ssb/query2_1/LocalFileSystemTests.h
+        src/query2_1/LocalFileSystemQueries.cpp include/normal/ssb/query2_1/LocalFileSystemQueries.h
+        src/query2_1/SQL.cpp include/normal/ssb/query2_1/SQL.h src/common/Operators.cpp
+        include/normal/ssb/common/Operators.h src/SSBSchema.cpp include/normal/ssb/SSBSchema.h)
 
 target_include_directories(normal-ssb PUBLIC include)
 
@@ -57,6 +62,7 @@ add_executable(normal-ssb-test
         test/SSBQuery1_1SQLTest.cpp
         test/SSBQuery1_1S3PushDownTestSF0_01.cpp
         test/SSBQuery1_1S3HybridTestSF0_01.cpp
+        test/SSBQuery2_1FileTestSF0_01.cpp
         test/MiscTest.cpp)
 
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
@@ -78,7 +84,7 @@ add_dependencies(normal-ssb-data-generate ssb_db_gen)
 # dbgen doesn't generate headers so we add them manually
 add_custom_target(normal-ssb-data-prepend-headers
         COMMAND sed -i '' '1s/^/LO_ORDERKEY,LO_LINENUMBER,LO_CUSTKEY,LO_PARTKEY,LO_SUPPKEY,LO_ORDERDATE,LO_ORDERPRIORITY,LO_SHIPPRIORITY,LO_QUANTITY,LO_EXTENDEDPRICE,LO_ORDTOTALPRICE,LO_DISCOUNT,LO_REVENUE,LO_SUPPLYCOST,LO_TAX,LO_COMMITDATE,LO_SHIPMODE\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl
-        COMMAND sed -i '' '1s/^/P_PARTKEY,P_NAME,P_MFGR,P_BRAND,P_TYPE,P_SIZE,P_CONTAINER,P_RETAILPRICE,P_COMMENT\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl
+        COMMAND sed -i '' '1s/^/P_PARTKEY,P_NAME,P_MFGR,P_CATEGORY,P_BRAND1,P_COLOR,P_TYPE,P_SIZE,P_CONTAINER\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl
         COMMAND sed -i '' '1s/^/S_SUPPKEY,S_NAME,S_ADDRESS,S_CITY,S_NATION,S_REGION,S_PHONE\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl
         COMMAND sed -i '' '1s/^/C_CUSTKEY,C_NAME,C_ADDRESS,C_CITY,C_NATION,C_REGION,C_PHONE,C_MKTSEGMENT\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/customer.tbl
         COMMAND sed -i '' '1s/^/D_DATEKEY,D_DATE,D_DAYOFWEEK,D_MONTH,D_YEAR,D_YEARMONTHNUM,D_YEARMONTH,D_DAYNUMINWEEK,D_DAYNUMINMONTH,D_DAYNUMINYEAR,D_MONTHNUMINYEAR,D_WEEKNUMINYEAR,D_SELLINGSEASON,D_LASTDAYINWEEKFL,D_LASTDAYINMONTHFL,D_HOLIDAYFL,D_WEEKDAYFL\\n/' ${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/date.tbl)

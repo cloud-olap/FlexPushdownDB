@@ -4,6 +4,8 @@
 
 #include "normal/cache/SegmentRange.h"
 
+#include <fmt/format.h>
+
 using namespace normal::cache;
 
 SegmentRange::SegmentRange(unsigned long StartOffset, unsigned long FinishOffset)

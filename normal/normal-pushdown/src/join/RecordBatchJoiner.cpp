@@ -43,6 +43,8 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   if (!status.ok())
 	return tl::make_unexpected(status.message());
 
+//  buildTupleSetIndex_->validate();
+
   // Create references to each array in the index
   ::arrow::ArrayVector buildColumns;
   for (const auto &column: buildTable->columns()) {
@@ -101,7 +103,7 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   for (size_t c = 0; c < buildAppenders.size(); ++c) {
 	auto expectedArray = buildAppenders[c]->finalize();
 	if (!expectedArray.has_value())
-	  return tl::make_unexpected(status.message());
+	  return tl::make_unexpected(expectedArray.error());
 	if (expectedArray.value()->length() > 0)
 	  joinedArrayVectors_[c].emplace_back(expectedArray.value());
   }
@@ -109,7 +111,7 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   for (size_t c = 0; c < probeAppenders.size(); ++c) {
 	auto expectedArray = probeAppenders[c]->finalize();
 	if (!expectedArray.has_value())
-	  return tl::make_unexpected(status.message());
+	  return tl::make_unexpected(expectedArray.error());
 	if (expectedArray.value()->length() > 0)
 	  joinedArrayVectors_[buildAppenders.size() + c].emplace_back(expectedArray.value());
   }

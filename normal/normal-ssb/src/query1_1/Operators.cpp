@@ -460,3 +460,41 @@ std::shared_ptr<Aggregate> Operators::makeAggregateReduceOperator(const std::sha
 std::shared_ptr<Collate> Operators::makeCollateOperator(const std::shared_ptr<OperatorGraph>& g) {
   return std::make_shared<Collate>(fmt::format("/query-{}/collate", g->getId()), g->getId());
 }
+
+std::shared_ptr<BloomCreateOperator>
+Operators::makeDateBloomCreateOperators(const std::shared_ptr<OperatorGraph>& g) {
+
+	auto o = BloomCreateOperator::make(fmt::format("/query-{}/date-bloom-create", g->getId()),
+									   "d_datekey",
+									   0.3,
+									   {});
+
+
+  return o;
+}
+
+std::vector<std::shared_ptr<FileScanBloomUseOperator>>
+Operators::makeLineOrderFileScanBloomUseOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+
+  auto file = filesystem::absolute(dataDir + "/lineorder.tbl");
+  auto numBytesFile = filesystem::file_size(file);
+
+  std::vector<std::string> columns =
+	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
+	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
+	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
+
+  std::vector<std::shared_ptr<FileScanBloomUseOperator>> os;
+  auto lineOrderScanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto o = FileScanBloomUseOperator::make(fmt::format("/query-{}/lineorder-scan-bloom-use-{}", g->getId(), u),
+										file,
+										columns,
+										lineOrderScanRanges[u].first,
+										lineOrderScanRanges[u].second,
+										"lo_orderdate");
+	os.push_back(o);
+  }
+
+  return os;
+}

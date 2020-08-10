@@ -8,8 +8,6 @@
 #include <vector>
 #include <memory>
 
-#include <fmt/format.h>
-
 #include <normal/tuple/Scalar.h>
 #include <normal/tuple/Schema.h>
 

@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include <fmt/format.h>
+
 using namespace normal::core::cache;
 
 EvictRequestMessage::EvictRequestMessage(std::shared_ptr<EvictionPolicyType> evictionPolicyType,

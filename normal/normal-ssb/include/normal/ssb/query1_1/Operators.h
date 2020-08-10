@@ -20,6 +20,8 @@
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/cache/CacheLoad.h>
 #include <normal/pushdown/merge/MergeOperator.h>
+#include <normal/pushdown/bloomjoin/BloomCreateOperator.h>
+#include <normal/pushdown/bloomjoin/FileScanBloomUseOperator.h>
 
 using namespace normal::core::graph;
 using namespace normal::pushdown;
@@ -28,6 +30,7 @@ using namespace normal::pushdown::join;
 using namespace normal::pushdown::shuffle;
 using namespace normal::pushdown::cache;
 using namespace normal::pushdown::merge;
+using namespace normal::pushdown::bloomjoin;
 
 namespace normal::ssb::query1_1 {
 
@@ -135,6 +138,12 @@ public:
   static std::shared_ptr<Aggregate> makeAggregateReduceOperator(const std::shared_ptr<OperatorGraph> &g);
 
   static std::shared_ptr<Collate> makeCollateOperator(const std::shared_ptr<OperatorGraph> &g);
+
+  static std::shared_ptr<BloomCreateOperator>
+  makeDateBloomCreateOperators(const std::shared_ptr<OperatorGraph>& g);
+
+  static std::vector<std::shared_ptr<FileScanBloomUseOperator>>
+  makeLineOrderFileScanBloomUseOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g);
 
 };
 

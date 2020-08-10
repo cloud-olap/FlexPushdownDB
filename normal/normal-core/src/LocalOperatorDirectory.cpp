@@ -2,9 +2,14 @@
 // Created by matt on 25/3/20.
 //
 
-#include <normal/core/Globals.h>
+
 #include "normal/core/LocalOperatorDirectory.h"
+
 #include <sstream>
+
+#include <fmt/format.h>
+
+#include <normal/core/Globals.h>
 
 namespace normal::core {
 
