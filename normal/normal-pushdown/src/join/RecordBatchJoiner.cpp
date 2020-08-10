@@ -43,6 +43,8 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   if (!status.ok())
 	return tl::make_unexpected(status.message());
 
+//  buildTupleSetIndex_->validate();
+
   // Create references to each array in the index
   ::arrow::ArrayVector buildColumns;
   for (const auto &column: buildTable->columns()) {
