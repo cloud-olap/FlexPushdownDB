@@ -66,6 +66,8 @@ void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 //	std::shared_ptr<normal::core::message::Message>
 //		hashTableMessage = std::make_shared<HashTableMessage>(kernel_.getHashTable(), name());
 
+//	kernel_.getTupleSetIndex().value()->validate();
+
 	std::shared_ptr<normal::core::message::Message>
 		message = std::make_shared<TupleSetIndexMessage>(kernel_.getTupleSetIndex().value(), name());
 

@@ -7,6 +7,8 @@
 #include "normal/core/Globals.h"
 #include <sstream>
 
+#include <fmt/format.h>
+
 namespace normal::core {
 
 void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
@@ -42,6 +44,16 @@ std::string OperatorDirectory::showString() const {
 void OperatorDirectory::setIncomplete() {
   for(auto& entry : entries_){
     entry.second.complete(false);
+  }
+}
+
+tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(std::string operatorId) {
+  auto entryIt = entries_.find(operatorId);
+  if(entryIt == entries_.end()){
+	return tl::unexpected(fmt::format("Operator with id '{}' not found", operatorId));
+  }
+  else{
+	return entryIt->second;
   }
 }
 

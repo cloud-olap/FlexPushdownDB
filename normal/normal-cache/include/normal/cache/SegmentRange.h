@@ -7,8 +7,6 @@
 
 #include <string>
 
-#include <fmt/format.h>
-
 namespace normal::cache {
 
 class SegmentRange {

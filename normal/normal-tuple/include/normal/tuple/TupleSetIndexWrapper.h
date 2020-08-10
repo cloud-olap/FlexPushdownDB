@@ -78,16 +78,17 @@ public:
 //   * end
 //   */
 
+	size_t tableRow = rowIndexOffset;
 	while (recordBatch) {
 
 	  auto array = recordBatch->column(columnIndex);
 
 	  auto typedArray = std::static_pointer_cast<ArrowArrayType>(array);
-	  for (int64_t r = 0; r < typedArray->length(); ++r) {
-		valueIndexMap.emplace(Value(typedArray, r), r + rowIndexOffset);
+	  for (int64_t batchRow = 0; batchRow < typedArray->length(); ++batchRow) {
+		valueIndexMap.emplace(Value(typedArray, batchRow), tableRow);
+		++tableRow;
 	  }
 
-//    SPDLOG_INFO("Join index built for {} tuples, column: {}, bytesize: {}", recordBatch->num_rows(), recordBatch->column_name(columnIndex), size);
 	  // Read a batch
 	  recordBatchResult = reader.Next();
 	  if (!recordBatchResult.ok()) {
@@ -159,6 +160,68 @@ public:
 	  s += fmt::format("{} : {}\n", valueRowIndex.first, valueRowIndex.second);
 	}
 	return s;
+  }
+
+  tl::expected<void, std::string> validate() override {
+
+	::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
+	::arrow::Status status;
+
+	std::unordered_multimap<CType, int64_t> valueIndexMap{};
+
+	// Read the table a batch at a time
+	::arrow::TableBatchReader reader{*table_};
+	reader.set_chunksize(DefaultChunkSize);
+
+	// Read a batch
+	recordBatchResult = reader.Next();
+	if (!recordBatchResult.ok()) {
+	  return tl::make_unexpected(recordBatchResult.status().message());
+	}
+	auto recordBatch = *recordBatchResult;
+
+	long tableRow = 0;
+
+	while (recordBatch) {
+
+	  auto array = recordBatch->column(columnIndex_);
+
+	  auto typedArray = std::static_pointer_cast<ArrowArrayType>(array);
+	  for (int64_t r = 0; r < typedArray->length(); ++r) {
+
+	    auto value = Value(typedArray, r);
+
+	    SPDLOG_DEBUG("Table value at row {} is '{}'", tableRow, value);
+
+		auto indexes = find(value);
+		bool found = false;
+		for(size_t i = 0;i<indexes.size();++i){
+		  SPDLOG_DEBUG("  Index for value '{}' points to row {}", value, indexes[i]);
+		  if(indexes[i] == tableRow) {
+			SPDLOG_DEBUG("  FOUND!");
+			found = true;
+		  }
+		}
+		if(!found) {
+		  SPDLOG_DEBUG("  NOT FOUND!");
+		  return tl::make_unexpected(fmt::format(
+			  "Index invalid. Value found at row {} is '{}' was not found in the index",
+			  tableRow,
+			  value));
+		}
+
+		++tableRow;
+	  }
+
+	  // Read a batch
+	  recordBatchResult = reader.Next();
+	  if (!recordBatchResult.ok()) {
+		return tl::make_unexpected(recordBatchResult.status().message());
+	  }
+	  recordBatch = *recordBatchResult;
+	}
+
+	return {};
   }
 
 private:

@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <string>
 #include <tl/expected.hpp>
-#include <fmt/format.h>
 
 #include "LocalOperatorDirectoryEntry.h"
 

@@ -34,7 +34,9 @@ include(External_graphviz)
 include(External_expected)
 include(External_fmt)
 include(External_ssb_dbgen)
+include(External_primesieve)
 include(Dependency_SQLite3)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules

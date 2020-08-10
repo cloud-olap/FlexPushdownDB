@@ -60,4 +60,17 @@ TEST_CASE ("full-par2" * doctest::skip(false || SKIP_SUITE)) {
   LocalFileSystemTests::full(1992, 2, 25, "data/ssb-sf0.01", 2, true);
 }
 
+// FIXME: Not yet working, something bad with the hash function math
+TEST_CASE ("bloom-par1" * doctest::skip(false || SKIP_SUITE)) {
+  auto n = Normal::start();
+  LocalFileSystemTests::bloom(1992, 2, 25, "data/ssb-sf0.01", 1, true, n);
+  n->stop();
+}
+
+TEST_CASE ("bloom-par2" * doctest::skip(false || SKIP_SUITE)) {
+  auto n = Normal::start();
+  LocalFileSystemTests::bloom(1992, 2, 25, "data/ssb-sf0.01", 2, true, n);
+  n->stop();
+}
+
 }

@@ -52,7 +52,7 @@ std::shared_ptr<TupleSet2> Sample::sample3x3String() {
 }
 
 std::shared_ptr<TupleSet2> Sample::sampleCxRString(int numCols, int numRows) {
-  sampleCxRRealString(numCols, numRows, std::uniform_real_distribution(0.0, 100.0));
+  return sampleCxRRealString(numCols, numRows, std::uniform_real_distribution(0.0, 100.0));
 }
 
 std::shared_ptr<TupleSet2> Sample::sampleCxRRealString(int numCols, int numRows, std::uniform_real_distribution<double> dist) {

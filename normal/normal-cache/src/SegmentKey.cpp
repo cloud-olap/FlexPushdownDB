@@ -4,6 +4,8 @@
 
 #include "normal/cache/SegmentKey.h"
 
+#include <fmt/format.h>
+
 using namespace normal::cache;
 
 SegmentKey::SegmentKey(std::shared_ptr<Partition> Partition,
