@@ -13,18 +13,20 @@ class SegmentMetadata {
 
 public:
   SegmentMetadata();
-  SegmentMetadata(size_t size);
-  static std::shared_ptr<SegmentMetadata> make(size_t size);
+  SegmentMetadata(size_t estimateSize, size_t size);
   static std::shared_ptr<SegmentMetadata> make();
+  static std::shared_ptr<SegmentMetadata> make(size_t estimateSize, size_t size);
 
   size_t size() const;
   int hitNum() const;
+  size_t estimateSize() const;
 
   void setSize(size_t size);
 
   void incHitNum();
 
 private:
+  size_t estimateSize_;
   size_t size_;
   int hitNum_;
 

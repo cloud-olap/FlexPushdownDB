@@ -38,7 +38,7 @@ void HashJoinBuild::onReceive(const normal::core::message::Envelope &msg) {
 	this->onComplete(completeMessage);
   } else {
 	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + msg.message().type());
+	throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
   }
 }
 
@@ -53,7 +53,7 @@ void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
 //  SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
 
   auto result = kernel_.put(tupleSet);
-  if(!result) throw std::runtime_error(result.error());
+  if(!result) throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
 
 //  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
 }

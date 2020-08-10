@@ -17,30 +17,27 @@ namespace normal::connector {
 class MiniCatalogue {
 
 public:
+  MiniCatalogue(const std::shared_ptr<std::vector<std::string>> &tables,
+                const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> &schemas,
+                const std::shared_ptr<std::unordered_map<std::string, int>> &columnLengthMap,
+                const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder);
+  static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue();
 
-    MiniCatalogue(const std::shared_ptr<std::vector<std::string>> &tables,
-                  const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> &schemas,
-                  const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder);
-
-    static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue();
-
-    std::shared_ptr<std::vector<std::string>> tables();
-
-    std::shared_ptr<std::vector<std::string>> defaultJoinOrder();
-
-    std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas();
-
-    std::string findTableOfColumn(std::string columnName);
+  std::shared_ptr<std::vector<std::string>> tables();
+  std::shared_ptr<std::vector<std::string>> defaultJoinOrder();
+  std::string findTableOfColumn(std::string columnName);
+  double lengthFraction(std::string columnName);
 
 private:
+  std::shared_ptr<std::vector<std::string>> tables_;
+  std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas_;
+  std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap_;
 
-    std::shared_ptr<std::vector<std::string>> tables_;
-
-    std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas_;
-
-    // default star join order, "lineorder" is center, order rest from small size to large size
-    std::shared_ptr<std::vector<std::string>> defaultJoinOrder_;
+  // default star join order, "lineorder" is center, order rest from small size to large size
+  std::shared_ptr<std::vector<std::string>> defaultJoinOrder_;
 };
+
+const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue();
 
 }
 

@@ -122,7 +122,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   assert(expectedJoinedTupleSet.value()->getArrowTable().has_value());
   auto result = expectedJoinedTupleSet.value()->getArrowTable().value()->ValidateFull();
   if(!result.ok())
-    throw std::runtime_error(result.message());
+    throw std::runtime_error(fmt::format("{}, HashJoinProbeKernel2", result.message()));
 
 #endif
 

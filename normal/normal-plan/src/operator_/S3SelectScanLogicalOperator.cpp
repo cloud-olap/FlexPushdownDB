@@ -18,6 +18,7 @@
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
+#include <normal/pushdown/Project.h>
 
 using namespace normal::plan::operator_;
 using namespace normal::pushdown;
@@ -191,6 +192,9 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
   if (predicate_) {
     // predicate column names
     predicateColumnNames = predicate_->involvedColumnNames();
+    // deduplicate
+    auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
+    predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
 
     // simpleCast
     filterPredicate = filter::FilterPredicate::make(predicate_);
@@ -201,6 +205,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
    * For each range in each partition, construct:
    * a CacheLoad, a S3Scan which is to pull up segments to cache, a Merge, a Filter if needed
    * a S3Select, a second Merge for local filtered segments + S3Select result
+   * a Project to make all tupleSets have the same schema
    */
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
@@ -299,8 +304,21 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
       s3Select->produce(merge2);
       merge2->setRightProducer(s3Select);
 
-      // merge2 is the stream-out physical operator
-      streamOutPhysicalOperators_->emplace_back(merge2);
+      // project
+      auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<expression::gandiva::Expression>>>();
+      for (auto const &projectedColumnName: *projectedColumnNames_) {
+        projectExpressions->emplace_back(expression::gandiva::col(projectedColumnName));
+      }
+      auto project = std::make_shared<Project>(
+              fmt::format("project-{}/{}-{}", s3Bucket, s3Object, rangeId), *projectExpressions);
+      operators->emplace_back(project);
+
+      // wire up merge2 and project
+      merge2->produce(project);
+      project->consume(merge2);
+
+      // project is the stream-out physical operator
+      streamOutPhysicalOperators_->emplace_back(project);
 
       rangeId++;
     }

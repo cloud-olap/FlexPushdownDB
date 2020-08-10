@@ -38,7 +38,7 @@ void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
 	this->onComplete(completeMessage);
   } else {
 	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + msg.message().type());
+	throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", msg.message().type(), name()));
   }
 }
 
@@ -55,7 +55,7 @@ void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg)
 
   auto tupleSet = TupleSet2::create(msg.tuples());
   auto result = kernel_.putProbeTupleSet(tupleSet);
-  if(!result) throw std::runtime_error(result.error());
+  if(!result) throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
 //  SPDLOG_DEBUG("Buffering tupleSet  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 10000)));
 //  if (!tuples_) {
 //	// Initialise tuples buffer with message contents
@@ -80,7 +80,7 @@ void HashJoinProbe::joinAndSendTuples() {
 	sendTuples(expectedJoinedTuples.value());
   } else {
 	// FIXME: Propagate error properly
-	throw std::runtime_error(expectedJoinedTuples.error());
+	throw std::runtime_error(fmt::format("{}, {}", expectedJoinedTuples.error(), name()));
   }
 }
 
@@ -104,5 +104,5 @@ void HashJoinProbe::onHashTable(const TupleSetIndexMessage &msg) {
 
 void HashJoinProbe::bufferHashTable(const TupleSetIndexMessage &msg) {
   auto result = kernel_.putBuildTupleSetIndex(msg.getTupleSetIndex());
-  if(!result) throw std::runtime_error(result.error());
+  if(!result) throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
 }

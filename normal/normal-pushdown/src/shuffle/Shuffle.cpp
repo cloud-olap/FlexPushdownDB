@@ -31,7 +31,7 @@ void Shuffle::onReceive(const Envelope &msg) {
 	this->onComplete(completeMessage);
   } else {
 	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + msg.message().type());
+	throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}" + msg.message().type(), name()));
   }
 }
 
@@ -48,14 +48,13 @@ void Shuffle::onComplete(const CompleteMessage &) {
 
 void Shuffle::onTuple(const TupleMessage &message) {
 
-  // Get the tuple set
-  auto &&tupleSet = TupleSet2::create(message.tuples());
-
-  // Check there are consumers
+  // Set consumers if not (sometimes TupleMessages arrives before StartMessage)
   if(consumers_.empty()){
-    return;
+    consumers_ = this->ctx()->operatorMap().get(OperatorRelationshipType::Consumer);
   }
 
+  // Get the tuple set
+  auto &&tupleSet = TupleSet2::create(message.tuples());
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;
   auto startTime = std::chrono::steady_clock::now();
 
@@ -70,7 +69,7 @@ void Shuffle::onTuple(const TupleMessage &message) {
     // Shuffle the tuple set
     auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
     if (!expectedShuffledTupleSets.has_value()) {
-      throw std::runtime_error(expectedShuffledTupleSets.error());
+      throw std::runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
     }
     shuffledTupleSets = expectedShuffledTupleSets.value();
   }

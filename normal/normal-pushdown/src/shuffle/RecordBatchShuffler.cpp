@@ -29,7 +29,7 @@ RecordBatchShuffler::RecordBatchShuffler(int shuffleColumnIndex,
     for (int c = 0; c < schema_->num_fields(); ++c) {
       auto expectedAppender = ArrayAppender::make(schema_->field(c)->type(), DefaultChunkSize);
       if (!expectedAppender.has_value()) {
-        throw std::runtime_error(expectedAppender.error());
+        throw std::runtime_error(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
       }
       shuffledAppendersVector_[s][c] = expectedAppender.value();
     }
@@ -100,7 +100,7 @@ tl::expected<void, std::string> RecordBatchShuffler::shuffle(const std::shared_p
         shuffledArraysVector_[partitionIndex][c].emplace_back(expectedArray.value());
         auto expectedAppender = ArrayAppender::make(schema_->field(c)->type(), DefaultChunkSize);
         if (!expectedAppender.has_value()) {
-          throw std::runtime_error(expectedAppender.error());
+          throw std::runtime_error(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
         }
         shuffledAppendersVector_[partitionIndex][c] = expectedAppender.value();
         bufferedValueNums[partitionIndex][c] = 0;

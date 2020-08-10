@@ -254,7 +254,7 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
     });
 
     if (!result.has_value()) {
-      throw std::runtime_error(result.error());
+      throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
     }
 
     std::vector<std::shared_ptr<Column>> readColumns;
@@ -268,7 +268,7 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
         std::shared_ptr<arrow::Array> array;
         auto status = builder->Finish(&array);
         if (!status.ok()) {
-          throw std::runtime_error(status.message());
+          throw std::runtime_error(fmt::format("{}, {}", status.message(), name()));
         }
         readColumns.emplace_back(Column::make(columnNames_.at(col_id), array));
       }
@@ -294,7 +294,7 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
     this->onCacheLoadResponse(scanMessage);
   } else {
     // FIXME: Propagate error properly
-    throw std::runtime_error("Unrecognized message type " + message.message().type());
+    throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", message.message().type(), name()));
   }
 }
 

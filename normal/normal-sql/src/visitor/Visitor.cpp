@@ -167,7 +167,7 @@ std::shared_ptr<std::vector<std::string>> columnsNeededForAggregate(
  */
 antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::NormalSQLParser::Select_coreContext *ctx) {
 
-  auto miniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue();
+  auto miniCatalogue = normal::connector::defaultMiniCatalogue;
   auto nodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>>();
 
   // collate logical operator

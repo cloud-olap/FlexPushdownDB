@@ -66,7 +66,7 @@ void SegmentCacheActor::load(const LoadRequestMessage &msg) {
   auto responseMessage = LoadResponseMessage::make(segments, name(), *segmentKeysToCache);
 
   ctx()->send(responseMessage, msg.sender())
-	  .map_error([](auto err) { throw std::runtime_error(err); });
+	  .map_error([](auto err) { throw std::runtime_error(fmt::format("{}, SegmentCacheActor", err)); });
 }
 
 void SegmentCacheActor::store(const StoreRequestMessage &msg) {

@@ -6,8 +6,18 @@
 
 using namespace normal::cache;
 
-bool lessFrequent (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
-  return key1->getMetadata()->hitNum() < key2->getMetadata()->hitNum();
+bool lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
+  return (key1->getMetadata()->hitNum() / key1->getMetadata()->size())
+       < (key2->getMetadata()->hitNum() / key2->getMetadata()->size());
+//  return (key1->getMetadata()->hitNum())
+//         < (key2->getMetadata()->hitNum());
+}
+
+bool lessEstimateValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
+  return (key1->getMetadata()->hitNum() / key1->getMetadata()->estimateSize())
+       < (key2->getMetadata()->hitNum() / key2->getMetadata()->estimateSize());
+//  return (key1->getMetadata()->hitNum())
+//         < (key2->getMetadata()->hitNum());
 }
 
 FBRCachingPolicy::FBRCachingPolicy(size_t maxSize) :
@@ -50,12 +60,12 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
     return std::nullopt;
   }
 
-  std::sort(keysInCache_.begin(), keysInCache_.end(), lessFrequent);
+  std::sort(keysInCache_.begin(), keysInCache_.end(), lessValue);
   int heapIndex = 0;
   size_t tmpFreeSize = freeSize_;
   while (tmpFreeSize < segmentSize) {
     auto removableKey = keysInCache_[heapIndex];
-    if (removableKey->getMetadata()->hitNum() < realKey->getMetadata()->hitNum()) {
+    if (lessValue(removableKey, realKey)) {
       removableKeys->emplace_back(removableKey);
       tmpFreeSize += removableKey->getMetadata()->size();
       ++heapIndex;
@@ -111,8 +121,7 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
 
     // try to find one lower-value unused key in cache
     for (const auto &keyInCache: keysInCache_) {
-      if (keyInCache->getMetadata()->hitNum() < realKey->getMetadata()->hitNum() &&
-        keysToReplace_.find(keyInCache) == keysToReplace_.end()) {
+      if (lessEstimateValue(keyInCache, realKey) && keysToReplace_.find(keyInCache) == keysToReplace_.end()) {
         keysToCache->emplace_back(realKey);
         addEstimateCachingDecision(realKey, keyInCache);
         break;

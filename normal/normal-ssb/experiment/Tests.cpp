@@ -121,11 +121,11 @@ auto executeSql(normal::sql::Interpreter i, const std::string &sql) {
 
 TEST_SUITE ("MainTests" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
-//  spdlog::set_level(spdlog::level::info);
+TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
+  spdlog::set_level(spdlog::level::info);
 
-  // chosse whether to use partitioned lineorder
-  bool partitioned = false;
+  // choose whether to use partitioned lineorder
+  bool partitioned = true;
 
   // choose mode
   auto mode1 = normal::plan::operator_::mode::Modes::fullPushdownMode();
@@ -138,7 +138,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
           "query2.1.sql", "query2.2.sql", "query2.3.sql",
           "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
           "query4.1.sql", "query4.2.sql", "query4.3.sql"
-//          "query2.2.sql"
+//          "query2.1.sql"
   };
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");
@@ -146,11 +146,11 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   std::string dir_prefix = "ssb-sf1/";
 
   // choose caching policy
-  auto lru = LRUCachingPolicy::make(1024*1024*1024);
-  auto fbr = FBRCachingPolicy::make(1024*1024*1024);
+  auto lru = LRUCachingPolicy::make(1024*1024);
+  auto fbr = FBRCachingPolicy::make(1024*1024*100);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode3, fbr);
+  normal::sql::Interpreter i(mode2, lru);
   if (partitioned) {
     configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
   } else {
@@ -177,7 +177,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Sequence all finished");
 }
 
-TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // prepare queries
