@@ -13,6 +13,7 @@
  * @return
  */
 const char* getCurrentTestName() { return doctest::detail::g_cs->currentTest->m_name; }
+const char* getCurrentTestSuiteName() { return doctest::detail::g_cs->currentTest->m_test_suite; }
 
 /**
  * Tests entry point

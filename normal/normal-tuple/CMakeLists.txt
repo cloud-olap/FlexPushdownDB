@@ -35,14 +35,17 @@ add_library(normal-tuple STATIC
         src/TupleSetIndex.cpp include/normal/tuple/TupleSetIndex.h
         src/TupleSetIndexWrapper.cpp include/normal/tuple/TupleSetIndexWrapper.h
         src/TupleSetIndexFinder.cpp include/normal/tuple/TupleSetIndexFinder.h
-        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h)
+        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
+        src/Converter.cpp include/normal/tuple/Converter.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 
 target_link_libraries(normal-tuple PRIVATE spdlog::spdlog)
 target_link_libraries(normal-tuple PRIVATE fmt::fmt)
+target_link_libraries(normal-tuple PRIVATE LLVM-filesystem)
 target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
+target_link_libraries(normal-tuple PUBLIC parquet_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -52,13 +55,14 @@ target_link_libraries(normal-tuple PUBLIC arrow_static)
 add_executable(normal-tuple-test
         test/Globals.h
         test/MainTest.cpp
-        test/TupleTest.cpp test/CSVTest.cpp)
+        test/TupleTest.cpp test/CSVTest.cpp test/ParquetTest.cpp)
 
 
 target_include_directories(normal-tuple-test PRIVATE include)
 
 target_link_libraries(normal-tuple-test spdlog::spdlog)
 target_link_libraries(normal-tuple-test doctest::doctest)
+target_link_libraries(normal-tuple-test fmt::fmt)
 target_link_libraries(normal-tuple-test normal-tuple)
 
 
