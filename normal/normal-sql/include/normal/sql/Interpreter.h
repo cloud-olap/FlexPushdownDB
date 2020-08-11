@@ -31,6 +31,8 @@ public:
   void clearOperatorGraph();
   void boot();
   void stop();
+  void saveMetrics();
+  std::string showMetrics();
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>> catalogues_;
@@ -39,6 +41,11 @@ private:
   std::shared_ptr<core::graph::OperatorGraph> operatorGraph_;
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
   std::shared_ptr<CachingPolicy> cachingPolicy_;
+
+  /*
+   * About result metrics
+   */
+  std::vector<double> executionTimes;
 };
 
 }

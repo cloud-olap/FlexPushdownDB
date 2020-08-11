@@ -98,4 +98,42 @@ void Interpreter::stop() {
   operatorManager_->stop();
 }
 
+std::string Interpreter::showMetrics() {
+  double totalExecutionTime = 0;
+  for (auto const executionTime: executionTimes) {
+    totalExecutionTime += executionTime;
+  }
+  std::stringstream ss;
+  ss << std::endl;
+  std::stringstream formattedExecutionTime;
+  formattedExecutionTime << totalExecutionTime << " secs";
+  ss << std::left << std::setw(60) << "Total Execution Time ";
+  ss << std::left << std::setw(60) << formattedExecutionTime.str();
+  ss << std::endl;
+  ss << std::endl;
+
+  ss << std::left << std::setw(120) << "Query Execution Times" << std::endl;
+  ss << std::setfill(' ');
+  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+  ss << std::left << std::setw(20) << "Query";
+  ss << std::left << std::setw(40) << "Execution Time";
+  ss << std::endl;
+  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+  for (int qid = 1; qid <= executionTimes.size(); ++qid) {
+    std::stringstream formattedProcessingTime1;
+    formattedProcessingTime1 << executionTimes[qid - 1] << " secs";
+    ss << std::left << std::setw(20) << std::to_string(qid);
+    ss << std::left << std::setw(40) << formattedProcessingTime1.str();
+    ss << std::endl;
+  }
+
+  return ss.str();
+}
+
+void Interpreter::saveMetrics() {
+  executionTimes.emplace_back((double) (operatorGraph_->getElapsedTime().value()) / 1000000000.0);
+}
+
 

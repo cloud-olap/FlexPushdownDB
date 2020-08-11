@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CACHE_INCLUDE_NORMAL_CACHE_LRUCACHINGPOLICY_H
 
 #include <memory>
+#include <vector>
 #include <list>
 #include <forward_list>
 #include <unordered_map>

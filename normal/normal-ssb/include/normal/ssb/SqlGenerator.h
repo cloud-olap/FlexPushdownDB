@@ -27,7 +27,7 @@ public:
   std::string generateSql (std::string queryName);
 
 private:
-  std::default_random_engine generator_;
+  std::shared_ptr<std::default_random_engine> generator_;
   std::map<std::string, QueryName> queryNameMap_;
 
   std::string genQuery1_1();

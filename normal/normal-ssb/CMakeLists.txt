@@ -9,19 +9,20 @@ add_library(normal-ssb
         include/normal/ssb/Globals.h
         src/TestUtil.cpp include/normal/ssb/TestUtil.h
         src/SQLite3.cpp include/normal/ssb/SQLite3.h
-        src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
-        src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
-        src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
-        src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
-        src/query1_1/LocalFileSystemTests.cpp include/normal/ssb/query1_1/LocalFileSystemTests.h
-        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
         src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h
-        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
-        src/query2_1/Operators.cpp  include/normal/ssb/query2_1/Operators.h
-        src/query2_1/LocalFileSystemTests.cpp include/normal/ssb/query2_1/LocalFileSystemTests.h
-        src/query2_1/LocalFileSystemQueries.cpp include/normal/ssb/query2_1/LocalFileSystemQueries.h
-        src/query2_1/SQL.cpp include/normal/ssb/query2_1/SQL.h src/common/Operators.cpp
-        include/normal/ssb/common/Operators.h src/SSBSchema.cpp include/normal/ssb/SSBSchema.h)
+        src/SSBSchema.cpp include/normal/ssb/SSBSchema.h)
+#        include/normal/ssb/common/Operators.h src/common/Operators.cpp
+#        src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
+#        src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
+#        src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
+#        src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
+#        src/query1_1/LocalFileSystemTests.cpp include/normal/ssb/query1_1/LocalFileSystemTests.h
+#        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
+#        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
+#        src/query2_1/Operators.cpp  include/normal/ssb/query2_1/Operators.h
+#        src/query2_1/LocalFileSystemTests.cpp include/normal/ssb/query2_1/LocalFileSystemTests.h
+#        src/query2_1/LocalFileSystemQueries.cpp include/normal/ssb/query2_1/LocalFileSystemQueries.h
+#        src/query2_1/SQL.cpp include/normal/ssb/query2_1/SQL.h )
 
 target_include_directories(normal-ssb PUBLIC include)
 

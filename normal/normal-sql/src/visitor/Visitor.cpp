@@ -391,7 +391,6 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     std::shared_ptr<normal::plan::operator_::LogicalOperator> finalConsumerNode;
     if (join) {
       // naive join ordering
-      // "lineorder" is large, right-deep join is better
       std::shared_ptr<normal::plan::operator_::JoinLogicalOperator> lastJoinNode = nullptr;
       for (const auto &joinTable: *miniCatalogue->defaultJoinOrder()) {
         auto joinPredicate = joinPredicate_map->find(joinTable);
@@ -412,28 +411,28 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
           rightScanNode->setConsumer(joinNode);
           lastJoinNode = joinNode;
         } else {
-//          // left-deep join
-//          auto leftColumnName = joinPredicate_pair->second;
-//          auto rightColumnName = joinPredicate_pair->first;
-//          auto rightScanNode = scanNodes_map->find(joinTable)->second;
-//          auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(
-//                  leftColumnName, rightColumnName, lastJoinNode, rightScanNode);
-//          joinNode->setName(leftColumnName + ", " + rightColumnName);
-//          nodes->emplace_back(joinNode);
-//          lastJoinNode->setConsumer(joinNode);
-//          rightScanNode->setConsumer(joinNode);
-//          lastJoinNode = joinNode;
-          // right-deep join
-          auto leftColumnName = joinPredicate_pair->first;
-          auto rightColumnName = joinPredicate_pair->second;
-          auto leftScanNode = scanNodes_map->find(joinTable)->second;
+          // left-deep join
+          auto leftColumnName = joinPredicate_pair->second;
+          auto rightColumnName = joinPredicate_pair->first;
+          auto rightScanNode = scanNodes_map->find(joinTable)->second;
           auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(
-                  leftColumnName, rightColumnName, leftScanNode, lastJoinNode);
+                  leftColumnName, rightColumnName, lastJoinNode, rightScanNode);
           joinNode->setName(leftColumnName + ", " + rightColumnName);
           nodes->emplace_back(joinNode);
           lastJoinNode->setConsumer(joinNode);
-          leftScanNode->setConsumer(joinNode);
+          rightScanNode->setConsumer(joinNode);
           lastJoinNode = joinNode;
+//          // right-deep join
+//          auto leftColumnName = joinPredicate_pair->first;
+//          auto rightColumnName = joinPredicate_pair->second;
+//          auto leftScanNode = scanNodes_map->find(joinTable)->second;
+//          auto joinNode = std::make_shared<normal::plan::operator_::JoinLogicalOperator>(
+//                  leftColumnName, rightColumnName, leftScanNode, lastJoinNode);
+//          joinNode->setName(leftColumnName + ", " + rightColumnName);
+//          nodes->emplace_back(joinNode);
+//          lastJoinNode->setConsumer(joinNode);
+//          leftScanNode->setConsumer(joinNode);
+//          lastJoinNode = joinNode;
         }
       }
       finalConsumerNode = lastJoinNode;

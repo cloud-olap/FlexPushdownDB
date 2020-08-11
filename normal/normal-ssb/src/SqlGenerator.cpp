@@ -9,6 +9,9 @@
 using namespace normal::ssb;
 
 SqlGenerator::SqlGenerator() {
+  std::random_device rd;
+  generator_ = std::make_shared<std::default_random_engine>(rd());
+
   queryNameMap_.emplace("query1_1", Query1_1);
   queryNameMap_.emplace("query1_2", Query1_2);
   queryNameMap_.emplace("query1_3", Query1_3);
@@ -33,7 +36,7 @@ std::vector<std::string> SqlGenerator::generateSqlBatch(int batchSize) {
   // generate randomly
   std::vector<std::string> queries;
   std::uniform_int_distribution<int> distribution(0,queryNames.size() - 1);
-  auto dice = std::bind(distribution, generator_);
+  auto dice = std::bind(distribution, *generator_);
   for (int i = 0; i < batchSize; ++i) {
     int queryIndex = dice();
     auto queryName = queryNames[queryIndex];
@@ -353,19 +356,19 @@ std::string SqlGenerator::genQuery4_3() {
 
 int SqlGenerator::genD_year() {
   std::uniform_int_distribution<int> distribution(1992,1998);
-  return distribution(generator_);
+  return distribution(*generator_);
 }
 
 int SqlGenerator::genD_yearmonthnum() {
   auto year = genD_year();
   std::uniform_int_distribution<int> distribution(1,12);
-  auto month = distribution(generator_);
+  auto month = distribution(*generator_);
   return year * 100 + month;
 }
 
 int SqlGenerator::genD_weeknuminyear() {
   std::uniform_int_distribution<int> distribution(10,40);
-  return distribution(generator_);
+  return distribution(*generator_);
 }
 
 std::string SqlGenerator::genD_yearmonth() {
@@ -373,61 +376,61 @@ std::string SqlGenerator::genD_yearmonth() {
   std::vector<std::string> months{"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   std::uniform_int_distribution<int> distribution(1,12);
-  auto month = months[distribution(generator_) - 1];
+  auto month = months[distribution(*generator_) - 1];
   return month + std::to_string(year);
 }
 
 int SqlGenerator::genLo_discount() {
   std::uniform_int_distribution<int> distribution(3,7);
-  return distribution(generator_);
+  return distribution(*generator_);
 }
 
 int SqlGenerator::genLo_quantity() {
   std::uniform_int_distribution<int> distribution(15,30);
-  return distribution(generator_);
+  return distribution(*generator_);
 }
 
 int SqlGenerator::genP_category_num() {
   std::uniform_int_distribution<int> distribution(1,5);
-  auto tenth = distribution(generator_);
-  auto unit = distribution(generator_);
+  auto tenth = distribution(*generator_);
+  auto unit = distribution(*generator_);
   return tenth * 10 + unit;
 }
 
 int SqlGenerator::genP_brand1_num() {
   auto category_num = genP_category_num();
   std::uniform_int_distribution<int> distribution(10,30);
-  auto brand1_num = distribution(generator_);
+  auto brand1_num = distribution(*generator_);
   return category_num * 100 + brand1_num;
 }
 
 int SqlGenerator::genP_mfgr_num() {
   std::uniform_int_distribution<int> distribution(1,5);
-  return distribution(generator_);
+  return distribution(*generator_);
 }
 
 std::string SqlGenerator::genS_region() {
   std::vector<std::string> regions{"AMERICA", "AFRICA", "MIDDLE EAST", "EUROPE", "ASIA"};
   std::uniform_int_distribution<int> distribution(0,4);
-  return regions[distribution(generator_)];
+  return regions[distribution(*generator_)];
 }
 
 std::string SqlGenerator::genS_nation() {
   std::vector<std::string> nations{"UNITED STATES", "CHINA", "UNITED KINGDOM", "INDIA", "RUSSIA"};
   std::uniform_int_distribution<int> distribution(0,4);
-  return nations[distribution(generator_)];
+  return nations[distribution(*generator_)];
 }
 
 std::string SqlGenerator::genS_city() {
   const size_t indent = 9;
   std::vector<std::string> nationsPrefix{"UNITED ST", "CHINA", "UNITED KI", "INDIA", "RUSSIA"};
   std::uniform_int_distribution<int> distribution1(0,4);
-  auto nation = nationsPrefix[distribution1(generator_)];
+  auto nation = nationsPrefix[distribution1(*generator_)];
   for (auto i = nation.length(); i < indent; ++i) {
     nation += " ";
   }
 
   std::uniform_int_distribution<int> distribution2(0,9);
-  auto city_num = distribution2(generator_);
+  auto city_num = distribution2(*generator_);
   return nation + std::to_string(city_num);
 }

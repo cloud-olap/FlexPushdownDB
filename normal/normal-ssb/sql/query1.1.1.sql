@@ -1,7 +1,11 @@
-select lo_orderdate, lo_quantity, d_weeknuminyear
-from lineorder,
-     date
-where lo_orderdate = d_datekey
-  and d_year = 1992
-  and (lo_discount between 1 and 3)
-  and lo_quantity < 25;
+select c_nation, s_nation, d_year, sum(lo_revenue) as revenue
+from customer, lineorder, supplier, date
+where lo_custkey = c_custkey
+  and lo_suppkey = s_suppkey
+  and lo_orderdate = d_datekey
+  and c_region = 'EUROPE'
+  and s_region = 'EUROPE'
+  and d_year >= 1998
+  and d_year <= 1998
+group by c_nation, s_nation, d_year
+order by d_year asc, revenue desc;

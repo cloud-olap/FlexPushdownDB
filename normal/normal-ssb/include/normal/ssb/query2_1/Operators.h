@@ -19,7 +19,7 @@
 #include <normal/pushdown/shuffle/Shuffle.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/cache/CacheLoad.h>
-#include <normal/pushdown/merge/MergeOperator.h>
+#include <normal/pushdown/merge/Merge.h>
 #include <normal/pushdown/bloomjoin/BloomCreateOperator.h>
 #include <normal/pushdown/bloomjoin/FileScanBloomUseOperator.h>
 

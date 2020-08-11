@@ -47,15 +47,15 @@ add_library(normal-pushdown STATIC
         src/join/HashJoinProbeKernel2.cpp include/normal/pushdown/join/HashJoinProbeKernel2.h
         src/join/HashJoinBuildKernel2.cpp include/normal/pushdown/join/HashJoinBuildKernel2.h
         src/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
-        src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h
-        src/bloomjoin/BloomCreateOperator.cpp include/normal/pushdown/bloomjoin/BloomCreateOperator.h
-        src/bloomjoin/FileScanBloomUseOperator.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.h
-        src/bloomjoin/BloomCreateKernel.cpp include/normal/pushdown/bloomjoin/BloomCreateKernel.h
-        src/bloomjoin/FileScanBloomUseKernel.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.h
-        src/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
-        src/bloomjoin/UniversalHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalHashFunction.h
-        src/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h
-        src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h)
+        src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h)
+#        src/bloomjoin/BloomCreateOperator.cpp include/normal/pushdown/bloomjoin/BloomCreateOperator.h
+#        src/bloomjoin/FileScanBloomUseOperator.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.h
+#        src/bloomjoin/BloomCreateKernel.cpp include/normal/pushdown/bloomjoin/BloomCreateKernel.h
+#        src/bloomjoin/FileScanBloomUseKernel.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.h
+#        src/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
+#        src/bloomjoin/UniversalHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalHashFunction.h
+#        src/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h
+#        src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
