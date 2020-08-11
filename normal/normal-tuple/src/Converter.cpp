@@ -28,6 +28,7 @@ tl::expected<void, std::string> Converter::csvToParquet(const std::string &inFil
   auto inputStream = *expectedInputStream;
 
   auto read_options = arrow::csv::ReadOptions::Defaults();
+  read_options.use_threads = true;
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto convert_options = arrow::csv::ConvertOptions::Defaults();
   std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;

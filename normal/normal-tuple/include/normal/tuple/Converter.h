@@ -19,7 +19,7 @@ public:
 													  const std::string &outFile,
 													  const ::arrow::Schema &schema,
 													  int rowGroupSize);
-}
+};
 
 }
 

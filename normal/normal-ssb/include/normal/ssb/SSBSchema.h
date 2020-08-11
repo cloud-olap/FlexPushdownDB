@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <string>
+#include <normal/tuple/Schema.h>
 
 class SSBSchema {
 public:
@@ -26,6 +27,11 @@ public:
   static const inline std::vector<std::string> PartFields
 	  {"P_PARTKEY", "P_NAME", "P_MFGR", "P_CATEGORY", "P_BRAND1", "P_COLOR", "P_TYPE", "P_SIZE", "P_CONTAINER"};
 
+  static std::shared_ptr<arrow::Schema> customerSchema();
+  static std::shared_ptr<arrow::Schema> dateSchema();
+  static std::shared_ptr<arrow::Schema> lineOrder();
+  static std::shared_ptr<arrow::Schema> part();
+  static std::shared_ptr<arrow::Schema> supplier();
 };
 
 #endif //NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_SSBSCHEMA_H

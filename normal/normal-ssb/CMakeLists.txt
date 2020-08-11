@@ -71,6 +71,18 @@ target_link_libraries(normal-ssb-test PRIVATE normal-sql)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Tool
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-ssb-tool
+        tool/Main.cpp)
+
+target_link_libraries(normal-ssb-tool PRIVATE spdlog::spdlog)
+target_link_libraries(normal-ssb-tool PRIVATE normal-ssb)
+target_link_libraries(normal-ssb-tool PRIVATE normal-tuple)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Data
 #-----------------------------------------------------------------------------------------------------------------------
 
