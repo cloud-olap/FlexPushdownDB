@@ -204,7 +204,7 @@ Operators::makeDateFilterOperators(short year, int numConcurrentUnits, const std
 	auto dateFilter = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/date-filter-{}", g->getId(), u),
 		FilterPredicate::make(
-			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
+			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type, int>(year))));
 	dateFilterOperators.push_back(dateFilter);
   }
 
@@ -391,10 +391,10 @@ Operators::makeLineOrderFilterOperators(short discount, short quantity, int numC
 		FilterPredicate::make(
 			and_(
 				and_(
-					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
+					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountLower)),
+					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountUpper))
 				),
-				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
+				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type, int>(quantity))
 			)
 		)
 	);

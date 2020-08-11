@@ -38,12 +38,14 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   auto indexFinder = expectedIndexFinder.value();
 
   // Combine the chunks in the build table so we have single arrays for each column
-  std::shared_ptr<::arrow::Table> buildTable;
-  status = buildTupleSetIndex_->getTable()->CombineChunks(::arrow::default_memory_pool(), &buildTable);
-  if (!status.ok())
-	return tl::make_unexpected(status.message());
+//  std::shared_ptr<::arrow::Table> buildTable;
+//  status = buildTupleSetIndex_->getTable()->CombineChunks(::arrow::default_memory_pool(), &buildTable);
+//  if (!status.ok())
+//	return tl::make_unexpected(status.message());
 
 //  buildTupleSetIndex_->validate();
+
+  auto buildTable = buildTupleSetIndex_->getTable();
 
   // Create references to each array in the index
   ::arrow::ArrayVector buildColumns;

@@ -140,6 +140,9 @@ public:
 
   [[nodiscard]] tl::expected<void, std::string> filter() {
 
+	::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
+	::arrow::Status status;
+
 	auto table = tupleSet_.value()->getArrowTable().value();
 	auto filterColumnIndex = table->schema()->GetFieldIndex(bloomFilterColumnName_);
 
@@ -152,14 +155,27 @@ public:
 	}
 
 	::arrow::TableBatchReader reader(*table);
-	auto result = reader.Next();
+	reader.set_chunksize(DefaultChunkSize);
 
-	while (*result) {
-	  auto recordBatch = *result;
+	// Read a batch
+	recordBatchResult = reader.Next();
+	if (!recordBatchResult.ok()) {
+	  return tl::make_unexpected(recordBatchResult.status().message());
+	}
+	auto recordBatch = *recordBatchResult;
+
+	while (recordBatch) {
+
 	  auto filterResult = filterRecordBatch(*recordBatch, filterColumnIndex, appenders);
 	  if (!filterResult)
 		return tl::make_unexpected(filterResult.error());
-	  result = reader.Next();
+
+	  // Read a batch
+	  recordBatchResult = reader.Next();
+	  if (!recordBatchResult.ok()) {
+		return tl::make_unexpected(recordBatchResult.status().message());
+	  }
+	  recordBatch = *recordBatchResult;
 	}
 
 	::arrow::ArrayVector filteredArrayVector_(table->schema()->num_fields());
