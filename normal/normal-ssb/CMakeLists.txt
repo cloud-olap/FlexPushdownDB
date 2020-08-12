@@ -8,7 +8,7 @@ project(normal-ssb VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(normal-ssb
         include/normal/ssb/Globals.h
         src/TestUtil.cpp include/normal/ssb/TestUtil.h
-        src/SQLite3.cpp include/normal/ssb/SQLite3.h
+#        src/SQLite3.cpp include/normal/ssb/SQLite3.h
         src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h
         src/SSBSchema.cpp include/normal/ssb/SSBSchema.h)
 #        include/normal/ssb/common/Operators.h src/common/Operators.cpp
@@ -30,8 +30,8 @@ target_link_libraries(normal-ssb PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb PRIVATE LLVM-filesystem)
 target_link_libraries(normal-ssb PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb PRIVATE normal-plan)
-target_link_libraries(normal-ssb PRIVATE sqlite3_static)
-target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
+#target_link_libraries(normal-ssb PRIVATE sqlite3_static)
+#target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
 target_link_libraries(normal-ssb PUBLIC normal-core)
 target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
 
@@ -104,11 +104,11 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/lineorder.tbl ${CMAKE_C
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/part.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/supplier.tbl COPYONLY)
 
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/customer.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/customer.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/date.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/date.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/lineorder.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/customer.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/customer.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/date.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/date.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/lineorder.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Query generator
@@ -129,8 +129,8 @@ add_executable(normal-ssb-experiment
         experiment/Tests.cpp
         experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h
         experiment/HardcodedPlanTestSinglePartition.cpp
-        experiment/HardcodedPlanTestMultiPartition.cpp
-        experiment/SqliteTest.cpp)
+        experiment/HardcodedPlanTestMultiPartition.cpp)
+#        experiment/SqliteTest.cpp)
 
 target_link_libraries(normal-ssb-experiment PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb)

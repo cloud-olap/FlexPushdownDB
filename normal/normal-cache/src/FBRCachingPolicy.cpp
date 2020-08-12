@@ -3,6 +3,7 @@
 //
 
 #include "normal/cache/FBRCachingPolicy.h"
+#include <algorithm>
 
 using namespace normal::cache;
 

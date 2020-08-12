@@ -36,7 +36,7 @@ std::shared_ptr<normal::core::type::Type> getType(std::shared_ptr<normal::expres
   if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::Int32Type>)) {
     return normal::core::type::integer32Type();
   } else if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::Int64Type>)) {
-    return normal::core::type::integer64Type();
+    return normal::core::type::integer32Type();
   } else if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::FloatType>)) {
     return normal::core::type::float64Type();
   } else {

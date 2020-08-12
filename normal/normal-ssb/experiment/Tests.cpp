@@ -138,16 +138,16 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
 
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {
-//          "query1.1.sql", "query1.2.sql", "query1.3.sql",
-//          "query2.1.sql", "query2.2.sql", "query2.3.sql",
-//          "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
-//          "query4.1.sql", "query4.2.sql", "query4.3.sql"
-          "query1.1.1.sql"
+          "query1.1.sql", "query1.2.sql", "query1.3.sql",
+          "query2.1.sql", "query2.2.sql", "query2.3.sql",
+          "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
+          "query4.1.sql", "query4.2.sql", "query4.3.sql"
+//          "query1.1.1.sql"
   };
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf1/";
+  std::string dir_prefix = "ssb-sf0.01/";
 
   // choose caching policy
   auto lru = LRUCachingPolicy::make(1024*1024*600);
@@ -156,7 +156,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   // configure interpreter
   normal::sql::Interpreter i(mode1, lru);
   if (partitioned) {
-    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 32);
+    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 10);
   } else {
     configureS3ConnectorSinglePartition(i, bucket_name, dir_prefix);
   }
@@ -213,11 +213,11 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Batch finished");
 }
 
-TEST_CASE ("ColdCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("ColdCacheExperiment" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int batchSize = 5;
+  const int batchSize = 40;
   const size_t cacheSize = 1024*1024*100;
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf1/";
@@ -272,10 +272,10 @@ TEST_CASE ("ColdCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
 }
 
 TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
-//  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 10, executeBatchSize = 15;
+  const int warmBatchSize = 10, executeBatchSize = 10;
   const size_t cacheSize = 1024*1024*300;
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf1/";
@@ -315,7 +315,7 @@ TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
 //  SPDLOG_INFO("Execution phase finished");
 //  i1.stop();
 //  SPDLOG_INFO("Full-pushdown mode finished, metrics:\n{}", i1.showMetrics());
-//
+
 //  i2.boot();
 //  SPDLOG_INFO("Pullup-caching mode start");
 //  SPDLOG_INFO("Cache warm phase:");
@@ -351,18 +351,6 @@ TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Hybrid-caching mode finished, metrics:\n{}", i3.showMetrics());
 
   SPDLOG_INFO("Warm-cache experiment finished, {} queries executed", executeBatchSize);
-}
-
-TEST_CASE ("t" * doctest::skip(false || SKIP_SUITE)) {
-  int i = 0;
-  char *p = NULL;
-  while (true) {
-    p = new char[1000000];
-    i++;
-    if (i % 100000 == 0) {
-      SPDLOG_INFO("{}", i);
-    }
-  }
 }
 
 }
