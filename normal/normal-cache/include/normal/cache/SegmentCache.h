@@ -30,9 +30,14 @@ public:
 
   size_t getSize() const;
 
+  int hitNum() const;
+  int missNum() const;
+
 private:
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> map_;
 	std::shared_ptr<CachingPolicy> cachingPolicy_;
+	int hitNum_ = 0;
+	int missNum_ = 0;
 };
 
 }

@@ -39,10 +39,12 @@ tl::expected<std::shared_ptr<SegmentData>,
 
   auto mapIterator = map_.find(key);
   if (mapIterator == map_.end()) {
-	return tl::unexpected(fmt::format("Segment for key '{}' not found", key->toString()));
+    missNum_++;
+	  return tl::unexpected(fmt::format("Segment for key '{}' not found", key->toString()));
   } else {
-	auto cacheEntry = mapIterator->second;
-	return mapIterator->second;
+    hitNum_++;
+    auto cacheEntry = mapIterator->second;
+    return mapIterator->second;
   }
 }
 
@@ -69,4 +71,12 @@ size_t SegmentCache::getSize() const {
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 SegmentCache::toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
   return cachingPolicy_->onToCache(segmentKeys);
+}
+
+int SegmentCache::hitNum() const {
+  return hitNum_;
+}
+
+int SegmentCache::missNum() const {
+  return missNum_;
 }

@@ -82,3 +82,7 @@ void SegmentCacheActor::evict(const EvictRequestMessage &msg) {
   SPDLOG_DEBUG("Evict  |  evictMessage: {}", msg.toString());
   throw std::runtime_error("Cache eviction not implemented");
 }
+
+const std::shared_ptr<SegmentCacheActorState> &SegmentCacheActor::getState() const {
+  return state_;
+}
