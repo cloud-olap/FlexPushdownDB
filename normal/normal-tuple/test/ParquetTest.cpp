@@ -11,6 +11,8 @@
 
 #include <normal/tuple/Converter.h>
 #include <normal/tuple/Globals.h>
+#include <normal/tuple/ParquetReader.h>
+#include <normal/tuple/Util.h>
 
 using namespace normal::tuple;
 
@@ -19,26 +21,54 @@ const char *getCurrentTestSuiteName();
 
 #define SKIP_SUITE false
 
-TEST_SUITE ("parquet" * doctest::skip(SKIP_SUITE)) {
+tl::expected<void, std::string> convert(const std::string& inFile, const std::string& outFile, int rowGroupSize) {
 
-TEST_CASE ("parquet-csv-to-parquet" * doctest::skip(false || SKIP_SUITE)) {
-
-  auto outDir = fmt::format("tests/{}/{}", getCurrentTestSuiteName(), getCurrentTestName());
-
-  std::filesystem::create_directories(outDir);
+  std::filesystem::create_directories(std::filesystem::absolute(outFile).remove_filename());
 
   auto fields = {::arrow::field("A", ::arrow::int32()),
 				 ::arrow::field("B", ::arrow::int32()),
 				 ::arrow::field("C", ::arrow::int32())};
   auto schema = std::make_shared<::arrow::Schema>(fields);
 
-  auto result = Converter::csvToParquet("data/csv/test.csv",
-										fmt::format("{}/test.snappy.parquet", outDir),
-										*schema,
-										DefaultChunkSize);
+  auto result = Converter::csvToParquet(inFile, outFile, *schema, rowGroupSize);
 
+  return result;
+}
+
+TEST_SUITE ("parquet" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("parquet-csv-to-parquet" * doctest::skip(false || SKIP_SUITE)) {
+
+  const std::string inFile = "data/csv/test.csv";
+  const std::string outFile = fmt::format("tests/{}/{}/test.snappy.parquet", getCurrentTestSuiteName(), getCurrentTestName());
+
+  auto result = convert(inFile, outFile, DefaultChunkSize);
+	  CHECK_MESSAGE(result.has_value(), result.error());
+}
+
+TEST_CASE ("parquet-read-byte-range" * doctest::skip(false || SKIP_SUITE)) {
+
+  const std::string inFile = "data/csv/test3x10000.csv";
+  const std::string outFile = fmt::format("tests/{}/{}/test3x10000.snappy.parquet", getCurrentTestSuiteName(), getCurrentTestName());
+
+  auto result = convert(inFile, outFile, 300);
 	  CHECK_MESSAGE(result.has_value(), result.error());
 
+  auto size = std::filesystem::file_size(outFile);
+  auto scanRanges = Util::ranges<int>(0, size, 3);
+
+  auto expectedReader = ParquetReader::make(outFile);
+  if(!expectedReader)
+		FAIL (expectedReader.error());
+  auto reader = expectedReader.value();
+
+  for (const auto &scanRange: scanRanges) {
+	auto expectedTupleSet = reader->readRange(scanRange.first, scanRange.second);
+	if (!expectedTupleSet)
+		  FAIL (expectedTupleSet.error());
+	auto tupleSet = expectedTupleSet.value();
+	SPDLOG_DEBUG("Output:\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  }
 }
 
 }

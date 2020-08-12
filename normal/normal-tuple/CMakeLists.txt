@@ -36,7 +36,9 @@ add_library(normal-tuple STATIC
         src/TupleSetIndexWrapper.cpp include/normal/tuple/TupleSetIndexWrapper.h
         src/TupleSetIndexFinder.cpp include/normal/tuple/TupleSetIndexFinder.h
         src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
-        src/Converter.cpp include/normal/tuple/Converter.h)
+        src/Converter.cpp include/normal/tuple/Converter.h
+        src/ParquetReader.cpp include/normal/tuple/ParquetReader.h
+        src/Util.cpp include/normal/tuple/Util.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 
@@ -71,7 +73,7 @@ target_link_libraries(normal-tuple-test normal-tuple)
 #-----------------------------------------------------------------------------------------------------------------------
 
 configure_file(data/csv/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/csv/test.csv COPYONLY)
-
+configure_file(data/csv/test3x10000.csv ${CMAKE_CURRENT_BINARY_DIR}/data/csv/test3x10000.csv COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
