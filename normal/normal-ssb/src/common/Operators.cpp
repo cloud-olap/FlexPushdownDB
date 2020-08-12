@@ -73,6 +73,35 @@ Operators::makeFileScanOperators(const std::string &namePrefix,
   return os;
 }
 
+std::vector<std::shared_ptr<FileScan>>
+Operators::makeFileScanOperators(const std::string &namePrefix,
+								 const std::string &filename,
+								 FileType fileType,
+								 const std::vector<std::string> &columns,
+								 const std::string &dataDir,
+								 int numConcurrentUnits,
+								 const std::shared_ptr<OperatorGraph> &g) {
+
+  auto file = filesystem::absolute(dataDir + "/" + filename);
+  auto numBytesFile = filesystem::file_size(file);
+
+  std::vector<std::shared_ptr<FileScan>> os;
+  auto scanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto o = FileScan::make(fmt::format("/query-{}/{}-scan-{}", g->getId(), namePrefix, u),
+							file,
+							fileType,
+							columns,
+							scanRanges[u].first,
+							scanRanges[u].second,
+							g->getId());
+	os.push_back(o);
+	g->put(o);
+  }
+
+  return os;
+}
+
 std::vector<std::shared_ptr<MergeOperator>>
 Operators::makeMergeOperators(const std::string &namePrefix, int numConcurrentUnits,
 							  const std::shared_ptr<OperatorGraph> &g) {

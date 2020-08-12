@@ -10,6 +10,7 @@
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/core/Normal.h>
+#include <normal/tuple/FileType.h>
 
 using namespace normal::core;
 using namespace normal::core::graph;
@@ -27,9 +28,14 @@ public:
 												 int numConcurrentUnits,
 												 const std::shared_ptr<OperatorManager> &mgr);
 
+  static std::shared_ptr<OperatorGraph>
+  dateScan(const std::string &dataDir, FileType fileType, int numConcurrentUnits, const std::shared_ptr<Normal> &n);
+
   static std::shared_ptr<OperatorGraph> lineOrderScan(const std::string &dataDir,
 														int numConcurrentUnits,
 														const std::shared_ptr<OperatorManager> &mgr);
+  static std::shared_ptr<OperatorGraph>
+  lineOrderScan(const std::string &dataDir, FileType fileType, int numConcurrentUnits, const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> dateFilter(const std::string &dataDir,
 													 short year,
@@ -50,6 +56,7 @@ public:
 											   const std::shared_ptr<OperatorManager> &mgr);
 
   static std::shared_ptr<OperatorGraph> full(const std::string &dataDir,
+											   FileType fileType,
 											   short year,
 											   short discount,
 											   short quantity,

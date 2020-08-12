@@ -55,6 +55,15 @@ public:
 						int numConcurrentUnits,
 						const std::shared_ptr<OperatorGraph> &g);
 
+  static std::vector<std::shared_ptr<FileScan>>
+  makeFileScanOperators(const std::string &namePrefix,
+								   const std::string &filename,
+								   FileType fileType,
+								   const std::vector<std::string> &columns,
+								   const std::string &dataDir,
+								   int numConcurrentUnits,
+								   const std::shared_ptr<OperatorGraph> &g);
+
   static std::vector<std::shared_ptr<MergeOperator>>
   makeMergeOperators(const std::string &namePrefix,
 					 int numConcurrentUnits,
@@ -112,6 +121,14 @@ public:
 	  producers[u1]->produce(consumer);
 	  consumer->consume(producers[u1]);
 	}
+  }
+
+  template <typename A, typename B>
+  static void connectToOne(std::shared_ptr<A> producer,
+						   std::shared_ptr<B> consumer){
+
+	producer->produce(consumer);
+	consumer->consume(producer);
   }
 
 

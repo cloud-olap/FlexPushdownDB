@@ -17,14 +17,14 @@ ParquetReader::~ParquetReader() {
 tl::expected<std::shared_ptr<ParquetReader>, std::string> ParquetReader::make(const std::string &Path) {
   auto reader = std::make_shared<ParquetReader>(Path);
   auto result = reader->open();
-  if(!result) {
+  if (!result) {
 	return tl::make_unexpected(result.error());
   }
   return reader;
 }
 
 tl::expected<void, std::string> ParquetReader::close() {
-  if(inputStream_ && !inputStream_->closed()) {
+  if (inputStream_ && !inputStream_->closed()) {
 	auto result = inputStream_->Close();
 	if (!result.ok())
 	  return tl::make_unexpected(result.message());
@@ -33,7 +33,7 @@ tl::expected<void, std::string> ParquetReader::close() {
 }
 
 tl::expected<std::shared_ptr<TupleSet2>, std::string>
-ParquetReader::read(const std::vector<std::string>& columnNames, unsigned long startPos, unsigned long finishPos) {
+ParquetReader::read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) {
 
   ::arrow::Status status;
 
@@ -49,17 +49,25 @@ ParquetReader::read(const std::vector<std::string>& columnNames, unsigned long s
   }
 
   std::unordered_map<std::string, bool> columnIndexMap;
-  for(const auto &columnName: columnNames) {
+  for (const auto &columnName: columnNames) {
 	columnIndexMap.emplace(ColumnName::canonicalize(columnName), true);
   }
 
   std::vector<int> columnIndexes;
   for (int columnIndex = 0; columnIndex < metadata_->schema()->num_columns(); ++columnIndex) {
 	auto columnMetaData = metadata_->schema()->Column(columnIndex);
-	if(columnIndexMap.find(ColumnName::canonicalize(columnMetaData->name())) != columnIndexMap.end()){
+	if (columnIndexMap.find(ColumnName::canonicalize(columnMetaData->name())) != columnIndexMap.end()) {
 	  columnIndexes.emplace_back(columnIndex);
 	}
   }
+
+  if (columnIndexes.empty())
+	SPDLOG_WARN(
+		"ParquetReader will not read any data. The supplied column names did not match any columns in the file's schema. \n"
+		"Parquet File: '{}'\n"
+		"Columns: '{}'\n",
+		path_,
+		fmt::join(columnNames, ","));
 
   std::unique_ptr<::arrow::RecordBatchReader> recordBatchReader;
   status = arrowReader_->GetRecordBatchReader(rowGroupIndexes, columnIndexes, &recordBatchReader);
@@ -74,6 +82,16 @@ ParquetReader::read(const std::vector<std::string>& columnNames, unsigned long s
 	close();
 	return tl::make_unexpected(status.message());
   }
+
+  auto tableColumnNames = table->schema()->field_names();
+  std::vector<std::string> canonicalColumnNames;
+  std::transform(tableColumnNames.begin(), tableColumnNames.end(),
+				 std::back_inserter(canonicalColumnNames),
+				 [](auto name) -> auto { return ColumnName::canonicalize(name); });
+
+  status = table->RenameColumns(canonicalColumnNames, &table);
+	if(!status.ok())
+	  return tl::make_unexpected(status.message());
 
   auto tupleSet = TupleSet2::make(table);
   return tupleSet;

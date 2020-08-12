@@ -8,6 +8,7 @@
 #include <string>
 
 #include <normal/core/Normal.h>
+#include <normal/tuple/FileType.h>
 
 using namespace normal::core;
 
@@ -29,6 +30,7 @@ public:
    * Only checking row count at moment
    */
   static void dateScan(const std::string &dataDir, int numConcurrentUnits, int numIterations, bool check);
+  static void dateScan(const std::string &dataDir, FileType fileType, int numConcurrentUnits, int numIterations, bool check, const std::shared_ptr<Normal>& n);
 
   /**
    * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan and filter component of query 1.1
@@ -43,6 +45,7 @@ public:
    * Only checking row count at moment
    */
   static void lineOrderScan(const std::string &dataDir, int numConcurrentUnits, bool check);
+  static void lineOrderScan(const std::string &dataDir, FileType fileType, int numConcurrentUnits, int numIterations, bool check, const std::shared_ptr<Normal>& n);
 
   /**
    * LocalFileSystemTests that SQLLite and Normal produce the same output for lineorder scan and filter component of query 1.1
@@ -68,6 +71,7 @@ public:
 
   static void full2(short year, short discount, short quantity,
 				   const std::string &dataDir,
+				   FileType fileType,
 				   int numConcurrentUnits,
 				   bool check,
 				   const std::shared_ptr<Normal> &n);

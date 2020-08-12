@@ -52,6 +52,70 @@ void LocalFileSystemTests::dateScan(const std::string &dataDir, int numConcurren
   }
 }
 
+void LocalFileSystemTests::dateScan(const std::string &dataDir, FileType fileType, int numConcurrentUnits, int numIterations, bool check, const std::shared_ptr<Normal>& n) {
+
+
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}, numIterations: {}",
+			  dataDir, numConcurrentUnits, numIterations);
+
+  std::vector<std::shared_ptr<TupleSet2>> actuals;
+  for(int i= 0;i<numIterations;++i) {
+	auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan(dataDir, fileType,
+																				   numConcurrentUnits, n));
+	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+	actuals.emplace_back(actual);
+  }
+
+  std::shared_ptr<TupleSet2> lastActual;
+  for(const auto &actual: actuals){
+	if(!lastActual) {
+	  lastActual = actual;
+	}
+	else {
+		  CHECK_EQ(actual->numRows(), lastActual->numRows());
+	}
+  }
+
+  if (check) {
+	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
+											{std::filesystem::absolute(dataDir + "/date.tbl")});
+	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
+		CHECK_EQ(expected->size(), lastActual->numRows());
+  }
+}
+
+void LocalFileSystemTests::lineOrderScan(const std::string &dataDir, FileType fileType, int numConcurrentUnits, int numIterations, bool check, const std::shared_ptr<Normal>& n) {
+
+
+  SPDLOG_INFO("Arguments  |  dataDir: '{}', numConcurrentUnits: {}, numIterations: {}",
+			  dataDir, numConcurrentUnits, numIterations);
+
+  std::vector<std::shared_ptr<TupleSet2>> actuals;
+  for(int i= 0;i<numIterations;++i) {
+	auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::lineOrderScan(dataDir, fileType,
+																				   numConcurrentUnits, n));
+	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+	actuals.emplace_back(actual);
+  }
+
+  std::shared_ptr<TupleSet2> lastActual;
+  for(const auto &actual: actuals){
+	if(!lastActual) {
+	  lastActual = actual;
+	}
+	else {
+		  CHECK_EQ(actual->numRows(), lastActual->numRows());
+	}
+  }
+
+  if (check) {
+	auto expected = TestUtil::executeSQLite(SQL::lineOrderScan("temp"),
+											{std::filesystem::absolute(dataDir + "/lineorder.tbl")});
+	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
+		CHECK_EQ(expected->size(), lastActual->numRows());
+  }
+}
+
 /**
  * LocalFileSystemTests that SQLLite and Normal produce the same output for date scan and filter component of query 1.1
  *
@@ -183,7 +247,7 @@ void LocalFileSystemTests::full(short year, short discount, short quantity,
   mgr->boot();
   mgr->start();
 
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::full(dataDir,
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::full(dataDir, FileType::CSV,
 																			year, discount, quantity,
 																			numConcurrentUnits, mgr));
 
@@ -208,6 +272,7 @@ void LocalFileSystemTests::full(short year, short discount, short quantity,
 
 void LocalFileSystemTests::full2(short year, short discount, short quantity,
 								const std::string &dataDir,
+								 FileType fileType,
 								int numConcurrentUnits,
 								bool check,
 								 const std::shared_ptr<Normal>& n) {
@@ -215,7 +280,7 @@ void LocalFileSystemTests::full2(short year, short discount, short quantity,
   SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, year, discount, quantity, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::full(dataDir,
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::full(dataDir, fileType,
 																			 year, discount, quantity,
 																			 numConcurrentUnits, n->getOperatorManager()));
 
