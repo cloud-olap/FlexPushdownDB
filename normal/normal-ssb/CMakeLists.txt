@@ -104,11 +104,11 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/lineorder.tbl ${CMAKE_C
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/part.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/supplier.tbl COPYONLY)
 
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/customer.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/customer.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/date.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/date.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/lineorder.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/customer.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/customer.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/date.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/date.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/lineorder.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Query generator

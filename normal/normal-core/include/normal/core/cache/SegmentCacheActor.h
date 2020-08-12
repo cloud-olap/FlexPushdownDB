@@ -37,6 +37,8 @@ public:
   void store(const StoreRequestMessage &msg);
   void evict(const EvictRequestMessage &msg);
 
+  const std::shared_ptr<SegmentCacheActorState> &getState() const;
+
 private:
   std::shared_ptr<SegmentCacheActorState> state_;
 

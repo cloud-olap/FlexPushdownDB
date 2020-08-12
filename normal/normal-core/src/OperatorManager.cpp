@@ -376,6 +376,30 @@ std::string OperatorManager::showMetrics() {
   return ss.str();
 }
 
+std::string OperatorManager::showCacheMetrics() {
+  int hitNum = segmentCacheActor_->getState()->cache->hitNum();
+  int missNum = segmentCacheActor_->getState()->cache->missNum();
+  double hitRate = (hitNum + missNum == 0) ? 0.0 : (double) hitNum / (double) (hitNum + missNum);
+
+  std::stringstream ss;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Hit num:";
+  ss << std::left << std::setw(40) << hitNum;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Miss num:";
+  ss << std::left << std::setw(40) << missNum;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Hit rate:";
+  ss << std::left << std::setw(40) << hitRate;
+  ss << std::endl;
+  ss << std::endl;
+
+  return ss.str();
+}
+
 const std::shared_ptr<caf::actor_system> &OperatorManager::getActorSystem() const {
   return actorSystem;
 }
