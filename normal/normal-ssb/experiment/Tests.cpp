@@ -149,34 +149,41 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
           "query4.1.sql", "query4.2.sql", "query4.3.sql"
 //          "query1.1.1.sql"
   };
+  std::vector<int> order1 = {
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+  };
+  std::vector<int> order2 = {
+          0, 7, 12, 4, 11, 1, 3, 10, 8, 2, 9, 5, 6
+  };
 //  sql_file_names.insert(sql_file_names.end(), sql_file_names.begin(), sql_file_names.end());
 //  sql_file_names.insert(sql_file_names.end(), sql_file_names.begin(), sql_file_names.end());
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql");
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf1/";
+  std::string dir_prefix = "ssb-sf0.01/";
 
   // choose caching policy
   auto lru = LRUCachingPolicy::make(1024*1024*300);
   auto fbr = FBRCachingPolicy::make(1024*1024*300);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode2, lru);
+  normal::sql::Interpreter i(mode3, fbr);
   if (partitioned) {
-    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 32);
+    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 10);
   } else {
     configureS3ConnectorSinglePartition(i, bucket_name, dir_prefix);
   }
 
   // execute
   i.boot();
-  int index = 1;
-  for (const auto &sql_file_name: sql_file_names) {
+  int cnt = 1;
+  for (const auto index: order1) {
     // read sql file
+    auto sql_file_name = sql_file_names[index];
     auto sql_file_path = sql_file_dir_path.append(sql_file_name);
     SPDLOG_DEBUG(sql_file_dir_path.string());
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
-    SPDLOG_INFO("{}-{}: \n{}", index++, sql_file_name, sql);
+    SPDLOG_INFO("{}-{}: \n{}", cnt++, sql_file_name, sql);
 
     // execute sql
     executeSql(i, sql, true);
