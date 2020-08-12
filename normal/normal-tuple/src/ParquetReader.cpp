@@ -4,6 +4,8 @@
 
 #include "normal/tuple/ParquetReader.h"
 
+#include <filesystem>
+
 using namespace normal::tuple;
 
 ParquetReader::ParquetReader(std::string Path) : path_(std::move(Path)) {}
@@ -30,7 +32,8 @@ tl::expected<void, std::string> ParquetReader::close() {
   return {};
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string> ParquetReader::readRange(int startPos, int finishPos) {
+tl::expected<std::shared_ptr<TupleSet2>, std::string>
+ParquetReader::read(const std::vector<std::string>& columnNames, unsigned long startPos, unsigned long finishPos) {
 
   ::arrow::Status status;
 
@@ -45,8 +48,21 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> ParquetReader::readRange(i
 	}
   }
 
+  std::unordered_map<std::string, bool> columnIndexMap;
+  for(const auto &columnName: columnNames) {
+	columnIndexMap.emplace(ColumnName::canonicalize(columnName), true);
+  }
+
+  std::vector<int> columnIndexes;
+  for (int columnIndex = 0; columnIndex < metadata_->schema()->num_columns(); ++columnIndex) {
+	auto columnMetaData = metadata_->schema()->Column(columnIndex);
+	if(columnIndexMap.find(ColumnName::canonicalize(columnMetaData->name())) != columnIndexMap.end()){
+	  columnIndexes.emplace_back(columnIndex);
+	}
+  }
+
   std::unique_ptr<::arrow::RecordBatchReader> recordBatchReader;
-  status = arrowReader_->GetRecordBatchReader(rowGroupIndexes, &recordBatchReader);
+  status = arrowReader_->GetRecordBatchReader(rowGroupIndexes, columnIndexes, &recordBatchReader);
   if (!status.ok()) {
 	close();
 	return tl::make_unexpected(status.message());

@@ -5,6 +5,10 @@
 #ifndef NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_STRINGARRAYAPPENDER_H
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_STRINGARRAYAPPENDER_H
 
+#include <cstdint>
+#include <memory>
+#include <vector>
+
 #include "ArrayAppender.h"
 
 namespace normal::tuple {

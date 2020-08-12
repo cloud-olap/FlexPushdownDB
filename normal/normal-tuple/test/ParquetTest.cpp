@@ -63,7 +63,7 @@ TEST_CASE ("parquet-read-byte-range" * doctest::skip(false || SKIP_SUITE)) {
   auto reader = expectedReader.value();
 
   for (const auto &scanRange: scanRanges) {
-	auto expectedTupleSet = reader->readRange(scanRange.first, scanRange.second);
+	auto expectedTupleSet = reader->read({"A","B","C"}, scanRange.first, scanRange.second);
 	if (!expectedTupleSet)
 		  FAIL (expectedTupleSet.error());
 	auto tupleSet = expectedTupleSet.value();

@@ -6,25 +6,28 @@
 #define NORMAL_NORMAL_TUPLE_INCLUDE_NORMAL_TUPLE_PARQUETREADER_H
 
 #include <string>
-#include <utility>
 #include <memory>
-#include <arrow/io/api.h>
 
-#include <normal/tuple/TupleSet2.h>
+#include <tl/expected.hpp>
+#include <arrow/io/api.h>
 #include <parquet/arrow/reader.h>
-#include <filesystem>
+
+#include <normal/tuple/FileReader.h>
+#include <normal/tuple/TupleSet2.h>
 
 namespace normal::tuple {
 
-class ParquetReader {
+class ParquetReader : public FileReader {
 
 public:
   explicit ParquetReader(std::string Path);
-  virtual ~ParquetReader();
+  ~ParquetReader() override;
+
   static tl::expected<std::shared_ptr<ParquetReader>, std::string> make(const std::string &Path);
 
   tl::expected<void, std::string> close();
-  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet2>, std::string> readRange(int startPos, int finishPos);
+  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet2>, std::string>
+  read(const std::vector<std::string> &columnNames, unsigned long startPos, unsigned long finishPos) override;
 
 private:
   std::string path_;
