@@ -5,6 +5,7 @@
 #include "normal/ssb/query1_1/S3SelectQueries.h"
 
 #include <normal/ssb/Globals.h>
+#include <normal/ssb/common/Operators.h>
 #include <normal/ssb/query1_1/Operators.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
@@ -20,7 +21,7 @@ S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
 								const std::string &s3ObjectDir,
 								int numConcurrentUnits,
 								AWSClient &client,
-								const std::shared_ptr<OperatorManager> &mgr) {
+								const std::shared_ptr<Normal>& n) {
 
   auto dateFile = s3ObjectDir + "/date.tbl";
   auto s3Objects = std::vector{dateFile};
@@ -32,21 +33,12 @@ S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
-  auto dateScans =
-	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto dateScans = Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(collate);
-	collate->consume(dateScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateScans[u]);
-  g->put(collate);
+  common::Operators::connectToOne(dateScans, collate);
 
   return g;
 }
@@ -56,7 +48,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::stri
 																   short year,
 																   int numConcurrentUnits,
 																   AWSClient &client,
-																   const std::shared_ptr<OperatorManager> &mgr) {
+																 const std::shared_ptr<Normal>& n) {
 
   auto dateFile = s3ObjectDir + "/date.tbl";
   auto s3Objects = std::vector{dateFile};
@@ -68,29 +60,15 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::stri
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto dateScans =
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(collate);
-	collate->consume(dateFilters[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateFilters[u]);
-  g->put(collate);
+  common::Operators::connectToEach(dateScans, dateFilters);
+  common::Operators::connectToOne(dateFilters, collate);
 
   return g;
 }
@@ -101,7 +79,7 @@ S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
 								  short year,
 								  int numConcurrentUnits,
 								  AWSClient &client,
-								  const std::shared_ptr<OperatorManager> &mgr) {
+								  const std::shared_ptr<Normal>& n) {
 
   auto dateFile = s3ObjectDir + "/date.tbl";
   auto s3Objects = std::vector{dateFile};
@@ -113,7 +91,7 @@ S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto cacheLoads =
 	  Operators::makeDateS3SelectCacheLoadOperators(s3ObjectDir, s3Bucket,
@@ -125,25 +103,17 @@ S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
 													   year,
 													   numConcurrentUnits, partitionMap,
 													   client, g);
+  auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
-  }
+  common::Operators::connectHitsToEach(cacheLoads, dateMerges);
+  common::Operators::connectMissesToEach(cacheLoads, dateScans);
+  common::Operators::connectToEach(dateScans, dateMerges);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(collate);
-	collate->consume(dateFilters[u]);
-  }
+  common::Operators::connectToEach(dateMerges, dateFilters);
 
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateFilters[u]);
-  g->put(collate);
+  common::Operators::connectToOne(dateFilters, collate);
 
   return g;
 }
@@ -153,7 +123,7 @@ S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 									 const std::string &s3ObjectDir,
 									 int numConcurrentUnits,
 									 AWSClient &client,
-									 const std::shared_ptr<OperatorManager> &mgr) {
+									 const std::shared_ptr<Normal>& n) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto s3Objects = std::vector{lineOrderFile};
@@ -165,21 +135,13 @@ S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto lineOrderScans =
 	  Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(collate);
-	collate->consume(lineOrderScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderScans[u]);
-  g->put(collate);
+  common::Operators::connectToOne(lineOrderScans, collate);
 
   return g;
 }
@@ -191,7 +153,7 @@ S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
 									   short quantity,
 									   int numConcurrentUnits,
 									   AWSClient &client,
-									   const std::shared_ptr<OperatorManager> &mgr) {
+									   const std::shared_ptr<Normal>& n) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto s3Objects = std::vector{lineOrderFile};
@@ -203,29 +165,15 @@ S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto lineOrderScans =
 	  Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderFilters[u]);
-	lineOrderFilters[u]->consume(lineOrderScans[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(collate);
-	collate->consume(lineOrderFilters[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderFilters[u]);
-  g->put(collate);
+  common::Operators::connectToEach(lineOrderScans, lineOrderFilters);
+  common::Operators::connectToOne(lineOrderFilters, collate);
 
   return g;
 }
@@ -237,7 +185,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 															 short quantity,
 															 int numConcurrentUnits,
 															 AWSClient &client,
-															 const std::shared_ptr<OperatorManager> &mgr) {
+														   const std::shared_ptr<Normal>& n) {
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto dateFile = s3ObjectDir + "/date.tbl";
   auto s3Objects = std::vector{lineOrderFile, dateFile};
@@ -249,7 +197,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto dateScans =
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
@@ -257,74 +205,23 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 																	  numConcurrentUnits, partitionMap, client, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
-  auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
-  auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
-  auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);
-  auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits, g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
+  auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
+  auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
+  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
-  }
+  common::Operators::connectToEach(dateScans, dateFilters);
+  common::Operators::connectToEach(lineOrderScans, lineOrderFilters);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderFilters[u]);
-	lineOrderFilters[u]->consume(lineOrderScans[u]);
-  }
+  common::Operators::connectToEach(dateFilters, dateShuffles);
+  common::Operators::connectToEach(lineOrderFilters, lineOrderShuffles);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(dateShuffles[u]);
-	dateShuffles[u]->consume(dateFilters[u]);
-  }
+  common::Operators::connectToAll(dateShuffles, joinBuild);
+  common::Operators::connectToAll(lineOrderShuffles, joinProbe);
+  common::Operators::connectToEach(joinBuild, joinProbe);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(lineOrderShuffles[u]);
-	lineOrderShuffles[u]->consume(lineOrderFilters[u]);
-  }
-
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  dateShuffles[u1]->produce(joinBuild[u2]);
-	  joinBuild[u2]->consume(dateShuffles[u1]);
-	}
-  }
-
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  lineOrderShuffles[u1]->produce(joinProbe[u2]);
-	  joinProbe[u2]->consume(lineOrderShuffles[u1]);
-	}
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinBuild[u]->produce(joinProbe[u]);
-	joinProbe[u]->consume(joinBuild[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinProbe[u]->produce(collate);
-	collate->consume(joinProbe[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateFilters[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderFilters[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinBuild[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinProbe[u]);
-  g->put(collate);
+  common::Operators::connectToOne(joinProbe, collate);
 
   return g;
 }
@@ -336,7 +233,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 															 short quantity,
 															 int numConcurrentUnits,
 															 AWSClient &client,
-															 const std::shared_ptr<OperatorManager> &mgr) {
+														   const std::shared_ptr<Normal>& n) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto dateFile = s3ObjectDir + "/date.tbl";
@@ -349,7 +246,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto dateScans =
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
@@ -357,87 +254,28 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 																	  numConcurrentUnits, partitionMap, client, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
-  auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
-  auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
-  auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);
-  auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits, g);
+  auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
+  auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
+  auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
+  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits, g);
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateFilters[u]);
-	dateFilters[u]->consume(dateScans[u]);
-  }
+  common::Operators::connectToEach(dateScans, dateFilters);
+  common::Operators::connectToEach(lineOrderScans, lineOrderFilters);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderFilters[u]);
-	lineOrderFilters[u]->consume(lineOrderScans[u]);
-  }
+  common::Operators::connectToEach(dateFilters, dateShuffles);
+  common::Operators::connectToEach(lineOrderFilters, lineOrderShuffles);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateFilters[u]->produce(dateShuffles[u]);
-	dateShuffles[u]->consume(dateFilters[u]);
-  }
+  common::Operators::connectToAll(dateShuffles, joinBuild);
+  common::Operators::connectToAll(lineOrderShuffles, joinProbe);
+  common::Operators::connectToEach(joinBuild, joinProbe);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderFilters[u]->produce(lineOrderShuffles[u]);
-	lineOrderShuffles[u]->consume(lineOrderFilters[u]);
-  }
+  common::Operators::connectToEach(joinProbe, aggregates);
+  common::Operators::connectToOne(aggregates, aggregateReduce);
 
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  dateShuffles[u1]->produce(joinBuild[u2]);
-	  joinBuild[u2]->consume(dateShuffles[u1]);
-	}
-  }
-
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  lineOrderShuffles[u1]->produce(joinProbe[u2]);
-	  joinProbe[u2]->consume(lineOrderShuffles[u1]);
-	}
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinBuild[u]->produce(joinProbe[u]);
-	joinProbe[u]->consume(joinBuild[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinProbe[u]->produce(aggregates[u]);
-	aggregates[u]->consume(joinProbe[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	aggregates[u]->produce(aggregateReduce);
-	aggregateReduce->consume(aggregates[u]);
-  }
-
-  aggregateReduce->produce(collate);
-  collate->consume(aggregateReduce);
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateFilters[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderFilters[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinBuild[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinProbe[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(aggregates[u]);
-  g->put(aggregateReduce);
-  g->put(collate);
+  common::Operators::connectToOne(aggregateReduce, collate);
 
   return g;
 }
@@ -449,7 +287,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPushDown(const std::string &
 															   short quantity,
 															   int numConcurrentUnits,
 															   AWSClient &client,
-															   const std::shared_ptr<OperatorManager> &mgr) {
+															 const std::shared_ptr<Normal>& n) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto dateFile = s3ObjectDir + "/date.tbl";
@@ -462,7 +300,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPushDown(const std::string &
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto dateScans =
 	  Operators::makeDateS3SelectScanPushDownOperators(s3ObjectDir, s3Bucket,
@@ -473,73 +311,25 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPushDown(const std::string &
 																			  discount, quantity,
 																			  numConcurrentUnits, partitionMap,
 																			  client, g);
-  auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
-  auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
-  auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);
-  auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits, g);
+  auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
+  auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
+  auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
+  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits, g);
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateShuffles[u]);
-	dateShuffles[u]->consume(dateScans[u]);
-  }
+  common::Operators::connectToEach(dateScans, dateShuffles);
+  common::Operators::connectToEach(lineOrderScans, lineOrderShuffles);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderShuffles[u]);
-	lineOrderShuffles[u]->consume(lineOrderScans[u]);
-  }
+  common::Operators::connectToAll(dateShuffles, joinBuild);
+  common::Operators::connectToAll(lineOrderShuffles, joinProbe);
+  common::Operators::connectToEach(joinBuild, joinProbe);
 
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  dateShuffles[u1]->produce(joinBuild[u2]);
-	  joinBuild[u2]->consume(dateShuffles[u1]);
-	}
-  }
+  common::Operators::connectToEach(joinProbe, aggregates);
+  common::Operators::connectToOne(aggregates, aggregateReduce);
 
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  lineOrderShuffles[u1]->produce(joinProbe[u2]);
-	  joinProbe[u2]->consume(lineOrderShuffles[u1]);
-	}
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinBuild[u]->produce(joinProbe[u]);
-	joinProbe[u]->consume(joinBuild[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinProbe[u]->produce(aggregates[u]);
-	aggregates[u]->consume(joinProbe[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	aggregates[u]->produce(aggregateReduce);
-	aggregateReduce->consume(aggregates[u]);
-  }
-
-  aggregateReduce->produce(collate);
-  collate->consume(aggregateReduce);
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinBuild[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinProbe[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(aggregates[u]);
-  g->put(aggregateReduce);
-  g->put(collate);
+  common::Operators::connectToOne(aggregateReduce, collate);
 
   return g;
 }
@@ -551,7 +341,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3
 															 short quantity,
 															 int numConcurrentUnits,
 															 AWSClient &client,
-															 const std::shared_ptr<OperatorManager> &mgr) {
+														   const std::shared_ptr<Normal>& n) {
 
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto dateFile = s3ObjectDir + "/date.tbl";
@@ -564,7 +354,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
   }
 
-  auto g = OperatorGraph::make(mgr);
+  auto g = n->createQuery();
 
   auto dateScans =
 	  Operators::makeDateS3SelectScanPushDownOperators(s3ObjectDir, s3Bucket,
@@ -575,73 +365,25 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3
 																			  discount, quantity,
 																			  numConcurrentUnits, partitionMap,
 																			  client, g);
-  auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
-  auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
-  auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);
-  auto joinProbe = Operators::makeHashJoinProbeOperators(numConcurrentUnits, g);
+  auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
+  auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
+  auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
+  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits, g);
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
-  auto collate = Operators::makeCollateOperator(g);
+  auto collate = common::Operators::makeCollateOperator(g);
 
-  // Wire up
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	dateScans[u]->produce(dateShuffles[u]);
-	dateShuffles[u]->consume(dateScans[u]);
-  }
+  common::Operators::connectToEach(dateScans, dateShuffles);
+  common::Operators::connectToEach(lineOrderScans, lineOrderShuffles);
 
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	lineOrderScans[u]->produce(lineOrderShuffles[u]);
-	lineOrderShuffles[u]->consume(lineOrderScans[u]);
-  }
+  common::Operators::connectToAll(dateShuffles, joinBuild);
+  common::Operators::connectToAll(lineOrderShuffles, joinProbe);
+  common::Operators::connectToEach(joinBuild, joinProbe);
 
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  dateShuffles[u1]->produce(joinBuild[u2]);
-	  joinBuild[u2]->consume(dateShuffles[u1]);
-	}
-  }
+  common::Operators::connectToEach(joinProbe, aggregates);
+  common::Operators::connectToOne(aggregates, aggregateReduce);
 
-  for (int u1 = 0; u1 < numConcurrentUnits; ++u1) {
-	for (int u2 = 0; u2 < numConcurrentUnits; ++u2) {
-	  lineOrderShuffles[u1]->produce(joinProbe[u2]);
-	  joinProbe[u2]->consume(lineOrderShuffles[u1]);
-	}
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinBuild[u]->produce(joinProbe[u]);
-	joinProbe[u]->consume(joinBuild[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	joinProbe[u]->produce(aggregates[u]);
-	aggregates[u]->consume(joinProbe[u]);
-  }
-
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	aggregates[u]->produce(aggregateReduce);
-	aggregateReduce->consume(aggregates[u]);
-  }
-
-  aggregateReduce->produce(collate);
-  collate->consume(aggregateReduce);
-
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderScans[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(dateShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(lineOrderShuffles[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinBuild[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(joinProbe[u]);
-  for (int u = 0; u < numConcurrentUnits; ++u)
-	g->put(aggregates[u]);
-  g->put(aggregateReduce);
-  g->put(collate);
+  common::Operators::connectToOne(aggregateReduce, collate);
 
   return g;
 }

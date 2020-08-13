@@ -69,6 +69,21 @@ public:
 					 int numConcurrentUnits,
 					 const std::shared_ptr<OperatorGraph> &g);
 
+  static std::shared_ptr<BloomCreateOperator>
+  makeBloomCreateOperator(const std::string &namePrefix,
+							   const std::string& columnName,
+							   double desiredFalsePositiveRate,
+							   const std::shared_ptr<OperatorGraph>& g);
+
+  static std::vector<std::shared_ptr<FileScanBloomUseOperator>>
+  makeFileScanBloomUseOperators(const std::string &namePrefix,
+								const std::string &filename,
+								const std::vector<std::string> &columns,
+								const std::string& columnName,
+								const std::string &dataDir,
+								int numConcurrentUnits,
+								const std::shared_ptr<OperatorGraph> &g);
+
   static std::vector<std::shared_ptr<Shuffle>>
   makeShuffleOperators(const std::string &namePrefix,
 					   const std::string &columnName,
@@ -110,6 +125,16 @@ public:
 		producers[u1]->produce(consumers[u2]);
 		consumers[u2]->consume(producers[u1]);
 	  }
+	}
+  }
+
+  template <typename A, typename B>
+  static void connectToAll(std::shared_ptr<A> producer,
+						   std::vector<std::shared_ptr<B>> consumers){
+
+	for (size_t u2 = 0; u2 < consumers.size(); ++u2) {
+	  producer->produce(consumers[u2]);
+	  consumers[u2]->consume(producer);
 	}
   }
 
