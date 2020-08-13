@@ -29,6 +29,7 @@ public:
   bool allComplete();
   std::string showString() const;
   void setIncomplete();
+  void clear();
 
 };
 

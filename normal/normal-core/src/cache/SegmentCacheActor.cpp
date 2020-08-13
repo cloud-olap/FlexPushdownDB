@@ -40,11 +40,11 @@ void SegmentCacheActor::load(const LoadRequestMessage &msg) {
 	auto cacheData = state_->cache->load(segmentKey);
 
 	if (cacheData.has_value()) {
-	  SPDLOG_DEBUG("Cache hit  |  segmentKey: {}", segmentKey->toString());
+//	  SPDLOG_DEBUG("Cache hit  |  segmentKey: {}", segmentKey->toString());
 	  segments.insert(std::pair(segmentKey, cacheData.value()));
 
 	} else {
-	  SPDLOG_DEBUG("Cache miss  |  segmentKey: {}", segmentKey->toString());
+//	  SPDLOG_DEBUG("Cache miss  |  segmentKey: {}", segmentKey->toString());
 	}
   }
 

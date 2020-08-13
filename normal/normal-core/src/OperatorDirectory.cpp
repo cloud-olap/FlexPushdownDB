@@ -57,4 +57,8 @@ tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(std::st
   }
 }
 
+void OperatorDirectory::clear() {
+  entries_.clear();
+}
+
 }
