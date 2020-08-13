@@ -55,7 +55,6 @@ std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest2(const std::shared
 
   auto tuples = std::static_pointer_cast<Collate>(g->getOperator(fmt::format("/query-{}/collate", g->getId())))->tuples();
 
-//  g->stop();
   SPDLOG_INFO("Metrics:\n{}", g->showMetrics());
 
   auto tupleSet = TupleSet2::create(tuples);

@@ -10,6 +10,7 @@
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/AWSClient.h>
+#include <normal/core/Normal.h>
 
 using namespace normal::core;
 using namespace normal::core::graph;
@@ -28,20 +29,20 @@ public:
 														 const std::string &s3ObjectDir,
 														 int numConcurrentUnits,
 														 AWSClient &client,
-														 const std::shared_ptr<OperatorManager> &mgr);
+													   const std::shared_ptr<Normal>& n);
 
   static std::shared_ptr<OperatorGraph> lineOrderScanPullUp(const std::string &s3Bucket,
 															  const std::string &s3ObjectDir,
 															  int numConcurrentUnits,
 															  AWSClient &client,
-															  const std::shared_ptr<OperatorManager> &mgr);
+															const std::shared_ptr<Normal>& n);
 
   static std::shared_ptr<OperatorGraph> dateFilterPullUp(const std::string &s3Bucket,
 														   const std::string &s3ObjectDir,
 														   short year,
 														   int numConcurrentUnits,
 														   AWSClient &client,
-														   const std::shared_ptr<OperatorManager> &mgr);
+														 const std::shared_ptr<Normal>& n);
 
   /**
    * A query plan where records present in the cache are passed to the date filter operator and those not in the cache
@@ -52,7 +53,7 @@ public:
 														 short year,
 														 int numConcurrentUnits,
 														 AWSClient &client,
-														 const std::shared_ptr<OperatorManager> &mgr);
+														 const std::shared_ptr<Normal>& n);
 
   static std::shared_ptr<OperatorGraph> lineOrderFilterPullUp(const std::string &s3Bucket,
 																const std::string &s3ObjectDir,
@@ -60,7 +61,7 @@ public:
 																short quantity,
 																int numConcurrentUnits,
 																AWSClient &client,
-																const std::shared_ptr<OperatorManager> &mgr);
+															  const std::shared_ptr<Normal>& n);
 
   static std::shared_ptr<OperatorGraph> joinPullUp(const std::string &s3Bucket,
 													 const std::string &s3ObjectDir,
@@ -69,7 +70,7 @@ public:
 													 short quantity,
 													 int numConcurrentUnits,
 													 AWSClient &client,
-													 const std::shared_ptr<OperatorManager> &mgr);
+												   const std::shared_ptr<Normal>& n);
 
   static std::shared_ptr<OperatorGraph> fullPullUp(const std::string &s3Bucket,
 													 const std::string &s3ObjectDir,
@@ -78,7 +79,7 @@ public:
 													 short quantity,
 													 int numConcurrentUnits,
 													 AWSClient &client,
-													 const std::shared_ptr<OperatorManager> &mgr);
+												   const std::shared_ptr<Normal>& n);
 
   static std::shared_ptr<OperatorGraph> fullPushDown(const std::string &s3Bucket,
 													   const std::string &s3ObjectDir,
@@ -87,7 +88,7 @@ public:
 													   short quantity,
 													   int numPartitions,
 													   AWSClient &client,
-													   const std::shared_ptr<OperatorManager> &mgr);
+													 const std::shared_ptr<Normal>& n);
 
   static std::shared_ptr<OperatorGraph> fullHybrid(const std::string &s3Bucket,
 													 const std::string &s3ObjectDir,
@@ -96,7 +97,7 @@ public:
 													 short quantity,
 													 int numPartitions,
 													 AWSClient &client,
-													 const std::shared_ptr<OperatorManager> &mgr);
+													 const std::shared_ptr<Normal>& n);
 };
 
 }

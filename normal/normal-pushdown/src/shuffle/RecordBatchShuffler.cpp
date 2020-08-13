@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include <utility>
+#include <normal/tuple/ArrayAppenderWrapper.h>
 
 using namespace normal::pushdown::shuffle;
 using namespace normal::tuple;
@@ -145,20 +146,6 @@ tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> RecordBatchSh
       shuffledTupleSetVector[s] = TupleSet2::make(shuffledTable);
     }
   }
-
-//  // Create TupleSets from arrayAppenders
-//  std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSetVector{numSlots_};
-//  for (size_t s = 0; s < shuffledAppendersVector_.size(); ++s) {
-//    auto arrays = std::vector<std::shared_ptr<arrow::Array>>();
-//    for (auto const &arrayAppender: shuffledAppendersVector_[s]) {
-//      auto expectedArray = arrayAppender->finalize();
-//      if (!expectedArray.has_value()) {
-//        throw std::runtime_error(expectedArray.error());
-//      }
-//      arrays.emplace_back(expectedArray.value());
-//    }
-//    shuffledTupleSetVector[s] = TupleSet2::make(schema_, arrays);
-//  }
 
   return shuffledTupleSetVector;
 }

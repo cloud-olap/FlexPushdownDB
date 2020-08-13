@@ -11,6 +11,7 @@
 #include <normal/tuple/ArrayAppender.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/pushdown/bloomjoin/SlicedBloomFilter.h>
+#include <normal/tuple/ArrayAppenderWrapper.h>
 
 using namespace normal::tuple;
 using namespace normal::tuple::csv;
@@ -140,26 +141,42 @@ public:
 
   [[nodiscard]] tl::expected<void, std::string> filter() {
 
+	::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
+	::arrow::Status status;
+
 	auto table = tupleSet_.value()->getArrowTable().value();
 	auto filterColumnIndex = table->schema()->GetFieldIndex(bloomFilterColumnName_);
 
 	std::vector<std::shared_ptr<ArrayAppender>> appenders(table->num_columns());
 	for (int c = 0; c < table->num_columns(); ++c) {
-	  auto expectedAppender = ArrayAppender::make(table->column(c)->type(), 0);
+	  auto expectedAppender = ArrayAppenderBuilder::make(table->column(c)->type(), 0);
 	  if (!expectedAppender.has_value())
 		return tl::make_unexpected(expectedAppender.error());
 	  appenders[c] = expectedAppender.value();
 	}
 
 	::arrow::TableBatchReader reader(*table);
-	auto result = reader.Next();
+	reader.set_chunksize(DefaultChunkSize);
 
-	while (*result) {
-	  auto recordBatch = *result;
+	// Read a batch
+	recordBatchResult = reader.Next();
+	if (!recordBatchResult.ok()) {
+	  return tl::make_unexpected(recordBatchResult.status().message());
+	}
+	auto recordBatch = *recordBatchResult;
+
+	while (recordBatch) {
+
 	  auto filterResult = filterRecordBatch(*recordBatch, filterColumnIndex, appenders);
 	  if (!filterResult)
 		return tl::make_unexpected(filterResult.error());
-	  result = reader.Next();
+
+	  // Read a batch
+	  recordBatchResult = reader.Next();
+	  if (!recordBatchResult.ok()) {
+		return tl::make_unexpected(recordBatchResult.status().message());
+	  }
+	  recordBatch = *recordBatchResult;
 	}
 
 	::arrow::ArrayVector filteredArrayVector_(table->schema()->num_fields());

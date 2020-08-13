@@ -56,7 +56,7 @@ void OperatorManager::start() {
     for (const auto &consumer: op->consumers())
       actorHandles.emplace_back(consumer.second->actorHandle());
 
-    auto sm = std::make_shared<message::StartMessage>(actorHandles, "root");
+    auto sm = std::make_shared<message::StartMessage>(actorHandles, "/root");
 
     (*rootActor_)->send(op->actorHandle(), normal::core::message::Envelope(sm));
   }
