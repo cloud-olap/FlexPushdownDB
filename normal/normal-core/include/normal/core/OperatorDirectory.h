@@ -24,7 +24,7 @@ private:
 
 public:
   void insert(const OperatorDirectoryEntry& entry);
-  tl::expected<OperatorDirectoryEntry, std::string> get(std::string operatorId);
+  tl::expected<OperatorDirectoryEntry, std::string> get(const std::string& operatorId);
   void setComplete(const std::string& name);
   bool allComplete();
   std::string showString() const;

@@ -24,6 +24,7 @@ void OperatorDirectory::setComplete(const std::string& name) {
 }
 
 bool OperatorDirectory::allComplete() {
+
   for(const auto& entry : entries_){
 
     // FIXME: Hack to skip actors that aren't operators (i.e. SegmentCache)
@@ -47,7 +48,7 @@ void OperatorDirectory::setIncomplete() {
   }
 }
 
-tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(std::string operatorId) {
+tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(const std::string& operatorId) {
   auto entryIt = entries_.find(operatorId);
   if(entryIt == entries_.end()){
 	return tl::unexpected(fmt::format("Operator with id '{}' not found", operatorId));

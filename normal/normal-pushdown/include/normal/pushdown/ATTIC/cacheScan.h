@@ -8,7 +8,7 @@
 #include <string>
 
 #include <normal/core/Operator.h>
-#include <normal/core/Cache.h>
+#include <normal/core/ATTIC/Cache.h>
 namespace normal::pushdown {
 
     class cacheScan : public normal::core::Operator {

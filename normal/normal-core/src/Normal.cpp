@@ -4,9 +4,6 @@
 
 #include "normal/core/Normal.h"
 
-#include "caf/all.hpp"
-#include "caf/io/all.hpp"
-
 #include "normal/core/Globals.h"
 
 namespace normal::core {

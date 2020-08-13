@@ -19,8 +19,8 @@ StoreRequestMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>, std::s
 }
 
 std::shared_ptr<StoreRequestMessage>
-StoreRequestMessage::make(std::shared_ptr<SegmentKey> segmentKey,
-						  std::shared_ptr<SegmentData> segmentData,
+StoreRequestMessage::make(const std::shared_ptr<SegmentKey>& segmentKey,
+						  const std::shared_ptr<SegmentData>& segmentData,
 						  const std::string &sender) {
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments;
   segments.emplace(segmentKey, segmentData);

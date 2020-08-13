@@ -26,7 +26,7 @@ add_library(normal-pushdown STATIC
         src/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
         src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
         src/Sort.cpp include/normal/pushdown/Sort.h
-        src/cacheScan.cpp include/normal/pushdown/cacheScan.h
+        src/ATTIC/cacheScan.cpp include/normal/pushdown/ATTIC/cacheScan.h
         src/group/Group.cpp include/normal/pushdown/group/Group.h
         src/group/GroupKey.cpp include/normal/pushdown/group/GroupKey.h
         src/TupleMessage.cpp include/normal/pushdown/TupleMessage.h

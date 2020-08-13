@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map> 
 
-#include "normal/core/Operator.h"
+#include "../Operator.h"
 #include "normal/tuple/TupleSet.h"
 
 using namespace normal::tuple;
