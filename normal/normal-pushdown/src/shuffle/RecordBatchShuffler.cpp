@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include <utility>
+#include <normal/tuple/ArrayAppenderWrapper.h>
 
 using namespace normal::pushdown::shuffle;
 using namespace normal::tuple;
@@ -69,7 +70,7 @@ tl::expected<void, std::string> RecordBatchShuffler::shuffle(const std::shared_p
 	appenders[s] = std::vector<std::shared_ptr<ArrayAppender>>{static_cast<size_t>(recordBatch->num_columns())};
 	for (int c = 0; c < recordBatch->num_columns(); ++c) {
 	  int64_t expectedSize = std::ceil(((double)recordBatch->num_rows() / (double)numSlots_) * 1.25);
-	  auto expectedAppender = ArrayAppender::make(recordBatch->schema()->field(c)->type(), expectedSize);
+	  auto expectedAppender = ArrayAppenderBuilder::make(recordBatch->schema()->field(c)->type(), expectedSize);
 	  if (!expectedAppender.has_value())
 		return tl::make_unexpected(expectedAppender.error());
 	  else

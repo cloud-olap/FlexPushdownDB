@@ -42,31 +42,29 @@ namespace arrow { class MemoryPool; }
 
 namespace normal::pushdown {
 
-FileScan::FileScan(std::string name, std::string filePath, long queryId) :
+FileScan::FileScan(std::string name, const std::string& filePath, long queryId) :
 	Operator(std::move(name), "FileScan"),
-	filePath_(std::move(filePath)),
-	startOffset_(0),
-	finishOffset_(ULONG_MAX),
-queryId_(queryId){}
+	queryId_(queryId),
+	scanOnStart_(true),
+	kernel_(FileScanKernel::make(filePath, FileType::CSV, 0, ULONG_MAX)){}
 
 FileScan::FileScan(std::string name,
-				   std::string filePath,
-				   std::vector<std::string> columnNames,
+				   const std::string& filePath,
+				   FileType fileType,
+				   std::vector<std::string>  columnNames,
 				   unsigned long startOffset,
 				   unsigned long finishOffset,
-long queryId,
+				   long queryId,
 				   bool scanOnStart) :
 	Operator(std::move(name), "FileScan"),
-	filePath_(std::move(filePath)),
-	columnNames_(std::move(columnNames)),
-	startOffset_(startOffset),
-	finishOffset_(finishOffset),
 	queryId_(queryId),
-	scanOnStart_(scanOnStart){}
+	scanOnStart_(scanOnStart),
+	columnNames_(std::move(columnNames)),
+	kernel_(FileScanKernel::make(filePath, fileType, startOffset, finishOffset)){}
 
-std::shared_ptr<FileScan> FileScan::make(std::string name,
-										 std::string filePath,
-										 std::vector<std::string> columnNames,
+std::shared_ptr<FileScan> FileScan::make(const std::string& name,
+										 const std::string& filePath,
+										 const std::vector<std::string>& columnNames,
 										 unsigned long startOffset,
 										 unsigned long finishOffset, long queryId,
 										 bool scanOnStart) {
@@ -75,6 +73,27 @@ std::shared_ptr<FileScan> FileScan::make(std::string name,
 
   return std::make_shared<FileScan>(name,
 									filePath,
+									FileType::CSV,
+									canonicalColumnNames,
+									startOffset,
+									finishOffset,
+									queryId,
+									scanOnStart);
+}
+
+std::shared_ptr<FileScan> FileScan::make(const std::string& name,
+										 const std::string& filePath,
+										 FileType fileType,
+										 const std::vector<std::string>& columnNames,
+										 unsigned long startOffset,
+										 unsigned long finishOffset, long queryId,
+										 bool scanOnStart) {
+
+  auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
+
+  return std::make_shared<FileScan>(name,
+									filePath,
+									fileType,
 									canonicalColumnNames,
 									startOffset,
 									finishOffset,
@@ -105,14 +124,6 @@ void FileScan::onComplete(const normal::core::message::CompleteMessage &) {
   }
 }
 
-tl::expected<std::shared_ptr<TupleSet2>, std::string> FileScan::readCSVFile(const std::vector<std::string>& columnNames) {
-
-  CSVParser parser(filePath_, columnNames, startOffset_, finishOffset_);
-  auto tupleSet = parser.parse();
-
-  return tupleSet;
-}
-
 void FileScan::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
   if(scanOnStart_){
@@ -126,7 +137,7 @@ void FileScan::readAndSendTuples(const std::vector<std::string> &columnNames){
   /*
    * FIXME: Should support reading the file in pieces
    */
-  auto expectedReadTupleSet = readCSVFile(columnNames);
+  auto expectedReadTupleSet = kernel_->scan(columnNames);
   auto readTupleSet = expectedReadTupleSet.value();
 
   // Store the read columns in the cache
@@ -141,8 +152,8 @@ void FileScan::onCacheLoadResponse(const ScanMessage &Message) {
 }
 
 void FileScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
-  auto partition = std::make_shared<LocalFilePartition>(filePath_);
-  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
+  auto partition = std::make_shared<LocalFilePartition>(kernel_->getPath());
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_->getStartPos(), kernel_->getFinishPos(), name(), ctx());
 }
 
 }

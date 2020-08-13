@@ -29,6 +29,7 @@ public:
   int64_t size();
   std::vector<std::shared_ptr<::arrow::ChunkedArray>> columns();
   [[nodiscard]] const std::shared_ptr<::arrow::Table> &getTable() const;
+  [[nodiscard]] tl::expected<void, std::string> combine();
 
   virtual tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) = 0;
   virtual tl::expected<void, std::string> merge(const std::shared_ptr<TupleSetIndex> &other) = 0;

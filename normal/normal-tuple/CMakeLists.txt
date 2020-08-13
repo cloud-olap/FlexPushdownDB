@@ -27,22 +27,30 @@ add_library(normal-tuple STATIC
         src/arrow/SchemaHelper.cpp include/normal/tuple/arrow/SchemaHelper.h
         src/csv/CSVParser.cpp include/normal/tuple/csv/CSVParser.h
         src/ArrayAppender.cpp include/normal/tuple/ArrayAppender.h
-        src/StringArrayAppender.cpp include/normal/tuple/StringArrayAppender.h
-        src/Int64ArrayAppender.cpp include/normal/tuple/Int64ArrayAppender.h
         src/ArrayHasher.cpp include/normal/tuple/ArrayHasher.h
         src/StringArrayHasher.cpp include/normal/tuple/StringArrayHasher.h
         src/Int64ArrayHasher.cpp include/normal/tuple/Int64ArrayHasher.h
         src/TupleSetIndex.cpp include/normal/tuple/TupleSetIndex.h
         src/TupleSetIndexWrapper.cpp include/normal/tuple/TupleSetIndexWrapper.h
         src/TupleSetIndexFinder.cpp include/normal/tuple/TupleSetIndexFinder.h
-        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h)
+        src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
+        src/Converter.cpp include/normal/tuple/Converter.h
+        src/ParquetReader.cpp include/normal/tuple/ParquetReader.h
+        src/Util.cpp include/normal/tuple/Util.h
+        src/FileReader.cpp include/normal/tuple/FileReader.h
+        src/FileType.cpp include/normal/tuple/FileType.h
+        src/FileReaderBuilder.cpp include/normal/tuple/FileReaderBuilder.h
+        src/CSVReader.cpp include/normal/tuple/CSVReader.h
+        src/ArrayAppenderWrapper.cpp include/normal/tuple/ArrayAppenderWrapper.h)
 
 target_include_directories(normal-tuple PUBLIC include)
 
 target_link_libraries(normal-tuple PRIVATE spdlog::spdlog)
 target_link_libraries(normal-tuple PRIVATE fmt::fmt)
+target_link_libraries(normal-tuple PRIVATE LLVM-filesystem)
 target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
+target_link_libraries(normal-tuple PUBLIC parquet_static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -52,13 +60,14 @@ target_link_libraries(normal-tuple PUBLIC arrow_static)
 add_executable(normal-tuple-test
         test/Globals.h
         test/MainTest.cpp
-        test/TupleTest.cpp test/CSVTest.cpp)
+        test/TupleTest.cpp test/CSVTest.cpp test/ParquetTest.cpp)
 
 
 target_include_directories(normal-tuple-test PRIVATE include)
 
 target_link_libraries(normal-tuple-test spdlog::spdlog)
 target_link_libraries(normal-tuple-test doctest::doctest)
+target_link_libraries(normal-tuple-test fmt::fmt)
 target_link_libraries(normal-tuple-test normal-tuple)
 
 
@@ -67,7 +76,7 @@ target_link_libraries(normal-tuple-test normal-tuple)
 #-----------------------------------------------------------------------------------------------------------------------
 
 configure_file(data/csv/test.csv ${CMAKE_CURRENT_BINARY_DIR}/data/csv/test.csv COPYONLY)
-
+configure_file(data/csv/test3x10000.csv ${CMAKE_CURRENT_BINARY_DIR}/data/csv/test3x10000.csv COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

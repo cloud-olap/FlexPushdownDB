@@ -16,30 +16,28 @@ namespace normal::core::type {
 
 class Types {
 public:
-  static std::unique_ptr<Type> fromArrowType(std::shared_ptr<arrow::DataType> arrowType) {
-    if (arrowType->id() == arrow::DecimalType::type_id) {
-      auto t = std::static_pointer_cast<arrow::DecimalType>(arrowType);
-      return decimalType(t->precision(), t->scale());
-    }
-    else{
-      throw std::runtime_error("Unrecognized type " + arrowType->ToString());
-    }
+  static std::unique_ptr<Type> fromArrowType(const std::shared_ptr<arrow::DataType> &arrowType) {
+	if (arrowType->id() == arrow::DecimalType::type_id) {
+	  auto t = std::static_pointer_cast<arrow::DecimalType>(arrowType);
+	  return decimalType(t->precision(), t->scale());
+	} else {
+	  throw std::runtime_error("Unrecognized type " + arrowType->ToString());
+	}
   }
 
   static std::shared_ptr<Type> fromStringType(std::string &&stringType) {
 
-    // Make sure its in lower case
+	// Make sure its in lower case
 	std::transform(stringType.begin(), stringType.end(), stringType.begin(), ::tolower);
 
-    if (stringType == "double" || stringType == "float64") {
-      return float64Type();
-    }
+	if (stringType == "double" || stringType == "float64") {
+	  return float64Type();
+	}
 	if (stringType == "int" || stringType == "integer" || stringType == "int32" || stringType == "integer32") {
 	  return integer32Type();
+	} else {
+	  throw std::runtime_error("Unrecognized type " + stringType);
 	}
-    else{
-      throw std::runtime_error("Unrecognized type " + stringType);
-    }
   }
 
 };

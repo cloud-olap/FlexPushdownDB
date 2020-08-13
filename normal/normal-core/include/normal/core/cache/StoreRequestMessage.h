@@ -32,8 +32,8 @@ public:
 	   const std::string &sender);
 
   static std::shared_ptr<StoreRequestMessage>
-  make(std::shared_ptr<SegmentKey>,
-	   std::shared_ptr<SegmentData> segment,
+  make(const std::shared_ptr<SegmentKey>&,
+	   const std::shared_ptr<SegmentData>& segment,
 	   const std::string &sender);
 
   [[nodiscard]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &

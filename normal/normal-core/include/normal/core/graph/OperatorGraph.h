@@ -20,7 +20,7 @@ using namespace normal::core::cache;
 namespace normal::core::graph {
 
 // TODO: This eventually should be a globally unique name
-inline constexpr const char *GraphRootActorName = "graph/root";
+inline constexpr const char *GraphRootActorName = "root";
 
 /**
  * Executable graph of operators
@@ -32,6 +32,7 @@ public:
   static std::shared_ptr<OperatorGraph> make(const std::shared_ptr<OperatorManager>& operatorManager);
   void put(const std::shared_ptr<Operator> &op);
   void start();
+  void startOperatorAndProducers(const std::shared_ptr<Operator>& op, std::unordered_map<std::string, bool> operatorStates);
   void join();
   void boot();
   void write_graph(const std::string &file);

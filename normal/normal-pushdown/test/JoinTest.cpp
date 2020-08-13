@@ -35,8 +35,8 @@ TEST_CASE ("filescan-join-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto g = OperatorGraph::make(mgr);
 
-  auto aScan = std::make_shared<FileScan>("fileScanA", "data/join/a.csv", std::vector<std::string>{"AA"}, 0, numBytesAFile, g->getId());
-  auto bScan = std::make_shared<FileScan>("fileScanB", "data/join/b.csv", std::vector<std::string>{"BA"}, 0, numBytesBFile, g->getId());
+  auto aScan = FileScan::make("fileScanA", "data/join/a.csv", std::vector<std::string>{"AA"}, 0, numBytesAFile, g->getId());
+  auto bScan = FileScan::make("fileScanB", "data/join/b.csv", std::vector<std::string>{"BA"}, 0, numBytesBFile, g->getId());
   auto joinBuild = HashJoinBuild::create("join-build", "AA");
   auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
 												   JoinPredicate::create("AA", "BA"));

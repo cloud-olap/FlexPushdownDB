@@ -6,6 +6,9 @@
 #define NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY1_1_S3SELECTTESTS_H
 
 #include <string>
+#include <normal/core/Normal.h>
+
+using namespace normal::core;
 
 namespace normal::ssb {
 
@@ -22,7 +25,8 @@ public:
 					   const std::string &dataDir,
 					   int numConcurrentUnits,
 					   int numIterations,
-					   bool check);
+					   bool check,
+					   const std::shared_ptr<Normal>& n);
 
   /**
    * Tests that SQLLite and Normal produce the same output for date scan component of query 1.1 using hybrid strategy.
@@ -34,25 +38,29 @@ public:
 							   const std::string &dataDir,
 							   int numConcurrentUnits,
 							   int numIterations,
-							   bool check);
+							   bool check,
+							   const std::shared_ptr<Normal>& n);
 
   static void dateFilter(short year,
 						 const std::string &s3ObjectDir,
 						 const std::string &dataDir,
 						 int numConcurrentUnits,
-						 bool check);
+						 bool check,
+						 const std::shared_ptr<Normal>& n);
 
   static void lineOrderScan(const std::string &s3ObjectDir,
 							const std::string &dataDir,
 							int numConcurrentUnits,
-							bool check);
+							bool check,
+							const std::shared_ptr<Normal>& n);
 
   static void lineOrderFilter(short discount,
 							  short quantity,
 							  const std::string &s3ObjectDir,
 							  const std::string &dataDir,
 							  int numConcurrentUnits,
-							  bool check);
+							  bool check,
+							  const std::shared_ptr<Normal>& n);
 
   static void join(short year,
 				   short discount,
@@ -60,22 +68,26 @@ public:
 				   const std::string &s3ObjectDir,
 				   const std::string &dataDir,
 				   int numConcurrentUnits,
-				   bool check);
+				   bool check,
+				   const std::shared_ptr<Normal>& n);
 
   static void full(short year, short discount, short quantity,
 				   const std::string &s3ObjectDir, const std::string &dataDir,
 				   int numConcurrentUnits,
-				   bool check);
+				   bool check,
+				   const std::shared_ptr<Normal>& n);
 
   static void fullPushDown(short year, short discount, short quantity,
 						   const std::string &s3ObjectDir, const std::string &dataDir,
 						   int numConcurrentUnits,
-						   bool check);
+						   bool check,
+						   const std::shared_ptr<Normal>& n);
 
   static void hybrid(short year, short discount, short quantity,
 					 const std::string &s3ObjectDir, const std::string &dataDir,
 					 int numConcurrentUnits,
-					 bool check);
+					 bool check,
+					 const std::shared_ptr<Normal>& n);
 
 };
 

@@ -16,7 +16,7 @@ add_library(normal-core STATIC
         src/OperatorContext.cpp include/normal/core/OperatorContext.h
         src/OperatorManager.cpp include/normal/core/OperatorManager.h
         src/message/Message.cpp include/normal/core/message/Message.h
-        src/Cache.cpp include/normal/core/Cache.h
+        src/ATTIC/Cache.cpp include/normal/core/ATTIC/Cache.h
         src/Actors.cpp include/normal/core/Actors.h
         src/OperatorDirectory.cpp include/normal/core/OperatorDirectory.h
         src/OperatorDirectoryEntry.cpp include/normal/core/OperatorDirectoryEntry.h

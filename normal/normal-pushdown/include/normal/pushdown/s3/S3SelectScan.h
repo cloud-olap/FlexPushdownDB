@@ -9,7 +9,7 @@
 #include <string>
 
 #include <aws/s3/S3Client.h>
-#include <normal/core/Cache.h>
+
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/tuple/TupleSet2.h>

@@ -63,11 +63,24 @@ add_executable(normal-ssb-test
         test/SSBQuery1_1S3PushDownTestSF0_01.cpp
         test/SSBQuery1_1S3HybridTestSF0_01.cpp
         test/SSBQuery2_1FileTestSF0_01.cpp
-        test/MiscTest.cpp)
+        test/MiscTest.cpp
+        test/SSBTestQuery1_1FileParquetSF0_01.cpp)
 
 target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-test PRIVATE normal-ssb)
 target_link_libraries(normal-ssb-test PRIVATE normal-sql)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Tool
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-ssb-tool
+        tool/Main.cpp)
+
+target_link_libraries(normal-ssb-tool PRIVATE spdlog::spdlog)
+target_link_libraries(normal-ssb-tool PRIVATE normal-ssb)
+target_link_libraries(normal-ssb-tool PRIVATE normal-tuple)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -108,6 +121,17 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/lineorder.tbl ${CMAKE_CURR
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
 
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/customer.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/date.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/lineorder.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet COPYONLY)
+
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/date.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/part.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

@@ -32,74 +32,6 @@ using namespace normal::core::graph;
 using namespace normal::expression::gandiva;
 
 std::vector<std::shared_ptr<CacheLoad>>
-Operators::makeDateFileCacheLoadOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
-  auto numBytesDateFile = filesystem::file_size(dateFile);
-
-  std::vector<std::string> dateColumns =
-	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
-	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
-	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
-
-  std::vector<std::shared_ptr<CacheLoad>> cacheLoadOperators;
-  auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numConcurrentUnits);
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	std::shared_ptr<Partition> partition = std::make_shared<LocalFilePartition>(dateFile);
-	auto o = CacheLoad::make(fmt::format("/query-{}/date-cache-load-{}", g->getId(), u),
-									dateColumns,
-									partition,
-									dateScanRanges[u].first,
-									dateScanRanges[u].second);
-	cacheLoadOperators.push_back(o);
-  }
-
-  return cacheLoadOperators;
-}
-
-std::vector<std::shared_ptr<FileScan>>
-Operators::makeDateFileScanOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  auto dateFile = filesystem::absolute(dataDir + "/date.tbl");
-  auto numBytesDateFile = filesystem::file_size(dateFile);
-
-  /**
-   * Scan
-   * date.tbl
-   */
-  std::vector<std::string> dateColumns =
-	  {"D_DATEKEY", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR", "D_YEARMONTHNUM", "D_YEARMONTH", "D_DAYNUMINWEEK",
-	   "D_DAYNUMINMONTH", "D_DAYNUMINYEAR", "D_MONTHNUMINYEAR", "D_WEEKNUMINYEAR", "D_SELLINGSEASON",
-	   "D_LASTDAYINWEEKFL", "D_LASTDAYINMONTHFL", "D_HOLIDAYFL", "D_WEEKDAYFL"};
-
-  std::vector<std::shared_ptr<FileScan>> dateScanOperators;
-  auto dateScanRanges = Util::ranges<int>(0, numBytesDateFile, numConcurrentUnits);
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto dateScan = FileScan::make(fmt::format("/query-{}/date-scan-{}", g->getId(), u),
-								   dateFile,
-								   dateColumns,
-								   dateScanRanges[u].first,
-								   dateScanRanges[u].second,
-								   g->getId());
-	dateScanOperators.push_back(dateScan);
-  }
-
-  return dateScanOperators;
-}
-
-std::vector<std::shared_ptr<MergeOperator>>
-Operators::makeDateMergeOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  std::vector<std::shared_ptr<MergeOperator>> os;
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = MergeOperator::make(fmt::format("/query-{}/date-merge-{}", g->getId(), u));
-	os.push_back(o);
-  }
-
-  return os;
-}
-
-std::vector<std::shared_ptr<CacheLoad>>
 Operators::makeDateS3SelectCacheLoadOperators(const std::string &s3ObjectDir,
 											  const std::string &s3Bucket,
 											  int numConcurrentUnits,
@@ -125,6 +57,7 @@ Operators::makeDateS3SelectCacheLoadOperators(const std::string &s3ObjectDir,
 									dateScanRanges[u].first,
 									dateScanRanges[u].second);
 	dateScanOperators.push_back(dateScan);
+	g->put(dateScan);
   }
 
   return dateScanOperators;
@@ -159,6 +92,7 @@ Operators::makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
 	dateScanOperators.push_back(dateScan);
+	g->put(dateScan);
   }
 
   return dateScanOperators;
@@ -191,113 +125,28 @@ Operators::makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
 	dateScanOperators.push_back(dateScan);
+	g->put(dateScan);
   }
 
   return dateScanOperators;
 }
 
 std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-Operators::makeDateFilterOperators(short year, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeDateFilterOperators(short year, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
   std::vector<std::shared_ptr<normal::pushdown::filter::Filter>> dateFilterOperators;
   for (int u = 0; u < numConcurrentUnits; ++u) {
+    auto expr = castValues ?
+    	eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type, int>(year)) :
+		eq(col("d_year"), lit<::arrow::Int32Type, int>(year));
 	auto dateFilter = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/date-filter-{}", g->getId(), u),
-		FilterPredicate::make(
-			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type>(year))));
+		FilterPredicate::make(expr));
 	dateFilterOperators.push_back(dateFilter);
+	g->put(dateFilter);
   }
 
   return dateFilterOperators;
-}
-
-std::vector<std::shared_ptr<Shuffle>>
-Operators::makeDateShuffleOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  std::vector<std::shared_ptr<Shuffle>> shuffleOperators;
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto shuffle = Shuffle::make(fmt::format("/query-{}/date-shuffle-{}", g->getId(), u), "d_datekey");
-	shuffleOperators.emplace_back(shuffle);
-  }
-
-  return shuffleOperators;
-}
-
-std::vector<std::shared_ptr<Shuffle>>
-Operators::makeLineOrderShuffleOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  std::vector<std::shared_ptr<Shuffle>> shuffleOperators;
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto shuffle = Shuffle::make(fmt::format("/query-{}/lineorder-shuffle-{}", g->getId(), u), "lo_orderdate");
-	shuffleOperators.emplace_back(shuffle);
-  }
-
-  return shuffleOperators;
-}
-
-std::vector<std::shared_ptr<CacheLoad>>
-Operators::makeLineOrderFileCacheLoadOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  auto file = filesystem::absolute(dataDir + "/lineorder.tbl");
-  auto numBytesFile = filesystem::file_size(file);
-
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
-	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
-	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-
-  std::vector<std::shared_ptr<CacheLoad>> os;
-  auto scanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	std::shared_ptr<Partition> partition = std::make_shared<LocalFilePartition>(file);
-	auto o = CacheLoad::make(fmt::format("/query-{}/lineorder-cache-load-{}", g->getId(), u),
-							 lineOrderColumns,
-							 partition,
-							 scanRanges[u].first,
-							 scanRanges[u].second);
-	os.push_back(o);
-  }
-
-  return os;
-}
-
-std::vector<std::shared_ptr<FileScan>>
-Operators::makeLineOrderFileScanOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  auto lineOrderFile = filesystem::absolute(dataDir + "/lineorder.tbl");
-  auto numBytesLineOrderFile = filesystem::file_size(lineOrderFile);
-//  auto numBytesLineOrderFile = 2973819;
-
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
-	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
-	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-
-  std::vector<std::shared_ptr<FileScan>> lineOrderScanOperators;
-  auto lineOrderScanRanges = Util::ranges<int>(0, numBytesLineOrderFile, numConcurrentUnits);
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto lineOrderScan = FileScan::make(fmt::format("/query-{}/lineorder-scan-{}", g->getId(), u),
-										lineOrderFile,
-										lineOrderColumns,
-										lineOrderScanRanges[u].first,
-										lineOrderScanRanges[u].second,
-										g->getId());
-	lineOrderScanOperators.push_back(lineOrderScan);
-  }
-
-  return lineOrderScanOperators;
-}
-
-std::vector<std::shared_ptr<MergeOperator>>
-Operators::makeLineOrderMergeOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  std::vector<std::shared_ptr<MergeOperator>> os;
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = MergeOperator::make(fmt::format("/query-{}/lineorder-merge-{}", g->getId(), u));
-	os.push_back(o);
-  }
-
-  return os;
 }
 
 std::vector<std::shared_ptr<S3SelectScan>>
@@ -329,6 +178,7 @@ Operators::makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
 	lineOrderScanOperators.push_back(lineOrderScan);
+	g->put(lineOrderScan);
   }
 
   return lineOrderScanOperators;
@@ -368,13 +218,14 @@ Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3Objec
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client());
 	lineOrderScanOperators.push_back(lineOrderScan);
+	g->put(lineOrderScan);
   }
 
   return lineOrderScanOperators;
 }
 
 std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-Operators::makeLineOrderFilterOperators(short discount, short quantity, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeLineOrderFilterOperators(short discount, short quantity, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
   /**
    * Filter
@@ -386,43 +237,29 @@ Operators::makeLineOrderFilterOperators(short discount, short quantity, int numC
 
   std::vector<std::shared_ptr<normal::pushdown::filter::Filter>> lineOrderFilterOperators;
   for (int u = 0; u < numConcurrentUnits; ++u) {
+    auto expr = castValues ?
+				and_(
+					and_(
+						gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountLower)),
+						lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountUpper))
+					),
+					lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type, int>(quantity))
+				) :
+				and_(
+					and_(
+						gte(col("lo_discount"), lit<::arrow::Int32Type, int>(discountLower)),
+						lte(col("lo_discount"), lit<::arrow::Int32Type, int>(discountUpper))
+					),
+					lt(col("lo_quantity"), lit<::arrow::Int32Type, int>(quantity))
+				);
 	auto lineOrderFilter = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/lineorder-filter-{}", g->getId(), u),
-		FilterPredicate::make(
-			and_(
-				and_(
-					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountLower)),
-					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type>(discountUpper))
-				),
-				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type>(quantity))
-			)
-		)
-	);
+		FilterPredicate::make(expr));
 	lineOrderFilterOperators.push_back(lineOrderFilter);
+	g->put(lineOrderFilter);
   }
 
   return lineOrderFilterOperators;
-}
-
-std::vector<std::shared_ptr<HashJoinBuild>>
-Operators::makeHashJoinBuildOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-  std::vector<std::shared_ptr<HashJoinBuild>> hashJoinBuildOperators;
-  hashJoinBuildOperators.reserve(numConcurrentUnits);
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	hashJoinBuildOperators.emplace_back(HashJoinBuild::create(fmt::format("/query-{}/join-build-{}", g->getId(), u), "d_datekey"));
-  }
-  return hashJoinBuildOperators;
-}
-
-std::vector<std::shared_ptr<HashJoinProbe>> Operators::makeHashJoinProbeOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-  std::vector<std::shared_ptr<HashJoinProbe>> hashJoinProbeOperators;
-  hashJoinProbeOperators.reserve(numConcurrentUnits);
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	hashJoinProbeOperators.emplace_back(std::make_shared<HashJoinProbe>(fmt::format("/query-{}/join-probe-{}", g->getId(), u),
-																		JoinPredicate::create("d_datekey",
-																							  "lo_orderdate")));
-  }
-  return hashJoinProbeOperators;
 }
 
 std::vector<std::shared_ptr<Aggregate>>
@@ -441,6 +278,7 @@ Operators::makeAggregateOperators(int numConcurrentUnits, const std::shared_ptr<
 	));
 	auto aggregate = std::make_shared<Aggregate>(fmt::format("/query-{}/aggregate-{}", g->getId(), u), aggregateFunctions);
 	aggregateOperators.emplace_back(aggregate);
+	g->put(aggregate);
   }
 
   return aggregateOperators;
@@ -454,47 +292,7 @@ std::shared_ptr<Aggregate> Operators::makeAggregateReduceOperator(const std::sha
   );
   auto aggregateReduce = std::make_shared<Aggregate>(fmt::format("/query-{}/aggregate-reduce", g->getId()), aggregateFunctions);
 
+  g->put(aggregateReduce);
+
   return aggregateReduce;
-}
-
-std::shared_ptr<Collate> Operators::makeCollateOperator(const std::shared_ptr<OperatorGraph>& g) {
-  return std::make_shared<Collate>(fmt::format("/query-{}/collate", g->getId()), g->getId());
-}
-
-std::shared_ptr<BloomCreateOperator>
-Operators::makeDateBloomCreateOperators(const std::shared_ptr<OperatorGraph>& g) {
-
-	auto o = BloomCreateOperator::make(fmt::format("/query-{}/date-bloom-create", g->getId()),
-									   "d_datekey",
-									   0.3,
-									   {});
-
-
-  return o;
-}
-
-std::vector<std::shared_ptr<FileScanBloomUseOperator>>
-Operators::makeLineOrderFileScanBloomUseOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
-
-  auto file = filesystem::absolute(dataDir + "/lineorder.tbl");
-  auto numBytesFile = filesystem::file_size(file);
-
-  std::vector<std::string> columns =
-	  {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE", "LO_ORDERPRIORITY",
-	   "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE", "LO_DISCOUNT", "LO_REVENUE",
-	   "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
-
-  std::vector<std::shared_ptr<FileScanBloomUseOperator>> os;
-  auto lineOrderScanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
-  for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = FileScanBloomUseOperator::make(fmt::format("/query-{}/lineorder-scan-bloom-use-{}", g->getId(), u),
-										file,
-										columns,
-										lineOrderScanRanges[u].first,
-										lineOrderScanRanges[u].second,
-										"lo_orderdate");
-	os.push_back(o);
-  }
-
-  return os;
 }

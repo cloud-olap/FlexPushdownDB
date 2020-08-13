@@ -49,20 +49,6 @@ public:
 									 AWSClient &client,
 									 const std::shared_ptr<OperatorGraph> &g);
 
-  static std::vector<std::shared_ptr<CacheLoad>>
-  makeDateFileCacheLoadOperators(const std::string &dataDir,
-								 int numConcurrentUnits,
-								 const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<FileScan>>
-  makeDateFileScanOperators(const std::string &dataDir,
-							int numConcurrentUnits,
-							const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<MergeOperator>>
-  makeDateMergeOperators(int numConcurrentUnits,
-						 const std::shared_ptr<OperatorGraph> &g);
-
   static std::vector<std::shared_ptr<S3SelectScan>>
   makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
 								const std::string &s3Bucket,
@@ -79,20 +65,6 @@ public:
 										std::unordered_map<std::string, long> partitionMap,
 										AWSClient &client,
 										const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<CacheLoad>>
-  makeLineOrderFileCacheLoadOperators(const std::string &dataDir,
-									  int numConcurrentUnits,
-									  const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<FileScan>>
-  makeLineOrderFileScanOperators(const std::string &dataDir,
-								 int numConcurrentUnits,
-								 const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<MergeOperator>>
-  makeLineOrderMergeOperators(int numConcurrentUnits,
-							  const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<S3SelectScan>>
   makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
@@ -112,39 +84,19 @@ public:
 											 const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-  makeDateFilterOperators(short year, int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
+  makeDateFilterOperators(short year, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
   makeLineOrderFilterOperators(short discount,
 							   short quantity,
+							   bool castValues,
 							   int numConcurrentUnits,
 							   const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<Shuffle>>
-  makeDateShuffleOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<Shuffle>>
-  makeLineOrderShuffleOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<HashJoinBuild>>
-  makeHashJoinBuildOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
-
-  static std::vector<std::shared_ptr<HashJoinProbe>>
-  makeHashJoinProbeOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<Aggregate>>
   makeAggregateOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
 
   static std::shared_ptr<Aggregate> makeAggregateReduceOperator(const std::shared_ptr<OperatorGraph> &g);
-
-  static std::shared_ptr<Collate> makeCollateOperator(const std::shared_ptr<OperatorGraph> &g);
-
-  static std::shared_ptr<BloomCreateOperator>
-  makeDateBloomCreateOperators(const std::shared_ptr<OperatorGraph>& g);
-
-  static std::vector<std::shared_ptr<FileScanBloomUseOperator>>
-  makeLineOrderFileScanBloomUseOperators(const std::string &dataDir, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g);
-
 };
 
 }

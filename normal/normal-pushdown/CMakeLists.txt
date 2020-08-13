@@ -26,7 +26,7 @@ add_library(normal-pushdown STATIC
         src/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
         src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
         src/Sort.cpp include/normal/pushdown/Sort.h
-        src/cacheScan.cpp include/normal/pushdown/cacheScan.h
+        src/ATTIC/cacheScan.cpp include/normal/pushdown/ATTIC/cacheScan.h
         src/group/Group.cpp include/normal/pushdown/group/Group.h
         src/group/GroupKey.cpp include/normal/pushdown/group/GroupKey.h
         src/TupleMessage.cpp include/normal/pushdown/TupleMessage.h
@@ -55,7 +55,8 @@ add_library(normal-pushdown STATIC
         src/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
         src/bloomjoin/UniversalHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalHashFunction.h
         src/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h
-        src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h)
+        src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h
+        src/file/FileScanKernel.cpp include/normal/pushdown/file/FileScanKernel.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

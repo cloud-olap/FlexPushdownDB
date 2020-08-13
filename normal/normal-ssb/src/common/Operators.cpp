@@ -73,6 +73,35 @@ Operators::makeFileScanOperators(const std::string &namePrefix,
   return os;
 }
 
+std::vector<std::shared_ptr<FileScan>>
+Operators::makeFileScanOperators(const std::string &namePrefix,
+								 const std::string &filename,
+								 FileType fileType,
+								 const std::vector<std::string> &columns,
+								 const std::string &dataDir,
+								 int numConcurrentUnits,
+								 const std::shared_ptr<OperatorGraph> &g) {
+
+  auto file = filesystem::absolute(dataDir + "/" + filename);
+  auto numBytesFile = filesystem::file_size(file);
+
+  std::vector<std::shared_ptr<FileScan>> os;
+  auto scanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto o = FileScan::make(fmt::format("/query-{}/{}-scan-{}", g->getId(), namePrefix, u),
+							file,
+							fileType,
+							columns,
+							scanRanges[u].first,
+							scanRanges[u].second,
+							g->getId());
+	os.push_back(o);
+	g->put(o);
+  }
+
+  return os;
+}
+
 std::vector<std::shared_ptr<MergeOperator>>
 Operators::makeMergeOperators(const std::string &namePrefix, int numConcurrentUnits,
 							  const std::shared_ptr<OperatorGraph> &g) {
@@ -80,6 +109,46 @@ Operators::makeMergeOperators(const std::string &namePrefix, int numConcurrentUn
   std::vector<std::shared_ptr<MergeOperator>> os;
   for (int u = 0; u < numConcurrentUnits; ++u) {
 	auto o = MergeOperator::make(fmt::format("/query-{}/{}-merge-{}", g->getId(), namePrefix, u));
+	os.push_back(o);
+	g->put(o);
+  }
+
+  return os;
+}
+
+std::shared_ptr<BloomCreateOperator>
+Operators::makeBloomCreateOperator(const std::string &namePrefix, const std::string& columnName, double desiredFalsePositiveRate, const std::shared_ptr<OperatorGraph>& g) {
+
+  auto o = BloomCreateOperator::make(fmt::format("/query-{}/{}-bloom-create", g->getId(), namePrefix),
+									 columnName,
+									 desiredFalsePositiveRate,
+									 {});
+
+  g->put(o);
+  return o;
+}
+
+std::vector<std::shared_ptr<FileScanBloomUseOperator>>
+Operators::makeFileScanBloomUseOperators(const std::string &namePrefix,
+										 const std::string &filename,
+										 const std::vector<std::string> &columns,
+										 const std::string &columnName,
+										 const std::string &dataDir,
+										 int numConcurrentUnits,
+										 const std::shared_ptr<OperatorGraph> &g) {
+
+  auto file = filesystem::absolute(dataDir + "/" + filename);
+  auto numBytesFile = filesystem::file_size(file);
+
+  std::vector<std::shared_ptr<FileScanBloomUseOperator>> os;
+  auto scanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto o = FileScanBloomUseOperator::make(fmt::format("/query-{}/{}-scan-bloom-use-{}", g->getId(), namePrefix, u),
+											file,
+											columns,
+											scanRanges[u].first,
+											scanRanges[u].second,
+											columnName);
 	os.push_back(o);
 	g->put(o);
   }

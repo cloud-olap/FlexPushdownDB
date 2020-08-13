@@ -27,3 +27,10 @@ int64_t TupleSetIndex::size() {
 std::vector<std::shared_ptr<::arrow::ChunkedArray>> TupleSetIndex::columns() {
   return table_->columns();
 }
+
+tl::expected<void, std::string> TupleSetIndex::combine() {
+  auto result = table_->CombineChunks(::arrow::default_memory_pool(), &table_);
+  if(!result.ok())
+    return tl::make_unexpected(result.message());
+  return {};
+}
