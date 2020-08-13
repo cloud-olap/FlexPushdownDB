@@ -197,14 +197,16 @@ Operators::makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
 }
 
 std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-Operators::makeDateFilterOperators(short year, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeDateFilterOperators(short year, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
   std::vector<std::shared_ptr<normal::pushdown::filter::Filter>> dateFilterOperators;
   for (int u = 0; u < numConcurrentUnits; ++u) {
+    auto expr = castValues ?
+    	eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type, int>(year)) :
+		eq(col("d_year"), lit<::arrow::Int32Type, int>(year));
 	auto dateFilter = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/date-filter-{}", g->getId(), u),
-		FilterPredicate::make(
-			eq(cast(col("d_year"), integer32Type()), lit<::arrow::Int32Type, int>(year))));
+		FilterPredicate::make(expr));
 	dateFilterOperators.push_back(dateFilter);
   }
 
@@ -374,7 +376,7 @@ Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3Objec
 }
 
 std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-Operators::makeLineOrderFilterOperators(short discount, short quantity, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeLineOrderFilterOperators(short discount, short quantity, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
   /**
    * Filter
@@ -386,18 +388,24 @@ Operators::makeLineOrderFilterOperators(short discount, short quantity, int numC
 
   std::vector<std::shared_ptr<normal::pushdown::filter::Filter>> lineOrderFilterOperators;
   for (int u = 0; u < numConcurrentUnits; ++u) {
+    auto expr = castValues ?
+				and_(
+					and_(
+						gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountLower)),
+						lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountUpper))
+					),
+					lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type, int>(quantity))
+				) :
+				and_(
+					and_(
+						gte(col("lo_discount"), lit<::arrow::Int32Type, int>(discountLower)),
+						lte(col("lo_discount"), lit<::arrow::Int32Type, int>(discountUpper))
+					),
+					lt(col("lo_quantity"), lit<::arrow::Int32Type, int>(quantity))
+				);
 	auto lineOrderFilter = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/lineorder-filter-{}", g->getId(), u),
-		FilterPredicate::make(
-			and_(
-				and_(
-					gte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountLower)),
-					lte(cast(col("lo_discount"), integer32Type()), lit<::arrow::Int32Type, int>(discountUpper))
-				),
-				lt(cast(col("lo_quantity"), integer32Type()), lit<::arrow::Int32Type, int>(quantity))
-			)
-		)
-	);
+		FilterPredicate::make(expr));
 	lineOrderFilterOperators.push_back(lineOrderFilter);
   }
 

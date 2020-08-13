@@ -2,6 +2,7 @@
 // Created by matt on 3/8/20.
 //
 
+#include <normal/tuple/ArrayAppenderWrapper.h>
 #include "normal/pushdown/join/RecordBatchJoiner.h"
 
 using namespace normal::pushdown::join;
@@ -62,7 +63,7 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
   // Create appenders to create the destination arrays
   std::vector<std::shared_ptr<ArrayAppender>> buildAppenders{buildColumns.size()};
   for (size_t c = 0; c < buildColumns.size(); ++c) {
-	auto expectedAppender = ArrayAppender::make(buildColumns[c]->type(), 0);
+	auto expectedAppender = ArrayAppenderBuilder::make(buildColumns[c]->type(), 0);
 	if (!expectedAppender.has_value())
 	  return tl::make_unexpected(expectedAppender.error());
 	buildAppenders[c] = expectedAppender.value();
@@ -70,7 +71,7 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
 
   std::vector<std::shared_ptr<ArrayAppender>> probeAppenders{probeColumns.size()};
   for (size_t c = 0; c < probeColumns.size(); ++c) {
-	auto expectedAppender = ArrayAppender::make(probeColumns[c]->type(), 0);
+	auto expectedAppender = ArrayAppenderBuilder::make(probeColumns[c]->type(), 0);
 	if (!expectedAppender.has_value())
 	  return tl::make_unexpected(expectedAppender.error());
 	probeAppenders[c] = expectedAppender.value();

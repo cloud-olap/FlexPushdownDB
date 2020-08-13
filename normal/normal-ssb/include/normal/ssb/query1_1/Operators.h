@@ -112,11 +112,12 @@ public:
 											 const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-  makeDateFilterOperators(short year, int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
+  makeDateFilterOperators(short year, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
   makeLineOrderFilterOperators(short discount,
 							   short quantity,
+							   bool castValues,
 							   int numConcurrentUnits,
 							   const std::shared_ptr<OperatorGraph> &g);
 

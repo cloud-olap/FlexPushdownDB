@@ -11,6 +11,7 @@
 #include <normal/tuple/ArrayAppender.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/pushdown/bloomjoin/SlicedBloomFilter.h>
+#include <normal/tuple/ArrayAppenderWrapper.h>
 
 using namespace normal::tuple;
 using namespace normal::tuple::csv;
@@ -148,7 +149,7 @@ public:
 
 	std::vector<std::shared_ptr<ArrayAppender>> appenders(table->num_columns());
 	for (int c = 0; c < table->num_columns(); ++c) {
-	  auto expectedAppender = ArrayAppender::make(table->column(c)->type(), 0);
+	  auto expectedAppender = ArrayAppenderBuilder::make(table->column(c)->type(), 0);
 	  if (!expectedAppender.has_value())
 		return tl::make_unexpected(expectedAppender.error());
 	  appenders[c] = expectedAppender.value();

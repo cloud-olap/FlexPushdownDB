@@ -85,7 +85,7 @@ LocalFileSystemQueries::dateFilter(const std::string &dataDir, short year, int n
   auto dateCacheLoads = Operators::makeDateFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto dateScans = Operators::makeDateFileScanOperators(dataDir, numConcurrentUnits, g);
   auto dateMerges = Operators::makeDateMergeOperators(numConcurrentUnits, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
@@ -202,7 +202,7 @@ LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
   auto lineOrderCacheLoads = Operators::makeLineOrderFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = Operators::makeLineOrderMergeOperators(numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
@@ -260,8 +260,8 @@ LocalFileSystemQueries::join(const std::string &dataDir,
   auto lineOrderCacheLoads = Operators::makeLineOrderFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderScans = Operators::makeLineOrderFileScanOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = Operators::makeLineOrderMergeOperators(numConcurrentUnits, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
   auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);
@@ -389,8 +389,8 @@ LocalFileSystemQueries::full(const std::string &dataDir,
   auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
   auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
   auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
   auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
   auto joinBuild =  common::Operators::makeHashJoinBuildOperators("1", "d_datekey", numConcurrentUnits, g);
@@ -554,8 +554,8 @@ LocalFileSystemQueries::bloom(const std::string &dataDir,
   auto lineOrderCacheLoads = Operators::makeLineOrderFileCacheLoadOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderScanBloomUses = Operators::makeLineOrderFileScanBloomUseOperators(dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = Operators::makeLineOrderMergeOperators(numConcurrentUnits, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, true, quantity, numConcurrentUnits, g);
   auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);

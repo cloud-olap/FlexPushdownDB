@@ -72,7 +72,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::stri
 
   auto dateScans =
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
@@ -125,7 +125,7 @@ S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
 													   year,
 													   numConcurrentUnits, partitionMap,
 													   client, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
@@ -207,7 +207,7 @@ S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
 
   auto lineOrderScans =
 	  Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
   auto collate = Operators::makeCollateOperator(g);
 
   // Wire up
@@ -255,8 +255,8 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
   auto lineOrderScans = Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket,
 																	  numConcurrentUnits, partitionMap, client, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
   auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);
@@ -355,8 +355,8 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
   auto lineOrderScans = Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket,
 																	  numConcurrentUnits, partitionMap, client, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
   auto dateShuffles = Operators::makeDateShuffleOperators(numConcurrentUnits, g);
   auto lineOrderShuffles = Operators::makeLineOrderShuffleOperators(numConcurrentUnits, g);
   auto joinBuild = Operators::makeHashJoinBuildOperators(numConcurrentUnits, g);

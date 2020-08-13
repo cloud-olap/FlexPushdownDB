@@ -21,13 +21,7 @@ namespace normal::tuple {
  */
 class ArrayAppender {
 public:
-  explicit ArrayAppender(std::shared_ptr<::arrow::DataType> type,
-						 std::shared_ptr<::arrow::ArrayBuilder> builder,
-						 size_t expectedSize = 0);
   virtual ~ArrayAppender() = default;
-
-  static tl::expected<std::shared_ptr<ArrayAppender>, std::string>
-  make(const std::shared_ptr<::arrow::DataType> &type, size_t expectedSize);
 
   virtual inline void appendValue(const std::shared_ptr<::arrow::Array> &array, int64_t i) = 0;
 
