@@ -118,9 +118,8 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
-//  SPDLOG_INFO("Finish");
-  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
+  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+//  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -155,12 +154,12 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   std::vector<int> order2 = {
           0, 7, 12, 4, 11, 1, 3, 10, 8, 2, 9, 5, 6
   };
-//  sql_file_names.insert(sql_file_names.end(), sql_file_names.begin(), sql_file_names.end());
-//  sql_file_names.insert(sql_file_names.end(), sql_file_names.begin(), sql_file_names.end());
+//  order1.insert(order1.end(), order1.begin(), order1.end());
+//  order1.insert(order1.end(), order1.begin(), order1.end());
   auto currentPath = filesystem::current_path();
-  auto sql_file_dir_path = currentPath.append("sql");
+  auto sql_file_dir_path = currentPath.append("sql/filterlineorder");
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf0.01/";
+  std::string dir_prefix = "ssb-sf1/";
 
   // choose caching policy
   auto lru = LRUCachingPolicy::make(1024*1024*300);
@@ -169,7 +168,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   // configure interpreter
   normal::sql::Interpreter i(mode3, fbr);
   if (partitioned) {
-    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 10);
+    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 32);
   } else {
     configureS3ConnectorSinglePartition(i, bucket_name, dir_prefix);
   }
@@ -177,7 +176,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   // execute
   i.boot();
   int cnt = 1;
-  for (const auto index: order1) {
+  for (const auto index: order2) {
     // read sql file
     auto sql_file_name = sql_file_names[index];
     auto sql_file_path = sql_file_dir_path.append(sql_file_name);

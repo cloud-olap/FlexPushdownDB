@@ -140,10 +140,14 @@ target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb-query-generate)
 # Copy ssb query files to runtime directory
 
 set(SSB_query_file_list
-        "query1.1.sql" "query1.2.sql" "query1.3.sql" "query1.1.1.sql"
-        "query2.1.sql" "query2.2.sql" "query2.3.sql"
-        "query3.1.sql" "query3.2.sql" "query3.3.sql" "query3.4.sql"
-        "query4.1.sql" "query4.2.sql" "query4.3.sql")
+        "original/query1.1.sql" "original/query1.2.sql" "original/query1.3.sql"
+        "original/query2.1.sql" "original/query2.2.sql" "original/query2.3.sql"
+        "original/query3.1.sql" "original/query3.2.sql" "original/query3.3.sql" "original/query3.4.sql"
+        "original/query4.1.sql" "original/query4.2.sql" "original/query4.3.sql"
+        "filterlineorder/query1.1.sql" "filterlineorder/query1.2.sql" "filterlineorder/query1.3.sql"
+        "filterlineorder/query2.1.sql" "filterlineorder/query2.2.sql" "filterlineorder/query2.3.sql"
+        "filterlineorder/query3.1.sql" "filterlineorder/query3.2.sql" "filterlineorder/query3.3.sql" "filterlineorder/query3.4.sql"
+        "filterlineorder/query4.1.sql" "filterlineorder/query4.2.sql" "filterlineorder/query4.3.sql")
 
 FOREACH(SSB_query_file ${SSB_query_file_list})
     configure_file(${CMAKE_CURRENT_LIST_DIR}/sql/${SSB_query_file} ${CMAKE_CURRENT_BINARY_DIR}/sql/${SSB_query_file} COPYONLY)
