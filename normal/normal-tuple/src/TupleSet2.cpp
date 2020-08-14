@@ -271,12 +271,12 @@ std::shared_ptr<TupleSet2> TupleSet2::make(std::shared_ptr<::arrow::Table> arrow
   return std::make_shared<TupleSet2>(std::move(arrowTable));
 }
 
-std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays) {
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<::arrow::Schema>& schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays) {
   auto arrowTable = ::arrow::Table::Make (schema, arrays);
   return std::make_shared<TupleSet2>(std::move(arrowTable));
 }
 
-std::shared_ptr<TupleSet2> TupleSet2::make(std::shared_ptr<::arrow::Schema> schema,
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<::arrow::Schema>& schema,
 										   const std::vector<std::shared_ptr<::arrow::ChunkedArray>> &arrays) {
   auto arrowTable = ::arrow::Table::Make (schema, arrays);
   return std::make_shared<TupleSet2>(std::move(arrowTable));

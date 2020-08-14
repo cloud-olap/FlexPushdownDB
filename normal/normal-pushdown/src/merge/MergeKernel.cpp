@@ -130,18 +130,13 @@ MergeKernel::merge(const std::shared_ptr<TupleSet2> &tupleSet1,
   const auto &mergedArrays = mergeArrays(tupleSet1, tupleSet2);
 
   // Create the merged tuple set
-
-  /**
-   * FIXME: System is interchangeably using 0-length vectors and null optionals to represent
-   *  an empty tupleset. Need to standardise on one way or the other. Preferring null optional
-   *  for the time being as its less likely to hide empty tables not being handled properly.
-   */
   if (!mergedSchema->fields().empty() && !mergedArrays.empty()) {
 	const auto &mergedTable = ::arrow::Table::Make(mergedSchema->getSchema(), mergedArrays);
 	const auto &mergedTupleSet = TupleSet2::make(mergedTable);
 	return mergedTupleSet;
   } else {
-	const auto &mergedTupleSet = TupleSet2::make();
+	// Makes an empty tuple set
+	const auto mergedTupleSet = TupleSet2::make(std::vector<std::shared_ptr<Column>>{});
 	return mergedTupleSet;
   }
 

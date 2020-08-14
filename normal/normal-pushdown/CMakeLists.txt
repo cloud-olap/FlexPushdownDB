@@ -56,7 +56,9 @@ add_library(normal-pushdown STATIC
         src/bloomjoin/UniversalHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalHashFunction.h
         src/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h
         src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h
-        src/file/FileScanKernel.cpp include/normal/pushdown/file/FileScanKernel.h)
+        src/file/FileScanKernel.cpp include/normal/pushdown/file/FileScanKernel.h
+        src/s3/S3SelectScanKernel.cpp include/normal/pushdown/s3/S3SelectScanKernel.h
+        src/s3/S3SelectScan2.cpp include/normal/pushdown/s3/S3SelectScan2.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
