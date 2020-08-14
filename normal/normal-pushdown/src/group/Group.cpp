@@ -7,6 +7,7 @@
 
 #include <normal/pushdown/group/GroupKey.h>
 #include <normal/tuple/ArrayAppender.h>
+#include <normal/tuple/ArrayAppenderWrapper.h>
 
 using namespace normal::pushdown::group;
 using namespace normal::tuple;
@@ -137,7 +138,7 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
       if (currentAppendersIt == tempGroupedAppenders.end()) {
         appenders = std::make_shared<std::vector<std::shared_ptr<ArrayAppender>>>();
         for (int col_id = 0; col_id < recordBatch->num_columns(); ++col_id) {
-          auto expectedAppender = ArrayAppender::make(arrowSchema->field(col_id)->type(), tupleSet->numRows());
+          auto expectedAppender = ArrayAppenderBuilder::make(arrowSchema->field(col_id)->type(), tupleSet->numRows());
           if (!expectedAppender.has_value()) {
             throw std::runtime_error(expectedAppender.error());
           }

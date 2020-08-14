@@ -35,7 +35,7 @@ public:
   void startOperatorAndProducers(const std::shared_ptr<Operator>& op, std::unordered_map<std::string, bool> operatorStates);
   void join();
   void boot();
-  void write_graph(const std::string &file);
+//  void write_graph(const std::string &file);
   std::shared_ptr<Operator> getOperator(const std::string &);
   std::map<std::string, std::shared_ptr<OperatorContext>> getOperators();
   tl::expected<long, std::string> getElapsedTime();

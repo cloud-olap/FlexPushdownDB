@@ -173,11 +173,11 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/lineorder.snapp
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet COPYONLY)
 configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet COPYONLY)
 
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/date.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/part.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/date.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/part.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics

@@ -43,8 +43,9 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
 
   if (!buildTupleSetIndex_.has_value())
 	return tl::make_unexpected("ArraySetIndex not set");
-  if (!probeTupleSet_.has_value())
-	return tl::make_unexpected("TupleSet not set");
+  if (!probeTupleSet_.has_value()) {
+    return tl::make_unexpected("TupleSet not set");
+  }
 
   // Combine the chunks in the build table so we have single arrays for each column
   auto combineResult = buildTupleSetIndex_.value()->combine();

@@ -11,7 +11,7 @@
 
 #include <caf/all.hpp>
 #include <caf/io/all.hpp>
-#include <graphviz/gvc.h>
+//#include <graphviz/gvc.h>
 
 #include <normal/core/Actors.h>
 #include "normal/core/Globals.h"
@@ -201,63 +201,63 @@ void OperatorManager::boot() {
   }
 }
 
-void OperatorManager::write_graph(const std::string &file) {
-
-  auto gvc = gvContext();
-
-  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
-
-  // Init attributes
-  agattr(graph, AGNODE, const_cast<char *>("fixedsize"), const_cast<char *>("false"));
-  agattr(graph, AGNODE, const_cast<char *>("shape"), const_cast<char *>("ellipse"));
-  agattr(graph, AGNODE, const_cast<char *>("label"), const_cast<char *>("<not set>"));
-  agattr(graph, AGNODE, const_cast<char *>("fontname"), const_cast<char *>("Arial"));
-  agattr(graph, AGNODE, const_cast<char *>("fontsize"), const_cast<char *>("8"));
-
-  // Add all the nodes
-  for (const auto &op: this->m_operatorMap) {
-    std::string nodeName = op.second->op()->name();
-    auto node = agnode(graph, const_cast<char *>(nodeName.c_str()), true);
-
-    agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
-
-    std::string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
-                            "<tr><td align='left'><b>" + op.second->op()->getType() + "</b></td></tr>"
-                            "<tr><td align='left'>" + op.second->op()->name() + "</td></tr>"
-                            "</table>";
-    char *htmlNodeLabel = agstrdup_html(graph, const_cast<char *>(nodeLabel.c_str()));
-    agset(node, const_cast<char *>("label"), htmlNodeLabel);
-    agstrfree(graph, htmlNodeLabel);
-  }
-
-  // Add all the edges
-  for (const auto &op: this->m_operatorMap) {
-    auto opNode = agfindnode(graph, (char *) (op.second->op()->name().c_str()));
-    for (const auto &c: op.second->op()->consumers()) {
-      auto consumerOpNode = agfindnode(graph, (char *) (c.second->name().c_str()));
-      agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
-    }
-  }
-
-  const std::experimental::filesystem::path &path = std::experimental::filesystem::path(file);
-  if (!std::experimental::filesystem::exists(path.parent_path())) {
-    throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
-  } else {
-    FILE *outFile = fopen(file.c_str(), "w");
-    if (outFile == nullptr) {
-      throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
-    }
-
-    gvLayout(gvc, graph, "dot");
-    gvRender(gvc, graph, "svg", outFile);
-
-    fclose(outFile);
-
-    gvFreeLayout(gvc, graph);
-    agclose(graph);
-    gvFreeContext(gvc);
-  }
-}
+//void OperatorManager::write_graph(const std::string &file) {
+//
+//  auto gvc = gvContext();
+//
+//  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
+//
+//  // Init attributes
+//  agattr(graph, AGNODE, const_cast<char *>("fixedsize"), const_cast<char *>("false"));
+//  agattr(graph, AGNODE, const_cast<char *>("shape"), const_cast<char *>("ellipse"));
+//  agattr(graph, AGNODE, const_cast<char *>("label"), const_cast<char *>("<not set>"));
+//  agattr(graph, AGNODE, const_cast<char *>("fontname"), const_cast<char *>("Arial"));
+//  agattr(graph, AGNODE, const_cast<char *>("fontsize"), const_cast<char *>("8"));
+//
+//  // Add all the nodes
+//  for (const auto &op: this->m_operatorMap) {
+//    std::string nodeName = op.second->op()->name();
+//    auto node = agnode(graph, const_cast<char *>(nodeName.c_str()), true);
+//
+//    agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
+//
+//    std::string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
+//                            "<tr><td align='left'><b>" + op.second->op()->getType() + "</b></td></tr>"
+//                            "<tr><td align='left'>" + op.second->op()->name() + "</td></tr>"
+//                            "</table>";
+//    char *htmlNodeLabel = agstrdup_html(graph, const_cast<char *>(nodeLabel.c_str()));
+//    agset(node, const_cast<char *>("label"), htmlNodeLabel);
+//    agstrfree(graph, htmlNodeLabel);
+//  }
+//
+//  // Add all the edges
+//  for (const auto &op: this->m_operatorMap) {
+//    auto opNode = agfindnode(graph, (char *) (op.second->op()->name().c_str()));
+//    for (const auto &c: op.second->op()->consumers()) {
+//      auto consumerOpNode = agfindnode(graph, (char *) (c.second->name().c_str()));
+//      agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
+//    }
+//  }
+//
+//  const std::experimental::filesystem::path &path = std::experimental::filesystem::path(file);
+//  if (!std::experimental::filesystem::exists(path.parent_path())) {
+//    throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
+//  } else {
+//    FILE *outFile = fopen(file.c_str(), "w");
+//    if (outFile == nullptr) {
+//      throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
+//    }
+//
+//    gvLayout(gvc, graph, "dot");
+//    gvRender(gvc, graph, "svg", outFile);
+//
+//    fclose(outFile);
+//
+//    gvFreeLayout(gvc, graph);
+//    agclose(graph);
+//    gvFreeContext(gvc);
+//  }
+//}
 
 std::shared_ptr<Operator> OperatorManager::getOperator(const std::string &name) {
   return this->m_operatorMap.find(name)->second->op();

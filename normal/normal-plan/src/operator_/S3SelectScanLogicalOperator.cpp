@@ -19,16 +19,15 @@
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
 #include <normal/pushdown/Project.h>
+#include <normal/pushdown/Globals.h>
 
 using namespace normal::plan::operator_;
 using namespace normal::pushdown;
 using namespace normal::core::type;
 
 S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
-	const std::shared_ptr<S3SelectPartitioningScheme>& partitioningScheme,
-	std::shared_ptr<normal::pushdown::AWSClient> AwsClient) :
-	ScanLogicalOperator(partitioningScheme),
-	awsClient_(std::move(AwsClient)) {}
+	const std::shared_ptr<S3SelectPartitioningScheme>& partitioningScheme) :
+	ScanLogicalOperator(partitioningScheme) {}
 
 
 std::string S3SelectScanLogicalOperator::genFilterSql(){
@@ -78,7 +77,7 @@ S3SelectScanLogicalOperator::toOperatorsFullPushDown(int numRanges) {
               scanRange.first,
               scanRange.second,
               S3SelectCSVParseOptions(",", "\n"),
-              this->awsClient_->defaultS3Client(),
+              pushdown::defaultS3Client,
               true,
               false);
       operators->emplace_back(scanOp);
@@ -131,7 +130,7 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
               scanRange.first,
               scanRange.second,
               S3SelectCSVParseOptions(",", "\n"),
-              this->awsClient_->defaultS3Client(),
+              pushdown::defaultS3Client,
               false,
               true);
       operators->emplace_back(scanOp);
@@ -239,7 +238,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               scanRange.first,
               scanRange.second,
               S3SelectCSVParseOptions(",", "\n"),
-              this->awsClient_->defaultS3Client(),
+              pushdown::defaultS3Client,
               false,
               true);
       operators->emplace_back(s3Scan);
@@ -284,7 +283,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               scanRange.first,
               scanRange.second,
               S3SelectCSVParseOptions(",", "\n"),
-              this->awsClient_->defaultS3Client(),
+              pushdown::defaultS3Client,
               false,
               false);
       operators->emplace_back(s3Select);

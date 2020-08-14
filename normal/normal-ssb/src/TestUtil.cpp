@@ -28,21 +28,21 @@ void TestUtil::writeExecutionPlan(normal::core::OperatorManager &mgr) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
-  mgr.write_graph(physicalPlanFile);
+//  mgr.write_graph(physicalPlanFile);
 }
 
 void TestUtil::writeExecutionPlan2(OperatorGraph &g) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
-  g.write_graph(physicalPlanFile);
+//  g.write_graph(physicalPlanFile);
 }
 
 void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto logicalPlanFile = filesystem::path(testScratchDir).append("logical-execution-plan.svg");
-  plan.writeGraph(logicalPlanFile);
+//  plan.writeGraph(logicalPlanFile);
 }
 
 std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest2(const std::shared_ptr<OperatorGraph> &g) {

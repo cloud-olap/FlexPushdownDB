@@ -63,7 +63,7 @@ public:
   tl::expected<void, std::string> send(std::shared_ptr<message::Message> message, const std::string &recipientId);
   std::shared_ptr<normal::core::message::Message> receive();
 
-  void write_graph(const std::string &file);
+//  void write_graph(const std::string &file);
 
   tl::expected<long, std::string> getElapsedTime();
 

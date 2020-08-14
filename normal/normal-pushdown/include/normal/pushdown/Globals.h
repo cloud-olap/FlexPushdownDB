@@ -8,6 +8,9 @@
 #define LOG_LEVEL SPDLOG_LEVEL_DEBUG
 
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
+
+#include <aws/s3/S3Client.h>
+#include "AWSClient.h"
 #include "spdlog/spdlog.h"
 
 namespace normal::pushdown {
@@ -16,7 +19,7 @@ namespace normal::pushdown {
  * Default number of tuples operators should buffer before sending to consumers
  */
 inline constexpr int DefaultBufferSize = 10000;
-
+inline const std::shared_ptr<Aws::S3::S3Client> defaultS3Client = AWSClient::defaultS3Client();
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GLOBALS_H

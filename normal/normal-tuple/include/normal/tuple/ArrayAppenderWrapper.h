@@ -41,7 +41,8 @@ public:
 
 	buffer_.shrink_to_fit();
 
-	status = builder_->AppendValues(buffer_);
+  status = strangeProblem(builder_, buffer_);
+
 	if (!status.ok()) {
 	  return tl::make_unexpected(status.message());
 	}
@@ -55,6 +56,8 @@ public:
 
 	return array;
   }
+
+::arrow::Status strangeProblem(const std::shared_ptr<ArrowBuilderType> &builder, const std::vector<CType> &buffer);
 
 private:
   std::vector<CType> buffer_;
@@ -72,10 +75,12 @@ public:
 	if (type->id() == ::arrow::StringType::type_id) {
 	  return ArrayAppenderWrapper<std::string, ::arrow::StringType>::make(expectedSize);
 	}  else if (type->id() == ::arrow::Int32Type::type_id) {
-	  return ArrayAppenderWrapper<int, ::arrow::Int32Type>::make(expectedSize);
-	}else if (type->id() == ::arrow::Int64Type::type_id) {
-	  return ArrayAppenderWrapper<long, ::arrow::Int64Type>::make(expectedSize);
-	} else {
+	  return ArrayAppenderWrapper<::arrow::Int32Type::c_type, ::arrow::Int32Type>::make(expectedSize);
+	} else if (type->id() == ::arrow::Int64Type::type_id) {
+	  return ArrayAppenderWrapper<::arrow::Int64Type::c_type, ::arrow::Int64Type>::make(expectedSize);
+	} else if (type->id() == ::arrow::DoubleType::type_id) {
+    return ArrayAppenderWrapper<::arrow::DoubleType::c_type, ::arrow::DoubleType>::make(expectedSize);
+  } else {
 	  return tl::make_unexpected(
 		  fmt::format("ArrayAppender not implemented for type '{}'", type->name()));
 	}

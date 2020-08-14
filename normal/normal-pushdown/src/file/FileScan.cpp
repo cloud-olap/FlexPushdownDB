@@ -93,6 +93,7 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 
   return std::make_shared<FileScan>(name,
 									filePath,
+									fileType,
 									canonicalColumnNames,
 									startOffset,
 									finishOffset,
@@ -141,7 +142,7 @@ void FileScan::readAndSendTuples(const std::vector<std::string> &columnNames){
   if (columnNames.empty()) {
     readTupleSet = TupleSet2::make2();
   } else {
-    auto expectedReadTupleSet = readCSVFile(columnNames);
+    auto expectedReadTupleSet = kernel_->scan(columnNames);
     readTupleSet = expectedReadTupleSet.value();
 
     // Store the read columns in the cache

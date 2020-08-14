@@ -14,14 +14,9 @@ namespace normal::connector::s3 {
 
 class S3SelectConnector : public normal::connector::Connector {
 
-private:
-  std::shared_ptr<pushdown::AWSClient> awsClient_;
-
 public:
   explicit S3SelectConnector(const std::string &name);
   ~S3SelectConnector() override = default;
-
-  [[nodiscard]] const std::shared_ptr<pushdown::AWSClient> &getAwsClient() const;
 
 };
 

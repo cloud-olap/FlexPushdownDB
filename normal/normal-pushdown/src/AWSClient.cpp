@@ -20,10 +20,12 @@ void AWSClient::shutdown() {
 }
 
 std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
+  auto client = std::make_shared<AWSClient>();
+  client->init();
 
   static const char *ALLOCATION_TAG = "Normal";
 
-  std::shared_ptr<Aws::S3::S3Client> client;
+  std::shared_ptr<Aws::S3::S3Client> s3Client;
   std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
 
   limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 50000000);
@@ -37,13 +39,13 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   config.writeRateLimiter = limiter;
   config.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(ALLOCATION_TAG, 4);
 
-  client = Aws::MakeShared<Aws::S3::S3Client>(ALLOCATION_TAG,
+  s3Client = Aws::MakeShared<Aws::S3::S3Client>(ALLOCATION_TAG,
                                               Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(
                                                   ALLOCATION_TAG),
                                               config,
                                               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
                                               true);
 
-  return client;
+  return s3Client;
 }
 }

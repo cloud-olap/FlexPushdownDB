@@ -16,6 +16,7 @@
 #include <normal/cache/FBRCachingPolicy.h>
 #include "ExperimentUtil.h"
 #include <normal/ssb/SqlGenerator.h>
+#include <normal/pushdown/Globals.h>
 
 #define SKIP_SUITE false
 
@@ -32,9 +33,7 @@ void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::strin
     auto s3Object = dir_prefix + tableName + ".tbl";
     s3Objects->emplace_back(s3Object);
   }
-  auto client = conn->getAwsClient();
-  client->init();
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, client->defaultS3Client());
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::pushdown::defaultS3Client);
 
   // configure s3Connector
   for (int tbl_id = 0; tbl_id < tableNames.size(); tbl_id++) {
@@ -74,9 +73,7 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
     auto objects = s3ObjectPair.second;
     s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
   }
-  auto client = conn->getAwsClient();
-  client->init();
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, client->defaultS3Client());
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::pushdown::defaultS3Client);
 
   // configure s3Connector
   for (auto const &s3ObjectPair: *s3ObjectsMap) {
@@ -118,8 +115,8 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
-//  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
+//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -130,7 +127,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 TEST_SUITE ("MainTests" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
-  spdlog::set_level(spdlog::level::info);
+//  spdlog::set_level(spdlog::level::info);
 
   // choose whether to use partitioned lineorder
   bool partitioned = true;
@@ -146,7 +143,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
           "query2.1.sql", "query2.2.sql", "query2.3.sql",
           "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
           "query4.1.sql", "query4.2.sql", "query4.3.sql"
-//          "query1.1.1.sql"
+//          "query3.1.sql"
   };
   std::vector<int> order1 = {
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
@@ -154,10 +151,11 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   std::vector<int> order2 = {
           0, 7, 12, 4, 11, 1, 3, 10, 8, 2, 9, 5, 6
   };
-//  order1.insert(order1.end(), order1.begin(), order1.end());
-//  order1.insert(order1.end(), order1.begin(), order1.end());
+  order1.insert(order1.end(), order1.begin(), order1.end());
+  order1.insert(order1.end(), order1.begin(), order1.end());
+  order1.insert(order1.end(), order1.begin(), order1.end());
   auto currentPath = filesystem::current_path();
-  auto sql_file_dir_path = currentPath.append("sql/filterlineorder");
+  auto sql_file_dir_path = currentPath.append("sql/original");
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf1/";
 
@@ -166,7 +164,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   auto fbr = FBRCachingPolicy::make(1024*1024*300);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode3, fbr);
+  normal::sql::Interpreter i(mode2, lru);
   if (partitioned) {
     configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 32);
   } else {
@@ -176,7 +174,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   // execute
   i.boot();
   int cnt = 1;
-  for (const auto index: order2) {
+  for (const auto index: order1) {
     // read sql file
     auto sql_file_name = sql_file_names[index];
     auto sql_file_path = sql_file_dir_path.append(sql_file_name);
@@ -189,11 +187,11 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
 
-  i.stop();
-
   SPDLOG_INFO("Sequence all finished");
   SPDLOG_INFO("Overall Metrics:\n{}", i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+
+  i.stop();
 }
 
 TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
@@ -366,5 +364,17 @@ TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
 
   SPDLOG_INFO("Warm-cache experiment finished, {} queries executed", executeBatchSize);
 }
+
+//void f(std::string msg) {
+//  SPDLOG_INFO(msg);
+//}
+//
+//TEST_CASE ("f" * doctest::skip(false || SKIP_SUITE)) {
+//  for (int i = 0; i < 100; i++) {
+//    std::thread t1(f, "Hello");
+//    t1.join();
+//  }
+//  SPDLOG_INFO("Finish");
+//}
 
 }
