@@ -102,10 +102,6 @@ auto execute(normal::sql::Interpreter &i) {
 auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics) {
   i.clearOperatorGraph();
 
-  if (i.getOperatorGraph()->getId() == 29) {
-    SPDLOG_INFO("Reach the hanging: {}", index);
-  }
-
   i.parse(sql);
 
   TestUtil::writeExecutionPlan(*i.getLogicalPlan());
@@ -126,8 +122,8 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
 TEST_SUITE ("MainTests" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
-//  spdlog::set_level(spdlog::level::info);
+TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
+  spdlog::set_level(spdlog::level::info);
 
   // choose whether to use partitioned lineorder
   bool partitioned = true;
@@ -151,11 +147,11 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   std::vector<int> order2 = {
           0, 7, 12, 4, 11, 1, 3, 10, 8, 2, 9, 5, 6
   };
-  order1.insert(order1.end(), order1.begin(), order1.end());
-  order1.insert(order1.end(), order1.begin(), order1.end());
-  order1.insert(order1.end(), order1.begin(), order1.end());
+//  order1.insert(order1.end(), order1.begin(), order1.end());
+//  order1.insert(order1.end(), order1.begin(), order1.end());
+//  order1.insert(order1.end(), order1.begin(), order1.end());
   auto currentPath = filesystem::current_path();
-  auto sql_file_dir_path = currentPath.append("sql/original");
+  auto sql_file_dir_path = currentPath.append("sql/filterlineorder");
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf1/";
 
@@ -164,7 +160,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   auto fbr = FBRCachingPolicy::make(1024*1024*300);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode2, lru);
+  normal::sql::Interpreter i(mode1, lru);
   if (partitioned) {
     configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 32);
   } else {
@@ -174,7 +170,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   // execute
   i.boot();
   int cnt = 1;
-  for (const auto index: order1) {
+  for (const auto index: order2) {
     // read sql file
     auto sql_file_name = sql_file_names[index];
     auto sql_file_path = sql_file_dir_path.append(sql_file_name);
@@ -283,15 +279,15 @@ TEST_CASE ("ColdCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Cold-cache experiment finished, {} queries executed", batchSize);
 }
 
-TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("WarmCacheExperiment" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 10, executeBatchSize = 40;
+  const int warmBatchSize = 10, executeBatchSize = 20;
   const size_t cacheSize = 1024*1024*300;
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf0.01/";
-  const int partitionNum = 10;
+  std::string dir_prefix = "ssb-sf1/";
+  const int partitionNum = 32;
   auto mode1 = normal::plan::operator_::mode::Modes::fullPushdownMode();
   auto mode2 = normal::plan::operator_::mode::Modes::pullupCachingMode();
   auto mode3 = normal::plan::operator_::mode::Modes::hybridCachingMode();
@@ -318,7 +314,7 @@ TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
 //    SPDLOG_INFO("sql {}", index);
 //    executeSql(i1, sqls[index - 1], false);
 //  }
-  SPDLOG_INFO("Cache warm phase finished");
+//  SPDLOG_INFO("Cache warm phase finished");
   SPDLOG_INFO("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= sqls.size(); ++index) {
     SPDLOG_INFO("sql {}:\n{}", index - warmBatchSize, sqls[index - 1]);
@@ -328,53 +324,41 @@ TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
   i1.stop();
   SPDLOG_INFO("Full-pushdown mode finished, metrics:\n{}", i1.showMetrics());
 
-//  i2.boot();
-//  SPDLOG_INFO("Pullup-caching mode start");
-//  SPDLOG_INFO("Cache warm phase:");
-//  for (auto index = 1; index <= warmBatchSize; ++index) {
-//    SPDLOG_INFO("sql {}", index);
-//    executeSql(i2, sqls[index - 1], false);
-//  }
-//  SPDLOG_INFO("Cache warm phase finished");
-//  SPDLOG_INFO("Execution phase:");
-//  for (auto index = warmBatchSize + 1; index <= sqls.size(); ++index) {
-//    SPDLOG_INFO("sql {}:\n{}", index - warmBatchSize, sqls[index - 1]);
-//    executeSql(i2, sqls[index - 1], true);
-//  }
-//  SPDLOG_INFO("Execution phase finished");
-//  i2.stop();
-//  SPDLOG_INFO("Pullup-caching mode finished, metrics:\n{}", i2.showMetrics());
+  i2.boot();
+  SPDLOG_INFO("Pullup-caching mode start");
+  SPDLOG_INFO("Cache warm phase:");
+  for (auto index = 1; index <= warmBatchSize; ++index) {
+    SPDLOG_INFO("sql {}", index);
+    executeSql(i2, sqls[index - 1], false);
+  }
+  SPDLOG_INFO("Cache warm phase finished");
+  SPDLOG_INFO("Execution phase:");
+  for (auto index = warmBatchSize + 1; index <= sqls.size(); ++index) {
+    SPDLOG_INFO("sql {}:\n{}", index - warmBatchSize, sqls[index - 1]);
+    executeSql(i2, sqls[index - 1], true);
+  }
+  SPDLOG_INFO("Execution phase finished");
+  i2.stop();
+  SPDLOG_INFO("Pullup-caching mode finished, metrics:\n{}", i2.showMetrics());
 
-//  i3.boot();
-//  SPDLOG_INFO("Hybrid-caching mode start");
-//  SPDLOG_INFO("Cache warm phase:");
-//  for (auto index = 1; index <= warmBatchSize; ++index) {
-//    SPDLOG_INFO("sql {}", index);
-//    executeSql(i3, sqls[index - 1], false);
-//  }
-//  SPDLOG_INFO("Cache warm phase finished");
-//  SPDLOG_INFO("Execution phase:");
-//  for (auto index = warmBatchSize + 1; index <= sqls.size(); ++index) {
-//    SPDLOG_INFO("sql {}:\n{}", index - warmBatchSize, sqls[index - 1]);
-//    executeSql(i3, sqls[index - 1], true);
-//  }
-//  SPDLOG_INFO("Execution phase finished");
-//  i3.stop();
-//  SPDLOG_INFO("Hybrid-caching mode finished, metrics:\n{}", i3.showMetrics());
+  i3.boot();
+  SPDLOG_INFO("Hybrid-caching mode start");
+  SPDLOG_INFO("Cache warm phase:");
+  for (auto index = 1; index <= warmBatchSize; ++index) {
+    SPDLOG_INFO("sql {}", index);
+    executeSql(i3, sqls[index - 1], false);
+  }
+  SPDLOG_INFO("Cache warm phase finished");
+  SPDLOG_INFO("Execution phase:");
+  for (auto index = warmBatchSize + 1; index <= sqls.size(); ++index) {
+    SPDLOG_INFO("sql {}:\n{}", index - warmBatchSize, sqls[index - 1]);
+    executeSql(i3, sqls[index - 1], true);
+  }
+  SPDLOG_INFO("Execution phase finished");
+  i3.stop();
+  SPDLOG_INFO("Hybrid-caching mode finished, metrics:\n{}", i3.showMetrics());
 
   SPDLOG_INFO("Warm-cache experiment finished, {} queries executed", executeBatchSize);
 }
-
-//void f(std::string msg) {
-//  SPDLOG_INFO(msg);
-//}
-//
-//TEST_CASE ("f" * doctest::skip(false || SKIP_SUITE)) {
-//  for (int i = 0; i < 100; i++) {
-//    std::thread t1(f, "Hello");
-//    t1.join();
-//  }
-//  SPDLOG_INFO("Finish");
-//}
 
 }

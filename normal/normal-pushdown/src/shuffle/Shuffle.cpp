@@ -45,6 +45,7 @@ void Shuffle::onComplete(const CompleteMessage &) {
     while (!(tupleArrived_ && onTupleNum_ == 0)) {
       std::this_thread::yield();
     }
+//    SPDLOG_INFO("Shuffle complete: {}", name());
 	  ctx()->notifyComplete();
   }
 }
@@ -53,6 +54,7 @@ void Shuffle::onTuple(const TupleMessage &message) {
   shuffleLock.lock();
   onTupleNum_++;
   tupleArrived_ = true;
+//  SPDLOG_INFO("Shuffle onTuple: {}", name());
   shuffleLock.unlock();
 
   // Set consumers if not (sometimes TupleMessages arrives before StartMessage)

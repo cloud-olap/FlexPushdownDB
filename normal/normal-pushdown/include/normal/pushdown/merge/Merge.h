@@ -42,6 +42,11 @@ private:
   std::list<std::shared_ptr<TupleSet2>> leftTupleSets_;
   std::list<std::shared_ptr<TupleSet2>> rightTupleSets_;
 
+  // Flags to make sure CompleteMessage is sent after all TupleMessages have been sent
+  int onTupleNum_ = 0;
+  bool tupleArrived_ = false;
+  std::mutex mergeLock;
+
 };
 
 }
