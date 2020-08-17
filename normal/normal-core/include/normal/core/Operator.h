@@ -47,8 +47,8 @@ public:
   std::map<std::string, std::shared_ptr<Operator>> consumers();
 
   void create(std::shared_ptr<OperatorContext> ctx);
-  void produce(const std::shared_ptr<Operator> &operator_);
-  void consume(const std::shared_ptr<Operator> &operator_);
+  virtual void produce(const std::shared_ptr<Operator> &operator_);
+  virtual void consume(const std::shared_ptr<Operator> &operator_);
   const std::string &getType() const;
 
 };

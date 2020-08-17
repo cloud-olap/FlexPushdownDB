@@ -31,6 +31,20 @@ void MergeOperator::onReceive(const Envelope &msg) {
   }
 }
 
+void MergeOperator::consume(const std::shared_ptr<Operator> &operator_) {
+  if(leftProducer_.has_value() && rightProducer_.has_value())
+	throw std::runtime_error("Left and right producer already set");
+  else {
+
+	Operator::consume(operator_);
+
+	if (!leftProducer_.has_value())
+	  leftProducer_ = operator_->name();
+	else if (!rightProducer_.has_value())
+	  rightProducer_ = operator_->name();
+  }
+}
+
 void MergeOperator::onStart() {
 
   auto producers_ = this->ctx()->operatorMap().get(OperatorRelationshipType::Producer);
@@ -38,13 +52,10 @@ void MergeOperator::onStart() {
   if (producers_.size() < 2)
 	throw std::runtime_error("Left and right producer not set");
 
-  leftProducer_ = producers_[0];
-  rightProducer_ = producers_[1];
-
   SPDLOG_DEBUG("Starting operator  |  name: '{}', leftProducer: {}, rightProducer: {}",
 			   name(),
-			   leftProducer_->name(),
-			   rightProducer_->name());
+			   leftProducer_.value(),
+			   rightProducer_.value());
 }
 
 void MergeOperator::onComplete(const CompleteMessage &) {
@@ -59,9 +70,9 @@ void MergeOperator::onTuple(const TupleMessage &message) {
   const auto &tupleSet = TupleSet2::create(message.tuples());
 
   // Add the tupleset to a slot in left or right producers tuple queue
-  if (message.sender() == leftProducer_->name()) {
+  if (message.sender() == leftProducer_.value()) {
 	leftTupleSets_.emplace_back(tupleSet);
-  } else if (message.sender() == rightProducer_->name()) {
+  } else if (message.sender() == rightProducer_.value()) {
 	rightTupleSets_.emplace_back(tupleSet);
   } else {
 	throw std::runtime_error(fmt::format("Unrecognized producer {}", message.sender()));

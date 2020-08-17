@@ -28,11 +28,12 @@ public:
   void onStart();
   void onComplete(const CompleteMessage &);
   void onTuple(const TupleMessage &message);
+  void consume(const std::shared_ptr<Operator> &operator_) override;
 
 private:
 
-  std::optional<LocalOperatorDirectoryEntry> leftProducer_  = std::nullopt;
-  std::optional<LocalOperatorDirectoryEntry> rightProducer_  = std::nullopt;
+  std::optional<std::string> leftProducer_  = std::nullopt;
+  std::optional<std::string> rightProducer_  = std::nullopt;
 
   std::list<std::shared_ptr<TupleSet2>> leftTupleSets_;
   std::list<std::shared_ptr<TupleSet2>> rightTupleSets_;

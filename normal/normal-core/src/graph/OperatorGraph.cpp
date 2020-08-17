@@ -38,27 +38,6 @@ void graph::OperatorGraph::put(const std::shared_ptr<Operator> &op) {
   operatorDirectory_.insert(OperatorDirectoryEntry(op->name(), std::nullopt, false));
 }
 
-void graph::OperatorGraph::startOperatorAndProducers(const std::shared_ptr<Operator>& op, std::unordered_map<std::string, bool> operatorStates){
-
-  if(!operatorStates[op->name()]) {
-	std::vector<caf::actor> actorHandles;
-	for (const auto &consumer: op->consumers())
-	  actorHandles.emplace_back(consumer.second->actorHandle());
-
-	auto sm = std::make_shared<normal::core::message::StartMessage>(actorHandles,
-																	fmt::format("/query-{}/{}",
-																				this->id_,
-																				GraphRootActorName));
-	(*rootActor_)->send(op->actorHandle(), normal::core::message::Envelope(sm));
-
-	operatorStates.emplace(op->name(), true);
-
-	for (const auto &producer: op->producers()) {
-	  startOperatorAndProducers(producer.second, operatorStates);
-	}
-  }
-}
-
 void graph::OperatorGraph::start() {
 
   startTime_ = std::chrono::steady_clock::now();
@@ -66,18 +45,19 @@ void graph::OperatorGraph::start() {
   // Mark all the operators as incomplete
   operatorDirectory_.setIncomplete();
 
-  // Traverse the graph from consumer to producer, keeping track of which have been sent start messages
-  std::unordered_map<std::string, bool> operatorStates;
-  for(const auto &op: m_operatorMap){
-	operatorStates.emplace(op.first, false);
-  }
 
-  for(const auto &entry: m_operatorMap){
-	auto ctx = entry.second;
+//   Send start messages to the actors
+  for (const auto &element: m_operatorMap) {
+	auto ctx = element.second;
 	auto op = ctx->op();
-	if(op->consumers().empty()){
-	  startOperatorAndProducers(op, operatorStates);
-	}
+
+	std::vector<caf::actor> actorHandles;
+	for (const auto &consumer: op->consumers())
+	  actorHandles.emplace_back(consumer.second->actorHandle());
+
+	auto sm = std::make_shared<message::StartMessage>(actorHandles, GraphRootActorName);
+
+	(*rootActor_)->send(op->actorHandle(), normal::core::message::Envelope(sm));
   }
 }
 

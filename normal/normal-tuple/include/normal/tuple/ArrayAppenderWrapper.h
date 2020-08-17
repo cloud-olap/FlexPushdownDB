@@ -75,17 +75,17 @@ template<>
 void ArrayAppenderWrapper<std::string, ::arrow::StringType>::appendValue(const std::shared_ptr<::arrow::Array> &array, int64_t i);
 
 template<>
-::arrow::Status ArrayAppenderWrapper<int, ::arrow::Int32Type>::strangeProblem(const std::shared_ptr<::arrow::Int32Builder> &builder, const std::vector<int> &buffer){
+inline ::arrow::Status ArrayAppenderWrapper<int, ::arrow::Int32Type>::strangeProblem(const std::shared_ptr<::arrow::Int32Builder> &builder, const std::vector<int> &buffer){
   return builder->AppendValues(buffer);
 }
 
 template<>
-::arrow::Status ArrayAppenderWrapper<long, ::arrow::Int64Type>::strangeProblem(const std::shared_ptr<::arrow::Int64Builder> &builder, const std::vector<long> &buffer){
+inline ::arrow::Status ArrayAppenderWrapper<long, ::arrow::Int64Type>::strangeProblem(const std::shared_ptr<::arrow::Int64Builder> &builder, const std::vector<long> &buffer){
   return builder->AppendValues(buffer);
 }
 
 template<>
-::arrow::Status ArrayAppenderWrapper<std::string, ::arrow::StringType>::strangeProblem(const std::shared_ptr<::arrow::StringBuilder> &builder, const std::vector<std::string> &buffer){
+inline ::arrow::Status ArrayAppenderWrapper<std::string, ::arrow::StringType>::strangeProblem(const std::shared_ptr<::arrow::StringBuilder> &builder, const std::vector<std::string> &buffer){
   return builder->AppendValues(buffer);
 }
 
