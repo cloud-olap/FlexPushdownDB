@@ -21,7 +21,7 @@ std::shared_ptr<SegmentCache> SegmentCache::make(const std::shared_ptr<CachingPo
   return std::make_shared<SegmentCache>(cachingPolicy);
 }
 
-void SegmentCache::store(const std::shared_ptr<SegmentKey> &key, const std::shared_ptr<SegmentData> &data, bool used) {
+void SegmentCache::store(const std::shared_ptr<SegmentKey> &key, const std::shared_ptr<SegmentData> &data) {
   auto removableKeys = cachingPolicy_->onStore(key);
 
   if (removableKeys.has_value()) {
@@ -29,14 +29,6 @@ void SegmentCache::store(const std::shared_ptr<SegmentKey> &key, const std::shar
       map_.erase(removableKey);
     }
     map_.emplace(key, data);
-  }
-
-  /**
-   * Calibration on hitNum
-   */
-  if (used) {
-    hitNum_++;
-    missNum_--;
   }
 }
 

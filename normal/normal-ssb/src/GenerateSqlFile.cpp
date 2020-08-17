@@ -15,9 +15,9 @@ void writeFile(std::string content, std::filesystem::path &filePath) {
 }
 
 int main() {
-  const int batchSize = 100;
+  const int batchSize = 10;
   SqlGenerator sqlGenerator;
-  auto sqls = sqlGenerator.generateSqlBatch(batchSize);
+  auto sqls = sqlGenerator.generateSqlBatchSkew(batchSize);
 
   auto sql_file_dir_path = std::filesystem::current_path().append("sql/generated");
   if (!std::filesystem::exists(sql_file_dir_path)) {

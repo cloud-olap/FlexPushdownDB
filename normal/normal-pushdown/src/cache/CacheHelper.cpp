@@ -40,8 +40,7 @@ void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &
 											  int64_t startOffset,
 											  int64_t finishOffset,
 											  const std::string &sender,
-											  const std::shared_ptr<OperatorContext> &ctx,
-											  bool used) {
+											  const std::shared_ptr<OperatorContext> &ctx) {
 
   assert(tupleSet);
   assert(startOffset >= 0);
@@ -61,6 +60,6 @@ void CacheHelper::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &
 	segmentsToStore.emplace(segmentKey, segmentData);
   }
 
-  ctx->send(StoreRequestMessage::make(segmentsToStore, sender, used), "SegmentCache")
+  ctx->send(StoreRequestMessage::make(segmentsToStore, sender), "SegmentCache")
 	  .map_error([](auto err) { throw std::runtime_error(err); });
 }

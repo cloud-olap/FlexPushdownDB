@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_FULLPULLUPMODE_H
 #define NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_FULLPULLUPMODE_H
 
-#include "mode.h"
+#include "Mode.h"
 
 namespace normal::plan::operator_::mode {
 

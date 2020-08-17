@@ -58,8 +58,7 @@ public:
 										  int64_t startOffset,
 										  int64_t finishOffset,
 										  const std::string &sender,
-										  const std::shared_ptr<OperatorContext> &ctx,
-										  bool used);
+										  const std::shared_ptr<OperatorContext> &ctx);
 };
 
 }

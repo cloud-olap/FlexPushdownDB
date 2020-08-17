@@ -19,16 +19,30 @@ enum QueryName {
     Unknown
 };
 
+enum SkewQueryName {
+    SkewQuery2_1, SkewQuery2_2, SkewQuery2_3,
+    SkewQuery3_1, SkewQuery3_2, SkewQuery3_3, SkewQuery3_4,
+    SkewQuery4_1, SkewQuery4_2, SkewQuery4_3,
+    SkewUnknown
+};
+
 class SqlGenerator {
 
 public:
   SqlGenerator();
-  std::vector<std::string> generateSqlBatch (int batchSize);
-  std::string generateSql (std::string queryName);
+  std::vector<std::string> generateSqlBatch(int batchSize);
+  std::string generateSql(std::string queryName);
+
+  /**
+   * The following is used to generate skew benchmark
+   */
+  std::vector<std::string> generateSqlBatchSkew(int batchSize);
+  std::string generateSqlSkew(std::string queryName, std::string lo_predicate);
 
 private:
   std::shared_ptr<std::default_random_engine> generator_;
   std::map<std::string, QueryName> queryNameMap_;
+  std::map<std::string, SkewQueryName> skewQueryNameMap_;
 
   std::string genQuery1_1();
   std::string genQuery1_2();
@@ -57,6 +71,20 @@ private:
   std::string genS_region();
   std::string genS_nation();
   std::string genS_city();
+
+  /**
+   * The following is used to generate skew benchmark
+   */
+  std::string genSkewQuery2_1(std::string lo_predicate);
+  std::string genSkewQuery2_2(std::string lo_predicate);
+  std::string genSkewQuery2_3(std::string lo_predicate);
+  std::string genSkewQuery3_1(std::string lo_predicate);
+  std::string genSkewQuery3_2(std::string lo_predicate);
+  std::string genSkewQuery3_3(std::string lo_predicate);
+  std::string genSkewQuery3_4(std::string lo_predicate);
+  std::string genSkewQuery4_1(std::string lo_predicate);
+  std::string genSkewQuery4_2(std::string lo_predicate);
+  std::string genSkewQuery4_3(std::string lo_predicate);
 };
 
 }
