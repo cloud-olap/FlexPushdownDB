@@ -6,6 +6,7 @@
 #include <normal/plan/operator_/type/OperatorTypes.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
+#include <normal/plan/Globals.h>
 
 using namespace normal::plan::operator_;
 
@@ -17,7 +18,7 @@ JoinLogicalOperator::JoinLogicalOperator(const std::string &leftColumnName, cons
           leftProducer_(leftProducer), rightProducer_(rightProducer){}
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogicalOperator::toOperators() {
-  const int numConcurrentUnits = 32;
+  auto numConcurrentUnits = JoinParallelDegree;
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
   // join build

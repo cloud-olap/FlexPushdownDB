@@ -10,6 +10,7 @@
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/core/Normal.h>
+#include <normal/tuple/FileType.h>
 
 using namespace normal::core;
 using namespace normal::core::graph;
@@ -24,44 +25,51 @@ class LocalFileSystemQueries {
 public:
 
   static std::shared_ptr<OperatorGraph> dateScan(const std::string &dataDir,
+												 FileType fileType,
 												 int numConcurrentUnits,
-												 const std::shared_ptr<OperatorManager> &mgr);
+												 const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> lineOrderScan(const std::string &dataDir,
-														int numConcurrentUnits,
-														const std::shared_ptr<OperatorManager> &mgr);
+													  FileType fileType,
+													  int numConcurrentUnits,
+													  const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> dateFilter(const std::string &dataDir,
-													 short year,
-													 int numConcurrentUnits,
-													 const std::shared_ptr<OperatorManager> &mgr);
+												   FileType fileType,
+												   short year,
+												   int numConcurrentUnits,
+												   const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> lineOrderFilter(const std::string &dataDir,
-														  short discount,
-														  short quantity,
-														  int numConcurrentUnits,
-														  const std::shared_ptr<OperatorManager> &mgr);
+														FileType fileType,
+														short discount,
+														short quantity,
+														int numConcurrentUnits,
+														const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> join(const std::string &dataDir,
-											   short year,
-											   short discount,
-											   short quantity,
-											   int numConcurrentUnits,
-											   const std::shared_ptr<OperatorManager> &mgr);
+											 FileType fileType,
+											 short year,
+											 short discount,
+											 short quantity,
+											 int numConcurrentUnits,
+											 const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> full(const std::string &dataDir,
-											   short year,
-											   short discount,
-											   short quantity,
-											   int numConcurrentUnits,
-											   const std::shared_ptr<OperatorManager> &mgr);
+											 FileType fileType,
+											 short year,
+											 short discount,
+											 short quantity,
+											 int numConcurrentUnits,
+											 const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> bloom(const std::string &dataDir,
-									   short year,
-									   short discount,
-									   short quantity,
-									   int numConcurrentUnits,
-									   const std::shared_ptr<Normal> &n);
+											  FileType fileType,
+											  short year,
+											  short discount,
+											  short quantity,
+											  int numConcurrentUnits,
+											  const std::shared_ptr<Normal> &n);
 };
 
 }

@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include <utility>
+#include <normal/tuple/ArrayAppenderWrapper.h>
 
 using namespace normal::pushdown::shuffle;
 using namespace normal::tuple;
@@ -27,7 +28,7 @@ RecordBatchShuffler::RecordBatchShuffler(int shuffleColumnIndex,
   for (size_t s = 0; s < numSlots; ++s) {
     shuffledAppendersVector_[s] = std::vector<std::shared_ptr<ArrayAppender>>{static_cast<size_t>(schema_->num_fields())};
     for (int c = 0; c < schema_->num_fields(); ++c) {
-      auto expectedAppender = ArrayAppender::make(schema_->field(c)->type(), DefaultChunkSize);
+      auto expectedAppender = ArrayAppenderBuilder::make(schema_->field(c)->type(), DefaultChunkSize);
       if (!expectedAppender.has_value()) {
         throw std::runtime_error(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
       }
@@ -98,7 +99,7 @@ tl::expected<void, std::string> RecordBatchShuffler::shuffle(const std::shared_p
           return tl::make_unexpected(expectedArray.error());
         }
         shuffledArraysVector_[partitionIndex][c].emplace_back(expectedArray.value());
-        auto expectedAppender = ArrayAppender::make(schema_->field(c)->type(), DefaultChunkSize);
+        auto expectedAppender = ArrayAppenderBuilder::make(schema_->field(c)->type(), DefaultChunkSize);
         if (!expectedAppender.has_value()) {
           throw std::runtime_error(fmt::format("{}, RecordBatchShuffler", expectedAppender.error()));
         }
@@ -145,20 +146,6 @@ tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> RecordBatchSh
       shuffledTupleSetVector[s] = TupleSet2::make(shuffledTable);
     }
   }
-
-//  // Create TupleSets from arrayAppenders
-//  std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSetVector{numSlots_};
-//  for (size_t s = 0; s < shuffledAppendersVector_.size(); ++s) {
-//    auto arrays = std::vector<std::shared_ptr<arrow::Array>>();
-//    for (auto const &arrayAppender: shuffledAppendersVector_[s]) {
-//      auto expectedArray = arrayAppender->finalize();
-//      if (!expectedArray.has_value()) {
-//        throw std::runtime_error(expectedArray.error());
-//      }
-//      arrays.emplace_back(expectedArray.value());
-//    }
-//    shuffledTupleSetVector[s] = TupleSet2::make(schema_, arrays);
-//  }
 
   return shuffledTupleSetVector;
 }

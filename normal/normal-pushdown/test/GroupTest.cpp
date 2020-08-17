@@ -40,7 +40,7 @@ TEST_CASE ("group" * doctest::skip(false || SKIP_SUITE)) {
 
   auto g = OperatorGraph::make(mgr);
 
-  auto scan = std::make_shared<FileScan>("fileScan", "data/group/a.csv", std::vector<std::string>{"AA", "AB"}, 0, numBytesAFile, g->getId());
+  auto scan = FileScan::make("fileScan", "data/group/a.csv", std::vector<std::string>{"AA", "AB"}, 0, numBytesAFile, g->getId());
   auto sumExpr = std::make_shared<normal::pushdown::aggregate::Sum>("sum",
 																	cast(col("AB"), float64Type()));
   auto

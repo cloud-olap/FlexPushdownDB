@@ -11,7 +11,7 @@ add_library(normal-pushdown STATIC
         src/s3/S3SelectScan.cpp include/normal/pushdown/s3/S3SelectScan.h
         src/file/FileScan.cpp include/normal/pushdown/file/FileScan.h
         src/Aggregate.cpp include/normal/pushdown/Aggregate.h
-        src/s3/S3SelectParser.cpp src/s3/S3SelectParser.h
+        src/s3/S3SelectParser.cpp include/normal/pushdown/s3/S3SelectParser.h
         src/aggregate/AggregationResult.cpp include/normal/pushdown/aggregate/AggregationResult.h
         src/aggregate/Sum.cpp include/normal/pushdown/aggregate/Sum.h
         src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h
@@ -26,7 +26,7 @@ add_library(normal-pushdown STATIC
         src/filter/Filter.cpp include/normal/pushdown/filter/Filter.h
         src/filter/FilterPredicate.cpp include/normal/pushdown/filter/FilterPredicate.h
         src/Sort.cpp include/normal/pushdown/Sort.h
-        src/cacheScan.cpp include/normal/pushdown/cacheScan.h
+        src/ATTIC/cacheScan.cpp include/normal/pushdown/ATTIC/cacheScan.h
         src/group/Group.cpp include/normal/pushdown/group/Group.h
         src/group/GroupKey.cpp include/normal/pushdown/group/GroupKey.h
         src/TupleMessage.cpp include/normal/pushdown/TupleMessage.h
@@ -47,15 +47,16 @@ add_library(normal-pushdown STATIC
         src/join/HashJoinProbeKernel2.cpp include/normal/pushdown/join/HashJoinProbeKernel2.h
         src/join/HashJoinBuildKernel2.cpp include/normal/pushdown/join/HashJoinBuildKernel2.h
         src/join/RecordBatchJoiner.cpp include/normal/pushdown/join/RecordBatchJoiner.h
-        src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h)
-#        src/bloomjoin/BloomCreateOperator.cpp include/normal/pushdown/bloomjoin/BloomCreateOperator.h
-#        src/bloomjoin/FileScanBloomUseOperator.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.h
-#        src/bloomjoin/BloomCreateKernel.cpp include/normal/pushdown/bloomjoin/BloomCreateKernel.h
-#        src/bloomjoin/FileScanBloomUseKernel.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.h
-#        src/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
-#        src/bloomjoin/UniversalHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalHashFunction.h
-#        src/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h
-#        src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h)
+        src/join/TupleSetIndexMessage.cpp include/normal/pushdown/join/TupleSetIndexMessage.h
+        src/bloomjoin/BloomCreateOperator.cpp include/normal/pushdown/bloomjoin/BloomCreateOperator.h
+        src/bloomjoin/FileScanBloomUseOperator.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseOperator.h
+        src/bloomjoin/BloomCreateKernel.cpp include/normal/pushdown/bloomjoin/BloomCreateKernel.h
+        src/bloomjoin/FileScanBloomUseKernel.cpp include/normal/pushdown/bloomjoin/FileScanBloomUseKernel.h
+        src/bloomjoin/SlicedBloomFilter.cpp include/normal/pushdown/bloomjoin/SlicedBloomFilter.h
+        src/bloomjoin/UniversalHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalHashFunction.h
+        src/bloomjoin/UniversalSQLHashFunction.cpp include/normal/pushdown/bloomjoin/UniversalSQLHashFunction.h
+        src/bloomjoin/BloomFilterMessage.cpp include/normal/pushdown/bloomjoin/BloomFilterMessage.h
+        src/file/FileScanKernel.cpp include/normal/pushdown/file/FileScanKernel.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

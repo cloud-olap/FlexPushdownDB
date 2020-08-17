@@ -48,8 +48,12 @@ public:
 
 private:
 	std::string columnName_;
-
 	std::vector<LocalOperatorDirectoryEntry> consumers_;
+
+	// Flags to make sure CompleteMessage is sent after all TupleMessages have been sent
+	int onTupleNum_ = 0;
+	bool tupleArrived_ = false;
+	std::mutex shuffleLock;
 };
 
 }

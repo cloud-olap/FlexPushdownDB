@@ -6,9 +6,11 @@
 #define NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_MODES_H
 
 #include <memory>
+#include "FullPullupMode.h"
 #include "FullPushdownMode.h"
 #include "PullupCachingMode.h"
 #include "HybridCachingMode.h"
+#include "HybridCachingLastMode.h"
 
 namespace normal::plan::operator_::mode{
 
@@ -18,9 +20,11 @@ namespace normal::plan::operator_::mode{
 class Modes {
 
 public:
+  static std::shared_ptr<FullPullupMode> fullPullupMode();
   static std::shared_ptr<FullPushdownMode> fullPushdownMode();
   static std::shared_ptr<PullupCachingMode> pullupCachingMode();
   static std::shared_ptr<HybridCachingMode> hybridCachingMode();
+  static std::shared_ptr<HybridCachingLastMode> hybridCachingLastMode();
 };
 
 }

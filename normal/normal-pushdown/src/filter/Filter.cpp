@@ -47,13 +47,18 @@ void Filter::onReceive(const normal::core::message::Envelope &Envelope) {
 }
 
 void Filter::onStart() {
-  received_->clear();
+//  received_->clear();
   assert(received_->validate());
-  filtered_->clear();
+//  filtered_->clear();
   assert(filtered_->validate());
 }
 
 void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
+  filterLock.lock();
+  onTupleNum_++;
+  tupleArrived_ = true;
+  filterLock.unlock();
+
 //  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   /**
    * Check if this filter is applicable, if not, just send an empty table and complete
@@ -65,6 +70,7 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
 
   if (*applicable_) {
     bufferTuples(tupleSet);
+//    SPDLOG_INFO("Filter onTuple: {}, {}, {}", tupleSet->numRows(), received_->numRows(), name());
     buildFilter();
     if (received_->numRows() > DefaultBufferSize) {
       filterTuples();
@@ -81,22 +87,32 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
             std::make_shared<core::message::CompleteMessage>(name());
     ctx()->tell(completeMessage);
     ctx()->notifyComplete();
+    complete_ = true;
   }
+
+  filterLock.lock();
+  onTupleNum_--;
+  filterLock.unlock();
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
-//  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
-  if(received_->getArrowTable().has_value()) {
-	filterTuples();
-	sendTuples();
+  if (complete_) {
+    return;
   }
 
-  std::shared_ptr<core::message::Message> completeMessage =
-          std::make_shared<core::message::CompleteMessage>(name());
-  ctx()->tell(completeMessage);
+//  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
 
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
-	ctx()->notifyComplete();
+    while (!(tupleArrived_ && onTupleNum_ == 0)) {
+      std::this_thread::yield();
+    }
+//    SPDLOG_INFO("Filter complete: {}, {}", received_->numRows(), name());
+    if(received_->getArrowTable().has_value()) {
+      filterTuples();
+      sendTuples();
+    }
+    ctx()->notifyComplete();
+    complete_ = true;
   }
 }
 
@@ -152,6 +168,7 @@ void Filter::sendTuples() {
 	  std::make_shared<core::message::TupleMessage>(filtered_->toTupleSetV1(), name());
 
   ctx()->tell(tupleMessage);
+//  SPDLOG_INFO("Filter send tuples: {}", name());
   filtered_->clear();
   assert(filtered_->validate());
 }

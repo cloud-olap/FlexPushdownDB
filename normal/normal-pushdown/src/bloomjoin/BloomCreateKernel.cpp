@@ -37,7 +37,7 @@ tl::expected<double, std::string> BloomCreateKernel::calculateBestFalsePositiveR
     return tl::make_unexpected("No TupleSets added");
   }
 
-  ulong m = MaxS3SelectExpressionLength - (maxBloomJoinUseSQLTemplateSize + MaxBloomFilterPredicateSQLTemplateLength);
+  u_long m = MaxS3SelectExpressionLength - (maxBloomJoinUseSQLTemplateSize + MaxBloomFilterPredicateSQLTemplateLength);
   auto requiredFalsePositiveRate = SlicedBloomFilter::calculateFalsePositiveRate(m, (int)receivedTupleSet_.value()->numRows());
 
   if (requiredFalsePositiveRate > desiredFalsePositiveRate_) {
@@ -48,6 +48,9 @@ tl::expected<double, std::string> BloomCreateKernel::calculateBestFalsePositiveR
 }
 
 tl::expected<void, std::string> BloomCreateKernel::buildBloomFilter() {
+
+  ::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
+  ::arrow::Status status;
 
   size_t maxBloomJoinUseSQLTemplateSize = 0;
   for(const auto &bloomJoinUseSQLTemplate: bloomJoinUseSQLTemplates_)
@@ -62,13 +65,29 @@ tl::expected<void, std::string> BloomCreateKernel::buildBloomFilter() {
   int keyColumnIndex = receivedTupleSet_.value()->schema().value()->getFieldIndexByName(columnName_);
   auto table = receivedTupleSet_.value()->getArrowTable().value();
 
-  ::arrow::TableBatchReader tableBatchReader(*table);
-  auto result = tableBatchReader.Next();
+  ::arrow::TableBatchReader reader(*table);
+  reader.set_chunksize(DefaultChunkSize);
 
-  while(*result){
-    auto recordBatch = *result;
-	addRecordBatchToBloomFilter(*recordBatch, keyColumnIndex);
-	result = tableBatchReader.Next();
+  // Read a batch
+  recordBatchResult = reader.Next();
+  if (!recordBatchResult.ok()) {
+	return tl::make_unexpected(recordBatchResult.status().message());
+  }
+  auto recordBatch = *recordBatchResult;
+
+  while(recordBatch){
+
+	auto result = addRecordBatchToBloomFilter(*recordBatch, keyColumnIndex);
+	if (!result.has_value()) {
+	  return tl::make_unexpected(result.error());
+	}
+
+	// Read a batch
+	recordBatchResult = reader.Next();
+	if (!recordBatchResult.ok()) {
+	  return tl::make_unexpected(recordBatchResult.status().message());
+	}
+	recordBatch = *recordBatchResult;
   }
 
   return {};

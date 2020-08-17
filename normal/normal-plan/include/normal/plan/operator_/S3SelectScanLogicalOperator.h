@@ -21,20 +21,17 @@ namespace normal::plan::operator_ {
 class S3SelectScanLogicalOperator : public ScanLogicalOperator {
 
 public:
-  S3SelectScanLogicalOperator(const std::shared_ptr<S3SelectPartitioningScheme> &partitioningScheme,
-							  std::shared_ptr<pushdown::AWSClient> AwsClient);
+  S3SelectScanLogicalOperator(const std::shared_ptr<S3SelectPartitioningScheme> &partitioningScheme);
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
-  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsFullPushDown(int numRanges);
-
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsFullPullup(int numRanges);
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsFullPushdown(int numRanges);
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsPullupCaching(int numRanges);
-
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsHybridCaching(int numRanges);
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsHybridCachingLast(int numRanges);
 
 private:
-  std::shared_ptr<pushdown::AWSClient> awsClient_;
-
   std::string genFilterSql();
 
 };

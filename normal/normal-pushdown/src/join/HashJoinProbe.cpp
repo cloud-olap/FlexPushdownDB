@@ -47,6 +47,7 @@ void HashJoinProbe::onStart() {
 }
 
 void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
+//  SPDLOG_INFO("On tuple: {}", name());
   // Add the tuples to the internal buffer
   bufferTuples(msg);
 }
@@ -70,6 +71,7 @@ void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg)
 void HashJoinProbe::onComplete(const normal::core::message::CompleteMessage &) {
   if (ctx()->operatorMap().allComplete(normal::core::OperatorRelationshipType::Producer)) {
 	joinAndSendTuples();
+//    SPDLOG_INFO("Join probe complete: {}", name());
 	ctx()->notifyComplete();
   }
 }

@@ -9,7 +9,7 @@
 #include <string>
 
 #include <aws/s3/S3Client.h>
-#include <normal/core/Cache.h>
+
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/tuple/TupleSet2.h>
@@ -71,9 +71,11 @@ private:
    * Flags:
    * 1) scanOnStart_: send request to s3 at the beginning
    * 2) toCache_: whether the segments are to be cached
+   * 3) resultNeeded_: whether the segments will be used in the current query
    */
   bool scanOnStart_;
   bool toCache_;
+  bool resultNeeded_;
 
   void onStart();
   void onReceive(const Envelope &message) override;

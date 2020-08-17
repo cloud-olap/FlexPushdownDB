@@ -138,8 +138,10 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
         streamOutPhysicalOperators = toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
         break;
 
+      case normal::plan::operator_::mode::FullPullup:
       case normal::plan::operator_::mode::PullupCaching:
-      case normal::plan::operator_::mode::HybridCaching: {
+      case normal::plan::operator_::mode::HybridCaching:
+      case normal::plan::operator_::mode::HybridCachingLast: {
         // get scan physical operators
         toPhysicalOperators(logicalProducer, logicalToPhysical_map, allPhysicalOperators);
         // get stream-out operators

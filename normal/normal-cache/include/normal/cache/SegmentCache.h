@@ -22,7 +22,7 @@ public:
   static std::shared_ptr<SegmentCache> make();
   static std::shared_ptr<SegmentCache> make(const std::shared_ptr<CachingPolicy>& cachingPolicy);
 
-  void store(const std::shared_ptr<SegmentKey>& key, const std::shared_ptr<SegmentData>& data);
+  void store(const std::shared_ptr<SegmentKey>& key, const std::shared_ptr<SegmentData>& data, bool used);
   tl::expected<std::shared_ptr<SegmentData>, std::string> load(const std::shared_ptr<SegmentKey>& key);
   unsigned long remove(const std::shared_ptr<SegmentKey>& key);
   unsigned long remove(const std::function<bool(const SegmentKey& entry)>& predicate);

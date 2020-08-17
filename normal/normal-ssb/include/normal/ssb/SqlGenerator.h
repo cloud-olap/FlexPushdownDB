@@ -50,6 +50,7 @@ private:
   std::string genD_yearmonth();
   int genLo_discount();
   int genLo_quantity();
+  std::string genLo_predicate();
   int genP_category_num();
   int genP_brand1_num();
   int genP_mfgr_num();

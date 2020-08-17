@@ -2,9 +2,10 @@
 // Created by Yifei Yang on 8/8/20.
 //
 
-#include "normal/ssb/SqlGenerator.h"
+#include <normal/ssb/SqlGenerator.h>
 #include <random>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 using namespace normal::ssb;
 
@@ -135,6 +136,7 @@ std::string SqlGenerator::genQuery1_3() {
 std::string SqlGenerator::genQuery2_1() {
   auto p_category = "MFGR#" + std::to_string(genP_category_num());
   auto s_region = genS_region();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select sum(lo_revenue), d_year, p_brand1\n"
           "from lineorder, date, part, supplier\n"
@@ -143,10 +145,12 @@ std::string SqlGenerator::genQuery2_1() {
           "  and lo_suppkey = s_suppkey\n"
           "  and p_category = '{}'\n"
           "  and s_region = '{}'\n"
+          "  and {}\n"
           "group by d_year, p_brand1\n"
           "order by d_year, p_brand1;",
           p_category,
-          s_region
+          s_region,
+          lo_predicate
           );
 }
 
@@ -155,6 +159,7 @@ std::string SqlGenerator::genQuery2_2() {
   auto p_brand1_0 = "MFGR#" + std::to_string(p_brand1_num - 3);
   auto p_brand1_1 = "MFGR#" + std::to_string(p_brand1_num + 4);
   auto s_region = genS_region();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select sum(lo_revenue), d_year, p_brand1\n"
           "from lineorder, date, part, supplier\n"
@@ -163,17 +168,20 @@ std::string SqlGenerator::genQuery2_2() {
           "  and lo_suppkey = s_suppkey\n"
           "  and (p_brand1 between '{}' and '{}')\n"
           "  and s_region = '{}'\n"
+          "  and {}\n"
           "group by d_year, p_brand1\n"
           "order by d_year, p_brand1;",
           p_brand1_0,
           p_brand1_1,
-          s_region
+          s_region,
+          lo_predicate
           );
 }
 
 std::string SqlGenerator::genQuery2_3() {
   auto p_brand1 = "MFGR#" + std::to_string(genP_brand1_num());
   auto s_region = genS_region();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select sum(lo_revenue), d_year, p_brand1\n"
           "from lineorder, date, part, supplier\n"
@@ -182,10 +190,12 @@ std::string SqlGenerator::genQuery2_3() {
           "  and lo_suppkey = s_suppkey\n"
           "  and p_brand1 = '{}'\n"
           "  and s_region = '{}'\n"
+          "  and {}\n"
           "group by d_year, p_brand1\n"
           "order by d_year, p_brand1;",
           p_brand1,
-          s_region
+          s_region,
+          lo_predicate
           );
 }
 
@@ -194,6 +204,7 @@ std::string SqlGenerator::genQuery3_1() {
   auto d_year1 = genD_year();
   auto d_year2 = genD_year();
   auto d_year_pair = (d_year1 <= d_year2) ? std::make_pair(d_year1, d_year2) : std::make_pair(d_year2, d_year1);
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_nation, s_nation, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -204,11 +215,13 @@ std::string SqlGenerator::genQuery3_1() {
           "  and s_region = '{0}'\n"
           "  and d_year >= {1}\n"
           "  and d_year <= {2}\n"
+          "  and {3}\n"
           "group by c_nation, s_nation, d_year\n"
           "order by d_year asc, revenue desc;",
           region,
           d_year_pair.first,
-          d_year_pair.second
+          d_year_pair.second,
+          lo_predicate
           );
 }
 
@@ -217,6 +230,7 @@ std::string SqlGenerator::genQuery3_2() {
   auto d_year1 = genD_year();
   auto d_year2 = genD_year();
   auto d_year_pair = (d_year1 <= d_year2) ? std::make_pair(d_year1, d_year2) : std::make_pair(d_year2, d_year1);
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_city, s_city, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -227,11 +241,13 @@ std::string SqlGenerator::genQuery3_2() {
           "  and s_nation = '{0}'\n"
           "  and d_year >= {1}\n"
           "  and d_year <= {2}\n"
+          "  and {3}\n"
           "group by c_city, s_city, d_year\n"
           "order by d_year asc, revenue desc;",
           nation,
           d_year_pair.first,
-          d_year_pair.second
+          d_year_pair.second,
+          lo_predicate
   );
 }
 
@@ -241,6 +257,7 @@ std::string SqlGenerator::genQuery3_3() {
   auto d_year1 = genD_year();
   auto d_year2 = genD_year();
   auto d_year_pair = (d_year1 <= d_year2) ? std::make_pair(d_year1, d_year2) : std::make_pair(d_year2, d_year1);
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_city, s_city, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -251,12 +268,14 @@ std::string SqlGenerator::genQuery3_3() {
           "  and (s_city = '{0}' or s_city = '{1}')\n"
           "  and d_year >= {2}\n"
           "  and d_year <= {3}\n"
+          "  and {4}\n"
           "group by c_city, s_city, d_year\n"
           "order by d_year asc, revenue desc;",
           city1,
           city2,
           d_year_pair.first,
-          d_year_pair.second
+          d_year_pair.second,
+          lo_predicate
   );
 }
 
@@ -264,6 +283,7 @@ std::string SqlGenerator::genQuery3_4() {
   auto city1 = genS_city();
   auto city2 = genS_city();
   auto d_yearmonth = genD_yearmonth();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_city, s_city, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -273,11 +293,13 @@ std::string SqlGenerator::genQuery3_4() {
           "  and (c_city = '{0}' or c_city = '{1}')\n"
           "  and (s_city = '{0}' or s_city = '{1}')\n"
           "  and d_yearmonth = '{2}'\n"
+          "  and {3}\n"
           "group by c_city, s_city, d_year\n"
           "order by d_year asc, revenue desc;",
           city1,
           city2,
-          d_yearmonth
+          d_yearmonth,
+          lo_predicate
   );
 }
 
@@ -285,6 +307,7 @@ std::string SqlGenerator::genQuery4_1() {
   auto region = genS_region();
   auto p_mfgr1 = "MFGR#" + std::to_string(genP_mfgr_num());
   auto p_mfgr2 = "MFGR#" + std::to_string(genP_mfgr_num());
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select d_year, c_nation, sum(lo_revenue - lo_supplycost) as profit\n"
           "from date, customer, supplier, part, lineorder\n"
@@ -295,11 +318,13 @@ std::string SqlGenerator::genQuery4_1() {
           "  and c_region = '{0}'\n"
           "  and s_region = '{0}'\n"
           "  and (p_mfgr = '{1}' or p_mfgr = '{2}')\n"
+          "  and {3}\n"
           "group by d_year, c_nation\n"
           "order by d_year, c_nation;",
           region,
           p_mfgr1,
-          p_mfgr2
+          p_mfgr2,
+          lo_predicate
           );
 }
 
@@ -309,6 +334,7 @@ std::string SqlGenerator::genQuery4_2() {
   auto d_year2 = genD_year();
   auto p_mfgr1 = "MFGR#" + std::to_string(genP_mfgr_num());
   auto p_mfgr2 = "MFGR#" + std::to_string(genP_mfgr_num());
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select d_year, s_nation, p_category, sum(lo_revenue - lo_supplycost) as profit\n"
           "from date, customer, supplier, part, lineorder\n"
@@ -320,13 +346,15 @@ std::string SqlGenerator::genQuery4_2() {
           "  and s_region = '{0}'\n"
           "  and (d_year = {1} or d_year = {2})\n"
           "  and (p_mfgr = '{3}' or p_mfgr = '{4}')\n"
+          "  and {5}\n"
           "group by d_year, s_nation, p_category\n"
           "order by d_year, s_nation, p_category;",
           region,
           d_year1,
           d_year2,
           p_mfgr1,
-          p_mfgr2
+          p_mfgr2,
+          lo_predicate
   );
 }
 
@@ -335,6 +363,7 @@ std::string SqlGenerator::genQuery4_3() {
   auto d_year1 = genD_year();
   auto d_year2 = genD_year();
   auto p_category = "MFGR#" + std::to_string(genP_category_num());
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select d_year, s_city, p_brand1, sum(lo_revenue - lo_supplycost) as profit\n"
           "from date, customer, supplier, part, lineorder\n"
@@ -345,12 +374,14 @@ std::string SqlGenerator::genQuery4_3() {
           "  and s_nation = '{}'\n"
           "  and (d_year = {} or d_year = {})\n"
           "  and p_category = '{}'\n"
+          "  and {}\n"
           "group by d_year, s_city, p_brand1\n"
           "order by d_year, s_city, p_brand1;",
           s_nation,
           d_year1,
           d_year2,
-          p_category
+          p_category,
+          lo_predicate
   );
 }
 
@@ -433,4 +464,22 @@ std::string SqlGenerator::genS_city() {
   std::uniform_int_distribution<int> distribution2(0,9);
   auto city_num = distribution2(*generator_);
   return nation + std::to_string(city_num);
+}
+
+std::string SqlGenerator::genLo_predicate() {
+  const int numKinds = 2;
+  std::uniform_int_distribution<int> distribution(1, numKinds);
+  auto kind = distribution(*generator_);
+  switch (kind % numKinds) {
+    case 0: {
+      auto lo_discount = genLo_discount();
+      return "lo_discount between " + std::to_string(lo_discount - 1) + " and " + std::to_string(lo_discount + 1);
+    }
+    case 1: {
+      auto lo_quantity = genLo_quantity();
+      return "lo_quantity between " + std::to_string(lo_quantity - 4) + " and " + std::to_string(lo_quantity + 5);
+    }
+    default:
+      throw std::runtime_error("Unimplemented lo_predicate kind");
+  }
 }

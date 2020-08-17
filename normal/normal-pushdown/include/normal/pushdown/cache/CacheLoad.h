@@ -24,7 +24,8 @@ public:
 					 std::vector<std::string> predicateColumnNames,
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
-					 int64_t finishOffset);
+					 int64_t finishOffset,
+					 bool useNewCacheLayout);
   ~CacheLoad() override = default;
 
   static std::shared_ptr<CacheLoad> make(const std::string &name,
@@ -32,7 +33,8 @@ public:
                      std::vector<std::string> predicateColumnNames,
 										 const std::shared_ptr<Partition>& partition,
 										 int64_t startOffset,
-										 int64_t finishOffset);
+										 int64_t finishOffset,
+										 bool useNewCacheLayout);
 
   void onStart();
   void onReceive(const Envelope &msg) override;
@@ -56,6 +58,11 @@ private:
   std::shared_ptr<Operator> hitOperator_;
   std::shared_ptr<Operator> missOperatorToCache_;
   std::shared_ptr<Operator> missOperatorToPushdown_;
+
+  /**
+   * whether to use the new cache layout after segments back or the last one without waiting
+   */
+  bool useNewCacheLayout_;
 
   void requestLoadSegmentsFromCache();
   void onCacheLoadResponse(const LoadResponseMessage &Message);

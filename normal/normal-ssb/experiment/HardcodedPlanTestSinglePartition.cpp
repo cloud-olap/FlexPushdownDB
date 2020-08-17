@@ -21,7 +21,7 @@
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Multiply.h>
 #include <normal/pushdown/group/Group.h>
-#include "ExperimentUtil.h"
+#include <normal/plan/Globals.h>
 
 #define SKIP_SUITE false
 
@@ -37,22 +37,22 @@ TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
 
   // operators
   auto s3Bucket = "s3filter";
-  auto s3Object = "ssb-sf0.01/date.tbl";
+  auto s3Object = "ssb-sf1/lineorder.tbl";
   std::vector<std::string> s3Objects = {s3Object};
   auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
   auto numBytes = partitionMap.find(s3Object)->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  std::vector<std::string> columns = {"d_datekey", "d_year"};
+  std::vector<std::string> columns = {"lo_extendedprice", "lo_discount"};
   auto lineorderScan = normal::pushdown::S3SelectScan::make(
           "SimpleScan",
           "s3filter",
           s3Object,
-          fmt::format("select d_datekey, d_year from s3Object where cast(d_year as int) = 1993"),
+          fmt::format(" where cast(lo_quantity as int) > 1"),
           columns,
           scanRanges[0].first,
           scanRanges[0].second,
           normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-          client.defaultS3Client(),
+          normal::plan::DefaultS3Client,
           true);
 
   auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
