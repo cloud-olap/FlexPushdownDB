@@ -31,9 +31,18 @@ public:
 	return std::make_shared<ArrayAppenderWrapper>(expectedSize);
   }
 
-  void appendValue(const std::shared_ptr<::arrow::Array> &array, int64_t i) override{
+  void appendValue(const std::shared_ptr<::arrow::Array> &array, int64_t i) override {
 	buffer_.emplace_back(std::static_pointer_cast<ArrowArrayType>(array)->Value(i));
   }
+
+  /**
+   * Need this to compile on Mac, not sure why???
+   *
+   * @param builder
+   * @param buffer
+   * @return
+   */
+  ::arrow::Status strangeProblem(const std::shared_ptr<ArrowBuilderType> &builder, const std::vector<CType> &buffer);
 
   tl::expected<std::shared_ptr<arrow::Array>, std::string> finalize() override {
 	::arrow::Status status;
@@ -41,7 +50,7 @@ public:
 
 	buffer_.shrink_to_fit();
 
-	status = builder_->AppendValues(buffer_);
+	status = strangeProblem(builder_, buffer_);
 	if (!status.ok()) {
 	  return tl::make_unexpected(status.message());
 	}
@@ -64,6 +73,21 @@ private:
 
 template<>
 void ArrayAppenderWrapper<std::string, ::arrow::StringType>::appendValue(const std::shared_ptr<::arrow::Array> &array, int64_t i);
+
+template<>
+::arrow::Status ArrayAppenderWrapper<int, ::arrow::Int32Type>::strangeProblem(const std::shared_ptr<::arrow::Int32Builder> &builder, const std::vector<int> &buffer){
+  return builder->AppendValues(buffer);
+}
+
+template<>
+::arrow::Status ArrayAppenderWrapper<long, ::arrow::Int64Type>::strangeProblem(const std::shared_ptr<::arrow::Int64Builder> &builder, const std::vector<long> &buffer){
+  return builder->AppendValues(buffer);
+}
+
+template<>
+::arrow::Status ArrayAppenderWrapper<std::string, ::arrow::StringType>::strangeProblem(const std::shared_ptr<::arrow::StringBuilder> &builder, const std::vector<std::string> &buffer){
+  return builder->AppendValues(buffer);
+}
 
 class ArrayAppenderBuilder {
 public:
