@@ -70,7 +70,7 @@ void OperatorManager::stop() {
 }
 
 OperatorManager::OperatorManager() : queryCounter_(0){
-  actorSystemConfig.load<caf::io::middleman>();
+//  actorSystemConfig.load<caf::io::middleman>();
   actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
   rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
 }
