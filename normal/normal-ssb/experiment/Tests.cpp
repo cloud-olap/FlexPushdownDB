@@ -144,6 +144,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
 //          "query3.1.sql"
   };
   std::vector<int> order1 = {
+//          12,12
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
   };
   std::vector<int> order2 = {
