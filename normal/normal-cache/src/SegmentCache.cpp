@@ -34,10 +34,10 @@ void SegmentCache::store(const std::shared_ptr<SegmentKey> &key, const std::shar
   /**
    * Calibration on hitNum
    */
-  if (used) {
-    hitNum_++;
-    missNum_--;
-  }
+//  if (used) {
+//    hitNum_++;
+//    missNum_--;
+//  }
 }
 
 tl::expected<std::shared_ptr<SegmentData>,

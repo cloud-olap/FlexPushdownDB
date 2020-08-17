@@ -374,7 +374,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   std::string dir_prefix = "ssb-sf1/";
   const int partitionNum = 32;
 
-  auto mode = normal::plan::operator_::mode::Modes::fullPullupMode();
+  auto mode = normal::plan::operator_::mode::Modes::hybridCachingLastMode();
   auto lru = LRUCachingPolicy::make(cacheSize);
   auto fbr = FBRCachingPolicy::make(cacheSize);
 

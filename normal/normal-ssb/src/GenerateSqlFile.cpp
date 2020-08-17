@@ -3,13 +3,13 @@
 //
 
 
-#include <filesystem>
+#include <experimental/filesystem>
 #include <fstream>
 #include <normal/ssb/SqlGenerator.h>
 
 using namespace normal::ssb;
 
-void writeFile(std::string content, std::filesystem::path &filePath) {
+void writeFile(std::string content, std::experimental::filesystem::path &filePath) {
   std::ofstream file(filePath.string());
   file << content;
 }
@@ -19,9 +19,9 @@ int main() {
   SqlGenerator sqlGenerator;
   auto sqls = sqlGenerator.generateSqlBatch(batchSize);
 
-  auto sql_file_dir_path = std::filesystem::current_path().append("sql/generated");
-  if (!std::filesystem::exists(sql_file_dir_path)) {
-    std::filesystem::create_directory(sql_file_dir_path);
+  auto sql_file_dir_path = std::experimental::filesystem::current_path().append("sql/generated");
+  if (!std::experimental::filesystem::exists(sql_file_dir_path)) {
+    std::experimental::filesystem::create_directory(sql_file_dir_path);
   }
 
   int index = 1;

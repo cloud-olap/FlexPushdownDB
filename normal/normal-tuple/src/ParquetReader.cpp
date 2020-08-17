@@ -4,7 +4,7 @@
 
 #include "normal/tuple/ParquetReader.h"
 
-#include <filesystem>
+#include <experimental/filesystem>
 
 using namespace normal::tuple;
 
@@ -100,7 +100,7 @@ ParquetReader::read(const std::vector<std::string> &columnNames, unsigned long s
 tl::expected<void, std::string> ParquetReader::open() {
   ::arrow::Status status;
 
-  auto absolutePath = std::filesystem::absolute(path_);
+  auto absolutePath = std::experimental::filesystem::absolute(path_);
 
   auto expectedInputStream = ::arrow::io::ReadableFile::Open(absolutePath);
   if (!expectedInputStream.ok())
