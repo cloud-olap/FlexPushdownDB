@@ -111,8 +111,8 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
-//  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
+//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -122,7 +122,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
 TEST_SUITE ("MainTests" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // choose whether to use partitioned lineorder
@@ -281,7 +281,7 @@ TEST_CASE ("ColdCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Cold-cache experiment finished, {} queries executed", batchSize);
 }
 
-TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("WarmCacheExperiment-Together" * doctest::skip(true || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
@@ -361,6 +361,56 @@ TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Hybrid-caching mode finished, metrics:\n{}", i3.showMetrics());
 
   SPDLOG_INFO("Warm-cache experiment finished, {} queries executed", executeBatchSize);
+}
+
+TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
+  spdlog::set_level(spdlog::level::info);
+
+  // parameters
+  const int warmBatchSize = 50, executeBatchSize = 50;
+  const size_t cacheSize = 1024*1024*300;
+  std::string bucket_name = "s3filter";
+  std::string dir_prefix = "ssb-sf1/";
+  const int partitionNum = 32;
+
+  auto mode = normal::plan::operator_::mode::Modes::fullPullupMode();
+  auto lru = LRUCachingPolicy::make(cacheSize);
+  auto fbr = FBRCachingPolicy::make(cacheSize);
+
+  auto currentPath = filesystem::current_path();
+  auto sql_file_dir_path = currentPath.append("sql/generated");
+
+  // interpreter
+  normal::sql::Interpreter i(mode, fbr);
+  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, partitionNum);
+
+  // execute
+  i.boot();
+  SPDLOG_INFO("{} mode start", mode->toString());
+  if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
+      mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
+    SPDLOG_INFO("Cache warm phase:");
+    for (auto index = 1; index <= warmBatchSize; ++index) {
+      SPDLOG_INFO("sql {}", index);
+      auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+      auto sql = ExperimentUtil::read_file(sql_file_path.string());
+      executeSql(i, sql, false);
+      sql_file_dir_path = sql_file_dir_path.parent_path();
+    }
+    SPDLOG_INFO("Cache warm phase finished");
+  }
+  SPDLOG_INFO("Execution phase:");
+  for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
+    SPDLOG_INFO("sql {}", index - warmBatchSize);
+    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    executeSql(i, sql, true);
+    sql_file_dir_path = sql_file_dir_path.parent_path();
+  }
+  SPDLOG_INFO("Execution phase finished");
+  SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
+  SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+  i.stop();
 }
 
 }

@@ -2,9 +2,10 @@
 // Created by Yifei Yang on 8/8/20.
 //
 
-#include "normal/ssb/SqlGenerator.h"
+#include <normal/ssb/SqlGenerator.h>
 #include <random>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 using namespace normal::ssb;
 

@@ -10,7 +10,7 @@ add_library(normal-ssb
         src/TestUtil.cpp include/normal/ssb/TestUtil.h
         src/SQLite3.cpp include/normal/ssb/SQLite3.h
         src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h
-        src/SSBSchema.cpp include/normal/ssb/SSBSchema.h)
+        src/SSBSchema.cpp include/normal/ssb/SSBSchema.h src/GenerateSqlFile.cpp)
 #        include/normal/ssb/common/Operators.h src/common/Operators.cpp
 #        src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
 #        src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
@@ -133,6 +133,12 @@ add_library(normal-ssb-query-generate
 
 target_link_libraries(normal-ssb-query-generate PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb-query-generate PRIVATE normal-ssb)
+
+add_executable(normal-ssb-query-generate-file
+        src/GenerateSqlFile.cpp)
+
+target_link_libraries(normal-ssb-query-generate-file PRIVATE normal-ssb-query-generate)
+target_link_libraries(normal-ssb-query-generate-file PRIVATE normal-ssb)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Experiment
