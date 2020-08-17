@@ -25,25 +25,27 @@ class StoreRequestMessage : public Message {
 
 public:
   StoreRequestMessage(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
-					  const std::string &sender);
+					  const std::string &sender,
+					  bool used);
 
   static std::shared_ptr<StoreRequestMessage>
   make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
-	   const std::string &sender);
-
-  static std::shared_ptr<StoreRequestMessage>
-  make(const std::shared_ptr<SegmentKey>&,
-	   const std::shared_ptr<SegmentData>& segment,
-	   const std::string &sender);
+	   const std::string &sender,
+	   bool used);
 
   [[nodiscard]] const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &
   getSegments() const;
+  [[nodiscard]] bool used() const;
 
   [[nodiscard]] std::string toString() const;
 
 private:
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments_;
 
+  /**
+   * Whether these segments are already used, i.e. used in the current query
+   */
+  bool used_;
 };
 
 }

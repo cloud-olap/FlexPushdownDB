@@ -73,8 +73,8 @@ void SegmentCacheActor::store(const StoreRequestMessage &msg) {
 //  SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
   for(const auto &segmentEntry: msg.getSegments()){
     auto segmentKey = segmentEntry.first;
-	auto segmentData = segmentEntry.second;
-	state_->cache->store(segmentKey, segmentData);
+    auto segmentData = segmentEntry.second;
+    state_->cache->store(segmentKey, segmentData, msg.used());
   }
 }
 

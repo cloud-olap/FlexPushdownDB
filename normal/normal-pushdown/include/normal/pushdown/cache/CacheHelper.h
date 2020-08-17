@@ -51,13 +51,15 @@ public:
    * @param tupleSet
    * @param sender
    * @param ctx
+   * @param used
    */
   static void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet,
 										  const std::shared_ptr<Partition> &partition,
 										  int64_t startOffset,
 										  int64_t finishOffset,
 										  const std::string &sender,
-										  const std::shared_ptr<OperatorContext> &ctx);
+										  const std::shared_ptr<OperatorContext> &ctx,
+										  bool used);
 };
 
 }

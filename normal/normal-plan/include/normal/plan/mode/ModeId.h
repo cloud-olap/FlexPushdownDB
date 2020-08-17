@@ -8,9 +8,11 @@
 namespace normal::plan::operator_::mode {
 
 enum ModeId {
+  FullPullup,
   FullPushdown,
   PullupCaching,
-  HybridCaching
+  HybridCaching,
+  HybridCachingLast
 };
 
 }

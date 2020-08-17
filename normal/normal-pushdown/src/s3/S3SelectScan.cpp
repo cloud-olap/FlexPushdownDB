@@ -41,7 +41,7 @@
 
 #include "normal/core/message/Message.h"                            // for Message
 #include "normal/tuple/TupleSet.h"                           // for TupleSet
-#include "S3SelectParser.h"
+#include "normal/pushdown/s3/S3SelectParser.h"
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/core/cache/LoadRequestMessage.h>
@@ -301,8 +301,9 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
 void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
   columnNames_ = message.getColumnNames();
   columns_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames_.size());
+  resultNeeded_ = message.isResultNeeded();
 
-  if (message.isResultNeeded()) {
+  if (resultNeeded_) {
     readAndSendTuples();
   }
 
@@ -312,16 +313,16 @@ void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
             message = std::make_shared<TupleMessage>(emptyTupleSet->toTupleSetV1(), this->name());
     ctx()->tell(message);
     SPDLOG_DEBUG(fmt::format("Finished because result not needed: {}/{}", s3Bucket_, s3Object_));
+    ctx()->notifyComplete();
 
     //just to cache
     readTuples();
-    ctx()->notifyComplete();
   }
 }
 
 void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
   auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_, finishOffset_ - startOffset_);
-  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx(), resultNeeded_);
 }
 
 }

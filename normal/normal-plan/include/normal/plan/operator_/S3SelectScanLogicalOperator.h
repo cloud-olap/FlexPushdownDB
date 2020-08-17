@@ -25,14 +25,13 @@ public:
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
-  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsFullPushDown(int numRanges);
-
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsFullPullup(int numRanges);
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsFullPushdown(int numRanges);
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsPullupCaching(int numRanges);
-
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsHybridCaching(int numRanges);
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsHybridCachingLast(int numRanges);
 
 private:
-
   std::string genFilterSql();
 
 };

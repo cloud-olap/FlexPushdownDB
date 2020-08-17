@@ -8,24 +8,17 @@ using namespace normal::core::cache;
 
 StoreRequestMessage::StoreRequestMessage(
 	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
-	const std::string &sender) :
+	const std::string &sender,
+	bool used) :
 	Message("StoreRequestMessage", sender),
-	segments_(std::move(segments)) {}
+	segments_(std::move(segments)),
+	used_(used) {}
 
 std::shared_ptr<StoreRequestMessage>
 StoreRequestMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
-						  const std::string &sender) {
-  return std::make_shared<StoreRequestMessage>(std::move(segments), sender);
-}
-
-std::shared_ptr<StoreRequestMessage>
-StoreRequestMessage::make(const std::shared_ptr<SegmentKey>& segmentKey,
-						  const std::shared_ptr<SegmentData>& segmentData,
-						  const std::string &sender) {
-  std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments;
-  segments.emplace(segmentKey, segmentData);
-
-  return make(segments, sender);
+						  const std::string &sender,
+						  bool used) {
+  return std::make_shared<StoreRequestMessage>(std::move(segments), sender, used);
 }
 
 const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &
@@ -45,4 +38,8 @@ std::string StoreRequestMessage::toString() const {
   s += "}";
 
   return s;
+}
+
+bool StoreRequestMessage::used() const {
+  return used_;
 }

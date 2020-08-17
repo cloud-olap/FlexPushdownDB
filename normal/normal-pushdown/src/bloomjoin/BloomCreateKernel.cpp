@@ -37,7 +37,7 @@ tl::expected<double, std::string> BloomCreateKernel::calculateBestFalsePositiveR
     return tl::make_unexpected("No TupleSets added");
   }
 
-  ulong m = MaxS3SelectExpressionLength - (maxBloomJoinUseSQLTemplateSize + MaxBloomFilterPredicateSQLTemplateLength);
+  u_long m = MaxS3SelectExpressionLength - (maxBloomJoinUseSQLTemplateSize + MaxBloomFilterPredicateSQLTemplateLength);
   auto requiredFalsePositiveRate = SlicedBloomFilter::calculateFalsePositiveRate(m, (int)receivedTupleSet_.value()->numRows());
 
   if (requiredFalsePositiveRate > desiredFalsePositiveRate_) {

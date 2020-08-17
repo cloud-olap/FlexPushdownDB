@@ -72,7 +72,7 @@ void graph::OperatorGraph::start() {
 	operatorStates.emplace(op.first, false);
   }
 
-  int index = 1;
+//  int index = 1;
   for(const auto &entry: m_operatorMap){
     auto ctx = entry.second;
     auto op = ctx->op();

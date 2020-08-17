@@ -16,7 +16,7 @@
 #include <normal/cache/FBRCachingPolicy.h>
 #include "ExperimentUtil.h"
 #include <normal/ssb/SqlGenerator.h>
-#include <normal/pushdown/Globals.h>
+#include <normal/plan/Globals.h>
 
 #define SKIP_SUITE false
 
@@ -33,7 +33,7 @@ void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::strin
     auto s3Object = dir_prefix + tableName + ".tbl";
     s3Objects->emplace_back(s3Object);
   }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::pushdown::defaultS3Client);
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::plan::DefaultS3Client);
 
   // configure s3Connector
   for (int tbl_id = 0; tbl_id < tableNames.size(); tbl_id++) {
@@ -73,7 +73,7 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
     auto objects = s3ObjectPair.second;
     s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
   }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::pushdown::defaultS3Client);
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::plan::DefaultS3Client);
 
   // configure s3Connector
   for (auto const &s3ObjectPair: *s3ObjectsMap) {
@@ -111,8 +111,8 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
-  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
+  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+//  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -122,16 +122,18 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
 TEST_SUITE ("MainTests" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
+TEST_CASE ("SequentialRun" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // choose whether to use partitioned lineorder
   bool partitioned = true;
 
   // choose mode
+  auto mode0 = normal::plan::operator_::mode::Modes::fullPullupMode();
   auto mode1 = normal::plan::operator_::mode::Modes::fullPushdownMode();
   auto mode2 = normal::plan::operator_::mode::Modes::pullupCachingMode();
   auto mode3 = normal::plan::operator_::mode::Modes::hybridCachingMode();
+  auto mode4 = normal::plan::operator_::mode::Modes::hybridCachingLastMode();
 
   // hardcoded parameters
   std::vector<std::string> sql_file_names = {
@@ -160,7 +162,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   auto fbr = FBRCachingPolicy::make(1024*1024*300);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode1, lru);
+  normal::sql::Interpreter i(mode3, fbr);
   if (partitioned) {
     configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 32);
   } else {
@@ -279,7 +281,7 @@ TEST_CASE ("ColdCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("Cold-cache experiment finished, {} queries executed", batchSize);
 }
 
-TEST_CASE ("WarmCacheExperiment" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("WarmCacheExperiment" * doctest::skip(true || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
