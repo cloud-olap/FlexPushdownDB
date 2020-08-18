@@ -144,7 +144,6 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
 //          "query3.1.sql"
   };
   std::vector<int> order1 = {
-//          12,12
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
   };
   std::vector<int> order2 = {
@@ -371,10 +370,10 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   const int warmBatchSize = 50, executeBatchSize = 50;
   const size_t cacheSize = 1024*1024*300;
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf1/";
-  const int partitionNum = 32;
+  std::string dir_prefix = "ssb-sf1-sortlineorder/";
+  const int partitionNum = 31;
 
-  auto mode = normal::plan::operator_::mode::Modes::hybridCachingLastMode();
+  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
   auto lru = LRUCachingPolicy::make(cacheSize);
   auto fbr = FBRCachingPolicy::make(cacheSize);
 

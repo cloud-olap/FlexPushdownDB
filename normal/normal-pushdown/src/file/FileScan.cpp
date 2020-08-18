@@ -159,7 +159,7 @@ void FileScan::onCacheLoadResponse(const ScanMessage &Message) {
 
 void FileScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
   auto partition = std::make_shared<LocalFilePartition>(kernel_->getPath());
-  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_->getStartPos(), kernel_->getFinishPos(), name(), ctx(), false);
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_->getStartPos(), kernel_->getFinishPos(), name(), ctx());
 }
 
 }

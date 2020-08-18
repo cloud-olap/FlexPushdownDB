@@ -301,9 +301,8 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
 void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
   columnNames_ = message.getColumnNames();
   columns_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames_.size());
-  resultNeeded_ = message.isResultNeeded();
 
-  if (resultNeeded_) {
+  if (message.isResultNeeded()) {
     readAndSendTuples();
   }
 
@@ -322,7 +321,7 @@ void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
 
 void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
   auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_, finishOffset_ - startOffset_);
-  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx(), resultNeeded_);
+  CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
 }

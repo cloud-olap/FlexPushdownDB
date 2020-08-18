@@ -27,6 +27,8 @@ public:
 
   std::shared_ptr<std::vector<std::string> > involvedColumnNames() override;
 
+  const std::string &value() const;
+
 private:
   std::string value_;
 };

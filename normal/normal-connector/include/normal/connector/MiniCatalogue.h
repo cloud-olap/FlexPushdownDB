@@ -8,7 +8,7 @@
 
 #include <unordered_map>
 #include <vector>
-#include <memory>
+#include <normal/connector/partition/Partition.h>
 
 namespace normal::connector {
 
@@ -21,11 +21,16 @@ public:
   MiniCatalogue(const std::shared_ptr<std::vector<std::string>> &tables,
                 const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> &schemas,
                 const std::shared_ptr<std::unordered_map<std::string, int>> &columnLengthMap,
-                const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder);
+                const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder,
+                const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
+                        std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &sortedColumns);
   static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue();
 
-  std::shared_ptr<std::vector<std::string>> tables();
-  std::shared_ptr<std::vector<std::string>> defaultJoinOrder();
+  const std::shared_ptr<std::vector<std::string>> &tables() const;
+  const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder() const;
+  const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &
+    sortedColumns() const;
+
   std::string findTableOfColumn(std::string columnName);
   double lengthFraction(std::string columnName);
 
@@ -36,6 +41,10 @@ private:
 
   // default star join order, "lineorder" is center, order rest from small size to large size
   std::shared_ptr<std::vector<std::string>> defaultJoinOrder_;
+
+  // FIXME: better if using std::pair<gandiva::Expression, gandiva::Expression> ?
+  std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
+    std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns_;
 };
 
 const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue();

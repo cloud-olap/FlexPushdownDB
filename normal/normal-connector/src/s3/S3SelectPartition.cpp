@@ -4,6 +4,10 @@
 
 #include "normal/connector/s3/S3SelectPartition.h"
 
+S3SelectPartition::S3SelectPartition(std::string bucket, std::string object) :
+        bucket_(bucket),
+        object_(object) {}
+
 S3SelectPartition::S3SelectPartition(std::string bucket, std::string object, long numBytes) :
 	bucket_(bucket),
 	object_(object),

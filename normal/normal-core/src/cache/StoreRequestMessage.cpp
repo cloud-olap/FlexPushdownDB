@@ -8,17 +8,14 @@ using namespace normal::core::cache;
 
 StoreRequestMessage::StoreRequestMessage(
 	std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
-	const std::string &sender,
-	bool used) :
+	const std::string &sender) :
 	Message("StoreRequestMessage", sender),
-	segments_(std::move(segments)),
-	used_(used) {}
+	segments_(std::move(segments)) {}
 
 std::shared_ptr<StoreRequestMessage>
 StoreRequestMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
-						  const std::string &sender,
-						  bool used) {
-  return std::make_shared<StoreRequestMessage>(std::move(segments), sender, used);
+						  const std::string &sender) {
+  return std::make_shared<StoreRequestMessage>(std::move(segments), sender);
 }
 
 const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &
@@ -38,8 +35,4 @@ std::string StoreRequestMessage::toString() const {
   s += "}";
 
   return s;
-}
-
-bool StoreRequestMessage::used() const {
-  return used_;
 }
