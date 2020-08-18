@@ -43,6 +43,10 @@ public:
     return std::make_shared<std::vector<std::string>>();
   }
 
+  C_TYPE value() const {
+    return value_;
+  }
+
 private:
   C_TYPE value_;
 

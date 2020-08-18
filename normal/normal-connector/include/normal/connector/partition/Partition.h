@@ -25,4 +25,16 @@ public:
 
 };
 
+struct PartitionPointerHash {
+  inline size_t operator()(const std::shared_ptr<Partition> &partition) const {
+    return partition->hash();
+  }
+};
+
+struct PartitionPointerPredicate {
+  inline bool operator()(const std::shared_ptr<Partition>& lhs, const std::shared_ptr<Partition>& rhs) const {
+    return lhs->equalTo(rhs);
+  }
+};
+
 #endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_CONNECTOR_PARTITION_PARTITION_H

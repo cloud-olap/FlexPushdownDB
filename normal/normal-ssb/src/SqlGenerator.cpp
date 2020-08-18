@@ -485,11 +485,11 @@ std::string SqlGenerator::genLo_predicate() {
   switch (kind % numKinds) {
     case 0: {
       auto lo_discount = genLo_discount();
-      return "lo_discount between " + std::to_string(lo_discount - 1) + " and " + std::to_string(lo_discount + 1);
+      return "(lo_discount between " + std::to_string(lo_discount - 1) + " and " + std::to_string(lo_discount + 1) + ")";
     }
     case 1: {
       auto lo_quantity = genLo_quantity();
-      return "lo_quantity between " + std::to_string(lo_quantity - 4) + " and " + std::to_string(lo_quantity + 5);
+      return "(lo_quantity between " + std::to_string(lo_quantity - 4) + " and " + std::to_string(lo_quantity + 5) + ")";
     }
     default:
       throw std::runtime_error("Unimplemented lo_predicate kind");
@@ -515,10 +515,10 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkew(int batchSize) {
   for (int i = 0; i < batchSize; i++) {
     std::string lo_predicate;
     int kind = distribution1(*generator_);
-    if (kind <= hotPercentage) {
-      lo_predicate = fmt::format("lo_orderdate between {} and {}", 19911231, 19930523);
+    if (kind > hotPercentage) {
+      lo_predicate = fmt::format("(lo_orderdate between '{}' and '{}')", 19911231, 19930523);
     } else {
-      lo_predicate = fmt::format("lo_orderdate between {} and {}", 19930524, 19981231);
+      lo_predicate = fmt::format("(lo_orderdate between '{}' and '{}')", 19930524, 19981231);
     }
 
     int skewQueryIndex = distribution2(*generator_);
@@ -554,9 +554,10 @@ std::string SqlGenerator::generateSqlSkew(std::string queryName, std::string lo_
   }
 }
 
-std::string SqlGenerator::genSkewQuery2_1(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery2_1(std::string skewLo_predicate) {
   auto p_category = "MFGR#" + std::to_string(genP_category_num());
   auto s_region = genS_region();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select sum(lo_revenue), d_year, p_brand1\n"
           "from lineorder, date, part, supplier\n"
@@ -566,19 +567,22 @@ std::string SqlGenerator::genSkewQuery2_1(std::string lo_predicate) {
           "  and p_category = '{}'\n"
           "  and s_region = '{}'\n"
           "  and {}\n"
+          "  and {}\n"
           "group by d_year, p_brand1\n"
           "order by d_year, p_brand1;",
           p_category,
           s_region,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery2_2(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery2_2(std::string skewLo_predicate) {
   auto p_brand1_num = genP_brand1_num();
   auto p_brand1_0 = "MFGR#" + std::to_string(p_brand1_num - 3);
   auto p_brand1_1 = "MFGR#" + std::to_string(p_brand1_num + 4);
   auto s_region = genS_region();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select sum(lo_revenue), d_year, p_brand1\n"
           "from lineorder, date, part, supplier\n"
@@ -588,18 +592,21 @@ std::string SqlGenerator::genSkewQuery2_2(std::string lo_predicate) {
           "  and (p_brand1 between '{}' and '{}')\n"
           "  and s_region = '{}'\n"
           "  and {}\n"
+          "  and {}\n"
           "group by d_year, p_brand1\n"
           "order by d_year, p_brand1;",
           p_brand1_0,
           p_brand1_1,
           s_region,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery2_3(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery2_3(std::string skewLo_predicate) {
   auto p_brand1 = "MFGR#" + std::to_string(genP_brand1_num());
   auto s_region = genS_region();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select sum(lo_revenue), d_year, p_brand1\n"
           "from lineorder, date, part, supplier\n"
@@ -609,16 +616,19 @@ std::string SqlGenerator::genSkewQuery2_3(std::string lo_predicate) {
           "  and p_brand1 = '{}'\n"
           "  and s_region = '{}'\n"
           "  and {}\n"
+          "  and {}\n"
           "group by d_year, p_brand1\n"
           "order by d_year, p_brand1;",
           p_brand1,
           s_region,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery3_1(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery3_1(std::string skewLo_predicate) {
   auto region = genS_region();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_nation, s_nation, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -628,15 +638,18 @@ std::string SqlGenerator::genSkewQuery3_1(std::string lo_predicate) {
           "  and c_region = '{0}'\n"
           "  and s_region = '{0}'\n"
           "  and {1}\n"
+          "  and {2}\n"
           "group by c_nation, s_nation, d_year\n"
           "order by d_year asc, revenue desc;",
           region,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery3_2(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery3_2(std::string skewLo_predicate) {
   auto nation = genS_nation();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_city, s_city, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -646,16 +659,19 @@ std::string SqlGenerator::genSkewQuery3_2(std::string lo_predicate) {
           "  and c_nation = '{0}'\n"
           "  and s_nation = '{0}'\n"
           "  and {1}\n"
+          "  and {2}\n"
           "group by c_city, s_city, d_year\n"
           "order by d_year asc, revenue desc;",
           nation,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery3_3(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery3_3(std::string skewLo_predicate) {
   auto city1 = genS_city();
   auto city2 = genS_city();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_city, s_city, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -665,17 +681,20 @@ std::string SqlGenerator::genSkewQuery3_3(std::string lo_predicate) {
           "  and (c_city = '{0}' or c_city = '{1}')\n"
           "  and (s_city = '{0}' or s_city = '{1}')\n"
           "  and {2}\n"
+          "  and {3}\n"
           "group by c_city, s_city, d_year\n"
           "order by d_year asc, revenue desc;",
           city1,
           city2,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery3_4(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery3_4(std::string skewLo_predicate) {
   auto city1 = genS_city();
   auto city2 = genS_city();
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select c_city, s_city, d_year, sum(lo_revenue) as revenue\n"
           "from customer, lineorder, supplier, date\n"
@@ -685,18 +704,21 @@ std::string SqlGenerator::genSkewQuery3_4(std::string lo_predicate) {
           "  and (c_city = '{0}' or c_city = '{1}')\n"
           "  and (s_city = '{0}' or s_city = '{1}')\n"
           "  and {2}\n"
+          "  and {3}\n"
           "group by c_city, s_city, d_year\n"
           "order by d_year asc, revenue desc;",
           city1,
           city2,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery4_1(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery4_1(std::string skewLo_predicate) {
   auto region = genS_region();
   auto p_mfgr1 = "MFGR#" + std::to_string(genP_mfgr_num());
   auto p_mfgr2 = "MFGR#" + std::to_string(genP_mfgr_num());
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select d_year, c_nation, sum(lo_revenue - lo_supplycost) as profit\n"
           "from date, customer, supplier, part, lineorder\n"
@@ -708,19 +730,22 @@ std::string SqlGenerator::genSkewQuery4_1(std::string lo_predicate) {
           "  and s_region = '{0}'\n"
           "  and (p_mfgr = '{1}' or p_mfgr = '{2}')\n"
           "  and {3}\n"
+          "  and {4}\n"
           "group by d_year, c_nation\n"
           "order by d_year, c_nation;",
           region,
           p_mfgr1,
           p_mfgr2,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery4_2(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery4_2(std::string skewLo_predicate) {
   auto region = genS_region();
   auto p_mfgr1 = "MFGR#" + std::to_string(genP_mfgr_num());
   auto p_mfgr2 = "MFGR#" + std::to_string(genP_mfgr_num());
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select d_year, s_nation, p_category, sum(lo_revenue - lo_supplycost) as profit\n"
           "from date, customer, supplier, part, lineorder\n"
@@ -732,18 +757,21 @@ std::string SqlGenerator::genSkewQuery4_2(std::string lo_predicate) {
           "  and s_region = '{0}'\n"
           "  and (p_mfgr = '{1}' or p_mfgr = '{2}')\n"
           "  and {3}\n"
+          "  and {4}\n"
           "group by d_year, s_nation, p_category\n"
           "order by d_year, s_nation, p_category;",
           region,
           p_mfgr1,
           p_mfgr2,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 
-std::string SqlGenerator::genSkewQuery4_3(std::string lo_predicate) {
+std::string SqlGenerator::genSkewQuery4_3(std::string skewLo_predicate) {
   auto s_nation = genS_nation();
   auto p_category = "MFGR#" + std::to_string(genP_category_num());
+  auto lo_predicate = genLo_predicate();
   return fmt::format(
           "select d_year, s_city, p_brand1, sum(lo_revenue - lo_supplycost) as profit\n"
           "from date, customer, supplier, part, lineorder\n"
@@ -754,11 +782,13 @@ std::string SqlGenerator::genSkewQuery4_3(std::string lo_predicate) {
           "  and s_nation = '{}'\n"
           "  and p_category = '{}'\n"
           "  and {}\n"
+          "  and {}\n"
           "group by d_year, s_city, p_brand1\n"
           "order by d_year, s_city, p_brand1;",
           s_nation,
           p_category,
-          lo_predicate
+          lo_predicate,
+          skewLo_predicate
   );
 }
 

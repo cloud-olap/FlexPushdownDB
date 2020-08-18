@@ -12,6 +12,7 @@
 
 class S3SelectPartition: public Partition {
 public:
+  explicit S3SelectPartition(std::string bucket, std::string object);
   explicit S3SelectPartition(std::string bucket, std::string object, long numBytes);
 
   const std::string &getBucket() const;

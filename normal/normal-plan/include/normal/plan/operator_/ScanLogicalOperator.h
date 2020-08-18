@@ -30,6 +30,8 @@ public:
   const std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &streamOutPhysicalOperators() const;
 
 protected:
+  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> getValidPartitions(std::shared_ptr<expression::gandiva::Expression> predicate);
+
   // projected columns, not final projection, but columns that downstream operators need
   // don't include columns that filters need, currently filters are integrated together with scan in logical plan
   std::shared_ptr<std::vector<std::string>> projectedColumnNames_;
@@ -39,7 +41,10 @@ protected:
 
   std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> streamOutPhysicalOperators_;
 
+  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> validPartitions_;
+
 private:
+
   std::shared_ptr<PartitioningScheme> partitioningScheme_;
 
 };

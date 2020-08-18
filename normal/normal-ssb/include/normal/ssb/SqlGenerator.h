@@ -75,16 +75,16 @@ private:
   /**
    * The following is used to generate skew benchmark
    */
-  std::string genSkewQuery2_1(std::string lo_predicate);
-  std::string genSkewQuery2_2(std::string lo_predicate);
-  std::string genSkewQuery2_3(std::string lo_predicate);
-  std::string genSkewQuery3_1(std::string lo_predicate);
-  std::string genSkewQuery3_2(std::string lo_predicate);
-  std::string genSkewQuery3_3(std::string lo_predicate);
-  std::string genSkewQuery3_4(std::string lo_predicate);
-  std::string genSkewQuery4_1(std::string lo_predicate);
-  std::string genSkewQuery4_2(std::string lo_predicate);
-  std::string genSkewQuery4_3(std::string lo_predicate);
+  std::string genSkewQuery2_1(std::string skewLo_predicate);
+  std::string genSkewQuery2_2(std::string skewLo_predicate);
+  std::string genSkewQuery2_3(std::string skewLo_predicate);
+  std::string genSkewQuery3_1(std::string skewLo_predicate);
+  std::string genSkewQuery3_2(std::string skewLo_predicate);
+  std::string genSkewQuery3_3(std::string skewLo_predicate);
+  std::string genSkewQuery3_4(std::string skewLo_predicate);
+  std::string genSkewQuery4_1(std::string skewLo_predicate);
+  std::string genSkewQuery4_2(std::string skewLo_predicate);
+  std::string genSkewQuery4_3(std::string skewLo_predicate);
 };
 
 }

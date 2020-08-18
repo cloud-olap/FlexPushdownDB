@@ -15,7 +15,7 @@ void writeFile(std::string content, std::filesystem::path &filePath) {
 }
 
 int main() {
-  const int batchSize = 10;
+  const int batchSize = 100;
   SqlGenerator sqlGenerator;
   auto sqls = sqlGenerator.generateSqlBatchSkew(batchSize);
 

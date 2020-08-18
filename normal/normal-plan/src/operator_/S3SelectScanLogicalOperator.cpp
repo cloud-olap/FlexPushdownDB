@@ -3,18 +3,8 @@
 //
 
 #include <normal/plan/operator_/S3SelectScanLogicalOperator.h>
-
 #include <normal/pushdown/s3/S3SelectScan.h>
-#include <normal/expression/gandiva/And.h>
-#include <normal/expression/gandiva/Or.h>
-#include <normal/expression/gandiva/EqualTo.h>
-#include <normal/expression/gandiva/LessThan.h>
-#include <normal/expression/gandiva/LessThanOrEqualTo.h>
-#include <normal/expression/gandiva/GreaterThan.h>
-#include <normal/expression/gandiva/GreaterThanOrEqualTo.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/expression/gandiva/NumericLiteral.h>
-#include <variant>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
@@ -40,6 +30,8 @@ std::string S3SelectScanLogicalOperator::genFilterSql(){
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectScanLogicalOperator::toOperators() {
+  validPartitions_ = (!predicate_) ? getPartitioningScheme()->partitions() : getValidPartitions(predicate_);
+
   // construct physical operators
   auto mode = getMode();
   switch (mode->id()) {
@@ -80,7 +72,7 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
    */
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
-  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+  for (const auto &partition: *validPartitions_) {
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
@@ -131,7 +123,7 @@ S3SelectScanLogicalOperator::toOperatorsFullPushdown(int numRanges) {
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto filterSql = genFilterSql();
 
-  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+  for (const auto &partition: *validPartitions_) {
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Object = s3Partition->getObject();
     auto numBytes = s3Partition->getNumBytes();
@@ -181,7 +173,7 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
    */
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
-  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+  for (const auto &partition: *validPartitions_) {
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
@@ -280,7 +272,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
    */
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
-  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+  for (const auto &partition: *validPartitions_) {
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
@@ -426,7 +418,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
    */
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
-  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+  for (const auto &partition: *validPartitions_) {
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
