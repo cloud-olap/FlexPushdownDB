@@ -60,6 +60,10 @@ void MergeOperator::onStart() {
 
 void MergeOperator::onComplete(const CompleteMessage &) {
   if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
+
+    assert(this->leftTupleSets_.empty());
+	assert(this->rightTupleSets_.empty());
+
 	ctx()->notifyComplete();
   }
 }

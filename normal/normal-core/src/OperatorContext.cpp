@@ -18,13 +18,12 @@ void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
 
   assert(this);
 
-  OperatorActor* oa = this->operatorActor();
   message::Envelope e(msg);
 
   // Send message to consumers
   for(const auto& consumer: this->operator_->consumers()){
-    caf::actor actorHandle = consumer.second->actorHandle();
-    oa->send(actorHandle, e);
+    caf::actor actorHandle = consumer.second.lock()->actorHandle();
+    operatorActor_->send(actorHandle, e);
   }
 }
 
@@ -59,7 +58,6 @@ void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
 
 tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
 
-  OperatorActor* oa = this->operatorActor();
   message::Envelope e(msg);
 
   auto expectedOperator = operatorMap_.get(recipientId);
@@ -67,7 +65,7 @@ tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<mess
     auto recipientOperator = expectedOperator.value();
     auto expectedRecipientActor = recipientOperator.getActor();
     auto recipientActor = expectedRecipientActor.value();
-	oa->send(recipientActor, e);
+	operatorActor_->send(recipientActor, e);
 	return {};
   }
   else{
@@ -109,7 +107,7 @@ void OperatorContext::notifyComplete() {
 
   // Send message to consumers
   for(const auto& consumer: this->operator_->consumers()){
-    caf::actor actorHandle = consumer.second->actorHandle();
+    caf::actor actorHandle = consumer.second.lock()->actorHandle();
     operatorActor->send(actorHandle, e);
   }
 

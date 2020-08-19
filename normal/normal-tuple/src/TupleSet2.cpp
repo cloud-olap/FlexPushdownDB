@@ -113,6 +113,11 @@ long TupleSet2::numColumns() const {
   }
 }
 
+/**
+ * FIXME: This is really slow
+ * @param options
+ * @return
+ */
 std::string TupleSet2::showString(TupleSetShowOptions options) {
 
   if (!table_.has_value()) {

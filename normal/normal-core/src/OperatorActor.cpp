@@ -28,7 +28,7 @@ caf::behavior behaviour(OperatorActor *self) {
 
 		auto start = std::chrono::steady_clock::now();
         
-#define __FUNCTION__ functionName
+ //#define __FUNCTION__ functionName
 
 //        SPDLOG_DEBUG("Message received  |  recipient: '{}', sender: '{}', type: '{}'",
 //                     self->operator_()->name(),
@@ -63,6 +63,18 @@ long OperatorActor::getProcessingTime() const {
 
 void OperatorActor::incrementProcessingTime(long time) {
   processingTime_ += time;
+}
+
+void OperatorActor::on_exit() {
+  SPDLOG_DEBUG("Stopping operator  |  name: '{}'", this->opBehaviour_->name());
+
+  /*
+   * Need to delete the actor handle in operator otherwise CAF will never release the actor
+   *
+   * Since all the pointers the actors maintain with each other refer to this handle, only need
+   * to destroy this one and all the cycles are broken
+   */
+  this->opBehaviour_->destroyActor();
 }
 
 }

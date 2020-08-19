@@ -95,9 +95,10 @@ tl::expected<std::shared_ptr<std::vector<std::vector<std::pair<std::string, std:
 					results.get(),
 					&errorMessage);
 
+  sqlite3_close(db);
+  filesystem::remove(dbFile);
+
   if (rc) {
-	sqlite3_close(db);
-	filesystem::remove(dbFile);
 	return tl::unexpected(fmt::format("Failed execute SQL. {}", errorMessage));
   }
 

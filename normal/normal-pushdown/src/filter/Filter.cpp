@@ -69,6 +69,12 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
   }
 
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+
+    filter_ = std::nullopt;
+
+    assert(this->received_->numRows() == 0);
+	assert(this->filtered_->numRows() == 0);
+
 	ctx()->notifyComplete();
   }
 }

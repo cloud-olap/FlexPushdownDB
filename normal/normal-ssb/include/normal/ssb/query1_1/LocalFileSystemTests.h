@@ -66,6 +66,7 @@ public:
 					const std::string &dataDir,
 					FileType fileType,
 					int numConcurrentUnits,
+					int numIterations,
 					bool check,
 					const std::shared_ptr<Normal> &n);
 

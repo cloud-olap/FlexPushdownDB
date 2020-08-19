@@ -154,20 +154,37 @@ void LocalFileSystemTests::full2(short year, short discount, short quantity,
 								const std::string &dataDir,
 								 FileType fileType,
 								int numConcurrentUnits,
+								int numIterations,
 								bool check,
 								 const std::shared_ptr<Normal>& n) {
 
   SPDLOG_INFO("Arguments  |  dataDir: '{}', year: {}, discount: {}, quantity: {}, numConcurrentUnits: {}",
 			  dataDir, year, discount, quantity, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::full(dataDir, fileType,
-																			 year, discount, quantity,
-																			 numConcurrentUnits, n));
+  std::vector<std::pair<std::string, double>> actuals;
+  for(int i= 0;i<numIterations;++i) {
+	auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::full(dataDir, fileType,
+																			   year, discount, quantity,
+																			   numConcurrentUnits, n));
 
-  auto actualName = actual->getColumnByIndex(0).value()->getName();
-  auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<double>();
+	auto actualName = actual->getColumnByIndex(0).value()->getName();
+	auto actualValue = actual->getColumnByIndex(0).value()->element(0).value()->value<double>();
 
-  SPDLOG_INFO("Actual  |  {} = {}", actualName, actualValue);
+	SPDLOG_INFO("Actual  |  {} = {}", actualName, actualValue);
+	actuals.emplace_back(actualName, actualValue);
+  }
+
+  std::pair<std::string, double> lastActual{std::string(""), -1};
+  for(const auto &actual: actuals){
+	if(lastActual.first == std::string("")) {
+	  lastActual.first = actual.first;
+	  lastActual.second = actual.second;
+	}
+	else {
+		  CHECK_EQ(actual.first, lastActual.first);
+		  CHECK_EQ(actual.second, lastActual.second);
+	}
+  }
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::full(year, discount, quantity, "temp"),
@@ -176,8 +193,8 @@ void LocalFileSystemTests::full2(short year, short discount, short quantity,
 	auto expectedName = expected->at(0).at(0).first;
 	auto expectedValue = std::stod(expected->at(0).at(0).second);
 	SPDLOG_INFO("Expected  |  {} = {}", expectedName, expectedValue);
-		CHECK_EQ(expectedName, actualName);
-		CHECK_EQ(expectedValue, actualValue);
+		CHECK_EQ(expectedName, lastActual.first);
+		CHECK_EQ(expectedValue, lastActual.second);
   }
 }
 

@@ -23,7 +23,7 @@ TEST_CASE ("ssb-benchmark-query1.1-file-sf0.01-p2-cacheNone" * doctest::skip(fal
   ankerl::nanobench::Config().minEpochIterations(1).run(
 	  getCurrentTestName(), [&] {
 		auto n = Normal::start();
-		LocalFileSystemTests::full2(1992, 2, 25, fmt::format("data/ssb-sf{}", SF), FileType::CSV, 2, false, n);
+		LocalFileSystemTests::full2(1992, 2, 25, fmt::format("data/ssb-sf{}", SF), FileType::CSV, 2, 1, false, n);
 		n->stop();
 	  });
 }
@@ -33,11 +33,11 @@ TEST_CASE ("ssb-benchmark-query1.1-file-sf0.01-p2-cacheWarm"* doctest::skip(fals
   auto n = Normal::start();
 
   // Warm cache
-  LocalFileSystemTests::full2(1992, 2, 25, fmt::format("data/ssb-sf{}", SF), FileType::CSV,2, false, n);
+  LocalFileSystemTests::full2(1992, 2, 25, fmt::format("data/ssb-sf{}", SF), FileType::CSV,2, 1, false, n);
 
   ankerl::nanobench::Config().minEpochIterations(1).run(
 	  getCurrentTestName(), [&] {
-		LocalFileSystemTests::full2(1992, 2, 25, fmt::format("data/ssb-sf{}", SF), FileType::CSV,2, false, n);
+		LocalFileSystemTests::full2(1992, 2, 25, fmt::format("data/ssb-sf{}", SF), FileType::CSV,2, 1, false, n);
 	  });
 
   n->stop();
