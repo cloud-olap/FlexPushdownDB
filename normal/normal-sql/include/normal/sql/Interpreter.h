@@ -33,6 +33,7 @@ public:
   void stop();
   void saveMetrics();
   std::string showMetrics();
+  const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>> catalogues_;

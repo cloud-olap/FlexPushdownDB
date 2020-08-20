@@ -36,6 +36,12 @@ public:
     return tuples;
   }
 
+  static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::Schema>& schema, const std::vector<std::shared_ptr<arrow::ChunkedArray>>& values){
+    auto tuples = std::make_shared<TupleSet>();
+    tuples->table_ = arrow::Table::Make(schema, values);
+    return tuples;
+  }
+
   static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::csv::TableReader> &tableReader);
   static std::shared_ptr<TupleSet> make(const std::shared_ptr<arrow::Table> &table);
   static std::shared_ptr<TupleSet> concatenate(const std::shared_ptr<TupleSet>&,const std::shared_ptr<TupleSet>&);

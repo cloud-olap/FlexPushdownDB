@@ -152,9 +152,16 @@ void Filter::buildFilter() {
 
 void Filter::filterTuples() {
 
+  int num = received_->numRows();
+  auto start = std::chrono::steady_clock::now();
+
 //  SPDLOG_DEBUG("Filter Input\n{}", received_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
 
   filtered_ = filter_.value()->evaluate(*received_);
+
+  auto end = std::chrono::steady_clock::now();
+  SPDLOG_INFO("Filter {} tuples: {} ns", num, std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count());
+
   assert(filtered_->validate());
 
 //  SPDLOG_DEBUG("Filter Output\n{}", filtered_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));

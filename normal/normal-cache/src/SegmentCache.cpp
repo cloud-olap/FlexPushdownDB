@@ -80,3 +80,8 @@ int SegmentCache::hitNum() const {
 int SegmentCache::missNum() const {
   return missNum_;
 }
+
+void SegmentCache::clearMetrics() {
+  hitNum_ = 0;
+  missNum_ = 0;
+}

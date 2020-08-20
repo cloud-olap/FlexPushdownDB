@@ -51,6 +51,11 @@ public:
    */
   virtual std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) = 0;
 
+  /**
+   * Show the current cache layout
+   */
+  virtual std::string showCurrentLayout() = 0;
+
 protected:
   size_t maxSize_;
   size_t freeSize_;
