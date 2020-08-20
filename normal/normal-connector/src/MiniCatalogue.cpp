@@ -162,75 +162,11 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   valuePairs->emplace_back(std::pair<std::string, std::string>("19980305","19980519"));
   valuePairs->emplace_back(std::pair<std::string, std::string>("19980519","19980802"));
   std::string s3Bucket = "s3filter";
-  std::string s3ObjectDir = "ssb-sf1-sortlineorder/lineorder_sharded/";
+  std::string s3ObjectDir = "ssb-sf10-sortlineorder/lineorder_sharded/";
   for (int i = 0; i < valuePairs->size(); i++) {
     sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
                           valuePairs->at(i));
   }
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.0"),
-//                        std::pair<std::string, std::string>("19920101","19920316"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.1"),
-//                        std::pair<std::string, std::string>("19920316","19920531"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.2"),
-//                        std::pair<std::string, std::string>("19920531","19920814"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.3"),
-//                        std::pair<std::string, std::string>("19920814","19921029"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.4"),
-//                        std::pair<std::string, std::string>("19921029","19930112"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.5"),
-//                        std::pair<std::string, std::string>("19930112","19930329"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.6"),
-//                        std::pair<std::string, std::string>("19930329","19930613"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.7"),
-//                        std::pair<std::string, std::string>("19930613","19930827"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.8"),
-//                        std::pair<std::string, std::string>("19930827","19931110"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.9"),
-//                        std::pair<std::string, std::string>("19931110","19940124"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.10"),
-//                        std::pair<std::string, std::string>("19940124","19940409"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.11"),
-//                        std::pair<std::string, std::string>("19940409","19940623"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.12"),
-//                        std::pair<std::string, std::string>("19940623","19940906"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.13"),
-//                        std::pair<std::string, std::string>("19940906","19941121"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.14"),
-//                        std::pair<std::string, std::string>("19941121","19950204"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.15"),
-//                        std::pair<std::string, std::string>("19950204","19950419"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.16"),
-//                        std::pair<std::string, std::string>("19950419","19950703"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.17"),
-//                        std::pair<std::string, std::string>("19950703","19950916"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.18"),
-//                        std::pair<std::string, std::string>("19950916","19951130"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.19"),
-//                        std::pair<std::string, std::string>("19951130","19960214"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.20"),
-//                        std::pair<std::string, std::string>("19960214","19960429"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.21"),
-//                        std::pair<std::string, std::string>("19960429","19960713"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.22"),
-//                        std::pair<std::string, std::string>("19960713","19960926"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.23"),
-//                        std::pair<std::string, std::string>("19960926","19961210"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.24"),
-//                        std::pair<std::string, std::string>("19961210","19970223"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.25"),
-//                        std::pair<std::string, std::string>("19970223","19970509"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.26"),
-//                        std::pair<std::string, std::string>("19970509","19970723"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.27"),
-//                        std::pair<std::string, std::string>("19970723","19971006"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.28"),
-//                        std::pair<std::string, std::string>("19971006","19971220"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.29"),
-//                        std::pair<std::string, std::string>("19971220","19980305"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.30"),
-//                        std::pair<std::string, std::string>("19980305","19980519"));
-//  sortedValues->emplace(std::make_shared<S3SelectPartition>("s3filter", "ssb-sf1/lineorder_sharded/lineorder.tbl.31"),
-//                        std::pair<std::string, std::string>("19980519","19980802"));
   sortedColumns->emplace("lo_orderdate", sortedValues);
 
   return std::make_shared<MiniCatalogue>(tables, schemas, columnLengthMap, defaultJoinOrder, sortedColumns);

@@ -32,6 +32,7 @@ public:
 
   int hitNum() const;
   int missNum() const;
+  void clearMetrics();
 
 private:
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> map_;

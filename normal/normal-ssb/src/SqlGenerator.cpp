@@ -516,9 +516,9 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkew(int batchSize) {
     std::string lo_predicate;
     int kind = distribution1(*generator_);
     if (kind > hotPercentage) {
-      lo_predicate = fmt::format("(lo_orderdate between '{}' and '{}')", 19911231, 19930523);
+      lo_predicate = fmt::format("(lo_orderdate between '{}' and '{}')", 19920101, 19930523);
     } else {
-      lo_predicate = fmt::format("(lo_orderdate between '{}' and '{}')", 19930524, 19981231);
+      lo_predicate = fmt::format("(lo_orderdate between '{}' and '{}')", 19970524, 19981231);
     }
 
     int skewQueryIndex = distribution2(*generator_);

@@ -412,4 +412,8 @@ long OperatorManager::nextQueryId() {
   return queryCounter_.fetch_add(1);
 }
 
+void OperatorManager::clearCacheMetrics() {
+  segmentCacheActor_->getState()->cache->clearMetrics();
+}
+
 }

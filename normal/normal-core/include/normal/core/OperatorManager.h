@@ -69,6 +69,7 @@ public:
 
   std::string showMetrics();
   std::string showCacheMetrics();
+  void clearCacheMetrics();
 
 };
 

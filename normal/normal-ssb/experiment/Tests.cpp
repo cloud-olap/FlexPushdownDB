@@ -17,6 +17,7 @@
 #include "ExperimentUtil.h"
 #include <normal/ssb/SqlGenerator.h>
 #include <normal/plan/Globals.h>
+#include <normal/cache/Globals.h>
 
 #define SKIP_SUITE false
 
@@ -111,8 +112,9 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
-  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
+//  if (saveMetrics)
+    SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+//  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -367,13 +369,13 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 50, executeBatchSize = 50;
-  const size_t cacheSize = 1024*1024*300;
+  const int warmBatchSize = 20, executeBatchSize = 20;
+  const size_t cacheSize = 3ULL*1024*1024*1024;
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf1-sortlineorder/";
-  const int partitionNum = 31;
+  std::string dir_prefix = "ssb-sf10-sortlineorder/";
+  const int partitionNum = 32;
 
-  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
+  auto mode = normal::plan::operator_::mode::Modes::hybridCachingLastMode();
   auto lru = LRUCachingPolicy::make(cacheSize);
   auto fbr = FBRCachingPolicy::make(cacheSize);
 
@@ -399,6 +401,9 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
     }
     SPDLOG_INFO("Cache warm phase finished");
   }
+
+  i.getOperatorManager()->clearCacheMetrics();
+
   SPDLOG_INFO("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
     SPDLOG_INFO("sql {}", index - warmBatchSize);
@@ -408,8 +413,10 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
   SPDLOG_INFO("Execution phase finished");
+
   SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+
   i.stop();
 }
 
