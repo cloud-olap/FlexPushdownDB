@@ -136,4 +136,8 @@ void Interpreter::saveMetrics() {
   executionTimes.emplace_back((double) (operatorGraph_->getElapsedTime().value()) / 1000000000.0);
 }
 
+const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {
+  return cachingPolicy_;
+}
+
 

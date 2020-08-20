@@ -2,6 +2,7 @@
 // Created by matt on 2/6/20.
 //
 
+#include <sstream>
 #include "normal/cache/LRUCachingPolicy.h"
 
 using namespace normal::cache;
@@ -69,6 +70,14 @@ LRUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
    *  need to decouple pullup caching and hybrid caching later
    */
   return segmentKeys;
+}
+
+std::string LRUCachingPolicy::showCurrentLayout() {
+  std::stringstream ss;
+  for (auto const &segmentKey: usageQueue_) {
+    ss << segmentKey->toString() << std::endl;
+  }
+  return ss.str();
 }
 
 

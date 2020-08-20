@@ -2,22 +2,24 @@
 // Created by Yifei Yang on 8/3/20.
 //
 
+#include <sstream>
+#include <fmt/format.h>
 #include "normal/cache/FBRCachingPolicy.h"
 
 using namespace normal::cache;
 
 bool lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
-  return (key1->getMetadata()->hitNum() / key1->getMetadata()->size())
-       < (key2->getMetadata()->hitNum() / key2->getMetadata()->size());
-//  return (key1->getMetadata()->hitNum())
-//         < (key2->getMetadata()->hitNum());
+//  return (key1->getMetadata()->hitNum() / key1->getMetadata()->size())
+//       < (key2->getMetadata()->hitNum() / key2->getMetadata()->size());
+  return (key1->getMetadata()->hitNum())
+         < (key2->getMetadata()->hitNum());
 }
 
 bool lessEstimateValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
-  return (key1->getMetadata()->hitNum() / key1->getMetadata()->estimateSize())
-       < (key2->getMetadata()->hitNum() / key2->getMetadata()->estimateSize());
-//  return (key1->getMetadata()->hitNum())
-//         < (key2->getMetadata()->hitNum());
+//  return (key1->getMetadata()->hitNum() / key1->getMetadata()->estimateSize())
+//       < (key2->getMetadata()->hitNum() / key2->getMetadata()->estimateSize());
+  return (key1->getMetadata()->hitNum())
+         < (key2->getMetadata()->hitNum());
 }
 
 FBRCachingPolicy::FBRCachingPolicy(size_t maxSize) :
@@ -152,4 +154,12 @@ void FBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<Segme
     keysToReplace_.erase(keysToReplaceEntry->second);
     estimateCachingDecisions_.erase(in);
   }
+}
+
+std::string FBRCachingPolicy::showCurrentLayout() {
+  std::stringstream ss;
+  for (auto const &segmentKey: keysInCache_) {
+    ss << fmt::format("Key: {};\tHitnum: {}", segmentKey->toString(), segmentKey->getMetadata()->hitNum()) << std::endl;
+  }
+  return ss.str();
 }

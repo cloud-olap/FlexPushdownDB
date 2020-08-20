@@ -27,6 +27,7 @@ public:
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;
+  std::string showCurrentLayout() override;
 
 private:
   std::list<std::shared_ptr<SegmentKey>> usageQueue_;

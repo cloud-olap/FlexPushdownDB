@@ -112,9 +112,10 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-//  if (saveMetrics)
+  if (saveMetrics)
     SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
 //  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
+//  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -370,7 +371,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
 
   // parameters
   const int warmBatchSize = 20, executeBatchSize = 20;
-  const size_t cacheSize = 3ULL*1024*1024*1024;
+  const size_t cacheSize = 1024*1024*1024;
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf10-sortlineorder/";
   const int partitionNum = 32;
