@@ -370,10 +370,10 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 50, executeBatchSize = 50;
-  const size_t cacheSize = 102*1024*1024;
+  const int warmBatchSize = 20, executeBatchSize = 20;
+  const size_t cacheSize = 1024*1024*1024;
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf1-sortlineorder/";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/";
   const int partitionNum = 32;
 
   auto mode = normal::plan::operator_::mode::Modes::hybridCachingLastMode();
