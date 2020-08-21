@@ -257,7 +257,7 @@ public:
 	  return TupleSetIndexWrapper<long, ::arrow::Int64Type>::make(table, columnIndex);
 	} else {
 	  return tl::make_unexpected(
-		  fmt::format("TupleSetIndex not implemented for type '{}'", column->type()->id()));
+		  fmt::format("TupleSetIndex not implemented for type '{}'", column->type()->ToString()));
 	}
   }
 };

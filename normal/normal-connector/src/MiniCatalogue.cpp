@@ -162,7 +162,7 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   valuePairs->emplace_back(std::pair<std::string, std::string>("19980305","19980519"));
   valuePairs->emplace_back(std::pair<std::string, std::string>("19980519","19980802"));
   std::string s3Bucket = "s3filter";
-  std::string s3ObjectDir = "ssb-sf10-sortlineorder/lineorder_sharded/";
+  std::string s3ObjectDir = "ssb-sf1-sortlineorder/lineorder_sharded/";
   for (int i = 0; i < valuePairs->size(); i++) {
     sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
                           valuePairs->at(i));
