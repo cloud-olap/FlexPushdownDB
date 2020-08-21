@@ -82,18 +82,18 @@ void Merge::merge() {
 
 void Merge::onComplete(const CompleteMessage &) {
   if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
-    while (!(tupleArrived_ && onTupleNum_ == 0)) {
-      std::this_thread::yield();
-    }
+//    while (!(tupleArrived_ && onTupleNum_ == 0)) {
+//      std::this_thread::yield();
+//    }
 	  ctx()->notifyComplete();
   }
 }
 
 void Merge::onTuple(const TupleMessage &message) {
-  mergeLock.lock();
-  onTupleNum_++;
-  tupleArrived_ = true;
-  mergeLock.unlock();
+//  mergeLock.lock();
+//  onTupleNum_++;
+//  tupleArrived_ = true;
+//  mergeLock.unlock();
 
   // Get the tuple set
   const auto &tupleSet = TupleSet2::create(message.tuples());
@@ -111,9 +111,9 @@ void Merge::onTuple(const TupleMessage &message) {
   // Merge
   merge();
 
-  mergeLock.lock();
-  onTupleNum_--;
-  mergeLock.unlock();
+//  mergeLock.lock();
+//  onTupleNum_--;
+//  mergeLock.unlock();
 }
 
 void Merge::setLeftProducer(const std::shared_ptr<Operator> &leftProducer) {

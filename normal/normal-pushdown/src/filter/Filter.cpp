@@ -54,10 +54,10 @@ void Filter::onStart() {
 }
 
 void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
-  filterLock.lock();
-  onTupleNum_++;
-  tupleArrived_ = true;
-  filterLock.unlock();
+//  filterLock.lock();
+//  onTupleNum_++;
+//  tupleArrived_ = true;
+//  filterLock.unlock();
 
 //  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   /**
@@ -90,29 +90,29 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
     complete_ = true;
   }
 
-  filterLock.lock();
-  onTupleNum_--;
-  filterLock.unlock();
+//  filterLock.lock();
+//  onTupleNum_--;
+//  filterLock.unlock();
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
-  if (complete_) {
-    return;
-  }
+//  if (complete_) {
+//    return;
+//  }
 
 //  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
 
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
-    while (!(tupleArrived_ && onTupleNum_ == 0)) {
-      std::this_thread::yield();
-    }
+//    while (!(tupleArrived_ && onTupleNum_ == 0)) {
+//      std::this_thread::yield();
+//    }
 //    SPDLOG_INFO("Filter complete: {}, {}", received_->numRows(), name());
     if(received_->getArrowTable().has_value()) {
       filterTuples();
       sendTuples();
     }
     ctx()->notifyComplete();
-    complete_ = true;
+//    complete_ = true;
   }
 }
 

@@ -65,10 +65,10 @@ void Project::projectAndSendTuples() {
 }
 
 void Project::onTuple(const core::message::TupleMessage &message) {
-  projectLock.lock();
-  onTupleNum_++;
-  tupleArrived_ = true;
-  projectLock.unlock();
+//  projectLock.lock();
+//  onTupleNum_++;
+//  tupleArrived_ = true;
+//  projectLock.unlock();
 
   // Set the input schema if not yet set
   cacheInputSchema(message);
@@ -84,9 +84,9 @@ void Project::onTuple(const core::message::TupleMessage &message) {
     projectAndSendTuples();
   }
 
-  projectLock.lock();
-  onTupleNum_--;
-  projectLock.unlock();
+//  projectLock.lock();
+//  onTupleNum_--;
+//  projectLock.unlock();
 }
 
 void Project::buildAndCacheProjector() {
@@ -126,20 +126,20 @@ void Project::bufferTuples(const core::message::TupleMessage &message) {
 }
 
 void Project::onComplete(const normal::core::message::CompleteMessage &) {
-  if (complete_) {
-    return;
-  }
+//  if (complete_) {
+//    return;
+//  }
 
 
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
-    while (!(tupleArrived_ && onTupleNum_ == 0)) {
-      std::this_thread::yield();
-    }
+//    while (!(tupleArrived_ && onTupleNum_ == 0)) {
+//      std::this_thread::yield();
+//    }
 
     // Project and send any remaining tuples
     projectAndSendTuples();
 	  ctx()->notifyComplete();
-	  complete_ = true;
+//	  complete_ = true;
   }
 }
 
