@@ -90,6 +90,8 @@ void run(const std::string &s3Bucket,
 
   SPDLOG_DEBUG("Output:\n{}", tuples->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
+  g.reset();
+
   n->stop();
 
   client.shutdown();
@@ -109,10 +111,10 @@ TEST_CASE ("s3select-scan-v1-csv" * doctest::skip(false || SKIP_SUITE)) {
   auto g = n->createQuery();
 
   auto s3selectScan = S3SelectScan::make("s3selectscan",
-										 "s3filter",
-										 "ssb-sf0.01/supplier.tbl",
-										 "select s_name from S3Object",
-										 {"s_name"},
+										 "pushdowndb",
+										 "ssb-sf0.01/csv/date.tbl",
+										 "select d_datekey from S3Object",
+										 {"d_datekey"},
 										 0,
 										 std::numeric_limits<long>::max(),
 										 S3SelectCSVParseOptions(",", "\n"),
@@ -142,7 +144,7 @@ TEST_CASE ("s3select-scan-v1-csv" * doctest::skip(false || SKIP_SUITE)) {
 }
 
 TEST_CASE ("s3select-scan-v2-csv" * doctest::skip(false || SKIP_SUITE)) {
-  run("s3filter", "ssb-sf0.01/supplier.tbl", FileType::CSV, {"s_suppkey", "s_name"});
+  run("pushdowndb", "ssb-sf0.01/csv/date.tbl", FileType::CSV, {"d_datekey"});
 }
 
 TEST_CASE ("s3select-scan-v2-csv-empty" * doctest::skip(false || SKIP_SUITE)) {

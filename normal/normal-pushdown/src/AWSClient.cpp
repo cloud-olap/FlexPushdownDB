@@ -29,7 +29,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 500000000);
 
   Aws::Client::ClientConfiguration config;
-  config.region = Aws::Region::US_EAST_1;
+  config.region = Aws::Region::US_WEST_1;
   config.scheme = Aws::Http::Scheme::HTTP;
   config.connectTimeoutMs = 30000;
   config.requestTimeoutMs = 30000;

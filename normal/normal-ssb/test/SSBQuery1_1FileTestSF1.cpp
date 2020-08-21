@@ -104,9 +104,9 @@ TEST_CASE ("ssb-query1.1-file-csv-sf1-par32-full-scoped" * doctest::skip(false |
 	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("ssb-query1.1-file-csv-sf1-par32-iter5-full" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par32-iter50-full" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, 5, false, n);
+  LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, 50, false, n);
   n->stop();
 
 	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
