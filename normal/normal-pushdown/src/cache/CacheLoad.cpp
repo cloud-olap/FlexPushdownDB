@@ -179,12 +179,12 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
       }
     }
 
-    // Send the missed caching column names to the miss caching operator
-    auto missCachingMessage = std::make_shared<ScanMessage>(missedCachingColumnNames, this->name(), cachingResultNeeded);
-    ctx()->send(missCachingMessage, missOperatorToCache_->name());
-
-    // Send the missed pushdown column names to the miss pushdown operator
     if (missOperatorToPushdown_) {
+      // Send the missed caching column names to the miss caching operator
+      auto missCachingMessage = std::make_shared<ScanMessage>(missedCachingColumnNames, this->name(), cachingResultNeeded);
+      ctx()->send(missCachingMessage, missOperatorToCache_->name());
+
+      // Send the missed pushdown column names to the miss pushdown operator
       std::shared_ptr<ScanMessage> missPushdownMessage;
       if (cachingResultNeeded) {
         missPushdownMessage = std::make_shared<ScanMessage>(missedPushdownColumnNames, this->name(), true);
@@ -192,6 +192,10 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
         missPushdownMessage = std::make_shared<ScanMessage>(projectedColumnNames_, this->name(), true);
       }
       ctx()->send(missPushdownMessage, missOperatorToPushdown_->name());
+    } else {
+      // Send the missed caching column names to the miss caching operator
+      auto missCachingMessage = std::make_shared<ScanMessage>(missedCachingColumnNames, this->name(), true);
+      ctx()->send(missCachingMessage, missOperatorToCache_->name());
     }
   }
 

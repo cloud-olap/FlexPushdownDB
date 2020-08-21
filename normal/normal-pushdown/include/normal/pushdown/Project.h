@@ -93,6 +93,12 @@ private:
   void projectAndSendTuples();
   void cacheInputSchema(const core::message::TupleMessage &message);
   void buildAndCacheProjector();
+
+  // Flags to make sure CompleteMessage is sent after all TupleMessages have been sent
+  bool complete_ = false;
+  int onTupleNum_ = 0;
+  bool tupleArrived_ = false;
+  std::mutex projectLock;
 };
 
 }

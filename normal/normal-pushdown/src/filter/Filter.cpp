@@ -160,7 +160,7 @@ void Filter::filterTuples() {
   filtered_ = filter_.value()->evaluate(*received_);
 
   auto end = std::chrono::steady_clock::now();
-  SPDLOG_INFO("Filter {} tuples: {} ns", num, std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count());
+//  SPDLOG_INFO("Filter {} tuples: {} ns", num, std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count());
 
   assert(filtered_->validate());
 

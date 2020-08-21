@@ -36,18 +36,18 @@ TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
   client.init();
 
   // operators
-  auto s3Bucket = "s3filter";
-  auto s3Object = "ssb-sf1/lineorder.tbl";
+  auto s3Bucket = "pushdowndb";
+  auto s3Object = "ssb-sf0.01/csv/date.tbl";
   std::vector<std::string> s3Objects = {s3Object};
   auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
   auto numBytes = partitionMap.find(s3Object)->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  std::vector<std::string> columns = {"lo_extendedprice", "lo_discount"};
+  std::vector<std::string> columns = {"D_DATEKEY"};
   auto lineorderScan = normal::pushdown::S3SelectScan::make(
           "SimpleScan",
-          "s3filter",
+          "pushdowndb",
           s3Object,
-          fmt::format(" where cast(lo_quantity as int) > 1"),
+          fmt::format(""),
           columns,
           scanRanges[0].first,
           scanRanges[0].second,
