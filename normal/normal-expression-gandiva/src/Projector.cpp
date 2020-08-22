@@ -3,7 +3,7 @@
 //
 
 #include "normal/expression/gandiva/Projector.h"
-#include "Globals.h"
+#include "normal/expression/gandiva/Globals.h"
 
 #include <gandiva/tree_expr_builder.h>
 #include <normal/tuple/TupleSet.h>
@@ -28,7 +28,7 @@ void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
 																		field(expression->alias(),
 																			  expression->getReturnType()));
 
-	SPDLOG_DEBUG(fmt::format("Gandiva expression: {}", gandivaExpression->ToString()));
+	SPDLOG_INFO(fmt::format("Gandiva expression: {}", gandivaExpression->ToString()));
 
 	gandivaExpressions_.emplace_back(gandivaExpression);
   }

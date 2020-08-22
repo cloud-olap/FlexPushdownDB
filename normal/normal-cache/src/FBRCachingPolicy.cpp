@@ -34,6 +34,8 @@ void FBRCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
   auto keyEntry = keySet_.find(key);
   if (keyEntry != keySet_.end()) {
     keyEntry->get()->getMetadata()->incHitNum();
+  } else {
+    keySet_.emplace(key);
   }
 }
 
@@ -54,7 +56,7 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
       realKey->getMetadata()->setSize(key->getMetadata()->size());
     }
   } else {
-    throw std::runtime_error("Key should exist in keySet_");
+    throw std::runtime_error("onStore: Key should exist in keySet_");
   }
 
   auto segmentSize = realKey->getMetadata()->size();
@@ -99,27 +101,30 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
   // FIXME: an estimation here, if freeSize_ >= c * maxSize_, we try to cache all segments
   //  Because we cannot know the size of segmentData before bringing it back
   if (freeSize_ >= maxSize_ * 0.1) {
-    for (const auto &key: *segmentKeys) {
-      auto keyEntry = keySet_.find(key);
-      if (keyEntry != keySet_.end()) {
-        (*keyEntry)->getMetadata()->incHitNum();
-      } else {
-        keySet_.emplace(key);
-      }
-    }
+    // keys have been added to keySet_ in onLoad() before
+//    for (const auto &key: *segmentKeys) {
+//      auto keyEntry = keySet_.find(key);
+//      if (keyEntry != keySet_.end()) {
+//        (*keyEntry)->getMetadata()->incHitNum();
+//      } else {
+//        keySet_.emplace(key);
+//      }
+//    }
     return segmentKeys;
   }
 
+  // estimate whether to cache
   for (auto key: *segmentKeys) {
-    // estimate whether to cache
     std::shared_ptr<SegmentKey> realKey;
     auto keyEntry = keySet_.find(key);
+    // keys have been added to keySet_ in onLoad() before
     if (keyEntry != keySet_.end()) {
       realKey = *keyEntry;
-      realKey->getMetadata()->incHitNum();
+//      realKey->getMetadata()->incHitNum();
     } else {
-      realKey = key;
-      keySet_.emplace(realKey);
+//      realKey = key;
+//      keySet_.emplace(realKey);
+      throw std::runtime_error("onToCache: Key should exist in keySet_");
     }
 
     // try to find one lower-value unused key in cache
@@ -159,6 +164,7 @@ void FBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<Segme
 
 std::string FBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
+  ss << "Total numbers: " << keysInCache_.size() << std::endl;
   for (auto const &segmentKey: keysInCache_) {
     ss << fmt::format("Key: {};\tHitnum: {}", segmentKey->toString(), segmentKey->getMetadata()->hitNum()) << std::endl;
   }

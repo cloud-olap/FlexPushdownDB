@@ -6,7 +6,7 @@ project(normal-expression-gandiva VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-expression-gandiva STATIC
-        src/Globals.h
+        include/normal/expression/gandiva/Globals.h
         src/Expression.cpp include/normal/expression/gandiva/Expression.h
         src/Column.cpp include/normal/expression/gandiva/Column.h
         src/Cast.cpp include/normal/expression/gandiva/Cast.h

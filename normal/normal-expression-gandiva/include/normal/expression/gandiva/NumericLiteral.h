@@ -30,7 +30,7 @@ public:
   }
 
   std::string alias() override {
-    if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type)) {
+    if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type) || typeid(ARROW_TYPE) == typeid(arrow::Int64Type)) {
       return prefixInt_ + std::to_string(value_);
     } else if (typeid(ARROW_TYPE) == typeid(arrow::FloatType)) {
       return prefixFloat_ + std::to_string(value_);

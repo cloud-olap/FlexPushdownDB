@@ -8,7 +8,7 @@
 #include <normal/tuple/Globals.h>
 
 #include "normal/expression/gandiva/Filter.h"
-#include "Globals.h"
+#include "normal/expression/gandiva/Globals.h"
 
 using namespace normal::expression::gandiva;
 
@@ -106,15 +106,14 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 }
 
 void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
-
-//  std::lock_guard<std::mutex> g(BigGlobalLock);
+  std::lock_guard<std::mutex> g(BigGlobalLock);
 
   // Compile the expressions
   pred_->compile(Schema->getSchema());
 
   gandivaCondition_ = ::gandiva::TreeExprBuilder::MakeCondition(pred_->getGandivaExpression());
 
-//  SPDLOG_DEBUG("Filter predicate:\n{}", gandivaCondition_->ToString());
+  SPDLOG_INFO("Filter predicate:\n{}", gandivaCondition_->ToString());
 
   // Build a filter for the predicate.
   auto status = ::gandiva::Filter::Make(Schema->getSchema(),
