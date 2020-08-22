@@ -556,7 +556,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_literal(normal::sql::Norm
   auto res = visit(ctx->literal_value());
   if (res.is<int>()) {
     int int_val = res;
-    return num_lit<::arrow::Int32Type>(int_val);
+    return num_lit<::arrow::Int64Type>(int_val);
   } else if (res.is<float>()) {
     float float_val = res;
     return num_lit<::arrow::FloatType>(float_val);
