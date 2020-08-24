@@ -113,7 +113,7 @@ void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
 
   gandivaCondition_ = ::gandiva::TreeExprBuilder::MakeCondition(pred_->getGandivaExpression());
 
-  SPDLOG_INFO("Filter predicate:\n{}", gandivaCondition_->ToString());
+//  SPDLOG_INFO("Filter predicate:\n{}", gandivaCondition_->ToString());
 
   // Build a filter for the predicate.
   auto status = ::gandiva::Filter::Make(Schema->getSchema(),
