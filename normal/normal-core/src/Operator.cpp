@@ -34,31 +34,29 @@ void Operator::consume(const std::shared_ptr<Operator> &op) {
   producers_.emplace(op->name(), op);
 }
 
-std::map<std::string, std::shared_ptr<Operator>> Operator::consumers() {
+std::map<std::string, std::weak_ptr<Operator>> Operator::consumers() {
   return consumers_;
 }
 
-std::map<std::string, std::shared_ptr<Operator>> Operator::producers() {
+std::map<std::string, std::weak_ptr<Operator>> Operator::producers() {
   return producers_;
 }
 
 std::shared_ptr<OperatorContext> Operator::ctx() {
-  assert(opContext_);
-
-  return opContext_;
+  return opContext_.lock();
 }
 
-void Operator::create(std::shared_ptr<OperatorContext> ctx) {
+void Operator::create(const std::shared_ptr<OperatorContext>& ctx) {
   assert (ctx);
 
   SPDLOG_DEBUG("Creating operator  |  name: '{}'", this->name_);
 
-  opContext_ = std::move(ctx);
+  opContext_ = ctx;
 
-  assert (opContext_);
+  assert (!opContext_.expired());
 }
 
-caf::actor Operator::actorHandle() const {
+const caf::actor& Operator::actorHandle() const {
   return actorHandle_;
 }
 
@@ -68,6 +66,9 @@ void Operator::actorHandle(caf::actor actorHandle) {
 
 void Operator::setName(const std::string &Name) {
   name_ = Name;
+}
+void Operator::destroyActor() {
+	destroy(this->actorHandle_);
 }
 
 } // namespace

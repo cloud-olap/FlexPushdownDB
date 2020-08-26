@@ -22,7 +22,7 @@ class Shuffle : public Operator {
 public:
   Shuffle(const std::string &Name, std::string ColumnName);
 
-  static std::shared_ptr<Shuffle> make(const std::string &Name, std::string ColumnName);
+  static std::shared_ptr<Shuffle> make(const std::string &Name, const std::string& ColumnName);
 
   /**
    * Operators message handler
@@ -45,15 +45,12 @@ public:
    * @param message
    */
   void onTuple(const TupleMessage &message);
+  void produce(const std::shared_ptr<Operator> &operator_) override;
 
 private:
 	std::string columnName_;
-	std::vector<LocalOperatorDirectoryEntry> consumers_;
 
-	// Flags to make sure CompleteMessage is sent after all TupleMessages have been sent
-	int onTupleNum_ = 0;
-	bool tupleArrived_ = false;
-	std::mutex shuffleLock;
+	std::vector<std::string> consumers_;
 };
 
 }

@@ -43,11 +43,13 @@ private:
   std::chrono::steady_clock::time_point stopTime_;
 
   std::atomic<long> queryCounter_;
+  bool running_;
 
 public:
   OperatorManager();
   OperatorManager(const std::shared_ptr<CachingPolicy>& cachingPolicy);
 
+  virtual ~OperatorManager();
   void put(const std::shared_ptr<Operator> &op);
   std::shared_ptr<Operator> getOperator(const std::string &);
   std::map<std::string, std::shared_ptr<OperatorContext>> getOperators();

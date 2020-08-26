@@ -35,6 +35,15 @@ public:
 	buffer_.emplace_back(std::static_pointer_cast<ArrowArrayType>(array)->Value(i));
   }
 
+  /**
+   * Need this to compile on Mac, not sure why???
+   *
+   * @param builder
+   * @param buffer
+   * @return
+   */
+  ::arrow::Status strangeProblem(const std::shared_ptr<ArrowBuilderType> &builder, const std::vector<CType> &buffer);
+
   tl::expected<std::shared_ptr<arrow::Array>, std::string> finalize() override {
 	::arrow::Status status;
 	std::shared_ptr<ArrowArrayType> array;
@@ -42,7 +51,6 @@ public:
 	buffer_.shrink_to_fit();
 
   status = strangeProblem(builder_, buffer_);
-
 	if (!status.ok()) {
 	  return tl::make_unexpected(status.message());
 	}
@@ -56,8 +64,6 @@ public:
 
 	return array;
   }
-
-::arrow::Status strangeProblem(const std::shared_ptr<ArrowBuilderType> &builder, const std::vector<CType> &buffer);
 
 private:
   std::vector<CType> buffer_;

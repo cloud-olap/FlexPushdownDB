@@ -65,9 +65,9 @@ public:
 
   static std::shared_ptr<TupleSet2> make(const std::shared_ptr<Schema>& schema, const std::vector<std::shared_ptr<Column>>& columns);
 
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays);
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema>& schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays);
 
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema> schema, const std::vector<std::shared_ptr<::arrow::ChunkedArray>>& arrays);
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Schema>& schema, const std::vector<std::shared_ptr<::arrow::ChunkedArray>>& arrays);
 
   /**
    * Creates an empty tupleset
@@ -172,6 +172,18 @@ public:
   bool validate();
 
   tl::expected<std::string, std::string> getString(const std::string &columnName, int row);
+
+
+  tl::expected<void, std::string> renameColumns(const std::vector<std::string>& columnNames){
+
+    if(table_.has_value()){
+      auto result = table_.value()->RenameColumns(columnNames, &table_.value());
+      if(!result.ok())
+        return tl::make_unexpected(result.message());
+    }
+
+    return {};
+  }
 
 
 private:

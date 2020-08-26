@@ -13,71 +13,109 @@ using namespace normal::ssb;
 /**
  * NOTE: SQLite cannot execute queries on lineorder on sf=1, too big
  */
-TEST_SUITE ("ssb-query1.1-file-sf1" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("ssb-query1.1-file-csv-sf1" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("date-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par1-date-scan" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::dateScan("data/ssb-sf1", FileType::CSV, 1,1,  true, n);
+  LocalFileSystemTests::dateScan("data/ssb-sf1", FileType::CSV, 1, 1, true, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("date-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par2-date-scan" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::dateScan("data/ssb-sf1", FileType::CSV, 2,1,  true, n);
+  LocalFileSystemTests::dateScan("data/ssb-sf1", FileType::CSV, 2, 1, true, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("lineorder-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par1-lineorder-scan" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::lineOrderScan("data/ssb-sf1", FileType::CSV,1, 1, true, n);
+  LocalFileSystemTests::lineOrderScan("data/ssb-sf1", FileType::CSV, 1, 1, false, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("lineorder-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par2-lineorder-scan" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::lineOrderScan("data/ssb-sf1", FileType::CSV,2, 1, true, n);
+  LocalFileSystemTests::lineOrderScan("data/ssb-sf1", FileType::CSV, 2, 1, false, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("date-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par1-date-filter" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::dateFilter(1992, "data/ssb-sf1", FileType::CSV,1, true, n);
+  LocalFileSystemTests::dateFilter(1992, "data/ssb-sf1", FileType::CSV, 1, true, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("date-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par2-date-filter" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::dateFilter(1992, "data/ssb-sf1",FileType::CSV, 2, true, n);
+  LocalFileSystemTests::dateFilter(1992, "data/ssb-sf1", FileType::CSV, 2, true, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("lineorder-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par1-lineorder-filter" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::lineOrderFilter(2, 25, "data/ssb-sf1",FileType::CSV,  1, false, n);
-}
-
-TEST_CASE ("lineorder-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
-  auto n = Normal::start();
-  LocalFileSystemTests::lineOrderFilter(2, 25, "data/ssb-sf1",FileType::CSV,  2, false, n);
+  LocalFileSystemTests::lineOrderFilter(2, 25, "data/ssb-sf1", FileType::CSV, 1, false, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("join-par32" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par2-lineorder-filter" * doctest::skip(false || SKIP_SUITE)) {
+  auto n = Normal::start();
+  LocalFileSystemTests::lineOrderFilter(2, 25, "data/ssb-sf1", FileType::CSV, 2, false, n);
+  n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
+}
+
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par32-join" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
   LocalFileSystemTests::join(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, false, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("full-par32" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par32-full" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, false, n);
+  LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, 1, false, n);
   n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("bloom-par32" * doctest::skip(false || SKIP_SUITE)) {
-  auto n = Normal::start();
-  LocalFileSystemTests::bloom(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, false, n);
-  n->stop();
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par32-full-scoped" * doctest::skip(false || SKIP_SUITE)) {
+  {
+	auto n = Normal::start();
+	LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, 1, false, n);
+  }
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
+
+TEST_CASE ("ssb-query1.1-file-csv-sf1-par32-iter50-full" * doctest::skip(false || SKIP_SUITE)) {
+  auto n = Normal::start();
+  LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, 50, false, n);
+  n->stop();
+
+	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
+}
+
+//TEST_CASE ("bloom-par32" * doctest::skip(false || SKIP_SUITE)) {
+//  auto n = Normal::start();
+//  LocalFileSystemTests::bloom(1992, 2, 25, "data/ssb-sf1", FileType::CSV, 32, false, n);
+//  n->stop();
+//}
 
 }

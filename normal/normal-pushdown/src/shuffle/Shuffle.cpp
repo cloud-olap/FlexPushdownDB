@@ -16,7 +16,7 @@ using namespace normal::tuple;
 Shuffle::Shuffle(const std::string &Name, std::string ColumnName) :
 	Operator(Name, "Shuffle"), columnName_(std::move(ColumnName)) {}
 
-std::shared_ptr<Shuffle> Shuffle::make(const std::string &Name, std::string ColumnName){
+std::shared_ptr<Shuffle> Shuffle::make(const std::string &Name, const std::string& ColumnName){
   return std::make_shared<Shuffle>(Name, ColumnName);
 }
 
@@ -35,8 +35,12 @@ void Shuffle::onReceive(const Envelope &msg) {
   }
 }
 
+void Shuffle::produce(const std::shared_ptr<Operator> &operator_) {
+  Operator::produce(operator_);
+  consumers_.emplace_back(operator_->name());
+}
+
 void Shuffle::onStart() {
-  consumers_ = this->ctx()->operatorMap().get(OperatorRelationshipType::Consumer);
   SPDLOG_DEBUG("Starting '{}'  |  columnName: {}, numConsumers: {}", name(), columnName_, consumers_.size());
 }
 
@@ -94,7 +98,7 @@ void Shuffle::onTuple(const TupleMessage &message) {
   for(const auto& shuffledTupleSet: shuffledTupleSets){
 	std::shared_ptr<core::message::Message>
 		tupleMessage = std::make_shared<core::message::TupleMessage>(shuffledTupleSet->toTupleSetV1(), name());
-	ctx()->send(tupleMessage, consumers_[partitionIndex].name());
+	ctx()->send(tupleMessage, consumers_[partitionIndex]);
 	++partitionIndex;
   }
 
