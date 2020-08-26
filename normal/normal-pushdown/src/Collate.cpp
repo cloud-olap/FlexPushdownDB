@@ -22,7 +22,7 @@ void Collate::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
 
   // FIXME: Not the best way to reset the tuples structure
-  this->tuples_ = nullptr;
+  this->tuples_.reset();
 }
 
 Collate::Collate(std::string name, long queryId) :

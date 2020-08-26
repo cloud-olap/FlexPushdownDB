@@ -32,6 +32,9 @@ set(ARROW_SNAPPY_INCLUDE_DIR ${ARROW_SNAPPY_BASE_DIR}/include)
 set(ARROW_SNAPPY_STATIC_LIB ${ARROW_SNAPPY_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}snappy${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(ARROW_PARQUET_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}parquet${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(ARROW_PARQUET_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}parquet${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_JEMALLOC_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/jemalloc_ep-prefix/src/jemalloc_ep)
+set(ARROW_JEMALLOC_INCLUDE_DIR ${ARROW_JEMALLOC_BASE_DIR}/include)
+set(ARROW_JEMALLOC_STATIC_LIB ${ARROW_JEMALLOC_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 ExternalProject_Add(${ARROW_BASE}
         PREFIX ${ARROW_PREFIX}
@@ -45,6 +48,7 @@ ExternalProject_Add(${ARROW_BASE}
         BUILD_BYPRODUCTS
         ${ARROW_CORE_SHARED_LIBS}
         ${ARROW_CORE_STATIC_LIBS}
+        ${ARROW_JEMALLOC_STATIC_LIB}
         ${ARROW_RE2_STATIC_LIB}
         ${ARROW_GANDIVA_SHARED_LIB}
         ${ARROW_GANDIVA_STATIC_LIB}
@@ -60,7 +64,7 @@ ExternalProject_Add(${ARROW_BASE}
         -DARROW_IPC:BOOL=OFF
         -DARROW_PARQUET:BOOL=ON
         -DARROW_WITH_SNAPPY:BOOL=ON
-        -DARROW_JEMALLOC:BOOL=OFF
+        -DARROW_JEMALLOC:BOOL=ON
         -DARROW_GANDIVA:BOOL=ON
         -DARROW_DEPENDENCY_SOURCE=BUNDLED
         -DCMAKE_INSTALL_MESSAGE=NEVER
@@ -74,6 +78,7 @@ ExternalProject_Add(${ARROW_BASE}
         )
 
 
+file(MAKE_DIRECTORY ${ARROW_JEMALLOC_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 file(MAKE_DIRECTORY ${ARROW_RE2_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 file(MAKE_DIRECTORY ${ARROW_THRIFT_INCLUDE_DIR}) # Include directory needs to exist to run configure step
 file(MAKE_DIRECTORY ${ARROW_SNAPPY_INCLUDE_DIR}) # Include directory needs to exist to run configure step
@@ -98,6 +103,12 @@ file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR}) # Include directory needs to exist to 
 #find_package(Arrow REQUIRED)
 #find_package(Gandiva REQUIRED)
 
+add_library(jemalloc_static STATIC IMPORTED)
+set_target_properties(jemalloc_static PROPERTIES IMPORTED_LOCATION ${ARROW_JEMALLOC_STATIC_LIB})
+target_include_directories(jemalloc_static INTERFACE ${ARROW_JEMALLOC_INCLUDE_DIR})
+target_link_libraries(jemalloc_static INTERFACE pthread)
+add_dependencies(jemalloc_static ${ARROW_BASE})
+
 add_library(re2_static STATIC IMPORTED)
 set_target_properties(re2_static PROPERTIES IMPORTED_LOCATION ${ARROW_RE2_STATIC_LIB})
 target_include_directories(re2_static INTERFACE ${ARROW_RE2_INCLUDE_DIR})
@@ -116,6 +127,7 @@ add_dependencies(snappy_static ${ARROW_BASE})
 add_library(arrow_static STATIC IMPORTED)
 set_target_properties(arrow_static PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_STATIC_LIBS})
 target_include_directories(arrow_static INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_static INTERFACE jemalloc_static)
 target_link_libraries(arrow_static INTERFACE re2_static)
 target_link_libraries(arrow_static INTERFACE snappy_static)
 target_link_libraries(arrow_static INTERFACE pthread)
@@ -124,6 +136,7 @@ add_dependencies(arrow_static ${ARROW_BASE})
 add_library(arrow_shared SHARED IMPORTED)
 set_target_properties(arrow_shared PROPERTIES IMPORTED_LOCATION ${ARROW_CORE_SHARED_LIBS})
 target_include_directories(arrow_shared INTERFACE ${ARROW_INCLUDE_DIR})
+target_link_libraries(arrow_shared INTERFACE jemalloc_static)
 target_link_libraries(arrow_shared INTERFACE re2_static)
 target_link_libraries(arrow_shared INTERFACE snappy_static)
 target_link_libraries(arrow_shared INTERFACE pthread)

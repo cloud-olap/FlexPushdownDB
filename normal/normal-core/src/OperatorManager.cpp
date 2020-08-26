@@ -54,23 +54,43 @@ void OperatorManager::start() {
 
     std::vector<caf::actor> actorHandles;
     for (const auto &consumer: op->consumers())
-      actorHandles.emplace_back(consumer.second->actorHandle());
+      actorHandles.emplace_back(consumer.second.lock()->actorHandle());
 
     auto sm = std::make_shared<message::StartMessage>(actorHandles, "/root");
 
     (*rootActor_)->send(op->actorHandle(), normal::core::message::Envelope(sm));
   }
+
+  running_ = true;
 }
 
 void OperatorManager::stop() {
-  // TODO: Send actors a shutdown message
-  this->actorSystem->await_actors_before_shutdown(false);
+
+  // Send actors a shutdown message
+  for (const auto &element: m_operatorMap) {
+	auto actorHandle = element.second->op()->actorHandle();
+	(*rootActor_)->send_exit(actorHandle, caf::exit_reason::user_shutdown);
+  }
+
+  // Stop the root actor (seems, being defined by "scope", it needs to actually be destroyed to stop it)
+  rootActor_.reset();
+
+  this->actorSystem->await_all_actors_done();
+
+  this->m_operatorMap.clear();
+  this->operatorDirectory_.clear();
+
+  // Destroy the segment cache actor
+  // FIXME: Prob better to empty cache rather than kill ptr?
+  segmentCacheActor_.reset();
 
   stopTime_ = std::chrono::steady_clock::now();
+
+  running_ = false;
 }
 
-OperatorManager::OperatorManager() : queryCounter_(0){
-  actorSystemConfig.load<caf::io::middleman>();
+OperatorManager::OperatorManager() : queryCounter_(0), running_(false){
+//  actorSystemConfig.load<caf::io::middleman>();
   actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
   rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
 }
@@ -221,7 +241,7 @@ void OperatorManager::write_graph(const std::string &file) {
   for (const auto &op: this->m_operatorMap) {
     auto opNode = agfindnode(graph, (char *) (op.second->op()->name().c_str()));
     for (const auto &c: op.second->op()->consumers()) {
-      auto consumerOpNode = agfindnode(graph, (char *) (c.second->name().c_str()));
+      auto consumerOpNode = agfindnode(graph, (char *) (c.second.lock()->name().c_str()));
       agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
     }
   }
@@ -373,6 +393,11 @@ const std::shared_ptr<SegmentCacheActor> &OperatorManager::getSegmentCacheActor(
 
 long OperatorManager::nextQueryId() {
   return queryCounter_.fetch_add(1);
+}
+
+OperatorManager::~OperatorManager() {
+	if(running_)
+	  stop();
 }
 
 }

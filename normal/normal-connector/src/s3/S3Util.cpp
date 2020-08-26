@@ -38,6 +38,9 @@ S3Util::listObjects(std::string s3Bucket,
 		partitionMap.find(object.GetKey().c_str())->second = object.GetSize();
 	  }
 	}
+	else{
+	  throw std::runtime_error(res.GetError().GetMessage().c_str());
+	}
   }
 
   return partitionMap;

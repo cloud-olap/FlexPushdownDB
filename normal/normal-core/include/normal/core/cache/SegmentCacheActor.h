@@ -28,7 +28,7 @@ class SegmentCacheActor : public normal::core::Operator {
 
 public:
 
-  SegmentCacheActor(const std::string &Name);
+  explicit SegmentCacheActor(const std::string &Name);
 
   void onReceive(const message::Envelope &message) override;
 

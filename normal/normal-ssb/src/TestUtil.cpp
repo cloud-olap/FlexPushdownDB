@@ -65,7 +65,7 @@ std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest2(const std::shared
  * Runs the given query in sql lite, returning the results or failing the test on an error
  */
 std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>
-TestUtil::executeSQLite(const std::string &sql, std::vector<std::string> dataFiles) {
+TestUtil::executeSQLite(const std::string &sql, const std::vector<std::string>& dataFiles) {
 
   std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>> expected;
   auto expectedSQLite3Results = SQLite3::execute(sql, dataFiles);
