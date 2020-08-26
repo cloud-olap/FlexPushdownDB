@@ -100,7 +100,7 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
 
   // FIXME: an estimation here, if freeSize_ >= c * maxSize_, we try to cache all segments
   //  Because we cannot know the size of segmentData before bringing it back
-  if (freeSize_ >= maxSize_ * 0.1) {
+  if (freeSize_ >= maxSize_ * 0.1 && freeSize_ >= 100*1024*1024) {
     // keys have been added to keySet_ in onLoad() before
 //    for (const auto &key: *segmentKeys) {
 //      auto keyEntry = keySet_.find(key);
@@ -166,7 +166,9 @@ std::string FBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keysInCache_.size() << std::endl;
   for (auto const &segmentKey: keysInCache_) {
-    ss << fmt::format("Key: {};\tHitnum: {}", segmentKey->toString(), segmentKey->getMetadata()->hitNum()) << std::endl;
+    ss << fmt::format("Key: {};\tHitnum: {}\tSize: {}", segmentKey->toString(), segmentKey->getMetadata()->hitNum(), segmentKey->getMetadata()->size()) << std::endl;
   }
+  ss << "Max size: " << maxSize_ << std::endl;
+  ss << "Free size: " << freeSize_ << std::endl;
   return ss.str();
 }

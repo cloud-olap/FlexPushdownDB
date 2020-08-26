@@ -371,12 +371,12 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
 
   // parameters
   const int warmBatchSize = 30, executeBatchSize = 30;
-  const size_t cacheSize = 512*1024*1024;
+  const size_t cacheSize = 1792*1024*1024;
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf10-sortlineorder/";
   const int partitionNum = 32;
 
-  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
+  auto mode = normal::plan::operator_::mode::Modes::fullPushdownMode();
   auto lru = LRUCachingPolicy::make(cacheSize);
   auto fbr = FBRCachingPolicy::make(cacheSize);
 
@@ -416,6 +416,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   SPDLOG_INFO("Execution phase finished");
 
   SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
+//  SPDLOG_INFO("Current cache layout   :\n{}", i.getCachingPolicy()->showCurrentLayout());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
 
   i.stop();
