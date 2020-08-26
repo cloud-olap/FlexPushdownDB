@@ -115,7 +115,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 //  if (saveMetrics)
 //    SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
 //  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
-//  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
+  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -367,16 +367,16 @@ TEST_CASE ("WarmCacheExperiment-Together" * doctest::skip(true || SKIP_SUITE)) {
 }
 
 TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
-  spdlog::set_level(spdlog::level::info);
+//  spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 50, executeBatchSize = 50;
-  const size_t cacheSize = 102*1024*1024;
+  const int warmBatchSize = 20, executeBatchSize = 20;
+  const size_t cacheSize = 1536*1024*1024;
   std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf1-sortlineorder/";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/";
   const int partitionNum = 32;
 
-  auto mode = normal::plan::operator_::mode::Modes::hybridCachingLastMode();
+  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
   auto lru = LRUCachingPolicy::make(cacheSize);
   auto fbr = FBRCachingPolicy::make(cacheSize);
 

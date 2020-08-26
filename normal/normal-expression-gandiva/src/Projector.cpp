@@ -28,7 +28,7 @@ void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
 																		field(expression->alias(),
 																			  expression->getReturnType()));
 
-	SPDLOG_INFO(fmt::format("Gandiva expression: {}", gandivaExpression->ToString()));
+//	SPDLOG_INFO(fmt::format("Gandiva expression: {}", gandivaExpression->ToString()));
 
 	gandivaExpressions_.emplace_back(gandivaExpression);
   }
