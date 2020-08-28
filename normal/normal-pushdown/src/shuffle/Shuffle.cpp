@@ -61,11 +61,6 @@ void Shuffle::onTuple(const TupleMessage &message) {
 ////  SPDLOG_INFO("Shuffle onTuple: {}", name());
 //  shuffleLock.unlock();
 
-  // Set consumers if not (sometimes TupleMessages arrives before StartMessage)
-  if(consumers_.empty()){
-    consumers_ = this->ctx()->operatorMap().get(OperatorRelationshipType::Consumer);
-  }
-
   // Get the tuple set
   auto &&tupleSet = TupleSet2::create(message.tuples());
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;

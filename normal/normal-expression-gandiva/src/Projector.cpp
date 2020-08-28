@@ -17,7 +17,7 @@ Projector::Projector(std::vector<std::shared_ptr<Expression>> Expressions) :
 
 void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
 
-//  std::lock_guard<std::mutex> g(BigGlobalLock);
+  std::lock_guard<std::mutex> g(BigGlobalLock);
 
   // Compile the expressions
   gandivaExpressions_.reserve(expressions_.size());

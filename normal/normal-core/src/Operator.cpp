@@ -43,6 +43,7 @@ std::map<std::string, std::weak_ptr<Operator>> Operator::producers() {
 }
 
 std::shared_ptr<OperatorContext> Operator::ctx() {
+  assert(!opContext_.expired());
   return opContext_.lock();
 }
 

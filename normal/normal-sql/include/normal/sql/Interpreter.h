@@ -24,7 +24,7 @@ public:
   Interpreter(const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
               const std::shared_ptr<CachingPolicy>& cachingPolicy);
   [[nodiscard]] const std::shared_ptr<core::OperatorManager> &getOperatorManager() const;
-  [[nodiscard]] const std::shared_ptr<core::graph::OperatorGraph> &getOperatorGraph() const;
+  [[nodiscard]] std::shared_ptr<core::graph::OperatorGraph> &getOperatorGraph();
   void parse(const std::string& sql);
   void put(const std::shared_ptr<connector::Catalogue> &catalogue);
   const std::shared_ptr<plan::LogicalPlan> &getLogicalPlan() const;

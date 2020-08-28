@@ -2,11 +2,9 @@
 // Created by matt on 14/8/20.
 //
 
-#include "normal/pushdown/s3/S3SelectScanKernel.h"
-
+#include <normal/pushdown/s3/S3SelectScanKernel.h>
+#include <normal/pushdown/s3/S3SelectParser.h>
 #include <utility>
-
-#include "S3SelectParser.h"
 
 using namespace Aws::Client;
 using namespace Aws::S3;
