@@ -54,11 +54,6 @@ void Filter::onStart() {
 }
 
 void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
-//  filterLock.lock();
-//  onTupleNum_++;
-//  tupleArrived_ = true;
-//  filterLock.unlock();
-
 //  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   /**
    * Check if this filter is applicable, if not, just send an empty table and complete
@@ -89,30 +84,23 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
     ctx()->notifyComplete();
     complete_ = true;
   }
-
-//  filterLock.lock();
-//  onTupleNum_--;
-//  filterLock.unlock();
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
-//  if (complete_) {
-//    return;
-//  }
-
 //  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
+  if(received_->getArrowTable().has_value()) {
+	filterTuples();
+	sendTuples();
+  }
 
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
-//    while (!(tupleArrived_ && onTupleNum_ == 0)) {
-//      std::this_thread::yield();
-//    }
-//    SPDLOG_INFO("Filter complete: {}, {}", received_->numRows(), name());
-    if(received_->getArrowTable().has_value()) {
-      filterTuples();
-      sendTuples();
-    }
-    ctx()->notifyComplete();
-//    complete_ = true;
+
+    filter_ = std::nullopt;
+
+    assert(this->received_->numRows() == 0);
+	assert(this->filtered_->numRows() == 0);
+
+	ctx()->notifyComplete();
   }
 }
 
@@ -152,16 +140,9 @@ void Filter::buildFilter() {
 
 void Filter::filterTuples() {
 
-  int num = received_->numRows();
-  auto start = std::chrono::steady_clock::now();
-
 //  SPDLOG_DEBUG("Filter Input\n{}", received_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
 
   filtered_ = filter_.value()->evaluate(*received_);
-
-  auto end = std::chrono::steady_clock::now();
-//  SPDLOG_INFO("Filter {} tuples: {} ns", num, std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count());
-
   assert(filtered_->validate());
 
 //  SPDLOG_DEBUG("Filter Output\n{}", filtered_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
@@ -175,7 +156,6 @@ void Filter::sendTuples() {
 	  std::make_shared<core::message::TupleMessage>(filtered_->toTupleSetV1(), name());
 
   ctx()->tell(tupleMessage);
-//  SPDLOG_INFO("Filter send tuples: {}", name());
   filtered_->clear();
   assert(filtered_->validate());
 }

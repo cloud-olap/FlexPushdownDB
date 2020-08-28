@@ -232,7 +232,13 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> CSVParser::parse() {
   if (!expectedArrays.has_value())
 	return tl::unexpected(expectedArrays.error());
 
-  return TupleSet2::make(destinationSchema, expectedArrays.value());
+  auto tupleSet = TupleSet2::make(destinationSchema, expectedArrays.value());
+
+  status = this->inputStream_.value()->Close();
+  if(!status.ok())
+	return tl::make_unexpected(status.message());
+
+  return tupleSet;
 }
 
 tl::expected<std::shared_ptr<::arrow::Buffer>, std::string>

@@ -24,7 +24,7 @@ TEST_CASE ("ssb-query1.1-file-parquet-sf0.01-par1-lineorder-scan" * doctest::ski
 
 TEST_CASE ("ssb-query1.1-file-parquet-sf0.01-par1-full" * doctest::skip(false)) {
   auto n = Normal::start();
-  LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf0.01", FileType::Parquet, 1,  true, n);
+  LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf0.01", FileType::Parquet, 1, 1, true, n);
   n->stop();
 }
 

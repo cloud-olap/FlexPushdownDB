@@ -41,6 +41,9 @@ S3Util::listObjects(std::string s3Bucket,
       }
 	  }
 	}
+	else{
+	  throw std::runtime_error(res.GetError().GetMessage().c_str());
+	}
   }
 
   return partitionMap;

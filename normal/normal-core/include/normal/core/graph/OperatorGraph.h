@@ -32,7 +32,6 @@ public:
   static std::shared_ptr<OperatorGraph> make(const std::shared_ptr<OperatorManager>& operatorManager);
   void put(const std::shared_ptr<Operator> &op);
   void start();
-  void startOperatorAndProducers(const std::shared_ptr<Operator>& op, std::unordered_map<std::string, bool> operatorStates);
   void join();
   void boot();
 //  void write_graph(const std::string &file);
@@ -46,7 +45,7 @@ private:
   long id_;
   std::map<std::string, std::shared_ptr<OperatorContext>> m_operatorMap;
   OperatorDirectory operatorDirectory_;
-  std::shared_ptr<OperatorManager> operatorManager_;
+  std::weak_ptr<OperatorManager> operatorManager_;
   std::shared_ptr<caf::scoped_actor> rootActor_;
 
   std::chrono::steady_clock::time_point startTime_;

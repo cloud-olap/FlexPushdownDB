@@ -497,8 +497,21 @@ std::string SqlGenerator::genLo_predicate() {
 }
 
 /**
- * Generate the predicate on lineorder's orderdate: 80% 19911231-19930523; 20% 19930524-19981231
+ * Generate the predicate on lineorder's orderdate
+ * using Zipfian distribution on 8 partitions of orderdate values
  */
+std::vector<double> zipfian(int n, double alpha) {
+  std::vector<double> possibilities;
+  double baseDen = 0.0;
+  for (double i = 1.0; i <= n; i++) {
+    baseDen += pow(1 / i, alpha);
+  }
+  for (int i = 1; i <= n; i++) {
+    possibilities.emplace_back(1.0 / (pow(i, alpha) * baseDen));
+  }
+  return possibilities;
+}
+
 std::vector<std::string> SqlGenerator::generateSqlBatchSkew(int batchSize) {
   // collect all skew query names
   std::vector<std::string> skewQueryNames;
@@ -506,20 +519,27 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkew(int batchSize) {
     skewQueryNames.emplace_back(queryNameIt.first);
   }
 
-  // generate randomly
-  const int hotPercentage = 20;
-  std::uniform_int_distribution<int> distribution1(1, 100);
+  // zipfian
+  const int n = 7;
+  const double alpha = 0.0;
+  auto possibilities = zipfian(n, alpha);
+  std::uniform_real_distribution<double> distribution1(0.0, 1.0);
+  // random queries
   std::uniform_int_distribution<int> distribution2(0,skewQueryNames.size() - 1);
 
   std::vector<std::string> queries;
   for (int i = 0; i < batchSize; i++) {
     std::string lo_predicate;
-    int kind = distribution1(*generator_);
-    if (kind > hotPercentage) {
-      lo_predicate = fmt::format("(lo_orderdate between {} and {})", 19920101, 19930523);
-    } else {
-      lo_predicate = fmt::format("(lo_orderdate between {} and {})", 19970524, 19981231);
+    double possibility = distribution1(*generator_), sumPossibility = 0.0;
+    int kind = 0;
+    for (int j = 0; j < n; j++) {
+      if (sumPossibility <= possibility && possibility <= sumPossibility + possibilities[j]) {
+        kind = j;
+        break;
+      }
+      sumPossibility += possibilities[j];
     }
+    lo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 0x101, (1992 + kind) * 10000 + 1231);
 
     int skewQueryIndex = distribution2(*generator_);
     auto skewQueryName = skewQueryNames[skewQueryIndex];

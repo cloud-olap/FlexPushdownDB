@@ -28,11 +28,11 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   std::shared_ptr<Aws::S3::S3Client> s3Client;
   std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
 
-  limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 50000000);
+  limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 500000000);
 
   Aws::Client::ClientConfiguration config;
   config.region = Aws::Region::US_EAST_1;
-  config.scheme = Aws::Http::Scheme::HTTPS;
+  config.scheme = Aws::Http::Scheme::HTTP;
   config.connectTimeoutMs = 30000;
   config.requestTimeoutMs = 30000;
   config.readRateLimiter = limiter;

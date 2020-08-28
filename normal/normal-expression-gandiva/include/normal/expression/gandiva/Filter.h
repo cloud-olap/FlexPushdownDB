@@ -16,7 +16,7 @@ namespace normal::expression::gandiva {
 class Filter : public normal::expression::Filter {
 
 public:
-  Filter(std::shared_ptr<Expression> Pred);
+  explicit Filter(std::shared_ptr<Expression> Pred);
 
   static std::shared_ptr<Filter> make(const std::shared_ptr<Expression> &Pred);
 

@@ -312,9 +312,17 @@ void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
             message = std::make_shared<TupleMessage>(emptyTupleSet->toTupleSetV1(), this->name());
     ctx()->tell(message);
     SPDLOG_DEBUG(fmt::format("Finished because result not needed: {}/{}", s3Bucket_, s3Object_));
+
+    /**
+     * Here caching is asynchronous,
+     * so need to backup ctx first, because it's a weak_ptr, after query finishing will be destroyed
+     * even no use of this "ctxBackup" is ok
+     */
+    auto ctxBackup = ctx();
+
     ctx()->notifyComplete();
 
-    //just to cache
+    // just to cache
     readTuples();
   }
 }

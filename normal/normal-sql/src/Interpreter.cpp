@@ -81,10 +81,11 @@ const std::shared_ptr<normal::plan::LogicalPlan> &Interpreter::getLogicalPlan() 
 }
 
 void Interpreter::clearOperatorGraph() {
+  operatorGraph_.reset();
   operatorGraph_ = graph::OperatorGraph::make(operatorManager_);
 }
 
-const std::shared_ptr<normal::core::graph::OperatorGraph> &Interpreter::getOperatorGraph() const {
+std::shared_ptr<normal::core::graph::OperatorGraph> &Interpreter::getOperatorGraph() {
   return operatorGraph_;
 }
 
