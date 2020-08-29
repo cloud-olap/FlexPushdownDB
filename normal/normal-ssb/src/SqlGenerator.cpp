@@ -519,27 +519,43 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkew(int batchSize) {
     skewQueryNames.emplace_back(queryNameIt.first);
   }
 
-  // zipfian
+  const bool useZipfian = false;
+
+  // simple skewness
+  const double hotPercentage = 0.2;
+
+  // zipfian skewness
   const int n = 7;
   const double alpha = 0.0;
   auto possibilities = zipfian(n, alpha);
   std::uniform_real_distribution<double> distribution1(0.0, 1.0);
+
   // random queries
   std::uniform_int_distribution<int> distribution2(0,skewQueryNames.size() - 1);
 
   std::vector<std::string> queries;
   for (int i = 0; i < batchSize; i++) {
     std::string lo_predicate;
-    double possibility = distribution1(*generator_), sumPossibility = 0.0;
-    int kind = 0;
-    for (int j = 0; j < n; j++) {
-      if (sumPossibility <= possibility && possibility <= sumPossibility + possibilities[j]) {
-        kind = j;
-        break;
+    if (useZipfian) {
+      double possibility = distribution1(*generator_), sumPossibility = 0.0;
+      int kind = 0;
+      for (int j = 0; j < n; j++) {
+        if (sumPossibility <= possibility && possibility <= sumPossibility + possibilities[j]) {
+          kind = j;
+          break;
+        }
+        sumPossibility += possibilities[j];
       }
-      sumPossibility += possibilities[j];
+      lo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101,
+                                 (1992 + kind) * 10000 + 1231);
+    } else {
+      double kind = distribution1(*generator_);
+      if (kind > hotPercentage) {
+        lo_predicate = fmt::format("(lo_orderdate between {} and {})", 19920101, 19930523);
+      } else {
+        lo_predicate = fmt::format("(lo_orderdate between {} and {})", 19970101, 19980523);
+      }
     }
-    lo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101, (1992 + kind) * 10000 + 1231);
 
     int skewQueryIndex = distribution2(*generator_);
     auto skewQueryName = skewQueryNames[skewQueryIndex];
