@@ -47,6 +47,7 @@ private:
    * About result metrics
    */
   std::vector<double> executionTimes;
+  std::vector<std::pair<size_t, size_t>> bytesTransferred;
 };
 
 }
