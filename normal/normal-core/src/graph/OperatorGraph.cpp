@@ -13,6 +13,7 @@
 #include <normal/core/Actors.h>
 #include <normal/core/OperatorDirectoryEntry.h>
 #include <normal/core/Globals.h>
+#include <normal/pushdown/s3/S3SelectScan.h>
 
 using namespace normal::core::graph;
 using namespace normal::core;
@@ -310,9 +311,38 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::endl;
   ss << std::endl;
 
+  auto bytesTransferred = getBytesTransferred();
+  std::stringstream formattedProcessedBytes;
+  formattedProcessedBytes << bytesTransferred.first << " B" << " ("
+                          << ((double)bytesTransferred.first / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  std::stringstream formattedReturnedBytes;
+  formattedReturnedBytes << bytesTransferred.second << " B" << " ("
+                         << ((double)bytesTransferred.second / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  ss << std::left << std::setw(60) << "Processed Bytes";
+  ss << std::left << std::setw(60) << formattedProcessedBytes.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Returned Bytes";
+  ss << std::left << std::setw(60) << formattedReturnedBytes.str();
+  ss << std::endl;
+  ss << std::endl;
+
   return ss.str();
 }
 
 const long &graph::OperatorGraph::getId() const {
   return id_;
+}
+
+std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
+  size_t processedBytes = 0;
+  size_t returnedBytes = 0;
+  for (auto &entry: getOperators()) {
+    auto op = entry.second->op();
+    if (typeid(*op) == typeid(normal::pushdown::S3SelectScan)) {
+      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(op);
+      processedBytes += s3ScanOp->getProcessedBytes();
+      returnedBytes += s3ScanOp->getReturnedBytes();
+    }
+  }
+  return std::pair<size_t, size_t>(processedBytes, returnedBytes);
 }

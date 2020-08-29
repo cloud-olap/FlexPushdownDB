@@ -111,22 +111,50 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(60) << "Total Execution Time ";
   ss << std::left << std::setw(60) << formattedExecutionTime.str();
   ss << std::endl;
+
+  size_t totalProcessedBytes = 0, totalReturnedBytes = 0;
+  for (auto const &bytesTransferred: bytesTransferred) {
+    totalProcessedBytes += bytesTransferred.first;
+    totalReturnedBytes += bytesTransferred.second;
+  }
+  std::stringstream formattedProcessedBytes;
+  formattedProcessedBytes << totalProcessedBytes << " B" << " ("
+                          << ((double)totalProcessedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  std::stringstream formattedReturnedBytes;
+  formattedReturnedBytes << totalReturnedBytes << " B" << " ("
+                         << ((double)totalReturnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  ss << std::left << std::setw(60) << "Total Processed Bytes";
+  ss << std::left << std::setw(60) << formattedProcessedBytes.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total Returned Bytes";
+  ss << std::left << std::setw(60) << formattedReturnedBytes.str();
+  ss << std::endl;
   ss << std::endl;
 
-  ss << std::left << std::setw(120) << "Query Execution Times" << std::endl;
+  ss << std::left << std::setw(120) << "Query Execution Times and Bytes Transferred" << std::endl;
   ss << std::setfill(' ');
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
-  ss << std::left << std::setw(20) << "Query";
-  ss << std::left << std::setw(40) << "Execution Time";
+  ss << std::left << std::setw(15) << "Query";
+  ss << std::left << std::setw(30) << "Execution Time";
+  ss << std::left << std::setw(30) << "Processed Bytes";
+  ss << std::left << std::setw(30) << "Returned Bytes";
   ss << std::endl;
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
   for (int qid = 1; qid <= executionTimes.size(); ++qid) {
     std::stringstream formattedProcessingTime1;
     formattedProcessingTime1 << executionTimes[qid - 1] << " secs";
-    ss << std::left << std::setw(20) << std::to_string(qid);
-    ss << std::left << std::setw(40) << formattedProcessingTime1.str();
+    std::stringstream formattedProcessedBytes1;
+    formattedProcessedBytes1 << bytesTransferred[qid - 1].first << " B" << " ("
+                             << ((double)bytesTransferred[qid - 1].first / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    std::stringstream formattedReturnedBytes1;
+    formattedReturnedBytes1 << bytesTransferred[qid - 1].second << " B" << " ("
+                            << ((double)bytesTransferred[qid - 1].second / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    ss << std::left << std::setw(15) << std::to_string(qid);
+    ss << std::left << std::setw(30) << formattedProcessingTime1.str();
+    ss << std::left << std::setw(30) << formattedProcessedBytes1.str();
+    ss << std::left << std::setw(30) << formattedReturnedBytes1.str();
     ss << std::endl;
   }
 
@@ -135,6 +163,7 @@ std::string Interpreter::showMetrics() {
 
 void Interpreter::saveMetrics() {
   executionTimes.emplace_back((double) (operatorGraph_->getElapsedTime().value()) / 1000000000.0);
+  bytesTransferred.emplace_back(operatorGraph_->getBytesTransferred());
 }
 
 const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {

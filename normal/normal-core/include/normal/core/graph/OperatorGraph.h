@@ -38,6 +38,7 @@ public:
   std::shared_ptr<Operator> getOperator(const std::string &);
   std::map<std::string, std::shared_ptr<OperatorContext>> getOperators();
   tl::expected<long, std::string> getElapsedTime();
+  std::pair<size_t, size_t> getBytesTransferred();
   std::string showMetrics();
   const long &getId() const;
 

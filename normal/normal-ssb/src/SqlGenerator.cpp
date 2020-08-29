@@ -539,7 +539,7 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkew(int batchSize) {
       }
       sumPossibility += possibilities[j];
     }
-    lo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 0x101, (1992 + kind) * 10000 + 1231);
+    lo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101, (1992 + kind) * 10000 + 1231);
 
     int skewQueryIndex = distribution2(*generator_);
     auto skewQueryName = skewQueryNames[skewQueryIndex];

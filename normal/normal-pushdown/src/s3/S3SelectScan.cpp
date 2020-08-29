@@ -180,6 +180,8 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
 				 statsEvent.GetDetails().GetBytesScanned(),
 				 statsEvent.GetDetails().GetBytesProcessed(),
 				 statsEvent.GetDetails().GetBytesReturned());
+	processedBytes_ += statsEvent.GetDetails().GetBytesProcessed();
+	returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
   });
   handler.SetEndEventCallback([&]() {
 	SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",
@@ -330,6 +332,14 @@ void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
 void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet) {
   auto partition = std::make_shared<S3SelectPartition>(s3Bucket_, s3Object_, finishOffset_ - startOffset_);
   CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
+}
+
+size_t S3SelectScan::getProcessedBytes() const {
+  return processedBytes_;
+}
+
+size_t S3SelectScan::getReturnedBytes() const {
+  return returnedBytes_;
 }
 
 }

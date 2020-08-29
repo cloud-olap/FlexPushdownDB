@@ -55,6 +55,8 @@ public:
 											bool scanOnStart = true,
 											bool toCache = false);
 
+  size_t getProcessedBytes() const;
+  size_t getReturnedBytes() const;
 
 private:
   std::string s3Bucket_;
@@ -66,6 +68,8 @@ private:
   S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;
+  size_t processedBytes_ = 0;
+  size_t returnedBytes_ = 0;
 
   /**
    * Flags:
