@@ -25,9 +25,9 @@ LocalFileSystemQueries::dateScan(const std::string &dataDir, FileType fileType, 
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
   common::Operators::connectToOne(dateMerges, collate);
 

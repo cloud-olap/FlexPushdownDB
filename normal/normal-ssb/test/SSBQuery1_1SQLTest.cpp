@@ -17,6 +17,7 @@
 
 #include "normal/ssb/query1_1/SQL.h"
 #include <normal/plan/mode/Modes.h>
+#include <normal/cache/LRUCachingPolicy.h>
 
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
@@ -83,7 +84,7 @@ std::shared_ptr<TupleSet2> executeSQLTest(const std::string &sql) {
 
   SPDLOG_INFO("SQL:\n{}", sql);
 
-  normal::sql::Interpreter i(normal::plan::operator_::mode::Modes::fullPushdownMode());
+  normal::sql::Interpreter i(normal::plan::operator_::mode::Modes::fullPushdownMode(), std::make_shared<LRUCachingPolicy>(100));
 
   configureLocalConnector(i);
   configureS3Connector(i);

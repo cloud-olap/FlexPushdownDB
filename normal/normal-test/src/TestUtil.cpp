@@ -20,12 +20,12 @@ void TestUtil::writeExecutionPlan(normal::core::OperatorManager &mgr) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
-  mgr.write_graph(physicalPlanFile);
+//  mgr.write_graph(physicalPlanFile);
 }
 
 void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto logicalPlanFile = filesystem::path(testScratchDir).append("logical-execution-plan.svg");
-  plan.writeGraph(logicalPlanFile);
+//  plan.writeGraph(logicalPlanFile);
 }

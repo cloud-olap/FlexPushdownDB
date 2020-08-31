@@ -46,7 +46,7 @@ public:
 
   static std::shared_ptr<TupleSet> prepareEmptyTupleSet() {
 	auto schema = arrow::schema({});
-	auto tuples = TupleSet::make(schema, {});
+	auto tuples = TupleSet::make(schema, std::vector<std::shared_ptr<arrow::Array>>{});
 	return tuples;
   }
 

@@ -34,9 +34,9 @@ public:
       return prefixInt_ + std::to_string(value_);
     } else if (typeid(ARROW_TYPE) == typeid(arrow::FloatType)) {
       return prefixFloat_ + std::to_string(value_);
-    } else {
-      std::runtime_error("Numeric literal type not implemented");
     }
+
+    throw std::runtime_error("Numeric literal type not implemented");
   }
 
   std::shared_ptr<std::vector<std::string>> involvedColumnNames() override{

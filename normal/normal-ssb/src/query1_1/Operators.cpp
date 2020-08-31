@@ -51,7 +51,8 @@ Operators::makeDateFileCacheLoadOperators(const std::string &dataDir, int numCon
 									std::vector<std::string>(),
 									partition,
 									dateScanRanges[u].first,
-									dateScanRanges[u].second);
+									dateScanRanges[u].second,
+									true);
 	cacheLoadOperators.push_back(o);
   }
 
@@ -125,7 +126,8 @@ Operators::makeDateS3SelectCacheLoadOperators(const std::string &s3ObjectDir,
                   std::vector<std::string>(),
 									partition,
 									dateScanRanges[u].first,
-									dateScanRanges[u].second);
+									dateScanRanges[u].second,
+									true);
 	dateScanOperators.push_back(dateScan);
   }
 
@@ -201,7 +203,7 @@ Operators::makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
 }
 
 std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-Operators::makeDateFilterOperators(short year, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeDateFilterOperators(short year, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
   std::vector<std::shared_ptr<normal::pushdown::filter::Filter>> dateFilterOperators;
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -228,7 +230,7 @@ Operators::makeDateShuffleOperators(int numConcurrentUnits, const std::shared_pt
 }
 
 std::vector<std::shared_ptr<Shuffle>>
-Operators::makeLineOrderShuffleOperators(int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeLineOrderShuffleOperators(int numConcurrentUnits, bool castValues, const std::shared_ptr<OperatorGraph>& g) {
 
   std::vector<std::shared_ptr<Shuffle>> shuffleOperators;
   for (int u = 0; u < numConcurrentUnits; ++u) {
@@ -259,7 +261,8 @@ Operators::makeLineOrderFileCacheLoadOperators(const std::string &dataDir, int n
                std::vector<std::string>(),
 							 partition,
 							 scanRanges[u].first,
-							 scanRanges[u].second);
+							 scanRanges[u].second,
+							 true);
 	os.push_back(o);
   }
 
@@ -381,7 +384,7 @@ Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3Objec
 }
 
 std::vector<std::shared_ptr<normal::pushdown::filter::Filter>>
-Operators::makeLineOrderFilterOperators(short discount, short quantity, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeLineOrderFilterOperators(short discount, short quantity, bool castValues, int numConcurrentUnits, const std::shared_ptr<OperatorGraph>& g) {
 
   /**
    * Filter

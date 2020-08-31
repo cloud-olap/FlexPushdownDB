@@ -36,9 +36,11 @@ Operators::makeFileCacheLoadOperators(const std::string &namePrefix,
 	std::shared_ptr<Partition> partition = std::make_shared<LocalFilePartition>(file);
 	auto o = CacheLoad::make(fmt::format("/query-{}/{}-cache-load-{}", g->getId(), namePrefix, u),
 							 columns,
+							 std::vector<std::string>(),
 							 partition,
 							 scanRanges[u].first,
-							 scanRanges[u].second);
+							 scanRanges[u].second,
+							 true);
 	os.push_back(o);
 	g->put(o);
   }
@@ -102,13 +104,13 @@ Operators::makeFileScanOperators(const std::string &namePrefix,
   return os;
 }
 
-std::vector<std::shared_ptr<MergeOperator>>
+std::vector<std::shared_ptr<Merge>>
 Operators::makeMergeOperators(const std::string &namePrefix, int numConcurrentUnits,
 							  const std::shared_ptr<OperatorGraph> &g) {
 
-  std::vector<std::shared_ptr<MergeOperator>> os;
+  std::vector<std::shared_ptr<Merge>> os;
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = MergeOperator::make(fmt::format("/query-{}/{}-merge-{}", g->getId(), namePrefix, u));
+	auto o = Merge::make(fmt::format("/query-{}/{}-merge-{}", g->getId(), namePrefix, u));
 	os.push_back(o);
 	g->put(o);
   }

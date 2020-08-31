@@ -20,7 +20,7 @@
 #include <normal/pushdown/shuffle/Shuffle.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/cache/CacheLoad.h>
-#include <normal/pushdown/merge/MergeOperator.h>
+#include <normal/pushdown/merge/Merge.h>
 #include <normal/pushdown/bloomjoin/BloomCreateOperator.h>
 #include <normal/pushdown/bloomjoin/FileScanBloomUseOperator.h>
 
@@ -64,7 +64,7 @@ public:
 								   int numConcurrentUnits,
 								   const std::shared_ptr<OperatorGraph> &g);
 
-  static std::vector<std::shared_ptr<MergeOperator>>
+  static std::vector<std::shared_ptr<Merge>>
   makeMergeOperators(const std::string &namePrefix,
 					 int numConcurrentUnits,
 					 const std::shared_ptr<OperatorGraph> &g);
@@ -167,13 +167,33 @@ public:
 	}
   }
 
+  static void connectHitsToEachLeft(std::vector<std::shared_ptr<CacheLoad>> producers,
+								std::vector<std::shared_ptr<Merge>> consumers){
+
+	for (size_t u1 = 0; u1 < producers.size(); ++u1) {
+	  producers[u1]->setHitOperator(consumers[u1]);
+	  consumers[u1]->setLeftProducer(producers[u1]);
+	}
+  }
+
+  template <typename A>
+  static void connectToEachRight(std::vector<std::shared_ptr<A>> producers,
+									std::vector<std::shared_ptr<Merge>> consumers){
+
+	for (size_t u1 = 0; u1 < producers.size(); ++u1) {
+	  producers[u1]->produce(consumers[u1]);
+	  consumers[u1]->setRightProducer(producers[u1]);
+	}
+  }
+
 
   template <typename B>
   static void connectMissesToEach(std::vector<std::shared_ptr<CacheLoad>> producers,
 								  std::vector<std::shared_ptr<B>> consumers){
 
 	for (size_t u1 = 0; u1 < producers.size(); ++u1) {
-	  producers[u1]->setMissOperator(consumers[u1]);
+	  producers[u1]->setMissOperatorToCache(consumers[u1]);
+//	  producers[u1]->setMissOperatorToPushdown(consumers[u1]); ????????????
 	  consumers[u1]->consume(producers[u1]);
 	}
   }

@@ -10,19 +10,19 @@ add_library(normal-ssb
         src/TestUtil.cpp include/normal/ssb/TestUtil.h
         src/SQLite3.cpp include/normal/ssb/SQLite3.h
         src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h
-        src/SSBSchema.cpp include/normal/ssb/SSBSchema.h src/GenerateSqlFile.cpp)
-#        include/normal/ssb/common/Operators.h src/common/Operators.cpp
-#        src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
-#        src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
-#        src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
-#        src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
-#        src/query1_1/LocalFileSystemTests.cpp include/normal/ssb/query1_1/LocalFileSystemTests.h
-#        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
-#        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
-#        src/query2_1/Operators.cpp  include/normal/ssb/query2_1/Operators.h
-#        src/query2_1/LocalFileSystemTests.cpp include/normal/ssb/query2_1/LocalFileSystemTests.h
-#        src/query2_1/LocalFileSystemQueries.cpp include/normal/ssb/query2_1/LocalFileSystemQueries.h
-#        src/query2_1/SQL.cpp include/normal/ssb/query2_1/SQL.h )
+        src/SSBSchema.cpp include/normal/ssb/SSBSchema.h src/GenerateSqlFile.cpp
+        include/normal/ssb/common/Operators.h src/common/Operators.cpp
+        src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
+        src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
+        src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h
+        src/query1_1/LocalFileSystemQueries.cpp include/normal/ssb/query1_1/LocalFileSystemQueries.h
+        src/query1_1/LocalFileSystemTests.cpp include/normal/ssb/query1_1/LocalFileSystemTests.h
+        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
+        src/query1_1/S3SelectTests.cpp include/normal/ssb/query1_1/S3SelectTests.h
+        src/query2_1/Operators.cpp  include/normal/ssb/query2_1/Operators.h
+        src/query2_1/LocalFileSystemTests.cpp include/normal/ssb/query2_1/LocalFileSystemTests.h
+        src/query2_1/LocalFileSystemQueries.cpp include/normal/ssb/query2_1/LocalFileSystemQueries.h
+        src/query2_1/SQL.cpp include/normal/ssb/query2_1/SQL.h )
 
 target_include_directories(normal-ssb PUBLIC include)
 
@@ -32,7 +32,7 @@ target_link_libraries(normal-ssb PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb PRIVATE normal-plan)
 target_link_libraries(normal-ssb PRIVATE sqlite3_static)
 target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
-target_link_libraries(normal-ssb PUBLIC normal-core)
+target_link_libraries(normal-ssb PUBLIC normal-pushdown)
 target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
 
 

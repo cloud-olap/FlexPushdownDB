@@ -10,7 +10,7 @@
 #include <normal/pushdown/cache/CacheLoad.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/s3/S3SelectScan2.h>
-#include <normal/pushdown/merge/MergeOperator.h>
+#include <normal/pushdown/merge/Merge.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/AWSClient.h>
@@ -48,9 +48,9 @@ void run(const std::string &s3Bucket,
   }
 
   std::shared_ptr<Partition> partition = std::make_shared<S3SelectPartition>(s3Bucket, s3Object);
-  auto cacheLoad = CacheLoad::make("cache-load", columnNames, partition, 0, partitionMap[s3Object]);
+  auto cacheLoad = CacheLoad::make("cache-load", columnNames, {}, partition, 0, partitionMap[s3Object], true);
   g->put(cacheLoad);
-  auto merge = MergeOperator::make("merge");
+  auto merge = Merge::make("merge");
   g->put(merge);
   auto s3selectScan = S3SelectScan2::make("s3select-scan",
 										  s3Bucket,
@@ -71,7 +71,7 @@ void run(const std::string &s3Bucket,
   cacheLoad->setHitOperator(merge);
   merge->consume(cacheLoad);
 
-  cacheLoad->setMissOperator(s3selectScan);
+  cacheLoad->setMissOperatorToCache(s3selectScan);
   s3selectScan->consume(cacheLoad);
 
   s3selectScan->produce(merge);
