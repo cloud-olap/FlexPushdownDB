@@ -24,7 +24,7 @@ public:
                 const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder,
                 const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
                         std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &sortedColumns);
-  static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue();
+  static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue(std::string schemaName);
 
   const std::shared_ptr<std::vector<std::string>> &tables() const;
   const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder() const;
@@ -47,7 +47,7 @@ private:
     std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns_;
 };
 
-const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue();
+const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue("ssb-sf1-sortlineorder");
 
 }
 
