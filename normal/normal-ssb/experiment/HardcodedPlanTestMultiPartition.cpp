@@ -39,7 +39,7 @@ TEST_CASE ("SimpleScan" * doctest::skip(false || SKIP_SUITE)) {
   auto s3Bucket = "s3filter";
   auto s3Object = "ssb-sf1/lineorder.tbl";
   std::vector<std::string> s3Objects = {s3Object};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf1", s3Objects, client.defaultS3Client());
   auto numBytes = partitionMap.find(s3Object)->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
   std::vector<std::string> columns = {"lo_orderkey", "lo_orderdate", "lo_extendedprice"};
@@ -90,7 +90,7 @@ TEST_CASE ("SimpleScan-partitioned" * doctest::skip(false || SKIP_SUITE)) {
   }
   std::vector<std::string> columns = {"lo_orderkey", "lo_orderdate", "lo_extendedprice"};
   auto sql = fmt::format("select lo_orderkey, lo_orderdate, lo_extendedprice from s3Object");
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf1", s3Objects, client.defaultS3Client());
   std::vector<std::shared_ptr<normal::pushdown::S3SelectScan>> lineorderScans;
 
   for (int i = 0; i < numPartitions; i++) {

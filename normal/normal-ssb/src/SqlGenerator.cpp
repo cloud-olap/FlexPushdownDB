@@ -519,14 +519,14 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkew(int batchSize) {
     skewQueryNames.emplace_back(queryNameIt.first);
   }
 
-  const bool useZipfian = false;
+  const bool useZipfian = true;
 
   // simple skewness
   const double hotPercentage = 0.2;
 
   // zipfian skewness
   const int n = 7;
-  const double alpha = 0.0;
+  const double alpha = 2.0;
   auto possibilities = zipfian(n, alpha);
   std::uniform_real_distribution<double> distribution1(0.0, 1.0);
 
