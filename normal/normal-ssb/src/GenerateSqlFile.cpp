@@ -15,7 +15,7 @@ void writeFile(std::string content, std::experimental::filesystem::path &filePat
 }
 
 int main() {
-  const int batchSize = 100;
+  const int batchSize = 100, recurringTimes = 1;
   SqlGenerator sqlGenerator;
   auto sqls = sqlGenerator.generateSqlBatchSkew(batchSize);
 
@@ -24,11 +24,13 @@ int main() {
     std::experimental::filesystem::create_directory(sql_file_dir_path);
   }
 
-  int index = 1;
-  for (auto const &sql: sqls) {
-    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index++));
-    writeFile(sql, sql_file_path);
-    sql_file_dir_path = sql_file_dir_path.parent_path();
+  for (int index = 0; index < batchSize; index++) {
+    auto sql = sqls[index];
+    for (int j = 0; j < recurringTimes; j++) {
+      auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1) + j * batchSize));
+      writeFile(sql, sql_file_path);
+      sql_file_dir_path = sql_file_dir_path.parent_path();
+    }
   }
 
   return 0;

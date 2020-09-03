@@ -49,16 +49,17 @@ void graph::OperatorGraph::start() {
 
 //   Send start messages to the actors
   for (const auto &element: m_operatorMap) {
-	auto ctx = element.second;
-	auto op = ctx->op();
+      auto ctx = element.second;
+      auto op = ctx->op();
 
-	std::vector<caf::actor> actorHandles;
-	for (const auto &consumer: op->consumers())
-	  actorHandles.emplace_back(consumer.second.lock()->actorHandle());
+      std::vector<caf::actor> actorHandles;
+      for (const auto &consumer: op->consumers())
+          actorHandles.emplace_back(consumer.second.lock()->actorHandle());
 
-	auto sm = std::make_shared<message::StartMessage>(actorHandles, GraphRootActorName);
-
-	(*rootActor_)->send(op->actorHandle(), normal::core::message::Envelope(sm));
+      auto sm = std::make_shared<message::StartMessage>(actorHandles, GraphRootActorName);
+      SPDLOG_INFO("{} - Send sm to {}", getId(), op->name());
+      (*rootActor_)->send(op->actorHandle(), normal::core::message::Envelope(sm));
+      SPDLOG_INFO("{} - Finish sending sm to {}", getId(), op->name());
   }
 }
 
