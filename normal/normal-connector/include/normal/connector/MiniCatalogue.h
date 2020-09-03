@@ -18,24 +18,25 @@ namespace normal::connector {
 class MiniCatalogue {
 
 public:
-  MiniCatalogue(const std::shared_ptr<std::vector<std::string>> &tables,
+  MiniCatalogue(const std::shared_ptr<std::unordered_map<std::string, int>> partitionNums,
                 const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> &schemas,
                 const std::shared_ptr<std::unordered_map<std::string, int>> &columnLengthMap,
                 const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder,
                 const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
                         std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &sortedColumns);
-  static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue();
+  static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue(std::string s3Bucket, std::string schemaName);
 
-  const std::shared_ptr<std::vector<std::string>> &tables() const;
+  const std::shared_ptr<std::unordered_map<std::string, int>> &partitionNums() const;
   const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder() const;
   const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &
     sortedColumns() const;
 
+  std::shared_ptr<std::vector<std::string>> tables();
   std::string findTableOfColumn(std::string columnName);
   double lengthFraction(std::string columnName);
 
 private:
-  std::shared_ptr<std::vector<std::string>> tables_;
+  std::shared_ptr<std::unordered_map<std::string, int>> partitionNums_;
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas_;
   std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap_;
 
@@ -47,7 +48,8 @@ private:
     std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns_;
 };
 
-const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue = MiniCatalogue::defaultMiniCatalogue();
+const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue =
+        MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf100-sortlineorder/csv");
 
 }
 

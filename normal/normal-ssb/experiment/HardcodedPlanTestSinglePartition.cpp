@@ -37,12 +37,14 @@ TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
 
   // operators
   auto s3Bucket = "pushdowndb";
-  auto s3Object = "ssb-sf0.01/csv/date.tbl";
+  auto s3Object = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.3213";
   std::vector<std::string> s3Objects = {s3Object};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf100-sortlineorder/csv/lineorder_sharded", s3Objects, client.defaultS3Client());
   auto numBytes = partitionMap.find(s3Object)->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  std::vector<std::string> columns = {"D_DATEKEY"};
+  std::vector<std::string> columns = {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE",
+                                      "LO_ORDERPRIORITY", "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE",
+                                      "LO_DISCOUNT", "LO_REVENUE", "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
   auto lineorderScan = normal::pushdown::S3SelectScan::make(
           "SimpleScan",
           "pushdowndb",
@@ -84,7 +86,7 @@ TEST_CASE ("Join_Two" * doctest::skip(true || SKIP_SUITE)) {
   // operators
   auto s3Bucket = "s3filter";
   std::vector<std::string> s3Objects = {"ssb-sf0.01/part.tbl", "ssb-sf0.01/lineorder.tbl"};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf0.01", s3Objects, client.defaultS3Client());
 
   // lineorder scan
   auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;
@@ -181,7 +183,7 @@ TEST_CASE ("Join_Three" * doctest::skip(true || SKIP_SUITE)) {
   // operators
   auto s3Bucket = "s3filter";
   std::vector<std::string> s3Objects = {"ssb-sf0.01/part.tbl", "ssb-sf0.01/lineorder.tbl", "ssb-sf0.01/supplier.tbl"};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf0.01", s3Objects, client.defaultS3Client());
 
   // lineorder scan
   auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;
@@ -318,7 +320,7 @@ TEST_CASE ("Join_Two_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
   // operators
   auto s3Bucket = "s3filter";
   std::vector<std::string> s3Objects = {"ssb-sf0.01/date.tbl", "ssb-sf0.01/lineorder.tbl"};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf0.01", s3Objects, client.defaultS3Client());
 
   // lineorder scan
   auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;
@@ -434,7 +436,7 @@ TEST_CASE ("Join_Three_Aggregate" * doctest::skip(true || SKIP_SUITE)) {
   // operators
   auto s3Bucket = "s3filter";
   std::vector<std::string> s3Objects = {"ssb-sf0.01/date.tbl", "ssb-sf0.01/lineorder.tbl", "ssb-sf0.01/part.tbl"};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf0.01", s3Objects, client.defaultS3Client());
 
   // lineorder scan
   auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;
@@ -589,7 +591,7 @@ TEST_CASE ("Join_Two_Group" * doctest::skip(true || SKIP_SUITE)) {
   // operators
   auto s3Bucket = "s3filter";
   std::vector<std::string> s3Objects = {"ssb-sf0.01/date.tbl", "ssb-sf0.01/lineorder.tbl"};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf0.01", s3Objects, client.defaultS3Client());
 
   // lineorder scan
   auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;
@@ -700,7 +702,7 @@ TEST_CASE ("Join_Two_Project" * doctest::skip(true || SKIP_SUITE)) {
   // operators
   auto s3Bucket = "s3filter";
   std::vector<std::string> s3Objects = {"ssb-sf0.01/date.tbl", "ssb-sf0.01/lineorder.tbl"};
-  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf0.01", s3Objects, client.defaultS3Client());
 
   // lineorder scan
   auto numBytes = partitionMap.find("ssb-sf0.01/lineorder.tbl")->second;

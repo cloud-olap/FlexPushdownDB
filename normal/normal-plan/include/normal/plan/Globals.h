@@ -15,7 +15,7 @@
 namespace normal::plan {
 
 inline constexpr int NumRanges = 1;
-inline constexpr int JoinParallelDegree = 32;
+inline constexpr int JoinParallelDegree = 64;
 inline const std::shared_ptr<Aws::S3::S3Client> DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
 }
 

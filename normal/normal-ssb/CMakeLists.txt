@@ -186,6 +186,26 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/supplier.snappy
 #configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Metadata
+#-----------------------------------------------------------------------------------------------------------------------
+
+configure_file(metadata/ssb-sf1-sortlineorder/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/column_length COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/schemas COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/partitionNums COPYONLY)
+
+configure_file(metadata/ssb-sf10-sortlineorder/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf10-sortlineorder/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf10-sortlineorder/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf10-sortlineorder/column_length COPYONLY)
+configure_file(metadata/ssb-sf10-sortlineorder/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf10-sortlineorder/schemas COPYONLY)
+configure_file(metadata/ssb-sf10-sortlineorder/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf10-sortlineorder/partitionNums COPYONLY)
+
+configure_file(metadata/ssb-sf100-sortlineorder/csv/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/column_length COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/schemas COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/partitionNums COPYONLY)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------
 
