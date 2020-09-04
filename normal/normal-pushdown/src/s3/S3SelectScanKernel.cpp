@@ -144,9 +144,21 @@ S3SelectScanKernel::s3Select(const std::string &sql,
 				 s3Object_,
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
-	std::shared_ptr<TupleSet> tupleSetV1 = s3SelectParser.parsePayload(payload);
-	auto tupleSet = TupleSet2::create(tupleSetV1);
-	tupleSetEventCallback(tupleSet);
+
+	auto expectedTupleSet = s3SelectParser.parse(payload);
+
+	// Check for error
+	if (!expectedTupleSet.has_value()) {
+	  optionalErrorMessage = expectedTupleSet.error();
+	  return;
+	}
+	auto maybeTupleSet = expectedTupleSet.value();
+
+	// Check if a tupleset was parsed
+	if (maybeTupleSet.has_value()) {
+	  auto tupleSet = TupleSet2::create(maybeTupleSet.value());
+	  tupleSetEventCallback(tupleSet);
+	}
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
 	SPDLOG_DEBUG("S3 Select StatsEvent  |  partition: s3://{}/{}, scanned: {}, processed: {}, returned: {}",

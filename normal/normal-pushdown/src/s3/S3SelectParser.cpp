@@ -19,8 +19,11 @@ namespace normal::pushdown {
  * @return
  */
 std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
-    const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &from,
-    const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &to) {
+    const Aws::Vector<unsigned char>::iterator &from,
+    const Aws::Vector<unsigned char>::iterator &to) {
+
+  //  Aws::String records(from, to);
+  //  SPDLOG_DEBUG("records '{}'", records);
 
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto read_options = arrow::csv::ReadOptions::Defaults();
@@ -28,55 +31,57 @@ std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
   read_options.autogenerate_column_names = true;
   auto convert_options = arrow::csv::ConvertOptions::Defaults();
 
-  // FIXME: Can arrow read the vector directly?
-  Aws::String records(from, to);
-
+  // Get a view of the first line
   auto newLineIt = std::find(from, to, '\n');
-  std::basic_string_view<unsigned char> firstRow(from.base(), newLineIt - from);
-  arrow::util::string_view sv = reinterpret_cast<const char *>(firstRow.data());
+  if(newLineIt == to)
+    throw std::runtime_error("Cannot parse S3 Select payload  |  Newline not found in payload");
+  arrow::util::string_view firstLine(reinterpret_cast<const char *>(from.base()), newLineIt - from + 1);
 
+  // Parse the first line
   arrow::csv::BlockParser p{parse_options, -1, 1};
   uint32_t out_size;
-  arrow::Status status = p.Parse(sv, &out_size);
-  if (!status.ok())
-    abort();
+  auto parseStatus = p.Parse(firstLine, &out_size);
+  if (!parseStatus.ok())
+	throw std::runtime_error(fmt::format("Cannot parse S3 Select payload  |  Error parsing first line in payload, firstline: '{}', error: '{}'", to_string(firstLine), parseStatus.message()));
 
+  // With the number of columns, set the types of each column to utf8 (Arrow will infer types otherwise)
   int numFields = p.num_cols();
+  if (numFields <= 0)
+	throw std::runtime_error(fmt::format("Cannot parse S3 Select payload  |  {} fields found in first line, firstline: '{}'", numFields, to_string(firstLine)));
   std::unordered_map<std::string, std::shared_ptr<arrow::DataType>> column_types{};
   for (int i = 0; i < numFields; ++i) {
-    std::stringstream ss;
-    ss << "f" << i;
-    column_types[ss.str()] = arrow::utf8();
+    column_types[fmt::format("f{}", i)] = arrow::utf8();
   }
-
   convert_options.column_types = column_types;
 
-  std::shared_ptr<arrow::io::BufferReader>
-      reader = std::make_shared<arrow::io::BufferReader>(from.base(), std::distance(from, to));
-  arrow::MemoryPool *pool = arrow::default_memory_pool();
-
-  // FIXME: How to size the buffer?
-  auto createResult = arrow::io::BufferedInputStream::Create(CSV_READER_BUFFER_SIZE, pool, reader, -1);
-
-  if (!createResult.ok()) {
-    // FIXME:
-    abort();
-  }
-
-  auto input = createResult.ValueOrDie();
+  // Create a reader
+  auto reader = std::make_shared<arrow::io::BufferReader>(from.base(), std::distance(from, to));
+  auto createResult = arrow::io::BufferedInputStream::Create(CSV_READER_BUFFER_SIZE,
+															 arrow::default_memory_pool(),
+															 reader,
+															 -1);
+  if (!createResult.ok())
+	throw std::runtime_error(fmt::format("Cannot parse S3 Select payload  |  Could not create a reader, error: '{}'", createResult.status().message()));
+  auto input = *createResult;
 
   // Instantiate TableReader from input stream and options
-  auto makeReaderResult = arrow::csv::TableReader::Make(pool, input, read_options,
-                                                        parse_options, convert_options);
-  if (!makeReaderResult.ok()) {
-    // FIXME:
-    abort();
-  }
+  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
+														input,
+														read_options,
+                                                        parse_options,
+                                                        convert_options);
+  if (!makeReaderResult.ok())
+	throw std::runtime_error(fmt::format("Cannot parse S3 Select payload  |  Could not create a table reader, error: '{}'", makeReaderResult.status().message()));
+  auto tableReader = *makeReaderResult;
 
-  std::shared_ptr<arrow::csv::TableReader> tableReader = makeReaderResult.ValueOrDie();
-  std::shared_ptr<TupleSet> tupleSet = TupleSet::make(tableReader);
+  // Parse the payload and create the tupleset
+  auto tupleSet = TupleSet::make(tableReader);
 
   return tupleSet;
+}
+
+std::shared_ptr<TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char> &payload) {
+  return parse(payload)->value();
 }
 
 /**
@@ -84,7 +89,7 @@ std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
  * @param payload
  * @return
  */
-std::shared_ptr<TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char> &payload) {
+tl::expected<std::optional<std::shared_ptr<TupleSet>>, std::string> S3SelectParser::parse(Aws::Vector<unsigned char> &payload) {
 
   SPDLOG_TRACE({
                  Aws::String payloadString(payload.begin(), payload.end());
@@ -109,11 +114,11 @@ std::shared_ptr<TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char
                });
 
 
-  // Find the last newline
+  // Find the last newline (if there is one)
   auto newLineIt = std::find(payload.rbegin(), payload.rend(), '\n');
   long pos = (payload.rend() - newLineIt);
 
-  // Store anything following the last newline as partial data
+  // Store anything following the last newline (if there is one) as partial data
   partial = std::vector<unsigned char>(payload.begin() + pos, payload.end());
 
   SPDLOG_TRACE({
@@ -126,10 +131,15 @@ std::shared_ptr<TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char
                  spdlog::trace("Complete payload: \n{}", records3);
                });
 
-  std::shared_ptr<TupleSet>
-      tupleSet = S3SelectParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
+  if(pos > 0) {
+	std::shared_ptr<TupleSet>
+		tupleSet = S3SelectParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
 
-  return tupleSet;
+	return tupleSet;
+  }
+  else{
+    return std::nullopt;
+  }
 }
 
 }
