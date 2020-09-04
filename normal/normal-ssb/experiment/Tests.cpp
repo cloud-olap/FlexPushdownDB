@@ -231,10 +231,10 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
 }
 
 TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
-//  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 0, executeBatchSize = 1;
+  const int warmBatchSize = 2, executeBatchSize = 1;
   const size_t cacheSize = 10240L*1024*1024;
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
@@ -284,6 +284,45 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   i.getOperatorGraph().reset();
   i.stop();
   SPDLOG_INFO("Memory allocated finally: {}", arrow::default_memory_pool()->bytes_allocated());
+}
+
+
+std::vector<std::string> split(std::string str, std::string splitStr) {
+  std::vector<std::string> res;
+  std::string::size_type pos1, pos2;
+  pos2 = str.find(splitStr);
+  pos1 = 0;
+  while (pos2 != std::string::npos)
+  {
+    res.push_back(str.substr(pos1, pos2 - pos1));
+    pos1 = pos2 + 1;
+    pos2 = str.find(splitStr, pos1);
+  }
+  if (pos1 < str.length()) {
+    res.push_back(str.substr(pos1));
+  }
+  return res;
+}
+
+TEST_CASE ("CheckFile" * doctest::skip(true || SKIP_SUITE)) {
+  auto filePath = std::filesystem::current_path().append("lineorder.tbl.1255");
+  std::ifstream file(filePath.string());
+  std::string str;
+  int rightCnt = 0, wrongCnt = 0, lineNum = 0;
+  while (getline(file, str)) {
+    auto strs = split(str, ",");
+    if (strs.size() == 17) {
+      rightCnt++;
+    } else {
+      wrongCnt++;
+      SPDLOG_INFO("wrong line: {}, {} commas", lineNum, strs.size() - 1);
+    }
+    if (lineNum % 10000 == 0) {
+      SPDLOG_INFO("lineNum: {}, rightCnt: {}, wrongCnt: {}", lineNum, rightCnt, wrongCnt);
+    }
+    lineNum++;
+  }
+  SPDLOG_INFO("lineNum: {}, rightCnt: {}, wrongCnt: {}", lineNum, rightCnt, wrongCnt);
 }
 
 }

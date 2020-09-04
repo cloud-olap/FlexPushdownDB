@@ -37,19 +37,17 @@ TEST_CASE ("SimpleScan" * doctest::skip(true || SKIP_SUITE)) {
 
   // operators
   auto s3Bucket = "pushdowndb";
-  auto s3Object = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.3213";
+  auto s3Object = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.1125";
   std::vector<std::string> s3Objects = {s3Object};
   auto partitionMap = normal::connector::s3::S3Util::listObjects(s3Bucket, "ssb-sf100-sortlineorder/csv/lineorder_sharded", s3Objects, client.defaultS3Client());
   auto numBytes = partitionMap.find(s3Object)->second;
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-  std::vector<std::string> columns = {"LO_ORDERKEY", "LO_LINENUMBER", "LO_CUSTKEY", "LO_PARTKEY", "LO_SUPPKEY", "LO_ORDERDATE",
-                                      "LO_ORDERPRIORITY", "LO_SHIPPRIORITY", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_ORDTOTALPRICE",
-                                      "LO_DISCOUNT", "LO_REVENUE", "LO_SUPPLYCOST", "LO_TAX", "LO_COMMITDATE", "LO_SHIPMODE"};
+  std::vector<std::string> columns = {"lo_extendedprice"};
   auto lineorderScan = normal::pushdown::S3SelectScan::make(
           "SimpleScan",
           "pushdowndb",
           s3Object,
-          fmt::format(""),
+          fmt::format(" where (((cast(lo_quantity as int) >= 24 and cast(lo_quantity as int) <= 33) and cast(lo_orderdate as int) >= 19930101) and cast(lo_orderdate as int) <= 19931231)"),
           columns,
           scanRanges[0].first,
           scanRanges[0].second,
