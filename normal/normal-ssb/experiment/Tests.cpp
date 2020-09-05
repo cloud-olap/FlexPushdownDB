@@ -104,6 +104,7 @@ auto execute(normal::sql::Interpreter &i) {
 }
 
 auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics) {
+  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
   i.clearOperatorGraph();
 
   i.parse(sql);
@@ -124,6 +125,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
     i.saveMetrics();
   }
 
+  i.getOperatorGraph().reset();
   return tupleSet;
 }
 
@@ -231,10 +233,10 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
 }
 
 TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
-//  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 0, executeBatchSize = 1;
+  const int warmBatchSize = 2, executeBatchSize = 5;
   const size_t cacheSize = 10240L*1024*1024;
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
@@ -247,7 +249,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
-  normal::sql::Interpreter i(mode, fbr);
+  normal::sql::Interpreter i(mode, lru);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
 
   // execute
