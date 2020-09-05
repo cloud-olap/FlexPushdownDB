@@ -34,7 +34,8 @@ private:
 
 public:
 
-  std::shared_ptr<TupleSet> parsePayload(Aws::Vector<unsigned char> &Vector);
+  [[deprecated("Use parse(Aws::Vector<unsigned char> &Vector)")]] std::shared_ptr<TupleSet> parsePayload(Aws::Vector<unsigned char> &Vector);
+  tl::expected<std::optional<std::shared_ptr<TupleSet>>, std::string> parse(Aws::Vector<unsigned char> &Vector);
 
 };
 

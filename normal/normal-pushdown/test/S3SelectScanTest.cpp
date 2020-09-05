@@ -17,6 +17,7 @@
 #include <normal/core/Normal.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/connector/s3/S3SelectPartition.h>
+#include <normal/pushdown/s3/S3SelectParser.h>
 
 #include "TestUtil.h"
 
@@ -69,13 +70,13 @@ void run(const std::string &s3Bucket,
   g->put(collate);
 
   cacheLoad->setHitOperator(merge);
-  merge->consume(cacheLoad);
+  merge->setLeftProducer(cacheLoad);
 
   cacheLoad->setMissOperator(s3selectScan);
   s3selectScan->consume(cacheLoad);
 
   s3selectScan->produce(merge);
-  merge->consume(s3selectScan);
+  merge->setRightProducer(s3selectScan);
 
   merge->produce(collate);
   collate->consume(merge);
@@ -141,6 +142,45 @@ TEST_CASE ("s3select-scan-v1-csv" * doctest::skip(false || SKIP_SUITE)) {
   n->stop();
 
   client.shutdown();
+}
+
+TEST_CASE ("s3select-parser" * doctest::skip(false || SKIP_SUITE)) {
+
+  Aws::Vector<unsigned char> data{'1', ',', '2', ',', '3', '\n',
+								  '4', ',', '5', ',', '6', '\n',
+								  '7', ',', '8', ',', '9', '\n'};
+
+  for(size_t payloadSize = 1; payloadSize <= data.size(); ++payloadSize) {
+
+	S3SelectParser parser;
+
+	auto selectionStart = data.begin();
+	auto selectionEnd = selectionStart + std::min<long>(data.end() - selectionStart, payloadSize);
+	while (selectionStart != data.end()) {
+
+	  auto payload = Aws::Vector<unsigned char>(selectionStart, selectionEnd);
+
+	  selectionStart = selectionEnd;
+	  selectionEnd = selectionStart + std::min<long>(data.end() - selectionStart, payloadSize);
+
+	  auto expectedTupleSet = parser.parse(payload);
+
+	  // Check for error
+	  if (!expectedTupleSet.has_value())
+			FAIL (expectedTupleSet.error());
+	  auto maybeTupleSet = expectedTupleSet.value();
+
+	  // Check if a tupleset was parsed
+	  if (maybeTupleSet.has_value()) {
+		auto tuples = TupleSet2::create(maybeTupleSet.value());
+		SPDLOG_DEBUG("Output:\n{}", tuples->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+	  }
+	}
+  }
+}
+
+TEST_CASE ("s3select-scan-v2-csv-large" * doctest::skip(false || SKIP_SUITE)) {
+  run("s3filter", "ssb-sf1/date.tbl", FileType::CSV, {"d_datekey", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR"});
 }
 
 TEST_CASE ("s3select-scan-v2-csv" * doctest::skip(false || SKIP_SUITE)) {
