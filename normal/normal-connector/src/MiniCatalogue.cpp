@@ -5,7 +5,7 @@
 #include <string>
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/connector/s3/S3SelectPartition.h>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <fstream>
 
 normal::connector::MiniCatalogue::MiniCatalogue(
@@ -38,7 +38,7 @@ std::vector<std::string> split(std::string str, std::string splitStr) {
   return res;
 }
 
-std::vector<std::string> readFileByLines(std::filesystem::path filePath) {
+std::vector<std::string> readFileByLines(std::experimental::filesystem::path filePath) {
   std::ifstream file(filePath.string());
   std::vector<std::string> res;
   std::string str;
@@ -50,7 +50,7 @@ std::vector<std::string> readFileByLines(std::filesystem::path filePath) {
 
 std::shared_ptr<std::vector<std::pair<std::string, std::string>>> readMetadataSort(std::string schemaName, std::string fileName) {
   auto res = std::make_shared<std::vector<std::pair<std::string, std::string>>>();
-  auto filePath = std::filesystem::current_path().append("metadata").append(schemaName).append("sort").append(fileName);
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("sort").append(fileName);
   for (auto const &str: readFileByLines(filePath)) {
     auto splitRes = split(str, ",");
     res->emplace_back(std::pair<std::string, std::string>(splitRes[0], splitRes[1]));
@@ -60,7 +60,7 @@ std::shared_ptr<std::vector<std::pair<std::string, std::string>>> readMetadataSo
 
 std::shared_ptr<std::unordered_map<std::string, int>> readMetadataColumnLength(std::string schemaName) {
   auto res = std::make_shared<std::unordered_map<std::string, int>>();
-  auto filePath = std::filesystem::current_path().append("metadata").append(schemaName).append("column_length");
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("column_length");
   for (auto const &str: readFileByLines(filePath)) {
     auto splitRes = split(str, ",");
     res->emplace(splitRes[0], stoi(splitRes[1]));
@@ -70,7 +70,7 @@ std::shared_ptr<std::unordered_map<std::string, int>> readMetadataColumnLength(s
 
 std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> readMetadataSchemas(std::string schemaName) {
   auto res = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
-  auto filePath = std::filesystem::current_path().append("metadata").append(schemaName).append("schemas");
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("schemas");
   for (auto const &str: readFileByLines(filePath)) {
     auto splitRes = split(str, ":");
     auto columnNames = std::make_shared<std::vector<std::string>>();
@@ -84,7 +84,7 @@ std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std:
 
 std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(std::string schemaName) {
   auto res = std::make_shared<std::unordered_map<std::string, int>>();
-  auto filePath = std::filesystem::current_path().append("metadata").append(schemaName).append("partitionNums");
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("partitionNums");
   for (auto const &str: readFileByLines(filePath)) {
     auto splitRes = split(str, ",");
     res->emplace(splitRes[0], stoi(splitRes[1]));
