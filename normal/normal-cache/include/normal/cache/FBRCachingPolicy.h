@@ -20,8 +20,8 @@ namespace normal::cache {
 class FBRCachingPolicy: public CachingPolicy {
 
 public:
-  explicit FBRCachingPolicy(size_t maxSize);
-  static std::shared_ptr<FBRCachingPolicy> make(size_t maxSize);
+  explicit FBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
+  static std::shared_ptr<FBRCachingPolicy> make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
