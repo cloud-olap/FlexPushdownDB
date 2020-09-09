@@ -55,9 +55,9 @@ private:
   int64_t startOffset_;
   int64_t finishOffset_;
 
-  std::shared_ptr<Operator> hitOperator_;
-  std::shared_ptr<Operator> missOperatorToCache_;
-  std::shared_ptr<Operator> missOperatorToPushdown_;
+  std::weak_ptr<Operator> hitOperator_;
+  std::weak_ptr<Operator> missOperatorToCache_;
+  std::weak_ptr<Operator> missOperatorToPushdown_;
 
   /**
    * whether to use the new cache layout after segments back or the last one without waiting

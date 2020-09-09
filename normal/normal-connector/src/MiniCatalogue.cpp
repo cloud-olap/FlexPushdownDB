@@ -118,7 +118,7 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   auto sortedValues = std::make_shared<std::unordered_map<std::shared_ptr<Partition>, std::pair<std::string, std::string>,
           PartitionPointerHash, PartitionPointerPredicate>>();
   auto valuePairs = readMetadataSort(schemaName, "lineorder_orderdate");
-  std::string s3ObjectDir = schemaName + "/lineorder_sharded/";
+  std::string s3ObjectDir = schemaName + "lineorder_sharded/";
   for (int i = 0; i < valuePairs->size(); i++) {
     sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
                           valuePairs->at(i));
