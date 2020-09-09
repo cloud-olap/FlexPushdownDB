@@ -124,6 +124,18 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/supplier.tbl ${CMAKE_CU
 #configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/part.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/part.tbl COPYONLY)
 #configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/supplier.tbl ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/supplier.tbl COPYONLY)
 
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/customer.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/date.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/lineorder.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet COPYONLY)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet COPYONLY)
+
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/date.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/part.snappy.parquet COPYONLY)
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet COPYONLY)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Query generator
 #-----------------------------------------------------------------------------------------------------------------------
@@ -172,18 +184,6 @@ set(SSB_query_file_list
 FOREACH(SSB_query_file ${SSB_query_file_list})
     configure_file(${CMAKE_CURRENT_LIST_DIR}/sql/${SSB_query_file} ${CMAKE_CURRENT_BINARY_DIR}/sql/${SSB_query_file} COPYONLY)
 ENDFOREACH(SSB_query_file)
-
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/customer.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/date.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/lineorder.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/part.snappy.parquet COPYONLY)
-configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf0.01/parquet/supplier.snappy.parquet COPYONLY)
-
-#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/customer.snappy.parquet COPYONLY)
-#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/date.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/date.snappy.parquet COPYONLY)
-#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/lineorder.snappy.parquet COPYONLY)
-#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/part.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/part.snappy.parquet COPYONLY)
-#configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet ${CMAKE_CURRENT_BINARY_DIR}/data/ssb-sf1/parquet/supplier.snappy.parquet COPYONLY)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Metadata

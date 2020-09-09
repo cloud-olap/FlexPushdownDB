@@ -36,8 +36,8 @@ private:
 
   void merge();
 
-  std::shared_ptr<Operator> leftProducer_;
-  std::shared_ptr<Operator> rightProducer_;
+  std::weak_ptr<Operator> leftProducer_;
+  std::weak_ptr<Operator> rightProducer_;
 
   std::list<std::shared_ptr<TupleSet2>> leftTupleSets_;
   std::list<std::shared_ptr<TupleSet2>> rightTupleSets_;

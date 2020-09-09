@@ -236,12 +236,12 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 2, executeBatchSize = 5;
-  const size_t cacheSize = 10240L*1024*1024;
-  std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
+  const int warmBatchSize = 50, executeBatchSize = 50;
+  const size_t cacheSize = 1024*1024*1024;
+  std::string bucket_name = "s3filter";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/";
 
-  auto mode = normal::plan::operator_::mode::Modes::fullPushdownMode();
+  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
   auto lru = LRUCachingPolicy::make(cacheSize);
   auto fbr = FBRCachingPolicy::make(cacheSize);
 
@@ -249,7 +249,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
-  normal::sql::Interpreter i(mode, lru);
+  normal::sql::Interpreter i(mode, fbr);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
 
   // execute
@@ -282,6 +282,13 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
 
   SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+
+  auto metricsFilePath = filesystem::current_path().append("metrics");
+  std::ofstream fout(metricsFilePath.string());
+  fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
+  fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
+  fout.flush();
+  fout.close();
 
   i.getOperatorGraph().reset();
   i.stop();
