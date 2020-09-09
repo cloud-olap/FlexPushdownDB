@@ -15,12 +15,12 @@ using namespace normal::ssb;
 
 #define SKIP_SUITE false
 
-inline constexpr auto SF = "0.01";
+inline static constexpr auto SF = "0.01";
 
 TEST_SUITE ("ssb-benchmark-query1.1-file-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("ssb-benchmark-query1.1-file-sf0.01-p2-cacheNone" * doctest::skip(false || SKIP_SUITE)) {
-  ankerl::nanobench::Config().minEpochIterations(1).run(
+  ankerl::nanobench::Config().minEpochIterations(1000).run(
 	  getCurrentTestName(), [&] {
 		auto n = Normal::start();
 		LocalFileSystemTests::full2(1992, 2, 25, fmt::format("data/ssb-sf{}", SF), FileType::CSV, 2, 1, false, n);

@@ -46,9 +46,9 @@ LocalFileSystemQueries::dateFilter(const std::string &dataDir, FileType fileType
   auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
   common::Operators::connectToEach(dateMerges, dateFilters);
 
@@ -67,9 +67,9 @@ LocalFileSystemQueries::lineOrderScan(const std::string &dataDir, FileType fileT
   auto lineorderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(lineorderCacheLoads, lineorderMerges);
+  common::Operators::connectHitsToEachLeft(lineorderCacheLoads, lineorderMerges);
   common::Operators::connectMissesToEach(lineorderCacheLoads, lineorderScans);
-  common::Operators::connectToEach(lineorderScans, lineorderMerges);
+  common::Operators::connectToEachRight(lineorderScans, lineorderMerges);
 
   common::Operators::connectToOne(lineorderMerges, collate);
 
@@ -93,9 +93,9 @@ LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(lineOrderCacheLoads, lineOrderMerges);
+  common::Operators::connectHitsToEachLeft(lineOrderCacheLoads, lineOrderMerges);
   common::Operators::connectMissesToEach(lineOrderCacheLoads, lineOrderScans);
-  common::Operators::connectToEach(lineOrderScans, lineOrderMerges);
+  common::Operators::connectToEachRight(lineOrderScans, lineOrderMerges);
 
   common::Operators::connectToEach(lineOrderMerges, lineOrderFilters);
 
@@ -129,13 +129,13 @@ LocalFileSystemQueries::join(const std::string &dataDir,
   auto joinProbe = common::Operators::makeHashJoinProbeOperators("1", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
-  common::Operators::connectHitsToEach(lineOrderCacheLoads, lineOrderMerges);
+  common::Operators::connectHitsToEachLeft(lineOrderCacheLoads, lineOrderMerges);
   common::Operators::connectMissesToEach(lineOrderCacheLoads, lineOrderScans);
-  common::Operators::connectToEach(lineOrderScans, lineOrderMerges);
+  common::Operators::connectToEachRight(lineOrderScans, lineOrderMerges);
 
   common::Operators::connectToEach(dateMerges, dateFilters);
   common::Operators::connectToEach(lineOrderMerges, lineOrderFilters);
@@ -179,13 +179,13 @@ LocalFileSystemQueries::full(const std::string &dataDir,
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
-  common::Operators::connectHitsToEach(lineOrderCacheLoads, lineOrderMerges);
+  common::Operators::connectHitsToEachLeft(lineOrderCacheLoads, lineOrderMerges);
   common::Operators::connectMissesToEach(lineOrderCacheLoads, lineOrderScans);
-  common::Operators::connectToEach(lineOrderScans, lineOrderMerges);
+  common::Operators::connectToEachRight(lineOrderScans, lineOrderMerges);
 
   common::Operators::connectToEach(dateMerges, dateFilters);
   common::Operators::connectToEach(lineOrderMerges, lineOrderFilters);

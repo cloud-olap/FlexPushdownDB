@@ -167,7 +167,7 @@ Operators::makeShuffleOperators(const std::string &namePrefix,
   std::vector<std::shared_ptr<Shuffle>> os;
   for (int u = 0; u < numConcurrentUnits; ++u) {
 	auto o = Shuffle::make(fmt::format("/query-{}/{}-shuffle-{}", g->getId(), namePrefix, u), columnName);
-	os.emplace_back(o);
+	os.push_back(o);
 	g->put(o);
   }
 
@@ -184,7 +184,7 @@ Operators::makeHashJoinBuildOperators(const std::string &namePrefix,
   for (int u = 0; u < numConcurrentUnits; ++u) {
 	auto o = HashJoinBuild::create(fmt::format("/query-{}/{}-join-build-{}", g->getId(), namePrefix, u),
 								   columnName);
-	os.emplace_back(o);
+	os.push_back(o);
 	g->put(o);
   }
   return os;
@@ -204,7 +204,7 @@ Operators::makeHashJoinProbeOperators(const std::string &namePrefix,
 														 namePrefix,
 														 u),
 											 JoinPredicate::create(leftColumnName, rightColumnName));
-	os.emplace_back(o);
+	os.push_back(o);
 	g->put(o);
   }
   return os;
