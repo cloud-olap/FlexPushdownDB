@@ -135,7 +135,27 @@ public:
 
 	valueRowMap_.insert(valueRowIndexMap.begin(), valueRowIndexMap.end());
 
-	auto result = ::arrow::ConcatenateTables({table_, table});
+    /**
+     * need to synchronize schemas (schemas can be the same but in different orders)
+     */
+    std::shared_ptr<::arrow::Table> newTable;
+    auto schema = table_->schema();
+    if (!schema->Equals(table->schema())) {
+      std::vector<std::shared_ptr<::arrow::ChunkedArray>> newChunkedArrays;
+      for (auto const &field: schema->fields()) {
+          auto chunkedArray = table->GetColumnByName(field->name());
+          if (!chunkedArray) {
+              return tl::make_unexpected("Schemas not compatible");
+          }
+          newChunkedArrays.emplace_back(chunkedArray);
+      }
+      newTable = ::arrow::Table::Make(schema, newChunkedArrays);
+    } else {
+      newTable = table;
+    }
+
+    auto result = ::arrow::ConcatenateTables({table_, newTable});
+
 	if (!result.ok())
 	  return tl::make_unexpected(result.status().message());
 	table_ = *result;

@@ -44,7 +44,7 @@ void HashJoinBuild::onReceive(const normal::core::message::Envelope &msg) {
 
 void HashJoinBuild::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
-  kernel_.clear();
+//  kernel_.clear();
 }
 
 void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
