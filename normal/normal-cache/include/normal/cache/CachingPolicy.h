@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <normal/plan/mode/Mode.h>
 
 #include "SegmentKey.h"
 
@@ -17,7 +18,7 @@ class CachingPolicy {
 
 public:
 
-  CachingPolicy(size_t maxSize);
+  CachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
 
   virtual ~CachingPolicy() = default;
 
@@ -57,6 +58,7 @@ public:
   virtual std::string showCurrentLayout() = 0;
 
 protected:
+  std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
   size_t maxSize_;
   size_t freeSize_;
 };

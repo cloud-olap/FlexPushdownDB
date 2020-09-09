@@ -19,9 +19,9 @@ namespace normal::cache {
 class LRUCachingPolicy: public CachingPolicy {
 
 public:
-  explicit LRUCachingPolicy(size_t maxSize);
+  explicit LRUCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
   static std::shared_ptr<LRUCachingPolicy> make();
-  static std::shared_ptr<LRUCachingPolicy> make(size_t maxSize);
+  static std::shared_ptr<LRUCachingPolicy> make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
 
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;

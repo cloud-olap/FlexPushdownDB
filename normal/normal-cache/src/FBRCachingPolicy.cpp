@@ -23,11 +23,11 @@ bool lessEstimateValue (const std::shared_ptr<SegmentKey> &key1, const std::shar
          < (key2->getMetadata()->hitNum());
 }
 
-FBRCachingPolicy::FBRCachingPolicy(size_t maxSize) :
-        CachingPolicy(maxSize) {}
+FBRCachingPolicy::FBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
+        CachingPolicy(maxSize, mode) {}
 
-std::shared_ptr<FBRCachingPolicy> FBRCachingPolicy::make(size_t maxSize) {
-  return std::make_shared<FBRCachingPolicy>(maxSize);
+std::shared_ptr<FBRCachingPolicy> FBRCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
+  return std::make_shared<FBRCachingPolicy>(maxSize, mode);
 }
 
 void FBRCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
@@ -96,6 +96,11 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+
+  if (mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+    return segmentKeys;
+  }
+
   auto keysToCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
   // FIXME: an estimation here, if freeSize_ >= c * maxSize_, we try to cache all segments
