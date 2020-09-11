@@ -50,10 +50,20 @@ set_target_properties("aws-cpp-sdk-core" PROPERTIES IMPORTED_LOCATION ${AWSCPPSD
 target_include_directories("aws-cpp-sdk-core" INTERFACE ${AWSCPPSDK_INCLUDE_DIR})
 add_dependencies("aws-cpp-sdk-core" ${AWSCPPSDK_BASE})
 
+#add_library("aws-cpp-sdk-core-static" STATIC IMPORTED)
+#set_target_properties("aws-cpp-sdk-core-static" PROPERTIES IMPORTED_LOCATION ${AWSCPPSDK_CORE_STATIC_LIBS})
+#target_include_directories("aws-cpp-sdk-core-static" INTERFACE ${AWSCPPSDK_INCLUDE_DIR})
+#add_dependencies("aws-cpp-sdk-core-static" ${AWSCPPSDK_BASE})
+
 add_library("aws-cpp-sdk-s3" SHARED IMPORTED)
 set_target_properties("aws-cpp-sdk-s3" PROPERTIES IMPORTED_LOCATION ${AWSCPPSDK_S3_SHARED_LIBS})
 target_include_directories("aws-cpp-sdk-s3" INTERFACE ${AWSCPPSDK_INCLUDE_DIR})
 add_dependencies("aws-cpp-sdk-s3" ${AWSCPPSDK_BASE})
+
+#add_library("aws-cpp-sdk-s3-static" STATIC IMPORTED)
+#set_target_properties("aws-cpp-sdk-s3-static" PROPERTIES IMPORTED_LOCATION ${AWSCPPSDK_S3_STATIC_LIBS})
+#target_include_directories("aws-cpp-sdk-s3-static" INTERFACE ${AWSCPPSDK_INCLUDE_DIR})
+#add_dependencies("aws-cpp-sdk-s3-static" ${AWSCPPSDK_BASE})
 
 
 #showTargetProps("aws-cpp-sdk-core")
