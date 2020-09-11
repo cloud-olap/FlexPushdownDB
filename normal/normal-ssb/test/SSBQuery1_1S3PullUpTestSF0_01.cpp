@@ -8,79 +8,79 @@
 
 using namespace normal::ssb;
 
-#define SKIP_SUITE true
+#define SKIP_SUITE false
 
-TEST_SUITE ("ssb-query1.1-s3-pullup-sf0.01" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("ssb-query1.1-s3-pullup-csv-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("date-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-date-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::dateScan("ssb-sf0.01", "data/ssb-sf0.01", 1, 1, true, n);
+  S3SelectTests::dateScan("ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 4, 100, true, n);
   n->stop();
 }
 
-TEST_CASE ("date-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-date-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::dateScan("ssb-sf0.01", "data/ssb-sf0.01", 2, 1, true, n);
+  S3SelectTests::dateScan("ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 2, 1, true, n);
   n->stop();
 }
 
-TEST_CASE ("lineorder-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-lineorder-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::lineOrderScan("ssb-sf0.01", "data/ssb-sf0.01", 1, true, n);
+  S3SelectTests::lineOrderScan("ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 1, true, n);
   n->stop();
 }
 
-TEST_CASE ("lineorder-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-lineorder-scan-par2" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::lineOrderScan("ssb-sf0.01", "data/ssb-sf0.01", 2, true, n);
+  S3SelectTests::lineOrderScan("ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 2, true, n);
   n->stop();
 }
 
-TEST_CASE ("date-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-date-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::dateFilter(1992, "ssb-sf0.01", "data/ssb-sf0.01", 1, true, n);
+  S3SelectTests::dateFilter(1992, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 1, true, n);
   n->stop();
 }
 
-TEST_CASE ("date-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-date-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::dateFilter(1992, "ssb-sf0.01", "data/ssb-sf0.01", 2, true, n);
+  S3SelectTests::dateFilter(1992, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 2, true, n);
   n->stop();
 }
 
-TEST_CASE ("lineorder-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-lineorder-filter-par1" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::lineOrderFilter(2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 1, true, n);
+  S3SelectTests::lineOrderFilter(2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 1, true, n);
   n->stop();
 }
 
-TEST_CASE ("lineorder-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-lineorder-filter-par2" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::lineOrderFilter(2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 2, true, n);
+  S3SelectTests::lineOrderFilter(2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 2, true, n);
   n->stop();
 }
 
-TEST_CASE ("join-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-join-par1" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::join(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 1, true, n);
+  S3SelectTests::join(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 1, true, n);
   n->stop();
 }
 
-TEST_CASE ("join-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-join-par2" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::join(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 2, true, n);
+  S3SelectTests::join(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 2, true, n);
   n->stop();
 }
 
-TEST_CASE ("full-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-full-par1" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::full(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 1, true, n);
+  S3SelectTests::full(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 1, true, n);
   n->stop();
 }
 
-TEST_CASE ("full-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-full-par2" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::full(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 2, true, n);
+  S3SelectTests::full(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 2, true, n);
   n->stop();
 }
 

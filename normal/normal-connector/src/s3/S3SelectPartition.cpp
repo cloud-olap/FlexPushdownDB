@@ -4,14 +4,17 @@
 
 #include "normal/connector/s3/S3SelectPartition.h"
 
+#include <utility>
+
 S3SelectPartition::S3SelectPartition(std::string bucket, std::string object) :
-        bucket_(bucket),
-        object_(object) {}
+        bucket_(std::move(bucket)),
+        object_(std::move(object)) {}
 
 S3SelectPartition::S3SelectPartition(std::string bucket, std::string object, long numBytes) :
-	bucket_(bucket),
-	object_(object),
-	numBytes_(numBytes) {}
+	bucket_(std::move(bucket)),
+	object_(std::move(object)){
+  setNumBytes(numBytes);
+}
 
 const std::string &S3SelectPartition::getBucket() const {
   return bucket_;
@@ -41,8 +44,4 @@ bool S3SelectPartition::equalTo(std::shared_ptr<Partition> other) {
 
 bool S3SelectPartition::operator==(const S3SelectPartition &other) {
   return bucket_ == other.bucket_ && object_ == other.object_;
-}
-
-const long &S3SelectPartition::getNumBytes() const {
-  return numBytes_;
 }

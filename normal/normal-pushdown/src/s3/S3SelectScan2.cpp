@@ -73,7 +73,7 @@ std::shared_ptr<S3SelectScan2> S3SelectScan2::make(const std::string &name,
 										 startPos,
 										 finishPos,
 										 fileType,
-										 columnNames,
+										 columnNames.has_value() ? std::optional(ColumnName::canonicalize(columnNames.value())) : std::nullopt,
 										 csvParseOptions,
 										 s3Client,
 										 scanOnStart);

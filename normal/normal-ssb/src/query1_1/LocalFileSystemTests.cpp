@@ -26,7 +26,7 @@ void LocalFileSystemTests::dateScan(const std::string &dataDir, FileType fileTyp
 	auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::dateScan(dataDir, fileType,
 																				   numConcurrentUnits, n));
 	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
-	actuals.emplace_back(actual);
+	actuals.push_back(actual);
   }
 
   std::shared_ptr<TupleSet2> lastActual;

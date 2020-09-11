@@ -17,8 +17,8 @@ void convert(const std::string &inDir, const std::string &outDir) {
   std::filesystem::create_directories(outDir);
 
   auto tables = {
-	  std::pair{"customer", SSBSchema::customerSchema()},
-	  std::pair{"date", SSBSchema::dateSchema()},
+	  std::pair{"customer", SSBSchema::customer()},
+	  std::pair{"date", SSBSchema::date()},
 	  std::pair{"lineorder", SSBSchema::lineOrder()},
 	  std::pair{"part", SSBSchema::part()},
 	  std::pair{"supplier", SSBSchema::supplier()}

@@ -8,19 +8,19 @@
 
 using namespace normal::ssb;
 
-#define SKIP_SUITE true
+#define SKIP_SUITE false
 
-TEST_SUITE ("ssb-query1.1-s3-pushdown-sf0.01" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("ssb-query1.1-s3-pushdown-csv-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("full-par1" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pushdown-csv-sf0.01-par1-full" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::fullPushDown(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 1, true, n);
+  S3SelectTests::fullPushDown(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 1, true, n);
   n->stop();
 }
 
-TEST_CASE ("full-par2" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("ssb-query1.1-s3-pushdown-csv-sf0.01-par2-full" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::fullPushDown(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", 2, true, n);
+  S3SelectTests::fullPushDown(1992, 2, 25, "ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 2, true, n);
   n->stop();
 }
 

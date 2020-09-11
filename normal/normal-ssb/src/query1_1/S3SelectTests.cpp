@@ -16,6 +16,7 @@ using namespace normal::ssb::query1_1;
 
 void S3SelectTests::dateScan(const std::string &s3ObjectDir,
 							 const std::string &dataDir,
+							 FileType fileType,
 							 int numConcurrentUnits,
 							 int numIterations,
 							 bool check,
@@ -29,9 +30,10 @@ void S3SelectTests::dateScan(const std::string &s3ObjectDir,
 
   std::vector<std::shared_ptr<TupleSet2>> actuals;
   for (int i = 0; i < numIterations; ++i) {
-	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateScanPullUp("s3filter", s3ObjectDir,
+	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateScanPullUp("pushdowndb", s3ObjectDir, fileType,
 																				  numConcurrentUnits, client, n));
 	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+	actuals.push_back(actual);
   }
 
   std::shared_ptr<TupleSet2> lastActual;
@@ -54,6 +56,7 @@ void S3SelectTests::dateScan(const std::string &s3ObjectDir,
 void S3SelectTests::hybridDateFilter(short year,
 									 const std::string &s3ObjectDir,
 									 const std::string &dataDir,
+									 FileType fileType,
 									 int numConcurrentUnits,
 									 int numIterations,
 									 bool check,
@@ -67,9 +70,10 @@ void S3SelectTests::hybridDateFilter(short year,
 
   std::vector<std::shared_ptr<TupleSet2>> actuals;
   for (int i = 0; i < numIterations; ++i) {
-	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterHybrid("s3filter", s3ObjectDir, year,
+	auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterHybrid("pushdowndb", s3ObjectDir,  fileType, year,
 																					numConcurrentUnits, client, n));
 	SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
+	actuals.push_back(actual);
   }
 
   std::shared_ptr<TupleSet2> lastActual;
@@ -97,17 +101,18 @@ void S3SelectTests::hybridDateFilter(short year,
 void S3SelectTests::dateFilter(short year,
 							   const std::string &s3ObjectDir,
 							   const std::string &dataDir,
+							   FileType fileType,
 							   int numConcurrentUnits,
 							   bool check,
 							   const std::shared_ptr<Normal>& n) {
 
   SPDLOG_INFO("Arguments  |  year: {}, dataDir: '{}', numConcurrentUnits: {}",
-			  dataDir, year, numConcurrentUnits);
+			  year, dataDir, numConcurrentUnits);
 
   AWSClient client;
   client.init();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterPullUp("s3filter", s3ObjectDir,
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::dateFilterPullUp("pushdowndb", s3ObjectDir, fileType,
 																				  year,
 																				  numConcurrentUnits, client, n));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
@@ -127,6 +132,7 @@ void S3SelectTests::dateFilter(short year,
  */
 void S3SelectTests::lineOrderScan(const std::string &s3ObjectDir,
 								  const std::string &dataDir,
+								  FileType fileType,
 								  int numConcurrentUnits,
 								  bool check,
 								  const std::shared_ptr<Normal>& n) {
@@ -137,7 +143,7 @@ void S3SelectTests::lineOrderScan(const std::string &s3ObjectDir,
   AWSClient client;
   client.init();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::lineOrderScanPullUp("s3filter", s3ObjectDir,
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::lineOrderScanPullUp("pushdowndb", s3ObjectDir, fileType,
 																					 numConcurrentUnits, client, n));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
 
@@ -158,6 +164,7 @@ void S3SelectTests::lineOrderFilter(short discount,
 									short quantity,
 									const std::string &s3ObjectDir,
 									const std::string &dataDir,
+									FileType fileType,
 									int numConcurrentUnits,
 									bool check,
 									const std::shared_ptr<Normal>& n) {
@@ -168,8 +175,8 @@ void S3SelectTests::lineOrderFilter(short discount,
   AWSClient client;
   client.init();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::lineOrderFilterPullUp("s3filter",
-																					   s3ObjectDir,
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::lineOrderFilterPullUp("pushdowndb",
+																					   s3ObjectDir, fileType,
 																					   discount,
 																					   quantity,
 																					   numConcurrentUnits,
@@ -195,6 +202,7 @@ void S3SelectTests::join(short year,
 						 short quantity,
 						 const std::string &s3ObjectDir,
 						 const std::string &dataDir,
+						 FileType fileType,
 						 int numConcurrentUnits,
 						 bool check,
 						 const std::shared_ptr<Normal>& n) {
@@ -205,7 +213,7 @@ void S3SelectTests::join(short year,
   AWSClient client;
   client.init();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::joinPullUp("s3filter", s3ObjectDir,
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::joinPullUp("pushdowndb", s3ObjectDir, fileType,
 																			year, discount, quantity,
 																			numConcurrentUnits, client, n));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
@@ -224,6 +232,7 @@ void S3SelectTests::join(short year,
  */
 void S3SelectTests::full(short year, short discount, short quantity,
 						 const std::string &s3ObjectDir, const std::string &dataDir,
+						 FileType fileType,
 						 int numConcurrentUnits,
 						 bool check,
 						 const std::shared_ptr<Normal>& n) {
@@ -234,7 +243,7 @@ void S3SelectTests::full(short year, short discount, short quantity,
   AWSClient client;
   client.init();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullPullUp("s3filter", s3ObjectDir,
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullPullUp("pushdowndb", s3ObjectDir, fileType,
 																			year, discount, quantity,
 																			numConcurrentUnits, client, n));
 
@@ -260,6 +269,7 @@ void S3SelectTests::full(short year, short discount, short quantity,
  */
 void S3SelectTests::fullPushDown(short year, short discount, short quantity,
 								 const std::string &s3ObjectDir, const std::string &dataDir,
+								 FileType fileType,
 								 int numConcurrentUnits,
 								 bool check,
 								 const std::shared_ptr<Normal>& n) {
@@ -270,7 +280,7 @@ void S3SelectTests::fullPushDown(short year, short discount, short quantity,
   AWSClient client;
   client.init();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullPushDown("s3filter", s3ObjectDir,
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullPushDown("pushdowndb", s3ObjectDir, fileType,
 																			  year, discount, quantity,
 																			  numConcurrentUnits, client, n));
 
@@ -296,6 +306,7 @@ void S3SelectTests::fullPushDown(short year, short discount, short quantity,
  */
 void S3SelectTests::hybrid(short year, short discount, short quantity,
 						   const std::string &s3ObjectDir, const std::string &dataDir,
+						   FileType fileType,
 						   int numConcurrentUnits,
 						   bool check,
 						   const std::shared_ptr<Normal>& n) {
@@ -306,7 +317,7 @@ void S3SelectTests::hybrid(short year, short discount, short quantity,
   AWSClient client;
   client.init();
 
-  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullHybrid("s3filter", s3ObjectDir,
+  auto actual = TestUtil::executeExecutionPlan2(S3SelectQueries::fullHybrid("pushdowndb", s3ObjectDir,fileType,
 																			year, discount, quantity,
 																			numConcurrentUnits, client, n));
 

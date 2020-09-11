@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <optional>
 
 /**
  * Base class for partition meta data
@@ -22,6 +23,12 @@ public:
   virtual bool equalTo(std::shared_ptr<Partition> other) = 0;
 
   virtual size_t hash() = 0;
+
+  [[nodiscard]] const long &getNumBytes() const;
+  void setNumBytes(const long &NumBytes);
+
+private:
+  long numBytes = -1;
 
 };
 

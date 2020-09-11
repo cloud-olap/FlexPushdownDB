@@ -8,6 +8,7 @@
 #include <string>
 
 #include <normal/core/Normal.h>
+#include <normal/tuple/FileType.h>
 
 using namespace normal::core;
 
@@ -19,18 +20,21 @@ public:
 
   static void partFilter(const std::string &category,
 						 const std::string &dataDir,
+						 FileType fileType,
 						 int numConcurrentUnits,
 						 bool check,
 						 const std::shared_ptr<Normal> &n);
 
   static void join2x(const std::string &region,
 					 const std::string &dataDir,
+					 FileType fileType,
 					 int numConcurrentUnits,
 					 bool check,
 					 const std::shared_ptr<Normal> &n);
 
   static void join3x(const std::string &region,
 					 const std::string &dataDir,
+					 FileType fileType,
 					 int numConcurrentUnits,
 					 bool check,
 					 const std::shared_ptr<Normal> &n);
@@ -38,6 +42,7 @@ public:
   static void join(const std::string &category,
 				   const std::string &region,
 				   const std::string &dataDir,
+				   FileType fileType,
 				   int numConcurrentUnits,
 				   bool check,
 				   const std::shared_ptr<Normal> &n);

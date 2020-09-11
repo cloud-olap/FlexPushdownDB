@@ -12,6 +12,7 @@
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/core/Normal.h>
+#include <normal/tuple/FileType.h>
 
 using namespace normal::core;
 using namespace normal::core::graph;
@@ -35,21 +36,25 @@ public:
 	  {"P_PARTKEY", "P_CATEGORY"};
 
   static std::shared_ptr<OperatorGraph> partFilter(const std::string &dataDir,
+												   FileType fileType,
 											   const std::string &category,
 											   int numConcurrentUnits,
 											   const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> join2x(const std::string &dataDir,
+											   FileType fileType,
 											   const std::string &region,
 											   int numConcurrentUnits,
 											   const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> join3x(const std::string &dataDir,
+											   FileType fileType,
 											   const std::string &region,
 											   int numConcurrentUnits,
 											   const std::shared_ptr<Normal> &n);
 
   static std::shared_ptr<OperatorGraph> join(const std::string &dataDir,
+											 FileType fileType,
 											 const std::string &category,
 											 const std::string &region,
 											 int numConcurrentUnits,
