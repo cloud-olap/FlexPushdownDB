@@ -40,7 +40,9 @@ public:
   std::string &name();
   [[nodiscard]] const caf::actor& actorHandle() const;
   void actorHandle(caf::actor actorId);
+  [[ deprecated("Use std::weak_ptr<OperatorContext> weakCtx()") ]]
   std::shared_ptr<OperatorContext> ctx();
+  std::weak_ptr<OperatorContext> weakCtx();
   void setName(const std::string &Name);
   virtual void onReceive(const normal::core::message::Envelope &msg) = 0;
 
