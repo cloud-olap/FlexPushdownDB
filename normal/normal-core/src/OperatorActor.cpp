@@ -15,11 +15,16 @@ namespace normal::core {
 OperatorActor::OperatorActor(caf::actor_config &cfg, std::shared_ptr<Operator> opBehaviour) :
     caf::event_based_actor(cfg),
     opBehaviour_(std::move(opBehaviour)) {
-  
-  this->opBehaviour_->ctx()->operatorActor(this);
+
+//  this->opBehaviour_->ctx()->operatorActor(this);
 }
 
 caf::behavior behaviour(OperatorActor *self) {
+
+  auto ctx = self->operator_()->weakCtx().lock();
+  if(!ctx)
+	throw std::runtime_error("Could not get operator context  |  Could not acquire shared pointer from weak pointer");
+  ctx->operatorActor(self);
 
   auto functionName = __FUNCTION__;
 
