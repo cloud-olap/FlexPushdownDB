@@ -102,10 +102,9 @@ void graph::OperatorGraph::boot() {
   for (const auto &element: m_operatorMap) {
 	auto ctx = element.second;
 	auto op = ctx->op();
-	caf::expected<actor> expectedHandle = operatorManager_.lock()->getActorSystem()->spawn<normal::core::OperatorActor>(op);
-	if(!expectedHandle)
-	  throw std::runtime_error(to_string(expectedHandle.error()));
-	auto actorHandle = expectedHandle.value();
+	auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn<normal::core::OperatorActor>(op);
+	if(!actorHandle)
+	  throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
 	op->actorHandle(actorHandle);
   }
 
