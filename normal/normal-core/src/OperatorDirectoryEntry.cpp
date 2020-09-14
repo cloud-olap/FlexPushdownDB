@@ -10,11 +10,11 @@
 namespace normal::core {
 
 OperatorDirectoryEntry::OperatorDirectoryEntry(std::string name,
-                                               std::optional<caf::actor> actor,
-                                               bool complete) :
-    name_(std::move(name)),
-    actor_(std::move(actor)),
-    complete_(complete) {}
+											   std::shared_ptr<OperatorContext> operatorContext,
+											   bool complete) :
+	name_(std::move(name)),
+	operatorContext_(std::move(operatorContext)),
+	complete_(complete) {}
 
 const std::string &OperatorDirectoryEntry::name() const {
   return name_;
@@ -26,6 +26,10 @@ bool OperatorDirectoryEntry::complete() const {
 
 void OperatorDirectoryEntry::complete(bool complete) {
   complete_ = complete;
+}
+
+std::weak_ptr<OperatorContext> OperatorDirectoryEntry::getOperatorContext() const {
+  return operatorContext_;
 }
 
 }

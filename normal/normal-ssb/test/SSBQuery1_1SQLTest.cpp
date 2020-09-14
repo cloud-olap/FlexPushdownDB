@@ -65,19 +65,25 @@ void configureS3Connector(normal::sql::Interpreter &i) {
   i.put(cat);
 }
 
+/**
+ * This is out of date, commenting to stop compiler errors.
+ * @param i
+ * @return
+ */
 auto execute(normal::sql::Interpreter &i) {
-  i.getOperatorManager()->boot();
-  i.getOperatorManager()->start();
-  i.getOperatorManager()->join();
+//  i.getOperatorManager()->boot();
+//  i.getOperatorManager()->start();
+//  i.getOperatorManager()->join();
+//
+//  std::shared_ptr<normal::pushdown::Collate>
+//	  collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
+//
+//  auto tuples = collate->tuples();
+//
+//  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
 
-  std::shared_ptr<normal::pushdown::Collate>
-	  collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
-
-  auto tuples = collate->tuples();
-
-  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
-
-  return tuples;
+//  return tuples;
+	return nullptr;
 }
 
 std::shared_ptr<TupleSet2> executeSQLTest(const std::string &sql) {

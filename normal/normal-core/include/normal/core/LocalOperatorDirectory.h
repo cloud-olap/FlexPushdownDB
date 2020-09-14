@@ -26,7 +26,7 @@ public:
   void setComplete(const std::string &name);
   bool allComplete();
   bool allComplete(const OperatorRelationshipType &operatorRelationshipType);
-  std::string showString() const;
+  [[nodiscard]] std::string showString() const;
   void setIncomplete();
 
   tl::expected<LocalOperatorDirectoryEntry, std::string>

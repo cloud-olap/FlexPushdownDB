@@ -5,6 +5,7 @@
 #include "normal/core/OperatorManager.h"
 
 #include <cassert>
+#include <utility>
 #include <vector>
 //#include <filesystem>
 #include <experimental/filesystem>
@@ -34,9 +35,7 @@ void OperatorManager::put(const std::shared_ptr<normal::core::Operator> &op) {
   caf::actor rootActorHandle = normal::core::Actors::toActorHandle(this->rootActor_);
 
   auto ctx = std::make_shared<normal::core::OperatorContext>(op, rootActorHandle);
-  m_operatorMap.insert(std::pair(op->name(), ctx));
-
-  operatorDirectory_.insert(normal::core::OperatorDirectoryEntry(op->name(), std::nullopt, false));
+  operatorDirectory_.insert(normal::core::OperatorDirectoryEntry(op->name(), ctx, false));
 }
 
 void OperatorManager::start() {
@@ -48,9 +47,9 @@ void OperatorManager::start() {
 
 
 //   Send start messages to the actors
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 
     std::vector<caf::actor> actorHandles;
     for (const auto &consumer: op->consumers())
@@ -67,9 +66,10 @@ void OperatorManager::start() {
 void OperatorManager::stop() {
 
   // Send actors a shutdown message
-  for (const auto &element: m_operatorMap) {
-	auto actorHandle = element.second->op()->actorHandle();
-	(*rootActor_)->send_exit(actorHandle, caf::exit_reason::user_shutdown);
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
+	(*rootActor_)->send_exit(op->actorHandle(), caf::exit_reason::user_shutdown);
   }
 
   // Stop the root actor (seems, being defined by "scope", it needs to actually be destroyed to stop it)
@@ -77,7 +77,6 @@ void OperatorManager::stop() {
 
   this->actorSystem->await_all_actors_done();
 
-  this->m_operatorMap.clear();
   this->operatorDirectory_.clear();
 
   // Destroy the segment cache actor
@@ -95,9 +94,10 @@ OperatorManager::OperatorManager() : queryCounter_(0), running_(false){
   rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
 }
 
-OperatorManager::OperatorManager(const std::shared_ptr<CachingPolicy>& cachingPolicy) :
-  cachingPolicy_(cachingPolicy),
-  queryCounter_(0) {
+OperatorManager::OperatorManager(std::shared_ptr<CachingPolicy>  cachingPolicy) :
+  cachingPolicy_(std::move(cachingPolicy)),
+  queryCounter_(0),
+  running_(false){
 //  actorSystemConfig.load<caf::io::middleman>();
   actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
   rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
@@ -143,80 +143,78 @@ void OperatorManager::boot() {
   put(segmentCacheActor_);
 
   // Create the operators
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
-    op->create(ctx);
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
+    op->create(entry.getOperatorContext().lock());
   }
 
   // Create the operator actors
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
     caf::actor actorHandle = actorSystem->spawn<normal::core::OperatorActor>(op);
     op->actorHandle(actorHandle);
   }
 
   // Tell the actors about the system actors
-  for (const auto &element: m_operatorMap) {
-
-	auto ctx = element.second;
-	auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 
 	auto rootActorEntry = LocalOperatorDirectoryEntry("root",
 											 std::optional(rootActor_->ptr()),
 											 OperatorRelationshipType::None,
 											 false);
 
-	ctx->operatorMap().insert(rootActorEntry);
+	entry.getOperatorContext().lock()->operatorMap().insert(rootActorEntry);
 
 	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry(segmentCacheActor_->name(),
 															  std::optional(segmentCacheActor_->actorHandle()),
 											 OperatorRelationshipType::None,
 											 false);
 
-	ctx->operatorMap().insert(segmentCacheActorEntry);
+	entry.getOperatorContext().lock()->operatorMap().insert(segmentCacheActorEntry);
   }
 
   // Tell the system actors about the other actors
-  for (const auto &element: m_operatorMap) {
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 
-	auto ctx = element.second;
-	auto op = ctx->op();
-
-	auto entry = LocalOperatorDirectoryEntry(op->name(),
+	auto localEntry = LocalOperatorDirectoryEntry(op->name(),
 											 op->actorHandle(),
 											 OperatorRelationshipType::None,
 											 false);
 
-	segmentCacheActor_->ctx()->operatorMap().insert(entry);
+	segmentCacheActor_->ctx()->operatorMap().insert(localEntry);
   }
 
   // Tell the actors who their producers are
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
     for (const auto &producerEntry: op->producers()) {
       auto producer = producerEntry.second;
-      auto entry = LocalOperatorDirectoryEntry(producer.lock()->name(),
+      auto localEntry = LocalOperatorDirectoryEntry(producer.lock()->name(),
                                                producer.lock()->actorHandle(),
                                                OperatorRelationshipType::Producer,
                                                false);
-      ctx->operatorMap().insert(entry);
+	  entry.getOperatorContext().lock()->operatorMap().insert(localEntry);
     }
   }
 
   // Tell the actors who their consumers are
-  for (const auto &element: m_operatorMap) {
-    auto ctx = element.second;
-    auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
     for (const auto &consumerEntry: op->consumers()) {
       auto consumer = consumerEntry.second;
-      auto entry = LocalOperatorDirectoryEntry(consumer.lock()->name(),
+      auto localEntry = LocalOperatorDirectoryEntry(consumer.lock()->name(),
                                                consumer.lock()->actorHandle(),
                                                OperatorRelationshipType::Consumer,
                                                false);
-      ctx->operatorMap().insert(entry);
+	  entry.getOperatorContext().lock()->operatorMap().insert(localEntry);
     }
   }
 }
@@ -279,14 +277,6 @@ void OperatorManager::boot() {
 //  }
 //}
 
-std::shared_ptr<Operator> OperatorManager::getOperator(const std::string &name) {
-  return this->m_operatorMap.find(name)->second->op();
-}
-
-std::map<std::string, std::shared_ptr<OperatorContext>> OperatorManager::getOperators() {
-  return this->m_operatorMap;
-}
-
 tl::expected<long, std::string> OperatorManager::getElapsedTime() {
 
   if(startTime_.time_since_epoch().count() == 0)
@@ -320,10 +310,10 @@ std::shared_ptr<normal::core::message::Message> OperatorManager::receive() {
 
 tl::expected<void, std::string> OperatorManager::send(std::shared_ptr<message::Message> message,
 													  const std::string &recipientId) {
-  auto expectedOperator = m_operatorMap.find(recipientId);
-  if(expectedOperator != m_operatorMap.end()){
-	auto operatorContext = expectedOperator->second;
-	auto operatorActor = operatorContext->operatorActor();
+  auto expectedOperator = operatorDirectory_.get(recipientId);
+  if(expectedOperator.has_value()){
+	auto operatorContext = expectedOperator.value().getOperatorContext();
+	auto operatorActor = operatorContext.lock()->operatorActor();
 	(*rootActor_)->send(operatorActor, normal::core::message::Envelope(std::move(message)));
 	return {};
   }
@@ -338,11 +328,9 @@ std::string OperatorManager::showMetrics() {
 
   ss << std::endl;
 
-  auto operators = getOperators();
-
   long totalProcessingTime = 0;
-  for (auto &entry : operators) {
-	auto processingTime = entry.second->operatorActor()->getProcessingTime();
+  for (auto &entry : operatorDirectory_) {
+	auto processingTime = entry.second.getOperatorContext().lock()->operatorActor()->getProcessingTime();
 	totalProcessingTime += processingTime;
   }
 
@@ -368,9 +356,9 @@ std::string OperatorManager::showMetrics() {
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
 
-  for (auto &entry : operators) {
-	auto operatorName = entry.second->op()->name();
-	auto processingTime = entry.second->operatorActor()->getProcessingTime();
+  for (auto &entry : operatorDirectory_) {
+	auto operatorName = entry.second.name();
+	auto processingTime = entry.second.getOperatorContext().lock()->operatorActor()->getProcessingTime();
 	auto processingFraction = (double)processingTime / (double)totalProcessingTime;
 	std::stringstream formattedProcessingTime;
 	formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double)processingTime / 1000000000.0 ) << " secs)";

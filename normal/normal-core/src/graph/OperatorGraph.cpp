@@ -19,7 +19,9 @@ using namespace normal::core::graph;
 using namespace normal::core;
 using namespace std::experimental;
 
-graph::OperatorGraph::OperatorGraph(long id, const std::shared_ptr<OperatorManager>& operatorManager) : id_(id), operatorManager_(operatorManager) {
+graph::OperatorGraph::OperatorGraph(long id, const std::shared_ptr<OperatorManager> &operatorManager) :
+	id_(id),
+	operatorManager_(operatorManager) {
   rootActor_ = std::make_shared<caf::scoped_actor>(*operatorManager->getActorSystem());
 }
 
@@ -34,9 +36,7 @@ void graph::OperatorGraph::put(const std::shared_ptr<Operator> &op) {
   caf::actor rootActorHandle = Actors::toActorHandle(this->rootActor_);
 
   auto ctx = std::make_shared<normal::core::OperatorContext>(op, rootActorHandle);
-  m_operatorMap.insert(std::pair(op->name(), ctx));
-
-  operatorDirectory_.insert(OperatorDirectoryEntry(op->name(), std::nullopt, false));
+  operatorDirectory_.insert(OperatorDirectoryEntry(op->name(), ctx, false));
 }
 
 void graph::OperatorGraph::start() {
@@ -48,9 +48,9 @@ void graph::OperatorGraph::start() {
 
 
 //   Send start messages to the actors
-  for (const auto &element: m_operatorMap) {
-	auto ctx = element.second;
-	auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 
 	std::vector<caf::actor> actorHandles;
 	for (const auto &consumer: op->consumers())
@@ -92,16 +92,16 @@ void graph::OperatorGraph::join() {
 void graph::OperatorGraph::boot() {
 
   // Create the operators
-  for (const auto &element: m_operatorMap) {
-	auto ctx = element.second;
-	auto op = ctx->op();
-	op->create(ctx);
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
+	op->create(entry.getOperatorContext().lock());
   }
 
   // Create the operator actors
-  for (const auto &element: m_operatorMap) {
-	auto ctx = element.second;
-	auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 	auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn<normal::core::OperatorActor>(op);
 	if(!actorHandle)
 	  throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
@@ -109,65 +109,63 @@ void graph::OperatorGraph::boot() {
   }
 
   // Tell the actors about the system actors
-  for (const auto &element: m_operatorMap) {
-
-	auto ctx = element.second;
-	auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 
 	auto rootActorEntry = LocalOperatorDirectoryEntry(GraphRootActorName,
 													  std::optional(rootActor_->ptr()),
 													  OperatorRelationshipType::None,
 													  false);
 
-	ctx->operatorMap().insert(rootActorEntry);
+	entry.getOperatorContext().lock()->operatorMap().insert(rootActorEntry);
 
 	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry(operatorManager_.lock()->getSegmentCacheActor()->name(),
 															  std::optional(operatorManager_.lock()->getSegmentCacheActor()->actorHandle()),
 															  OperatorRelationshipType::None,
 															  false);
 
-	ctx->operatorMap().insert(segmentCacheActorEntry);
+	entry.getOperatorContext().lock()->operatorMap().insert(segmentCacheActorEntry);
   }
 
   // Tell the system actors about the other actors
-  for (const auto &element: m_operatorMap) {
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 
-	auto ctx = element.second;
-	auto op = ctx->op();
-
-	auto entry = LocalOperatorDirectoryEntry(op->name(),
+	auto localEntry = LocalOperatorDirectoryEntry(op->name(),
 											 op->actorHandle(),
 											 OperatorRelationshipType::None,
 											 false);
 
-	operatorManager_.lock()->getSegmentCacheActor()->ctx()->operatorMap().insert(entry);
+	operatorManager_.lock()->getSegmentCacheActor()->weakCtx().lock()->operatorMap().insert(localEntry);
   }
 
   // Tell the actors who their producers are
-  for (const auto &element: m_operatorMap) {
-	auto ctx = element.second;
-	auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 	for (const auto &producerEntry: op->producers()) {
 	  auto producer = producerEntry.second;
-	  auto entry = LocalOperatorDirectoryEntry(producer.lock()->name(),
+	  auto localEntry = LocalOperatorDirectoryEntry(producer.lock()->name(),
 											   producer.lock()->actorHandle(),
 											   OperatorRelationshipType::Producer,
 											   false);
-	  ctx->operatorMap().insert(entry);
+	  entry.getOperatorContext().lock()->operatorMap().insert(localEntry);
 	}
   }
 
   // Tell the actors who their consumers are
-  for (const auto &element: m_operatorMap) {
-	auto ctx = element.second;
-	auto op = ctx->op();
+  for (const auto &element: operatorDirectory_) {
+	auto entry = element.second;
+	auto op = entry.getOperatorContext().lock()->op();
 	for (const auto &consumerEntry: op->consumers()) {
 	  auto consumer = consumerEntry.second;
-	  auto entry = LocalOperatorDirectoryEntry(consumer.lock()->name(),
+	  auto localEntry = LocalOperatorDirectoryEntry(consumer.lock()->name(),
 											   consumer.lock()->actorHandle(),
 											   OperatorRelationshipType::Consumer,
 											   false);
-	  ctx->operatorMap().insert(entry);
+	  entry.getOperatorContext().lock()->operatorMap().insert(localEntry);
 	}
   }
 }
@@ -242,11 +240,7 @@ tl::expected<long, std::string> graph::OperatorGraph::getElapsedTime() {
 }
 
 std::shared_ptr<Operator> graph::OperatorGraph::getOperator(const std::string &name) {
-  return this->m_operatorMap.find(name)->second->op();
-}
-
-std::map<std::string, std::shared_ptr<OperatorContext>> graph::OperatorGraph::getOperators() {
-  return this->m_operatorMap;
+  return operatorDirectory_.get(name).value().getOperatorContext().lock()->op();
 }
 
 std::string graph::OperatorGraph::showMetrics() {
@@ -255,11 +249,9 @@ std::string graph::OperatorGraph::showMetrics() {
 
   ss << std::endl;
 
-  auto operators = getOperators();
-
   long totalProcessingTime = 0;
-  for (auto &entry : operators) {
-	auto processingTime = entry.second->operatorActor()->getProcessingTime();
+  for (auto &entry : operatorDirectory_) {
+	auto processingTime = entry.second.getOperatorContext().lock()->operatorActor()->getProcessingTime();
 	totalProcessingTime += processingTime;
   }
 
@@ -286,9 +278,9 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
 
-  for (auto &entry : operators) {
-	auto operatorName = entry.second->op()->name();
-	auto processingTime = entry.second->operatorActor()->getProcessingTime();
+  for (auto &entry : operatorDirectory_) {
+	auto operatorName = entry.second.name();
+	auto processingTime = entry.second.getOperatorContext().lock()->operatorActor()->getProcessingTime();
 	auto processingFraction = (double)processingTime / (double)totalProcessingTime;
 	std::stringstream formattedProcessingTime;
 	formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double)processingTime / 1000000000.0)
@@ -338,8 +330,8 @@ const long &graph::OperatorGraph::getId() const {
 std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
   size_t processedBytes = 0;
   size_t returnedBytes = 0;
-  for (auto &entry: getOperators()) {
-    auto op = entry.second->op();
+  for (const auto &entry: operatorDirectory_) {
+    auto op = entry.second.getOperatorContext().lock()->op();
     if (typeid(*op) == typeid(normal::pushdown::S3SelectScan)) {
       auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(op);
       processedBytes += s3ScanOp->getProcessedBytes();

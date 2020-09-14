@@ -18,7 +18,7 @@ void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
 void OperatorDirectory::setComplete(const std::string& name) {
   auto entry = entries_.find(name);
   if(entry == entries_.end())
-    throw std::runtime_error("No entry for actor '" + name + "'");
+    throw std::runtime_error("No entry for operator '" + name + "'");
   else
     entry->second.complete(true);
 }
@@ -48,10 +48,10 @@ void OperatorDirectory::setIncomplete() {
   }
 }
 
-tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(const std::string& operatorId) {
-  auto entryIt = entries_.find(operatorId);
+tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(const std::string& name) {
+  auto entryIt = entries_.find(name);
   if(entryIt == entries_.end()){
-	return tl::unexpected(fmt::format("Operator with id '{}' not found", operatorId));
+	return tl::unexpected(fmt::format("Operator with name '{}' not found", name));
   }
   else{
 	return entryIt->second;
@@ -60,6 +60,30 @@ tl::expected<OperatorDirectoryEntry, std::string> OperatorDirectory::get(const s
 
 void OperatorDirectory::clear() {
   entries_.clear();
+}
+
+OperatorDirectory::MapType::iterator OperatorDirectory::begin() {
+  return entries_.begin();
+}
+
+OperatorDirectory::MapType::const_iterator OperatorDirectory::begin() const {
+  return entries_.begin();
+}
+
+OperatorDirectory::MapType::iterator OperatorDirectory::end() {
+  return entries_.end();
+}
+
+OperatorDirectory::MapType::const_iterator OperatorDirectory::end() const {
+  return entries_.end();
+}
+
+OperatorDirectory::MapType::const_iterator OperatorDirectory::cbegin() const {
+  return entries_.cbegin();
+}
+
+OperatorDirectory::MapType::const_iterator OperatorDirectory::cend() const {
+  return entries_.cend();
 }
 
 }
