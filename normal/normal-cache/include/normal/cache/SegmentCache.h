@@ -29,7 +29,7 @@ public:
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> toCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys);
 
   size_t getSize() const;
-
+  const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
   int hitNum() const;
   int missNum() const;
   void clearMetrics();

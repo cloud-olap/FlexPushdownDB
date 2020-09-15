@@ -25,7 +25,6 @@ namespace normal::pushdown {
 class Collate : public normal::core::Operator {
 
 private:
-  long queryId_;
   std::shared_ptr<TupleSet> tuples_;
   void onStart();
 
@@ -34,7 +33,7 @@ private:
   void onReceive(const normal::core::message::Envelope &message) override;
 
 public:
-  Collate(std::string name, long queryId);
+  Collate(std::string name, long queryId = 0);
   ~Collate() override = default;
   void show();
   std::shared_ptr<TupleSet> tuples();

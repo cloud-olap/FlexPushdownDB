@@ -37,7 +37,9 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> AggregateL
     }
 
     // FIXME: Defaulting to name -> aggregation
-    auto aggregate = std::make_shared<normal::pushdown::Aggregate>(fmt::format("aggregate-{}", index), expressions);
+    auto aggregate = std::make_shared<normal::pushdown::Aggregate>(fmt::format("aggregate-{}", index),
+                                                                   expressions,
+                                                                   getQueryId());
     operators->emplace_back(aggregate);
   }
 
@@ -47,7 +49,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> AggregateL
     for (const auto &function: *functions_) {
       reduceExpressions->emplace_back(function->toExecutorReduceFunction());
     }
-    auto aggregateReduce = std::make_shared<normal::pushdown::Aggregate>("aggregateReduce", reduceExpressions);
+    auto aggregateReduce = std::make_shared<normal::pushdown::Aggregate>("aggregateReduce", reduceExpressions, getQueryId());
 
     // wire up internally
     for (const auto &aggregate: *operators) {

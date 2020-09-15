@@ -49,7 +49,7 @@ private:
 };
 
 const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue =
-        MiniCatalogue::defaultMiniCatalogue("s3filter", "ssb-sf10-sortlineorder/");
+        MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf10-sortlineorder/csv/");
 
 }
 

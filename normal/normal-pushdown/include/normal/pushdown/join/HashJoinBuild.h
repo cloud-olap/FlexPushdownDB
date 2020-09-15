@@ -28,7 +28,7 @@ namespace normal::pushdown::join {
 class HashJoinBuild : public normal::core::Operator {
 
 public:
-  explicit HashJoinBuild(const std::string &name, std::string columnName);
+  explicit HashJoinBuild(const std::string &name, std::string columnName, long queryId = 0);
 
   static std::shared_ptr<HashJoinBuild> create(const std::string &name, const std::string &columnName);
 

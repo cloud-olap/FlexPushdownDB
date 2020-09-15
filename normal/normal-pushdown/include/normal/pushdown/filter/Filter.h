@@ -12,6 +12,7 @@
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/expression/Filter.h>
+#include <normal/cache/SegmentKey.h>
 
 #include "FilterPredicate.h"
 
@@ -19,9 +20,12 @@ namespace normal::pushdown::filter {
 
 class Filter : public normal::core::Operator {
 public:
-  explicit Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred);
+  explicit Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred, long queryId,
+                  const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys);
 
-  static std::shared_ptr<Filter> make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred);
+  static std::shared_ptr<Filter> make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred,
+                                      long queryId = 0,
+                                      std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys = nullptr);
 
   void onReceive(const core::message::Envelope &Envelope) override;
 
@@ -48,19 +52,20 @@ private:
   void buildFilter();
   void filterTuples();
   void sendTuples();
+  void sendSegmentWeight();
 
   /**
    * Whether all predicate columns are covered in the schema of received tuples
    */
   std::shared_ptr<bool> applicable_;
-
   bool isApplicable(std::shared_ptr<normal::tuple::TupleSet2> tupleSet);
 
-  // Flags to make sure CompleteMessage is sent after all TupleMessages have been sent
-  bool complete_ = false;
-  int onTupleNum_ = 0;
-  bool tupleArrived_ = false;
-  std::mutex filterLock;
+  /**
+   * Used to compute filter weight
+   */
+  std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys_;
+  long totalNumRows_ = 0;
+  long filteredNumRows_ = 0;
 };
 
 }

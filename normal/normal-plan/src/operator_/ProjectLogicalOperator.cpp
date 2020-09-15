@@ -27,7 +27,9 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> ProjectLog
 
   for (auto index = 0; index < numConcurrentUnits_; index++) {
     // FIXME: Defaulting to name -> proj
-    auto project = std::make_shared<normal::pushdown::Project>(fmt::format("proj-{}", index), *expressions_);
+    auto project = std::make_shared<normal::pushdown::Project>(fmt::format("proj-{}", index),
+                                                               *expressions_,
+                                                               getQueryId());
     operators->emplace_back(project);
   }
 

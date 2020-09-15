@@ -20,8 +20,9 @@ CacheLoad::CacheLoad(std::string name,
 					 std::shared_ptr<Partition> Partition,
 					 int64_t StartOffset,
 					 int64_t FinishOffset,
-					 bool useNewCacheLayout) :
-					 Operator(std::move(name), "CacheLoad"),
+					 bool useNewCacheLayout,
+					 long queryId) :
+					 Operator(std::move(name), "CacheLoad", queryId),
 					 projectedColumnNames_(projectedColumnNames),
 					 predicateColumnNames_(predicateColumnNames),
 					 partition_(std::move(Partition)),
@@ -41,7 +42,8 @@ std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
 										   const std::shared_ptr<Partition> &partition,
 										   int64_t startOffset,
 										   int64_t finishOffset,
-										   bool useNewCacheLayout) {
+										   bool useNewCacheLayout,
+										   long queryId) {
 
   std::vector<std::string> canonicalProjectedColumnNames;
   std::vector<std::string> canonicalPredicateColumnNames;
@@ -58,7 +60,8 @@ std::shared_ptr<CacheLoad> CacheLoad::make(const std::string &name,
 									 partition,
 									 startOffset,
 									 finishOffset,
-									 useNewCacheLayout);
+									 useNewCacheLayout,
+									 queryId);
 }
 
 void CacheLoad::onReceive(const Envelope &message) {

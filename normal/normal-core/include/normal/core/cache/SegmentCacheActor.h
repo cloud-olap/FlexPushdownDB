@@ -16,6 +16,7 @@
 #include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/StoreRequestMessage.h>
 #include <normal/core/cache/EvictRequestMessage.h>
+#include <normal/core/cache/WeightRequestMessage.h>
 #include "SegmentCacheActorState.h"
 #include "LoadResponseMessage.h"
 
@@ -36,6 +37,7 @@ public:
   void load(const LoadRequestMessage &msg);
   void store(const StoreRequestMessage &msg);
   void evict(const EvictRequestMessage &msg);
+  void weight(const WeightRequestMessage &msg);
 
   const std::shared_ptr<SegmentCacheActorState> &getState() const;
 

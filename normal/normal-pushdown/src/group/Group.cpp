@@ -13,9 +13,10 @@ using namespace normal::pushdown::group;
 using namespace normal::tuple;
 
 Group::Group(const std::string &Name,
-			 std::vector<std::string> ColumnNames,
-			 std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> AggregateFunctions) :
-	Operator(Name, "Group"),
+             std::vector<std::string> ColumnNames,
+             std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> AggregateFunctions,
+             long queryId) :
+	Operator(Name, "Group", queryId),
 	columnNames_(std::move(ColumnNames)),
 	aggregateFunctions_(std::move(AggregateFunctions)),
 	aggregateResults_() {
