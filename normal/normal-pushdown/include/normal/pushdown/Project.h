@@ -24,7 +24,8 @@ public:
    * @param Expressions Expressions to evaluate to produce the attributes in the projection
    */
   Project(const std::string &Name,
-          std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> Expressions);
+          std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> Expressions,
+          long queryId = 0);
 
   /**
    * Default destructor
@@ -94,11 +95,6 @@ private:
   void cacheInputSchema(const core::message::TupleMessage &message);
   void buildAndCacheProjector();
 
-  // Flags to make sure CompleteMessage is sent after all TupleMessages have been sent
-  bool complete_ = false;
-  int onTupleNum_ = 0;
-  bool tupleArrived_ = false;
-  std::mutex projectLock;
 };
 
 }

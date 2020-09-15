@@ -30,16 +30,16 @@ public:
 		   std::vector<std::string>  columnNames,
 		   unsigned long startOffset,
 		   unsigned long finishOffset,
-		   long queryId,
-		   bool scanOnStart = false);
+		   bool scanOnStart,
+		   long queryId);
 
   static std::shared_ptr<FileScan> make(const std::string& name,
 										const std::string& filePath,
 										const std::vector<std::string>& columnNames,
 										unsigned long startOffset,
 										unsigned long finishOffset,
-										long queryId,
-										bool scanOnStart = false);
+										bool scanOnStart = false,
+										long queryId = 0);
 
   static std::shared_ptr<FileScan> make(const std::string& name,
 										const std::string& filePath,
@@ -47,10 +47,9 @@ public:
 										const std::vector<std::string>& columnNames,
 										unsigned long startOffset,
 										unsigned long finishOffset,
-										long queryId,
-										bool scanOnStart = false);
+										bool scanOnStart = false,
+										long queryId = 0);
 private:
-  long queryId_;
   bool scanOnStart_;
   std::vector<std::string> columnNames_;
   std::unique_ptr<FileScanKernel> kernel_;

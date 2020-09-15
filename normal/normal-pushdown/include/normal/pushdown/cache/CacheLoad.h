@@ -25,7 +25,8 @@ public:
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset,
-					 bool useNewCacheLayout);
+					 bool useNewCacheLayout,
+					 long queryId);
   ~CacheLoad() override = default;
 
   static std::shared_ptr<CacheLoad> make(const std::string &name,
@@ -34,7 +35,8 @@ public:
 										 const std::shared_ptr<Partition>& partition,
 										 int64_t startOffset,
 										 int64_t finishOffset,
-										 bool useNewCacheLayout);
+										 bool useNewCacheLayout,
+										 long queryId = 0);
 
   void onStart();
   void onReceive(const Envelope &msg) override;

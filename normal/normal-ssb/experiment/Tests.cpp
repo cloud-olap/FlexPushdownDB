@@ -14,6 +14,7 @@
 #include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
+#include <normal/cache/WFBRCachingPolicy.h>
 #include "ExperimentUtil.h"
 #include <normal/ssb/SqlGenerator.h>
 #include <normal/plan/Globals.h>
@@ -117,7 +118,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   auto tupleSet = TupleSet2::create(tuples);
   SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 //  if (saveMetrics)
-    SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
   SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
 //  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
   SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
@@ -166,12 +167,14 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf1/";
 
+  auto chosenMode = mode3;
+
   // choose caching policy
-  auto lru = LRUCachingPolicy::make(1024*1024*300);
-  auto fbr = FBRCachingPolicy::make(1024*1024*300);
+  auto lru = LRUCachingPolicy::make(1024*1024*300, chosenMode);
+  auto fbr = FBRCachingPolicy::make(1024*1024*300, chosenMode);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode3, fbr);
+  normal::sql::Interpreter i(chosenMode, fbr);
   if (partitioned) {
     configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
   } else {
@@ -237,19 +240,20 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
 
   // parameters
   const int warmBatchSize = 50, executeBatchSize = 50;
-  const size_t cacheSize = 17920L*1024*1024;
+  const size_t cacheSize = 1024*1024*1024;
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
 
-  auto mode = normal::plan::operator_::mode::Modes::fullPullupMode();
-  auto lru = LRUCachingPolicy::make(cacheSize);
-  auto fbr = FBRCachingPolicy::make(cacheSize);
+  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
+  auto lru = LRUCachingPolicy::make(cacheSize, mode);
+  auto fbr = FBRCachingPolicy::make(cacheSize, mode);
+  auto wfbr = WFBRCachingPolicy::make(cacheSize, mode);
 
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
-  normal::sql::Interpreter i(mode, fbr);
+  normal::sql::Interpreter i(mode, wfbr);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
 
   // execute
@@ -294,5 +298,4 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   i.stop();
   SPDLOG_INFO("Memory allocated finally: {}", arrow::default_memory_pool()->bytes_allocated());
 }
-
 }

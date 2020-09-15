@@ -26,8 +26,7 @@ void Collate::onStart() {
 }
 
 Collate::Collate(std::string name, long queryId) :
-Operator(std::move(name), "Collate"),
-queryId_(queryId) {
+  Operator(std::move(name), "Collate", queryId) {
 }
 
 void Collate::onReceive(const normal::core::message::Envelope &message) {

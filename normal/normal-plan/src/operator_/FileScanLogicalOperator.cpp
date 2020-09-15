@@ -21,7 +21,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> FileScanLo
 	const std::shared_ptr<pushdown::FileScan> &fileScanOperator =
 		std::make_shared<normal::pushdown::FileScan>(localFilePartition->getPath(),
 													 localFilePartition->getPath(),
-													 0);
+													 getQueryId());
 
 
 	operators->push_back(fileScanOperator);

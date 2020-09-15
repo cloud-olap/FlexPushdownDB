@@ -85,3 +85,7 @@ void SegmentCache::clearMetrics() {
   hitNum_ = 0;
   missNum_ = 0;
 }
+
+const std::shared_ptr<CachingPolicy> &SegmentCache::getCachingPolicy() const {
+  return cachingPolicy_;
+}

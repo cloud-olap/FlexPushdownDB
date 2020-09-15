@@ -9,12 +9,14 @@ using namespace normal::cache;
 SegmentMetadata::SegmentMetadata() :
   estimateSize_(0),
   size_(0),
-  hitNum_(1) {}
+  hitNum_(1),
+  value_(0.0) {}
 
 SegmentMetadata::SegmentMetadata(size_t estimateSize, size_t size) :
   estimateSize_(estimateSize),
   size_(size),
-  hitNum_(1) {}
+  hitNum_(1),
+  value_(0.0) {}
 
 std::shared_ptr<SegmentMetadata> SegmentMetadata::make() {
   return std::make_shared<SegmentMetadata>();
@@ -42,4 +44,12 @@ void SegmentMetadata::setSize(size_t size) {
 
 size_t SegmentMetadata::estimateSize() const {
   return estimateSize_;
+}
+
+double SegmentMetadata::value() const {
+  return value_;
+}
+
+void SegmentMetadata::addValue(double value) {
+  value_ += value;
 }

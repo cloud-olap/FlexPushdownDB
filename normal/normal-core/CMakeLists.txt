@@ -37,7 +37,8 @@ add_library(normal-core STATIC
         src/cache/SegmentCacheActor.cpp include/normal/core/cache/SegmentCacheActor.h
         src/cache/SegmentCacheActorState.cpp include/normal/core/cache/SegmentCacheActorState.h
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
-        src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h)
+        src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
+        src/cache/WeightRequestMessage.cpp include/normal/core/cache/WeightRequestMessage.h)
 
 
 target_include_directories(normal-core PUBLIC include)

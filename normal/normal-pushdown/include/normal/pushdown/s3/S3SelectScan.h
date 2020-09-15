@@ -15,6 +15,7 @@
 #include <normal/tuple/TupleSet2.h>
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/pushdown/scan/ScanMessage.h>
+#include <normal/core/cache/WeightRequestMessage.h>
 
 #include "normal/core/Operator.h"
 #include "normal/tuple/TupleSet.h"
@@ -41,7 +42,9 @@ public:
 			   S3SelectCSVParseOptions parseOptions,
 			   std::shared_ptr<Aws::S3::S3Client> s3Client,
 			   bool scanOnStart,
-			   bool toCache);
+			   bool toCache,
+			   long queryId,
+         const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys);
 
   static std::shared_ptr<S3SelectScan> make(std::string name,
 											std::string s3Bucket,
@@ -53,7 +56,9 @@ public:
 											S3SelectCSVParseOptions parseOptions,
 											std::shared_ptr<Aws::S3::S3Client> s3Client,
 											bool scanOnStart = true,
-											bool toCache = false);
+											bool toCache = false,
+											long queryId = 0,
+                      std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys = nullptr);
 
   size_t getProcessedBytes() const;
   size_t getReturnedBytes() const;
@@ -88,7 +93,12 @@ private:
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
   std::shared_ptr<TupleSet2> readTuples();
   void readAndSendTuples();
+  void sendSegmentWeight();
 
+  /**
+   * used to compute filter weight
+   */
+  std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys_;
 };
 
 }

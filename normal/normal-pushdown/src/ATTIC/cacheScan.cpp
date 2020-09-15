@@ -5,8 +5,8 @@
 #include <normal/pushdown/TupleMessage.h>
 #include "normal/pushdown/ATTIC/cacheScan.h"
 namespace normal::pushdown {
-    cacheScan::cacheScan(std::string name,  std::string cacheID,std::shared_ptr<Cache> cache) :
-    Operator(std::move(name), "cacheScan"),
+    cacheScan::cacheScan(std::string name,  std::string cacheID,std::shared_ptr<Cache> cache, long queryId) :
+    Operator(std::move(name), "cacheScan", queryId),
     cacheID_(std::move(cacheID)),
     cache_(cache){}
     void cacheScan::onStart() {

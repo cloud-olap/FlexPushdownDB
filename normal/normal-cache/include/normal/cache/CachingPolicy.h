@@ -14,6 +14,12 @@
 
 namespace normal::cache {
 
+enum CachingPolicyId {
+  LRU,
+  FBR,
+  WFBR
+};
+
 class CachingPolicy {
 
 public:
@@ -56,6 +62,13 @@ public:
    * Show the current cache layout
    */
   virtual std::string showCurrentLayout() = 0;
+
+  /**
+   * Get caching policy id
+   *
+   * @return caching policy id
+   */
+  virtual CachingPolicyId id() = 0;
 
 protected:
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;

@@ -179,7 +179,8 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
       if (joinBuilds->size() > 1) {
         for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
           auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
-                                                                  leftColumnName);
+                                                                  leftColumnName,
+                                                                  Planner::getQueryId());
           // wire up
           streamOutPhysicalOperator->produce(shuffle);
           shuffle->consume(streamOutPhysicalOperator);
@@ -202,7 +203,8 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
       if (joinProbes->size() > 1) {
         for (const auto &streamOutPhysicalOperator: *streamOutPhysicalOperators) {
           auto shuffle = normal::pushdown::shuffle::Shuffle::make(streamOutPhysicalOperator->name() + "-shuffle",
-                                                                  rightColumnName);
+                                                                  rightColumnName,
+                                                                  Planner::getQueryId());
           // wire up
           streamOutPhysicalOperator->produce(shuffle);
           shuffle->consume(streamOutPhysicalOperator);
@@ -309,7 +311,7 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
 }
 
 std::shared_ptr<PhysicalPlan> Planner::generate (const LogicalPlan &logicalPlan,
-                                                         std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
+                                                 std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
   auto physicalPlan = std::make_shared<PhysicalPlan>();
   auto logicalOperators = logicalPlan.getOperators();
   auto logicalToPhysical_map = std::make_shared<std::unordered_map<
@@ -335,4 +337,12 @@ std::shared_ptr<PhysicalPlan> Planner::generate (const LogicalPlan &logicalPlan,
   }
 
   return physicalPlan;
+}
+
+void Planner::setQueryId(long queryId) {
+  queryId_ = queryId;
+}
+
+long Planner::getQueryId() {
+  return queryId_;
 }

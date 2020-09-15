@@ -1,29 +1,37 @@
 //
-// Created by Yifei Yang on 8/3/20.
+// Created by Yifei Yang on 9/10/20.
 //
 
 #include <sstream>
 #include <fmt/format.h>
-#include "normal/cache/FBRCachingPolicy.h"
-#include <algorithm>
+#include <normal/cache/WFBRCachingPolicy.h>
 
 using namespace normal::cache;
 
-bool FBRCachingPolicy::lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
-//  return (key1->getMetadata()->hitNum() / key1->getMetadata()->size())
-//       < (key2->getMetadata()->hitNum() / key2->getMetadata()->size());
-  return (key1->getMetadata()->hitNum())
-         < (key2->getMetadata()->hitNum());
+bool WFBRCachingPolicy::lessValue(const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
+//  if (key1->getMetadata()->hitNum() != key2->getMetadata()->hitNum()) {
+//    return key1->getMetadata()->hitNum() < key2->getMetadata()->hitNum();
+//  } else {
+//    return (key1->getMetadata()->value()) < (key2->getMetadata()->value());
+//  }
+
+  return (key1->getMetadata()->value()) < (key2->getMetadata()->value());
+
+//  auto value1 = (1.0 + key1->getMetadata()->value() / ((double) (1 + currentQueryId_))) * ((double) key1->getMetadata()->hitNum());
+//  auto value2 = (1.0 + key2->getMetadata()->value() / ((double) (1 + currentQueryId_))) * ((double) key2->getMetadata()->hitNum());
+//  return value1 < value2;
 }
 
-FBRCachingPolicy::FBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-        CachingPolicy(maxSize, mode) {}
+WFBRCachingPolicy::WFBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode):
+      CachingPolicy(maxSize, mode),
+      currentQueryId_(0) {}
 
-std::shared_ptr<FBRCachingPolicy> FBRCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
-  return std::make_shared<FBRCachingPolicy>(maxSize, mode);
+std::shared_ptr<WFBRCachingPolicy>
+WFBRCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
+  return std::make_shared<WFBRCachingPolicy>(maxSize, mode);
 }
 
-void FBRCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
+void WFBRCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
   auto keyEntry = keySet_.find(key);
   if (keyEntry != keySet_.end()) {
     keyEntry->get()->getMetadata()->incHitNum();
@@ -32,12 +40,36 @@ void FBRCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
   }
 }
 
-void FBRCachingPolicy::onRemove(const std::shared_ptr<SegmentKey> &key) {
+void WFBRCachingPolicy::onWeight(const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> &segmentKeys, double weight, long queryId) {
+  // if new query executes, clear temporary weight updated keys
+  if (queryId > currentQueryId_) {
+    weightUpdatedKeys_.clear();
+    currentQueryId_ = queryId;
+  }
+
+  // update value using weight
+  for (auto const &segmentKey: *segmentKeys) {
+    if (weightUpdatedKeys_.find(segmentKey) == weightUpdatedKeys_.end()) {
+      std::shared_ptr<SegmentKey> realKey;
+      auto keyEntry = keySet_.find(segmentKey);
+      if (keyEntry != keySet_.end()) {
+        realKey = *keyEntry;
+        realKey->getMetadata()->addValue(weight);
+      } else {
+        throw std::runtime_error("onWeight: Key should exist in keySet_");
+      }
+
+      weightUpdatedKeys_.emplace(realKey);
+    }
+  }
+}
+
+void WFBRCachingPolicy::onRemove(const std::shared_ptr<SegmentKey> &key) {
   erase(key);
 }
 
 std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>>
-FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
+WFBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
   auto removableKeys = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
   // decide whether to cache
@@ -91,7 +123,7 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
-FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+WFBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
   if (mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
     return segmentKeys;
   }
@@ -101,15 +133,6 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
   // FIXME: an estimation here, if freeSize_ >= c * maxSize_, we try to cache all segments
   //  Because we cannot know the size of segmentData before bringing it back
   if (freeSize_ >= maxSize_ * 0.1 && freeSize_ >= 100*1024*1024) {
-    // keys have been added to keySet_ in onLoad() before
-//    for (const auto &key: *segmentKeys) {
-//      auto keyEntry = keySet_.find(key);
-//      if (keyEntry != keySet_.end()) {
-//        (*keyEntry)->getMetadata()->incHitNum();
-//      } else {
-//        keySet_.emplace(key);
-//      }
-//    }
     return segmentKeys;
   }
 
@@ -120,10 +143,7 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
     // keys have been added to keySet_ in onLoad() before
     if (keyEntry != keySet_.end()) {
       realKey = *keyEntry;
-//      realKey->getMetadata()->incHitNum();
     } else {
-//      realKey = key;
-//      keySet_.emplace(realKey);
       throw std::runtime_error("onToCache: Key should exist in keySet_");
     }
 
@@ -140,17 +160,17 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
   return keysToCache;
 }
 
-void FBRCachingPolicy::erase(const std::shared_ptr<SegmentKey> &key) {
+void WFBRCachingPolicy::erase(const std::shared_ptr<SegmentKey> &key) {
   keysInCache_.erase(std::find(keysInCache_.begin(), keysInCache_.end(), key));
 }
 
-void FBRCachingPolicy::addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in,
+void WFBRCachingPolicy::addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in,
                                                   const std::shared_ptr<SegmentKey> &out) {
   keysToReplace_.emplace(out);
   estimateCachingDecisions_.emplace(in, out);
 }
 
-void FBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in) {
+void WFBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in) {
   auto keysToReplaceEntry = estimateCachingDecisions_.find(in);
   if (keysToReplaceEntry != estimateCachingDecisions_.end()) {
     keysToReplace_.erase(keysToReplaceEntry->second);
@@ -158,17 +178,17 @@ void FBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<Segme
   }
 }
 
-std::string FBRCachingPolicy::showCurrentLayout() {
+std::string WFBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keysInCache_.size() << std::endl;
   for (auto const &segmentKey: keysInCache_) {
-    ss << fmt::format("Key: {};\tHitnum: {}\tSize: {}", segmentKey->toString(), segmentKey->getMetadata()->hitNum(), segmentKey->getMetadata()->size()) << std::endl;
+    ss << fmt::format("Key: {};\tValue: {}", segmentKey->toString(), segmentKey->getMetadata()->value()) << std::endl;
   }
   ss << "Max size: " << maxSize_ << std::endl;
   ss << "Free size: " << freeSize_ << std::endl;
   return ss.str();
 }
 
-CachingPolicyId FBRCachingPolicy::id() {
-  return FBR;
+CachingPolicyId WFBRCachingPolicy::id() {
+  return WFBR;
 }
