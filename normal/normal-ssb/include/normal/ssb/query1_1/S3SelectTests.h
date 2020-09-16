@@ -10,6 +10,7 @@
 #include <normal/tuple/FileType.h>
 
 using namespace normal::core;
+using namespace normal::tuple;
 
 namespace normal::ssb {
 
