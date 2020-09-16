@@ -27,9 +27,10 @@ private:
   OperatorActor* operatorActor_;
   LocalOperatorDirectory operatorMap_;
   caf::actor rootActor_;
+  caf::actor segmentCacheActor_;
 
 public:
-  OperatorContext(std::shared_ptr<Operator> op, caf::actor& rootActor);
+  OperatorContext(std::shared_ptr<Operator> op, caf::actor& rootActor, caf::actor segmentCacheActor);
 
   std::shared_ptr<Operator> op();
 

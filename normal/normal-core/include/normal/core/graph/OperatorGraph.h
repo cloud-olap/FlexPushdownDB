@@ -8,11 +8,14 @@
 #include <memory>
 #include <string>
 
+#include <caf/all.hpp>
+#include <tl/expected.hpp>
+
 #include <normal/core/Operator.h>
 #include <normal/core/OperatorContext.h>
 #include <normal/core/OperatorDirectory.h>
-#include <normal/core/cache/SegmentCacheActor.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/Forward.h>
 
 using namespace normal::core;
 using namespace normal::core::cache;

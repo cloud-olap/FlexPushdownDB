@@ -7,7 +7,8 @@
 #include <utility>
 #include <cassert>
 #include <normal/core/message/CompleteMessage.h>
-
+#include <normal/core/cache/LoadRequestMessage.h>
+#include <normal/core/cache/SegmentCacheActor.h>
 #include "normal/core/Globals.h"
 #include "normal/core/message/Message.h"
 #include "normal/core/Actors.h"
@@ -60,6 +61,24 @@ tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<mess
 
   message::Envelope e(msg);
 
+  if(recipientId == "SegmentCache"){
+    if(msg->type() == "LoadRequestMessage"){
+	  operatorActor_->request(segmentCacheActor_, infinite, normal::core::cache::LoadAtom::value, std::static_pointer_cast<normal::core::cache::LoadRequestMessage>(msg))
+	  .then([=](const std::shared_ptr<normal::core::cache::LoadResponseMessage>& response){
+		operatorActor_->send(operator_->actorHandle(), Envelope(response));
+//		send(response, this->operator_->name());
+	  });
+    }
+    else if(msg->type() == "StoreRequestMessage"){
+	  operatorActor_->send(segmentCacheActor_, normal::core::cache::StoreAtom::value, std::static_pointer_cast<normal::core::cache::StoreRequestMessage>(msg));
+	}
+    else{
+      throw std::runtime_error("Unrecognized message " + msg->type());
+    }
+
+	return {};
+  }
+
   auto expectedOperator = operatorMap_.get(recipientId);
   if(expectedOperator.has_value()){
     auto recipientOperator = expectedOperator.value();
@@ -73,10 +92,11 @@ tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<mess
   }
 }
 
-OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op,  caf::actor& rootActor):
+OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op,  caf::actor& rootActor, caf::actor segmentCacheActor):
     operator_(std::move(op)),
     operatorActor_(nullptr),
-    rootActor_(rootActor)
+    rootActor_(rootActor),
+    segmentCacheActor_(std::move(segmentCacheActor))
 {}
 
 std::shared_ptr<normal::core::Operator> OperatorContext::op() {

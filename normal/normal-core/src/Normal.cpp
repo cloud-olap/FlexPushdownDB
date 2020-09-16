@@ -26,8 +26,4 @@ std::shared_ptr<OperatorGraph> Normal::createQuery() {
   return OperatorGraph::make(operatorManager_);
 }
 
-const std::shared_ptr<OperatorManager> &Normal::getOperatorManager() const {
-  return operatorManager_;
-}
-
 }

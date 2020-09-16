@@ -70,7 +70,7 @@ void configureS3Connector(normal::sql::Interpreter &i) {
  * @param i
  * @return
  */
-auto execute(normal::sql::Interpreter &i) {
+auto execute(normal::sql::Interpreter& /* i */) {
 //  i.getOperatorManager()->boot();
 //  i.getOperatorManager()->start();
 //  i.getOperatorManager()->join();
@@ -86,28 +86,34 @@ auto execute(normal::sql::Interpreter &i) {
 	return nullptr;
 }
 
-std::shared_ptr<TupleSet2> executeSQLTest(const std::string &sql) {
+/**
+ * This is out of date, commenting to stop compiler errors.
+ * @param i
+ * @return
+ */
+std::shared_ptr<TupleSet2> executeSQLTest(const std::string& /* sql */) {
 
-  SPDLOG_INFO("SQL:\n{}", sql);
-
-  normal::sql::Interpreter i(normal::plan::operator_::mode::Modes::fullPushdownMode(), std::make_shared<LRUCachingPolicy>(100));
-
-  configureLocalConnector(i);
-  configureS3Connector(i);
-
-  i.parse(sql);
-
-  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
-  TestUtil::writeExecutionPlan(*i.getOperatorManager());
-
-  auto tuples = execute(i);
-
-  i.getOperatorManager()->stop();
-
-  SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
-
-  auto tupleSet = TupleSet2::create(tuples);
-  return tupleSet;
+//  SPDLOG_INFO("SQL:\n{}", sql);
+//
+//  normal::sql::Interpreter i(normal::plan::operator_::mode::Modes::fullPushdownMode(), std::make_shared<LRUCachingPolicy>(100));
+//
+//  configureLocalConnector(i);
+//  configureS3Connector(i);
+//
+//  i.parse(sql);
+//
+//  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
+//  TestUtil::writeExecutionPlan(*i.getOperatorManager());
+//
+//  auto tuples = execute(i);
+//
+//  i.getOperatorManager()->stop();
+//
+//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
+//
+//  auto tupleSet = TupleSet2::create(tuples);
+//  return tupleSet;
+  return nullptr;
 }
 
 #define SKIP_SUITE true

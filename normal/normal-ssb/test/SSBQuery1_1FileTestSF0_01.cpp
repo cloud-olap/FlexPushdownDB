@@ -14,7 +14,7 @@ TEST_SUITE ("ssb-query1.1-file-csv-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("ssb-query1.1-file-csv-sf0.01-par1-date-scan" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  LocalFileSystemTests::dateScan("data/ssb-sf0.01", FileType::CSV, 4, 10000, true, n);
+  LocalFileSystemTests::dateScan("data/ssb-sf0.01", FileType::CSV, 1, 1, true, n);
   n->stop();
 
 	  CHECK_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);

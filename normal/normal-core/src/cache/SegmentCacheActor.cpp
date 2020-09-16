@@ -7,34 +7,34 @@
 
 using namespace normal::core::cache;
 
-SegmentCacheActor::SegmentCacheActor(const std::string &Name) :
-	Operator(Name, "SegmentCache"),
+SegmentCacheActor::SegmentCacheActor(caf::actor_config &cfg) :
+	caf::event_based_actor(cfg),
 	state_(make()) {}
 
-SegmentCacheActor::SegmentCacheActor(const std::string &Name, const std::shared_ptr<CachingPolicy>& cachingPolicy) :
-        Operator(Name, "SegmentCache"),
-        state_(make(cachingPolicy)) {}
+SegmentCacheActor::SegmentCacheActor(caf::actor_config &cfg, const std::shared_ptr<CachingPolicy>& cachingPolicy) :
+	caf::event_based_actor(cfg),
+	state_(make(cachingPolicy)) {}
 
-void SegmentCacheActor::onReceive(const Envelope &message) {
-  if (message.message().type() == "StoreRequestMessage") {
-	auto storeMessage = dynamic_cast<const StoreRequestMessage &>(message.message());
-	store(storeMessage);
-  } else if (message.message().type() == "LoadRequestMessage") {
-	auto loadMessage = dynamic_cast<const LoadRequestMessage &>(message.message());
-	load(loadMessage);
-  } else if (message.message().type() == "EvictRequestMessage") {
-	auto evictMessage = dynamic_cast<const EvictRequestMessage &>(message.message());
-	evict(evictMessage);
-  } else if (message.message().type() == "StartMessage") {
-	auto startMessage = dynamic_cast<const StartMessage &>(message.message());
-	// NOOP
-  } else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error("Unrecognized message type " + message.message().type());
-  }
-}
+//void SegmentCacheActor::onReceive(const Envelope &message) {
+//  if (message.message().type() == "StoreRequestMessage") {
+//	auto storeMessage = dynamic_cast<const StoreRequestMessage &>(message.message());
+//	store(storeMessage);
+//  } else if (message.message().type() == "LoadRequestMessage") {
+//	auto loadMessage = dynamic_cast<const LoadRequestMessage &>(message.message());
+//	load(loadMessage);
+//  } else if (message.message().type() == "EvictRequestMessage") {
+//	auto evictMessage = dynamic_cast<const EvictRequestMessage &>(message.message());
+//	evict(evictMessage);
+//  } else if (message.message().type() == "StartMessage") {
+//	auto startMessage = dynamic_cast<const StartMessage &>(message.message());
+//	// NOOP
+//  } else {
+//	// FIXME: Propagate error properly
+//	throw std::runtime_error("Unrecognized message type " + message.message().type());
+//  }
+//}
 
-void SegmentCacheActor::load(const LoadRequestMessage &msg) {
+std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMessage &msg) {
 
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments;
 //  std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache;
@@ -65,8 +65,10 @@ void SegmentCacheActor::load(const LoadRequestMessage &msg) {
 
   auto responseMessage = LoadResponseMessage::make(segments, name(), *segmentKeysToCache);
 
-  ctx()->send(responseMessage, msg.sender())
-	  .map_error([](auto err) { throw std::runtime_error(fmt::format("{}, SegmentCacheActor", err)); });
+//  ctx()->send(responseMessage, msg.sender())
+//	  .map_error([](auto err) { throw std::runtime_error(fmt::format("{}, SegmentCacheActor", err)); });
+
+  return responseMessage;
 }
 
 void SegmentCacheActor::store(const StoreRequestMessage &msg) {

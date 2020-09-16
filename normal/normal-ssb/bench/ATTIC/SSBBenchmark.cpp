@@ -67,42 +67,44 @@ void configureS3Connector(normal::sql::Interpreter &i) {
   i.put(cat);
 }
 
-auto execute(normal::sql::Interpreter &i) {
-  i.getOperatorManager()->boot();
-  i.getOperatorManager()->start();
-  i.getOperatorManager()->join();
-
-  std::shared_ptr<normal::pushdown::Collate>
-	  collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
-
-  auto tuples = collate->tuples();
-
-  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
-
-  return tuples;
+auto execute(normal::sql::Interpreter &/*i*/) {
+//  i.getOperatorManager()->boot();
+//  i.getOperatorManager()->start();
+//  i.getOperatorManager()->join();
+//
+//  std::shared_ptr<normal::pushdown::Collate>
+//	  collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
+//
+//  auto tuples = collate->tuples();
+//
+//  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
+//
+//  return tuples;
+return nullptr;
 }
 
-auto executeTest(const std::string &sql) {
+auto executeTest(const std::string &/*sql*/) {
 
-  SPDLOG_INFO("SQL:\n{}", sql);
-
-  normal::sql::Interpreter i;
-
-  configureLocalConnector(i);
-  configureS3Connector(i);
-
-  i.parse(sql);
-
-  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
-  TestUtil::writeExecutionPlan(*i.getOperatorManager());
-
-  auto tuples = execute(i);
-
-  i.getOperatorManager()->stop();
-
-  SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
-
-  return tuples;
+//  SPDLOG_INFO("SQL:\n{}", sql);
+//
+//  normal::sql::Interpreter i;
+//
+//  configureLocalConnector(i);
+//  configureS3Connector(i);
+//
+//  i.parse(sql);
+//
+//  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
+//  TestUtil::writeExecutionPlan(*i.getOperatorManager());
+//
+//  auto tuples = execute(i);
+//
+//  i.getOperatorManager()->stop();
+//
+//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
+//
+//  return tuples;
+return nullptr;
 }
 
 TEST_CASE ("ssb-benchmark-query01" * doctest::skip(true || SKIP_SUITE)) {

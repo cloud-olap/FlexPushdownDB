@@ -8,6 +8,7 @@
 
 #include <caf/all.hpp>
 #include <experimental/filesystem>
+#include <utility>
 //#include <graphviz/gvc.h>
 
 #include <normal/core/Actors.h>
@@ -35,7 +36,7 @@ void graph::OperatorGraph::put(const std::shared_ptr<Operator> &op) {
 
   caf::actor rootActorHandle = Actors::toActorHandle(this->rootActor_);
 
-  auto ctx = std::make_shared<normal::core::OperatorContext>(op, rootActorHandle);
+  auto ctx = std::make_shared<normal::core::OperatorContext>(op, rootActorHandle, operatorManager_.lock()->getSegmentCacheActor());
   operatorDirectory_.insert(OperatorDirectoryEntry(op->name(), ctx, false));
 }
 
@@ -109,37 +110,37 @@ void graph::OperatorGraph::boot() {
   }
 
   // Tell the actors about the system actors
-  for (const auto &element: operatorDirectory_) {
-	auto entry = element.second;
-	auto op = entry.getOperatorContext().lock()->op();
-
-	auto rootActorEntry = LocalOperatorDirectoryEntry(GraphRootActorName,
-													  std::optional(rootActor_->ptr()),
-													  OperatorRelationshipType::None,
-													  false);
-
-	entry.getOperatorContext().lock()->operatorMap().insert(rootActorEntry);
-
-	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry(operatorManager_.lock()->getSegmentCacheActor()->name(),
-															  std::optional(operatorManager_.lock()->getSegmentCacheActor()->actorHandle()),
-															  OperatorRelationshipType::None,
-															  false);
-
-	entry.getOperatorContext().lock()->operatorMap().insert(segmentCacheActorEntry);
-  }
+//  for (const auto &element: operatorDirectory_) {
+//	auto entry = element.second;
+//	auto op = entry.getOperatorContext().lock()->op();
+//
+//	auto rootActorEntry = LocalOperatorDirectoryEntry(GraphRootActorName,
+//													  std::optional(rootActor_->ptr()),
+//													  OperatorRelationshipType::None,
+//													  false);
+//
+//	entry.getOperatorContext().lock()->operatorMap().insert(rootActorEntry);
+//
+//	auto segmentCacheActorEntry = LocalOperatorDirectoryEntry(element.first,
+//															  std::optional(operatorManager_.lock()->getSegmentCacheActor()),
+//															  OperatorRelationshipType::None,
+//															  false);
+//
+//	entry.getOperatorContext().lock()->operatorMap().insert(segmentCacheActorEntry);
+//  }
 
   // Tell the system actors about the other actors
-  for (const auto &element: operatorDirectory_) {
-	auto entry = element.second;
-	auto op = entry.getOperatorContext().lock()->op();
-
-	auto localEntry = LocalOperatorDirectoryEntry(op->name(),
-											 op->actorHandle(),
-											 OperatorRelationshipType::None,
-											 false);
-
-	operatorManager_.lock()->getSegmentCacheActor()->weakCtx().lock()->operatorMap().insert(localEntry);
-  }
+//  for (const auto &element: operatorDirectory_) {
+//	auto entry = element.second;
+//	auto op = entry.getOperatorContext().lock()->op();
+//
+//	auto localEntry = LocalOperatorDirectoryEntry(op->name(),
+//											 op->actorHandle(),
+//											 OperatorRelationshipType::None,
+//											 false);
+//
+//	operatorManager_.lock()->getSegmentCacheActor()->weakCtx().lock()->operatorMap().insert(localEntry);
+//  }
 
   // Tell the actors who their producers are
   for (const auto &element: operatorDirectory_) {

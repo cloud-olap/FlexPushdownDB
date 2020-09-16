@@ -42,10 +42,12 @@ TEST_CASE ("load" * doctest::skip(false || SKIP_SUITE)) {
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments;
   segments.emplace(segmentKey1, segment1Data1);
 
-  mgr->send(StoreRequestMessage::make(segments, "root"), "SegmentCache")
-	  .map_error([](auto err) { throw std::runtime_error(err); });
-  mgr->send(LoadRequestMessage::make(segmentKeys, "root"), "SegmentCache")
-	  .map_error([](auto err) { throw std::runtime_error(err); });
+  // TODO: Out of date
+
+//  mgr->send(StoreRequestMessage::make(segments, "root"), "SegmentCache")
+//	  .map_error([](auto err) { throw std::runtime_error(err); });
+//  mgr->send(LoadRequestMessage::make(segmentKeys, "root"), "SegmentCache")
+//	  .map_error([](auto err) { throw std::runtime_error(err); });
 
   auto msg = mgr->receive();
 

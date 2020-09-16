@@ -86,7 +86,7 @@ private:
   }
 
   void onComplete(const CompleteMessage & /*msg*/) {
-	if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
+	if (weakCtx().lock()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
 
 	  auto filterResult = kernel_->filter();
 	  if (!filterResult)
@@ -99,9 +99,9 @@ private:
 
 	  std::shared_ptr<Message>
 		  tupleSetMessage = std::make_shared<TupleMessage>(tupleSet->toTupleSetV1(), name());
-	  ctx()->tell(tupleSetMessage);
+	  weakCtx().lock()->tell(tupleSetMessage);
 
-	  ctx()->notifyComplete();
+	  weakCtx().lock()->notifyComplete();
 	}
   }
 

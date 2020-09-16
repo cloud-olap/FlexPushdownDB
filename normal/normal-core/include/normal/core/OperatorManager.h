@@ -33,8 +33,8 @@ private:
   caf::actor_system_config actorSystemConfig;
   std::shared_ptr<caf::actor_system> actorSystem;
   std::shared_ptr<caf::scoped_actor> rootActor_;
-  OperatorDirectory operatorDirectory_;
-  std::shared_ptr<SegmentCacheActor> segmentCacheActor_;
+//  OperatorDirectory operatorDirectory_;
+  caf::actor segmentCacheActor_;
   std::shared_ptr<CachingPolicy> cachingPolicy_;
 
   std::chrono::steady_clock::time_point startTime_;
@@ -48,24 +48,24 @@ public:
   explicit OperatorManager(std::shared_ptr<CachingPolicy>  cachingPolicy);
 
   virtual ~OperatorManager();
-  void put(const std::shared_ptr<Operator> &op);
-  const std::shared_ptr<SegmentCacheActor> &getSegmentCacheActor() const;
+//  void put(const std::shared_ptr<Operator> &op);
+  const caf::actor &getSegmentCacheActor() const;
   const std::shared_ptr<caf::actor_system> &getActorSystem() const;
   long nextQueryId();
 
   void boot();
   void start();
   void stop();
-  void join();
+//  void join();
 
-  tl::expected<void, std::string> send(std::shared_ptr<message::Message> message, const std::string &recipientId);
+//  tl::expected<void, std::string> send(std::shared_ptr<message::Message> message, const std::string &recipientId);
   std::shared_ptr<normal::core::message::Message> receive();
 
 //  void write_graph(const std::string &file);
 
   tl::expected<long, std::string> getElapsedTime();
 
-  std::string showMetrics();
+//  std::string showMetrics();
   std::string showCacheMetrics();
   void clearCacheMetrics();
 
