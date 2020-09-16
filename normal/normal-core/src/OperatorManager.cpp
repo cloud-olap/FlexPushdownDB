@@ -20,6 +20,7 @@
 #include "normal/core/Operator.h"
 #include "normal/core/message/StartMessage.h"
 #include <normal/core/cache/SegmentCacheActor.h>
+#include <normal/cache/LRUCachingPolicy.h>
 
 using namespace normal::core::cache;
 
@@ -159,9 +160,9 @@ void OperatorManager::boot() {
 //  }
 
   if (cachingPolicy_) {
-  	segmentCacheActor_ = actorSystem->spawn<SegmentCacheActor>(cachingPolicy_);
+  	segmentCacheActor_ = actorSystem->spawn(SegmentCacheActor::makeBehaviour, cachingPolicy_);
   } else {
-    segmentCacheActor_ = actorSystem->spawn<SegmentCacheActor>();
+    segmentCacheActor_ = actorSystem->spawn(SegmentCacheActor::makeBehaviour, std::nullopt);
   }
 
   // Tell the actors about the system actors

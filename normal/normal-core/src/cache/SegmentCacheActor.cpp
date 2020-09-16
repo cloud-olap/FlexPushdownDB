@@ -3,88 +3,75 @@
 //
 
 #include "normal/core/cache/SegmentCacheActor.h"
-#include <normal/cache/Globals.h>
 
-using namespace normal::core::cache;
+namespace normal::core::cache {
 
-SegmentCacheActor::SegmentCacheActor(caf::actor_config &cfg) :
-	caf::event_based_actor(cfg),
-	state_(make()) {}
+std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMessage &msg,
+															 stateful_actor<SegmentCacheActorState> *self) {
 
-SegmentCacheActor::SegmentCacheActor(caf::actor_config &cfg, const std::shared_ptr<CachingPolicy>& cachingPolicy) :
-	caf::event_based_actor(cfg),
-	state_(make(cachingPolicy)) {}
-
-//void SegmentCacheActor::onReceive(const Envelope &message) {
-//  if (message.message().type() == "StoreRequestMessage") {
-//	auto storeMessage = dynamic_cast<const StoreRequestMessage &>(message.message());
-//	store(storeMessage);
-//  } else if (message.message().type() == "LoadRequestMessage") {
-//	auto loadMessage = dynamic_cast<const LoadRequestMessage &>(message.message());
-//	load(loadMessage);
-//  } else if (message.message().type() == "EvictRequestMessage") {
-//	auto evictMessage = dynamic_cast<const EvictRequestMessage &>(message.message());
-//	evict(evictMessage);
-//  } else if (message.message().type() == "StartMessage") {
-//	auto startMessage = dynamic_cast<const StartMessage &>(message.message());
-//	// NOOP
-//  } else {
-//	// FIXME: Propagate error properly
-//	throw std::runtime_error("Unrecognized message type " + message.message().type());
-//  }
-//}
-
-std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMessage &msg) {
-
-  std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> segments;
+  std::unordered_map<std::shared_ptr<SegmentKey>,
+					 std::shared_ptr<SegmentData>,
+					 SegmentKeyPointerHash,
+					 SegmentKeyPointerPredicate> segments;
 //  std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache;
   auto missSegmentKeys = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
 //  SPDLOG_DEBUG("Handling load request. loadRequestMessage: {}", msg.toString());
 
-  for(const auto &segmentKey: msg.getSegmentKeys()) {
+  for (const auto &segmentKey: msg.getSegmentKeys()) {
 
-    auto cacheData = state_->cache->load(segmentKey);
+	auto cacheData = self->state.cache->load(segmentKey);
 
-    if (cacheData.has_value()) {
-      SPDLOG_DEBUG("Cache hit  |  segmentKey: {}", segmentKey->toString());
-      segments.insert(std::pair(segmentKey, cacheData.value()));
+	if (cacheData.has_value()) {
+	  SPDLOG_DEBUG("Cache hit  |  segmentKey: {}", segmentKey->toString());
+	  segments.insert(std::pair(segmentKey, cacheData.value()));
 
-    } else {
-      SPDLOG_DEBUG("Cache miss  |  segmentKey: {}", segmentKey->toString());
-      missSegmentKeys->emplace_back(segmentKey);
-    }
+	} else {
+	  SPDLOG_DEBUG("Cache miss  |  segmentKey: {}", segmentKey->toString());
+	  missSegmentKeys->emplace_back(segmentKey);
+	}
   }
 
-  /*
-   * Decision making should be locked
-   */
-  normal::cache::replacementGlobalLock.lock();
-  auto segmentKeysToCache = state_->cache->toCache(missSegmentKeys);
-  normal::cache::replacementGlobalLock.unlock();
+  auto segmentKeysToCache = self->state.cache->toCache(missSegmentKeys);
 
-  auto responseMessage = LoadResponseMessage::make(segments, name(), *segmentKeysToCache);
-
-//  ctx()->send(responseMessage, msg.sender())
-//	  .map_error([](auto err) { throw std::runtime_error(fmt::format("{}, SegmentCacheActor", err)); });
-
-  return responseMessage;
+  return LoadResponseMessage::make(segments, self->state.name, *segmentKeysToCache);
 }
 
-void SegmentCacheActor::store(const StoreRequestMessage &msg) {
+void SegmentCacheActor::store(const StoreRequestMessage &msg,
+							  stateful_actor<SegmentCacheActorState> *self) {
 //  SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
-  for(const auto &segmentEntry: msg.getSegments()){
-    auto segmentKey = segmentEntry.first;
-    auto segmentData = segmentEntry.second;
-    state_->cache->store(segmentKey, segmentData);
+  for (const auto &segmentEntry: msg.getSegments()) {
+	auto segmentKey = segmentEntry.first;
+	auto segmentData = segmentEntry.second;
+	self->state.cache->store(segmentKey, segmentData);
   }
 }
 
-void SegmentCacheActor::evict(const EvictRequestMessage &msg) {
-  SPDLOG_DEBUG("Evict  |  evictMessage: {}", msg.toString());
-  throw std::runtime_error("Cache eviction not implemented");
+behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
+										  const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy) {
+
+  if (cachingPolicy.has_value())
+	self->state.cache = SegmentCache::make(cachingPolicy.value());
+  else
+	self->state.cache = SegmentCache::make();
+
+  return {
+	  [=](LoadAtom, const std::shared_ptr<LoadRequestMessage> &m) {
+		return load(*m, self);
+	  },
+	  [=](StoreAtom, const std::shared_ptr<StoreRequestMessage> &m) {
+		store(*m, self);
+	  },
+	  [=](GetNumHitsAtom) {
+		return self->state.cache->hitNum();
+	  },
+	  [=](GetNumMissesAtom) {
+		return self->state.cache->missNum();
+	  },
+	  [=](ClearMetricsAtom) {
+		self->state.cache->clearMetrics();
+	  }
+  };
 }
 
-const std::shared_ptr<SegmentCacheActorState> &SegmentCacheActor::getState() const {
-  return state_;
 }

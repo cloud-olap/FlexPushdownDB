@@ -31,11 +31,8 @@ add_library(normal-core STATIC
         src/type/Integer64Type.cpp include/normal/core/type/Integer64Type.h
         src/cache/LoadRequestMessage.cpp include/normal/core/cache/LoadRequestMessage.h
         src/cache/StoreRequestMessage.cpp include/normal/core/cache/StoreRequestMessage.h
-        src/cache/EvictRequestMessage.cpp include/normal/core/cache/EvictRequestMessage.h
-        src/cache/EvictionPolicyType.cpp include/normal/core/cache/EvictionPolicyType.h
         src/cache/LoadResponseMessage.cpp include/normal/core/cache/LoadResponseMessage.h
         src/cache/SegmentCacheActor.cpp include/normal/core/cache/SegmentCacheActor.h
-        src/cache/SegmentCacheActorState.cpp include/normal/core/cache/SegmentCacheActorState.h
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
         include/normal/core/Forward.h)

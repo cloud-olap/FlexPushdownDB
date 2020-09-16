@@ -5,15 +5,11 @@
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_LOADRESPONSEMESSAGE_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_LOADRESPONSEMESSAGE_H
 
-#include <caf/all.hpp>
-#include <utility>
+#include <normal/core/message/Message.h>
 
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
 
-#include <normal/core/message/Message.h>
-
-using namespace caf;
 using namespace normal::cache;
 using namespace normal::core::message;
 
