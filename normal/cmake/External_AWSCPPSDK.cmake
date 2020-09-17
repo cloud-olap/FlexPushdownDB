@@ -1,5 +1,5 @@
 # AWS SDK
-set(AWS_CPP_SDK_VERSION "1.7.301")
+set(AWS_CPP_SDK_VERSION "1.8.49")
 set(AWS_CPP_SDK_GIT_URL "https://github.com/aws/aws-sdk-cpp.git")
 
 
