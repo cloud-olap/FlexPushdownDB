@@ -1,6 +1,6 @@
 # CAF
 
-set(CAF_VERSION "7ff369655076e9baf7acd9021e2e27966f9cffb4")  # 0.17.4
+set(CAF_VERSION "0.17.6")
 set(CAF_GIT_URL "https://github.com/actor-framework/actor-framework.git")
 
 
