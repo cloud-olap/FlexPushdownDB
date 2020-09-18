@@ -7,6 +7,8 @@
 
 #include "Globals.h"
 
+backward::SignalHandling sh;
+
 /**
  * Returns the name of the current test case
  *

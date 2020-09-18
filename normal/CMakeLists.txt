@@ -36,7 +36,7 @@ include(External_fmt)
 include(External_ssb_dbgen)
 include(External_primesieve)
 include(Dependency_SQLite3)
-
+include(External_Backward)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules

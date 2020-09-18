@@ -6,7 +6,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include <doctest/doctest.h>
 
-#include "normal/ssb/Globals.h"
+#include "Globals.h"
+
+backward::SignalHandling sh;
 
 /**
  * Returns the name of the current test case

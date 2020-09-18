@@ -36,6 +36,7 @@ target_include_directories(normal-cache-test PRIVATE include)
 
 target_link_libraries(normal-cache-test spdlog::spdlog)
 target_link_libraries(normal-cache-test doctest::doctest)
+target_link_libraries(normal-cache-test Backward::Backward)
 target_link_libraries(normal-cache-test normal-cache)
 
 

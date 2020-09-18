@@ -14,6 +14,8 @@
  */
 const char* getCurrentTestName() { return doctest::detail::g_cs->currentTest->m_name; }
 
+backward::SignalHandling sh;
+
 /**
  * Tests entry point
  *

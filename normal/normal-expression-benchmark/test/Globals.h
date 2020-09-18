@@ -10,6 +10,9 @@
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
 #include <spdlog/spdlog.h>
 
+#define BACKWARD_HAS_BFD 1
+#include <backward.hpp>
+
 namespace normal::expression::test {}
 
 #endif //NORMAL_NORMAL_EXPRESSION_TEST_GLOBALS_H
