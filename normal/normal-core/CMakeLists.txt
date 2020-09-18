@@ -72,6 +72,7 @@ target_include_directories(normal-core-test PRIVATE include)
 
 target_link_libraries(normal-core-test spdlog::spdlog)
 target_link_libraries(normal-core-test doctest::doctest)
+target_link_libraries(normal-core-test Backward::Backward)
 target_link_libraries(normal-core-test normal-core)
 
 

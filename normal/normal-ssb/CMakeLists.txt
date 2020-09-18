@@ -45,12 +45,14 @@ add_executable(normal-ssb-benchmark
         bench/ATTIC/SSBBenchmark.cpp
         bench/ATTIC/SSBNanoBenchmark.cpp
         bench/SSBBenchmarkQuery1_1FileSF0_01.cpp
-        bench/SSBBenchmarkQuery1_1FileSF1.cpp)
+        bench/SSBBenchmarkQuery1_1FileSF1.cpp
+        bench/Globals.h)
 
-target_link_libraries(normal-ssb-benchmark PRIVATE doctest::doctest)
-target_link_libraries(normal-ssb-benchmark PRIVATE nanobench::nanobench)
-target_link_libraries(normal-ssb-benchmark PRIVATE normal-ssb)
-target_link_libraries(normal-ssb-benchmark PRIVATE normal-sql)
+target_link_libraries(normal-ssb-benchmark doctest::doctest)
+target_link_libraries(normal-ssb-benchmark Backward::Backward)
+target_link_libraries(normal-ssb-benchmark nanobench::nanobench)
+target_link_libraries(normal-ssb-benchmark normal-ssb)
+target_link_libraries(normal-ssb-benchmark normal-sql)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -67,11 +69,13 @@ add_executable(normal-ssb-test
         test/SSBQuery1_1S3HybridTestSF0_01.cpp
         test/SSBQuery2_1FileTestSF0_01.cpp
         test/SSBTestQuery1_1FileParquetSF0_01.cpp
-        test/MiscTest.cpp)
+        test/MiscTest.cpp
+        test/Globals.h)
 
-target_link_libraries(normal-ssb-test PRIVATE doctest::doctest)
-target_link_libraries(normal-ssb-test PRIVATE normal-ssb)
-target_link_libraries(normal-ssb-test PRIVATE normal-sql)
+target_link_libraries(normal-ssb-test doctest::doctest)
+target_link_libraries(normal-ssb-test Backward::Backward)
+target_link_libraries(normal-ssb-test normal-ssb)
+target_link_libraries(normal-ssb-test normal-sql)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -164,10 +168,11 @@ add_executable(normal-ssb-experiment
         experiment/HardcodedPlanTestMultiPartition.cpp)
 #        experiment/SqliteTest.cpp)
 
-target_link_libraries(normal-ssb-experiment PRIVATE doctest::doctest)
-target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb)
-target_link_libraries(normal-ssb-experiment PRIVATE normal-sql)
-target_link_libraries(normal-ssb-experiment PRIVATE normal-ssb-query-generate)
+target_link_libraries(normal-ssb-experiment doctest::doctest)
+target_link_libraries(normal-ssb-experiment Backward::Backward)
+target_link_libraries(normal-ssb-experiment normal-ssb)
+target_link_libraries(normal-ssb-experiment normal-sql)
+target_link_libraries(normal-ssb-experiment normal-ssb-query-generate)
 
 # Copy ssb query files to runtime directory
 

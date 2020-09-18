@@ -11,7 +11,7 @@
  * Setting the log level here will disable macros for levels below it
  */
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 namespace normal::core {
 

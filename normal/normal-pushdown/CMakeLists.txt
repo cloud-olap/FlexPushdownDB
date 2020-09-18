@@ -97,9 +97,10 @@ add_executable(normal-pushdown-test
 
 target_include_directories(normal-pushdown-test PRIVATE include)
 
-target_link_libraries(normal-pushdown-test PRIVATE spdlog::spdlog)
-target_link_libraries(normal-pushdown-test PRIVATE doctest::doctest)
-target_link_libraries(normal-pushdown-test PRIVATE normal-pushdown)
+target_link_libraries(normal-pushdown-test spdlog::spdlog)
+target_link_libraries(normal-pushdown-test doctest::doctest)
+target_link_libraries(normal-pushdown-test Backward::Backward)
+target_link_libraries(normal-pushdown-test normal-pushdown)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -114,11 +115,12 @@ add_executable(normal-pushdown-benchmark
 
 target_include_directories(normal-pushdown-benchmark PRIVATE include)
 
-target_link_libraries(normal-pushdown-benchmark PRIVATE spdlog::spdlog)
-target_link_libraries(normal-pushdown-benchmark PRIVATE doctest::doctest)
-target_link_libraries(normal-pushdown-benchmark PRIVATE nanobench::nanobench)
-target_link_libraries(normal-pushdown-benchmark PRIVATE normal-tuple)
-target_link_libraries(normal-pushdown-benchmark PRIVATE normal-pushdown)
+target_link_libraries(normal-pushdown-benchmark spdlog::spdlog)
+target_link_libraries(normal-pushdown-benchmark doctest::doctest)
+target_link_libraries(normal-pushdown-benchmark Backward::Backward)
+target_link_libraries(normal-pushdown-benchmark nanobench::nanobench)
+target_link_libraries(normal-pushdown-benchmark normal-tuple)
+target_link_libraries(normal-pushdown-benchmark normal-pushdown)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -9,7 +9,9 @@
 #define ANKERL_NANOBENCH_IMPLEMENT
 #include <nanobench.h>
 
-#include "normal/ssb/Globals.h"
+#include "Globals.h"
+
+backward::SignalHandling sh;
 
 /**
  * Returns the name of the current test case

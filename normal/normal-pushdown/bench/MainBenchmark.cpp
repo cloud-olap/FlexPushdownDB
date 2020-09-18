@@ -10,6 +10,8 @@
 #define ANKERL_NANOBENCH_IMPLEMENT
 #include <nanobench.h>
 
+backward::SignalHandling sh;
+
 /**
  * Returns the name of the current test case
  *

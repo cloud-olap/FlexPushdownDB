@@ -69,6 +69,7 @@ target_include_directories(normal-tuple-test PRIVATE include)
 
 target_link_libraries(normal-tuple-test spdlog::spdlog)
 target_link_libraries(normal-tuple-test doctest::doctest)
+target_link_libraries(normal-tuple-test Backward::Backward)
 target_link_libraries(normal-tuple-test fmt::fmt)
 target_link_libraries(normal-tuple-test normal-tuple)
 
