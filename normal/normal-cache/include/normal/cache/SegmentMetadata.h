@@ -22,6 +22,8 @@ public:
   int hitNum() const;
   size_t estimateSize() const;
   double value() const;
+  double avgValue() const;
+  double value2() const;
 
   void incHitNum();
   void addValue(double value);

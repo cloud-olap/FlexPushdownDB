@@ -419,6 +419,14 @@ int SqlGenerator::genD_weeknuminyear() {
   return distribution(*generator_);
 }
 
+std::string SqlGenerator::genD_dayofweek() {
+  std::vector<std::string> dayOfWeeks{"Monday", "Tuesday", "Wednesday", "Thursday",
+  				      "Friday", "Saturday", "Sunday"};
+  std::uniform_int_distribution<int> distribution(0,6);
+  int index = distribution(*generator_);
+  return dayOfWeeks[index];
+}
+
 std::string SqlGenerator::genD_yearmonth() {
   auto year = genD_year();
   std::vector<std::string> months{"Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -843,12 +851,12 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkewWeight(int batchSize)
 
   // zipfian parameters
   const int n = 7;
-  const double alpha = 0.0;
+  const double alpha = 1.2;
   auto possibilities = zipfian(n, alpha);
   std::uniform_real_distribution<double> distribution1(0.0, 1.0);
 
   // random queries
-  std::uniform_int_distribution<int> distribution2(0,skewWeightQueryNames.size() - 1);
+  std::uniform_int_distribution<int> distribution2(1, skewWeightQueryNames.size() - 1);
 
   // column selectivity
   std::uniform_int_distribution<int> distribution3(1, 100);
@@ -875,7 +883,7 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkewWeight(int batchSize)
 
     // column selectivity
     int kind1 = distribution3(*generator_);
-    queries.emplace_back(generateSqlSkewWeight(skewWeightQueryName, skewLo_predicate, kind1 > 50));
+    queries.emplace_back(generateSqlSkewWeight(skewWeightQueryName, skewLo_predicate, kind1 > 40));
   }
 
   return queries;
@@ -891,7 +899,7 @@ std::string SqlGenerator::generateSqlSkewWeight(std::string queryName, std::stri
   }
 
   auto lo_predicate = genLo_predicate(high);
-  std::string aggColumn = high? "lo_revenue" : "lo_extendedprice * lo_discount";
+  std::string aggColumn = high? "sum(lo_revenue), sum(lo_supplycost)" : "sum(lo_extendedprice * lo_discount), sum(lo_ordtotalprice)";
 
   switch (queryNameEnum) {
     case SkewWeightQuery1: return genSkewWeightQuery1(skewLo_predicate, lo_predicate, aggColumn);
@@ -918,64 +926,89 @@ std::string SqlGenerator::genLo_predicate(bool high) {
   }
 }
 
+
 std::string SqlGenerator::genSkewWeightQuery1(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn) {
+  /*auto dayOfWeek = genD_dayofweek();
   return fmt::format(
-          "select sum({}) as revenue\n"
+          "select d_yearmonthnum, {}\n"
           "from date, lineorder\n"
           "where lo_orderdate = d_datekey\n"
+          "  and d_dayofweek = '{}'\n"
           "  and {}\n"
-          "  and {};\n",
+          "  and {}\n"
+          "group by d_yearmonthnum;\n",
           aggColumn,
+          dayOfWeek,
           lo_predicate,
           skewLo_predicate
+  );*/
+  auto s_city = genS_city();
+  return fmt::format(
+	  "select s_name, {}\n"
+	  "from supplier, lineorder\n"
+	  "where lo_suppkey = s_suppkey\n"
+	  "  and s_city = '{}'\n"
+	  "  and {}\n"
+	  "  and {}\n"
+	  "group by s_name;\n",
+	  aggColumn,
+	  s_city,
+	  lo_predicate,
+	  skewLo_predicate
   );
 }
 
 std::string SqlGenerator::genSkewWeightQuery2(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn) {
-  auto s_nation = genS_nation();
+  auto s_city = genS_city();
   return fmt::format(
-          "select sum({}) as revenue\n"
+          "select s_name, {}\n"
           "from supplier, lineorder\n"
           "where lo_suppkey = s_suppkey\n"
-          "  and s_nation = '{}'\n"
+          "  and s_city = '{}'\n"
           "  and {}\n"
-          "  and {};\n",
+          "  and {}\n"
+          "group by s_name;\n",
           aggColumn,
-          s_nation,
+          s_city,
           lo_predicate,
           skewLo_predicate
   );
+  //return genSkewWeightQuery1(skewLo_predicate, lo_predicate, aggColumn);
 }
 
 std::string SqlGenerator::genSkewWeightQuery3(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn) {
-  auto c_nation = genS_nation();
+  auto c_city = genS_city();
   return fmt::format(
-          "select sum({}) as revenue\n"
+          "select c_name, {}\n"
           "from customer, lineorder\n"
           "where lo_custkey = c_custkey\n"
-          "  and c_nation = '{}'\n"
+          "  and c_city = '{}'\n"
           "  and {}\n"
-          "  and {};\n",
+          "  and {}\n"
+          "group by c_name;\n",
           aggColumn,
-          c_nation,
+          c_city,
           lo_predicate,
           skewLo_predicate
   );
+  //return genSkewWeightQuery1(skewLo_predicate, lo_predicate, aggColumn);
 }
 
 std::string SqlGenerator::genSkewWeightQuery4(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn) {
-  auto p_category = "MFGR#" + std::to_string(genP_category_num());
+  auto p_brand1 = "MFGR#" + std::to_string(genP_brand1_num());
   return fmt::format(
-          "select sum({}) as revenue\n"
+          "select p_size, {}\n"
           "from part, lineorder\n"
           "where lo_partkey = p_partkey\n"
-          "  and p_category = '{}'\n"
+          "  and p_brand1 = '{}'\n"
           "  and {}\n"
-          "  and {};\n",
+          "  and {}\n"
+          "group by p_size;\n",
           aggColumn,
-          p_category,
+          p_brand1,
           lo_predicate,
           skewLo_predicate
   );
+  //return genSkewWeightQuery1(skewLo_predicate, lo_predicate, aggColumn);
 }
 

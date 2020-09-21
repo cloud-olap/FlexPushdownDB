@@ -376,8 +376,11 @@ void S3SelectScan::sendSegmentWeight() {
     projectFraction += miniCatalogue->lengthFraction(columnName);
   }
   double totalBytes = projectFraction * ((double) processedBytes_);
+  double predicateNum = (double) getPredicateNum(filterSql_);
+  double predPara = 0.5;
 
-  double weight = filteredBytes / totalBytes * ((double) getPredicateNum(filterSql_));
+  double weight = filteredBytes / totalBytes * (predicateNum / (predicateNum + predPara));
+  //double weight = filteredBytes / totalBytes * ((double) getPredicateNum(filterSql_));
 
   ctx()->send(WeightRequestMessage::make(weightedSegmentKeys_, weight, getQueryId(), name()), "SegmentCache")
     .map_error([](auto err) { throw std::runtime_error(err); });

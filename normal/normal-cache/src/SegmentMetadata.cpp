@@ -50,6 +50,15 @@ double SegmentMetadata::value() const {
   return value_;
 }
 
+double SegmentMetadata::avgValue() const {
+  return (hitNum_ == 0) ? 0.0 : value_ / ((double) hitNum_);
+}
+
+double SegmentMetadata::value2() const {
+  double hitPara = 0.05;
+  return hitPara * ((double) hitNum_) + value_;
+}
+
 void SegmentMetadata::addValue(double value) {
   value_ += value;
 }

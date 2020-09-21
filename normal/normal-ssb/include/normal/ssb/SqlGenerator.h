@@ -78,6 +78,7 @@ private:
   int genD_yearmonthnum();
   int genD_weeknuminyear();
   std::string genD_yearmonth();
+  std::string genD_dayofweek();
   int genLo_discount();
   int genLo_quantity();
   std::string genLo_predicate();

@@ -16,6 +16,9 @@ bool WFBRCachingPolicy::lessValue(const std::shared_ptr<SegmentKey> &key1, const
 //  }
 
   return (key1->getMetadata()->value()) < (key2->getMetadata()->value());
+//  return (key1->getMetadata()->value2()) < (key2->getMetadata()->value2());
+
+//  return (key1->getMetadata()->avgValue()) < (key2->getMetadata()->avgValue());
 
 //  auto value1 = (1.0 + key1->getMetadata()->value() / ((double) (1 + currentQueryId_))) * ((double) key1->getMetadata()->hitNum());
 //  auto value2 = (1.0 + key2->getMetadata()->value() / ((double) (1 + currentQueryId_))) * ((double) key2->getMetadata()->hitNum());
@@ -182,7 +185,7 @@ std::string WFBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keysInCache_.size() << std::endl;
   for (auto const &segmentKey: keysInCache_) {
-    ss << fmt::format("Key: {};\tValue: {}", segmentKey->toString(), segmentKey->getMetadata()->value()) << std::endl;
+    ss << fmt::format("Key: {};\tAvgValue: {}\tValue: {}Value2: {}\tHitNum: {}", segmentKey->toString(), segmentKey->getMetadata()->avgValue(), segmentKey->getMetadata()->value(), segmentKey->getMetadata()->value2(), segmentKey->getMetadata()->hitNum()) << std::endl;
   }
   ss << "Max size: " << maxSize_ << std::endl;
   ss << "Free size: " << freeSize_ << std::endl;

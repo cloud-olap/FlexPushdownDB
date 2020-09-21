@@ -180,7 +180,11 @@ int getPredicateNum(const std::shared_ptr<normal::expression::gandiva::Expressio
 }
 
 void Filter::sendSegmentWeight() {
-  double weight = ((double) filteredNumRows_) / ((double ) totalNumRows_) * (getPredicateNum(pred_->expression()));
+  double predicateNum = (double) getPredicateNum(pred_->expression());
+  double predPara = 0.5;
+
+  double weight = ((double) filteredNumRows_) / ((double ) totalNumRows_) * (predicateNum / (predicateNum + predPara));
+  //double weight = ((double) filteredNumRows_) / ((double ) totalNumRows_) * (predicateNum);
   ctx()->send(core::cache::WeightRequestMessage::make(weightedSegmentKeys_, weight, getQueryId(), name()), "SegmentCache")
           .map_error([](auto err) { throw std::runtime_error(err); });
 }

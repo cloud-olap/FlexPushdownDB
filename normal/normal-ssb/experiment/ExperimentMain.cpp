@@ -6,6 +6,9 @@
 #include <doctest/doctest.h>
 #include "normal/ssb/Globals.h"
 
+#define BACKWARD_HAS_BFD 1
+#include <backward.hpp>
+
 backward::SignalHandling sh;
 
 const char* getCurrentTestName() { return doctest::detail::g_cs->currentTest->m_name; }
