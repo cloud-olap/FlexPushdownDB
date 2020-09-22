@@ -28,6 +28,7 @@ private:
 public:
   long getProcessingTime() const;
   void incrementProcessingTime(long time);
+  bool running_ = false;
 public:
   OperatorActor(caf::actor_config &cfg, std::shared_ptr<Operator> opBehaviour);
 

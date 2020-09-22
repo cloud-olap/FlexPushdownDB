@@ -58,9 +58,12 @@ public:
   void onReceive(const Envelope &message) override;
 
 private:
+  // Column names to scan when scanOnStart_ is true
   std::optional<std::vector<std::string>> columnNames_;
   bool scanOnStart_;
   std::unique_ptr<S3SelectScanKernel> kernel_;
+  // Column names to scan when receiving a scanmessage
+  std::optional<std::vector<std::string>> columnNamesToScan_;
 
   [[nodiscard]] tl::expected<void, std::string> onStart();
   void onComplete(const CompleteMessage &message);

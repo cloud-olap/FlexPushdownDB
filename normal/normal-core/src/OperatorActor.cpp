@@ -40,10 +40,16 @@ caf::behavior behaviour(OperatorActor *self) {
 //                     msg.message().sender(),
 //                     msg.message().type());
 
-        if (msg.message().type() == "CompleteMessage") {
-          auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());
-          self->operator_()->ctx()->operatorMap().setComplete(msg.message().sender());
-        }
+		if (msg.message().type() == "CompleteMessage") {
+		  auto completeMessage = dynamic_cast<const message::CompleteMessage &>(msg.message());
+		  self->operator_()->ctx()->operatorMap().setComplete(msg.message().sender());
+		}
+		else if (msg.message().type() == "StartMessage") {
+		  self->running_ = true;
+		}
+		else if (msg.message().type() == "StopMessage") {
+		  self->running_ = false;
+		}
 
         self->operator_()->onReceive(msg);
 
