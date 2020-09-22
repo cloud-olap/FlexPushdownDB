@@ -114,7 +114,7 @@ void OperatorContext::notifyComplete() {
   // Send message to root actor
   operatorActor->send(rootActor_, e);
 
-  operatorActor->quit();
+//  operatorActor->quit();
 }
 
 } // namespace

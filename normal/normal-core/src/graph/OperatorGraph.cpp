@@ -87,6 +87,10 @@ void graph::OperatorGraph::join() {
 	  },
 	  handle_err);
 
+  for (const auto &element: operatorDirectory_) {
+	(*rootActor_)->send_exit(element.second.getOperatorContext().lock()->operatorActor(), caf::exit_reason::user_shutdown);
+  }
+
   stopTime_ = std::chrono::steady_clock::now();
 }
 
