@@ -11,6 +11,7 @@
 #include <normal/core/Operator.h>
 #include <normal/plan/operator_/type/OperatorType.h>
 #include <normal/plan/mode/Mode.h>
+#include <normal/cache/SegmentKey.h>
 
 namespace normal::plan::operator_ {
 
@@ -23,6 +24,8 @@ public:
   std::shared_ptr<type::OperatorType> type();
 
   virtual std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() = 0;
+
+  virtual std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> extractSegmentKeys();
 
   const std::string &getName() const;
   void setName(const std::string &Name);
