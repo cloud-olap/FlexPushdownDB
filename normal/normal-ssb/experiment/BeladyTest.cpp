@@ -6,14 +6,13 @@
 #include <normal/sql/Interpreter.h>
 #include <normal/ssb/TestUtil.h>
 #include <normal/pushdown/Collate.h>
-#include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
-#include <normal/connector/s3/S3SelectCatalogueEntry.h>
 #include <normal/pushdown/Util.h>
 #include <normal/plan/mode/Modes.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
+#include <normal/cache/BeladyCachingPolicy.h>
 #include "ExperimentUtil.h"
 #include <normal/ssb/SqlGenerator.h>
 #include <normal/plan/Globals.h>
@@ -24,6 +23,10 @@
 #define SKIP_SUITE false
 
 using namespace normal::ssb;
+
+// not the best solution, should make a header file down the road most likely but this will work for now
+void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix);
+std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics);
 
 size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::string queryColumn, long numBytes) {
   // operators
@@ -88,7 +91,7 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
 
   // get partitionNums
   auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
-  auto partitionNums = normal::connector::defaultMiniCatalogue->partitionNums();
+  auto partitionNums = normal::cache::beladyMiniCatalogue->partitionNums();
 
   for (auto const &partitionNumEntry: *partitionNums) {
     auto tableName = partitionNumEntry.first;
@@ -130,7 +133,7 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
     for (auto const &s3Object: *objects) {
       auto numBytes = objectNumBytes_Map.find(s3Object)->second;
 
-      auto columns = normal::connector::defaultMiniCatalogue->getColumnsOfTable(tableName);
+      auto columns = normal::cache::beladyMiniCatalogue->getColumnsOfTable(tableName);
       for (std::string column: *columns) {
         auto segmentInfo = std::make_shared<segment_info_t>();
         auto s3ObjectToNameMinusSchema = s3ObjectToS3ObjectMinusSchemaMap->find(s3Object);
@@ -156,55 +159,9 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
   }
 }
 
-void configureS3ConnectorMultiPartition2(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
-  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
-  auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
-
-  // get partitionNums
-  auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
-  auto partitionNums = normal::connector::defaultMiniCatalogue->partitionNums();
-  for (auto const &partitionNumEntry: *partitionNums) {
-    auto tableName = partitionNumEntry.first;
-    auto partitionNum = partitionNumEntry.second;
-    auto objects = std::make_shared<std::vector<std::string>>();
-    if (partitionNum == 1) {
-      objects->emplace_back(dir_prefix + tableName + ".tbl");
-      s3ObjectsMap->emplace(tableName, objects);
-    } else {
-      for (int i = 0; i < partitionNum; i++) {
-        objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
-      }
-      s3ObjectsMap->emplace(tableName, objects);
-    }
-  }
-
-  // look up tables
-  auto s3Objects = std::make_shared<std::vector<std::string>>();
-  for (auto const &s3ObjectPair: *s3ObjectsMap) {
-    auto objects = s3ObjectPair.second;
-    s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
-  }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
-
-  // configure s3Connector
-  for (auto const &s3ObjectPair: *s3ObjectsMap) {
-    auto tableName = s3ObjectPair.first;
-    auto objects = s3ObjectPair.second;
-    auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
-    for (auto const &s3Object: *objects) {
-      auto numBytes = objectNumBytes_Map.find(s3Object)->second;
-      partitioningScheme->add(std::make_shared<S3SelectPartition>(bucket_name, s3Object, numBytes));
-    }
-    cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
-  }
-  i.put(cat);
-}
-
-std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<std::set<int>>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
-generateSegmentKeyToSqlQueryMapping(normal::sql::Interpreter &i, int numQueries, filesystem::path sql_file_dir_path) {
-  // populate mapping of SegmentKey->[Query #s Segment is used in]
-  auto segmentKeysToInvolvedQueryNums = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<std::set<int>>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
-
+void generateSegmentKeyAndSqlQueryMappings(normal::sql::Interpreter &i, int numQueries, filesystem::path sql_file_dir_path) {
+  // populate mapping of SegmentKey->[Query #s Segment is used in] and
+  // QueryNumber->[Involved Segment Keys] and set these in the beladyMiniCatalogue
   for (auto queryNum = 1; queryNum <= numQueries; ++queryNum) {
     SPDLOG_INFO("processing segments in query {}", queryNum);
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", queryNum));
@@ -220,21 +177,12 @@ generateSegmentKeyToSqlQueryMapping(normal::sql::Interpreter &i, int numQueries,
     for (auto logicalOp: *logicalOperators) {
       auto involvedSegmentKeys = logicalOp->extractSegmentKeys();
       for (auto segmentKey: *involvedSegmentKeys) {
-        auto keyEntry = segmentKeysToInvolvedQueryNums->find(segmentKey);
-        if (keyEntry != segmentKeysToInvolvedQueryNums->end()) {
-          keyEntry->second->insert(queryNum);
-        } else {
-          // first time seeing this key, create a set entry for it
-          auto queryNumbers = std::make_shared<std::set<int>>();
-          queryNumbers->insert(queryNum);
-          segmentKeysToInvolvedQueryNums->emplace(segmentKey, queryNumbers);
-        }
+        normal::cache::beladyMiniCatalogue->addToSegmentQueryNumMappings(queryNum, segmentKey);
       }
     }
     i.getOperatorGraph().reset();
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
-  return segmentKeysToInvolvedQueryNums;
 }
 
 TEST_SUITE ("BeladyTests" * doctest::skip(SKIP_SUITE)) {
@@ -247,38 +195,69 @@ TEST_CASE ("GenerateBeladyMetadataExperiment" * doctest::skip(false || SKIP_SUIT
   // Only run this if you want to generate new Belady metadata.
 //  generateBeladyMetadata(bucket_name, dir_prefix);
 
-  const int warmBatchSize = 0, executeBatchSize = 100;
-  const size_t cacheSize = 1024*1024*1024;
+  // Use these values when running experiments
+//  const int warmBatchSize = 50, executeBatchSize = 50;
+//  const size_t cacheSize = 1024*1024*1024;
+  // Temporary values to use when running smaller experiments for small changes
+  const int warmBatchSize = 20, executeBatchSize = 20;
+  const size_t cacheSize = 30*1024*1024;
 
   auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
-  // TODO: modify this to use BeladyCachingPolicy once implemented
   auto lru = LRUCachingPolicy::make(cacheSize, mode);
   auto fbr = FBRCachingPolicy::make(cacheSize, mode);
+  auto belady = BeladyCachingPolicy::make(cacheSize, mode);
+
+  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
 
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
-  normal::sql::Interpreter i(mode, fbr);
-  configureS3ConnectorMultiPartition2(i, bucket_name, dir_prefix);
+  normal::sql::Interpreter i(mode, belady);
+  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
   i.boot();
 
-  // get mapping of SegmentKey->[Query #s Segment is used in] and set this in the defaultMiniCatalogue
-  auto segmentKeysToInvolvedQueryNums = generateSegmentKeyToSqlQueryMapping(i, warmBatchSize + executeBatchSize, sql_file_dir_path);
-  normal::connector::defaultMiniCatalogue->setSegmentKeysToInvolvedQueryNums(segmentKeysToInvolvedQueryNums);
+  // populate mapping of SegmentKey->[Query #s Segment is used in] and
+  // QueryNumber->[Involved Segment Keys] and set these in the beladyMiniCatalogue
+  generateSegmentKeyAndSqlQueryMappings(i, warmBatchSize + executeBatchSize, sql_file_dir_path);
+  belady->generateCacheDecisions(warmBatchSize + executeBatchSize);
 
+  for (auto index = 1; index <= warmBatchSize; ++index) {
+    normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
+    SPDLOG_INFO("sql {}", index);
+    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    executeSql(i, sql, false);
+    sql_file_dir_path = sql_file_dir_path.parent_path();
+  }
+  SPDLOG_INFO("Cache warm phase finished");
 
+  i.getOperatorManager()->clearCacheMetrics();
 
-//  std::cout << "\n\nPRINT MAPPING OF segmentKey to Query Numbers\n\n";
-//
-//  for (auto segmentKeyToQueries: *segmentKeysToInvolvedQueryNums) {
-//    std::cout << segmentKeyToQueries.first->toString() << " -> ";
-//    for (int queryNum: *segmentKeyToQueries.second) {
-//      std::cout << queryNum << ", ";
-//    }
-//    std::cout << "\n";
-//  }
+  SPDLOG_INFO("Execution phase:");
+  for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
+    normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
+    SPDLOG_INFO("sql {}", index - warmBatchSize);
+    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    executeSql(i, sql, true);
+    sql_file_dir_path = sql_file_dir_path.parent_path();
+  }
+  SPDLOG_INFO("Execution phase finished");
 
+  SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
+  SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+
+  auto metricsFilePath = filesystem::current_path().append("metrics");
+  std::ofstream fout(metricsFilePath.string());
+  fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
+  fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
+  fout.flush();
+  fout.close();
+
+  i.getOperatorGraph().reset();
+  i.stop();
+  SPDLOG_INFO("Memory allocated finally: {}", arrow::default_memory_pool()->bytes_allocated());
 }
 
 }

@@ -18,6 +18,7 @@ normal::connector::MiniCatalogue::MiniCatalogue(
         const std::shared_ptr<std::unordered_map<std::string, int>> &columnLengthMap,
         const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
                           SegmentKeyPointerHash, SegmentKeyPointerPredicate>> &segmentKeyToSize,
+        const std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> &queryNumToInvolvedSegments,
         const std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
                           cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> &segmentKeysToInvolvedQueryNums,
         const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder,
@@ -27,12 +28,12 @@ normal::connector::MiniCatalogue::MiniCatalogue(
         schemas_(schemas),
         columnLengthMap_(columnLengthMap),
         segmentKeyToSize_(segmentKeyToSize),
+        queryNumToInvolvedSegments_(queryNumToInvolvedSegments),
         segmentKeysToInvolvedQueryNums_(segmentKeysToInvolvedQueryNums),
         defaultJoinOrder_(defaultJoinOrder),
         sortedColumns_(sortedColumns) {
-  // initialize this as an empty map that can be set to a populated map later if necessary
-//  segmentKeysToInvolvedQueryNums_ = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<std::set<int>>,
-//  SegmentKeyPointerHash, SegmentKeyPointerPredicate>>()
+  // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
+  currentQueryNum_ = 1;
 }
 
 std::vector<std::string> split(std::string str, std::string splitStr) {
@@ -163,6 +164,9 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   }
   sortedColumns->emplace("lo_orderdate", sortedValues);
 
+  // initialize this as empty and populate it if necessary
+  auto queryNumToInvolvedSegments = std::make_shared<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>>();
+
   // segmentKey to size
   auto segmentKeyToSize = readMetadataSegmentInfo(s3Bucket, schemaName);
 
@@ -170,7 +174,7 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   auto segmentKeysToInvolvedQueryNums = std::make_shared<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
                           cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>();
 
-  return std::make_shared<MiniCatalogue>(partitionNums, schemas, columnLengthMap, segmentKeyToSize, segmentKeysToInvolvedQueryNums, defaultJoinOrder, sortedColumns);
+  return std::make_shared<MiniCatalogue>(partitionNums, schemas, columnLengthMap, segmentKeyToSize, queryNumToInvolvedSegments, segmentKeysToInvolvedQueryNums, defaultJoinOrder, sortedColumns);
 }
 
 const std::shared_ptr<std::unordered_map<std::string, int>> &normal::connector::MiniCatalogue::partitionNums() const {
@@ -211,9 +215,39 @@ size_t normal::connector::MiniCatalogue::getSegmentSize(std::shared_ptr<cache::S
   return segmentKeyToSize_->at(segmentKey);
 }
 
-void normal::connector::MiniCatalogue::setSegmentKeysToInvolvedQueryNums(std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
-  cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums) {
-  segmentKeysToInvolvedQueryNums_ = segmentKeysToInvolvedQueryNums;
+// Used to populate the queryNumToInvolvedSegments_ and segmentKeysToInvolvedQueryNums_ mappings
+void normal::connector::MiniCatalogue::addToSegmentQueryNumMappings(int queryNum, std::shared_ptr<cache::SegmentKey> segmentKey) {
+  auto queryNumKeyEntry = queryNumToInvolvedSegments_->find(queryNum);
+  if (queryNumKeyEntry != queryNumToInvolvedSegments_->end()) {
+    queryNumKeyEntry->second->emplace_back(segmentKey);
+  } else {
+    // first time seeing this queryNum, create a map entry for it
+    auto segmentKeys = std::make_shared<std::vector<std::shared_ptr<cache::SegmentKey>>>();
+    segmentKeys->emplace_back(segmentKey);
+    queryNumToInvolvedSegments_->emplace(queryNum, segmentKeys);
+  }
+
+  auto segmentKeyEntry = segmentKeysToInvolvedQueryNums_->find(segmentKey);
+  if (segmentKeyEntry != segmentKeysToInvolvedQueryNums_->end()) {
+    segmentKeyEntry->second->insert(queryNum);
+  } else {
+    // first time seeing this key, create a map entry for it
+    auto queryNumbers = std::make_shared<std::set<int>>();
+    queryNumbers->insert(queryNum);
+    segmentKeysToInvolvedQueryNums_->emplace(segmentKey, queryNumbers);
+  }
+}
+
+// Throws runtime exception if queryNum not present, which ensures failing fast in case of queryNum not being present
+// If use cases of this method expand we can change this if necessary.
+std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> normal::connector::MiniCatalogue::getSegmentsInQuery(int queryNum) {
+  auto key = queryNumToInvolvedSegments_->find(queryNum);
+  if (key != queryNumToInvolvedSegments_->end()) {
+    return key->second;
+  }
+  // we must not have populated this queryNum->[segments used] mapping for this queryNum,
+  // throw an error as we should have never called this then
+  throw std::runtime_error("Error, " + std::to_string(queryNum) + " not populated in segmentKeysToInvolvedQueryNums_ in MiniCatalogue.cpp");
 }
 
 // Return the next query that this segmentKey is used in, if not used again according to the
@@ -257,4 +291,12 @@ std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::tabl
     tables->emplace_back(schema.first);
   }
   return tables;
+}
+
+void normal::connector::MiniCatalogue::setCurrentQueryNum(int queryNum) {
+  currentQueryNum_ = queryNum;
+}
+
+int normal::connector::MiniCatalogue::getCurrentQueryNum() {
+  return currentQueryNum_;
 }
