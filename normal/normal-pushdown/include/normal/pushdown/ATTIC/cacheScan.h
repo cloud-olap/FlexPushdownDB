@@ -22,7 +22,7 @@ namespace normal::pushdown {
 
 
     public:
-        cacheScan(std::string name, std::string cacheID, std::shared_ptr<Cache> cache);
+        cacheScan(std::string name, std::string cacheID, std::shared_ptr<Cache> cache, long queryId = 0);
         ~cacheScan() override;
     };
 

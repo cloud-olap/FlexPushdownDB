@@ -4,15 +4,17 @@
 
 #include "normal/core/cache/SegmentCacheActor.h"
 #include <normal/cache/Globals.h>
+#include <normal/cache/WFBRCachingPolicy.h>
 
+using namespace normal::cache;
 using namespace normal::core::cache;
 
 SegmentCacheActor::SegmentCacheActor(const std::string &Name) :
-	Operator(Name, "SegmentCache"),
+	Operator(Name, "SegmentCache", 0),
 	state_(make()) {}
 
 SegmentCacheActor::SegmentCacheActor(const std::string &Name, const std::shared_ptr<CachingPolicy>& cachingPolicy) :
-        Operator(Name, "SegmentCache"),
+        Operator(Name, "SegmentCache", 0),
         state_(make(cachingPolicy)) {}
 
 void SegmentCacheActor::onReceive(const Envelope &message) {
@@ -25,6 +27,9 @@ void SegmentCacheActor::onReceive(const Envelope &message) {
   } else if (message.message().type() == "EvictRequestMessage") {
 	auto evictMessage = dynamic_cast<const EvictRequestMessage &>(message.message());
 	evict(evictMessage);
+  } else if (message.message().type() == "WeightRequestMessage") {
+  auto weightMessage = dynamic_cast<const WeightRequestMessage &>(message.message());
+  weight(weightMessage);
   } else if (message.message().type() == "StartMessage") {
 	auto startMessage = dynamic_cast<const StartMessage &>(message.message());
 	// NOOP
@@ -81,6 +86,14 @@ void SegmentCacheActor::store(const StoreRequestMessage &msg) {
 void SegmentCacheActor::evict(const EvictRequestMessage &msg) {
   SPDLOG_DEBUG("Evict  |  evictMessage: {}", msg.toString());
   throw std::runtime_error("Cache eviction not implemented");
+}
+
+void SegmentCacheActor::weight(const WeightRequestMessage &msg) {
+  auto cachingPolicy = state_->cache->getCachingPolicy();
+  if (cachingPolicy->id() == WFBR) {
+    auto fbrCachingPolicy = std::static_pointer_cast<WFBRCachingPolicy>(cachingPolicy);
+    fbrCachingPolicy->onWeight(msg.getSegmentKeys(), msg.getWeight(), msg.getQueryId());
+  }
 }
 
 const std::shared_ptr<SegmentCacheActorState> &SegmentCacheActor::getState() const {

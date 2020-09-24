@@ -39,3 +39,11 @@ void LogicalOperator::setMode(const std::shared_ptr<normal::plan::operator_::mod
 const std::shared_ptr<normal::plan::operator_::mode::Mode> &LogicalOperator::getMode() const {
   return mode_;
 }
+
+void LogicalOperator::setQueryId(long queryId) {
+  queryId_ = queryId;
+}
+
+long LogicalOperator::getQueryId() const {
+  return queryId_;
+}

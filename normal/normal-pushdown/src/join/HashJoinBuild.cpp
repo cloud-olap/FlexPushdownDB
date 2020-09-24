@@ -16,8 +16,8 @@ using namespace normal::pushdown::join;
 using namespace normal::tuple;
 using namespace normal::core;
 
-HashJoinBuild::HashJoinBuild(const std::string &name, std::string columnName) :
-	Operator(name, "HashJoinBuild"),
+HashJoinBuild::HashJoinBuild(const std::string &name, std::string columnName, long queryId) :
+	Operator(name, "HashJoinBuild", queryId),
 	columnName_(std::move(columnName)),
 	kernel_(HashJoinBuildKernel2::make(columnName_)){
 }

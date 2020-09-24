@@ -37,7 +37,14 @@ public:
    * The following is used to generate skew benchmark
    */
   std::vector<std::string> generateSqlBatchSkew(int batchSize);
-  std::string generateSqlSkew(std::string queryName, std::string lo_predicate);
+  std::string generateSqlSkew(std::string queryName, std::string skewLo_predicate);
+
+  /**
+   * The following is used to generate skew benchmark + skew column selectivity (weight)
+   * Currently a simple one: 2 high-selectivity columns and 2 low-selectivity columns in lineorder
+   */
+  std::vector<std::string> generateSqlBatchSkewWeight(int batchSize);
+  std::string generateSqlSkewWeight(std::string queryName, std::string skewLo_predicate, bool high);
 
 private:
   std::shared_ptr<std::default_random_engine> generator_;
@@ -75,16 +82,21 @@ private:
   /**
    * The following is used to generate skew benchmark
    */
-  std::string genSkewQuery2_1(std::string skewLo_predicate);
-  std::string genSkewQuery2_2(std::string skewLo_predicate);
-  std::string genSkewQuery2_3(std::string skewLo_predicate);
-  std::string genSkewQuery3_1(std::string skewLo_predicate);
-  std::string genSkewQuery3_2(std::string skewLo_predicate);
-  std::string genSkewQuery3_3(std::string skewLo_predicate);
-  std::string genSkewQuery3_4(std::string skewLo_predicate);
-  std::string genSkewQuery4_1(std::string skewLo_predicate);
-  std::string genSkewQuery4_2(std::string skewLo_predicate);
-  std::string genSkewQuery4_3(std::string skewLo_predicate);
+  std::string genSkewQuery2_1(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery2_2(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery2_3(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery3_1(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery3_2(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery3_3(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery3_4(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery4_1(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery4_2(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+  std::string genSkewQuery4_3(std::string skewLo_predicate, std::string lo_predicate, std::string aggColumn);
+
+  /**
+   * The following is used to generate skew benchmark with column selectivity
+   */
+  std::string genLo_predicate(bool high);
 };
 
 }

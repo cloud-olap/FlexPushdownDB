@@ -28,7 +28,10 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> GroupLogic
     }
 
     // FIXME: Defaulting to name -> group
-    auto group = std::make_shared<normal::pushdown::group::Group>(fmt::format("group-{}", index), *groupColumnNames_, expressions);
+    auto group = std::make_shared<normal::pushdown::group::Group>(fmt::format("group-{}", index),
+                                                                  *groupColumnNames_,
+                                                                  expressions,
+                                                                  getQueryId());
     operators->emplace_back(group);
   }
 
@@ -38,7 +41,10 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> GroupLogic
     for (const auto &function: *functions_) {
       reduceExpressions->emplace_back(function->toExecutorReduceFunction());
     }
-    auto groupReduce = std::make_shared<normal::pushdown::group::Group>("groupReduce", *groupColumnNames_, reduceExpressions);
+    auto groupReduce = std::make_shared<normal::pushdown::group::Group>("groupReduce",
+                                                                        *groupColumnNames_,
+                                                                        reduceExpressions,
+                                                                        getQueryId());
 
     // wire up internally
     for (const auto &group: *operators) {

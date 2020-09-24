@@ -82,4 +82,8 @@ std::string LRUCachingPolicy::showCurrentLayout() {
   return ss.str();
 }
 
+CachingPolicyId LRUCachingPolicy::id() {
+  return LRU;
+}
+
 

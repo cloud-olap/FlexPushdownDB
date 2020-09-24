@@ -43,8 +43,7 @@ namespace arrow { class MemoryPool; }
 namespace normal::pushdown {
 
 FileScan::FileScan(std::string name, const std::string& filePath, long queryId) :
-	Operator(std::move(name), "FileScan"),
-	queryId_(queryId),
+	Operator(std::move(name), "FileScan", queryId),
 	scanOnStart_(true),
 	kernel_(FileScanKernel::make(filePath, FileType::CSV, 0, ULONG_MAX)){}
 
@@ -54,10 +53,9 @@ FileScan::FileScan(std::string name,
 				   std::vector<std::string>  columnNames,
 				   unsigned long startOffset,
 				   unsigned long finishOffset,
-				   long queryId,
-				   bool scanOnStart) :
-	Operator(std::move(name), "FileScan"),
-	queryId_(queryId),
+				   bool scanOnStart,
+				   long queryId) :
+	Operator(std::move(name), "FileScan", queryId),
 	scanOnStart_(scanOnStart),
 	columnNames_(std::move(columnNames)),
 	kernel_(FileScanKernel::make(filePath, fileType, startOffset, finishOffset)){}
@@ -66,8 +64,9 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 										 const std::string& filePath,
 										 const std::vector<std::string>& columnNames,
 										 unsigned long startOffset,
-										 unsigned long finishOffset, long queryId,
-										 bool scanOnStart) {
+										 unsigned long finishOffset,
+										 bool scanOnStart,
+										 long queryId) {
 
   auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
@@ -77,8 +76,8 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 									canonicalColumnNames,
 									startOffset,
 									finishOffset,
-									queryId,
-									scanOnStart);
+									scanOnStart,
+									queryId);
 }
 
 std::shared_ptr<FileScan> FileScan::make(const std::string& name,
@@ -86,8 +85,9 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 										 FileType fileType,
 										 const std::vector<std::string>& columnNames,
 										 unsigned long startOffset,
-										 unsigned long finishOffset, long queryId,
-										 bool scanOnStart) {
+										 unsigned long finishOffset,
+										 bool scanOnStart,
+										 long queryId) {
 
   auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
@@ -97,8 +97,8 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 									canonicalColumnNames,
 									startOffset,
 									finishOffset,
-									queryId,
-									scanOnStart);
+									scanOnStart,
+									queryId);
 }
 
 void FileScan::onReceive(const Envelope &message) {

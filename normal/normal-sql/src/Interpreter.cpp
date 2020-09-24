@@ -51,12 +51,15 @@ void Interpreter::parse(const std::string &sql) {
   // TODO: Perhaps support multiple statements in future
   logicalPlan_ = logicalPlans->at(0);
 
-  // Set mode
+  // Set mode and queryId
+  auto queryId = operatorGraph_->getId();
   for (auto const &logicalOperator: *logicalPlan_->getOperators()) {
     logicalOperator->setMode(mode_);
+    logicalOperator->setQueryId(queryId);
   }
 
   // Create physical plan
+  plan::Planner::setQueryId(queryId);
   std::shared_ptr<plan::PhysicalPlan> physicalPlan;
   physicalPlan = plan::Planner::generate(*logicalPlan_, mode_);
 

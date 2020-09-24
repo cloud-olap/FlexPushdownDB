@@ -20,9 +20,9 @@ namespace normal::pushdown::shuffle {
 class Shuffle : public Operator {
 
 public:
-  Shuffle(const std::string &Name, std::string ColumnName);
+  Shuffle(const std::string &Name, std::string ColumnName, long queryId);
 
-  static std::shared_ptr<Shuffle> make(const std::string &Name, const std::string& ColumnName);
+  static std::shared_ptr<Shuffle> make(const std::string &Name, const std::string& ColumnName, long queryId = 0);
 
   /**
    * Operators message handler
