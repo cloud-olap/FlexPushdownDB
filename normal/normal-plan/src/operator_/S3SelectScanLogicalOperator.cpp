@@ -578,3 +578,79 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
   return operators;
 }
 
+// Extract the segmentKeys that are to be scanned in this query, this information is needed for the
+// Belady caching algorithm
+std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> S3SelectScanLogicalOperator::extractSegmentKeys() {
+  auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+  auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
+  std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
+
+  if (predicate_) {
+    // predicate column names
+    predicateColumnNames = predicate_->involvedColumnNames();
+
+    // simpleCast
+    filterPredicate = filter::FilterPredicate::make(predicate_);
+    filterPredicate->simpleCast(filterPredicate->expression());
+  }
+
+  auto allColumnNames = std::make_shared<std::vector<std::string>>();
+  allColumnNames->insert(allColumnNames->end(), projectedColumnNames_->begin(), projectedColumnNames_->end());
+  allColumnNames->insert(allColumnNames->end(), predicateColumnNames->begin(), predicateColumnNames->end());
+  auto columnNameSet = std::make_shared<std::set<std::string>>(allColumnNames->begin(), allColumnNames->end());
+  // use set to remove duplicates
+  allColumnNames->assign(columnNameSet->begin(), columnNameSet->end());
+
+  /**
+   * Examine range of each partition, and create corresponding segment keys
+   */
+  auto involvedSegmentKeys = std::make_shared<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>();
+
+  for (const auto &partition: *validPartitions_) {
+    auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
+    auto numBytes = s3Partition->getNumBytes();
+    auto segmentRange = SegmentRange::make(0, numBytes);
+    for (auto column : *allColumnNames) {
+      auto segmentKey = SegmentKey::make(s3Partition, column, segmentRange);
+      involvedSegmentKeys->emplace_back(segmentKey);
+    }
+
+  }
+
+  return involvedSegmentKeys;
+}
+
+//    int rangeId = 0;
+//    for (const auto &scanRange: scanRanges) {
+//      // S3Scan
+//      auto scanOp = S3SelectScan::make(
+//              "s3scan - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+//              s3Partition->getBucket(),
+//              s3Object,
+//              "",
+//              *allColumnNames,
+//              scanRange.first,
+//              scanRange.second,
+//              S3SelectCSVParseOptions(",", "\n"),
+//              DefaultS3Client,
+//              true,
+//              false);
+//      operators->emplace_back(scanOp);
+//
+//      // Filter if it has filterPredicate
+//      if (predicate_) {
+//        auto filter = filter::Filter::make(
+//                fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
+//                filterPredicate);
+//        operators->emplace_back(filter);
+//        streamOutPhysicalOperators_->emplace_back(filter);
+//
+//        scanOp->produce(filter);
+//        filter->consume(scanOp);
+//      } else {
+//        streamOutPhysicalOperators_->emplace_back(scanOp);
+//      }
+//
+//      rangeId++;
+//    }
+//  }
