@@ -36,6 +36,8 @@ public:
 
   void generateCacheDecisions(int numQueries);
 
+  CachingPolicyId id() override;
+
 private:
   std::vector<std::shared_ptr<SegmentKey>> keysInCache_;
   // TODO: Change to these to be sets of SegmentKey or some more efficient data structure

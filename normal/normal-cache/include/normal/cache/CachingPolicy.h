@@ -16,7 +16,8 @@ namespace normal::cache {
 enum CachingPolicyId {
   LRU,
   FBR,
-  WFBR
+  WFBR,
+  BELADY
 };
 
 class CachingPolicy {

@@ -27,10 +27,10 @@ bool lessKeyValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_pt
     return key1Size < key2Size;
   } else if (key1NextUse == -1 || key2NextUse < key1NextUse) {
     return true;
-  } else { // (key2NextUse == -1 || key1NextUse < key2NextUse)
-    assert(key2NextUse == -1 || key1NextUse < key2NextUse);
+  } else if(key2NextUse == -1 || key1NextUse < key2NextUse) {
     return false;
   }
+  throw std::runtime_error("Error, lessKeyValue reached code that should not be reachable");
 }
 
 BeladyCachingPolicy::BeladyCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
@@ -54,7 +54,9 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
   auto segmentSize = key->getMetadata()->size();
   // make sure segmentSize within 1% of our expected size, if not then something went wrong
-  assert(abs((int) (segmentSize - beladyMiniCatalogue->getSegmentSize(key))) < abs((int) (segmentSize * 0.01)));
+  if (abs((int) (segmentSize - beladyMiniCatalogue->getSegmentSize(key))) < abs((int) (segmentSize * 0.01))) {
+    throw std::runtime_error("Error, segment has wrong size when compared to expected size");
+  }
   if (maxSize_ < segmentSize) {
     return std::nullopt;
   }
@@ -86,7 +88,9 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
   freeSize_ -= segmentSize;
 
   // Make sure we never use more than our cache size
-  assert(freeSize_ > 0);
+  if (freeSize_ < 0) {
+    throw std::runtime_error("Error, freeSize_ < 0, is: " + std::to_string(freeSize_));
+  }
 
   return std::optional(removableKeys);
 }
@@ -140,7 +144,9 @@ void assertNoDuplicateSegmentKeys(std::shared_ptr<std::vector<std::shared_ptr<Se
     for (int j = i + 1; j < segmentKeys->size(); j++) {
       auto key1 = segmentKeys->at(i);
       auto key2 = segmentKeys->at(j);
-      assert(*key1 != *key2);
+      if (*key1 != *key2) {
+        throw std::runtime_error("Error, identical keys present when generating caching decisions");
+      }
     }
   }
 }
@@ -187,4 +193,8 @@ void BeladyCachingPolicy::generateCacheDecisions(int numQueries) {
     }
     queryNumToKeysInCache_.emplace(queryNum, keysInCache);
   }
+}
+
+CachingPolicyId BeladyCachingPolicy::id() {
+  return BELADY;
 }
