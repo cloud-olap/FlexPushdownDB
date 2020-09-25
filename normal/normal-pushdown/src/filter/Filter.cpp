@@ -14,6 +14,7 @@
 #include <normal/core/cache/WeightRequestMessage.h>
 #include <normal/expression/gandiva/And.h>
 #include <normal/expression/gandiva/Or.h>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::pushdown::filter;
 using namespace normal::core;
@@ -180,7 +181,42 @@ int getPredicateNum(const std::shared_ptr<normal::expression::gandiva::Expressio
 }
 
 void Filter::sendSegmentWeight() {
-  double weight = ((double) filteredNumRows_) / ((double ) totalNumRows_) * (getPredicateNum(pred_->expression()));
-  ctx()->send(core::cache::WeightRequestMessage::make(weightedSegmentKeys_, weight, getQueryId(), name()), "SegmentCache")
+  auto selectivity = ((double) filteredNumRows_) / ((double ) totalNumRows_);
+  double predicateNum = (double) getPredicateNum(pred_->expression());
+
+  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
+
+  if (!RefinedWeightFunction) {
+    /**
+     * Naive weight function:
+     *   w = sel * (#pred / (#pred + c))
+     */
+    double predPara = 0.5;
+    double weight = selectivity * (predicateNum / (predicateNum + predPara));
+//    double weight = selectivity * predicateNum;
+
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  else {
+    /**
+     * Refined weight function:
+     *   w = sel / vNetwork + lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)
+     */
+    auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      auto columnName = segmentKey->getColumnName();
+      auto tableName = miniCatalogue->findTableOfColumn(columnName);
+      auto lenCol = (double) miniCatalogue->lengthOfColumn(columnName);
+      auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
+
+      auto weight = selectivity / vNetwork + lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter);
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  ctx()->send(core::cache::WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
           .map_error([](auto err) { throw std::runtime_error(err); });
 }

@@ -7,7 +7,7 @@
 
 #include <normal/core/message/Message.h>
 #include <normal/cache/SegmentKey.h>
-#include <vector>
+#include <unordered_map>
 
 using namespace normal::cache;
 using namespace normal::core::message;
@@ -15,28 +15,24 @@ using namespace normal::core::message;
 namespace normal::core::cache {
 
 /**
- * A message to cache of segment metadata
+ * A message to update segment weights
  */
 class WeightRequestMessage : public Message {
 
 public:
-  WeightRequestMessage(const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> &segmentKeys,
-                       double weight,
+  WeightRequestMessage(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap,
                        long queryId,
                        const std::string &sender);
 
-  static std::shared_ptr<WeightRequestMessage> make(const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> &segmentKeys,
-                                                    double weight,
+  static std::shared_ptr<WeightRequestMessage> make(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap,
                                                     long queryId,
                                                     const std::string &sender);
 
-  const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> &getSegmentKeys() const;
-  double getWeight() const;
+  const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &getWeightMap() const;
   long getQueryId() const;
 
 private:
-  std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys_;
-  double weight_;
+  std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> weightMap_;
   long queryId_;
 };
 
