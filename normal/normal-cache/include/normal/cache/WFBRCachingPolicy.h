@@ -19,7 +19,7 @@ public:
   static std::shared_ptr<WFBRCachingPolicy> make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
-  void onWeight(const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> &segmentKeys, double weight, long queryId);
+  void onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap, long queryId);
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;

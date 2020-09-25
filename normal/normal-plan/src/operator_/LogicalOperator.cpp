@@ -12,6 +12,10 @@ std::shared_ptr<type::OperatorType> LogicalOperator::type() {
   return type_;
 }
 
+std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> LogicalOperator::extractSegmentKeys() {
+  return std::make_shared<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>();
+}
+
 const std::string &LogicalOperator::getName() const {
   return name_;
 }

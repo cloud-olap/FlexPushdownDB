@@ -16,7 +16,8 @@ add_library(normal-cache STATIC
         src/SegmentMetadata.cpp include/normal/cache/SegmentMetadata.h
         src/FBRCachingPolicy.cpp include/normal/cache/FBRCachingPolicy.h
         src/Globals.cpp 
-        src/WFBRCachingPolicy.cpp include/normal/cache/WFBRCachingPolicy.h)
+        src/WFBRCachingPolicy.cpp include/normal/cache/WFBRCachingPolicy.h
+        src/BeladyCachingPolicy.cpp include/normal/cache/BeladyCachingPolicy.h)
 
 target_include_directories(normal-cache PUBLIC include)
 

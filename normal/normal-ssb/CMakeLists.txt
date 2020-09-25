@@ -165,7 +165,8 @@ add_executable(normal-ssb-experiment
         experiment/Tests.cpp
         experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h
         experiment/HardcodedPlanTestSinglePartition.cpp
-        experiment/HardcodedPlanTestMultiPartition.cpp)
+        experiment/HardcodedPlanTestMultiPartition.cpp
+        experiment/SqliteTest.cpp experiment/BeladyTest.cpp)
 #        experiment/SqliteTest.cpp)
 
 target_link_libraries(normal-ssb-experiment doctest::doctest)
@@ -198,6 +199,11 @@ configure_file(metadata/ssb-sf1-sortlineorder/sort/lineorder_orderdate ${CMAKE_C
 configure_file(metadata/ssb-sf1-sortlineorder/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/column_length COPYONLY)
 configure_file(metadata/ssb-sf1-sortlineorder/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/schemas COPYONLY)
 configure_file(metadata/ssb-sf1-sortlineorder/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/partitionNums COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/csv/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/csv/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/column_length COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/csv/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/schemas COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/csv/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/partitionNums COPYONLY)
+configure_file(metadata/ssb-sf1-sortlineorder/csv/segment_info ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/segment_info COPYONLY)
 
 configure_file(metadata/ssb-sf10-sortlineorder/csv/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf10-sortlineorder/csv/sort/lineorder_orderdate COPYONLY)
 configure_file(metadata/ssb-sf10-sortlineorder/csv/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf10-sortlineorder/csv/column_length COPYONLY)
