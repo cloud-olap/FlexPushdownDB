@@ -92,7 +92,7 @@ void SegmentCacheActor::weight(const WeightRequestMessage &msg) {
   auto cachingPolicy = state_->cache->getCachingPolicy();
   if (cachingPolicy->id() == WFBR) {
     auto fbrCachingPolicy = std::static_pointer_cast<WFBRCachingPolicy>(cachingPolicy);
-    fbrCachingPolicy->onWeight(msg.getSegmentKeys(), msg.getWeight(), msg.getQueryId());
+    fbrCachingPolicy->onWeight(msg.getWeightMap(), msg.getQueryId());
   }
 }
 

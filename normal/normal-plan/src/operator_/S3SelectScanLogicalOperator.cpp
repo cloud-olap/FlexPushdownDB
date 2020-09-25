@@ -308,7 +308,6 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
     int rangeId = 0;
     for (const auto &scanRange: scanRanges) {
       // weighted segment keys
-      // weighted segment keys
       auto weightedSegmentKeys = std::make_shared<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>();
       for (auto const &projectedColumnName: *projectedColumnNames_) {
         weightedSegmentKeys->emplace_back(normal::cache::SegmentKey::make(s3Partition, projectedColumnName,

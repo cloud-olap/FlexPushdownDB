@@ -368,22 +368,50 @@ int getPredicateNum(std::string &filterSql) {
 }
 
 void S3SelectScan::sendSegmentWeight() {
-  double filteredBytes = (double) returnedBytes_;
-
+  auto filteredBytes = (double) returnedBytes_;
   double projectFraction = 0.0;
   auto miniCatalogue = normal::connector::defaultMiniCatalogue;
   for (auto const &columnName: columnNames_) {
     projectFraction += miniCatalogue->lengthFraction(columnName);
   }
   double totalBytes = projectFraction * ((double) processedBytes_);
+  auto selectivity = filteredBytes / totalBytes;
   double predicateNum = (double) getPredicateNum(filterSql_);
-  double predPara = 0.5;
 
-  double weight = filteredBytes / totalBytes * (predicateNum / (predicateNum + predPara));
-  //double weight = filteredBytes / totalBytes * ((double) getPredicateNum(filterSql_));
+  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
 
-  ctx()->send(WeightRequestMessage::make(weightedSegmentKeys_, weight, getQueryId(), name()), "SegmentCache")
-    .map_error([](auto err) { throw std::runtime_error(err); });
+  if (!RefinedWeightFunction) {
+    /**
+     * Naive weight function:
+     *   w = sel * (#pred / (#pred + c))
+     */
+    double predPara = 0.5;
+    double weight = selectivity * (predicateNum / (predicateNum + predPara));
+//    double weight = selectivity * predicateNum;
+
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  else {
+    /**
+     * Refined weight function:
+     *   w = sel / vNetwork + lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)
+     */
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      auto columnName = segmentKey->getColumnName();
+      auto tableName = miniCatalogue->findTableOfColumn(columnName);
+      auto lenCol = (double) miniCatalogue->lengthOfColumn(columnName);
+      auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
+
+      auto weight = selectivity / vNetwork + lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter);
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  ctx()->send(WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
+          .map_error([](auto err) { throw std::runtime_error(err); });
 }
 
 }

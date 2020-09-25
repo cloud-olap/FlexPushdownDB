@@ -43,7 +43,7 @@ void WFBRCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
   }
 }
 
-void WFBRCachingPolicy::onWeight(const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> &segmentKeys, double weight, long queryId) {
+void WFBRCachingPolicy::onWeight(const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, double>> &weightMap, long queryId) {
   // if new query executes, clear temporary weight updated keys
   if (queryId > currentQueryId_) {
     weightUpdatedKeys_.clear();
@@ -51,7 +51,9 @@ void WFBRCachingPolicy::onWeight(const std::shared_ptr<std::vector<std::shared_p
   }
 
   // update value using weight
-  for (auto const &segmentKey: *segmentKeys) {
+  for (auto const &weightEntry: *weightMap) {
+    auto segmentKey = weightEntry.first;
+    auto weight = weightEntry.second;
     if (weightUpdatedKeys_.find(segmentKey) == weightUpdatedKeys_.end()) {
       std::shared_ptr<SegmentKey> realKey;
       auto keyEntry = keySet_.find(segmentKey);

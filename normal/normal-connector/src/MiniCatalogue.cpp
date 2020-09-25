@@ -7,6 +7,7 @@
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <experimental/filesystem>
 #include <fstream>
+#include <utility>
 #include <iostream>
 #include <normal/cache/SegmentKey.h>
 
@@ -35,8 +36,30 @@ normal::connector::MiniCatalogue::MiniCatalogue(
   // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
   currentQueryNum_ = 1;
 }
+        std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
+        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas,
+        std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
+        std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
+        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
+                std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns) :
+        partitionNums_(std::move(partitionNums)),
+        schemas_(std::move(schemas)),
+        columnLengthMap_(std::move(columnLengthMap)),
+        defaultJoinOrder_(std::move(defaultJoinOrder)),
+        sortedColumns_(std::move(sortedColumns)) {
+  // generate rowLengthMap from columnLengthMap
+  rowLengthMap_ = std::make_shared<std::unordered_map<std::string, int>>();
+  for (auto const &schemaEntry: *schemas_) {
+    auto tableName = schemaEntry.first;
+    int rowLength = 0;
+    for (auto const &columnName: *schemaEntry.second) {
+      rowLength += columnLengthMap_->find(columnName)->second;
+    }
+    rowLengthMap_->emplace(tableName, rowLength);
+  }
+}
 
-std::vector<std::string> split(std::string str, std::string splitStr) {
+std::vector<std::string> split(const std::string& str, const std::string& splitStr) {
   std::vector<std::string> res;
   std::string::size_type pos1, pos2;
   pos2 = str.find(splitStr);
@@ -53,6 +76,7 @@ std::vector<std::string> split(std::string str, std::string splitStr) {
   return res;
 }
 
+std::vector<std::string> readFileByLines(const std::filesystem::path& filePath) {
 std::vector<std::string> readFileByLines(std::experimental::filesystem::path filePath) {
   std::ifstream file(filePath.string());
   std::vector<std::string> res;
@@ -63,7 +87,7 @@ std::vector<std::string> readFileByLines(std::experimental::filesystem::path fil
   return res;
 }
 
-std::shared_ptr<std::vector<std::pair<std::string, std::string>>> readMetadataSort(std::string schemaName, std::string fileName) {
+std::shared_ptr<std::vector<std::pair<std::string, std::string>>> readMetadataSort(const std::string& schemaName, const std::string& fileName) {
   auto res = std::make_shared<std::vector<std::pair<std::string, std::string>>>();
   auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("sort").append(fileName);
   for (auto const &str: readFileByLines(filePath)) {
@@ -73,7 +97,7 @@ std::shared_ptr<std::vector<std::pair<std::string, std::string>>> readMetadataSo
   return res;
 }
 
-std::shared_ptr<std::unordered_map<std::string, int>> readMetadataColumnLength(std::string schemaName) {
+std::shared_ptr<std::unordered_map<std::string, int>> readMetadataColumnLength(const std::string& schemaName) {
   auto res = std::make_shared<std::unordered_map<std::string, int>>();
   auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("column_length");
   for (auto const &str: readFileByLines(filePath)) {
@@ -83,7 +107,7 @@ std::shared_ptr<std::unordered_map<std::string, int>> readMetadataColumnLength(s
   return res;
 }
 
-std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> readMetadataSchemas(std::string schemaName) {
+std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> readMetadataSchemas(const std::string& schemaName) {
   auto res = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
   auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("schemas");
   for (auto const &str: readFileByLines(filePath)) {
@@ -97,7 +121,7 @@ std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std:
   return res;
 }
 
-std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(std::string schemaName) {
+std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(const std::string& schemaName) {
   auto res = std::make_shared<std::unordered_map<std::string, int>>();
   auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("partitionNums");
   for (auto const &str: readFileByLines(filePath)) {
@@ -132,7 +156,7 @@ readMetadataSegmentInfo(std::string s3Bucket, std::string schemaName) {
 }
 
 std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalogue::defaultMiniCatalogue(
-        std::string s3Bucket, std::string schemaName) {
+        const std::string& s3Bucket, const std::string& schemaName) {
   // star join order
   auto defaultJoinOrder = std::make_shared<std::vector<std::string>>();
   defaultJoinOrder->emplace_back("supplier");
@@ -185,7 +209,7 @@ const std::shared_ptr<std::vector<std::string>> &normal::connector::MiniCatalogu
   return defaultJoinOrder_;
 }
 
-std::string normal::connector::MiniCatalogue::findTableOfColumn(std::string columnName) {
+std::string normal::connector::MiniCatalogue::findTableOfColumn(const std::string& columnName) {
   for (const auto &schema: *schemas_) {
     for (const auto &existColumnName: *(schema.second)) {
       if (existColumnName == columnName) {
@@ -196,6 +220,7 @@ std::string normal::connector::MiniCatalogue::findTableOfColumn(std::string colu
   throw std::runtime_error("Column " + columnName + " not found");
 }
 
+double normal::connector::MiniCatalogue::lengthFraction(const std::string& columnName) {
 std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::getColumnsOfTable(std::string tableName) {
   auto columns = std::make_shared<std::vector<std::string>>();
   for (const auto &schema: *schemas_) {
@@ -273,10 +298,7 @@ int normal::connector::MiniCatalogue::querySegmentNextUsedIn(std::shared_ptr<cac
 double normal::connector::MiniCatalogue::lengthFraction(std::string columnName) {
   auto thisLength = columnLengthMap_->find(columnName)->second;
   auto tableName = findTableOfColumn(columnName);
-  int allLength = 0;
-  for (auto const &otherColumnName: *schemas_->find(tableName)->second) {
-    allLength += columnLengthMap_->find(otherColumnName)->second;
-  }
+  auto allLength = rowLengthMap_->find(tableName)->second;
   return (double)thisLength / (double)allLength;
 }
 
@@ -291,6 +313,14 @@ std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::tabl
     tables->emplace_back(schema.first);
   }
   return tables;
+}
+
+int normal::connector::MiniCatalogue::lengthOfRow(const std::string& tableName) {
+  return rowLengthMap_->find(tableName)->second;
+}
+
+int normal::connector::MiniCatalogue::lengthOfColumn(const std::string& columnName) {
+  return columnLengthMap_->find(columnName)->second;
 }
 
 void normal::connector::MiniCatalogue::setCurrentQueryNum(int queryNum) {
