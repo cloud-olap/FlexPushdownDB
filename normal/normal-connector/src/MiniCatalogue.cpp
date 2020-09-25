@@ -14,39 +14,29 @@
 using namespace normal::cache;
 
 normal::connector::MiniCatalogue::MiniCatalogue(
-        const std::shared_ptr<std::unordered_map<std::string, int>> partitionNums,
-        const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> &schemas,
-        const std::shared_ptr<std::unordered_map<std::string, int>> &columnLengthMap,
-        const std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
-                          SegmentKeyPointerHash, SegmentKeyPointerPredicate>> &segmentKeyToSize,
-        const std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> &queryNumToInvolvedSegments,
-        const std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
-                          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> &segmentKeysToInvolvedQueryNums,
-        const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder,
-        const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
-                std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &sortedColumns) :
-        partitionNums_(partitionNums),
-        schemas_(schemas),
-        columnLengthMap_(columnLengthMap),
-        segmentKeyToSize_(segmentKeyToSize),
-        queryNumToInvolvedSegments_(queryNumToInvolvedSegments),
-        segmentKeysToInvolvedQueryNums_(segmentKeysToInvolvedQueryNums),
-        defaultJoinOrder_(defaultJoinOrder),
-        sortedColumns_(sortedColumns) {
-  // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
-  currentQueryNum_ = 1;
-}
         std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
         std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas,
         std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
+        std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
+                          SegmentKeyPointerHash, SegmentKeyPointerPredicate>> segmentKeyToSize,
+        std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> queryNumToInvolvedSegments,
+        std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
+                          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums,
         std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
         std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
                 std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns) :
         partitionNums_(std::move(partitionNums)),
         schemas_(std::move(schemas)),
         columnLengthMap_(std::move(columnLengthMap)),
+        segmentKeyToSize_(std::move(segmentKeyToSize)),
+        queryNumToInvolvedSegments_(std::move(queryNumToInvolvedSegments)),
+        segmentKeysToInvolvedQueryNums_(std::move(segmentKeysToInvolvedQueryNums)),
         defaultJoinOrder_(std::move(defaultJoinOrder)),
         sortedColumns_(std::move(sortedColumns)) {
+
+  // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
+  currentQueryNum_ = 1;
+
   // generate rowLengthMap from columnLengthMap
   rowLengthMap_ = std::make_shared<std::unordered_map<std::string, int>>();
   for (auto const &schemaEntry: *schemas_) {
@@ -76,7 +66,6 @@ std::vector<std::string> split(const std::string& str, const std::string& splitS
   return res;
 }
 
-std::vector<std::string> readFileByLines(const std::filesystem::path& filePath) {
 std::vector<std::string> readFileByLines(std::experimental::filesystem::path filePath) {
   std::ifstream file(filePath.string());
   std::vector<std::string> res;
@@ -220,7 +209,6 @@ std::string normal::connector::MiniCatalogue::findTableOfColumn(const std::strin
   throw std::runtime_error("Column " + columnName + " not found");
 }
 
-double normal::connector::MiniCatalogue::lengthFraction(const std::string& columnName) {
 std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::getColumnsOfTable(std::string tableName) {
   auto columns = std::make_shared<std::vector<std::string>>();
   for (const auto &schema: *schemas_) {
@@ -292,8 +280,6 @@ int normal::connector::MiniCatalogue::querySegmentNextUsedIn(std::shared_ptr<cac
   // must not exist in our queryNums, throw an error as we should have never called this then
   throw std::runtime_error("Error, " + segmentKey->toString() + " next query requested but never should have been used");
 }
-
-
 
 double normal::connector::MiniCatalogue::lengthFraction(std::string columnName) {
   auto thisLength = columnLengthMap_->find(columnName)->second;

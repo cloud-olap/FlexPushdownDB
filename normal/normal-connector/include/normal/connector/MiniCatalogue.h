@@ -23,23 +23,15 @@ public:
   MiniCatalogue(std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
                 std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas,
                 std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
+                std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,
+                        cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeyToSize,
+                std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> queryNumToInvolvedSegments,
+                std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
+                        cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums,
                 std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
                 std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
                         std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns);
   static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue(const std::string& s3Bucket, const std::string& schemaName);
-    MiniCatalogue(const std::shared_ptr<std::unordered_map<std::string, int>> partitionNums,
-                  const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> &schemas,
-                  const std::shared_ptr<std::unordered_map<std::string, int>> &columnLengthMap,
-                  const std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,
-                          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> &segmentKeyToSize,
-                  const std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> &queryNumToInvolvedSegments,
-                  const std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
-                          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> &segmentKeysToInvolvedQueryNums,
-                  const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder,
-                  const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
-                          std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &sortedColumns);
-
-    static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue(std::string s3Bucket, std::string schemaName);
 
   [[nodiscard]] const std::shared_ptr<std::unordered_map<std::string, int>> &partitionNums() const;
   [[nodiscard]] const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder() const;
@@ -48,18 +40,18 @@ public:
 
   std::shared_ptr<std::vector<std::string>> tables();
   std::string findTableOfColumn(const std::string& columnName);
-  double lengthFraction(const std::string& columnName);
+  double lengthFraction(std::string columnName);
   int lengthOfRow(const std::string& tableName);
   int lengthOfColumn(const std::string& columnName);
-  std::string findTableOfColumn(std::string columnName);
+
+  /*
+   * Used in Belady
+   */
   std::shared_ptr<std::vector<std::string>> getColumnsOfTable(std::string tableName);
   size_t getSegmentSize(std::shared_ptr<cache::SegmentKey> segmentKey);
   std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>> getSegmentsInQuery(int queryNum);
   void addToSegmentQueryNumMappings(int queryNum, std::shared_ptr<cache::SegmentKey> segmentKey);
-
   int querySegmentNextUsedIn(std::shared_ptr<cache::SegmentKey> segmentKey, int currentQuery);
-  double lengthFraction(std::string columnName);
-
   void setCurrentQueryNum(int queryNum);
   int getCurrentQueryNum();
 
