@@ -399,15 +399,17 @@ void S3SelectScan::sendSegmentWeight() {
   else {
     /**
      * Refined weight function:
-     *   w = sel / vNetwork + lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)
+     *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)) / #key
      */
+    auto numKey = (double) weightedSegmentKeys_->size();
     for (auto const &segmentKey: *weightedSegmentKeys_) {
       auto columnName = segmentKey->getColumnName();
       auto tableName = miniCatalogue->findTableOfColumn(columnName);
       auto lenCol = (double) miniCatalogue->lengthOfColumn(columnName);
       auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
 
-      auto weight = selectivity / vNetwork + lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter);
+//      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
+      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan)) / numKey;
       weightMap->emplace(segmentKey, weight);
     }
   }
