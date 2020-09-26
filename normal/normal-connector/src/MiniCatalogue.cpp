@@ -124,7 +124,7 @@ std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(
 std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
 readMetadataSegmentInfo(std::string s3Bucket, std::string schemaName) {
   auto res = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, size_t, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
-  auto filePath = std::filesystem::current_path().append("metadata").append(schemaName).append("segment_info");
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("segment_info");
   for (auto const &str: readFileByLines(filePath)) {
     auto splitRes = split(str, ",");
     std::string objectName = splitRes[0];

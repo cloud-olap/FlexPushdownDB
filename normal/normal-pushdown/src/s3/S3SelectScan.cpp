@@ -307,6 +307,8 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
   } else if (message.message().type() == "ScanMessage") {
     auto scanMessage = dynamic_cast<const scan::ScanMessage &>(message.message());
     this->onCacheLoadResponse(scanMessage);
+  } else if (message.message().type() == "CompleteMessage") {
+    // Noop
   } else {
     // FIXME: Propagate error properly
     throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", message.message().type(), name()));

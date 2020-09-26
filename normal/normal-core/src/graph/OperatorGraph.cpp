@@ -8,7 +8,7 @@
 
 #include <caf/all.hpp>
 #include <experimental/filesystem>
-//#include <graphviz/gvc.h>
+#include <graphviz/gvc.h>
 
 #include <normal/core/Actors.h>
 #include <normal/core/OperatorDirectoryEntry.h>
@@ -41,7 +41,7 @@ void graph::OperatorGraph::put(const std::shared_ptr<Operator> &op) {
 
 void graph::OperatorGraph::start() {
 
-  startTime_ = std::chrono::steady_clock::now();
+  //startTime_ = std::chrono::steady_clock::now();
 
   // Mark all the operators as incomplete
   operatorDirectory_.setIncomplete();
@@ -75,7 +75,13 @@ void graph::OperatorGraph::join() {
   bool allComplete = false;
   (*rootActor_)->receive_while([&] { return !allComplete; })(
 	  [&](const normal::core::message::Envelope &msg) {
-		SPDLOG_DEBUG("Query root actor received message  |  query: '{}', messageKind: '{}', from: '{}'",
+	
+  		if (!hasOneComplete_) {
+		  startTime_ = std::chrono::steady_clock::now();
+		  hasOneComplete_ = true;
+		}		
+
+	  	SPDLOG_DEBUG("Query root actor received message  |  query: '{}', messageKind: '{}', from: '{}'",
 					 this->getId(), msg.message().type(), msg.message().sender());
 
 		this->operatorDirectory_.setComplete(msg.message().sender());
@@ -87,8 +93,8 @@ void graph::OperatorGraph::join() {
 	  },
 	  handle_err);
 
-  for (const auto &element: operatorDirectory_) {
-	(*rootActor_)->send_exit(element.second.getOperatorContext().lock()->operatorActor(), caf::exit_reason::user_shutdown);
+  for (const auto &element: m_operatorMap) {
+	(*rootActor_)->send_exit(element.second->operatorActor(), caf::exit_reason::user_shutdown);
   }
 
   stopTime_ = std::chrono::steady_clock::now();
@@ -178,64 +184,64 @@ void graph::OperatorGraph::boot() {
   }
 }
 
-//void graph::OperatorGraph::write_graph(const std::string &file) {
-//
-//  auto gvc = gvContext();
-//
-//  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
-//
-//  // Init attributes
-//  agattr(graph, AGNODE, const_cast<char *>("fixedsize"), const_cast<char *>("false"));
-//  agattr(graph, AGNODE, const_cast<char *>("shape"), const_cast<char *>("ellipse"));
-//  agattr(graph, AGNODE, const_cast<char *>("label"), const_cast<char *>("<not set>"));
-//  agattr(graph, AGNODE, const_cast<char *>("fontname"), const_cast<char *>("Arial"));
-//  agattr(graph, AGNODE, const_cast<char *>("fontsize"), const_cast<char *>("8"));
-//
-//  // Add all the nodes
-//  for (const auto &op: this->m_operatorMap) {
-//	std::string nodeName = op.second->op()->name();
-//	auto node = agnode(graph, const_cast<char *>(nodeName.c_str()), true);
-//
-//	agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
-//
-//	std::string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
-//							"<tr><td align='left'><b>" + op.second->op()->getType() + "</b></td></tr>"
-//																					  "<tr><td align='left'>"
-//		+ op.second->op()->name() + "</td></tr>"
-//									"</table>";
-//	char *htmlNodeLabel = agstrdup_html(graph, const_cast<char *>(nodeLabel.c_str()));
-//	agset(node, const_cast<char *>("label"), htmlNodeLabel);
-//	agstrfree(graph, htmlNodeLabel);
-//  }
-//
-//  // Add all the edges
-//  for (const auto &op: this->m_operatorMap) {
-//	auto opNode = agfindnode(graph, (char *)(op.second->op()->name().c_str()));
-//	for (const auto &c: op.second->op()->consumers()) {
-//	  auto consumerOpNode = agfindnode(graph, (char *)(c.second->name().c_str()));
-//	  agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
-//	}
-//  }
-//
-//  const std::experimental::filesystem::path &path = std::experimental::filesystem::path(file);
-//  if (!std::experimental::filesystem::exists(path.parent_path())) {
-//	throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
-//  } else {
-//	FILE *outFile = fopen(file.c_str(), "w");
-//	if (outFile == nullptr) {
-//	  throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
-//	}
-//
-//	gvLayout(gvc, graph, "dot");
-//	gvRender(gvc, graph, "svg", outFile);
-//
-//	fclose(outFile);
-//
-//	gvFreeLayout(gvc, graph);
-//	agclose(graph);
-//	gvFreeContext(gvc);
-//  }
-//}
+void graph::OperatorGraph::write_graph(const std::string &file) {
+
+  auto gvc = gvContext();
+
+  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
+
+  // Init attributes
+  agattr(graph, AGNODE, const_cast<char *>("fixedsize"), const_cast<char *>("false"));
+  agattr(graph, AGNODE, const_cast<char *>("shape"), const_cast<char *>("ellipse"));
+  agattr(graph, AGNODE, const_cast<char *>("label"), const_cast<char *>("<not set>"));
+  agattr(graph, AGNODE, const_cast<char *>("fontname"), const_cast<char *>("Arial"));
+  agattr(graph, AGNODE, const_cast<char *>("fontsize"), const_cast<char *>("8"));
+
+  // Add all the nodes
+  for (const auto &op: this->m_operatorMap) {
+	std::string nodeName = op.second->op()->name();
+	auto node = agnode(graph, const_cast<char *>(nodeName.c_str()), true);
+
+	agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
+
+	std::string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
+							"<tr><td align='left'><b>" + op.second->op()->getType() + "</b></td></tr>"
+																					  "<tr><td align='left'>"
+		+ op.second->op()->name() + "</td></tr>"
+									"</table>";
+	char *htmlNodeLabel = agstrdup_html(graph, const_cast<char *>(nodeLabel.c_str()));
+	agset(node, const_cast<char *>("label"), htmlNodeLabel);
+	agstrfree(graph, htmlNodeLabel);
+  }
+
+  // Add all the edges
+  for (const auto &op: this->m_operatorMap) {
+	auto opNode = agfindnode(graph, (char *)(op.second->op()->name().c_str()));
+	for (const auto &c: op.second->op()->consumers()) {
+	  auto consumerOpNode = agfindnode(graph, (char *)(c.second.lock()->name().c_str()));
+	  agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
+	}
+  }
+
+  const std::experimental::filesystem::path &path = std::experimental::filesystem::path(file);
+  if (!std::experimental::filesystem::exists(path.parent_path())) {
+	throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
+  } else {
+	FILE *outFile = fopen(file.c_str(), "w");
+	if (outFile == nullptr) {
+	  throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
+	}
+
+	gvLayout(gvc, graph, "dot");
+	gvRender(gvc, graph, "svg", outFile);
+
+	fclose(outFile);
+
+	gvFreeLayout(gvc, graph);
+	agclose(graph);
+	gvFreeContext(gvc);
+  }
+}
 
 tl::expected<long, std::string> graph::OperatorGraph::getElapsedTime() {
 

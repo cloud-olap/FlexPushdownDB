@@ -110,8 +110,9 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   i.parse(sql);
 
-  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
-  TestUtil::writeExecutionPlan2(*i.getOperatorGraph());
+  // graph is too large
+//  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
+//  TestUtil::writeExecutionPlan2(*i.getOperatorGraph());
 
   auto tuples = execute(i);
 
@@ -239,10 +240,10 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 50, executeBatchSize = 50;
-  const size_t cacheSize = 1024*1024*1024;
+  const int warmBatchSize = 2, executeBatchSize = 2;
+  const size_t cacheSize = 15360L*1024*1024;
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
+  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
 
   auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
   auto lru = LRUCachingPolicy::make(cacheSize, mode);
@@ -253,7 +254,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
-  normal::sql::Interpreter i(mode, wfbr);
+  normal::sql::Interpreter i(mode, fbr);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
 
   // execute
@@ -265,6 +266,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
     for (auto index = 1; index <= warmBatchSize; ++index) {
       SPDLOG_INFO("sql {}", index);
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+      //SPDLOG_INFO("current path: {}", sql_file_path.string());
       auto sql = ExperimentUtil::read_file(sql_file_path.string());
       executeSql(i, sql, false);
       sql_file_dir_path = sql_file_dir_path.parent_path();

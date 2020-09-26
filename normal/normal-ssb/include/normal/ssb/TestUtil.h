@@ -41,8 +41,8 @@ public:
 
   static std::shared_ptr<TupleSet2> executeExecutionPlanTest2(const std::shared_ptr<OperatorGraph> &g);
 
-//  static std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>
-//  executeSQLite(const std::string &sql, std::vector<std::string> dataFiles);
+  static std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>
+  executeSQLite(const std::string &sql, std::vector<std::string> dataFiles);
 
   static std::shared_ptr<TupleSet2>
   executeExecutionPlan2(const std::shared_ptr<OperatorGraph> &g);

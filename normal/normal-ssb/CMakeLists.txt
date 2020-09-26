@@ -8,7 +8,7 @@ project(normal-ssb VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 add_library(normal-ssb
         include/normal/ssb/Globals.h
         src/TestUtil.cpp include/normal/ssb/TestUtil.h
-#        src/SQLite3.cpp include/normal/ssb/SQLite3.h
+        src/SQLite3.cpp include/normal/ssb/SQLite3.h
         src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h
         src/SSBSchema.cpp include/normal/ssb/SSBSchema.h src/GenerateSqlFile.cpp)
 #        include/normal/ssb/common/Operators.h src/common/Operators.cpp
@@ -30,8 +30,8 @@ target_link_libraries(normal-ssb PRIVATE doctest::doctest)
 target_link_libraries(normal-ssb PRIVATE LLVM-filesystem)
 target_link_libraries(normal-ssb PRIVATE fmt::fmt)
 target_link_libraries(normal-ssb PRIVATE normal-plan)
-#target_link_libraries(normal-ssb PRIVATE sqlite3_static)
-#target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
+target_link_libraries(normal-ssb PRIVATE sqlite3_static)
+target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
 target_link_libraries(normal-ssb PUBLIC normal-core)
 target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
 
@@ -166,8 +166,8 @@ add_executable(normal-ssb-experiment
         experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h
         experiment/HardcodedPlanTestSinglePartition.cpp
         experiment/HardcodedPlanTestMultiPartition.cpp
-        experiment/SqliteTest.cpp experiment/BeladyTest.cpp)
-#        experiment/SqliteTest.cpp)
+        experiment/SqliteTest.cpp experiment/BeladyTest.cpp
+        experiment/SqliteTest.cpp)
 
 target_link_libraries(normal-ssb-experiment doctest::doctest)
 target_link_libraries(normal-ssb-experiment Backward::Backward)
