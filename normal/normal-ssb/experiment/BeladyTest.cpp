@@ -191,9 +191,11 @@ TEST_CASE ("GenerateBeladyMetadataExperiment" * doctest::skip(false || SKIP_SUIT
   spdlog::set_level(spdlog::level::info);
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf1-sortlineorder/csv/";
+  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
+
 
   // Only run this if you want to generate new Belady metadata.
-//  generateBeladyMetadata(bucket_name, dir_prefix);
+  // generateBeladyMetadata(bucket_name, dir_prefix);
 
   // Use these values when running experiments
 //  const int warmBatchSize = 50, executeBatchSize = 50;
@@ -206,8 +208,6 @@ TEST_CASE ("GenerateBeladyMetadataExperiment" * doctest::skip(false || SKIP_SUIT
   auto lru = LRUCachingPolicy::make(cacheSize, mode);
   auto fbr = FBRCachingPolicy::make(cacheSize, mode);
   auto belady = BeladyCachingPolicy::make(cacheSize, mode);
-
-  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
 
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
