@@ -169,7 +169,6 @@ void generateSegmentKeyAndSqlQueryMappings(normal::sql::Interpreter &i, int numQ
     // get the related segments from the query:
     i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
     i.clearOperatorGraph();
-
     i.parse(sql);
 
     auto logicalPlan = i.getLogicalPlan();
@@ -187,22 +186,23 @@ void generateSegmentKeyAndSqlQueryMappings(normal::sql::Interpreter &i, int numQ
 
 TEST_SUITE ("BeladyTests" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("GenerateBeladyMetadataExperiment" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("BeladyExperiment" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf1-sortlineorder/csv/";
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
 
+  // Use these values when running experiments
+  const int warmBatchSize = 50, executeBatchSize = 50;
+  const size_t cacheSize = 1024*1024*1024;
+  // Temporary values to use when running smaller experiments for small changes
+//  const int warmBatchSize = 2, executeBatchSize = 10;
+//  const size_t cacheSize = 30*1024*1024;
 
   // Only run this if you want to generate new Belady metadata.
+  // you will also have to modify the code to redirect this output to a file as it is currently set up
+  // to just go to the default std::cout
   // generateBeladyMetadata(bucket_name, dir_prefix);
-
-  // Use these values when running experiments
-//  const int warmBatchSize = 50, executeBatchSize = 50;
-//  const size_t cacheSize = 1024*1024*1024;
-  // Temporary values to use when running smaller experiments for small changes
-  const int warmBatchSize = 20, executeBatchSize = 20;
-  const size_t cacheSize = 30*1024*1024;
 
   auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
   auto lru = LRUCachingPolicy::make(cacheSize, mode);
@@ -221,6 +221,7 @@ TEST_CASE ("GenerateBeladyMetadataExperiment" * doctest::skip(false || SKIP_SUIT
   // QueryNumber->[Involved Segment Keys] and set these in the beladyMiniCatalogue
   generateSegmentKeyAndSqlQueryMappings(i, warmBatchSize + executeBatchSize, sql_file_dir_path);
   belady->generateCacheDecisions(warmBatchSize + executeBatchSize);
+//  belady->removeUnnecessaryPullUps();
 
   for (auto index = 1; index <= warmBatchSize; ++index) {
     normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);

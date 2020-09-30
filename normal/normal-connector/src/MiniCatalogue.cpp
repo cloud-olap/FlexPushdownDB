@@ -209,10 +209,12 @@ std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::getC
   throw std::runtime_error("table " + tableName + " not found");
 }
 
-// Throws runtime exception if key not present, which ensures failing fast in case of key not being present
-// If use cases of this method expand we can change this if necessary.
 size_t normal::connector::MiniCatalogue::getSegmentSize(std::shared_ptr<cache::SegmentKey> segmentKey) {
-  return segmentKeyToSize_->at(segmentKey);
+  auto key = segmentKeyToSize_->find(segmentKey);
+  if (key != segmentKeyToSize_->end()) {
+    return segmentKeyToSize_->at(segmentKey);
+  }
+  throw std::runtime_error("Segment key not found in getSegmentSize: " + segmentKey->toString());
 }
 
 // Used to populate the queryNumToInvolvedSegments_ and segmentKeysToInvolvedQueryNums_ mappings
@@ -261,7 +263,7 @@ int normal::connector::MiniCatalogue::querySegmentNextUsedIn(std::shared_ptr<cac
     if (nextQueryIt != involvedQueriesList->end()) {
       return *nextQueryIt;
     }
-    // TODO: segment never used again so return -1 to indicate this.
+    // TODO: segment never used again so return -1 to indicate this. Probably want a better strategy in the future
     return -1;
   }
   // must not exist in our queryNums, throw an error as we should have never called this then
