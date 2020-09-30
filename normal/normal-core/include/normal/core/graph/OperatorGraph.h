@@ -32,8 +32,13 @@ class OperatorGraph {
 
 public:
   OperatorGraph(long id, const std::shared_ptr<OperatorManager>& operatorManager);
+  ~OperatorGraph(){
+	for (const auto &element: operatorDirectory_) {
+	  (*rootActor_)->send_exit(element.second.getActorHandle(), caf::exit_reason::user_shutdown);
+	}
+  }
   static std::shared_ptr<OperatorGraph> make(const std::shared_ptr<OperatorManager>& operatorManager);
-  void put(const std::shared_ptr<Operator> &op);
+  void put(const std::shared_ptr<Operator> &def);
   void start();
   void join();
   void boot();

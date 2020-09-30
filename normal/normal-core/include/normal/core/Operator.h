@@ -15,10 +15,9 @@
 #include "normal/core/OperatorContext.h"
 #include "normal/core/message/Envelope.h"
 #include "Globals.h"
+#include <normal/core/Forward.h>
 
 namespace normal::core {
-
-class OperatorContext;
 
 /**
  * Base class for operators
@@ -28,26 +27,23 @@ class Operator {
 private:
   std::string name_;
   std::string type_;
-  std::weak_ptr<OperatorContext> opContext_;
-  std::map<std::string, std::weak_ptr<Operator>> producers_;
-  std::map<std::string, std::weak_ptr<Operator>> consumers_;
-  caf::actor actorHandle_;
+  std::shared_ptr<OperatorContext> opContext_;
+  std::map<std::string, std::string> producers_;
+  std::map<std::string, std::string> consumers_;
 
 public:
   explicit Operator(std::string name, std::string type);
   virtual ~Operator() = default;
 
   std::string &name();
-  [[nodiscard]] const caf::actor& actorHandle() const;
-  void actorHandle(caf::actor actorId);
-  [[ deprecated("Use std::weak_ptr<OperatorContext> weakCtx()") ]]
   std::shared_ptr<OperatorContext> ctx();
-  std::weak_ptr<OperatorContext> weakCtx();
+  [[ deprecated("Use std::shared_ptr<OperatorContext> ctx()") ]]
+  std::shared_ptr<OperatorContext> weakCtx();
   void setName(const std::string &Name);
   virtual void onReceive(const normal::core::message::Envelope &msg) = 0;
 
-  std::map<std::string, std::weak_ptr<Operator>> producers();
-  std::map<std::string, std::weak_ptr<Operator>> consumers();
+  std::map<std::string, std::string> producers();
+  std::map<std::string, std::string> consumers();
 
   void create(const std::shared_ptr<OperatorContext>& ctx);
   virtual void produce(const std::shared_ptr<Operator> &operator_);

@@ -14,7 +14,7 @@ TEST_SUITE ("ssb-query1.1-s3-pullup-csv-sf0.01" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("ssb-query1.1-s3-pullup-csv-sf0.01-date-scan-par1" * doctest::skip(false || SKIP_SUITE)) {
   auto n = Normal::start();
-  S3SelectTests::dateScan("ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 4, 100, true, n);
+  S3SelectTests::dateScan("ssb-sf0.01", "data/ssb-sf0.01", FileType::CSV, 4, 1, true, n);
   n->stop();
 }
 

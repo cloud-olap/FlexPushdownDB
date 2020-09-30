@@ -12,27 +12,22 @@
 #include "normal/core/OperatorActor.h"
 #include "normal/core/LocalOperatorDirectory.h"
 #include "normal/core/message/Message.h"
+#include <normal/core/Forward.h>
 
 namespace normal::core {
-
-class OperatorActor;
-class Operator;
 
 /**
  * The API operators use to interact with their environment, e.g. sending messages
  */
 class OperatorContext {
 private:
-  std::shared_ptr<Operator> operator_;
   OperatorActor* operatorActor_;
   LocalOperatorDirectory operatorMap_;
   caf::actor rootActor_;
   caf::actor segmentCacheActor_;
 
 public:
-  OperatorContext(std::shared_ptr<Operator> op, caf::actor& rootActor, caf::actor segmentCacheActor);
-
-  std::shared_ptr<Operator> op();
+  OperatorContext(caf::actor rootActor, caf::actor segmentCacheActor);
 
   OperatorActor* operatorActor();
   void operatorActor(OperatorActor *operatorActor);
@@ -40,12 +35,12 @@ public:
   LocalOperatorDirectory &operatorMap();
 
   void tell(std::shared_ptr<message::Message> &msg);
-//  void tell_pushDownMode(std::shared_ptr<message::Message> &msg);
-//  void tell_pullUpMode(std::shared_ptr<message::Message> &msg);
 
   void notifyComplete();
 
   tl::expected<void, std::string> send(const std::shared_ptr<message::Message> &msg, const std::string &recipientId);
+
+  void destroyActorHandles();
 };
 
 }

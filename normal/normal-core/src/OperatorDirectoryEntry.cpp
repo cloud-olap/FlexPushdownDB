@@ -9,27 +9,35 @@
 
 namespace normal::core {
 
-OperatorDirectoryEntry::OperatorDirectoryEntry(std::string name,
-											   std::shared_ptr<OperatorContext> operatorContext,
+OperatorDirectoryEntry::OperatorDirectoryEntry(std::shared_ptr<Operator> def,
+											   caf::actor actorHandle,
 											   bool complete) :
-	name_(std::move(name)),
-	operatorContext_(std::move(operatorContext)),
+	def_(std::move(def)),
+	actorHandle_(std::move(actorHandle)),
 	complete_(complete) {}
 
-const std::string &OperatorDirectoryEntry::name() const {
-  return name_;
+const std::shared_ptr<Operator> &OperatorDirectoryEntry::getDef() const {
+  return def_;
 }
 
-bool OperatorDirectoryEntry::complete() const {
+const caf::actor &OperatorDirectoryEntry::getActorHandle() const {
+  return actorHandle_;
+}
+
+bool OperatorDirectoryEntry::isComplete() const {
   return complete_;
 }
 
-void OperatorDirectoryEntry::complete(bool complete) {
-  complete_ = complete;
+void OperatorDirectoryEntry::setDef(const std::shared_ptr<Operator> &def) {
+  def_ = def;
 }
 
-std::weak_ptr<OperatorContext> OperatorDirectoryEntry::getOperatorContext() const {
-  return operatorContext_;
+void OperatorDirectoryEntry::setActorHandle(const caf::actor &actorHandle) {
+  actorHandle_ = actorHandle;
+}
+
+void OperatorDirectoryEntry::setComplete(bool complete) {
+  complete_ = complete;
 }
 
 }

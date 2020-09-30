@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
 
   spdlog::set_level(spdlog::level::debug);
   spdlog::set_pattern("[%H:%M:%S.%e] [thread %t] [%! (%s:%#)] [%l]  %v");
+  spdlog::enable_backtrace(32);
 
   doctest::Context context;
 

@@ -66,7 +66,7 @@ private:
   }
 
   void onComplete(const CompleteMessage &/*msg*/) {
-	if (weakCtx().lock()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
+	if (weakCtx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
 
 	  auto result = kernel_->buildBloomFilter();
 	  if (!result)
@@ -79,9 +79,9 @@ private:
 
 	  std::shared_ptr<Message>
 		  bloomFilterMessage = std::make_shared<BloomFilterMessage>(bloomFilter, name());
-	  weakCtx().lock()->tell(bloomFilterMessage);
+	  weakCtx()->tell(bloomFilterMessage);
 
-	  weakCtx().lock()->notifyComplete();
+	  weakCtx()->notifyComplete();
 	}
   }
 

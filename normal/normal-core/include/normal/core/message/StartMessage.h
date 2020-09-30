@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <caf/all.hpp>
+#include <normal/core/OperatorConnection.h>
 
 #include "normal/core/message/Message.h"
 
@@ -18,12 +19,8 @@ namespace normal::core::message {
  */
 class StartMessage : public Message {
 
-private:
-  std::vector<caf::actor> consumers_;
-
 public:
-  explicit StartMessage(std::vector<caf::actor> consumers, std::string from);
-  [[nodiscard]] const std::vector<caf::actor> &consumers() const;
+  explicit StartMessage(std::string from);
 
 };
 

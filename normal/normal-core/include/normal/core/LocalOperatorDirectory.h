@@ -33,6 +33,7 @@ public:
   get(const std::string& operatorId);
   std::vector<LocalOperatorDirectoryEntry>
   get(const OperatorRelationshipType &operatorRelationshipType);
+  void destroyActorHandles();
 
 };
 

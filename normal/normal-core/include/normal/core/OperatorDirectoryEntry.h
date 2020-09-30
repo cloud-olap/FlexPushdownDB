@@ -19,19 +19,18 @@ namespace normal::core {
 class OperatorDirectoryEntry {
 
 private:
-  std::string name_;
-  std::shared_ptr<OperatorContext> operatorContext_;
+  std::shared_ptr<Operator> def_;
+  caf::actor actorHandle_;
   bool complete_;
 
 public:
-  OperatorDirectoryEntry(std::string name,
-						 std::shared_ptr<OperatorContext> operatorContext,
-                         bool complete);
-  [[nodiscard]] bool complete() const;
-  void complete(bool complete);
-  [[nodiscard]] const std::string &name() const;
-  [[nodiscard]] std::weak_ptr<OperatorContext> getOperatorContext() const;
-
+  OperatorDirectoryEntry(std::shared_ptr<Operator> def, caf::actor actorHandle, bool complete);
+  [[nodiscard]] const std::shared_ptr<Operator> &getDef() const;
+  [[nodiscard]] const caf::actor &getActorHandle() const;
+  [[nodiscard]] bool isComplete() const;
+  void setDef(const std::shared_ptr<Operator> &def);
+  void setActorHandle(const caf::actor &actorHandle);
+  void setComplete(bool complete);
 };
 
 }

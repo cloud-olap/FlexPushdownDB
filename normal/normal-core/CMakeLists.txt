@@ -35,7 +35,10 @@ add_library(normal-core STATIC
         src/cache/SegmentCacheActor.cpp include/normal/core/cache/SegmentCacheActor.h
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
-        include/normal/core/Forward.h)
+        include/normal/core/Forward.h
+        include/normal/core/OperatorActor2.cpp include/normal/core/OperatorActor2.h
+        include/normal/core/OperatorConnection.cpp include/normal/core/OperatorConnection.h
+        include/normal/core/message/ConnectMessage.cpp include/normal/core/message/ConnectMessage.h)
 
 
 target_include_directories(normal-core PUBLIC include)
@@ -62,7 +65,9 @@ target_link_libraries(normal-core PUBLIC normal-cache)
 add_executable(normal-core-test
         test/Globals.h
         test/MainTest.cpp
-        test/CacheTest.cpp)
+        test/CacheTest.cpp
+        test/SampleOperator.cpp test/SampleOperator.h
+        test/OperatorTest.cpp)
 
 
 target_include_directories(normal-core-test PRIVATE include)

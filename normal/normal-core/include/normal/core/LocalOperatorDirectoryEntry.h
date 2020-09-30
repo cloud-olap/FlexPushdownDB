@@ -18,13 +18,13 @@ class LocalOperatorDirectoryEntry {
 
 private:
   std::string name_;
-  std::optional<caf::actor> actor_;
+  caf::actor actor_;
   OperatorRelationshipType relationshipType_;
   bool complete_;
 
 public:
   LocalOperatorDirectoryEntry(std::string name,
-                              std::optional<caf::actor> actor,
+                              caf::actor actor,
                               OperatorRelationshipType relationshipType,
                               bool complete);
 
@@ -34,7 +34,8 @@ public:
 
   [[nodiscard]] const std::string &name() const;
   void name(const std::string &name);
-  const std::optional<caf::actor> &getActor() const;
+  [[nodiscard]] const caf::actor &getActor() const;
+  void destroyActor();
   [[nodiscard]] OperatorRelationshipType relationshipType() const;
   void relationshipType(OperatorRelationshipType relationshipType);
 

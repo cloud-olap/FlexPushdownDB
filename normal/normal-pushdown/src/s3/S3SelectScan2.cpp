@@ -122,7 +122,7 @@ void S3SelectScan2::onComplete(const CompleteMessage &) {
 
 void S3SelectScan2::onScan(const ScanMessage &Message) {
   columnNamesToScan_ = Message.getColumnNames();
-  if(weakCtx().lock()->operatorActor()->running_){
+  if(ctx()->operatorActor()->running_){
     // Only if running process the column names, otherwise leave for later
     readAndSendTuples(columnNamesToScan_.value());
   }

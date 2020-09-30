@@ -12,7 +12,7 @@
 namespace normal::core {
 
 void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
-  entries_.emplace(entry.name(), entry);
+  entries_.emplace(entry.getDef()->name(), entry);
 }
 
 void OperatorDirectory::setComplete(const std::string& name) {
@@ -20,7 +20,7 @@ void OperatorDirectory::setComplete(const std::string& name) {
   if(entry == entries_.end())
     throw std::runtime_error("No entry for operator '" + name + "'");
   else
-    entry->second.complete(true);
+    entry->second.setComplete(true);
 }
 
 bool OperatorDirectory::allComplete() {
@@ -28,7 +28,7 @@ bool OperatorDirectory::allComplete() {
   for(const auto& entry : entries_){
 
     // FIXME: Hack to skip actors that aren't operators (i.e. SegmentCache)
-    if(entry.first != "SegmentCache" && !entry.second.complete())
+    if(entry.first != "SegmentCache" && !entry.second.isComplete())
       return false;
   }
   return true;
@@ -37,14 +37,14 @@ bool OperatorDirectory::allComplete() {
 std::string OperatorDirectory::showString() const {
   std::stringstream ss;
   for(const auto& entry : entries_){
-    ss << entry.second.name() << ": " << entry.second.complete() << std::endl;
+    ss << entry.second.getDef().get() << ": " << entry.second.isComplete() << std::endl;
   }
   return ss.str();
 }
 
 void OperatorDirectory::setIncomplete() {
   for(auto& entry : entries_){
-    entry.second.complete(false);
+    entry.second.setComplete(false);
   }
 }
 

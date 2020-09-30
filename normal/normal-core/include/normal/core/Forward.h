@@ -26,6 +26,12 @@ class OperatorGraph;
 
 }
 
+namespace message {
+
+class Envelope;
+
+}
+
 }
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_FORWARD_H

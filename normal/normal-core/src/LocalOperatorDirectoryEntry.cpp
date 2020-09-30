@@ -10,7 +10,7 @@
 namespace normal::core {
 
 LocalOperatorDirectoryEntry::LocalOperatorDirectoryEntry(std::string name,
-                                                         std::optional<caf::actor> actor,
+                                                         caf::actor actor,
                                                          OperatorRelationshipType relationshipType,
                                                          bool complete) :
     name_(std::move(name)),
@@ -42,8 +42,12 @@ void LocalOperatorDirectoryEntry::name(const std::string &name) {
   name_ = name;
 }
 
-const std::optional<caf::actor> &LocalOperatorDirectoryEntry::getActor() const {
+const caf::actor & LocalOperatorDirectoryEntry::getActor() const {
   return actor_;
+}
+
+void LocalOperatorDirectoryEntry::destroyActor() {
+	destroy(actor_);
 }
 
 }
