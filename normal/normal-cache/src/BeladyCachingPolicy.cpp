@@ -25,9 +25,9 @@ bool lessKeyValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_pt
     size_t key1Size = beladyMiniCatalogue->getSegmentSize(key1);
     size_t key2Size = beladyMiniCatalogue->getSegmentSize(key2);
     return key1Size < key2Size;
-  } else if (key1NextUse == -1 || key2NextUse < key1NextUse) {
+  } else if (key1NextUse == -1 || (key2NextUse != -1 && key2NextUse < key1NextUse)) {
     return true;
-  } else if(key2NextUse == -1 || key1NextUse < key2NextUse) {
+  } else if(key2NextUse == -1 || (key1NextUse != -1 && key1NextUse < key2NextUse)) {
     return false;
   }
   throw std::runtime_error("Error, lessKeyValue reached code that should not be reachable");
@@ -53,8 +53,11 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
   auto removableKeys = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
   auto segmentSize = key->getMetadata()->size();
+  auto preComputedSize = beladyMiniCatalogue->getSegmentSize(key);
   // make sure segmentSize within 1% of our expected size, if not then something went wrong
-  if (abs((int) (segmentSize - beladyMiniCatalogue->getSegmentSize(key))) < abs((int) (segmentSize * 0.01))) {
+  int absSizeDiff = abs((int) (segmentSize - preComputedSize));
+  int onePercentSizeDiff = (int) ((float)segmentSize * 0.01);
+  if (absSizeDiff > onePercentSizeDiff) {
     throw std::runtime_error("Error, segment has wrong size when compared to expected size");
   }
   if (maxSize_ < segmentSize) {
@@ -68,7 +71,7 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
   }
   auto keysThatShouldBeCached = queryKey->second;
 
-  // remove any keys in the cache that shouldn't be present after this query
+  // remove keys in the cache that shouldn't be present after this query to make adequate room
   for (auto potentialKeyToRemove: keysInCache_) {
     bool evictKey = true;
     for (auto keyThatShouldBeCached: *keysThatShouldBeCached) {
@@ -80,6 +83,10 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
     if (evictKey) {
       removableKeys->emplace_back(potentialKeyToRemove);
       freeSize_ += potentialKeyToRemove->getMetadata()->size();
+      // this would mean we have freed up enough room for this new key so we can stop evicting keys
+      if (freeSize_ > segmentSize) {
+        break;
+      }
     }
   }
 
@@ -139,19 +146,65 @@ std::string BeladyCachingPolicy::showCurrentLayout() {
   return ss.str();
 }
 
+std::string BeladyCachingPolicy::printLayoutAfterEveryQuery() {
+  std::stringstream ss;
+  ss << "Total Queries: " << numQueries_ << std::endl;
+  int originalQueryNum = beladyMiniCatalogue->getCurrentQueryNum();
+  for (int queryNum = 1; queryNum <= numQueries_; queryNum++) {
+    beladyMiniCatalogue->setCurrentQueryNum(queryNum);
+    ss << "*****Segments in Query #" << queryNum << std::endl;
+    auto keysInCurrentQuery = beladyMiniCatalogue->getSegmentsInQuery(queryNum);
+    std::sort(keysInCurrentQuery->begin(), keysInCurrentQuery->end(), lessKeyValue);
+    // Reverse this ordering as we want keys with the greatest value first
+    std::reverse(keysInCurrentQuery->begin(), keysInCurrentQuery->end());
+    for (auto const &segmentKey: *keysInCurrentQuery) {
+      int keyNextUse = beladyMiniCatalogue->querySegmentNextUsedIn(segmentKey, queryNum);
+      size_t keySize = beladyMiniCatalogue->getSegmentSize(segmentKey);
+      ss << fmt::format("Next Use: {}\tSize: {}\tKey: {};", keyNextUse, keySize, segmentKey->toString()) << std::endl;
+    }
+    ss << "*****After query #" << queryNum << " cache contains:"<< std::endl;
+    auto keysInCacheAfterQueryNum = queryNumToKeysInCache_.at(queryNum);
+    size_t freeSize = maxSize_;
+    for (auto const &segmentKey: *keysInCacheAfterQueryNum) {
+      int keyNextUse = beladyMiniCatalogue->querySegmentNextUsedIn(segmentKey, queryNum);
+      size_t keySize = beladyMiniCatalogue->getSegmentSize(segmentKey);
+      ss << fmt::format("Next Use: {}\tSize: {}\tKey: {};", keyNextUse, keySize, segmentKey->toString()) << std::endl;
+      freeSize -= keySize;
+    }
+    ss << "Max size: " << maxSize_ << std::endl;
+    ss << "Free size: " << freeSize << std::endl;
+    float_t percentCacheUsed = 1.0 - ((float_t) freeSize / (float_t) maxSize_);
+    ss << "Percent cache used: " << percentCacheUsed << std::endl;
+  }
+  beladyMiniCatalogue->setCurrentQueryNum(originalQueryNum);
+  return ss.str();
+}
+
 void assertNoDuplicateSegmentKeys(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
   for (int i = 0; i < segmentKeys->size(); i++) {
     for (int j = i + 1; j < segmentKeys->size(); j++) {
       auto key1 = segmentKeys->at(i);
       auto key2 = segmentKeys->at(j);
-      if (*key1 != *key2) {
+      if (*key1 == *key2) {
         throw std::runtime_error("Error, identical keys present when generating caching decisions");
       }
     }
   }
 }
 
+void assertDecreasingOrderingOfSegmentKeys(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+  for (int i = 0; i < segmentKeys->size() - 1; i++) {
+    auto key1 = segmentKeys->at(i);
+    auto key2 = segmentKeys->at(i + 1);
+    if (lessKeyValue(key1, key2)) {
+      lessKeyValue(key1, key2);
+      throw std::runtime_error("Error, identical keys present when generating caching decisions");
+    }
+  }
+}
+
 void BeladyCachingPolicy::generateCacheDecisions(int numQueries) {
+  numQueries_ = numQueries;
   auto keysInCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
   for (int queryNum = 1; queryNum <= numQueries; ++queryNum) {
     beladyMiniCatalogue->setCurrentQueryNum(queryNum);
@@ -174,24 +227,84 @@ void BeladyCachingPolicy::generateCacheDecisions(int numQueries) {
         potentialKeysToCache->emplace_back(key);
       }
     }
+    assertNoDuplicateSegmentKeys(potentialKeysToCache);
 
     // reset our keysInCache to be empty for this query and populate it
     keysInCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
     std::sort(potentialKeysToCache->begin(), potentialKeysToCache->end(), lessKeyValue);
     // Reverse this ordering as we want keys with the greatest value first
     std::reverse(potentialKeysToCache->begin(), potentialKeysToCache->end());
+    assertDecreasingOrderingOfSegmentKeys(potentialKeysToCache);
+
 
     // Multiply by 0.99 as pre computed segment sizes are sometimes slightly off (< 1%), so this buffer
     // ensures we never store more in our cache than the max cache size
     size_t remainingCacheSize = maxSize_ * 0.99;
     for (auto segmentKey : *potentialKeysToCache) {
       size_t segmentSize = beladyMiniCatalogue->getSegmentSize(segmentKey);
-      if (segmentSize < remainingCacheSize) {
+      int keyNextUse = beladyMiniCatalogue->querySegmentNextUsedIn(segmentKey, queryNum);
+      // Decide to cache key if there is room and the key is used again ie: keyNextUse != -1
+      if (segmentSize < remainingCacheSize && keyNextUse != -1) {
         keysInCache->emplace_back(segmentKey);
         remainingCacheSize -= segmentSize;
       }
     }
     queryNumToKeysInCache_.emplace(queryNum, keysInCache);
+  }
+}
+
+// remove the plan to cache any segments that we will evict before using again
+void BeladyCachingPolicy::removeUnnecessaryPullUps() {
+  // iterate through queries 1 to max number of queries (queryNum_)
+  // and remove segments that won't be used in the future
+  for (int i = 1; i <= numQueries_; i++) {
+    auto keysToEvictForQueryi = std::vector<std::shared_ptr<SegmentKey>>();
+    auto keysInCacheAfterQueryi = queryNumToKeysInCache_.at(i);
+    for (auto key: *keysInCacheAfterQueryi) {
+      int keyNextUse = beladyMiniCatalogue->querySegmentNextUsedIn(key, i);
+      // Shouldn't be caching keys we never use again based on logic in generateCacheDecisions,
+      // so throw an error if it occurs
+      if (keyNextUse == -1) {
+        throw std::runtime_error("Error, decision to cache segment that is never used again");
+      }
+      bool keyPresentUntilUsedAgain = true;
+      for (int j = i + 1; j < keyNextUse; j++) {
+        auto keysInCacheAfterQueryj = queryNumToKeysInCache_.at(j);
+        bool keyEvictedDuringQueryj = true;
+        for (auto cachedKey: *keysInCacheAfterQueryj) {
+          if (*key == *cachedKey) {
+            keyEvictedDuringQueryj = false;
+            break;
+          }
+        }
+        if (keyEvictedDuringQueryj) {
+          keyPresentUntilUsedAgain = false;
+          break;
+        }
+      }
+
+      if (!keyPresentUntilUsedAgain) {
+        keysToEvictForQueryi.emplace_back(key);
+      }
+    }
+
+    for (auto keyToEvict: keysToEvictForQueryi) {
+      // if the key isn't present until it is used again, remove all decisions to have it in the cache
+      // until the next query, as it costs more to pull it up than to pushdown the predicates
+      // for a one time access
+      int keyNextUse = beladyMiniCatalogue->querySegmentNextUsedIn(keyToEvict, i);
+      for (int j = i; j < keyNextUse; j++) {
+        auto keysInCacheAfterQueryj = queryNumToKeysInCache_.at(j);
+        for (int index = 0; index < keysInCacheAfterQueryj->size(); index++) {
+          auto cachedKey = keysInCacheAfterQueryj->at(index);
+          if (*keyToEvict == *cachedKey) {
+            // we found the index to evict, done with this iteration
+            keysInCacheAfterQueryj->erase(keysInCacheAfterQueryj->begin() + index);
+            break;
+          }
+        }
+      }
+    }
   }
 }
 
