@@ -189,7 +189,7 @@ TEST_SUITE ("BeladyTests" * doctest::skip(SKIP_SUITE)) {
 TEST_CASE ("BeladyExperiment" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf1-sortlineorder/csv/";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
 
   // Use these values when running experiments
