@@ -14,22 +14,34 @@
 namespace normal::core {
 
 /**
- * Class for tracking operators from outside the actor system
+ * Class for tracking operators from outside the actor system.
+ *
+ * WIP: Also serves as the data structure that owns shared pointers to operators. The OperatorDirectoryEntry class
+ * only dispenses weak pointers (for the purpose of breaking cycles).
  */
-class OperatorDirectoryEntry;
-
 class OperatorDirectory {
+  using MapType = std::unordered_map<std::string, OperatorDirectoryEntry>;
+
 private:
-  std::unordered_map<std::string, OperatorDirectoryEntry> entries_;
+  MapType entries_;
 
 public:
   void insert(const OperatorDirectoryEntry& entry);
-  tl::expected<OperatorDirectoryEntry, std::string> get(const std::string& operatorId);
+  tl::expected<OperatorDirectoryEntry, std::string> get(const std::string& name);
+
   void setComplete(const std::string& name);
-  bool allComplete();
-  std::string showString() const;
   void setIncomplete();
+  bool allComplete();
+
+  std::string showString() const;
   void clear();
+
+  MapType::iterator begin();
+  MapType::const_iterator begin() const;
+  MapType::iterator end();
+  MapType::const_iterator end() const;
+  MapType::const_iterator cbegin() const;
+  MapType::const_iterator cend() const;
 
 };
 

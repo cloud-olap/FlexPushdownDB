@@ -4,6 +4,8 @@
 
 #include "normal/core/cache/StoreRequestMessage.h"
 
+#include <utility>
+
 using namespace normal::core::cache;
 
 StoreRequestMessage::StoreRequestMessage(

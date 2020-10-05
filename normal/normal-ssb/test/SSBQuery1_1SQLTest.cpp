@@ -17,6 +17,7 @@
 
 #include "normal/ssb/query1_1/SQL.h"
 #include <normal/plan/mode/Modes.h>
+#include <normal/cache/LRUCachingPolicy.h>
 
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
@@ -64,43 +65,55 @@ void configureS3Connector(normal::sql::Interpreter &i) {
   i.put(cat);
 }
 
-auto execute(normal::sql::Interpreter &i) {
-  i.getOperatorManager()->boot();
-  i.getOperatorManager()->start();
-  i.getOperatorManager()->join();
+/**
+ * This is out of date, commenting to stop compiler errors.
+ * @param i
+ * @return
+ */
+auto execute(normal::sql::Interpreter& /* i */) {
+//  i.getOperatorManager()->boot();
+//  i.getOperatorManager()->start();
+//  i.getOperatorManager()->join();
+//
+//  std::shared_ptr<normal::pushdown::Collate>
+//	  collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
+//
+//  auto tuples = collate->tuples();
+//
+//  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
 
-  std::shared_ptr<normal::pushdown::Collate>
-	  collate = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorManager()->getOperator("collate"));
-
-  auto tuples = collate->tuples();
-
-  SPDLOG_DEBUG("Output:\n{}", tuples->toString());
-
-  return tuples;
+//  return tuples;
+	return nullptr;
 }
 
-std::shared_ptr<TupleSet2> executeSQLTest(const std::string &sql) {
+/**
+ * This is out of date, commenting to stop compiler errors.
+ * @param i
+ * @return
+ */
+std::shared_ptr<TupleSet2> executeSQLTest(const std::string& /* sql */) {
 
-  SPDLOG_INFO("SQL:\n{}", sql);
-
-  normal::sql::Interpreter i(normal::plan::operator_::mode::Modes::fullPushdownMode());
-
-  configureLocalConnector(i);
-  configureS3Connector(i);
-
-  i.parse(sql);
-
-  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
-  TestUtil::writeExecutionPlan(*i.getOperatorManager());
-
-  auto tuples = execute(i);
-
-  i.getOperatorManager()->stop();
-
-  SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
-
-  auto tupleSet = TupleSet2::create(tuples);
-  return tupleSet;
+//  SPDLOG_INFO("SQL:\n{}", sql);
+//
+//  normal::sql::Interpreter i(normal::plan::operator_::mode::Modes::fullPushdownMode(), std::make_shared<LRUCachingPolicy>(100));
+//
+//  configureLocalConnector(i);
+//  configureS3Connector(i);
+//
+//  i.parse(sql);
+//
+//  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
+//  TestUtil::writeExecutionPlan(*i.getOperatorManager());
+//
+//  auto tuples = execute(i);
+//
+//  i.getOperatorManager()->stop();
+//
+//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorManager()->showMetrics());
+//
+//  auto tupleSet = TupleSet2::create(tuples);
+//  return tupleSet;
+  return nullptr;
 }
 
 #define SKIP_SUITE true

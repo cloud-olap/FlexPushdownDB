@@ -10,7 +10,7 @@
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/core/graph/OperatorGraph.h>
-#include <normal/expression/gandiva/Literal.h>
+#include <normal/expression/gandiva/StringLiteral.h>
 #include <normal/expression/gandiva/EqualTo.h>
 #include <normal/pushdown/Util.h>
 
@@ -33,7 +33,7 @@ Operators::makeSupplierFilterOperators(const std::string &region,
 	auto o = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/supplier-filter-{}", g->getId(), u),
 		FilterPredicate::make(
-			eq(col("s_region"), lit<::arrow::StringType>(region))));
+			eq(col("s_region"), str_lit(region))));
 	g->put(o);
 	os.push_back(o);
   }
@@ -51,7 +51,7 @@ Operators::makePartFilterOperators(const std::string &category,
 	auto o = normal::pushdown::filter::Filter::make(
 		fmt::format("/query-{}/part-filter-{}", g->getId(), u),
 		FilterPredicate::make(
-			eq(col("p_category"), lit<::arrow::StringType>(category))));
+			eq(col("p_category"), str_lit(category))));
 	g->put(o);
 	os.push_back(o);
   }

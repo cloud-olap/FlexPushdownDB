@@ -64,6 +64,12 @@ bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operato
   return true;
 }
 
+void LocalOperatorDirectory::destroyActorHandles(){
+  for(auto &entry: entries_){
+	entry.second.destroyActor();
+  }
+}
+
 tl::expected<LocalOperatorDirectoryEntry, std::string> LocalOperatorDirectory::get(const std::string &operatorId) {
   auto entryIt = entries_.find(operatorId);
   if(entryIt == entries_.end()){

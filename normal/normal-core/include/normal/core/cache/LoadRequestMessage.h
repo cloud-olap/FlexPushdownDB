@@ -5,13 +5,11 @@
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_LOADREQUESTMESSAGE_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_LOADREQUESTMESSAGE_H
 
-#include <caf/all.hpp>
 #include <normal/core/message/Message.h>
 
 #include <normal/cache/SegmentKey.h>
 #include <normal/cache/SegmentData.h>
 
-using namespace caf;
 using namespace normal::cache;
 using namespace normal::core::message;
 
@@ -39,7 +37,5 @@ private:
 };
 
 }
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(normal::core::cache::LoadRequestMessage)
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_LOADREQUESTMESSAGE_H

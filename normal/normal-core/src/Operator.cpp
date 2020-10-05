@@ -28,24 +28,27 @@ std::string &Operator::name() {
 }
 
 void Operator::produce(const std::shared_ptr<Operator> &op) {
-  consumers_.emplace(op->name(), op);
+  consumers_.emplace(op->name(), op->name());
 }
 
 void Operator::consume(const std::shared_ptr<Operator> &op) {
-  producers_.emplace(op->name(), op);
+  producers_.emplace(op->name(), op->name());
 }
 
-std::map<std::string, std::weak_ptr<Operator>> Operator::consumers() {
+std::map<std::string, std::string> Operator::consumers() {
   return consumers_;
 }
 
-std::map<std::string, std::weak_ptr<Operator>> Operator::producers() {
+std::map<std::string, std::string> Operator::producers() {
   return producers_;
 }
 
 std::shared_ptr<OperatorContext> Operator::ctx() {
-  assert(!opContext_.expired());
-  return opContext_.lock();
+  return opContext_;
+}
+
+std::shared_ptr<OperatorContext> Operator::weakCtx() {
+  return opContext_;
 }
 
 std::weak_ptr<OperatorContext> Operator::weakCtx() {
@@ -58,23 +61,13 @@ void Operator::create(const std::shared_ptr<OperatorContext>& ctx) {
   SPDLOG_DEBUG("Creating operator  |  name: '{}'", this->name_);
 
   opContext_ = ctx;
-
-  assert (!opContext_.expired());
-}
-
-const caf::actor& Operator::actorHandle() const {
-  return actorHandle_;
-}
-
-void Operator::actorHandle(caf::actor actorHandle) {
-  this->actorHandle_ = std::move(actorHandle);
 }
 
 void Operator::setName(const std::string &Name) {
   name_ = Name;
 }
 void Operator::destroyActor() {
-	destroy(this->actorHandle_);
+  opContext_->destroyActorHandles();
 }
 
 long Operator::getQueryId() const {

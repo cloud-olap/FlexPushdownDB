@@ -2,6 +2,7 @@
 // Created by matt on 24/4/20.
 //
 
+#include <arrow/api.h>
 #include <doctest/doctest.h>
 
 #include <normal/ssb/query1_1/LocalFileSystemTests.h>

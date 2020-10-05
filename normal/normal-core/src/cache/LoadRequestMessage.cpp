@@ -25,10 +25,10 @@ const std::vector<std::shared_ptr<SegmentKey>> &LoadRequestMessage::getSegmentKe
 std::string LoadRequestMessage::toString() const {
 
   std::string s = "segmentKeys : [";
-  for(auto it = segmentKeys_.begin();it != segmentKeys_.end();++it){
-    s += fmt::format("{}", it->get()->toString());
-    if(std::next(it) != segmentKeys_.end())
-      s +=",";
+  for (auto it = segmentKeys_.begin(); it != segmentKeys_.end(); ++it) {
+	s += fmt::format("{}", it->get()->toString());
+	if (std::next(it) != segmentKeys_.end())
+	  s += ",";
   }
   s += "]";
 

@@ -36,9 +36,11 @@ Operators::makeFileCacheLoadOperators(const std::string &namePrefix,
 	std::shared_ptr<Partition> partition = std::make_shared<LocalFilePartition>(file);
 	auto o = CacheLoad::make(fmt::format("/query-{}/{}-cache-load-{}", g->getId(), namePrefix, u),
 							 columns,
+							 std::vector<std::string>(),
 							 partition,
 							 scanRanges[u].first,
-							 scanRanges[u].second);
+							 scanRanges[u].second,
+							 true);
 	os.push_back(o);
 	g->put(o);
   }
@@ -46,32 +48,56 @@ Operators::makeFileCacheLoadOperators(const std::string &namePrefix,
   return os;
 }
 
-std::vector<std::shared_ptr<FileScan>>
-Operators::makeFileScanOperators(const std::string &namePrefix,
-								 const std::string &filename,
-								 const std::vector<std::string> &columns,
-								 const std::string &dataDir,
-								 int numConcurrentUnits,
-								 const std::shared_ptr<OperatorGraph> &g) {
+std::vector<std::shared_ptr<CacheLoad>>
+Operators::makeCacheLoadOperators(const std::string &namePrefix,
+								  const std::shared_ptr<Partition> &partition,
+								  const std::vector<std::string> &columns,
+								  int numConcurrentUnits,
+								  const std::shared_ptr<OperatorGraph> &g) {
 
-  auto file = filesystem::absolute(dataDir + "/" + filename);
-  auto numBytesFile = filesystem::file_size(file);
-
-  std::vector<std::shared_ptr<FileScan>> os;
-  auto scanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
+  std::vector<std::shared_ptr<CacheLoad>> os;
+  auto scanRanges = Util::ranges(0l, partition->getNumBytes(), numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = FileScan::make(fmt::format("/query-{}/{}-scan-{}", g->getId(), namePrefix, u),
-							file,
-							columns,
-							scanRanges[u].first,
-							scanRanges[u].second,
-							g->getId());
+	auto o = CacheLoad::make(fmt::format("/query-{}/{}-cache-load-{}", g->getId(), namePrefix, u),
+							 columns,
+							 std::vector<std::string>(),
+							 partition,
+							 scanRanges[u].first,
+							 scanRanges[u].second,
+							 true);
 	os.push_back(o);
 	g->put(o);
   }
 
   return os;
 }
+
+//std::vector<std::shared_ptr<FileScan>>
+//Operators::makeFileScanOperators(const std::string &namePrefix,
+//								 const std::string &filename,
+//								 const std::vector<std::string> &columns,
+//								 const std::string &dataDir,
+//								 int numConcurrentUnits,
+//								 const std::shared_ptr<OperatorGraph> &g) {
+//
+//  auto file = filesystem::absolute(dataDir + "/" + filename);
+//  auto numBytesFile = filesystem::file_size(file);
+//
+//  std::vector<std::shared_ptr<FileScan>> os;
+//  auto scanRanges = Util::ranges<int>(0, numBytesFile, numConcurrentUnits);
+//  for (int u = 0; u < numConcurrentUnits; ++u) {
+//	auto o = FileScan::make(fmt::format("/query-{}/{}-scan-{}", g->getId(), namePrefix, u),
+//							file,
+//							columns,
+//							scanRanges[u].first,
+//							scanRanges[u].second,
+//							g->getId());
+//	os.push_back(o);
+//	g->put(o);
+//  }
+//
+//  return os;
+//}
 
 std::vector<std::shared_ptr<FileScan>>
 Operators::makeFileScanOperators(const std::string &namePrefix,
@@ -102,13 +128,47 @@ Operators::makeFileScanOperators(const std::string &namePrefix,
   return os;
 }
 
-std::vector<std::shared_ptr<MergeOperator>>
+std::vector<std::shared_ptr<S3SelectScan2>>
+Operators::makeS3SelectScanPushDownOperators(const std::string &namePrefix,
+											 const std::string &s3Object,
+											 const std::string &s3Bucket,
+											 FileType fileType,
+											 const std::vector<std::string> &columns,
+											 const std::string &sql,
+											 bool scanOnStart,
+											 int numConcurrentUnits,
+											 const std::shared_ptr<S3SelectPartition>& partition,
+											 AWSClient &client, const std::shared_ptr<OperatorGraph> &g) {
+
+  std::vector<std::shared_ptr<S3SelectScan2>> os;
+  auto scanRanges = Util::ranges<long>(0, partition->getNumBytes(), numConcurrentUnits);
+  for (int u = 0; u < numConcurrentUnits; ++u) {
+	auto o = S3SelectScan2::make(
+		fmt::format("/query-{}/{}-s3-select-scan-{}", g->getId(), namePrefix, u),
+		s3Bucket,
+		s3Object,
+		sql,
+		scanRanges[u].first,
+		scanRanges[u].second,
+		fileType,
+		columns,
+		S3SelectCSVParseOptions(",", "\n"),
+		client.defaultS3Client(),
+		scanOnStart);
+	os.push_back(o);
+	g->put(o);
+  }
+
+  return os;
+}
+
+std::vector<std::shared_ptr<Merge>>
 Operators::makeMergeOperators(const std::string &namePrefix, int numConcurrentUnits,
 							  const std::shared_ptr<OperatorGraph> &g) {
 
-  std::vector<std::shared_ptr<MergeOperator>> os;
+  std::vector<std::shared_ptr<Merge>> os;
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto o = MergeOperator::make(fmt::format("/query-{}/{}-merge-{}", g->getId(), namePrefix, u));
+	auto o = Merge::make(fmt::format("/query-{}/{}-merge-{}", g->getId(), namePrefix, u));
 	os.push_back(o);
 	g->put(o);
   }
@@ -117,7 +177,10 @@ Operators::makeMergeOperators(const std::string &namePrefix, int numConcurrentUn
 }
 
 std::shared_ptr<BloomCreateOperator>
-Operators::makeBloomCreateOperator(const std::string &namePrefix, const std::string& columnName, double desiredFalsePositiveRate, const std::shared_ptr<OperatorGraph>& g) {
+Operators::makeBloomCreateOperator(const std::string &namePrefix,
+								   const std::string &columnName,
+								   double desiredFalsePositiveRate,
+								   const std::shared_ptr<OperatorGraph> &g) {
 
   auto o = BloomCreateOperator::make(fmt::format("/query-{}/{}-bloom-create", g->getId(), namePrefix),
 									 columnName,
@@ -165,7 +228,7 @@ Operators::makeShuffleOperators(const std::string &namePrefix,
   std::vector<std::shared_ptr<Shuffle>> os;
   for (int u = 0; u < numConcurrentUnits; ++u) {
 	auto o = Shuffle::make(fmt::format("/query-{}/{}-shuffle-{}", g->getId(), namePrefix, u), columnName);
-	os.emplace_back(o);
+	os.push_back(o);
 	g->put(o);
   }
 
@@ -182,7 +245,7 @@ Operators::makeHashJoinBuildOperators(const std::string &namePrefix,
   for (int u = 0; u < numConcurrentUnits; ++u) {
 	auto o = HashJoinBuild::create(fmt::format("/query-{}/{}-join-build-{}", g->getId(), namePrefix, u),
 								   columnName);
-	os.emplace_back(o);
+	os.push_back(o);
 	g->put(o);
   }
   return os;
@@ -202,7 +265,7 @@ Operators::makeHashJoinProbeOperators(const std::string &namePrefix,
 														 namePrefix,
 														 u),
 											 JoinPredicate::create(leftColumnName, rightColumnName));
-	os.emplace_back(o);
+	os.push_back(o);
 	g->put(o);
   }
   return os;

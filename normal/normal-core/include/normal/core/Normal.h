@@ -9,6 +9,7 @@
 
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
+#include <normal/core/Forward.h>
 
 using namespace normal::core::graph;
 
@@ -26,7 +27,7 @@ public:
   void stop();
 
   std::shared_ptr<OperatorGraph> createQuery();
-  const std::shared_ptr<OperatorManager> &getOperatorManager() const;
+
 private:
   std::shared_ptr<OperatorManager> operatorManager_;
 

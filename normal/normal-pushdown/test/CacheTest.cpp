@@ -58,7 +58,8 @@ void makeQuery(const std::vector<std::string>& columnNames, std::shared_ptr<Oper
                    std::vector<std::string>(),
 								   partition,
 								   0,
-								   numBytesTestFile);
+								   numBytesTestFile,
+								   true);
 
   normal::pushdown::AWSClient client;
   client.init();

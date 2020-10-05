@@ -7,7 +7,8 @@
 #include <utility>
 #include <cassert>
 #include <normal/core/message/CompleteMessage.h>
-
+#include <normal/core/cache/LoadRequestMessage.h>
+#include <normal/core/cache/SegmentCacheActor.h>
 #include "normal/core/Globals.h"
 #include "normal/core/message/Message.h"
 #include "normal/core/Actors.h"
@@ -21,51 +22,38 @@ void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
   message::Envelope e(msg);
 
   // Send message to consumers
-  for(const auto& consumer: this->operator_->consumers()){
-    caf::actor actorHandle = consumer.second.lock()->actorHandle();
-    operatorActor_->send(actorHandle, e);
+  for(const auto& consumer: this->operatorActor()->operator_()->consumers()){
+    caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
+    operatorActor_->anon_send(actorHandle, e);
   }
 }
-
-//void OperatorContext::tell_pushDownMode(std::shared_ptr<message::Message> &msg) {
-//    assert(this);
-//
-//    OperatorActor* oa = this->operatorActor();
-//    message::Envelope e(msg);
-//
-//    // Send message to filter consumers
-//    for(const auto& consumer: this->operator_->consumers()){
-//        if (consumer.second->getType()!="Filter") {
-//            caf::actor actorHandle = consumer.second->actorHandle();
-//            oa->send(actorHandle, e);
-//        }
-//    }
-//}
-//    void OperatorContext::tell_pullUpMode(std::shared_ptr<message::Message> &msg) {
-//        assert(this);
-//
-//        OperatorActor* oa = this->operatorActor();
-//        message::Envelope e(msg);
-//
-//        // Send message to filter consumers
-//        for(const auto& consumer: this->operator_->consumers()){
-//            if (consumer.second->getType()=="Filter") {
-//                caf::actor actorHandle = consumer.second->actorHandle();
-//                oa->send(actorHandle, e);
-//            }
-//        }
-//    }
 
 tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<message::Message> &msg, const std::string& recipientId) {
 
   message::Envelope e(msg);
 
+  if(recipientId == "SegmentCache"){
+    if(msg->type() == "LoadRequestMessage"){
+	  operatorActor_->request(segmentCacheActor_, infinite, normal::core::cache::LoadAtom::value, std::static_pointer_cast<normal::core::cache::LoadRequestMessage>(msg))
+	  .then([=](const std::shared_ptr<normal::core::cache::LoadResponseMessage>& response){
+		operatorActor_->anon_send(this->operatorActor(), Envelope(response));
+//		send(response, this->operator_->name());
+	  });
+    }
+    else if(msg->type() == "StoreRequestMessage"){
+	  operatorActor_->anon_send(segmentCacheActor_, normal::core::cache::StoreAtom::value, std::static_pointer_cast<normal::core::cache::StoreRequestMessage>(msg));
+	}
+    else{
+      throw std::runtime_error("Unrecognized message " + msg->type());
+    }
+
+	return {};
+  }
+
   auto expectedOperator = operatorMap_.get(recipientId);
   if(expectedOperator.has_value()){
     auto recipientOperator = expectedOperator.value();
-    auto expectedRecipientActor = recipientOperator.getActor();
-    auto recipientActor = expectedRecipientActor.value();
-	operatorActor_->send(recipientActor, e);
+	operatorActor_->anon_send(recipientOperator.getActor(), e);
 	return {};
   }
   else{
@@ -73,15 +61,11 @@ tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<mess
   }
 }
 
-OperatorContext::OperatorContext(std::shared_ptr<normal::core::Operator> op,  caf::actor& rootActor):
-    operator_(std::move(op)),
+OperatorContext::OperatorContext(caf::actor rootActor, caf::actor segmentCacheActor):
     operatorActor_(nullptr),
-    rootActor_(rootActor)
+    rootActor_(std::move(rootActor)),
+    segmentCacheActor_(std::move(segmentCacheActor))
 {}
-
-std::shared_ptr<normal::core::Operator> OperatorContext::op() {
-  return operator_;
-}
 
 LocalOperatorDirectory &OperatorContext::operatorMap() {
   return operatorMap_;
@@ -98,7 +82,7 @@ void OperatorContext::operatorActor(OperatorActor *operatorActor) {
  */
 void OperatorContext::notifyComplete() {
 
-  SPDLOG_INFO("Completing operator  |  name: '{}'", this->operator_->name());
+  SPDLOG_DEBUG("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
 
   OperatorActor* operatorActor = this->operatorActor();
 
@@ -106,15 +90,21 @@ void OperatorContext::notifyComplete() {
   message::Envelope e(msg);
 
   // Send message to consumers
-  for(const auto& consumer: this->operator_->consumers()){
-    caf::actor actorHandle = consumer.second.lock()->actorHandle();
-    operatorActor->send(actorHandle, e);
+  for(const auto& consumer: this->operatorActor()->operator_()->consumers()){
+    caf::actor actorHandle = operatorMap_.get(consumer.first).value().getActor();
+    operatorActor->anon_send(actorHandle, e);
   }
 
   // Send message to root actor
-  operatorActor->send(rootActor_, e);
+  operatorActor->anon_send(rootActor_, e);
 
 //  operatorActor->quit();
+}
+
+void OperatorContext::destroyActorHandles() {
+  operatorMap_.destroyActorHandles();
+  destroy(rootActor_);
+  destroy(segmentCacheActor_);
 }
 
 } // namespace

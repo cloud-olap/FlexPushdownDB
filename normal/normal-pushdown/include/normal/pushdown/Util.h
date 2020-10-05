@@ -30,7 +30,7 @@ public:
    * @return
    */
   template<typename T>
-  static std::vector<std::pair<T, T>> ranges(T start, T finish, T numRanges) {
+  static std::vector<std::pair<T, T>> ranges(T start, T finish, int numRanges) {
 	std::vector<std::pair<T, T>> result;
 
 	T rangeSize = ((finish - start) / numRanges) + 1;

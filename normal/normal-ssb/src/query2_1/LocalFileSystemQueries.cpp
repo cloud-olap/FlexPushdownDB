@@ -18,14 +18,15 @@ using namespace normal::expression::gandiva;
 
 
 std::shared_ptr<OperatorGraph> LocalFileSystemQueries::partFilter(const std::string &dataDir,
+																  FileType fileType,
 																  const std::string &category,
 																  int numConcurrentUnits,
 																  const std::shared_ptr<Normal> &n) {
 
   auto g = n->createQuery();
 
-  auto partCacheLoads = common::Operators::makeFileCacheLoadOperators("part", "part.tbl", SSBSchema::PartFields, dataDir, numConcurrentUnits, g);
-  auto partScans = common::Operators::makeFileScanOperators("part", "part.tbl", SSBSchema::PartFields, dataDir, numConcurrentUnits, g);
+  auto partCacheLoads = common::Operators::makeFileCacheLoadOperators("part", fileType == FileType::CSV ? "part.tbl" : "parquet/part.snappy.parquet", SSBSchema::part()->field_names(), dataDir, numConcurrentUnits, g);
+  auto partScans = common::Operators::makeFileScanOperators("part", "part.tbl", fileType, SSBSchema::part()->field_names(), dataDir, numConcurrentUnits, g);
   auto partMerges = common::Operators::makeMergeOperators("part", numConcurrentUnits, g);
 
   auto partFilters = Operators::makePartFilterOperators(category, numConcurrentUnits, g);
@@ -45,6 +46,7 @@ std::shared_ptr<OperatorGraph> LocalFileSystemQueries::partFilter(const std::str
 
 
 std::shared_ptr<OperatorGraph> LocalFileSystemQueries::join2x(const std::string &dataDir,
+															  FileType fileType,
 															  const std::string& region,
 															  int numConcurrentUnits,
 															  const std::shared_ptr<Normal> &n) {
@@ -52,11 +54,11 @@ std::shared_ptr<OperatorGraph> LocalFileSystemQueries::join2x(const std::string 
   auto g = n->createQuery();
 
   auto supplierCacheLoads = common::Operators::makeFileCacheLoadOperators("supplier", "supplier.tbl", SupplierFields, dataDir, numConcurrentUnits, g);
-  auto supplierScans = common::Operators::makeFileScanOperators("supplier", "supplier.tbl", SupplierFields, dataDir, numConcurrentUnits, g);
+  auto supplierScans = common::Operators::makeFileScanOperators("supplier", "supplier.tbl", fileType, SupplierFields, dataDir, numConcurrentUnits, g);
   auto supplierMerges = common::Operators::makeMergeOperators("supplier", numConcurrentUnits, g);
 
   auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", "lineorder.tbl", LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", "lineorder.tbl", LineOrderFields, dataDir, numConcurrentUnits, g);
+  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", "lineorder.tbl", fileType, LineOrderFields, dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
 
   auto supplierFilters = Operators::makeSupplierFilterOperators(region, numConcurrentUnits, g);
@@ -92,6 +94,7 @@ std::shared_ptr<OperatorGraph> LocalFileSystemQueries::join2x(const std::string 
 
 
 std::shared_ptr<OperatorGraph> LocalFileSystemQueries::join3x(const std::string &dataDir,
+															  FileType fileType,
 							 const std::string& region,
 							 int numConcurrentUnits,
 							 const std::shared_ptr<Normal> &n) {
@@ -99,15 +102,15 @@ std::shared_ptr<OperatorGraph> LocalFileSystemQueries::join3x(const std::string 
   auto g = n->createQuery();
 
   auto supplierCacheLoads = common::Operators::makeFileCacheLoadOperators("supplier", "supplier.tbl", SupplierFields, dataDir, numConcurrentUnits, g);
-  auto supplierScans = common::Operators::makeFileScanOperators("supplier", "supplier.tbl", SupplierFields, dataDir, numConcurrentUnits, g);
+  auto supplierScans = common::Operators::makeFileScanOperators("supplier", "supplier.tbl", fileType, SupplierFields, dataDir, numConcurrentUnits, g);
   auto supplierMerges = common::Operators::makeMergeOperators("supplier", numConcurrentUnits, g);
 
   auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", "lineorder.tbl", LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", "lineorder.tbl", LineOrderFields, dataDir, numConcurrentUnits, g);
+  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", "lineorder.tbl", fileType,LineOrderFields, dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
 
   auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", "date.tbl", DateFields, dataDir, numConcurrentUnits, g);
-  auto dateScans = common::Operators::makeFileScanOperators("date", "date.tbl", DateFields, dataDir, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeFileScanOperators("date", "date.tbl", fileType,DateFields, dataDir, numConcurrentUnits, g);
   auto dateMerges =common:: Operators::makeMergeOperators("date", numConcurrentUnits, g);
 
   auto supplierFilters = Operators::makeSupplierFilterOperators(region, numConcurrentUnits, g);
@@ -158,6 +161,7 @@ std::shared_ptr<OperatorGraph> LocalFileSystemQueries::join3x(const std::string 
 
 std::shared_ptr<OperatorGraph>
 LocalFileSystemQueries::join(const std::string &dataDir,
+							 FileType fileType,
 							 const std::string& category,
 							 const std::string& region,
 							 int numConcurrentUnits,
@@ -165,20 +169,22 @@ LocalFileSystemQueries::join(const std::string &dataDir,
 
   auto g = n->createQuery();
 
-  auto supplierCacheLoads = common::Operators::makeFileCacheLoadOperators("supplier", "supplier.tbl", SupplierFields, dataDir, numConcurrentUnits, g);
-  auto supplierScans = common::Operators::makeFileScanOperators("supplier", "supplier.tbl", SSBSchema::SupplierFields, dataDir, numConcurrentUnits, g);
+  auto supplierCacheLoads = common::Operators::makeFileCacheLoadOperators("supplier", "supplier.tbl", SSBSchema::supplier()->field_names(), dataDir, numConcurrentUnits, g);
+  auto supplierScans = common::Operators::makeFileScanOperators("supplier", "supplier.tbl", fileType, SSBSchema::supplier()->field_names(), dataDir, numConcurrentUnits, g);
   auto supplierMerges = common::Operators::makeMergeOperators("supplier", numConcurrentUnits, g);
 
-  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", "lineorder.tbl", LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", "lineorder.tbl", LineOrderFields, dataDir, numConcurrentUnits, g);
+  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", "lineorder.tbl", SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
+  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", "lineorder.tbl", fileType,SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
 
-  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", "date.tbl", DateFields, dataDir, numConcurrentUnits, g);
-  auto dateScans = common::Operators::makeFileScanOperators("date", "date.tbl", DateFields, dataDir, numConcurrentUnits, g);
+  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", "date.tbl",
+																	  SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeFileScanOperators("date", "date.tbl", fileType,
+															SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
   auto dateMerges =common:: Operators::makeMergeOperators("date", numConcurrentUnits, g);
 
-  auto partCacheLoads = common::Operators::makeFileCacheLoadOperators("part", "part.tbl", PartFields, dataDir, numConcurrentUnits, g);
-  auto partScans = common::Operators::makeFileScanOperators("part", "part.tbl", PartFields, dataDir, numConcurrentUnits, g);
+  auto partCacheLoads = common::Operators::makeFileCacheLoadOperators("part", "part.tbl", SSBSchema::part()->field_names(), dataDir, numConcurrentUnits, g);
+  auto partScans = common::Operators::makeFileScanOperators("part", "part.tbl", fileType,SSBSchema::part()->field_names(), dataDir, numConcurrentUnits, g);
   auto partMerges = common::Operators::makeMergeOperators("part", numConcurrentUnits, g);
 
   auto supplierFilters = Operators::makeSupplierFilterOperators(region, numConcurrentUnits, g);

@@ -4,7 +4,7 @@
 
 #include "normal/ssb/SSBSchema.h"
 
-std::shared_ptr<arrow::Schema> SSBSchema::customerSchema() {
+std::shared_ptr<arrow::Schema> SSBSchema::customer() {
 
   // 1,"Customer#000000001","j5JsirBM9P","MOROCCO  4","MOROCCO","AFRICA","25-902-614-8344","BUILDING"
 
@@ -21,7 +21,7 @@ std::shared_ptr<arrow::Schema> SSBSchema::customerSchema() {
   return schema;
 }
 
-std::shared_ptr<arrow::Schema> SSBSchema::dateSchema() {
+std::shared_ptr<arrow::Schema> SSBSchema::date() {
 
   // "19920101","January 1, 1992","Thursday","January",1992,199201,"Jan1992",5,1,1,1,1,"Winter","0","0","1","1"
 

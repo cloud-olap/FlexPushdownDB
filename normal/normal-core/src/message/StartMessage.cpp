@@ -8,15 +8,10 @@
 
 namespace normal::core::message {
 
-StartMessage::StartMessage(std::vector<caf::actor> consumers,
+StartMessage::StartMessage(
                            std::string from) :
-    Message("StartMessage", std::move(from)),
-    consumers_(std::move(consumers)) {
+    Message("StartMessage", std::move(from)){
 
-}
-
-const std::vector<caf::actor> &StartMessage::consumers() const {
-  return consumers_;
 }
 
 }

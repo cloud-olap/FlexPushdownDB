@@ -8,11 +8,14 @@
 #include <memory>
 #include <string>
 
+#include <caf/all.hpp>
+#include <tl/expected.hpp>
+
 #include <normal/core/Operator.h>
 #include <normal/core/OperatorContext.h>
 #include <normal/core/OperatorDirectory.h>
-#include <normal/core/cache/SegmentCacheActor.h>
 #include <normal/core/OperatorManager.h>
+#include <normal/core/Forward.h>
 
 using namespace normal::core;
 using namespace normal::core::cache;
@@ -29,22 +32,25 @@ class OperatorGraph {
 
 public:
   OperatorGraph(long id, const std::shared_ptr<OperatorManager>& operatorManager);
+  ~OperatorGraph(){
+	for (const auto &element: operatorDirectory_) {
+	  (*rootActor_)->send_exit(element.second.getActorHandle(), caf::exit_reason::user_shutdown);
+	}
+  }
   static std::shared_ptr<OperatorGraph> make(const std::shared_ptr<OperatorManager>& operatorManager);
-  void put(const std::shared_ptr<Operator> &op);
+  void put(const std::shared_ptr<Operator> &def);
   void start();
   void join();
   void boot();
   void write_graph(const std::string &file);
   std::shared_ptr<Operator> getOperator(const std::string &);
-  std::map<std::string, std::shared_ptr<OperatorContext>> getOperators();
   tl::expected<long, std::string> getElapsedTime();
   std::pair<size_t, size_t> getBytesTransferred();
   std::string showMetrics();
-  const long &getId() const;
+  [[nodiscard]] const long &getId() const;
 
 private:
   long id_;
-  std::map<std::string, std::shared_ptr<OperatorContext>> m_operatorMap;
   OperatorDirectory operatorDirectory_;
   std::weak_ptr<OperatorManager> operatorManager_;
   std::shared_ptr<caf::scoped_actor> rootActor_;

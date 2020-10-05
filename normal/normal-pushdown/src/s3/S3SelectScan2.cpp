@@ -75,7 +75,7 @@ std::shared_ptr<S3SelectScan2> S3SelectScan2::make(const std::string &name,
 										 startPos,
 										 finishPos,
 										 fileType,
-										 columnNames,
+										 columnNames.has_value() ? std::optional(ColumnName::canonicalize(columnNames.value())) : std::nullopt,
 										 csvParseOptions,
 										 s3Client,
 										 scanOnStart,
@@ -91,6 +91,10 @@ tl::expected<void, std::string> S3SelectScan2::onStart() {
   }
   else if(scanOnStart_ && !columnNames_.has_value()){
     return tl::make_unexpected("scanOnStart is set but no column names were supplied");
+  }
+  else if(!scanOnStart_ && columnNamesToScan_.has_value()){
+    // If we have already received column names, process them
+	readAndSendTuples(columnNamesToScan_.value());
   }
 
   return {};
@@ -120,7 +124,11 @@ void S3SelectScan2::onComplete(const CompleteMessage &) {
 }
 
 void S3SelectScan2::onScan(const ScanMessage &Message) {
-  readAndSendTuples(Message.getColumnNames());
+  columnNamesToScan_ = Message.getColumnNames();
+  if(ctx()->operatorActor()->running_){
+    // Only if running process the column names, otherwise leave for later
+    readAndSendTuples(columnNamesToScan_.value());
+  }
 }
 
 void S3SelectScan2::readAndSendTuples(const std::vector<std::string> &columnNames) {

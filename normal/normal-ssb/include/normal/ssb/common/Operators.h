@@ -16,13 +16,14 @@
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
 #include <normal/pushdown/Aggregate.h>
-#include <normal/pushdown/s3/S3SelectScan.h>
+#include <normal/pushdown/s3/S3SelectScan2.h>
 #include <normal/pushdown/shuffle/Shuffle.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/cache/CacheLoad.h>
-#include <normal/pushdown/merge/MergeOperator.h>
+#include <normal/pushdown/merge/Merge.h>
 #include <normal/pushdown/bloomjoin/BloomCreateOperator.h>
 #include <normal/pushdown/bloomjoin/FileScanBloomUseOperator.h>
+#include <normal/connector/s3/S3SelectPartition.h>
 
 using namespace normal::core::graph;
 using namespace normal::pushdown;
@@ -47,13 +48,20 @@ public:
 							 int numConcurrentUnits,
 							 const std::shared_ptr<OperatorGraph> &g);
 
-  static std::vector<std::shared_ptr<FileScan>>
-  makeFileScanOperators(const std::string &namePrefix,
-						const std::string &filename,
-						const std::vector<std::string> &columns,
-						const std::string &dataDir,
-						int numConcurrentUnits,
-						const std::shared_ptr<OperatorGraph> &g);
+  static std::vector<std::shared_ptr<CacheLoad>>
+  makeCacheLoadOperators(const std::string &namePrefix,
+									const std::shared_ptr<Partition>& partition,
+									const std::vector<std::string> &columns,
+									int numConcurrentUnits,
+									const std::shared_ptr<OperatorGraph> &g);
+
+//  static std::vector<std::shared_ptr<FileScan>>
+//  makeFileScanOperators(const std::string &namePrefix,
+//						const std::string &filename,
+//						const std::vector<std::string> &columns,
+//						const std::string &dataDir,
+//						int numConcurrentUnits,
+//						const std::shared_ptr<OperatorGraph> &g);
 
   static std::vector<std::shared_ptr<FileScan>>
   makeFileScanOperators(const std::string &namePrefix,
@@ -64,7 +72,20 @@ public:
 								   int numConcurrentUnits,
 								   const std::shared_ptr<OperatorGraph> &g);
 
-  static std::vector<std::shared_ptr<MergeOperator>>
+  static std::vector<std::shared_ptr<S3SelectScan2>>
+  makeS3SelectScanPushDownOperators(const std::string &namePrefix,
+									const std::string &s3Object,
+									const std::string &s3Bucket,
+									FileType fileType,
+									const std::vector<std::string> &columns,
+									const std::string &sql,
+									bool scanOnStart,
+									int numConcurrentUnits,
+									const std::shared_ptr<S3SelectPartition>& partition,
+									AWSClient &client,
+									const std::shared_ptr<OperatorGraph> &g);
+
+  static std::vector<std::shared_ptr<Merge>>
   makeMergeOperators(const std::string &namePrefix,
 					 int numConcurrentUnits,
 					 const std::shared_ptr<OperatorGraph> &g);
@@ -167,13 +188,33 @@ public:
 	}
   }
 
+  static void connectHitsToEachLeft(std::vector<std::shared_ptr<CacheLoad>> producers,
+								std::vector<std::shared_ptr<Merge>> consumers){
+
+	for (size_t u1 = 0; u1 < producers.size(); ++u1) {
+	  producers[u1]->setHitOperator(consumers[u1]);
+	  consumers[u1]->setLeftProducer(producers[u1]);
+	}
+  }
+
+  template <typename A>
+  static void connectToEachRight(std::vector<std::shared_ptr<A>> producers,
+									std::vector<std::shared_ptr<Merge>> consumers){
+
+	for (size_t u1 = 0; u1 < producers.size(); ++u1) {
+	  producers[u1]->produce(consumers[u1]);
+	  consumers[u1]->setRightProducer(producers[u1]);
+	}
+  }
+
 
   template <typename B>
   static void connectMissesToEach(std::vector<std::shared_ptr<CacheLoad>> producers,
 								  std::vector<std::shared_ptr<B>> consumers){
 
 	for (size_t u1 = 0; u1 < producers.size(); ++u1) {
-	  producers[u1]->setMissOperator(consumers[u1]);
+	  producers[u1]->setMissOperatorToCache(consumers[u1]);
+//	  producers[u1]->setMissOperatorToPushdown(consumers[u1]); ????????????
 	  consumers[u1]->consume(producers[u1]);
 	}
   }

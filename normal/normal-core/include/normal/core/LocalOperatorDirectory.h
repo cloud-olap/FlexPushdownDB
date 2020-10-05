@@ -26,7 +26,7 @@ public:
   void setComplete(const std::string &name);
   bool allComplete();
   bool allComplete(const OperatorRelationshipType &operatorRelationshipType);
-  std::string showString() const;
+  [[nodiscard]] std::string showString() const;
   void setIncomplete();
   void clearForSegmentCache();
   void clearUsingEmpty();
@@ -35,6 +35,7 @@ public:
   get(const std::string& operatorId);
   std::vector<LocalOperatorDirectoryEntry>
   get(const OperatorRelationshipType &operatorRelationshipType);
+  void destroyActorHandles();
 
 };
 

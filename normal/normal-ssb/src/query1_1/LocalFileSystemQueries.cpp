@@ -20,14 +20,16 @@ LocalFileSystemQueries::dateScan(const std::string &dataDir, FileType fileType, 
 
   auto g = n->createQuery();
 
-  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
-  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType, SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
+  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet",
+																	  SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType,
+															SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
   common::Operators::connectToOne(dateMerges, collate);
 
@@ -40,15 +42,17 @@ LocalFileSystemQueries::dateFilter(const std::string &dataDir, FileType fileType
 
   auto g = n->createQuery();
 
-  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
-  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType, SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
+  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet",
+																	  SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType,
+															SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
   common::Operators::connectToEach(dateMerges, dateFilters);
 
@@ -62,14 +66,14 @@ LocalFileSystemQueries::lineOrderScan(const std::string &dataDir, FileType fileT
 
   auto g = n->createQuery();
 
-  auto lineorderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineorderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
+  auto lineorderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
+  auto lineorderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
   auto lineorderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(lineorderCacheLoads, lineorderMerges);
+  common::Operators::connectHitsToEachLeft(lineorderCacheLoads, lineorderMerges);
   common::Operators::connectMissesToEach(lineorderCacheLoads, lineorderScans);
-  common::Operators::connectToEach(lineorderScans, lineorderMerges);
+  common::Operators::connectToEachRight(lineorderScans, lineorderMerges);
 
   common::Operators::connectToOne(lineorderMerges, collate);
 
@@ -87,15 +91,15 @@ LocalFileSystemQueries::lineOrderFilter(const std::string &dataDir,
   auto g = n->createQuery();
 
 
-  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
+  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
+  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(lineOrderCacheLoads, lineOrderMerges);
+  common::Operators::connectHitsToEachLeft(lineOrderCacheLoads, lineOrderMerges);
   common::Operators::connectMissesToEach(lineOrderCacheLoads, lineOrderScans);
-  common::Operators::connectToEach(lineOrderScans, lineOrderMerges);
+  common::Operators::connectToEachRight(lineOrderScans, lineOrderMerges);
 
   common::Operators::connectToEach(lineOrderMerges, lineOrderFilters);
 
@@ -115,11 +119,13 @@ LocalFileSystemQueries::join(const std::string &dataDir,
 
   auto g = n->createQuery();
 
-  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
-  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType, SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
+  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet",
+																	  SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType,
+															SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
-  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
+  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
+  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
@@ -129,13 +135,13 @@ LocalFileSystemQueries::join(const std::string &dataDir,
   auto joinProbe = common::Operators::makeHashJoinProbeOperators("1", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
-  common::Operators::connectHitsToEach(lineOrderCacheLoads, lineOrderMerges);
+  common::Operators::connectHitsToEachLeft(lineOrderCacheLoads, lineOrderMerges);
   common::Operators::connectMissesToEach(lineOrderCacheLoads, lineOrderScans);
-  common::Operators::connectToEach(lineOrderScans, lineOrderMerges);
+  common::Operators::connectToEachRight(lineOrderScans, lineOrderMerges);
 
   common::Operators::connectToEach(dateMerges, dateFilters);
   common::Operators::connectToEach(lineOrderMerges, lineOrderFilters);
@@ -163,11 +169,13 @@ LocalFileSystemQueries::full(const std::string &dataDir,
 
   auto g = n->createQuery();
 
-  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
-  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType, SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
+  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet",
+																	  SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType,
+															SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
-  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
+  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
+  auto lineOrderScans = common::Operators::makeFileScanOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", fileType, SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
@@ -179,13 +187,13 @@ LocalFileSystemQueries::full(const std::string &dataDir,
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(dateCacheLoads, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
   common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
-  common::Operators::connectHitsToEach(lineOrderCacheLoads, lineOrderMerges);
+  common::Operators::connectHitsToEachLeft(lineOrderCacheLoads, lineOrderMerges);
   common::Operators::connectMissesToEach(lineOrderCacheLoads, lineOrderScans);
-  common::Operators::connectToEach(lineOrderScans, lineOrderMerges);
+  common::Operators::connectToEachRight(lineOrderScans, lineOrderMerges);
 
   common::Operators::connectToEach(dateMerges, dateFilters);
   common::Operators::connectToEach(lineOrderMerges, lineOrderFilters);
@@ -216,12 +224,14 @@ LocalFileSystemQueries::bloom(const std::string &dataDir,
 
   auto g = n->createQuery();
 
-  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
-  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType, SSBSchema::DateFields, dataDir, numConcurrentUnits, g);
+  auto dateCacheLoads = common::Operators::makeFileCacheLoadOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet",
+																	  SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeFileScanOperators("date", fileType == FileType::CSV ? "date.tbl" : "parquet/date.snappy.parquet", fileType,
+															SSBSchema::date()->field_names(), dataDir, numConcurrentUnits, g);
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
   auto dateBloomCreate = common::Operators::makeBloomCreateOperator("d_datekey", "d_datekey", 0.3, g);
-  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::LineOrderFields, dataDir, numConcurrentUnits, g);
-  auto lineOrderScanBloomUses = common::Operators::makeFileScanBloomUseOperators("lo_orderdate", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::LineOrderFields, "lo_orderdate", dataDir, numConcurrentUnits, g);
+  auto lineOrderCacheLoads = common::Operators::makeFileCacheLoadOperators("lineorder", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::lineOrder()->field_names(), dataDir, numConcurrentUnits, g);
+  auto lineOrderScanBloomUses = common::Operators::makeFileScanBloomUseOperators("lo_orderdate", fileType == FileType::CSV ? "lineorder.tbl" : "parquet/lineorder.snappy.parquet", SSBSchema::lineOrder()->field_names(), "lo_orderdate", dataDir, numConcurrentUnits, g);
   auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
   auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
   auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);

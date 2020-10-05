@@ -9,6 +9,10 @@
 #include <normal/ssb/query1_1/Operators.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
+#include <normal/connector/s3/S3SelectPartition.h>
+
+#include <utility>
+#include <normal/ssb/SSBSchema.h>
 
 using namespace normal::ssb::query1_1;
 using namespace normal::pushdown::aggregate;
@@ -16,26 +20,54 @@ using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 using namespace normal::connector::s3;
 
-std::shared_ptr<OperatorGraph>
-S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
-								const std::string &s3ObjectDir,
-								int numConcurrentUnits,
-								AWSClient &client,
-								const std::shared_ptr<Normal>& n) {
+namespace {
 
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{dateFile};
+std::unordered_map<std::string, std::shared_ptr<S3SelectPartition>> discoverPartitions(const std::string &s3Bucket,
+																					   std::vector<std::string> s3Objects,
+																					   const AWSClient &client);
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+std::unordered_map<std::string, std::shared_ptr<S3SelectPartition>> discoverPartitions(const std::string &s3Bucket,
+																					   std::vector<std::string> s3Objects,
+																					   const AWSClient &client) {
+  auto partitionMap = S3Util::listObjects(s3Bucket, std::move(s3Objects), client.defaultS3Client());
 
+  std::unordered_map<std::string, std::shared_ptr<S3SelectPartition>> partitions;
   SPDLOG_DEBUG("Discovered partitions");
   for (auto &partition : partitionMap) {
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
+	partitions.emplace(partition.first,
+					   std::make_shared<S3SelectPartition>(s3Bucket, partition.first, partition.second));
   }
+  return partitions;
+}
+
+}
+
+std::shared_ptr<OperatorGraph>
+S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
+								const std::string &s3ObjectDir,
+								FileType fileType,
+								int numConcurrentUnits,
+								AWSClient &client,
+								const std::shared_ptr<Normal> &n) {
+
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+
+  auto partitions = discoverPartitions(s3Bucket, {dateFile}, client);
 
   auto g = n->createQuery();
 
-  auto dateScans = Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
+  auto dateScans = common::Operators::makeS3SelectScanPushDownOperators("date",
+																		dateFile,
+																		s3Bucket,
+																		fileType,
+																		SSBSchema::date()->field_names(),
+																		"select * from s3Object",
+																		true,
+																		numConcurrentUnits,
+																		partitions[dateFile],
+																		client,
+																		g);
   auto collate = common::Operators::makeCollateOperator(g);
 
   common::Operators::connectToOne(dateScans, collate);
@@ -44,27 +76,31 @@ S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
 }
 
 std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::string &s3Bucket,
-																   const std::string &s3ObjectDir,
-																   short year,
-																   int numConcurrentUnits,
-																   AWSClient &client,
-																 const std::shared_ptr<Normal>& n) {
+																 const std::string &s3ObjectDir,
+																 FileType fileType,
+																 short year,
+																 int numConcurrentUnits,
+																 AWSClient &client,
+																 const std::shared_ptr<Normal> &n) {
 
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{dateFile};
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto partitions = discoverPartitions(s3Bucket, {dateFile}, client);
 
   auto g = n->createQuery();
 
-  auto dateScans =
-	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeS3SelectScanPushDownOperators("date",
+																		dateFile,
+																		s3Bucket,
+																		fileType,
+																		SSBSchema::date()->field_names(),
+																		"select * from s3Object",
+																		true,
+																		numConcurrentUnits,
+																		partitions[dateFile],
+																		client,
+																		g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
   common::Operators::connectToEach(dateScans, dateFilters);
@@ -76,40 +112,44 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::stri
 std::shared_ptr<OperatorGraph>
 S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
 								  const std::string &s3ObjectDir,
+								  FileType fileType,
 								  short year,
 								  int numConcurrentUnits,
 								  AWSClient &client,
-								  const std::shared_ptr<Normal>& n) {
+								  const std::shared_ptr<Normal> &n) {
 
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{dateFile};
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto partitions = discoverPartitions(s3Bucket, {dateFile}, client);
 
   auto g = n->createQuery();
 
-  auto cacheLoads =
-	  Operators::makeDateS3SelectCacheLoadOperators(s3ObjectDir, s3Bucket,
-													   numConcurrentUnits, partitionMap,
-													   client, g);
-
-  auto dateScans =
-	  Operators::makeDateS3SelectScanPushDownOperators(s3ObjectDir, s3Bucket,
-													   year,
-													   numConcurrentUnits, partitionMap,
-													   client, g);
+  auto dateColumns = std::vector<std::string>{"D_DATEKEY", "D_YEAR"};
+  auto dateCacheLoads = common::Operators::makeCacheLoadOperators("date",
+																  partitions[dateFile],
+																  dateColumns,
+																  numConcurrentUnits,
+																  g);
+  auto dateScans = common::Operators::makeS3SelectScanPushDownOperators("date",
+																		dateFile,
+																		s3Bucket,
+																		fileType,
+																		dateColumns,
+																		fmt::format(
+																			"select {{}} from s3Object where cast(d_year as int) = {}",
+																			year),
+																		false,
+																		numConcurrentUnits,
+																		partitions[dateFile],
+																		client,
+																		g);
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectHitsToEach(cacheLoads, dateMerges);
-  common::Operators::connectMissesToEach(cacheLoads, dateScans);
-  common::Operators::connectToEach(dateScans, dateMerges);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
+  common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
 
   common::Operators::connectToEach(dateMerges, dateFilters);
 
@@ -121,24 +161,29 @@ S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
 std::shared_ptr<OperatorGraph>
 S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 									 const std::string &s3ObjectDir,
+									 FileType fileType,
 									 int numConcurrentUnits,
 									 AWSClient &client,
-									 const std::shared_ptr<Normal>& n) {
+									 const std::shared_ptr<Normal> &n) {
 
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto s3Objects = std::vector{lineOrderFile};
+  auto lineOrderFile =
+	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto partitions = discoverPartitions(s3Bucket, {lineOrderFile}, client);
 
   auto g = n->createQuery();
 
-  auto lineOrderScans =
-	  Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
+  auto lineOrderScans = common::Operators::makeS3SelectScanPushDownOperators("lineorder",
+																			 lineOrderFile,
+																			 s3Bucket,
+																			 fileType,
+																			 SSBSchema::lineOrder()->field_names(),
+																			 "select * from s3Object",
+																			 true,
+																			 numConcurrentUnits,
+																			 partitions[lineOrderFile],
+																			 client,
+																			 g);
   auto collate = common::Operators::makeCollateOperator(g);
 
   common::Operators::connectToOne(lineOrderScans, collate);
@@ -149,27 +194,32 @@ S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 std::shared_ptr<OperatorGraph>
 S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
 									   const std::string &s3ObjectDir,
+									   FileType fileType,
 									   short discount,
 									   short quantity,
 									   int numConcurrentUnits,
 									   AWSClient &client,
-									   const std::shared_ptr<Normal>& n) {
+									   const std::shared_ptr<Normal> &n) {
 
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto s3Objects = std::vector{lineOrderFile};
+  auto lineOrderFile =
+	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto partitions = discoverPartitions(s3Bucket, {lineOrderFile}, client);
 
   auto g = n->createQuery();
 
-  auto lineOrderScans =
-	  Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
+  auto lineOrderScans = common::Operators::makeS3SelectScanPushDownOperators("lineorder",
+																			 lineOrderFile,
+																			 s3Bucket,
+																			 fileType,
+																			 SSBSchema::lineOrder()->field_names(),
+																			 "select * from s3Object",
+																			 true,
+																			 numConcurrentUnits,
+																			 partitions[lineOrderFile],
+																			 client,
+																			 g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
   common::Operators::connectToEach(lineOrderScans, lineOrderFilters);
@@ -179,36 +229,53 @@ S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
 }
 
 std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3Bucket,
-															 const std::string &s3ObjectDir,
-															 short year,
-															 short discount,
-															 short quantity,
-															 int numConcurrentUnits,
-															 AWSClient &client,
-														   const std::shared_ptr<Normal>& n) {
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{lineOrderFile, dateFile};
+														   const std::string &s3ObjectDir,
+														   FileType fileType,
+														   short year,
+														   short discount,
+														   short quantity,
+														   int numConcurrentUnits,
+														   AWSClient &client,
+														   const std::shared_ptr<Normal> &n) {
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto lineOrderFile =
+	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
 
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 
-  auto dateScans =
-	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto lineOrderScans = Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket,
-																	  numConcurrentUnits, partitionMap, client, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeS3SelectScanPushDownOperators("date",
+																		dateFile,
+																		s3Bucket,
+																		fileType,
+																		SSBSchema::date()->field_names(),
+																		"select * from s3Object",
+																		true,
+																		numConcurrentUnits,
+																		partitions[dateFile],
+																		client,
+																		g);
+  auto lineOrderScans = common::Operators::makeS3SelectScanPushDownOperators("lineorder",
+																			 lineOrderFile,
+																			 s3Bucket,
+																			 fileType,
+																			 SSBSchema::lineOrder()->field_names(),
+																			 "select * from s3Object",
+																			 true,
+																			 numConcurrentUnits,
+																			 partitions[lineOrderFile],
+																			 client,
+																			 g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
+  auto lineOrderFilters =
+	  Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
   auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
   auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
   auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
-  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
+  auto joinProbe =
+	  common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto collate = common::Operators::makeCollateOperator(g);
 
   common::Operators::connectToEach(dateScans, dateFilters);
@@ -227,37 +294,53 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 }
 
 std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3Bucket,
-															 const std::string &s3ObjectDir,
-															 short year,
-															 short discount,
-															 short quantity,
-															 int numConcurrentUnits,
-															 AWSClient &client,
-														   const std::shared_ptr<Normal>& n) {
+														   const std::string &s3ObjectDir,
+														   FileType fileType,
+														   short year,
+														   short discount,
+														   short quantity,
+														   int numConcurrentUnits,
+														   AWSClient &client,
+														   const std::shared_ptr<Normal> &n) {
 
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{lineOrderFile, dateFile};
+  auto lineOrderFile =
+	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 
-  auto dateScans =
-	  Operators::makeDateS3SelectScanOperators(s3ObjectDir, s3Bucket, numConcurrentUnits, partitionMap, client, g);
-  auto lineOrderScans = Operators::makeLineOrderS3SelectScanOperators(s3ObjectDir, s3Bucket,
-																	  numConcurrentUnits, partitionMap, client, g);
-  auto dateFilters = Operators::makeDateFilterOperators(year, true, numConcurrentUnits, g);
-  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount, quantity, true, numConcurrentUnits, g);
+  auto dateScans = common::Operators::makeS3SelectScanPushDownOperators("date",
+																		dateFile,
+																		s3Bucket,
+																		fileType,
+																		SSBSchema::date()->field_names(),
+																		"select * from s3Object",
+																		true,
+																		numConcurrentUnits,
+																		partitions[dateFile],
+																		client,
+																		g);
+  auto lineOrderScans = common::Operators::makeS3SelectScanPushDownOperators("lineorder",
+																			 lineOrderFile,
+																			 s3Bucket,
+																			 fileType,
+																			 SSBSchema::lineOrder()->field_names(),
+																			 "select * from s3Object",
+																			 true,
+																			 numConcurrentUnits,
+																			 partitions[lineOrderFile],
+																			 client,
+																			 g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
+  auto lineOrderFilters =
+	  Operators::makeLineOrderFilterOperators(discount, quantity, fileType == FileType::CSV, numConcurrentUnits, g);
   auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
   auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
   auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
-  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
+  auto joinProbe =
+	  common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits, g);
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
   auto collate = common::Operators::makeCollateOperator(g);
@@ -281,46 +364,79 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 }
 
 std::shared_ptr<OperatorGraph> S3SelectQueries::fullPushDown(const std::string &s3Bucket,
-															   const std::string &s3ObjectDir,
-															   short year,
-															   short discount,
-															   short quantity,
-															   int numConcurrentUnits,
-															   AWSClient &client,
-															 const std::shared_ptr<Normal>& n) {
+															 const std::string &s3ObjectDir,
+															 FileType fileType,
+															 short year,
+															 short discount,
+															 short quantity,
+															 int numConcurrentUnits,
+															 AWSClient &client,
+															 const std::shared_ptr<Normal> &n) {
 
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{lineOrderFile, dateFile};
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto lineOrderFile =
+	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
 
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 
-  auto dateScans =
-	  Operators::makeDateS3SelectScanPushDownOperators(s3ObjectDir, s3Bucket,
-													   year,
-													   numConcurrentUnits, partitionMap,
-													   client, g);
-  auto lineOrderScans = Operators::makeLineOrderS3SelectScanPushdownOperators(s3ObjectDir, s3Bucket,
-																			  discount, quantity,
-																			  numConcurrentUnits, partitionMap,
-																			  client, g);
+  auto dateColumns = std::vector<std::string>{"D_DATEKEY", "D_YEAR"};
+  auto dateScans = common::Operators::makeS3SelectScanPushDownOperators("date",
+																		dateFile,
+																		s3Bucket,
+																		fileType,
+																		dateColumns,
+																		fmt::format(
+																			"select {{}} from s3Object where cast(d_year as int) = {}",
+																			year),
+																		true,
+																		numConcurrentUnits,
+																		partitions[dateFile],
+																		client, g);
+  auto lineOrderColumns = std::vector<std::string>{"LO_ORDERDATE",
+												   "LO_QUANTITY",
+												   "LO_EXTENDEDPRICE",
+												   "LO_DISCOUNT",
+												   "LO_REVENUE"};
+  auto lineOrderScans = common::Operators::makeS3SelectScanPushDownOperators("lineorder",
+																			 lineOrderFile,
+																			 s3Bucket,
+																			 fileType,
+																			 lineOrderColumns,
+																			 fmt::format(
+																				 "select {{}} from s3Object where cast(lo_discount as int) between {} and {} and cast(lo_quantity as int) < {}",
+																				 discount - 1,
+																				 discount + 1,
+																				 quantity),
+																			 true,
+																			 numConcurrentUnits,
+																			 partitions[lineOrderFile],
+																			 client,
+																			 g);
+  auto dateFilters = Operators::makeDateFilterOperators(year, fileType == FileType::CSV, numConcurrentUnits, g);
+  auto lineOrderFilters = Operators::makeLineOrderFilterOperators(discount,
+																  quantity,
+																  fileType == FileType::CSV,
+																  numConcurrentUnits,
+																  g);
   auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
   auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
-  auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
-  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
+  auto joinBuild = common::Operators::makeHashJoinBuildOperators("1", "d_datekey", numConcurrentUnits, g);
+  auto joinProbe = common::Operators::makeHashJoinProbeOperators("1",
+																 "d_datekey",
+																 "lo_orderdate",
+																 numConcurrentUnits,
+																 g);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits, g);
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectToEach(dateScans, dateShuffles);
-  common::Operators::connectToEach(lineOrderScans, lineOrderShuffles);
+  common::Operators::connectToEach(dateScans, dateFilters);
+  common::Operators::connectToEach(lineOrderScans, lineOrderFilters);
+
+  common::Operators::connectToEach(dateFilters, dateShuffles);
+  common::Operators::connectToEach(lineOrderFilters, lineOrderShuffles);
 
   common::Operators::connectToAll(dateShuffles, joinBuild);
   common::Operators::connectToAll(lineOrderShuffles, joinProbe);
@@ -335,46 +451,86 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPushDown(const std::string &
 }
 
 std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3Bucket,
-															 const std::string &s3ObjectDir,
-															 short year,
-															 short discount,
-															 short quantity,
-															 int numConcurrentUnits,
-															 AWSClient &client,
-														   const std::shared_ptr<Normal>& n) {
+														   const std::string &s3ObjectDir,
+														   FileType fileType,
+														   short year,
+														   short discount,
+														   short quantity,
+														   int numConcurrentUnits,
+														   AWSClient &client,
+														   const std::shared_ptr<Normal> &n) {
 
-  auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
-  auto dateFile = s3ObjectDir + "/date.tbl";
-  auto s3Objects = std::vector{lineOrderFile, dateFile};
-
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, client.defaultS3Client());
-
-  SPDLOG_DEBUG("Discovered partitions");
-  for (auto &partition : partitionMap) {
-	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
-  }
+  auto lineOrderFile =
+	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 
-  auto dateScans =
-	  Operators::makeDateS3SelectScanPushDownOperators(s3ObjectDir, s3Bucket,
-													   year,
-													   numConcurrentUnits, partitionMap,
-													   client, g);
-  auto lineOrderScans = Operators::makeLineOrderS3SelectScanPushdownOperators(s3ObjectDir, s3Bucket,
-																			  discount, quantity,
-																			  numConcurrentUnits, partitionMap,
-																			  client, g);
+  auto dateCacheLoads = common::Operators::makeCacheLoadOperators("date",
+																  partitions[dateFile],
+																  SSBSchema::date()->field_names(),
+																  numConcurrentUnits,
+																  g);
+  auto dateColumns = std::vector<std::string>{"D_DATEKEY", "D_YEAR"};
+  auto dateScans = common::Operators::makeS3SelectScanPushDownOperators("date",
+																		dateFile,
+																		s3Bucket,
+																		fileType,
+																		dateColumns,
+																		fmt::format(
+																			"select {{}} from s3Object where cast(d_year as int) = {}",
+																			year),
+																		false,
+																		numConcurrentUnits,
+																		partitions[dateFile],
+																		client, g);
+  auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
+  auto lineOrderCacheLoads = common::Operators::makeCacheLoadOperators("lineorder",
+																	   partitions[dateFile],
+																	   SSBSchema::lineOrder()->field_names(),
+																	   numConcurrentUnits,
+																	   g);
+  auto lineOrderColumns = std::vector<std::string>{"LO_ORDERDATE",
+												   "LO_QUANTITY",
+												   "LO_EXTENDEDPRICE",
+												   "LO_DISCOUNT",
+												   "LO_REVENUE"};
+  auto lineOrderScans = common::Operators::makeS3SelectScanPushDownOperators("lineorder",
+																			 lineOrderFile,
+																			 s3Bucket,
+																			 fileType,
+																			 lineOrderColumns,
+																			 fmt::format(
+																				 "select {{}} from s3Object where cast(lo_discount as int) between {} and {} and cast(lo_quantity as int) < {}",
+																				 discount - 1,
+																				 discount + 1,
+																				 quantity),
+																			 false,
+																			 numConcurrentUnits,
+																			 partitions[lineOrderFile],
+																			 client,
+																			 g);
+  auto lineOrderMerges = common::Operators::makeMergeOperators("lineorder", numConcurrentUnits, g);
   auto dateShuffles = common::Operators::makeShuffleOperators("date", "d_datekey", numConcurrentUnits, g);
   auto lineOrderShuffles = common::Operators::makeShuffleOperators("lineorder", "lo_orderdate", numConcurrentUnits, g);
   auto joinBuild = common::Operators::makeHashJoinBuildOperators("d_datekey", "d_datekey", numConcurrentUnits, g);
-  auto joinProbe = common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
+  auto joinProbe =
+	  common::Operators::makeHashJoinProbeOperators("lo_orderdate", "d_datekey", "lo_orderdate", numConcurrentUnits, g);
   auto aggregates = Operators::makeAggregateOperators(numConcurrentUnits, g);
   auto aggregateReduce = Operators::makeAggregateReduceOperator(g);
   auto collate = common::Operators::makeCollateOperator(g);
 
-  common::Operators::connectToEach(dateScans, dateShuffles);
-  common::Operators::connectToEach(lineOrderScans, lineOrderShuffles);
+  common::Operators::connectHitsToEachLeft(dateCacheLoads, dateMerges);
+  common::Operators::connectMissesToEach(dateCacheLoads, dateScans);
+  common::Operators::connectToEachRight(dateScans, dateMerges);
+
+  common::Operators::connectHitsToEachLeft(lineOrderCacheLoads, lineOrderMerges);
+  common::Operators::connectMissesToEach(lineOrderCacheLoads, lineOrderScans);
+  common::Operators::connectToEachRight(lineOrderScans, lineOrderMerges);
+
+  common::Operators::connectToEach(dateMerges, dateShuffles);
+  common::Operators::connectToEach(lineOrderMerges, lineOrderShuffles);
 
   common::Operators::connectToAll(dateShuffles, joinBuild);
   common::Operators::connectToAll(lineOrderShuffles, joinProbe);
@@ -387,5 +543,3 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3
 
   return g;
 }
-
-

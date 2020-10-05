@@ -14,6 +14,7 @@
 
 using namespace normal::core;
 using namespace normal::core::graph;
+using namespace normal::tuple;
 
 namespace normal::ssb::query1_1 {
 

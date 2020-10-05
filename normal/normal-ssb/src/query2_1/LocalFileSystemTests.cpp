@@ -16,6 +16,7 @@ using namespace normal::ssb::query2_1;
 
 void LocalFileSystemTests::partFilter(const std::string &category,
 								  const std::string &dataDir,
+									  FileType fileType,
 								  int numConcurrentUnits,
 								  bool check,
 								  const std::shared_ptr<Normal> &n) {
@@ -23,7 +24,7 @@ void LocalFileSystemTests::partFilter(const std::string &category,
   SPDLOG_INFO("Arguments  |  dataDir: '{}', category: {}, numConcurrentUnits: {}",
 			  dataDir, category, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::partFilter(dataDir,
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::partFilter(dataDir,fileType,
 																				   category,
 																			   numConcurrentUnits, n));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
@@ -38,6 +39,7 @@ void LocalFileSystemTests::partFilter(const std::string &category,
 
 void LocalFileSystemTests::join2x(const std::string &region,
 								  const std::string &dataDir,
+								  FileType fileType,
 								  int numConcurrentUnits,
 								  bool check,
 								  const std::shared_ptr<Normal> &n) {
@@ -45,7 +47,7 @@ void LocalFileSystemTests::join2x(const std::string &region,
   SPDLOG_INFO("Arguments  |  dataDir: '{}', region: {}, numConcurrentUnits: {}",
 			  dataDir, region, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::join2x(dataDir,
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::join2x(dataDir,fileType,
 																			   region,
 																			   numConcurrentUnits, n));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
@@ -61,6 +63,7 @@ void LocalFileSystemTests::join2x(const std::string &region,
 
 void LocalFileSystemTests::join3x(const std::string &region,
 								  const std::string &dataDir,
+								  FileType fileType,
 								  int numConcurrentUnits,
 								  bool check,
 								  const std::shared_ptr<Normal> &n) {
@@ -68,7 +71,7 @@ void LocalFileSystemTests::join3x(const std::string &region,
   SPDLOG_INFO("Arguments  |  dataDir: '{}', region: {}, numConcurrentUnits: {}",
 			  dataDir, region, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::join3x(dataDir,
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::join3x(dataDir,fileType,
 																			   region,
 																			   numConcurrentUnits, n));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
@@ -86,6 +89,7 @@ void LocalFileSystemTests::join3x(const std::string &region,
 void LocalFileSystemTests::join(const std::string &category,
 								const std::string &region,
 								const std::string &dataDir,
+								FileType fileType,
 								int numConcurrentUnits,
 								bool check,
 								const std::shared_ptr<Normal> &n) {
@@ -93,7 +97,7 @@ void LocalFileSystemTests::join(const std::string &category,
   SPDLOG_INFO("Arguments  |  dataDir: '{}', category: {}, region: {}, numConcurrentUnits: {}",
 			  dataDir, category, region, numConcurrentUnits);
 
-  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::join(dataDir,
+  auto actual = TestUtil::executeExecutionPlan2(LocalFileSystemQueries::join(dataDir,fileType,
 																			 category, region,
 																			 numConcurrentUnits, n));
   SPDLOG_INFO("Actual  |  numRows: {}", actual->numRows());
