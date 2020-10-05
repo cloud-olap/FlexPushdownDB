@@ -1,5 +1,8 @@
 project(normal-ssb VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
+# need to link libraries on mac
+LINK_DIRECTORIES(/usr/local/Cellar/llvm@7/7.1.0_2/lib)
+LINK_DIRECTORIES(/usr/local/Cellar/binutils/2.35.1/lib)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SSB common classes
