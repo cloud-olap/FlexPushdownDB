@@ -53,8 +53,8 @@ FileScan::FileScan(std::string name,
 				   std::vector<std::string>  columnNames,
 				   unsigned long startOffset,
 				   unsigned long finishOffset,
-				   bool scanOnStart,
-				   long queryId) :
+				   long queryId,
+				   bool scanOnStart) :
 	Operator(std::move(name), "FileScan", queryId),
 	scanOnStart_(scanOnStart),
 	columnNames_(std::move(columnNames)),
@@ -65,8 +65,8 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 										 const std::vector<std::string>& columnNames,
 										 unsigned long startOffset,
 										 unsigned long finishOffset,
-										 bool scanOnStart,
-										 long queryId) {
+                     long queryId,
+										 bool scanOnStart) {
 
   auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
@@ -86,8 +86,8 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 										 const std::vector<std::string>& columnNames,
 										 unsigned long startOffset,
 										 unsigned long finishOffset,
-										 bool scanOnStart,
-										 long queryId) {
+                     long queryId,
+                     bool scanOnStart) {
 
   auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
@@ -161,9 +161,7 @@ void FileScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tup
   auto partition = std::make_shared<LocalFilePartition>(kernel_->getPath());
   CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, kernel_->getStartPos(), kernel_->getFinishPos(), name(), ctx());
 }
-long FileScan::getQueryId() const {
-  return queryId_;
-}
+
 bool FileScan::isScanOnStart() const {
   return scanOnStart_;
 }

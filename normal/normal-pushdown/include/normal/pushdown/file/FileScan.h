@@ -59,7 +59,6 @@ private:
   std::unique_ptr<FileScanKernel> kernel_;
 public:
   const std::unique_ptr<FileScanKernel> &getKernel() const;
-  long getQueryId() const;
   bool isScanOnStart() const;
   const std::vector<std::string> &getColumnNames() const;
 private:

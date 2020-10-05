@@ -28,17 +28,17 @@ void TestUtil::writeExecutionPlan(normal::core::OperatorManager &/*mgr*/) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
-  mgr.write_graph(physicalPlanFile);
+  // TODO: OperatorManager::write_graph() has been removed
 }
 
-void TestUtil::writeExecutionPlan2(OperatorGraph &/*g*/)  {
+void TestUtil::writeExecutionPlan2(OperatorGraph &g)  {
   auto testScratchDir = getTestScratchDirectory();
 
   auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
   g.write_graph(physicalPlanFile);
 }
 
-void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &/*plan*/) {
+void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
   auto testScratchDir = getTestScratchDirectory();
 
   auto logicalPlanFile = filesystem::path(testScratchDir).append("logical-execution-plan.svg");

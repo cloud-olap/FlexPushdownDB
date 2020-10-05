@@ -105,7 +105,7 @@ auto execute(normal::sql::Interpreter &i) {
 }
 
 auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics) {
-  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
+//  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
   i.clearOperatorGraph();
 
   i.parse(sql);
@@ -241,11 +241,11 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
 
   // parameters
   const int warmBatchSize = 2, executeBatchSize = 2;
-  const size_t cacheSize = 15360L*1024*1024;
+  const size_t cacheSize = 1536L*1024*1024;
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
 
-  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
+  auto mode = normal::plan::operator_::mode::Modes::fullPushdownMode();
   auto lru = LRUCachingPolicy::make(cacheSize, mode);
   auto fbr = FBRCachingPolicy::make(cacheSize, mode);
   auto wfbr = WFBRCachingPolicy::make(cacheSize, mode);
