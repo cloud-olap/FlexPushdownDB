@@ -2,6 +2,7 @@
 // Created by matt on 21/5/20.
 //
 
+#include <normal/cache/WFBRCachingPolicy.h>
 #include "normal/core/cache/SegmentCacheActor.h"
 
 namespace normal::core::cache {
@@ -47,6 +48,15 @@ void SegmentCacheActor::store(const StoreRequestMessage &msg,
   }
 }
 
+void SegmentCacheActor::weight(const WeightRequestMessage &msg,
+                stateful_actor<SegmentCacheActorState> *self) {
+  auto cachingPolicy = self->state.cache->getCachingPolicy();
+  if (cachingPolicy->id() == WFBR) {
+    auto fbrCachingPolicy = std::static_pointer_cast<WFBRCachingPolicy>(cachingPolicy);
+    fbrCachingPolicy->onWeight(msg.getWeightMap(), msg.getQueryId());
+  }
+}
+
 behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
 										  const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy) {
 
@@ -61,6 +71,9 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
 	  },
 	  [=](StoreAtom, const std::shared_ptr<StoreRequestMessage> &m) {
 		store(*m, self);
+	  },
+	  [=](WeightAtom, const std::shared_ptr<WeightRequestMessage> &m) {
+    weight(*m, self);
 	  },
 	  [=](GetNumHitsAtom) {
 		return self->state.cache->hitNum();
