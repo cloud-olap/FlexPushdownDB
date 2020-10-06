@@ -334,3 +334,14 @@ std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
   }
   return std::pair<size_t, size_t>(processedBytes, returnedBytes);
 }
+
+size_t graph::OperatorGraph::getNumRequests() {
+  size_t numRequests = 0;
+  for (const auto &entry: operatorDirectory_) {
+    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3SelectScan)) {
+      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
+      numRequests += s3ScanOp->getNumRequests();
+    }
+  }
+  return numRequests;
+}

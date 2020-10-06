@@ -205,6 +205,7 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
   auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
+  numRequests_++;
 
   if (optionalErrorMessage.has_value()) {
 	return tl::unexpected(optionalErrorMessage.value());
@@ -355,6 +356,10 @@ size_t S3SelectScan::getProcessedBytes() const {
 
 size_t S3SelectScan::getReturnedBytes() const {
   return returnedBytes_;
+}
+
+size_t S3SelectScan::getNumRequests() const {
+  return numRequests_;
 }
 
 int subStrNum(const std::string& str, const std::string& sub) {

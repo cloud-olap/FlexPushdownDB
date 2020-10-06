@@ -62,6 +62,7 @@ public:
 
   size_t getProcessedBytes() const;
   size_t getReturnedBytes() const;
+  size_t getNumRequests() const;
 
 private:
   std::string s3Bucket_;
@@ -75,6 +76,7 @@ private:
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;
   size_t processedBytes_ = 0;
   size_t returnedBytes_ = 0;
+  size_t numRequests_ = 0;
 
   /**
    * Flags:

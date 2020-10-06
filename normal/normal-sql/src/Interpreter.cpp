@@ -117,21 +117,40 @@ std::string Interpreter::showMetrics() {
   ss << std::endl;
 
   size_t totalProcessedBytes = 0, totalReturnedBytes = 0;
-  for (auto const &bytesTransferred: bytesTransferred) {
-    totalProcessedBytes += bytesTransferred.first;
-    totalReturnedBytes += bytesTransferred.second;
+  for (auto const &bytesTransferredSingle: bytesTransferred) {
+    totalProcessedBytes += bytesTransferredSingle.first;
+    totalReturnedBytes += bytesTransferredSingle.second;
   }
+  double totalProcessedBytesGiga = ((double)totalProcessedBytes / 1024.0 / 1024.0 / 1024.0);
+  double totalReturnedBytesGiga = ((double)totalReturnedBytes / 1024.0 / 1024.0 / 1024.0);
   std::stringstream formattedProcessedBytes;
   formattedProcessedBytes << totalProcessedBytes << " B" << " ("
-                          << ((double)totalProcessedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+                          << totalProcessedBytesGiga << " GB)";
   std::stringstream formattedReturnedBytes;
   formattedReturnedBytes << totalReturnedBytes << " B" << " ("
-                         << ((double)totalReturnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+                         << totalReturnedBytesGiga << " GB)";
+  size_t totalNumRequests = 0;
+  for (auto const &numRequestsSingle: numRequests) {
+    totalNumRequests += numRequestsSingle;
+  }
+  double totalCost = ((double) totalNumRequests) * 0.0000004 +    // s3 request cost
+          totalProcessedBytesGiga * 0.002 +                       // s3 scan cost
+          totalReturnedBytesGiga * 0.0007 +                       // s3 return cost
+          totalExecutionTime / 3600 * 1.064;                      // runtime cost
+  std::stringstream formattedCost;
+  formattedCost << totalCost << " $";
+
   ss << std::left << std::setw(60) << "Total Processed Bytes";
   ss << std::left << std::setw(60) << formattedProcessedBytes.str();
   ss << std::endl;
   ss << std::left << std::setw(60) << "Total Returned Bytes";
   ss << std::left << std::setw(60) << formattedReturnedBytes.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total Request amount";
+  ss << std::left << std::setw(60) << totalNumRequests;
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total Cost";
+  ss << std::left << std::setw(60) << formattedCost.str();
   ss << std::endl;
   ss << std::endl;
 
@@ -168,6 +187,7 @@ std::string Interpreter::showMetrics() {
 void Interpreter::saveMetrics() {
   executionTimes.emplace_back((double) (operatorGraph_->getElapsedTime().value()) / 1000000000.0);
   bytesTransferred.emplace_back(operatorGraph_->getBytesTransferred());
+  numRequests.emplace_back(operatorGraph_->getNumRequests());
 }
 
 const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {

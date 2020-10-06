@@ -48,6 +48,7 @@ private:
    */
   std::vector<double> executionTimes;
   std::vector<std::pair<size_t, size_t>> bytesTransferred;
+  std::vector<size_t> numRequests;
 };
 
 }

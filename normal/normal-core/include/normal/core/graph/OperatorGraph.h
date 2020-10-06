@@ -46,6 +46,7 @@ public:
   std::shared_ptr<Operator> getOperator(const std::string &);
   tl::expected<long, std::string> getElapsedTime();
   std::pair<size_t, size_t> getBytesTransferred();
+  size_t getNumRequests();
   std::string showMetrics();
   [[nodiscard]] const long &getId() const;
 
