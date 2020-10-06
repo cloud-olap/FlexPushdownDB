@@ -26,8 +26,7 @@ using namespace normal::tuple;
 namespace normal::pushdown {
 
 using FileScanActor = OperatorActor2::extend_with<::caf::typed_actor<
-	caf::reacts_to<ScanAtom, std::vector<std::string>, bool>,
-	caf::reacts_to<Envelope>>>;
+	caf::reacts_to<ScanAtom, std::vector<std::string>, bool>>>;
 
 using FileScanStatefulActor = FileScanActor::stateful_pointer<FileScanState>;
 
@@ -63,14 +62,7 @@ public:
 	return OperatorActorState::makeBaseBehavior(
 		actor,
 		[=](ScanAtom, const std::vector<std::string> &columnNames, bool resultNeeded) {
-		  SPDLOG_DEBUG("[Actor {} ('{}')]  Scan  |  sender: {}", actor->id(),
-					   actor->name(), to_string(actor->current_sender()));
-		  process(actor, [=](auto /*messageSender*/) { onScan(actor, columnNames); });
-		},
-		[=](const Envelope &envelope) {
-		  SPDLOG_DEBUG("[Actor {} ('{}')]  Envelope  |  sender: {}", actor->id(),
-					   actor->name(), to_string(actor->current_sender()));
-		  process(actor, [=](auto /*messageSender*/) { onReceive(actor, envelope); });
+		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { onScan(actor, messageSender, columnNames); });
 		},
 		std::move(handlers)...
 	);
@@ -102,22 +94,30 @@ protected:
 	}
   }
 
-  void onEnvelope(FileScanStatefulActor actor, const caf::strong_actor_ptr& /*messageSender*/, const Envelope &envelope) override {
-	onReceive(actor, envelope);
+  void onEnvelope(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const Envelope &envelope) override {
+	onReceive(actor, messageSender, envelope);
   }
 
 private:
-  void onReceive(FileScanStatefulActor actor, const Envelope &message) {
+  void onReceive(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const Envelope &message) {
+
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Scan  |  sender: {}", actor->id(),
+				 actor->name(), to_string(messageSender));
+
 	if (message.message().type() == "ScanMessage") {
 	  auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
-	  this->onScan(actor, scanMessage.getColumnNames());
+	  this->onScan(actor, messageSender, scanMessage.getColumnNames());
 	} else {
 	  // FIXME: Propagate error properly
 	  throw std::runtime_error("Unrecognized message type " + message.message().type());
 	}
   }
 
-  void onScan(FileScanStatefulActor actor, const std::vector<std::string> &columnsToScan) {
+  void onScan(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const std::vector<std::string> &columnsToScan) {
+
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Envelope  |  sender: {}", actor->id(),
+				 actor->name(), to_string(messageSender));
+
 	readAndSendTuples(actor, columnsToScan);
   }
 

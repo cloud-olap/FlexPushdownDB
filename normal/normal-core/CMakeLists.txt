@@ -36,8 +36,8 @@ add_library(normal-core STATIC
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
         include/normal/core/Forward.h
-        include/normal/core/OperatorActor2.cpp include/normal/core/OperatorActor2.h
-        include/normal/core/OperatorConnection.cpp include/normal/core/OperatorConnection.h
+        src/OperatorActor2.cpp include/normal/core/OperatorActor2.h
+        src/OperatorConnection.cpp include/normal/core/OperatorConnection.h
         include/normal/core/message/ConnectMessage.cpp include/normal/core/message/ConnectMessage.h)
 
 
@@ -56,6 +56,7 @@ target_link_libraries(normal-core PUBLIC gandiva_static)
 target_link_libraries(normal-core PUBLIC expected)
 target_link_libraries(normal-core PUBLIC normal-expression)
 target_link_libraries(normal-core PUBLIC normal-cache)
+target_link_libraries(normal-core PUBLIC normal-util)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 // Created by matt on 23/9/20.
 //
 
-#include "OperatorConnection.h"
+#include "normal/core/OperatorConnection.h"
 
 #include <utility>
 

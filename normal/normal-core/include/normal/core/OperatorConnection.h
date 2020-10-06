@@ -16,14 +16,16 @@ namespace normal::core {
 class OperatorConnection {
 public:
   OperatorConnection(std::string Name, caf::actor ActorHandle, OperatorRelationshipType ConnectionType);
+
+  [[nodiscard]] const std::string &getName() const;
+  [[nodiscard]] const caf::actor &getActorHandle() const;
+  [[nodiscard]] OperatorRelationshipType getConnectionType() const;
+
 private:
   std::string name_;
   caf::actor actorHandle_;
   OperatorRelationshipType connectionType_;
-public:
-  [[nodiscard]] const std::string &getName() const;
-  [[nodiscard]] const caf::actor &getActorHandle() const;
-  [[nodiscard]] OperatorRelationshipType getConnectionType() const;
+
 };
 
 }

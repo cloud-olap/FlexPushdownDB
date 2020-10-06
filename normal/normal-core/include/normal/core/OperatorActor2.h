@@ -5,8 +5,11 @@
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_OPERATORACTOR2_H
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_OPERATORACTOR2_H
 
-#include <caf/all.hpp>
 #include <utility>
+#include <queue>
+
+#include <caf/all.hpp>
+#include <boost/callable_traits.hpp>
 
 #include <normal/core/Globals.h>
 #include <normal/core/LocalOperatorDirectory.h>
@@ -15,10 +18,10 @@
 #include <normal/core/OperatorConnection.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/core/OperatorActor.h>
-#include <queue>
 #include <normal/core/message/ConnectMessage.h>
 
 using namespace normal::core::message;
+using namespace boost::callable_traits;
 
 namespace normal::core {
 
@@ -58,8 +61,10 @@ protected:
   /// Process wrappers
   ///
 
-  template<typename R>
-  caf::result<R> processResult(Actor actor, const std::function<R(caf::strong_actor_ptr)> &f) {
+  template<typename F,
+	  typename R = boost::callable_traits::return_type_t<F>,
+	  typename = std::enable_if_t<!std::is_void_v<R>>>
+  caf::result<R> process(Actor actor, const F &f) {
 	auto processingStartTime_ = std::chrono::steady_clock::now();
 
 	caf::strong_actor_ptr messageSender;
@@ -72,10 +77,13 @@ protected:
 	auto processingStopTime_ = std::chrono::steady_clock::now();
 	processingTime_ +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(processingStopTime_ - processingStartTime_).count();
-	return r;
+	return caf::make_result(r);
   }
 
-  void process(Actor actor, const std::function<void(caf::strong_actor_ptr)> &f) {
+  template<typename F,
+	  typename R = boost::callable_traits::return_type_t<F>,
+	  typename = std::enable_if_t<std::is_void_v<R>>>
+  void process(Actor actor, const F &f) {
 	auto processingStartTime_ = std::chrono::steady_clock::now();
 
 	caf::strong_actor_ptr messageSender;
@@ -162,29 +170,98 @@ protected:
 
 	return caf::make_typed_behavior(
 		[=](StartAtom) {
-		  process(actor, [=](auto messageSender) { handleStart(actor, messageSender); });
+		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { handleStart(actor, messageSender); });
 		},
 		[=](StopAtom) {
-		  process(actor, [=](auto messageSender) { handleStop(actor, messageSender); });
+		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { handleStop(actor, messageSender); });
 		},
 		[=](ConnectAtom, const std::vector<OperatorConnection> &connections) {
-		  process(actor, [=](auto messageSender) { handleConnect(actor, messageSender, connections); });
+		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { handleConnect(actor, messageSender, connections); });
 		},
 		[=](CompleteAtom) {
-		  process(actor, [=](auto messageSender) { handleComplete(actor, messageSender); });
+		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { handleComplete(actor, messageSender); });
 		},
 		[=](GetProcessingTimeAtom) -> caf::result<long> {
-		  return processResult<long>(actor,
-									 [=](auto messageSender) { return handleGetProcessingTime(actor, messageSender); });
+		  return process(actor, [=](const caf::strong_actor_ptr& messageSender) { return handleGetProcessingTime(actor, messageSender); });
 		},
 		// Legacy handler
 		[=](const Envelope &envelope) {
-		  process(actor, [=](auto messageSender) { handleEnvelope(actor, messageSender, envelope); });
+		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { handleEnvelope(actor, messageSender, envelope); });
 		},
 		std::move(handlers)...
 	);
   }
 
+
+  ///
+  /// Extension points
+  ///
+
+  virtual void onExit(Actor /*actor*/, const ::caf::error &/*reason*/) { /*NOOP*/ };
+  virtual void onError(Actor /*actor*/, const ::caf::error &/*error*/) { /*NOOP*/ };
+  virtual void onDown(Actor /*actor*/, const ::caf::down_msg &/*downMessage*/) { /*NOOP*/ };
+  virtual void onLinkedExit(Actor /*actor*/, const ::caf::exit_msg &/*exitMessage*/) { /*NOOP*/ };
+  virtual void onException(Actor /*actor*/, const std::exception_ptr &/*exceptionPointer*/) { /*NOOP*/ };
+  virtual void onUnexpectedMessage(Actor /*actor*/, const ::caf::message_view &/*message*/) { /*NOOP*/ };
+
+  virtual void onStart(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
+  virtual void onStop(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
+  virtual void onConnect(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
+  virtual void onComplete(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
+  virtual void onEnvelope(Actor /*actor*/,
+						  const caf::strong_actor_ptr & /*messageSender*/,
+						  const Envelope &/*envelope*/) { /*NOOP*/ };
+
+  template<typename... Parameters>
+  void anonymousSend(Actor actor, caf::actor destination, Parameters...parameters) {
+	actor->anon_send(destination, parameters...);
+  }
+
+  template<typename... Parameters>
+  void tell(Actor actor, Parameters...parameters) {
+	for (const auto &operatorEntry: actor->state.operatorDirectory_) {
+	  if (std::get<2>(operatorEntry.second) == OperatorRelationshipType::Consumer)
+		anonymousSend(actor, std::get<0>(operatorEntry.second), parameters...);
+	}
+  }
+
+  void notifyComplete(Actor actor) {
+//	tell(actor, CompleteAtom::value);
+	tell(actor, Envelope(std::make_shared<CompleteMessage>(name)));
+//	anonymousSend(actor, rootActor_, CompleteAtom::value);
+	anonymousSend(actor, rootActor_, Envelope(std::make_shared<CompleteMessage>(name)));
+  }
+
+  bool isAllProducersComplete() {
+	assert(numCompleteProducers_ <= numProducers_);
+	return numCompleteProducers_ == numProducers_;
+  }
+
+  bool isAllConsumersComplete() {
+	assert(numCompleteConsumers_ <= numConsumers_);
+	return numCompleteConsumers_ == numConsumers_;
+  }
+
+  [[nodiscard]] const caf::actor &getSegmentCacheActorHandle() const {
+	return segmentCacheActorHandle_;
+  }
+
+private:
+  caf::actor rootActor_;
+  caf::actor segmentCacheActorHandle_;
+
+  bool running_ = false;
+
+  std::optional<caf::strong_actor_ptr> overriddenMessageSender_;
+  std::queue<std::pair<caf::message, caf::strong_actor_ptr>> buffer_;
+
+  std::map<caf::actor_id, std::tuple<caf::actor, std::string, OperatorRelationshipType, bool>> operatorDirectory_;
+  int numProducers_ = 0;
+  int numConsumers_ = 0;
+  int numCompleteProducers_ = 0;
+  int numCompleteConsumers_ = 0;
+
+  long processingTime_ = 0;
 
   ///
   /// Message handlers
@@ -212,7 +289,7 @@ protected:
   void handleStop(Actor actor, const caf::strong_actor_ptr &messageSender) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Stop  |  source: {}", actor->id(),
-				 actor->name(), to_string(actor->current_sender()));
+				 actor->name(), to_string(messageSender));
 
 	running_ = false;
 
@@ -298,77 +375,6 @@ protected:
 	  }
 	}
   }
-
-
-  ///
-  /// Extension points
-  ///
-
-  virtual void onExit(Actor /*actor*/, const ::caf::error &/*reason*/) { /*NOOP*/ };
-  virtual void onError(Actor /*actor*/, const ::caf::error &/*error*/) { /*NOOP*/ };
-  virtual void onDown(Actor /*actor*/, const ::caf::down_msg &/*downMessage*/) { /*NOOP*/ };
-  virtual void onLinkedExit(Actor /*actor*/, const ::caf::exit_msg &/*exitMessage*/) { /*NOOP*/ };
-  virtual void onException(Actor /*actor*/, const std::exception_ptr &/*exceptionPointer*/) { /*NOOP*/ };
-  virtual void onUnexpectedMessage(Actor /*actor*/, const ::caf::message_view &/*message*/) { /*NOOP*/ };
-
-  virtual void onStart(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
-  virtual void onStop(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
-  virtual void onConnect(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
-  virtual void onComplete(Actor /*actor*/, const caf::strong_actor_ptr & /*messageSender*/) { /*NOOP*/ };
-  virtual void onEnvelope(Actor /*actor*/,
-						  const caf::strong_actor_ptr & /*messageSender*/,
-						  const Envelope &/*envelope*/) { /*NOOP*/ };
-
-  template<typename... Parameters>
-  void anonymousSend(Actor actor, caf::actor destination, Parameters...parameters) {
-	actor->anon_send(destination, parameters...);
-  }
-
-  template<typename... Parameters>
-  void tell(Actor actor, Parameters...parameters) {
-	for (const auto &operatorEntry: actor->state.operatorDirectory_) {
-	  if (std::get<2>(operatorEntry.second) == OperatorRelationshipType::Consumer)
-		anonymousSend(actor, std::get<0>(operatorEntry.second), parameters...);
-	}
-  }
-
-  void notifyComplete(Actor actor) {
-//	tell(actor, CompleteAtom::value);
-	tell(actor, Envelope(std::make_shared<CompleteMessage>(name)));
-//	anonymousSend(actor, rootActor_, CompleteAtom::value);
-	anonymousSend(actor, rootActor_, Envelope(std::make_shared<CompleteMessage>(name)));
-  }
-
-  bool isAllProducersComplete() {
-	assert(numCompleteProducers_ <= numProducers_);
-	return numCompleteProducers_ == numProducers_;
-  }
-
-  bool isAllConsumersComplete() {
-	assert(numCompleteConsumers_ <= numConsumers_);
-	return numCompleteConsumers_ == numConsumers_;
-  }
-
-  [[nodiscard]] const caf::actor &getSegmentCacheActorHandle() const {
-	return segmentCacheActorHandle_;
-  }
-
-private:
-  caf::actor rootActor_;
-  caf::actor segmentCacheActorHandle_;
-
-  bool running_ = false;
-
-  std::optional<caf::strong_actor_ptr> overriddenMessageSender_;
-  std::queue<std::pair<caf::message, caf::strong_actor_ptr>> buffer_;
-
-  std::map<caf::actor_id, std::tuple<caf::actor, std::string, OperatorRelationshipType, bool>> operatorDirectory_;
-  int numProducers_ = 0;
-  int numConsumers_ = 0;
-  int numCompleteProducers_ = 0;
-  int numCompleteConsumers_ = 0;
-
-  long processingTime_ = 0;
 
 };
 

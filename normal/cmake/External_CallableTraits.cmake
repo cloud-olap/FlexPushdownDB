@@ -1,0 +1,34 @@
+# Boost Callable Traits
+
+set(CALLABLETRAITS_VERSION "2.3.3")
+set(CALLABLETRAITS_GIT_URL "https://github.com/boostorg/callable_traits.git")
+
+
+include(ExternalProject)
+find_package(Git REQUIRED)
+
+
+set(CALLABLETRAITS_BASE callabletraits_ep)
+set(CALLABLETRAITS_PREFIX ${DEPS_PREFIX}/${CALLABLETRAITS_BASE})
+set(CALLABLETRAITS_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${CALLABLETRAITS_PREFIX})
+set(CALLABLETRAITS_INSTALL_DIR ${CALLABLETRAITS_BASE_DIR}/install)
+set(CALLABLETRAITS_INCLUDE_DIR ${CALLABLETRAITS_INSTALL_DIR}/include)
+
+
+ExternalProject_Add(${CALLABLETRAITS_BASE}
+        PREFIX ${CALLABLETRAITS_BASE_DIR}
+        GIT_REPOSITORY ${CALLABLETRAITS_GIT_URL}
+        GIT_TAG ${CALLABLETRAITS_VERSION}
+        GIT_PROGRESS ON
+        GIT_SHALLOW ON
+        UPDATE_DISCONNECTED TRUE
+        INSTALL_DIR ${CALLABLETRAITS_INSTALL_DIR}
+        CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${CALLABLETRAITS_INSTALL_DIR}
+        )
+
+file(MAKE_DIRECTORY ${CALLABLETRAITS_INCLUDE_DIR}) # Include directory needs to exist to run configure step
+
+add_library(boost_callable_traits INTERFACE IMPORTED)
+target_include_directories(boost_callable_traits INTERFACE ${CALLABLETRAITS_INCLUDE_DIR})
+add_dependencies(boost_callable_traits ${CALLABLETRAITS_BASE})

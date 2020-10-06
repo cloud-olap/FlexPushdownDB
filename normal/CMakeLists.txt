@@ -37,11 +37,14 @@ include(External_ssb_dbgen)
 include(External_primesieve)
 include(Dependency_SQLite3)
 include(External_Backward)
+include(External_CallableTraits)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
 #-----------------------------------------------------------------------------------------------------------------------
 
+add_subdirectory(normal-util)
 add_subdirectory(normal-core)
 add_subdirectory(normal-tuple)
 add_subdirectory(normal-connector)
