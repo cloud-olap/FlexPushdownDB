@@ -32,7 +32,9 @@ public:
   void boot();
   void stop();
   void saveMetrics();
+  void saveHitRatios();
   std::string showMetrics();
+  std::string showHitRatios();
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
 
 private:
@@ -46,9 +48,10 @@ private:
   /*
    * About result metrics
    */
-  std::vector<double> executionTimes;
-  std::vector<std::pair<size_t, size_t>> bytesTransferred;
-  std::vector<size_t> numRequests;
+  std::vector<double> executionTimes_;
+  std::vector<std::pair<size_t, size_t>> bytesTransferred_;
+  std::vector<size_t> numRequests_;
+  std::vector<double> hitRatios_;
 };
 
 }

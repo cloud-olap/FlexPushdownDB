@@ -126,6 +126,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   if (saveMetrics) {
     i.saveMetrics();
   }
+  i.saveHitRatios();
 
   i.getOperatorGraph().reset();
   return tupleSet;
@@ -288,11 +289,13 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
 
   SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+  SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
 
   auto metricsFilePath = filesystem::current_path().append("metrics");
   std::ofstream fout(metricsFilePath.string());
   fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
   fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
+  fout << "Cache hit ratios:\n" << i.showHitRatios() << "\n";
   fout.flush();
   fout.close();
 

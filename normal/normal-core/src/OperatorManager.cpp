@@ -119,4 +119,30 @@ void OperatorManager::clearCacheMetrics() {
   self->send(segmentCacheActor_, ClearMetricsAtom::value);
 }
 
+double OperatorManager::getCrtQueryHitRatio() {
+  int crtQueryHitNum;
+  int crtQueryMissNum;
+
+  auto errorHandler = [&](const caf::error& error){
+      throw std::runtime_error(to_string(error));
+  };
+
+  scoped_actor self{*actorSystem};
+  self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom::value).receive(
+          [&](int numHits) {
+              crtQueryHitNum = numHits;
+          },
+          errorHandler);
+
+  self->request(segmentCacheActor_, infinite, GetCrtQueryNumMissesAtom::value).receive(
+          [&](int numMisses) {
+              crtQueryMissNum = numMisses;
+          },
+          errorHandler);
+
+  self->send(segmentCacheActor_, ClearCrtQueryMetricsAtom::value);
+
+  return (crtQueryHitNum + crtQueryMissNum == 0) ? 0.0 : (double) crtQueryHitNum / (double) (crtQueryHitNum + crtQueryMissNum);
+}
+
 }

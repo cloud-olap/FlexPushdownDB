@@ -52,6 +52,7 @@ public:
 
   std::string showCacheMetrics();
   void clearCacheMetrics();
+  double getCrtQueryHitRatio();
 
 };
 

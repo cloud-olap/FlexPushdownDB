@@ -32,13 +32,18 @@ public:
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
   int hitNum() const;
   int missNum() const;
+  int crtQueryHitNum() const;
+  int crtQueryMissNum() const;
   void clearMetrics();
+  void clearCrtQueryMetrics();
 
 private:
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> map_;
 	std::shared_ptr<CachingPolicy> cachingPolicy_;
 	int hitNum_ = 0;
 	int missNum_ = 0;
+	int crtQueryHitNum_ = 0;
+	int crtQueryMissNum_ = 0;
 };
 
 }

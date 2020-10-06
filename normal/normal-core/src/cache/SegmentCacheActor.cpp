@@ -81,9 +81,18 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
 	  [=](GetNumMissesAtom) {
 		return self->state.cache->missNum();
 	  },
+    [=](GetCrtQueryNumHitsAtom) {
+    return self->state.cache->crtQueryHitNum();
+    },
+    [=](GetCrtQueryNumMissesAtom) {
+    return self->state.cache->crtQueryMissNum();
+    },
 	  [=](ClearMetricsAtom) {
 		self->state.cache->clearMetrics();
-	  }
+	  },
+    [=](ClearCrtQueryMetricsAtom) {
+    self->state.cache->clearCrtQueryMetrics();
+    }
   };
 }
 

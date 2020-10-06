@@ -30,7 +30,10 @@ using StoreAtom = atom_constant<atom("Store")>;
 using WeightAtom = atom_constant<atom("Weight")>;
 using GetNumHitsAtom = atom_constant<atom("NumHits")>;
 using GetNumMissesAtom = atom_constant<atom("NumMisses")>;
+using GetCrtQueryNumHitsAtom = atom_constant<atom("CNumHits")>;
+using GetCrtQueryNumMissesAtom = atom_constant<atom("CNumMisses")>;
 using ClearMetricsAtom = atom_constant<atom("ClrMetrics")>;
+using ClearCrtQueryMetricsAtom = atom_constant<atom("ClrCMetric")>;
 
 class SegmentCacheActor {
 
