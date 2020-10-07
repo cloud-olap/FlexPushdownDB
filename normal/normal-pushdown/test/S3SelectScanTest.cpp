@@ -30,6 +30,7 @@ using namespace normal::core::graph;
 using namespace normal::connector::s3;
 
 void run(const std::string &s3Bucket,
+		 const std::string &s3ObjectPrefix,
 		 const std::string &s3Object,
 		 FileType fileType,
 		 const std::vector<std::string> &columnNames) {
@@ -42,7 +43,7 @@ void run(const std::string &s3Bucket,
   auto g = n->createQuery();
 
   auto s3Objects = std::vector{s3Object};
-  auto partitionMap = S3Util::listObjects(s3Bucket, s3Objects, AWSClient::defaultS3Client());
+  auto partitionMap = S3Util::listObjects(s3Bucket, s3ObjectPrefix, s3Objects, AWSClient::defaultS3Client());
   SPDLOG_DEBUG("Discovered partitions");
   for (auto &partition : partitionMap) {
 	SPDLOG_DEBUG("  's3://{}/{}': size: {}", s3Bucket, partition.first, partition.second);
@@ -180,23 +181,23 @@ TEST_CASE ("s3select-parser" * doctest::skip(false || SKIP_SUITE)) {
 }
 
 TEST_CASE ("s3select-scan-v2-csv-large" * doctest::skip(false || SKIP_SUITE)) {
-  run("s3filter", "ssb-sf1/date.tbl", FileType::CSV, {"d_datekey", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR"});
+  run("s3filter", "ssb-sf1", "date.tbl", FileType::CSV, {"d_datekey", "D_DATE", "D_DAYOFWEEK", "D_MONTH", "D_YEAR"});
 }
 
 TEST_CASE ("s3select-scan-v2-csv" * doctest::skip(false || SKIP_SUITE)) {
-  run("pushdowndb", "ssb-sf0.01/csv/date.tbl", FileType::CSV, {"d_datekey"});
+  run("pushdowndb", "ssb-sf0.01/csv", "date.tbl", FileType::CSV, {"d_datekey"});
 }
 
 TEST_CASE ("s3select-scan-v2-csv-empty" * doctest::skip(false || SKIP_SUITE)) {
-  run("s3filter", "ssb-sf0.01/supplier.tbl", FileType::CSV, {});
+  run("s3filter", "ssb-sf0.01", "supplier.tbl", FileType::CSV, {});
 }
 
 TEST_CASE ("s3select-scan-v2-parquet" * doctest::skip(false || SKIP_SUITE)) {
-  run("s3filter", "ssb-sf0.01/parquet/supplier.snappy.parquet", FileType::Parquet, {"s_suppkey", "s_name"});
+  run("s3filter", "ssb-sf0.01/parquet", "supplier.snappy.parquet", FileType::Parquet, {"s_suppkey", "s_name"});
 }
 
 TEST_CASE ("s3select-scan-v2-parquet-empty" * doctest::skip(false || SKIP_SUITE)) {
-  run("s3filter", "ssb-sf0.01/parquet/supplier.snappy.parquet", FileType::Parquet, {});
+  run("s3filter", "ssb-sf0.01/parquet", "supplier.snappy.parquet", FileType::Parquet, {});
 }
 
 }

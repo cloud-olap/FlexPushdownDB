@@ -13,9 +13,12 @@
 #include <normal/cache/SegmentData.h>
 #include <normal/cache/SegmentRange.h>
 #include <normal/cache/LRUCachingPolicy.h>
+#include <normal/plan/mode/Mode.h>
+#include <normal/plan/mode/ModeId.h>
 
 using namespace normal::cache;
 using namespace normal::tuple;
+using namespace normal::plan::operator_::mode;
 
 namespace normal::cache::test {
 
@@ -55,7 +58,7 @@ TEST_CASE ("segmentkey-equality" * doctest::skip(false || SKIP_SUITE)) {
  */
 TEST_CASE ("cache-hit" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto cache = SegmentCache::make(LRUCachingPolicy::make(100));
+  auto cache = SegmentCache::make(LRUCachingPolicy::make(100, std::make_shared<Mode>(ModeId::FullPullup)));
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
   auto segment1Key1 = SegmentKey::make(segment1Partition1, "a",SegmentRange::make(0, 1023));
@@ -88,7 +91,7 @@ TEST_CASE ("cache-hit" * doctest::skip(false || SKIP_SUITE)) {
  */
 TEST_CASE ("cache-miss" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto cache = SegmentCache::make(LRUCachingPolicy::make(100));
+  auto cache = SegmentCache::make(LRUCachingPolicy::make(100, std::make_shared<Mode>(ModeId::FullPullup)));
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
   auto segment1Key1 = SegmentKey::make(segment1Partition1, "a", SegmentRange::make(0, 1023));
@@ -114,7 +117,7 @@ TEST_CASE ("cache-miss" * doctest::skip(false || SKIP_SUITE)) {
  */
 TEST_CASE ("cache-eviction" * doctest::skip(false || SKIP_SUITE)) {
 
-  auto cache = SegmentCache::make(LRUCachingPolicy::make(1));
+  auto cache = SegmentCache::make(LRUCachingPolicy::make(100, std::make_shared<Mode>(ModeId::FullPullup)));
 
   auto segment1Partition1 = std::make_shared<LocalFilePartition>("data/a.csv");
   auto segment1Key1 = SegmentKey::make(segment1Partition1, "a", SegmentRange::make(0, 1023));
