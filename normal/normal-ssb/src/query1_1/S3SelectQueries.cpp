@@ -23,13 +23,15 @@ using namespace normal::connector::s3;
 namespace {
 
 std::unordered_map<std::string, std::shared_ptr<S3SelectPartition>> discoverPartitions(const std::string &s3Bucket,
+																					   const std::string &s3ObjectPrefix,
 																					   std::vector<std::string> s3Objects,
 																					   const AWSClient &client);
 
 std::unordered_map<std::string, std::shared_ptr<S3SelectPartition>> discoverPartitions(const std::string &s3Bucket,
+																					   const std::string &s3ObjectPrefix,
 																					   std::vector<std::string> s3Objects,
 																					   const AWSClient &client) {
-  auto partitionMap = S3Util::listObjects(s3Bucket, std::move(s3Objects), client.defaultS3Client());
+  auto partitionMap = S3Util::listObjects(s3Bucket, s3ObjectPrefix, std::move(s3Objects), client.defaultS3Client());
 
   std::unordered_map<std::string, std::shared_ptr<S3SelectPartition>> partitions;
   SPDLOG_DEBUG("Discovered partitions");
@@ -51,9 +53,10 @@ S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
 								AWSClient &client,
 								const std::shared_ptr<Normal> &n) {
 
-  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "date.tbl" : "date.snappy.parquet");
 
-  auto partitions = discoverPartitions(s3Bucket, {dateFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {dateFile}, client);
 
   auto g = n->createQuery();
 
@@ -83,9 +86,10 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::stri
 																 AWSClient &client,
 																 const std::shared_ptr<Normal> &n) {
 
-  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "date.tbl" : "date.snappy.parquet");
 
-  auto partitions = discoverPartitions(s3Bucket, {dateFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {dateFile}, client);
 
   auto g = n->createQuery();
 
@@ -118,9 +122,10 @@ S3SelectQueries::dateFilterHybrid(const std::string &s3Bucket,
 								  AWSClient &client,
 								  const std::shared_ptr<Normal> &n) {
 
-  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "date.tbl" : "date.snappy.parquet");
 
-  auto partitions = discoverPartitions(s3Bucket, {dateFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {dateFile}, client);
 
   auto g = n->createQuery();
 
@@ -166,10 +171,11 @@ S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 									 AWSClient &client,
 									 const std::shared_ptr<Normal> &n) {
 
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
   auto lineOrderFile =
-	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
+	  s3ObjectDir + (fileType == FileType::CSV ? "lineorder.tbl" : "lineorder.snappy.parquet");
 
-  auto partitions = discoverPartitions(s3Bucket, {lineOrderFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {lineOrderFile}, client);
 
   auto g = n->createQuery();
 
@@ -201,10 +207,11 @@ S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
 									   AWSClient &client,
 									   const std::shared_ptr<Normal> &n) {
 
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
   auto lineOrderFile =
-	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
+	  s3ObjectDir + (fileType == FileType::CSV ? "lineorder.tbl" : "lineorder.snappy.parquet");
 
-  auto partitions = discoverPartitions(s3Bucket, {lineOrderFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {lineOrderFile}, client);
 
   auto g = n->createQuery();
 
@@ -238,11 +245,12 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 														   AWSClient &client,
 														   const std::shared_ptr<Normal> &n) {
 
-  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "date.tbl" : "date.snappy.parquet");
   auto lineOrderFile =
-	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
+	  s3ObjectDir + (fileType == FileType::CSV ? "lineorder.tbl" : "lineorder.snappy.parquet");
 
-  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 
@@ -303,11 +311,11 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 														   AWSClient &client,
 														   const std::shared_ptr<Normal> &n) {
 
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "date.tbl" : "date.snappy.parquet");
   auto lineOrderFile =
-	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
-  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
-
-  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
+	  s3ObjectDir + (fileType == FileType::CSV ? "lineorder.tbl" : "lineorder.snappy.parquet");
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 
@@ -373,11 +381,12 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPushDown(const std::string &
 															 AWSClient &client,
 															 const std::shared_ptr<Normal> &n) {
 
-  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "date.tbl" : "date.snappy.parquet");
   auto lineOrderFile =
 	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
 
-  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 
@@ -460,10 +469,11 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3
 														   AWSClient &client,
 														   const std::shared_ptr<Normal> &n) {
 
+  auto s3ObjectPrefix = s3ObjectDir + (fileType == FileType::CSV ? "/csv" : "/parquet");
+  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "date.tbl" : "date.snappy.parquet");
   auto lineOrderFile =
 	  s3ObjectDir + (fileType == FileType::CSV ? "/csv/lineorder.tbl" : "/parquet/lineorder.snappy.parquet");
-  auto dateFile = s3ObjectDir + (fileType == FileType::CSV ? "/csv/date.tbl" : "/parquet/date.snappy.parquet");
-  auto partitions = discoverPartitions(s3Bucket, {dateFile, lineOrderFile}, client);
+  auto partitions = discoverPartitions(s3Bucket, s3ObjectPrefix, {dateFile, lineOrderFile}, client);
 
   auto g = n->createQuery();
 

@@ -14,11 +14,11 @@
 #include <normal/core/Actors.h>
 #include <normal/core/OperatorDirectoryEntry.h>
 #include <normal/core/Globals.h>
-//#include <normal/pushdown/file/FileScan2.h>
+#include <normal/pushdown/file/FileScan2.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
-//#include <normal/pushdown/s3/S3SelectScan2.h>
+#include <normal/pushdown/s3/S3SelectScan2.h>
 #include <normal/core/message/ConnectMessage.h>
-#include <caf/atom.hpp>
+
 
 using namespace normal::core::graph;
 using namespace normal::core;
@@ -109,22 +109,22 @@ void graph::OperatorGraph::boot() {
   for (auto &element: operatorDirectory_) {
 	auto op = element.second.getDef();
 	if(op->getType() == "FileScan"){
-//	  auto fileScanOp = std::static_pointer_cast<FileScan>(op);
-//	  auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn(FileScanFunctor,
-//																		  fileScanOp->name().c_str(),
-//																		  fileScanOp->getKernel()->getPath(),
-//																		  fileScanOp->getKernel()->getFileType().value(),
-//																		  fileScanOp->getColumnNames(),
-//																		  fileScanOp->getKernel()->getStartPos(),
-//																		  fileScanOp->getKernel()->getFinishPos(),
-//																		  fileScanOp->getQueryId(),
-//																		  *rootActor_,
-//																		  operatorManager_.lock()->getSegmentCacheActor(),
-//																		  fileScanOp->isScanOnStart()
-//	  );
-//	  if (!actorHandle)
-//		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-//	  element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+	  auto fileScanOp = std::static_pointer_cast<FileScan>(op);
+	  auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn(FileScanFunctor,
+																		  fileScanOp->name().c_str(),
+																		  fileScanOp->getKernel()->getPath(),
+																		  fileScanOp->getKernel()->getFileType().value(),
+																		  fileScanOp->getColumnNames(),
+																		  fileScanOp->getKernel()->getStartPos(),
+																		  fileScanOp->getKernel()->getFinishPos(),
+																		  fileScanOp->getQueryId(),
+																		  *rootActor_,
+																		  operatorManager_.lock()->getSegmentCacheActor(),
+																		  fileScanOp->isScanOnStart()
+	  );
+	  if (!actorHandle)
+		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+	  element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
 	}
 	else {
 	  auto ctx = std::make_shared<normal::core::OperatorContext>(*rootActor_, operatorManager_.lock()->getSegmentCacheActor());
