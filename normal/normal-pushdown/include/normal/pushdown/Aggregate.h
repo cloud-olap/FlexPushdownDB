@@ -37,7 +37,8 @@ private:
 
 public:
   Aggregate(std::string name,
-            std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions);
+            std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions,
+            long queryId = 0);
   ~Aggregate() override = default;
 
   void compute(const std::shared_ptr<TupleSet> &tuples);

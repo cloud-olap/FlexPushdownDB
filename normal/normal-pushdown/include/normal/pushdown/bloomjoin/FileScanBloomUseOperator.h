@@ -23,28 +23,31 @@ class FileScanBloomUseOperator : public Operator {
 
 public:
   FileScanBloomUseOperator(const std::string &name,
-						   const std::string &filePath,
-						   const std::vector<std::string> &columnNames,
-						   int startOffset,
-						   int finishOffset,
-						   const std::string &columnName) :
-	  Operator(name, "FileScanBloomUseOperator"),
+                           const std::string &filePath,
+                           const std::vector<std::string> &columnNames,
+                           int startOffset,
+                           int finishOffset,
+                           const std::string &columnName,
+                           long queryId) :
+	  Operator(name, "FileScanBloomUseOperator", queryId),
 	  kernel_(FileScanBloomUseKernel::make(filePath, columnNames, startOffset, finishOffset, columnName)) {
   }
 
   static std::shared_ptr<FileScanBloomUseOperator> make(const std::string &name,
-														const std::string &filePath,
-														const std::vector<std::string> &columnNames,
-														int startOffset,
-														int finishOffset,
-														const std::string &columnName) {
+                                                        const std::string &filePath,
+                                                        const std::vector<std::string> &columnNames,
+                                                        int startOffset,
+                                                        int finishOffset,
+                                                        const std::string &columnName,
+                                                        long queryId = 0) {
 
 	return std::make_shared<FileScanBloomUseOperator>(name,
 													  filePath,
 													  columnNames,
 													  startOffset,
 													  finishOffset,
-													  columnName);
+													  columnName,
+													  queryId);
   }
 
   void onReceive(const Envelope &msg) override {

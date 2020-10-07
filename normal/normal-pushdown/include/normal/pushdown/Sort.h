@@ -81,8 +81,10 @@ namespace normal::pushdown {
         bool compareTwoTuples(std::vector<Cell> & a,std::vector<Cell> & b);
 
     public:
-        Sort(std::string name,std::shared_ptr<normal::expression::gandiva::Expression> expression,std::shared_ptr<std::vector<int>> priorities):
-        Operator(std::move(name), "Sort"),
+        Sort(std::string name,std::shared_ptr<normal::expression::gandiva::Expression> expression,
+             std::shared_ptr<std::vector<int>> priorities,
+             long queryId = 0):
+        Operator(std::move(name), "Sort", queryId),
 		tmpRes_(std::make_shared<std::vector<std::vector<Cell>>>(std::vector<std::vector<Cell>>{})),
 		priorities_(std::move(priorities)),
 		expression_(std::move(expression)){};

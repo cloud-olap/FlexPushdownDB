@@ -4,7 +4,7 @@
 
 #include <normal/ssb/Globals.h>
 #include <doctest/doctest.h>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <normal/ssb/TestUtil.h>
 
 #define SKIP_SUITE true
@@ -28,11 +28,11 @@ TEST_CASE ("JoinTest" * doctest::skip(false || SKIP_SUITE)) {
           " group by d_year, p_brand1",
           " temp");
   std::string dataDir = "data/ssb-sf0.01";
-  std::vector<std::string> dataFiles = {std::filesystem::absolute(dataDir + "/date.tbl"),
-                std::filesystem::absolute(dataDir + "/lineorder.tbl"),
-                std::filesystem::absolute(dataDir + "/part.tbl"),
-                std::filesystem::absolute(dataDir + "/supplier.tbl"),
-                std::filesystem::absolute(dataDir + "/customer.tbl")};
+  std::vector<std::string> dataFiles = {std::experimental::filesystem::absolute(dataDir + "/date.tbl"),
+                std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl"),
+                std::experimental::filesystem::absolute(dataDir + "/part.tbl"),
+                std::experimental::filesystem::absolute(dataDir + "/supplier.tbl"),
+                std::experimental::filesystem::absolute(dataDir + "/customer.tbl")};
   auto expected = TestUtil::executeSQLite(sql, dataFiles);
   std::string strRes = "";
   for (const auto &strVec: *expected) {

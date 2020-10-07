@@ -39,7 +39,7 @@ public:
 										const std::vector<std::string> &columnNames,
 										unsigned long startOffset,
 										unsigned long finishOffset,
-										long queryId,
+										long queryId = 0,
 										bool scanOnStart = false);
 
   static std::shared_ptr<FileScan> make(const std::string &name,
@@ -48,19 +48,17 @@ public:
 										const std::vector<std::string> &columnNames,
 										unsigned long startOffset,
 										unsigned long finishOffset,
-										long queryId,
+										long queryId = 0,
 										bool scanOnStart = false);
 
   void onReceive(const normal::core::message::Envelope &message) override;
 
 private:
-  long queryId_;
   bool scanOnStart_;
   std::vector<std::string> columnNames_;
   std::unique_ptr<FileScanKernel> kernel_;
 public:
   const std::unique_ptr<FileScanKernel> &getKernel() const;
-  long getQueryId() const;
   bool isScanOnStart() const;
   const std::vector<std::string> &getColumnNames() const;
 private:

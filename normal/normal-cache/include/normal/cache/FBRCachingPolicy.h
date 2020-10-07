@@ -20,14 +20,15 @@ namespace normal::cache {
 class FBRCachingPolicy: public CachingPolicy {
 
 public:
-  explicit FBRCachingPolicy(size_t maxSize);
-  static std::shared_ptr<FBRCachingPolicy> make(size_t maxSize);
+  explicit FBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
+  static std::shared_ptr<FBRCachingPolicy> make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode);
 
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;
   std::string showCurrentLayout() override;
+  CachingPolicyId id() override;
 
 private:
   std::vector<std::shared_ptr<SegmentKey>> keysInCache_;
@@ -39,13 +40,13 @@ private:
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keysToReplace_;
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> estimateCachingDecisions_;
 
+  bool lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
   void addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in, const std::shared_ptr<SegmentKey> &out);
   void removeEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in);
   /**
-   * For FBR, erasing only erases the element in usageHeap_, but not in keySet_ to keep history hitNum
+   * For FBR, erasing only erases the element in keyInCache_, but not in keySet_ to keep history hitNum
    */
   void erase(const std::shared_ptr<SegmentKey> &key);
-  long value(const std::shared_ptr<SegmentMetadata> metadata);
 };
 
 }

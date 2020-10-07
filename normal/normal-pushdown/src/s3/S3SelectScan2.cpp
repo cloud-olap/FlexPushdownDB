@@ -26,8 +26,9 @@ S3SelectScan2::S3SelectScan2(std::string name,
 							 std::optional<std::vector<std::string>> columnNames,
 							 const std::optional<S3SelectCSVParseOptions> &csvParseOptions,
 							 const std::shared_ptr<S3Client> &s3Client,
-							 bool scanOnStart) :
-	Operator(std::move(name), "S3SelectScan"),
+							 bool scanOnStart,
+							 long queryId) :
+	Operator(std::move(name), "S3SelectScan", queryId),
 	columnNames_(std::move(columnNames)),
 	scanOnStart_(scanOnStart),
 	kernel_(S3SelectScanKernel::make(s3Bucket,
@@ -65,7 +66,8 @@ std::shared_ptr<S3SelectScan2> S3SelectScan2::make(const std::string &name,
 												   const std::optional<std::vector<std::string>> &columnNames,
 												   const std::optional<S3SelectCSVParseOptions> &csvParseOptions,
 												   const std::shared_ptr<S3Client> &s3Client,
-												   bool scanOnStart) {
+												   bool scanOnStart,
+												   long queryId) {
   return std::make_shared<S3SelectScan2>(name,
 										 s3Bucket,
 										 s3Object,
@@ -76,7 +78,8 @@ std::shared_ptr<S3SelectScan2> S3SelectScan2::make(const std::string &name,
 										 columnNames.has_value() ? std::optional(ColumnName::canonicalize(columnNames.value())) : std::nullopt,
 										 csvParseOptions,
 										 s3Client,
-										 scanOnStart);
+										 scanOnStart,
+										 queryId);
 
 }
 

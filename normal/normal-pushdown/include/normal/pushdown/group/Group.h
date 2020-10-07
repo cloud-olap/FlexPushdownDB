@@ -31,7 +31,8 @@ class Group : public normal::core::Operator {
 public:
   Group(const std::string &Name,
 		std::vector<std::string> ColumnNames,
-		std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> AggregateFunctions);
+		std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> AggregateFunctions,
+		long queryId = 0);
 
   static std::shared_ptr<Group> make(const std::string& Name,
 									 const std::vector<std::string>& columnNames,

@@ -5,28 +5,22 @@
 #include <sstream>
 #include <fmt/format.h>
 #include "normal/cache/FBRCachingPolicy.h"
+#include <algorithm>
 
 using namespace normal::cache;
 
-bool lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
+bool FBRCachingPolicy::lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
 //  return (key1->getMetadata()->hitNum() / key1->getMetadata()->size())
 //       < (key2->getMetadata()->hitNum() / key2->getMetadata()->size());
   return (key1->getMetadata()->hitNum())
          < (key2->getMetadata()->hitNum());
 }
 
-bool lessEstimateValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
-//  return (key1->getMetadata()->hitNum() / key1->getMetadata()->estimateSize())
-//       < (key2->getMetadata()->hitNum() / key2->getMetadata()->estimateSize());
-  return (key1->getMetadata()->hitNum())
-         < (key2->getMetadata()->hitNum());
-}
+FBRCachingPolicy::FBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
+        CachingPolicy(maxSize, mode) {}
 
-FBRCachingPolicy::FBRCachingPolicy(size_t maxSize) :
-        CachingPolicy(maxSize) {}
-
-std::shared_ptr<FBRCachingPolicy> FBRCachingPolicy::make(size_t maxSize) {
-  return std::make_shared<FBRCachingPolicy>(maxSize);
+std::shared_ptr<FBRCachingPolicy> FBRCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
+  return std::make_shared<FBRCachingPolicy>(maxSize, mode);
 }
 
 void FBRCachingPolicy::onLoad(const std::shared_ptr<SegmentKey> &key) {
@@ -64,15 +58,18 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
     return std::nullopt;
   }
 
-  std::sort(keysInCache_.begin(), keysInCache_.end(), lessValue);
-  int heapIndex = 0;
+  std::sort(keysInCache_.begin(), keysInCache_.end(),
+            [this](const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
+                return lessValue(key1, key2);
+            });
+  int removeIndex = 0;
   size_t tmpFreeSize = freeSize_;
   while (tmpFreeSize < segmentSize) {
-    auto removableKey = keysInCache_[heapIndex];
+    auto removableKey = keysInCache_[removeIndex];
     if (lessValue(removableKey, realKey)) {
       removableKeys->emplace_back(removableKey);
       tmpFreeSize += removableKey->getMetadata()->size();
-      ++heapIndex;
+      ++removeIndex;
     } else {
       removeEstimateCachingDecision(realKey);
       return std::nullopt;
@@ -80,8 +77,8 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
   }
 
   // remove
-  if (heapIndex > 0) {
-    keysInCache_.erase(keysInCache_.begin(), keysInCache_.begin() + heapIndex);
+  if (removeIndex > 0) {
+    keysInCache_.erase(keysInCache_.begin(), keysInCache_.begin() + removeIndex);
     freeSize_ = tmpFreeSize;
   }
 
@@ -95,6 +92,10 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+  if (mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+    return segmentKeys;
+  }
+
   auto keysToCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
   // FIXME: an estimation here, if freeSize_ >= c * maxSize_, we try to cache all segments
@@ -128,7 +129,7 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
 
     // try to find one lower-value unused key in cache
     for (const auto &keyInCache: keysInCache_) {
-      if (lessEstimateValue(keyInCache, realKey) && keysToReplace_.find(keyInCache) == keysToReplace_.end()) {
+      if (lessValue(keyInCache, realKey) && keysToReplace_.find(keyInCache) == keysToReplace_.end()) {
         keysToCache->emplace_back(realKey);
         addEstimateCachingDecision(realKey, keyInCache);
         break;
@@ -141,10 +142,6 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
 
 void FBRCachingPolicy::erase(const std::shared_ptr<SegmentKey> &key) {
   keysInCache_.erase(std::find(keysInCache_.begin(), keysInCache_.end(), key));
-}
-
-long FBRCachingPolicy::value(std::shared_ptr<SegmentMetadata> metadata) {
-  return metadata->hitNum() / metadata->size();
 }
 
 void FBRCachingPolicy::addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in,
@@ -165,9 +162,13 @@ std::string FBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keysInCache_.size() << std::endl;
   for (auto const &segmentKey: keysInCache_) {
-    ss << fmt::format("Key: {};\tHitnum: {}", segmentKey->toString(), segmentKey->getMetadata()->hitNum()) << std::endl;
+    ss << fmt::format("Key: {};\tHitnum: {}\tSize: {}", segmentKey->toString(), segmentKey->getMetadata()->hitNum(), segmentKey->getMetadata()->size()) << std::endl;
   }
   ss << "Max size: " << maxSize_ << std::endl;
   ss << "Free size: " << freeSize_ << std::endl;
   return ss.str();
+}
+
+CachingPolicyId FBRCachingPolicy::id() {
+  return FBR;
 }

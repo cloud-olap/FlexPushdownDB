@@ -13,9 +13,10 @@
 
 namespace normal::core {
 
-Operator::Operator(std::string name, std::string type) :
+Operator::Operator(std::string name, std::string type, long queryId) :
     name_(std::move(name)),
-    type_(std::move(type)) {
+    type_(std::move(type)),
+    queryId_(queryId) {
 }
 
 const std::string &Operator::getType() const {
@@ -63,6 +64,10 @@ void Operator::setName(const std::string &Name) {
 }
 void Operator::destroyActor() {
   opContext_->destroyActorHandles();
+}
+
+long Operator::getQueryId() const {
+  return queryId_;
 }
 
 } // namespace

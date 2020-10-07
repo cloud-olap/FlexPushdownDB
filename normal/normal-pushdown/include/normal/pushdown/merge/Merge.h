@@ -19,9 +19,9 @@ class Merge : public Operator {
 
 public:
 
-  explicit Merge(const std::string &Name);
+  explicit Merge(const std::string &Name, long queryId);
 
-  static std::shared_ptr<Merge> make(const std::string &Name);
+  static std::shared_ptr<Merge> make(const std::string &Name, long queryId = 0);
 
   void onReceive(const Envelope &msg) override;
 
@@ -36,16 +36,11 @@ private:
 
   void merge();
 
-  std::shared_ptr<Operator> leftProducer_;
-  std::shared_ptr<Operator> rightProducer_;
+  std::weak_ptr<Operator> leftProducer_;
+  std::weak_ptr<Operator> rightProducer_;
 
   std::list<std::shared_ptr<TupleSet2>> leftTupleSets_;
   std::list<std::shared_ptr<TupleSet2>> rightTupleSets_;
-
-  // Flags to make sure CompleteMessage is sent after all TupleMessages have been sent
-  int onTupleNum_ = 0;
-  bool tupleArrived_ = false;
-  std::mutex mergeLock;
 
 };
 

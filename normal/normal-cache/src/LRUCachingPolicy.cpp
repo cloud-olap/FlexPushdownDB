@@ -4,18 +4,20 @@
 
 #include <sstream>
 #include "normal/cache/LRUCachingPolicy.h"
+#include <normal/plan/mode/Modes.h>
 
 using namespace normal::cache;
 
-LRUCachingPolicy::LRUCachingPolicy(size_t maxSize) :
-  CachingPolicy(maxSize) {}
+LRUCachingPolicy::LRUCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
+  CachingPolicy(maxSize, mode) {}
 
 std::shared_ptr<LRUCachingPolicy> LRUCachingPolicy::make() {
-  return std::make_shared<LRUCachingPolicy>(std::numeric_limits<size_t>::max());
+  return std::make_shared<LRUCachingPolicy>(std::numeric_limits<size_t>::max(),
+                                            normal::plan::operator_::mode::Modes::pullupCachingMode());
 }
 
-std::shared_ptr<LRUCachingPolicy> LRUCachingPolicy::make(size_t maxSize) {
-  return std::make_shared<LRUCachingPolicy>(maxSize);
+std::shared_ptr<LRUCachingPolicy> LRUCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
+  return std::make_shared<LRUCachingPolicy>(maxSize, mode);
 }
 
 void LRUCachingPolicy::erase(const std::shared_ptr<SegmentKey> &key) {
@@ -66,8 +68,8 @@ void LRUCachingPolicy::onRemove(const std::shared_ptr<SegmentKey> &key) {
 
 std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>
 LRUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
-  /* TODO: here LRU is only used in pullup caching, so we cache every segment
-   *  need to decouple pullup caching and hybrid caching later
+  /**
+   * LRU always return all miss segment keys, for they are all newest
    */
   return segmentKeys;
 }
@@ -78,6 +80,10 @@ std::string LRUCachingPolicy::showCurrentLayout() {
     ss << segmentKey->toString() << std::endl;
   }
   return ss.str();
+}
+
+CachingPolicyId LRUCachingPolicy::id() {
+  return LRU;
 }
 
 

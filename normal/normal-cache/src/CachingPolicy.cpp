@@ -6,5 +6,5 @@
 
 using namespace normal::cache;
 
-CachingPolicy::CachingPolicy(size_t maxSize) :
-  maxSize_(maxSize), freeSize_(maxSize) {}
+CachingPolicy::CachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
+  maxSize_(maxSize), freeSize_(maxSize), mode_(mode) {}

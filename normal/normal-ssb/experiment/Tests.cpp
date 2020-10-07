@@ -14,10 +14,12 @@
 #include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
+#include <normal/cache/WFBRCachingPolicy.h>
 #include "ExperimentUtil.h"
 #include <normal/ssb/SqlGenerator.h>
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
+#include <normal/connector/MiniCatalogue.h>
 
 #define SKIP_SUITE false
 
@@ -28,45 +30,47 @@ void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::strin
   auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
 
   // look up tables
-  std::vector<std::string> tableNames = {"lineorder", "date", "customer", "supplier", "part"};
+  auto tableNames = normal::connector::defaultMiniCatalogue->tables();
   auto s3Objects = std::make_shared<std::vector<std::string>>();
-  for (const auto &tableName: tableNames) {
+  for (const auto &tableName: *tableNames) {
     auto s3Object = dir_prefix + tableName + ".tbl";
     s3Objects->emplace_back(s3Object);
   }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::plan::DefaultS3Client);
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
 
   // configure s3Connector
-  for (int tbl_id = 0; tbl_id < tableNames.size(); tbl_id++) {
-    auto &tableName = tableNames[tbl_id];
+  for (int tbl_id = 0; tbl_id < tableNames->size(); tbl_id++) {
+    auto &tableName = tableNames->at(tbl_id);
     auto &s3Object = s3Objects->at(tbl_id);
     auto numBytes = objectNumBytes_Map.find(s3Object)->second;
     auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
-    partitioningScheme->add(std::make_shared<S3SelectPartition>("s3filter", s3Object, numBytes));
+    partitioningScheme->add(std::make_shared<S3SelectPartition>(bucket_name, s3Object, numBytes));
     cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
   }
   i.put(cat);
 }
 
-void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix, int partitionNum) {
+void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
   auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
   auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
 
-  // s3Objects map
+  // get partitionNums
   auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
-  auto lineorderS3Objects = std::make_shared<std::vector<std::string>>();
-  for (int i = 0; i < partitionNum; i++) {
-    lineorderS3Objects->emplace_back(fmt::format("{}lineorder_sharded/lineorder.tbl.{}", dir_prefix, i));
+  auto partitionNums = normal::connector::defaultMiniCatalogue->partitionNums();
+  for (auto const &partitionNumEntry: *partitionNums) {
+    auto tableName = partitionNumEntry.first;
+    auto partitionNum = partitionNumEntry.second;
+    auto objects = std::make_shared<std::vector<std::string>>();
+    if (partitionNum == 1) {
+      objects->emplace_back(dir_prefix + tableName + ".tbl");
+      s3ObjectsMap->emplace(tableName, objects);
+    } else {
+      for (int i = 0; i < partitionNum; i++) {
+        objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
+      }
+      s3ObjectsMap->emplace(tableName, objects);
+    }
   }
-  auto dateS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "date.tbl"}));
-  auto customerS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "customer.tbl"}));
-  auto supplierS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "supplier.tbl"}));
-  auto partS3Objects = std::make_shared<std::vector<std::string>>(std::vector<std::string>({dir_prefix + "part.tbl"}));
-  s3ObjectsMap->insert({"lineorder", lineorderS3Objects});
-  s3ObjectsMap->insert({"date", dateS3Objects});
-  s3ObjectsMap->insert({"customer", customerS3Objects});
-  s3ObjectsMap->insert({"supplier", supplierS3Objects});
-  s3ObjectsMap->insert({"part", partS3Objects});
 
   // look up tables
   auto s3Objects = std::make_shared<std::vector<std::string>>();
@@ -74,7 +78,7 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
     auto objects = s3ObjectPair.second;
     s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
   }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, *s3Objects, normal::plan::DefaultS3Client);
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
 
   // configure s3Connector
   for (auto const &s3ObjectPair: *s3ObjectsMap) {
@@ -83,7 +87,7 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
     auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
     for (auto const &s3Object: *objects) {
       auto numBytes = objectNumBytes_Map.find(s3Object)->second;
-      partitioningScheme->add(std::make_shared<S3SelectPartition>("s3filter", s3Object, numBytes));
+      partitioningScheme->add(std::make_shared<S3SelectPartition>(bucket_name, s3Object, numBytes));
     }
     cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
   }
@@ -101,26 +105,30 @@ auto execute(normal::sql::Interpreter &i) {
 }
 
 auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics) {
+//  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
   i.clearOperatorGraph();
 
   i.parse(sql);
 
-  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
-  TestUtil::writeExecutionPlan2(*i.getOperatorGraph());
+  // graph is too large
+//  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
+//  TestUtil::writeExecutionPlan2(*i.getOperatorGraph());
 
   auto tuples = execute(i);
 
   auto tupleSet = TupleSet2::create(tuples);
-//  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 //  if (saveMetrics)
-//    SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
   SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
 //  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
   SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
   if (saveMetrics) {
     i.saveMetrics();
   }
+  i.saveHitRatios();
 
+  i.getOperatorGraph().reset();
   return tupleSet;
 }
 
@@ -161,14 +169,16 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf1/";
 
+  auto chosenMode = mode3;
+
   // choose caching policy
-  auto lru = LRUCachingPolicy::make(1024*1024*300);
-  auto fbr = FBRCachingPolicy::make(1024*1024*300);
+  auto lru = LRUCachingPolicy::make(1024*1024*300, chosenMode);
+  auto fbr = FBRCachingPolicy::make(1024*1024*300, chosenMode);
 
   // configure interpreter
-  normal::sql::Interpreter i(mode3, fbr);
+  normal::sql::Interpreter i(chosenMode, fbr);
   if (partitioned) {
-    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 32);
+    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
   } else {
     configureS3ConnectorSinglePartition(i, bucket_name, dir_prefix);
   }
@@ -210,7 +220,7 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
   std::string dir_prefix = "ssb-sf0.01/";
   normal::sql::Interpreter i;
   if (partitioned) {
-    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, 10);
+    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
   } else {
     configureS3ConnectorSinglePartition(i, bucket_name, dir_prefix);
   }
@@ -231,22 +241,22 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 30, executeBatchSize = 30;
-  const size_t cacheSize = 1024*1024*1024;
-  std::string bucket_name = "s3filter";
-  std::string dir_prefix = "ssb-sf10-sortlineorder/";
-  const int partitionNum = 32;
+  const int warmBatchSize = 2, executeBatchSize = 2;
+  const size_t cacheSize = 1536L*1024*1024;
+  std::string bucket_name = "pushdowndb";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
 
-  auto mode = normal::plan::operator_::mode::Modes::hybridCachingMode();
-  auto lru = LRUCachingPolicy::make(cacheSize);
-  auto fbr = FBRCachingPolicy::make(cacheSize);
+  auto mode = normal::plan::operator_::mode::Modes::fullPushdownMode();
+  auto lru = LRUCachingPolicy::make(cacheSize, mode);
+  auto fbr = FBRCachingPolicy::make(cacheSize, mode);
+  auto wfbr = WFBRCachingPolicy::make(cacheSize, mode);
 
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
   normal::sql::Interpreter i(mode, fbr);
-  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix, partitionNum);
+  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
 
   // execute
   i.boot();
@@ -257,6 +267,7 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
     for (auto index = 1; index <= warmBatchSize; ++index) {
       SPDLOG_INFO("sql {}", index);
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+      //SPDLOG_INFO("current path: {}", sql_file_path.string());
       auto sql = ExperimentUtil::read_file(sql_file_path.string());
       executeSql(i, sql, false);
       sql_file_dir_path = sql_file_dir_path.parent_path();
@@ -278,10 +289,18 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
 
   SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+  SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
+
+  auto metricsFilePath = filesystem::current_path().append("metrics");
+  std::ofstream fout(metricsFilePath.string());
+  fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
+  fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
+  fout << "Cache hit ratios:\n" << i.showHitRatios() << "\n";
+  fout.flush();
+  fout.close();
 
   i.getOperatorGraph().reset();
   i.stop();
   SPDLOG_INFO("Memory allocated finally: {}", arrow::default_memory_pool()->bytes_allocated());
 }
-
 }

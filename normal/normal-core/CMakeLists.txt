@@ -34,7 +34,7 @@ add_library(normal-core STATIC
         src/cache/LoadResponseMessage.cpp include/normal/core/cache/LoadResponseMessage.h
         src/cache/SegmentCacheActor.cpp include/normal/core/cache/SegmentCacheActor.h
         src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
-        src/graph/OperatorGraph.cpp include/normal/core/graph/OperatorGraph.h
+        src/cache/WeightRequestMessage.cpp include/normal/core/cache/WeightRequestMessage.h
         include/normal/core/Forward.h
         src/OperatorActor2.cpp include/normal/core/OperatorActor2.h
         src/OperatorConnection.cpp include/normal/core/OperatorConnection.h
@@ -50,9 +50,9 @@ target_link_libraries(normal-core PUBLIC caf::libcaf_core_static)
 target_link_libraries(normal-core PUBLIC caf::libcaf_io_static)
 target_link_libraries(normal-core PUBLIC arrow_static)
 target_link_libraries(normal-core PUBLIC gandiva_static)
-#target_link_libraries(normal-core PUBLIC graphviz_gvc_shared)
-#target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)
-#target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)
+target_link_libraries(normal-core PUBLIC graphviz_gvc_shared)
+target_link_libraries(normal-core PUBLIC graphviz_dot_layout_shared)
+target_link_libraries(normal-core PUBLIC graphviz_neato_layout_shared)
 target_link_libraries(normal-core PUBLIC expected)
 target_link_libraries(normal-core PUBLIC normal-expression)
 target_link_libraries(normal-core PUBLIC normal-cache)

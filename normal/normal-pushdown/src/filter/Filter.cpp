@@ -10,20 +10,27 @@
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/pushdown/Globals.h>
 #include <normal/expression/gandiva/Filter.h>
-//#include <normal/tuple/TupleSetShowOptions.h>
 #include <normal/tuple/Globals.h>
+#include <normal/core/cache/WeightRequestMessage.h>
+#include <normal/expression/gandiva/And.h>
+#include <normal/expression/gandiva/Or.h>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::pushdown::filter;
 using namespace normal::core;
+using namespace normal::cache;
 
-Filter::Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred) :
-	Operator(std::move(Name), "Filter"),
+Filter::Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred, long queryId,
+               const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys) :
+	Operator(std::move(Name), "Filter", queryId),
 	received_(normal::tuple::TupleSet2::make()),
 	filtered_(normal::tuple::TupleSet2::make()),
-	pred_(Pred) {}
+	pred_(Pred),
+	weightedSegmentKeys_(weightedSegmentKeys) {}
 
-std::shared_ptr<Filter> Filter::make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred) {
-  return std::make_shared<Filter>(Name, Pred);
+std::shared_ptr<Filter> Filter::make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred, long queryId,
+                                     std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) {
+  return std::make_shared<Filter>(Name, Pred, queryId, weightedSegmentKeys);
 }
 
 void Filter::onReceive(const normal::core::message::Envelope &Envelope) {
@@ -82,25 +89,27 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
             std::make_shared<core::message::CompleteMessage>(name());
     ctx()->tell(completeMessage);
     ctx()->notifyComplete();
-    complete_ = true;
   }
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 //  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
+
   if(received_->getArrowTable().has_value()) {
-	filterTuples();
-	sendTuples();
+    filterTuples();
+    sendTuples();
   }
 
   if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+    if (weightedSegmentKeys_ && totalNumRows_ > 0 && *applicable_) {
+      sendSegmentWeight();
+    }
 
     filter_ = std::nullopt;
-
     assert(this->received_->numRows() == 0);
-	assert(this->filtered_->numRows() == 0);
+	  assert(this->filtered_->numRows() == 0);
 
-	ctx()->notifyComplete();
+	  ctx()->notifyComplete();
   }
 }
 
@@ -145,6 +154,8 @@ void Filter::filterTuples() {
   filtered_ = filter_.value()->evaluate(*received_);
   assert(filtered_->validate());
 
+  totalNumRows_ += received_->numRows();
+  filteredNumRows_ += filtered_->numRows();
 //  SPDLOG_DEBUG("Filter Output\n{}", filtered_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
 
   received_->clear();
@@ -158,4 +169,56 @@ void Filter::sendTuples() {
   ctx()->tell(tupleMessage);
   filtered_->clear();
   assert(filtered_->validate());
+}
+
+int getPredicateNum(const std::shared_ptr<normal::expression::gandiva::Expression> &expr) {
+  if (typeid(*expr) == typeid(normal::expression::gandiva::And) || typeid(*expr) == typeid(normal::expression::gandiva::Or)) {
+    auto biExpr = std::static_pointer_cast<normal::expression::gandiva::BinaryExpression>(expr);
+    return getPredicateNum(biExpr->getLeft()) + getPredicateNum(biExpr->getRight());
+  } else {
+    return 1;
+  }
+}
+
+void Filter::sendSegmentWeight() {
+  auto selectivity = ((double) filteredNumRows_) / ((double ) totalNumRows_);
+  double predicateNum = (double) getPredicateNum(pred_->expression());
+
+  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
+
+  if (!RefinedWeightFunction) {
+    /**
+     * Naive weight function:
+     *   w = sel * (#pred / (#pred + c))
+     */
+    double predPara = 0.5;
+    double weight = selectivity * (predicateNum / (predicateNum + predPara));
+//    double weight = selectivity * predicateNum;
+
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  else {
+    /**
+     * Refined weight function:
+     *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)) / #key
+     */
+    auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+    auto numKey = (double) weightedSegmentKeys_->size();
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      auto columnName = segmentKey->getColumnName();
+      auto tableName = miniCatalogue->findTableOfColumn(columnName);
+      auto lenCol = (double) miniCatalogue->lengthOfColumn(columnName);
+      auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
+
+//      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
+      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan)) / numKey;
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  ctx()->send(core::cache::WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
+          .map_error([](auto err) { throw std::runtime_error(err); });
 }

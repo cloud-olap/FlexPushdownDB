@@ -27,12 +27,13 @@ class Operator {
 private:
   std::string name_;
   std::string type_;
+  long queryId_;
   std::shared_ptr<OperatorContext> opContext_;
   std::map<std::string, std::string> producers_;
   std::map<std::string, std::string> consumers_;
 
 public:
-  explicit Operator(std::string name, std::string type);
+  explicit Operator(std::string name, std::string type, long queryId);
   virtual ~Operator() = default;
 
   std::string &name();
@@ -41,6 +42,7 @@ public:
   std::shared_ptr<OperatorContext> weakCtx();
   void setName(const std::string &Name);
   virtual void onReceive(const normal::core::message::Envelope &msg) = 0;
+  long getQueryId() const;
 
   std::map<std::string, std::string> producers();
   std::map<std::string, std::string> consumers();

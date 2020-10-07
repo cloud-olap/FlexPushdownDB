@@ -18,14 +18,15 @@ JoinLogicalOperator::JoinLogicalOperator(const std::string &leftColumnName, cons
           leftProducer_(leftProducer), rightProducer_(rightProducer){}
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogicalOperator::toOperators() {
-  auto numConcurrentUnits = JoinParallelDegree;
+  const int numConcurrentUnits = JoinParallelDegree;
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
 
   // join build
   for (auto index = 0; index < numConcurrentUnits; index++) {
     auto joinBuild = std::make_shared<normal::pushdown::join::HashJoinBuild>(
             fmt::format("join-build-{}-{}-{}", leftColumnName_, rightColumnName_, index),
-            leftColumnName_);
+            leftColumnName_,
+            getQueryId());
     operators->emplace_back(joinBuild);
   }
 
@@ -33,7 +34,8 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogica
   for (auto index = 0; index < numConcurrentUnits; index++) {
     auto joinProbe = std::make_shared<normal::pushdown::join::HashJoinProbe>(
             fmt::format("join-probe-{}-{}-{}", leftColumnName_, rightColumnName_, index),
-            normal::pushdown::join::JoinPredicate::create(leftColumnName_,rightColumnName_));
+            normal::pushdown::join::JoinPredicate::create(leftColumnName_,rightColumnName_),
+            getQueryId());
     operators->emplace_back(joinProbe);
   }
 

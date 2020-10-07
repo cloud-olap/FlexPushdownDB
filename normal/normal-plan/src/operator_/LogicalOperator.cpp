@@ -12,6 +12,10 @@ std::shared_ptr<type::OperatorType> LogicalOperator::type() {
   return type_;
 }
 
+std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> LogicalOperator::extractSegmentKeys() {
+  return std::make_shared<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>();
+}
+
 const std::string &LogicalOperator::getName() const {
   return name_;
 }
@@ -34,4 +38,12 @@ void LogicalOperator::setMode(const std::shared_ptr<normal::plan::operator_::mod
 
 const std::shared_ptr<normal::plan::operator_::mode::Mode> &LogicalOperator::getMode() const {
   return mode_;
+}
+
+void LogicalOperator::setQueryId(long queryId) {
+  queryId_ = queryId;
+}
+
+long LogicalOperator::getQueryId() const {
+  return queryId_;
 }

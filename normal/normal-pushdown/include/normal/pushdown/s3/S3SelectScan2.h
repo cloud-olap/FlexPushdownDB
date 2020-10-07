@@ -45,7 +45,8 @@ public:
 				std::optional<std::vector<std::string>> columnNames,
 				const std::optional<S3SelectCSVParseOptions> &parseOptions,
 				const std::shared_ptr<S3Client> &s3Client,
-				bool scanOnStart);
+				bool scanOnStart,
+				long queryId);
 
   static std::shared_ptr<S3SelectScan2> make(const std::string &name,
 											 const std::string &s3Bucket,
@@ -57,7 +58,8 @@ public:
 											 const std::optional<std::vector<std::string>> &columnNames,
 											 const std::optional<S3SelectCSVParseOptions> &parseOptions,
 											 const std::shared_ptr<S3Client> &s3Client,
-											 bool scanOnStart);
+											 bool scanOnStart,
+											 long queryId = 0);
 
   void onReceive(const Envelope &message) override;
 

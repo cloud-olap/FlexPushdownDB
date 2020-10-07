@@ -48,6 +48,7 @@
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/cache/SegmentKey.h>
+#include <normal/connector/MiniCatalogue.h>
 
 #include "normal/pushdown/Globals.h"
 #include <normal/pushdown/cache/CacheHelper.h>
@@ -78,8 +79,10 @@ S3SelectScan::S3SelectScan(std::string name,
 						   S3SelectCSVParseOptions parseOptions,
 						   std::shared_ptr<Aws::S3::S3Client> s3Client,
 						   bool scanOnStart,
-               bool toCache) :
-	Operator(std::move(name), "S3SelectScan"),
+               bool toCache,
+               long queryId,
+               const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys) :
+	Operator(std::move(name), "S3SelectScan", queryId),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
 	filterSql_(std::move(filterSql)),
@@ -90,7 +93,8 @@ S3SelectScan::S3SelectScan(std::string name,
 	s3Client_(std::move(s3Client)),
 	columns_(columnNames_.size()),
 	scanOnStart_(scanOnStart),
-	toCache_(toCache) {}
+	toCache_(toCache),
+	weightedSegmentKeys_(weightedSegmentKeys) {}
 
 std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::string s3Bucket,
@@ -102,7 +106,9 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 S3SelectCSVParseOptions parseOptions,
 												 std::shared_ptr<Aws::S3::S3Client> s3Client,
 												 bool scanOnstart,
-												 bool toCache) {
+												 bool toCache,
+												 long queryId,
+                         std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) {
   return std::make_shared<S3SelectScan>(name,
 										s3Bucket,
 										s3Object,
@@ -113,7 +119,9 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										parseOptions,
 										s3Client,
 										scanOnstart,
-										toCache);
+										toCache,
+										queryId,
+										weightedSegmentKeys);
 
 }
 
@@ -197,6 +205,7 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
   auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
+  numRequests_++;
 
   if (optionalErrorMessage.has_value()) {
 	return tl::unexpected(optionalErrorMessage.value());
@@ -281,6 +290,11 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
     // Store the read columns in the cache, if not in full-pushdown mode
     if (toCache_) {
       requestStoreSegmentsInCache(readTupleSet);
+    } else {
+      // send segment filter weight
+      if (weightedSegmentKeys_ && processedBytes_ > 0) {
+        sendSegmentWeight();
+      }
     }
   }
 
@@ -294,6 +308,8 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
   } else if (message.message().type() == "ScanMessage") {
     auto scanMessage = dynamic_cast<const scan::ScanMessage &>(message.message());
     this->onCacheLoadResponse(scanMessage);
+  } else if (message.message().type() == "CompleteMessage") {
+    // Noop
   } else {
     // FIXME: Propagate error properly
     throw std::runtime_error(fmt::format("Unrecognized message type: {}, {}", message.message().type(), name()));
@@ -340,6 +356,71 @@ size_t S3SelectScan::getProcessedBytes() const {
 
 size_t S3SelectScan::getReturnedBytes() const {
   return returnedBytes_;
+}
+
+size_t S3SelectScan::getNumRequests() const {
+  return numRequests_;
+}
+
+int subStrNum(const std::string& str, const std::string& sub) {
+  int num = 0;
+  size_t len = sub.length();
+  if (len == 0) len = 1;
+  for (size_t i = 0; (i = str.find(sub, i)) != std::string::npos; num++, i += len);
+  return num;
+}
+
+int getPredicateNum(std::string &filterSql) {
+  return subStrNum(filterSql, "and") + subStrNum(filterSql, "or") + 1;
+}
+
+void S3SelectScan::sendSegmentWeight() {
+  auto filteredBytes = (double) returnedBytes_;
+  double projectFraction = 0.0;
+  auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+  for (auto const &columnName: columnNames_) {
+    projectFraction += miniCatalogue->lengthFraction(columnName);
+  }
+  double totalBytes = projectFraction * ((double) processedBytes_);
+  auto selectivity = filteredBytes / totalBytes;
+  double predicateNum = (double) getPredicateNum(filterSql_);
+
+  auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
+
+  if (!RefinedWeightFunction) {
+    /**
+     * Naive weight function:
+     *   w = sel * (#pred / (#pred + c))
+     */
+    double predPara = 0.5;
+    double weight = selectivity * (predicateNum / (predicateNum + predPara));
+//    double weight = selectivity * predicateNum;
+
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  else {
+    /**
+     * Refined weight function:
+     *   w = sel / vNetwork + (lenRow / (lenCol * vScan) + #pred / (lenCol * vFilter)) / #key
+     */
+    auto numKey = (double) weightedSegmentKeys_->size();
+    for (auto const &segmentKey: *weightedSegmentKeys_) {
+      auto columnName = segmentKey->getColumnName();
+      auto tableName = miniCatalogue->findTableOfColumn(columnName);
+      auto lenCol = (double) miniCatalogue->lengthOfColumn(columnName);
+      auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
+
+//      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
+      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan)) / numKey;
+      weightMap->emplace(segmentKey, weight);
+    }
+  }
+
+  ctx()->send(WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
+          .map_error([](auto err) { throw std::runtime_error(err); });
 }
 
 }

@@ -24,16 +24,22 @@ public:
   explicit BloomCreateOperator(const std::string &name,
 							   const std::string &columnName,
 							   double desiredFalsePositiveRate,
-							   const std::vector<std::string> &bloomJoinUseSqlTemplates) :
-	  Operator(name, "BloomCreateOperator"),
+							   const std::vector<std::string> &bloomJoinUseSqlTemplates,
+							   long queryId) :
+	  Operator(name, "BloomCreateOperator", queryId),
 	  kernel_(BloomCreateKernel::make(columnName, desiredFalsePositiveRate, bloomJoinUseSqlTemplates)) {
   }
 
   static std::shared_ptr<BloomCreateOperator> make(const std::string &name,
-												   const std::string &columnName,
-												   double desiredFalsePositiveRate,
-												   const std::vector<std::string> &bloomJoinUseSqlTemplates) {
-	return std::make_shared<BloomCreateOperator>(name, columnName, desiredFalsePositiveRate, bloomJoinUseSqlTemplates);
+                                                   const std::string &columnName,
+                                                   double desiredFalsePositiveRate,
+                                                   const std::vector<std::string> &bloomJoinUseSqlTemplates,
+                                                   long queryId = 0) {
+	return std::make_shared<BloomCreateOperator>(name,
+	                                             columnName,
+	                                             desiredFalsePositiveRate,
+	                                             bloomJoinUseSqlTemplates,
+	                                             queryId);
   }
 
   void onReceive(const Envelope &msg) override {

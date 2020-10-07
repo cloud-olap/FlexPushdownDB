@@ -30,7 +30,7 @@ public:
    *
    * @param path Path to write the SVG to
    */
-//  void writeGraph(const filesystem::path& path);
+  void writeGraph(const filesystem::path& path);
 
 private:
   std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> operators_;

@@ -13,6 +13,9 @@
 
 namespace normal::core {
 
+std::mutex mutex_;
+std::condition_variable condVar;
+
 void LocalOperatorDirectory::insert(const LocalOperatorDirectoryEntry& entry) {
   // map insert cannot cover the value for the same key, need to delete first
   auto iter = entries_.find(entry.name());
@@ -88,6 +91,28 @@ std::vector<LocalOperatorDirectoryEntry> LocalOperatorDirectory::get(const Opera
     }
   }
   return matchingEntries;
+}
+
+void LocalOperatorDirectory::clearUsingEmpty() {
+  std::unordered_map <std::string, LocalOperatorDirectoryEntry> emptyMap;
+  entries_.swap(emptyMap);
+  condVar.notify_one();
+}
+
+void LocalOperatorDirectory::clearForSegmentCache() {
+  for (auto it = entries_.begin(); it != entries_.end();) {
+    if (!(it->first == "SegmentCache" || it->first == "root")) {
+      entries_.erase(it++);
+    } else {
+      it++;
+    }
+  }
+//  if (entries_.size() > 100) {
+//    std::thread t(&LocalOperatorDirectory::clearUsingEmpty, this);
+//    std::unique_lock<std::mutex> lck(mutex_);
+//    condVar.wait(lck);
+//    t.join();
+//  }
 }
 
 }

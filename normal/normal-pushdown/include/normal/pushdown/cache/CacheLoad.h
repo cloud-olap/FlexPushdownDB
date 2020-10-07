@@ -25,7 +25,8 @@ public:
 					 std::shared_ptr<Partition> partition,
 					 int64_t startOffset,
 					 int64_t finishOffset,
-					 bool useNewCacheLayout);
+					 bool useNewCacheLayout,
+					 long queryId);
   ~CacheLoad() override = default;
 
   static std::shared_ptr<CacheLoad> make(const std::string &name,
@@ -34,7 +35,8 @@ public:
 										 const std::shared_ptr<Partition>& partition,
 										 int64_t startOffset,
 										 int64_t finishOffset,
-										 bool useNewCacheLayout);
+										 bool useNewCacheLayout,
+										 long queryId = 0);
 
   void onStart();
   void onReceive(const Envelope &msg) override;
@@ -55,9 +57,9 @@ private:
   int64_t startOffset_;
   int64_t finishOffset_;
 
-  std::shared_ptr<Operator> hitOperator_;
-  std::shared_ptr<Operator> missOperatorToCache_;
-  std::shared_ptr<Operator> missOperatorToPushdown_;
+  std::weak_ptr<Operator> hitOperator_;
+  std::weak_ptr<Operator> missOperatorToCache_;
+  std::weak_ptr<Operator> missOperatorToPushdown_;
 
   /**
    * whether to use the new cache layout after segments back or the last one without waiting

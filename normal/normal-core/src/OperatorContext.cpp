@@ -34,15 +34,18 @@ tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<mess
 
   if(recipientId == "SegmentCache"){
     if(msg->type() == "LoadRequestMessage"){
-	  operatorActor_->request(segmentCacheActor_, infinite, normal::core::cache::LoadAtom::value, std::static_pointer_cast<normal::core::cache::LoadRequestMessage>(msg))
-	  .then([=](const std::shared_ptr<normal::core::cache::LoadResponseMessage>& response){
-		operatorActor_->anon_send(this->operatorActor(), Envelope(response));
-//		send(response, this->operator_->name());
-	  });
+      operatorActor_->request(segmentCacheActor_, infinite, normal::core::cache::LoadAtom::value, std::static_pointer_cast<normal::core::cache::LoadRequestMessage>(msg))
+      .then([=](const std::shared_ptr<normal::core::cache::LoadResponseMessage>& response){
+      operatorActor_->anon_send(this->operatorActor(), Envelope(response));
+//		  send(response, this->operator_->name());
+      });
     }
     else if(msg->type() == "StoreRequestMessage"){
-	  operatorActor_->anon_send(segmentCacheActor_, normal::core::cache::StoreAtom::value, std::static_pointer_cast<normal::core::cache::StoreRequestMessage>(msg));
-	}
+      operatorActor_->anon_send(segmentCacheActor_, normal::core::cache::StoreAtom::value, std::static_pointer_cast<normal::core::cache::StoreRequestMessage>(msg));
+    }
+    else if(msg->type() == "WeightRequestMessage"){
+      operatorActor_->anon_send(segmentCacheActor_, normal::core::cache::WeightAtom::value, std::static_pointer_cast<normal::core::cache::WeightRequestMessage>(msg));
+    }
     else{
       throw std::runtime_error("Unrecognized message " + msg->type());
     }
@@ -82,7 +85,7 @@ void OperatorContext::operatorActor(OperatorActor *operatorActor) {
  */
 void OperatorContext::notifyComplete() {
 
-  SPDLOG_DEBUG("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
+  SPDLOG_INFO("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
 
   OperatorActor* operatorActor = this->operatorActor();
 

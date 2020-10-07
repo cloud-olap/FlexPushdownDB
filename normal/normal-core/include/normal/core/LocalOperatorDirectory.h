@@ -19,7 +19,7 @@ namespace normal::core {
 class LocalOperatorDirectory {
 
 private:
-  std::map <std::string, LocalOperatorDirectoryEntry> entries_;
+  std::unordered_map <std::string, LocalOperatorDirectoryEntry> entries_;
 
 public:
   void insert(const LocalOperatorDirectoryEntry &entry);
@@ -28,6 +28,8 @@ public:
   bool allComplete(const OperatorRelationshipType &operatorRelationshipType);
   [[nodiscard]] std::string showString() const;
   void setIncomplete();
+  void clearForSegmentCache();
+  void clearUsingEmpty();
 
   tl::expected<LocalOperatorDirectoryEntry, std::string>
   get(const std::string& operatorId);

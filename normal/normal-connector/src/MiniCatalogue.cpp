@@ -5,21 +5,147 @@
 #include <string>
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/connector/s3/S3SelectPartition.h>
+#include <experimental/filesystem>
+#include <fstream>
+#include <utility>
+#include <iostream>
+#include <normal/cache/SegmentKey.h>
+
+using namespace normal::cache;
 
 normal::connector::MiniCatalogue::MiniCatalogue(
-        const std::shared_ptr<std::vector<std::string>> &tables,
-        const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> &schemas,
-        const std::shared_ptr<std::unordered_map<std::string, int>> &columnLengthMap,
-        const std::shared_ptr<std::vector<std::string>> &defaultJoinOrder,
-        const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
-                std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &sortedColumns) :
-        tables_(tables),
-        schemas_(schemas),
-        columnLengthMap_(columnLengthMap),
-        defaultJoinOrder_(defaultJoinOrder),
-        sortedColumns_(sortedColumns) {}
+        std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
+        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas,
+        std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
+        std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
+                          SegmentKeyPointerHash, SegmentKeyPointerPredicate>> segmentKeyToSize,
+        std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> queryNumToInvolvedSegments,
+        std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
+                          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums,
+        std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
+        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
+                std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns) :
+        partitionNums_(std::move(partitionNums)),
+        schemas_(std::move(schemas)),
+        columnLengthMap_(std::move(columnLengthMap)),
+        segmentKeyToSize_(std::move(segmentKeyToSize)),
+        queryNumToInvolvedSegments_(std::move(queryNumToInvolvedSegments)),
+        segmentKeysToInvolvedQueryNums_(std::move(segmentKeysToInvolvedQueryNums)),
+        defaultJoinOrder_(std::move(defaultJoinOrder)),
+        sortedColumns_(std::move(sortedColumns)) {
 
-std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalogue::defaultMiniCatalogue() {
+  // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
+  currentQueryNum_ = 1;
+
+  // generate rowLengthMap from columnLengthMap
+  rowLengthMap_ = std::make_shared<std::unordered_map<std::string, int>>();
+  for (auto const &schemaEntry: *schemas_) {
+    auto tableName = schemaEntry.first;
+    int rowLength = 0;
+    for (auto const &columnName: *schemaEntry.second) {
+      rowLength += columnLengthMap_->find(columnName)->second;
+    }
+    rowLengthMap_->emplace(tableName, rowLength);
+  }
+}
+
+std::vector<std::string> split(const std::string& str, const std::string& splitStr) {
+  std::vector<std::string> res;
+  std::string::size_type pos1, pos2;
+  pos2 = str.find(splitStr);
+  pos1 = 0;
+  while (pos2 != std::string::npos)
+  {
+    res.push_back(str.substr(pos1, pos2 - pos1));
+    pos1 = pos2 + 1;
+    pos2 = str.find(splitStr, pos1);
+  }
+  if (pos1 < str.length()) {
+    res.push_back(str.substr(pos1));
+  }
+  return res;
+}
+
+std::vector<std::string> readFileByLines(std::experimental::filesystem::path filePath) {
+  std::ifstream file(filePath.string());
+  std::vector<std::string> res;
+  std::string str;
+  while (getline(file, str)) {
+    res.emplace_back(str);
+  }
+  return res;
+}
+
+std::shared_ptr<std::vector<std::pair<std::string, std::string>>> readMetadataSort(const std::string& schemaName, const std::string& fileName) {
+  auto res = std::make_shared<std::vector<std::pair<std::string, std::string>>>();
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("sort").append(fileName);
+  for (auto const &str: readFileByLines(filePath)) {
+    auto splitRes = split(str, ",");
+    res->emplace_back(std::pair<std::string, std::string>(splitRes[0], splitRes[1]));
+  }
+  return res;
+}
+
+std::shared_ptr<std::unordered_map<std::string, int>> readMetadataColumnLength(const std::string& schemaName) {
+  auto res = std::make_shared<std::unordered_map<std::string, int>>();
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("column_length");
+  for (auto const &str: readFileByLines(filePath)) {
+    auto splitRes = split(str, ",");
+    res->emplace(splitRes[0], stoi(splitRes[1]));
+  }
+  return res;
+}
+
+std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> readMetadataSchemas(const std::string& schemaName) {
+  auto res = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("schemas");
+  for (auto const &str: readFileByLines(filePath)) {
+    auto splitRes = split(str, ":");
+    auto columnNames = std::make_shared<std::vector<std::string>>();
+    for (auto const &columnName: split(splitRes[1], ",")) {
+      columnNames->emplace_back(columnName);
+    }
+    res->emplace(splitRes[0], columnNames);
+  }
+  return res;
+}
+
+std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(const std::string& schemaName) {
+  auto res = std::make_shared<std::unordered_map<std::string, int>>();
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("partitionNums");
+  for (auto const &str: readFileByLines(filePath)) {
+    auto splitRes = split(str, ",");
+    res->emplace(splitRes[0], stoi(splitRes[1]));
+  }
+  return res;
+}
+
+// Create a mapping of segmentKey -> size of segment with values already gathered
+std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
+readMetadataSegmentInfo(std::string s3Bucket, std::string schemaName) {
+  auto res = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, size_t, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
+  auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("segment_info");
+  for (auto const &str: readFileByLines(filePath)) {
+    auto splitRes = split(str, ",");
+    std::string objectName = splitRes[0];
+    std::string column = splitRes[1];
+    unsigned long startOffset = std::stoul(splitRes[2]);
+    unsigned long endOffset  = std::stoul(splitRes[3]);
+    size_t sizeInBytes;
+    sscanf(splitRes[4].c_str(), "%zu", &sizeInBytes);
+
+    std::string s3Object = schemaName + objectName;
+    // create the SegmentKey
+    auto segmentPartition = std::make_shared<S3SelectPartition>(s3Bucket, s3Object);
+    auto segmentRange = SegmentRange::make(startOffset, endOffset);
+    auto segmentKey = SegmentKey::make(segmentPartition, column, segmentRange);
+    res->emplace(segmentKey, sizeInBytes);
+  }
+  return res;
+}
+
+std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalogue::defaultMiniCatalogue(
+        const std::string& s3Bucket, const std::string& schemaName) {
   // star join order
   auto defaultJoinOrder = std::make_shared<std::vector<std::string>>();
   defaultJoinOrder->emplace_back("supplier");
@@ -28,159 +154,51 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   defaultJoinOrder->emplace_back("part");
 
   // schemas
-  auto cols_supplier = std::vector<std::string>{"s_suppkey", "s_name", "s_address", "s_city", "s_nation", "s_region",
-                                                "s_phone"};
-  auto cols_date = std::vector<std::string>{"d_datekey", "d_date", "d_dayofweek", "d_month", "d_year", "d_yearmonthnum",
-                                            "d_yearmonth", "d_daynuminweek", "d_daynuminmonth", "d_daynuminyear",
-                                            "d_monthnuminyear", "d_weeknuminyear", "d_sellingseason", "d_lastdayinweekfl",
-                                            "d_lastdayinmonthfl", "d_holidayfl", "d_weekdayfl"};
-  auto cols_customer = std::vector<std::string>{"c_custkey", "c_name", "c_address", "c_city", "c_nation", "c_region",
-                                                "c_phone", "c_mktsegment"};
-  auto cols_part = std::vector<std::string>{"p_partkey", "p_name", "p_mfgr", "p_category", "p_brand1", "p_color",
-                                            "p_type", "p_size", "p_container"};
-  auto cols_lineorder = std::vector<std::string>{"lo_orderkey", "lo_linenumber", "lo_custkey", "lo_partkey",
-                                                 "lo_suppkey", "lo_orderdate", "lo_orderpriority", "lo_shippriority",
-                                                 "lo_quantity", "lo_extendedprice", "lo_ordtotalprice", "lo_discount",
-                                                 "lo_revenue", "lo_supplycost", "lo_tax", "lo_commitdate",
-                                                 "lo_shipmode"};
-  auto schemas = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
-  schemas->insert({"supplier", std::make_shared<std::vector<std::string>>(cols_supplier)});
-  schemas->insert({"date", std::make_shared<std::vector<std::string>>(cols_date)});
-  schemas->insert({"customer", std::make_shared<std::vector<std::string>>(cols_customer)});
-  schemas->insert({"part", std::make_shared<std::vector<std::string>>(cols_part)});
-  schemas->insert({"lineorder", std::make_shared<std::vector<std::string>>(cols_lineorder)});
+  auto schemas = readMetadataSchemas(schemaName);
 
-  // tables
-  auto tables = std::make_shared<std::vector<std::string>>();
-  for (const auto &schema: *schemas) {
-    tables->push_back(schema.first);
-  }
+  // partitionNums
+  auto partitionNums = readMetadataPartitionNums(schemaName);
 
   // columnLengthMap
-  auto columnLengthMap = std::make_shared<std::unordered_map<std::string, int>>();
-  columnLengthMap->emplace("lo_orderkey", 4);
-  columnLengthMap->emplace("lo_linenumber", 4);
-  columnLengthMap->emplace("lo_custkey", 4);
-  columnLengthMap->emplace("lo_partkey", 4);
-  columnLengthMap->emplace("lo_suppkey", 4);
-  columnLengthMap->emplace("lo_orderdate", 4);
-  columnLengthMap->emplace("lo_orderpriority", 15);
-  columnLengthMap->emplace("lo_shippriority", 1);
-  columnLengthMap->emplace("lo_quantity", 4);
-  columnLengthMap->emplace("lo_extendedprice", 4);
-  columnLengthMap->emplace("lo_ordtotalprice", 4);
-  columnLengthMap->emplace("lo_discount", 4);
-  columnLengthMap->emplace("lo_revenue", 4);
-  columnLengthMap->emplace("lo_supplycost", 4);
-  columnLengthMap->emplace("lo_tax", 4);
-  columnLengthMap->emplace("lo_commitdate", 4);
-  columnLengthMap->emplace("lo_shipmode", 10);
-
-  columnLengthMap->emplace("p_partkey", 4);
-  columnLengthMap->emplace("p_name", 22);
-  columnLengthMap->emplace("p_mfgr", 6);
-  columnLengthMap->emplace("p_category", 7);
-  columnLengthMap->emplace("p_brand1", 9);
-  columnLengthMap->emplace("p_color", 11);
-  columnLengthMap->emplace("p_type", 25);
-  columnLengthMap->emplace("p_size", 4);
-  columnLengthMap->emplace("p_container", 10);
-
-  columnLengthMap->emplace("s_suppkey", 4);
-  columnLengthMap->emplace("s_name", 25);
-  columnLengthMap->emplace("s_address", 25);
-  columnLengthMap->emplace("s_city", 10);
-  columnLengthMap->emplace("s_nation", 15);
-  columnLengthMap->emplace("s_region", 12);
-  columnLengthMap->emplace("s_phone", 15);
-
-  columnLengthMap->emplace("c_custkey", 4);
-  columnLengthMap->emplace("c_name", 25);
-  columnLengthMap->emplace("c_address", 25);
-  columnLengthMap->emplace("c_city", 10);
-  columnLengthMap->emplace("c_nation", 15);
-  columnLengthMap->emplace("c_region", 12);
-  columnLengthMap->emplace("c_phone", 15);
-  columnLengthMap->emplace("c_mktsegment", 10);
-
-  columnLengthMap->emplace("d_datekey", 4);
-  columnLengthMap->emplace("d_date", 18);
-  columnLengthMap->emplace("d_dayofweek", 8);
-  columnLengthMap->emplace("d_month", 9);
-  columnLengthMap->emplace("d_year", 4);
-  columnLengthMap->emplace("d_yearmonthnum", 4);
-  columnLengthMap->emplace("d_yearmonth", 7);
-  columnLengthMap->emplace("d_daynuminweek", 4);
-  columnLengthMap->emplace("d_daynuminmonth", 4);
-  columnLengthMap->emplace("d_daynuminyear", 4);
-  columnLengthMap->emplace("d_monthnuminyear", 4);
-  columnLengthMap->emplace("d_weeknuminyear", 4);
-  columnLengthMap->emplace("d_sellingseason", 12);
-  columnLengthMap->emplace("d_lastdayinweekfl", 1);
-  columnLengthMap->emplace("d_lastdayinmonthfl", 1);
-  columnLengthMap->emplace("d_holidayfl", 1);
-  columnLengthMap->emplace("d_weekdayfl", 1);
+  auto columnLengthMap = readMetadataColumnLength(schemaName);
 
   // sortedColumns
   auto sortedColumns = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
           std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>>();
-  auto sortedValues = std::make_shared<std::unordered_map<std::shared_ptr<Partition>, std::pair<std::string, std::string>,
-          PartitionPointerHash, PartitionPointerPredicate>>();
 
   // sorted lo_orderdate
-  auto valuePairs = std::make_shared<std::vector<std::pair<std::string, std::string>>>();
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19920101","19920316"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19920316","19920531"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19920531","19920814"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19920814","19921029"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19921029","19930112"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19930112","19930329"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19930329","19930613"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19930613","19930827"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19930827","19931110"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19931110","19940124"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19940124","19940409"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19940409","19940623"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19940623","19940906"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19940906","19941121"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19941121","19950204"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19950204","19950419"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19950419","19950703"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19950703","19950916"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19950916","19951130"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19951130","19960214"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19960214","19960429"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19960429","19960713"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19960713","19960926"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19960926","19961210"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19961210","19970223"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19970223","19970509"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19970509","19970723"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19970723","19971006"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19971006","19971220"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19971220","19980305"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19980305","19980519"));
-  valuePairs->emplace_back(std::pair<std::string, std::string>("19980519","19980802"));
-  std::string s3Bucket = "s3filter";
-  std::string s3ObjectDir = "ssb-sf10-sortlineorder/lineorder_sharded/";
-  for (int i = 0; i < valuePairs->size(); i++) {
+  auto sortedValues = std::make_shared<std::unordered_map<std::shared_ptr<Partition>, std::pair<std::string, std::string>,
+          PartitionPointerHash, PartitionPointerPredicate>>();
+  auto valuePairs = readMetadataSort(schemaName, "lineorder_orderdate");
+  std::string s3ObjectDir = schemaName + "lineorder_sharded/";
+  for (int i = 0; i < (int) valuePairs->size(); i++) {
     sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
                           valuePairs->at(i));
   }
   sortedColumns->emplace("lo_orderdate", sortedValues);
 
-  return std::make_shared<MiniCatalogue>(tables, schemas, columnLengthMap, defaultJoinOrder, sortedColumns);
+  // initialize this as empty and populate it if necessary
+  auto queryNumToInvolvedSegments = std::make_shared<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>>();
+
+  // segmentKey to size
+  auto segmentKeyToSize = readMetadataSegmentInfo(s3Bucket, schemaName);
+
+  // initialize this as empty and populate it if necessary
+  auto segmentKeysToInvolvedQueryNums = std::make_shared<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
+                          cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>();
+
+  return std::make_shared<MiniCatalogue>(partitionNums, schemas, columnLengthMap, segmentKeyToSize, queryNumToInvolvedSegments, segmentKeysToInvolvedQueryNums, defaultJoinOrder, sortedColumns);
 }
 
-const std::shared_ptr<std::vector<std::string>> &normal::connector::MiniCatalogue::tables() const {
-  return tables_;
+const std::shared_ptr<std::unordered_map<std::string, int>> &normal::connector::MiniCatalogue::partitionNums() const {
+  return partitionNums_;
 }
 
 const std::shared_ptr<std::vector<std::string>> &normal::connector::MiniCatalogue::defaultJoinOrder() const {
   return defaultJoinOrder_;
 }
 
-std::string normal::connector::MiniCatalogue::findTableOfColumn(std::string columnName) {
+std::string normal::connector::MiniCatalogue::findTableOfColumn(const std::string& columnName) {
   for (const auto &schema: *schemas_) {
     for (const auto &existColumnName: *(schema.second)) {
       if (existColumnName == columnName) {
@@ -191,17 +209,112 @@ std::string normal::connector::MiniCatalogue::findTableOfColumn(std::string colu
   throw std::runtime_error("Column " + columnName + " not found");
 }
 
+std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::getColumnsOfTable(std::string tableName) {
+  auto columns = std::make_shared<std::vector<std::string>>();
+  for (const auto &schema: *schemas_) {
+    if (schema.first == tableName) {
+      for (const auto &columnName: *(schema.second)) {
+        columns->push_back(columnName);
+      }
+      return columns;
+    }
+  }
+  throw std::runtime_error("table " + tableName + " not found");
+}
+
+size_t normal::connector::MiniCatalogue::getSegmentSize(std::shared_ptr<cache::SegmentKey> segmentKey) {
+  auto key = segmentKeyToSize_->find(segmentKey);
+  if (key != segmentKeyToSize_->end()) {
+    return segmentKeyToSize_->at(segmentKey);
+  }
+  throw std::runtime_error("Segment key not found in getSegmentSize: " + segmentKey->toString());
+}
+
+// Used to populate the queryNumToInvolvedSegments_ and segmentKeysToInvolvedQueryNums_ mappings
+void normal::connector::MiniCatalogue::addToSegmentQueryNumMappings(int queryNum, std::shared_ptr<cache::SegmentKey> segmentKey) {
+  auto queryNumKeyEntry = queryNumToInvolvedSegments_->find(queryNum);
+  if (queryNumKeyEntry != queryNumToInvolvedSegments_->end()) {
+    queryNumKeyEntry->second->emplace_back(segmentKey);
+  } else {
+    // first time seeing this queryNum, create a map entry for it
+    auto segmentKeys = std::make_shared<std::vector<std::shared_ptr<cache::SegmentKey>>>();
+    segmentKeys->emplace_back(segmentKey);
+    queryNumToInvolvedSegments_->emplace(queryNum, segmentKeys);
+  }
+
+  auto segmentKeyEntry = segmentKeysToInvolvedQueryNums_->find(segmentKey);
+  if (segmentKeyEntry != segmentKeysToInvolvedQueryNums_->end()) {
+    segmentKeyEntry->second->insert(queryNum);
+  } else {
+    // first time seeing this key, create a map entry for it
+    auto queryNumbers = std::make_shared<std::set<int>>();
+    queryNumbers->insert(queryNum);
+    segmentKeysToInvolvedQueryNums_->emplace(segmentKey, queryNumbers);
+  }
+}
+
+// Throws runtime exception if queryNum not present, which ensures failing fast in case of queryNum not being present
+// If use cases of this method expand we can change this if necessary.
+std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> normal::connector::MiniCatalogue::getSegmentsInQuery(int queryNum) {
+  auto key = queryNumToInvolvedSegments_->find(queryNum);
+  if (key != queryNumToInvolvedSegments_->end()) {
+    return key->second;
+  }
+  // we must not have populated this queryNum->[segments used] mapping for this queryNum,
+  // throw an error as we should have never called this then
+  throw std::runtime_error("Error, " + std::to_string(queryNum) + " not populated in segmentKeysToInvolvedQueryNums_ in MiniCatalogue.cpp");
+}
+
+// Return the next query that this segmentKey is used in, if not used again according to the
+// segmentKeysToInvolvedQueryNums_ mapping set via setSegmentKeysToInvolvedQueryNums then return -1
+// Throws runtime exception if segmentKeysToInvolvedQueryNums_ is never set via setSegmentKeysToInvolvedQueryNums
+int normal::connector::MiniCatalogue::querySegmentNextUsedIn(std::shared_ptr<cache::SegmentKey> segmentKey, int currentQuery) {
+  auto key = segmentKeysToInvolvedQueryNums_->find(segmentKey);
+  if (key != segmentKeysToInvolvedQueryNums_->end()) {
+    auto involvedQueriesList = key->second;
+    auto nextQueryIt = involvedQueriesList->upper_bound(currentQuery);
+    if (nextQueryIt != involvedQueriesList->end()) {
+      return *nextQueryIt;
+    }
+    // TODO: segment never used again so return -1 to indicate this. Probably want a better strategy in the future
+    return -1;
+  }
+  // must not exist in our queryNums, throw an error as we should have never called this then
+  throw std::runtime_error("Error, " + segmentKey->toString() + " next query requested but never should have been used");
+}
+
 double normal::connector::MiniCatalogue::lengthFraction(std::string columnName) {
   auto thisLength = columnLengthMap_->find(columnName)->second;
   auto tableName = findTableOfColumn(columnName);
-  int allLength = 0;
-  for (auto const &otherColumnName: *schemas_->find(tableName)->second) {
-    allLength += columnLengthMap_->find(otherColumnName)->second;
-  }
+  auto allLength = rowLengthMap_->find(tableName)->second;
   return (double)thisLength / (double)allLength;
 }
 
 const std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> &
 normal::connector::MiniCatalogue::sortedColumns() const {
   return sortedColumns_;
+}
+
+std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::tables(){
+  auto tables = std::make_shared<std::vector<std::string>>();
+  for (auto const &schema: *schemas_) {
+    tables->emplace_back(schema.first);
+  }
+  return tables;
+}
+
+int normal::connector::MiniCatalogue::lengthOfRow(const std::string& tableName) {
+  return rowLengthMap_->find(tableName)->second;
+}
+
+int normal::connector::MiniCatalogue::lengthOfColumn(const std::string& columnName) {
+  return columnLengthMap_->find(columnName)->second;
+}
+
+void normal::connector::MiniCatalogue::setCurrentQueryNum(int queryNum) {
+  currentQueryNum_ = queryNum;
+}
+
+int normal::connector::MiniCatalogue::getCurrentQueryNum() {
+  return currentQueryNum_;
 }

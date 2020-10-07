@@ -13,11 +13,11 @@
 using namespace normal::pushdown::shuffle;
 using namespace normal::tuple;
 
-Shuffle::Shuffle(const std::string &Name, std::string ColumnName) :
-	Operator(Name, "Shuffle"), columnName_(std::move(ColumnName)) {}
+Shuffle::Shuffle(const std::string &Name, std::string ColumnName, long queryId) :
+	Operator(Name, "Shuffle", queryId), columnName_(std::move(ColumnName)) {}
 
-std::shared_ptr<Shuffle> Shuffle::make(const std::string &Name, const std::string& ColumnName){
-  return std::make_shared<Shuffle>(Name, ColumnName);
+std::shared_ptr<Shuffle> Shuffle::make(const std::string &Name, const std::string& ColumnName, long queryId){
+  return std::make_shared<Shuffle>(Name, ColumnName, queryId);
 }
 
 void Shuffle::onReceive(const Envelope &msg) {

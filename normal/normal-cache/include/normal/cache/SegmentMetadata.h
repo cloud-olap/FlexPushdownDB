@@ -17,18 +17,22 @@ public:
   static std::shared_ptr<SegmentMetadata> make();
   static std::shared_ptr<SegmentMetadata> make(size_t estimateSize, size_t size);
 
+  void setSize(size_t size);
   size_t size() const;
   int hitNum() const;
   size_t estimateSize() const;
-
-  void setSize(size_t size);
+  double value() const;
+  double avgValue() const;
+  double value2() const;
 
   void incHitNum();
+  void addValue(double value);
 
 private:
   size_t estimateSize_;
   size_t size_;
   int hitNum_;
+  double value_;
 
 };
 
