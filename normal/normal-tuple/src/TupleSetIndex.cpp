@@ -8,7 +8,8 @@
 
 using namespace normal::tuple;
 
-TupleSetIndex::TupleSetIndex(size_t columnIndex, std::shared_ptr<::arrow::Table> table) :
+TupleSetIndex::TupleSetIndex(std::string columnName, size_t columnIndex, std::shared_ptr<::arrow::Table> table) :
+	columnName_(std::move(columnName)),
 	columnIndex_(columnIndex),
 	table_(std::move(table)) {}
 

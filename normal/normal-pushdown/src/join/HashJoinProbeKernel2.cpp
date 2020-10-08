@@ -21,6 +21,10 @@ HashJoinProbeKernel2 HashJoinProbeKernel2::make(JoinPredicate pred) {
 }
 
 tl::expected<void, std::string> HashJoinProbeKernel2::putBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex> &tupleSetIndex) {
+
+  if(tupleSetIndex->getTable()->schema()->GetFieldIndex(pred_.getLeftColumnName()) == -1)
+    return tl::make_unexpected(fmt::format("Cannot put build tuple set index into probe kernel. Index does not contain join predicate left column '{}'", pred_.getLeftColumnName()));
+
   if (!buildTupleSetIndex_.has_value()) {
 	buildTupleSetIndex_ = tupleSetIndex;
 	return {};
@@ -29,6 +33,10 @@ tl::expected<void, std::string> HashJoinProbeKernel2::putBuildTupleSetIndex(cons
 }
 
 tl::expected<void, std::string> HashJoinProbeKernel2::putProbeTupleSet(const std::shared_ptr<TupleSet2> &tupleSet) {
+
+  if(tupleSet->getArrowTable().value()->schema()->GetFieldIndex(pred_.getRightColumnName()) == -1)
+	return tl::make_unexpected(fmt::format("Cannot put probe tuple set into probe kernel. Tuple set does not contain join predicate right column '{}'", pred_.getRightColumnName()));
+
   if (!probeTupleSet_.has_value()) {
 	probeTupleSet_ = tupleSet;
 	return {};

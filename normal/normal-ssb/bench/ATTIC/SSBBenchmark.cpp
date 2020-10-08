@@ -107,13 +107,13 @@ auto executeTest(const std::string &/*sql*/) {
 return nullptr;
 }
 
-TEST_CASE ("ssb-benchmark-query01" * doctest::skip(true || SKIP_SUITE)) {
-
-  short year = 1993;
-  short discount = 2;
-  short quantity = 24;
-
-  auto sql = SQL::full(year, discount, quantity, "local_fs");
-
-  auto tuples = executeTest(sql);
-}
+//TEST_CASE ("ssb-benchmark-query01" * doctest::skip(true || SKIP_SUITE)) {
+//
+//  short year = 1993;
+//  short discount = 2;
+//  short quantity = 24;
+//
+//  auto sql = SQL::full(year, discount, quantity, "local_fs");
+//
+//  auto tuples = executeTest(sql);
+//}

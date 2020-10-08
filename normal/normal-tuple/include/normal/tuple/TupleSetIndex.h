@@ -22,22 +22,42 @@ namespace normal::tuple {
  */
 class TupleSetIndex {
 public:
-  TupleSetIndex(size_t columnIndex, std::shared_ptr<::arrow::Table> table);
+  TupleSetIndex(std::string columnName, size_t columnIndex, std::shared_ptr<::arrow::Table> table);
   virtual ~TupleSetIndex() = default;
 
   std::shared_ptr<::arrow::DataType> type();
   int64_t size();
   std::vector<std::shared_ptr<::arrow::ChunkedArray>> columns();
   [[nodiscard]] const std::shared_ptr<::arrow::Table> &getTable() const;
+
+  /**
+   * Invokes combinechunks on the underlying value->row map
+   *
+   * @return
+   */
   [[nodiscard]] tl::expected<void, std::string> combine();
 
-  virtual tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) = 0;
-  virtual tl::expected<void, std::string> merge(const std::shared_ptr<TupleSetIndex> &other) = 0;
+  /**
+   * Adds the given table to the index
+   *
+   * @param table
+   * @return
+   */
+  [[nodiscard]] virtual tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) = 0;
+
+  /**
+   * Adds another index to this index
+   *
+   * @param other
+   * @return
+   */
+  [[nodiscard]] virtual tl::expected<void, std::string> merge(const std::shared_ptr<TupleSetIndex> &other) = 0;
   virtual std::string toString() = 0;
 
-  virtual tl::expected<void, std::string> validate() = 0;
+  [[nodiscard]] virtual tl::expected<void, std::string> validate() = 0;
 
 protected:
+  std::string columnName_;
   size_t columnIndex_;
   std::shared_ptr<::arrow::Table> table_;
 

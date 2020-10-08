@@ -64,7 +64,8 @@ add_executable(normal-tuple-test
         test/TupleTest.cpp
         test/CSVTest.cpp
         test/ParquetTest.cpp
-        test/ArrayAppenderTest.cpp)
+        test/ArrayAppenderTest.cpp
+        test/TupleSetIndexTest.cpp)
 
 
 target_include_directories(normal-tuple-test PRIVATE include)

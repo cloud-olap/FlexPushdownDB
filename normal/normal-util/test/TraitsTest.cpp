@@ -57,7 +57,7 @@ TEST_CASE ("traits-lambda" * doctest::skip(false)) {
   }
 
   {
-	auto test = [](int a, float b) -> long { return static_cast<long>(a); };
+	auto test = [](int a, float /* b */) -> long { return static_cast<long>(a); };
 
 	using Lambda = decltype(test);
 

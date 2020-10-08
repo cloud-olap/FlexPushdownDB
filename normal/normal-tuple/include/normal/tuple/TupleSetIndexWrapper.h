@@ -30,15 +30,11 @@ public:
   using ArrowArrayType = typename ::arrow::TypeTraits<ArrowType>::ArrayType;
 
   TupleSetIndexWrapper(const std::shared_ptr<::arrow::Table> &table,
+					   const std::string& columnName,
 					   size_t columnIndex,
 					   std::unordered_multimap<CType, int64_t> valueRowMap)
-	  : TupleSetIndex(columnIndex, table), valueRowMap_(std::move(valueRowMap)) {}
-
-  static std::shared_ptr<TupleSetIndexWrapper> make(const std::shared_ptr<::arrow::Table> &table, size_t columnIndex) {
-	assert(table->schema()->field(columnIndex)->type()->id() == (::arrow::TypeTraits<ArrowType>::type_singleton()->id()));
-	auto valueRowMap = build(columnIndex, 0, table);
-	return std::make_shared<TupleSetIndexWrapper>(table, columnIndex, valueRowMap.value());
-  }
+	  : TupleSetIndex(columnName, columnIndex, table),
+	  valueRowMap_(std::move(valueRowMap)) {}
 
   static CType Value(const std::shared_ptr<ArrowArrayType> &/*array*/, int64_t /*rowIndex*/) {
 	// NOOP
@@ -128,6 +124,13 @@ public:
 
   [[nodiscard]] tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) override {
 
+	int columnIndex = table->schema()->GetFieldIndex(columnName_);
+	if(columnIndex == -1)
+	  return tl::make_unexpected(fmt::format("Cannot add table to TupleSetIndex. Indexed column '{}' not found in given table.", columnName_));
+
+	if((size_t)columnIndex != columnIndex_)
+	  return tl::make_unexpected(fmt::format("Cannot add table to TupleSetIndex. Indexed column '{}' has a different position {} to column in index {}.", columnName_, columnIndex, columnIndex_));
+
 	auto expectedValueRowIndexMap = build(columnIndex_, table_->num_rows(), table);
 	if (!expectedValueRowIndexMap.has_value())
 	  return tl::make_unexpected(expectedValueRowIndexMap.error());
@@ -181,7 +184,7 @@ public:
 	return s;
   }
 
-  tl::expected<void, std::string> validate() override {
+  [[nodiscard]] tl::expected<void, std::string> validate() override {
 
 	::arrow::Result<std::shared_ptr<::arrow::RecordBatch>> recordBatchResult;
 	::arrow::Status status;
@@ -264,19 +267,26 @@ inline long TupleSetIndexWrapper<long, ::arrow::Int64Type>::Value(
 
 class TupleSetIndexBuilder {
 public:
-  static tl::expected<std::shared_ptr<TupleSetIndex>, std::string>
+  [[nodiscard]] static tl::expected<std::shared_ptr<TupleSetIndex>, std::string>
   make(const std::shared_ptr<::arrow::Table> &table, const std::string &columnName) {
 
-	size_t columnIndex = table->schema()->GetFieldIndex(columnName);
+	int columnIndex = table->schema()->GetFieldIndex(columnName);
+	if(columnIndex == -1)
+	  return tl::make_unexpected(fmt::format("Cannot make TupleSetIndex. Column '{}' not found in given table.", columnName));
+
 	auto column = table->schema()->field(columnIndex);
 
 	if (column->type()->id() == ::arrow::StringType::type_id) {
-	  return TupleSetIndexWrapper<std::string, ::arrow::StringType>::make(table, columnIndex);
+	  auto expectedValueRowMap = TupleSetIndexWrapper<std::string, ::arrow::StringType>::build(columnIndex, 0, table);
+	  if(!expectedValueRowMap) return tl::make_unexpected(expectedValueRowMap.error());
+	  return std::make_shared<TupleSetIndexWrapper<std::string, ::arrow::StringType>>(table, columnName, columnIndex, expectedValueRowMap.value());
 	} else if (column->type()->id() == ::arrow::Int64Type::type_id) {
-	  return TupleSetIndexWrapper<long, ::arrow::Int64Type>::make(table, columnIndex);
+	  auto expectedValueRowMap = TupleSetIndexWrapper<long, ::arrow::Int64Type>::build(columnIndex, 0, table);
+	  if(!expectedValueRowMap) return tl::make_unexpected(expectedValueRowMap.error());
+	  return std::make_shared<TupleSetIndexWrapper<long, ::arrow::Int64Type>>(table, columnName, columnIndex, expectedValueRowMap.value());
 	} else {
 	  return tl::make_unexpected(
-		  fmt::format("TupleSetIndex not implemented for type '{}'", column->type()->ToString()));
+		  fmt::format("TupleSetIndex not implemented for type '{}'", column->type()->name()));
 	}
   }
 };

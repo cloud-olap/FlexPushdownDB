@@ -37,7 +37,7 @@ TEST_CASE ("load" * doctest::skip(false || SKIP_SUITE)) {
   auto segmentKey1 = SegmentKey::make(partition1, "a", SegmentRange::make(0, 1023));
   auto segment1TupleSet1 = Sample::sample3String();
   auto segment1Data1 = SegmentData::make(segment1TupleSet1);
-  auto segmentKeys = {segmentKey1};
+//  auto segmentKeys = {segmentKey1};
 
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments;
   segments.emplace(segmentKey1, segment1Data1);

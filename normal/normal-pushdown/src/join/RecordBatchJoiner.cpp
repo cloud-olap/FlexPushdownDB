@@ -90,14 +90,16 @@ RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch
 	  for (size_t c = 0; c < buildColumns.size(); ++c) {
 
 		// Append each row from the build column
-		buildAppenders[c]->appendValue(buildColumns[c], br);
+		auto appendResult = buildAppenders[c]->safeAppendValue(buildColumns[c], br);
+		if(!appendResult) return appendResult;
 	  }
 
 	  // Iterate the probe columns
 	  for (size_t c = 0; c < probeColumns.size(); ++c) {
 
 		// Append each row from the probe column
-		probeAppenders[c]->appendValue(probeColumns[c], pr);
+		auto appendResult = probeAppenders[c]->safeAppendValue(probeColumns[c], pr);
+		if(!appendResult) return appendResult;
 	  }
 	}
   }
@@ -130,7 +132,7 @@ RecordBatchJoiner::toTupleSet() {
   std::vector<std::shared_ptr<::arrow::ChunkedArray>> chunkedArrays;
   for (const auto &joinedArrayVector: joinedArrayVectors_) {
     // check empty
-    if (joinedArrayVector.size() == 0) {
+    if (joinedArrayVector.empty()) {
       return TupleSet2::make(Schema::make(outputSchema_));
     }
 

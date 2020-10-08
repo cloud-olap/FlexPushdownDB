@@ -1,6 +1,6 @@
 # Doctest
 
-set(DOCTEST_VERSION "2.3.7")
+set(DOCTEST_VERSION "1c8da00") # 1c8da00 = 2.4.0
 set(DOCTEST_GIT_URL "https://github.com/onqtam/doctest.git")
 
 

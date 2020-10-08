@@ -20,7 +20,7 @@ class SampleState : public OperatorActorState<SampleActor::stateful_pointer <Sam
 public:
 
   void setState(SampleActor::stateful_pointer <SampleState> self, const char* name_){
-//	OperatorActorState::setBaseState(self, name_);
+	OperatorActorState::setBaseState(self, name_, nullptr, nullptr);
   }
 
   template<class... Handlers>
@@ -39,19 +39,19 @@ public:
 protected:
   void onStart(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Start  |  sender: {}", self->id(),
-				 self->name(), to_string(self->current_sender()));
+				 self->name(), to_string(messageSender));
 	tell(self, CompleteAtom::value);
 	self->quit(caf::exit_reason::normal);
   }
 
   void onStop(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Stop  |  sender: {}", self->id(),
-				 self->name(), to_string(self->current_sender()));
+				 self->name(), to_string(messageSender));
   }
 
   void onComplete(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Complete  |  sender: {}", self->id(),
-				 self->name(), to_string(self->current_sender()));
+				 self->name(), to_string(messageSender));
 	tell(self, CompleteAtom::value);
 	self->quit(caf::exit_reason::normal);
   }
