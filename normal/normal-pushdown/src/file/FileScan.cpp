@@ -76,8 +76,8 @@ std::shared_ptr<FileScan> FileScan::make(const std::string& name,
 									canonicalColumnNames,
 									startOffset,
 									finishOffset,
-									scanOnStart,
-									queryId);
+									queryId,
+									scanOnStart);
 }
 
 std::shared_ptr<FileScan> FileScan::make(const std::string& name,
