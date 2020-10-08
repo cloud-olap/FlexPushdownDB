@@ -62,7 +62,9 @@ add_executable(normal-tuple-test
         test/Globals.h
         test/MainTest.cpp
         test/TupleTest.cpp
-        test/CSVTest.cpp test/ParquetTest.cpp)
+        test/CSVTest.cpp
+        test/ParquetTest.cpp
+        test/ArrayAppenderTest.cpp)
 
 
 target_include_directories(normal-tuple-test PRIVATE include)
@@ -72,6 +74,26 @@ target_link_libraries(normal-tuple-test doctest::doctest)
 target_link_libraries(normal-tuple-test Backward::Backward)
 target_link_libraries(normal-tuple-test fmt::fmt)
 target_link_libraries(normal-tuple-test normal-tuple)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Benchmark
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-tuple-benchmark
+        bench/Globals.h
+        bench/Main.cpp
+        bench/ArrayAppenderBench.cpp)
+
+
+target_include_directories(normal-tuple-benchmark PRIVATE include)
+
+target_link_libraries(normal-tuple-benchmark spdlog::spdlog)
+target_link_libraries(normal-tuple-benchmark doctest::doctest)
+target_link_libraries(normal-tuple-benchmark Backward::Backward)
+target_link_libraries(normal-tuple-benchmark nanobench::nanobench)
+target_link_libraries(normal-tuple-benchmark fmt::fmt)
+target_link_libraries(normal-tuple-benchmark normal-tuple)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
