@@ -218,18 +218,37 @@ protected:
   }
 
   template<typename... Parameters>
-  void tell(Actor actor, Parameters...parameters) {
+  [[nodiscard]] tl::expected<void, std::string> tell(Actor actor, Parameters...parameters) {
+
+	if(complete_)
+	  return tl::make_unexpected(fmt::format("Cannot tell message to consumers, operator {} ('{}') is complete",
+											 actor->id(),
+											 actor->name()));
+
 	for (const auto &operatorEntry: actor->state.operatorDirectory_) {
 	  if (std::get<2>(operatorEntry.second) == OperatorRelationshipType::Consumer)
 		anonymousSend(actor, std::get<0>(operatorEntry.second), parameters...);
 	}
+
+	return {};
   }
 
-  void notifyComplete(Actor actor) {
+  [[nodiscard]] tl::expected<void, std::string> notifyComplete(Actor actor) {
+
+    if(complete_)
+	  return tl::make_unexpected(fmt::format("Cannot complete already completed operator {} ('{}')",
+											 actor->id(),
+											 actor->name()));
+
 //	tell(actor, CompleteAtom::value);
-	tell(actor, Envelope(std::make_shared<CompleteMessage>(name)));
+	auto tellResult = tell(actor, Envelope(std::make_shared<CompleteMessage>(name)));
+	if(!tellResult) return tellResult;
 //	anonymousSend(actor, rootActor_, CompleteAtom::value);
 	anonymousSend(actor, rootActor_, Envelope(std::make_shared<CompleteMessage>(name)));
+
+	complete_ = true;
+
+	return {};
   }
 
   bool isAllProducersComplete() {
@@ -251,6 +270,7 @@ private:
   caf::actor segmentCacheActorHandle_;
 
   bool running_ = false;
+  bool complete_ = false;
 
   std::optional<caf::strong_actor_ptr> overriddenMessageSender_;
   std::queue<std::pair<caf::message, caf::strong_actor_ptr>> buffer_;

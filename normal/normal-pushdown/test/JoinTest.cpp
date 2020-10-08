@@ -27,7 +27,7 @@ TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false)) {
   auto numBytesAFile = filesystem::file_size(aFile);
 
   auto bFile = filesystem::absolute("data/join/b.csv");
-  auto numBytesBFile = filesystem::file_size(aFile);
+  auto numBytesBFile = filesystem::file_size(bFile);
 
   auto mgr = std::make_shared<normal::core::OperatorManager>();
 
