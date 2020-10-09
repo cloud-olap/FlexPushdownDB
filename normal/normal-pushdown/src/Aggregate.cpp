@@ -53,7 +53,7 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
 
 //  SPDLOG_DEBUG("Producer complete");
 
-  if (this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
+  if (this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer) && !hasProcessedAllComplete_) {
 
 //    SPDLOG_DEBUG("All producers complete, completing");
 
@@ -109,6 +109,7 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
     ctx()->tell(tupleMessage);
 
     ctx()->notifyComplete();
+    hasProcessedAllComplete_ = true;
   }
 }
 
