@@ -6,6 +6,7 @@
 
 #include <doctest/doctest.h>
 
+#include <normal/core/Normal.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
@@ -23,15 +24,14 @@ TEST_SUITE ("join-test" * doctest::skip(false)) {
 
 TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false)) {
 
+  auto n = Normal::start();
+  auto g = n->createQuery();
+
   auto aFile = filesystem::absolute("data/join/a.csv");
   auto numBytesAFile = filesystem::file_size(aFile);
 
   auto bFile = filesystem::absolute("data/join/b.csv");
   auto numBytesBFile = filesystem::file_size(bFile);
-
-  auto mgr = std::make_shared<normal::core::OperatorManager>();
-
-  auto g = OperatorGraph::make(mgr);
 
   auto aScan = FileScan::make("fileScanA",
 							  "data/join/a.csv",
@@ -40,6 +40,7 @@ TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false)) {
 							  numBytesAFile,
 							  g->getId(),
 							  true);
+  g->put(aScan);
   auto bScan = FileScan::make("fileScanB",
 							  "data/join/b.csv",
 							  std::vector<std::string>{"BA", "BB", "BC"},
@@ -47,10 +48,14 @@ TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false)) {
 							  numBytesBFile,
 							  g->getId(),
 							  true);
+  g->put(bScan);
   auto joinBuild = HashJoinBuild::create("join-build", "AA");
+  g->put(joinBuild);
   auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
 												   JoinPredicate::create("AA", "BA"));
+  g->put(joinProbe);
   auto collate = std::make_shared<Collate>("collate", g->getId());
+  g->put(collate);
 
   aScan->produce(joinBuild);
   joinBuild->consume(aScan);
@@ -64,25 +69,16 @@ TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false)) {
   joinProbe->produce(collate);
   collate->consume(joinProbe);
 
-  g->put(aScan);
-  g->put(bScan);
-  g->put(joinBuild);
-  g->put(joinProbe);
-  g->put(collate);
-
   TestUtil::writeExecutionPlan(*g);
-
-  mgr->boot();
-  mgr->start();
 
   g->boot();
   g->start();
   g->join();
+
+  auto tuples = std::static_pointer_cast<Collate>(g->getOperator("collate"))->tuples();
+
   g.reset();
-
-  auto tuples = collate->tuples();
-
-  mgr->stop();
+  n->stop();
 
   auto tupleSet = TupleSet2::create(tuples);
 

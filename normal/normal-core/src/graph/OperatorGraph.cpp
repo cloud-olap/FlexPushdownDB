@@ -15,6 +15,8 @@
 #include <normal/core/OperatorDirectoryEntry.h>
 #include <normal/core/Globals.h>
 #include <normal/pushdown/file/FileScan2.h>
+#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate2.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/s3/S3SelectScan2.h>
 #include <normal/core/message/ConnectMessage.h>
@@ -100,6 +102,17 @@ void graph::OperatorGraph::join() {
 	  },
 	  handle_err);
 
+  // FIXME: Massive hack
+  // Since almost all tests/benchmarks etc look at the collate operator to get the final tuples. Here we move them from
+  // Collate2 to the old Collate operator.
+  (*rootActor_)->request(collateActorHandle_, caf::infinite, GetTupleSetAtom::value).receive(
+	  [&](const tl::expected<std::shared_ptr<TupleSet>, std::string> &expectedTupleSet) {
+		legacyCollateOperator_->setTuples(expectedTupleSet.value());
+	  },
+	  [&](const caf::error&  error){
+		throw std::runtime_error(to_string(error));
+	  });
+
   stopTime_ = std::chrono::steady_clock::now();
 }
 
@@ -125,6 +138,18 @@ void graph::OperatorGraph::boot() {
 	  if (!actorHandle)
 		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
 	  element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+	}
+	else if(op->getType() == "Collate"){
+	  legacyCollateOperator_ = std::static_pointer_cast<Collate>(op);
+	  collateActorHandle_  = operatorManager_.lock()->getActorSystem()->spawn(CollateFunctor,
+																			  legacyCollateOperator_->name().c_str(),
+																			  legacyCollateOperator_->getQueryId(),
+																		  *rootActor_,
+																		  operatorManager_.lock()->getSegmentCacheActor()
+	  );
+	  if (!collateActorHandle_)
+		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+	  element.second.setActorHandle(caf::actor_cast<caf::actor>(collateActorHandle_));
 	}
 	else {
 	  auto ctx = std::make_shared<normal::core::OperatorContext>(*rootActor_, operatorManager_.lock()->getSegmentCacheActor());

@@ -33,11 +33,11 @@ private:
   void onReceive(const normal::core::message::Envelope &message) override;
 
 public:
-  Collate(std::string name, long queryId = 0);
+  explicit Collate(std::string name, long queryId = 0);
   ~Collate() override = default;
   void show();
   std::shared_ptr<TupleSet> tuples();
-
+  void setTuples(const std::shared_ptr<TupleSet> &Tuples);
 };
 
 }

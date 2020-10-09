@@ -44,14 +44,15 @@ public:
 				const caf::actor &segmentCacheActorHandle,
 				bool scanOnStart = false) {
 
-	OperatorActorState::setBaseState(actor, name, rootActorHandle, segmentCacheActorHandle);
+	OperatorActorState::setBaseState(actor, name, queryId, rootActorHandle, segmentCacheActorHandle);
+
+	auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
 	filePath_ = filePath;
 	fileType_ = fileType;
-	columnNames_ = columnNames;
+	columnNames_ = canonicalColumnNames;
 	startOffset_ = startOffset;
 	finishOffset_ = finishOffset;
-	queryId_ = queryId;
 	scanOnStart_ = scanOnStart;
 
 	kernel_ = FileScanKernel::make(filePath, fileType, startOffset, finishOffset);
@@ -62,7 +63,12 @@ public:
 	return OperatorActorState::makeBaseBehavior(
 		actor,
 		[=](ScanAtom, const std::vector<std::string> &columnNames, bool /*resultNeeded*/) {
-		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { return onScan(actor, messageSender, columnNames); });
+		  process(actor,
+				  [=](const caf::strong_actor_ptr &messageSender) {
+					return onScan(actor,
+								  messageSender,
+								  columnNames);
+				  });
 		},
 		std::move(handlers)...
 	);
@@ -74,49 +80,49 @@ private:
   std::vector<std::string> columnNames_;
   unsigned long startOffset_;
   unsigned long finishOffset_;
-  long queryId_;
   bool scanOnStart_ = false;
 
   std::unique_ptr<FileScanKernel> kernel_;
 
 protected:
 
-  tl::expected<void, std::string> onStart(FileScanStatefulActor actor, const caf::strong_actor_ptr& /*messageSender*/) override {
+  tl::expected<void, std::string>
+  onStart(FileScanStatefulActor actor, const caf::strong_actor_ptr & /*messageSender*/) override {
 	if (scanOnStart_) {
 	  return readAndSendTuples(actor, columnNames_)
-	  .and_then([=](){return notifyComplete(actor);});
+		  .and_then([=]() { return notifyComplete(actor); });
 	}
 	return {};
   }
 
-  tl::expected<void, std::string> onComplete(FileScanStatefulActor actor, const caf::strong_actor_ptr& /*messageSender*/) override {
-	if (isAllProducersComplete()) {
+  tl::expected<void, std::string>
+  onComplete(FileScanStatefulActor actor, const caf::strong_actor_ptr & /*messageSender*/) override {
+	if (!isComplete() && isAllProducersComplete()) {
 	  return notifyComplete(actor);
 	}
 	return {};
   }
 
-  tl::expected<void, std::string> onEnvelope(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const Envelope &envelope) override {
-	return onReceive(actor, messageSender, envelope);
-  }
-
-private:
-  [[nodiscard]] tl::expected<void, std::string> onReceive(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const Envelope &message) {
-
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Scan  |  sender: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
-
-	if (message.message().type() == "ScanMessage") {
-	  auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
+  tl::expected<void, std::string>
+  onEnvelope(FileScanStatefulActor actor,
+			 const caf::strong_actor_ptr &messageSender,
+			 const Envelope &envelope) override {
+	if (envelope.message().type() == "ScanMessage") {
+	  auto scanMessage = dynamic_cast<const ScanMessage &>(envelope.message());
 	  return this->onScan(actor, messageSender, scanMessage.getColumnNames());
 	} else {
-	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", message.message().type()));
+	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", envelope.message().type()));
 	}
   }
 
-  [[nodiscard]] tl::expected<void, std::string> onScan(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const std::vector<std::string> &columnsToScan) {
+private:
 
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Envelope  |  sender: {}", actor->id(),
+  [[nodiscard]] tl::expected<void, std::string>
+  onScan(FileScanStatefulActor actor,
+		 const caf::strong_actor_ptr &messageSender,
+		 const std::vector<std::string> &columnsToScan) {
+
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Scan  |  sender: {}", actor->id(),
 				 actor->name(), to_string(messageSender));
 
 	return readAndSendTuples(actor, columnsToScan);
@@ -143,12 +149,13 @@ private:
 	}
 
 	anonymousSend(actor,
-				  getSegmentCacheActorHandle(),
+				  getSegmentCacheActorHandle().value(),
 				  StoreAtom::value,
 				  StoreRequestMessage::make(segmentsToStore, name));
   }
 
-  [[nodiscard]] tl::expected<void, std::string> readAndSendTuples(FileScanStatefulActor actor, const std::vector<std::string> &columnNames) {
+  [[nodiscard]] tl::expected<void, std::string>
+  readAndSendTuples(FileScanStatefulActor actor, const std::vector<std::string> &columnNames) {
 	// Read the columns not present in the cache
 	/*
 	 * FIXME: Should support reading the file in pieces

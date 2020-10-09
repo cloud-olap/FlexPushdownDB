@@ -23,6 +23,10 @@
 using namespace normal::core::message;
 using namespace boost::callable_traits;
 
+using ExpectedVoidString = tl::expected<void, std::string>;
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<normal::core::OperatorConnection>);
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedVoidString);
+
 namespace normal::core {
 
 using ConnectAtom = ::caf::atom_constant<caf::atom("connect")>;
@@ -57,10 +61,12 @@ protected:
 
   void setBaseState(Actor /* actor */,
 					const char *name_,
+					unsigned long queryId,
 					::caf::actor rootActor,
 					::caf::actor segmentCacheActorHandle) {
 	name = name_;
-	rootActor_ = std::move(rootActor);
+	queryId_ = queryId;
+	rootActorHandle_ = std::move(rootActor);
 	segmentCacheActorHandle_ = std::move(segmentCacheActorHandle);
   }
 
@@ -124,8 +130,8 @@ protected:
   template<class... Handlers>
   auto makeBaseBehavior(Actor actor, Handlers... handlers) {
 
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Spawning Actor", actor->id(),
-				 actor->name());
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Spawning operator  |  queryId: {}", actor->id(),
+				 actor->name(), queryId_.value());
 
 	/**
 	 * Handler for errors received from other actors
@@ -134,8 +140,8 @@ protected:
 	 */
 	actor->set_error_handler([=](const ::caf::error &error) {
 
-	  SPDLOG_ERROR("[Actor {} ('{}')]  Actor Error  |  error: {}", actor->id(),
-				   actor->name(), to_string(error));
+	  SPDLOG_ERROR("[Actor {} ('{}')]  Operator error  |  queryId: {}, error: {}", actor->id(),
+				   actor->name(), queryId_.value(), to_string(error));
 
 	  onError(actor, error);
 
@@ -150,8 +156,8 @@ protected:
 	 */
 	actor->set_default_handler([=](caf::scheduled_actor * /*actor*/, ::caf::message_view &message) {
 
-	  SPDLOG_ERROR("[Actor {} ('{}')]  Unexpected Message  |  message: {}", actor->id(),
-				   actor->name(), message.content().stringify());
+	  SPDLOG_ERROR("[Actor {} ('{}')]  Operator received unexpected message  |  queryId: {}, message: {}", actor->id(),
+				   actor->name(), queryId_.value(), message.content().stringify());
 
 	  onUnexpectedMessage(actor, message);
 
@@ -174,10 +180,10 @@ protected:
 		  std::rethrow_exception(exceptionPointer);
 		}
 	  } catch (const std::exception &exception) {
-		message = fmt::format("[Actor {} ('{}')]  Unhandled Exception  |  cause: '{}'",
+		message = fmt::format("[Actor {} ('{}')]  Operator caught unhandled exception  |  queryId: {}, cause: '{}'",
 							  actor->id(),
 							  actor->name(),
-							  exception.what());
+							  queryId_.value(), exception.what());
 		SPDLOG_ERROR(message);
 		spdlog::dump_backtrace();
 	  }
@@ -190,8 +196,8 @@ protected:
 	 */
 	actor->attach_functor([=](const caf::error &reason) {
 
-	  SPDLOG_DEBUG("[Actor {} ('{}')]  Actor Exit  |  reason: {}", actor->id(),
-				   actor->name(), to_string(reason));
+	  SPDLOG_DEBUG("[Actor {} ('{}')]  Operator exit  |  queryId: {}, reason: {}", actor->id(),
+				   actor->name(), queryId_.value(), to_string(reason));
 
 	  onExit(actor, reason);
 	});
@@ -203,10 +209,14 @@ protected:
 	 */
 	actor->set_down_handler([=](const ::caf::down_msg &downMessage) {
 
-	  SPDLOG_WARN("[Actor {} ('{}')]  Monitored Actor Down  |  source: {}, reason: {}", actor->id(),
-				  actor->name(), to_string(downMessage.source), to_string(downMessage.reason));
+	  SPDLOG_WARN("[Actor {} ('{}')]  Operator monitored actor down  |  queryId: {}, source: {}, reason: {}",
+				  actor->id(),
+				  actor->name(),
+				  queryId_.value(),
+				  to_string(downMessage.source),
+				  to_string(downMessage.reason));
 
-	  onDown(actor, downMessage);
+	  onMonitoredDown(actor, downMessage);
 	});
 
 	/**
@@ -218,8 +228,12 @@ protected:
 	actor->set_exit_handler([=](const ::caf::exit_msg &exitMessage) {
 
 	  if (exitMessage.reason) {
-		SPDLOG_WARN("[Actor {} ('{}')]  Linked Actor Exit  |  source: {}, reason: {}", actor->id(),
-					actor->name(), to_string(exitMessage.source), to_string(exitMessage.reason));
+		SPDLOG_WARN("[Actor {} ('{}')]  Operator linked actor exit  |  queryId: {}, source: {}, reason: {}",
+					actor->id(),
+					actor->name(),
+					queryId_.value(),
+					to_string(exitMessage.source),
+					to_string(exitMessage.reason));
 	  }
 
 	  onLinkedExit(actor, exitMessage);
@@ -279,7 +293,7 @@ protected:
 
   virtual void onExit(Actor /*actor*/, const ::caf::error &/*reason*/) { /*NOOP*/ };
   virtual void onError(Actor /*actor*/, const ::caf::error &/*error*/) { /*NOOP*/ };
-  virtual void onDown(Actor /*actor*/, const ::caf::down_msg &/*downMessage*/) { /*NOOP*/ };
+  virtual void onMonitoredDown(Actor /*actor*/, const ::caf::down_msg &/*downMessage*/) { /*NOOP*/ };
   virtual void onLinkedExit(Actor /*actor*/, const ::caf::exit_msg &/*exitMessage*/) { /*NOOP*/ };
   virtual void onException(Actor /*actor*/, const std::exception_ptr &/*exceptionPointer*/) { /*NOOP*/ };
   virtual void onUnexpectedMessage(Actor /*actor*/, const ::caf::message_view &/*message*/) { /*NOOP*/ };
@@ -322,7 +336,7 @@ protected:
   [[nodiscard]] tl::expected<void, std::string> tell(Actor actor, Parameters...parameters) {
 
 	if (!running_)
-	  return tl::make_unexpected(fmt::format("Cannot tell message to consumers, operator {} ('{}') is not started",
+	  return tl::make_unexpected(fmt::format("Cannot tell message to consumers, operator {} ('{}') is not running",
 											 actor->id(),
 											 actor->name()));
 
@@ -347,22 +361,29 @@ protected:
    */
   [[nodiscard]] tl::expected<void, std::string> notifyComplete(Actor actor) {
 
-	if (!running_)
+	if (!running_) {
 	  return tl::make_unexpected(fmt::format("Cannot complete operator {} ('{}'), not running",
 											 actor->id(),
 											 actor->name()));
+	}
 
-	if (complete_)
+	if (complete_) {
 	  return tl::make_unexpected(fmt::format("Cannot complete operator {} ('{}'), already complete",
 											 actor->id(),
 											 actor->name()));
+	}
+
+	SPDLOG_INFO("[Actor {} ('{}')]  Completing operator  |  queryId: {}",
+				actor->id(),
+				actor->name(),
+				queryId_.value());
 
 //	tell(actor, CompleteAtom::value);
 	auto tellResult = tell(actor, Envelope(std::make_shared<CompleteMessage>(name)));
 	if (!tellResult)
 	  return tellResult;
-//	anonymousSend(actor, rootActor_, CompleteAtom::value);
-	anonymousSend(actor, rootActor_, Envelope(std::make_shared<CompleteMessage>(name)));
+//	anonymousSend(actor, rootActorHandle_, CompleteAtom::value);
+	anonymousSend(actor, rootActorHandle_.value(), Envelope(std::make_shared<CompleteMessage>(name)));
 
 	complete_ = true;
 
@@ -388,13 +409,31 @@ protected:
   /**
    * @return SegmentCache actor handle
    */
-  [[nodiscard]] const caf::actor &getSegmentCacheActorHandle() const {
+  [[nodiscard]] const std::optional<caf::actor> &getSegmentCacheActorHandle() const {
 	return segmentCacheActorHandle_;
   }
 
+  [[nodiscard]] const std::optional<caf::actor> &getRootActorHandle() const {
+	return rootActorHandle_;
+  }
+
+  [[nodiscard]] bool isRunning() const {
+	return running_;
+  }
+
+  [[nodiscard]] bool isComplete() const {
+	return complete_;
+  }
+
+  [[nodiscard]] std::optional<unsigned long> getQueryId() const {
+	return queryId_;
+  }
+
 private:
-  caf::actor rootActor_;
-  caf::actor segmentCacheActorHandle_;
+  std::optional<unsigned long> queryId_;
+
+  std::optional<caf::actor> rootActorHandle_;
+  std::optional<caf::actor> segmentCacheActorHandle_;
 
   bool running_ = false;
   bool complete_ = false;
@@ -416,8 +455,8 @@ private:
 
   [[nodiscard]] tl::expected<void, std::string> handleStart(Actor actor, const caf::strong_actor_ptr &messageSender) {
 
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Start  |  source: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Starting operator  |  queryId: {}, source: {}", actor->id(),
+				 actor->name(), queryId_.value(), to_string(messageSender));
 
 	running_ = true;
 
@@ -435,8 +474,8 @@ private:
 
   [[nodiscard]] tl::expected<void, std::string> handleStop(Actor actor, const caf::strong_actor_ptr &messageSender) {
 
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Stop  |  source: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Stopping operator  |  queryId: {}, source: {}", actor->id(),
+				 actor->name(), queryId_.value(), to_string(messageSender));
 
 	running_ = false;
 
@@ -447,8 +486,8 @@ private:
 															  const caf::strong_actor_ptr &messageSender,
 															  const std::vector<OperatorConnection> &connections) {
 
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Connect  |  source: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Connecting operator  |  queryId: {}, source: {}", actor->id(),
+				 actor->name(), queryId_.value(), to_string(messageSender));
 
 	for (const auto &connection: connections) {
 	  actor->state.operatorDirectory_.emplace(connection.getActorHandle().id(),
@@ -468,13 +507,13 @@ private:
 
   [[nodiscard]] tl::expected<void, std::string> handleComplete(Actor actor,
 															   const caf::strong_actor_ptr &messageSender) {
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Complete  |  source: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Connected operator complete  |  queryId: {}, source: {}", actor->id(),
+				 actor->name(), queryId_.value(), to_string(messageSender));
 
 	auto maybeEntry = operatorDirectory_.find(actor->current_sender()->id());
 	if (maybeEntry == operatorDirectory_.end()) {
-	  throw std::runtime_error(fmt::format("Complete message received from unexpected sender  |  sender: {}",
-										   to_string(messageSender)));
+	  return tl::make_unexpected(fmt::format("Complete message received from unexpected sender {}",
+											 to_string(messageSender)));
 	}
 	std::get<3>(maybeEntry->second) = true;
 
@@ -487,8 +526,8 @@ private:
   };
 
   long handleGetProcessingTime(Actor actor, const caf::strong_actor_ptr &messageSender) {
-	SPDLOG_DEBUG("[Actor {} ('{}')]  GetProcessingTime  |  source: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Getting operator processing time  |  queryId: {}, source: {}", actor->id(),
+				 actor->name(), queryId_.value(), to_string(messageSender));
 
 	return actor->state.processingTime_;
   };
@@ -501,8 +540,12 @@ private:
    */
   [[nodiscard]] tl::expected<void, std::string>
   handleEnvelope(Actor actor, const caf::strong_actor_ptr &messageSender, const Envelope &envelope) {
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Envelope  |  source: {}, message: {}", actor->id(),
-				 actor->name(), to_string(messageSender), envelope.getMessage()->type());
+	SPDLOG_DEBUG("[Actor {} ('{}')]  Operator received envelope  |  queryId: {}, source: {}, message type: {}",
+				 actor->id(),
+				 actor->name(),
+				 queryId_.value(),
+				 to_string(messageSender),
+				 envelope.getMessage()->type());
 
 	auto message = envelope.getMessage();
 	if (message->type() == "StartMessage") {
@@ -531,10 +574,5 @@ private:
 };
 
 }
-
-using ExpectedVoidString = tl::expected<void, std::string>;
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<normal::core::OperatorConnection>);
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedVoidString);
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_OPERATORACTOR2_H

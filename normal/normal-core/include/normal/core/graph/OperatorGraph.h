@@ -16,9 +16,12 @@
 #include <normal/core/OperatorDirectory.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/core/Forward.h>
+#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate2.h>
 
 using namespace normal::core;
 using namespace normal::core::cache;
+using namespace normal::pushdown;
 
 namespace normal::core::graph {
 
@@ -55,6 +58,8 @@ private:
   OperatorDirectory operatorDirectory_;
   std::weak_ptr<OperatorManager> operatorManager_;
   std::shared_ptr<caf::scoped_actor> rootActor_;
+  CollateActor collateActorHandle_;
+  std::shared_ptr<Collate> legacyCollateOperator_;
 
   std::chrono::steady_clock::time_point startTime_;
   std::chrono::steady_clock::time_point stopTime_;

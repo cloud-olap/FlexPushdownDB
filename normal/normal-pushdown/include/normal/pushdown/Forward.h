@@ -9,6 +9,7 @@ namespace normal::pushdown {
 
 class S3SelectScanState;
 class FileScanState;
+class CollateState;
 
 }
 
