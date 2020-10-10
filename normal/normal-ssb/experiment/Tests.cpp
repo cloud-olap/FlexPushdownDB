@@ -16,6 +16,7 @@
 #include <normal/cache/FBRCachingPolicy.h>
 #include <normal/cache/WFBRCachingPolicy.h>
 #include "ExperimentUtil.h"
+#include "Tests.h"
 #include <normal/ssb/SqlGenerator.h>
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
@@ -132,6 +133,84 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   return tupleSet;
 }
 
+void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType) {
+  spdlog::set_level(spdlog::level::info);
+
+  // parameters
+  const int warmBatchSize = 0, executeBatchSize = 1;
+  std::string bucket_name = "pushdowndb";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
+
+  std::shared_ptr<normal::plan::operator_::mode::Mode> mode;
+  std::string modeAlias;
+  switch (modeType) {
+    case 1: mode = normal::plan::operator_::mode::Modes::fullPullupMode(); modeAlias = "fpu"; break;
+    case 2: mode = normal::plan::operator_::mode::Modes::fullPushdownMode(); modeAlias = "fpd"; break;
+    case 3: mode = normal::plan::operator_::mode::Modes::pullupCachingMode(); modeAlias = "pc"; break;
+    case 4: mode = normal::plan::operator_::mode::Modes::hybridCachingMode(); modeAlias = "hc"; break;
+    default: throw std::runtime_error("Mode not found, type: " + std::to_string(modeType));
+  }
+
+  std::shared_ptr<normal::cache::CachingPolicy> cachingPolicy;
+  std::string cachingPolicyAlias;
+  switch (cachingPolicyType) {
+    case 1: cachingPolicy = LRUCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lru"; break;
+    case 2: cachingPolicy = FBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lfu"; break;
+    case 3: cachingPolicy = WFBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "wlfu"; break;
+    default: throw std::runtime_error("CachingPolicy not found, type: " + std::to_string(cachingPolicyType));
+  }
+
+  auto currentPath = filesystem::current_path();
+  auto sql_file_dir_path = currentPath.append("sql/generated");
+
+  // interpreter
+  normal::sql::Interpreter i(mode, cachingPolicy);
+  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
+
+  // execute
+  i.boot();
+  SPDLOG_INFO("{} mode start", mode->toString());
+  if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
+      mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
+    SPDLOG_INFO("Cache warm phase:");
+    for (auto index = 1; index <= warmBatchSize; ++index) {
+      SPDLOG_INFO("sql {}", index);
+      auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+      auto sql = ExperimentUtil::read_file(sql_file_path.string());
+      executeSql(i, sql, false);
+      sql_file_dir_path = sql_file_dir_path.parent_path();
+    }
+    SPDLOG_INFO("Cache warm phase finished");
+  }
+
+  i.getOperatorManager()->clearCacheMetrics();
+
+  SPDLOG_INFO("Execution phase:");
+  for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
+    SPDLOG_INFO("sql {}", index - warmBatchSize);
+    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
+    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    executeSql(i, sql, true);
+    sql_file_dir_path = sql_file_dir_path.parent_path();
+  }
+  SPDLOG_INFO("Execution phase finished");
+
+  SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
+  SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+
+  auto metricsFilePath = filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
+  std::ofstream fout(metricsFilePath.string());
+  fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
+  fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
+  fout << "Current cache layout:\n" << i.getCachingPolicy()->showCurrentLayout() << "\n";
+  fout.flush();
+  fout.close();
+
+  i.getOperatorGraph().reset();
+  i.stop();
+  SPDLOG_INFO("Memory allocated finally: {}", arrow::default_memory_pool()->bytes_allocated());
+}
+
 TEST_SUITE ("MainTests" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
@@ -238,6 +317,12 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
 }
 
 TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
+  size_t cacheSize = 1024L*1024*1024;
+  int modeType = 4;
+  int cachingPolicyType = 2;
+  mainTest(cacheSize, modeType, cachingPolicyType);
+}
+}
   spdlog::set_level(spdlog::level::info);
 
   // parameters
