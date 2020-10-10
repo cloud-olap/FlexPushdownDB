@@ -197,12 +197,14 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
+  SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
 
   auto metricsFilePath = filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
   std::ofstream fout(metricsFilePath.string());
   fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
   fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
-  fout << "Current cache layout:\n" << i.getCachingPolicy()->showCurrentLayout() << "\n";
+  fout << "Cache hit ratios:\n" << i.showHitRatios() << "\n";
+//  fout << "Current cache layout:\n" << i.getCachingPolicy()->showCurrentLayout() << "\n";
   fout.flush();
   fout.close();
 
@@ -321,71 +323,5 @@ TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
   int modeType = 4;
   int cachingPolicyType = 2;
   mainTest(cacheSize, modeType, cachingPolicyType);
-}
-}
-  spdlog::set_level(spdlog::level::info);
-
-  // parameters
-  const int warmBatchSize = 2, executeBatchSize = 2;
-  const size_t cacheSize = 1536L*1024*1024;
-  std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
-
-  auto mode = normal::plan::operator_::mode::Modes::fullPushdownMode();
-  auto lru = LRUCachingPolicy::make(cacheSize, mode);
-  auto fbr = FBRCachingPolicy::make(cacheSize, mode);
-  auto wfbr = WFBRCachingPolicy::make(cacheSize, mode);
-
-  auto currentPath = filesystem::current_path();
-  auto sql_file_dir_path = currentPath.append("sql/generated");
-
-  // interpreter
-  normal::sql::Interpreter i(mode, fbr);
-  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
-
-  // execute
-  i.boot();
-  SPDLOG_INFO("{} mode start", mode->toString());
-  if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
-      mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
-    SPDLOG_INFO("Cache warm phase:");
-    for (auto index = 1; index <= warmBatchSize; ++index) {
-      SPDLOG_INFO("sql {}", index);
-      auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
-      //SPDLOG_INFO("current path: {}", sql_file_path.string());
-      auto sql = ExperimentUtil::read_file(sql_file_path.string());
-      executeSql(i, sql, false);
-      sql_file_dir_path = sql_file_dir_path.parent_path();
-    }
-    SPDLOG_INFO("Cache warm phase finished");
-  }
-
-  i.getOperatorManager()->clearCacheMetrics();
-
-  SPDLOG_INFO("Execution phase:");
-  for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
-    SPDLOG_INFO("sql {}", index - warmBatchSize);
-    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
-    executeSql(i, sql, true);
-    sql_file_dir_path = sql_file_dir_path.parent_path();
-  }
-  SPDLOG_INFO("Execution phase finished");
-
-  SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
-  SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
-  SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
-
-  auto metricsFilePath = filesystem::current_path().append("metrics");
-  std::ofstream fout(metricsFilePath.string());
-  fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
-  fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
-  fout << "Cache hit ratios:\n" << i.showHitRatios() << "\n";
-  fout.flush();
-  fout.close();
-
-  i.getOperatorGraph().reset();
-  i.stop();
-  SPDLOG_INFO("Memory allocated finally: {}", arrow::default_memory_pool()->bytes_allocated());
 }
 }
