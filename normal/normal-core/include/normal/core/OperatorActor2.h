@@ -77,6 +77,15 @@ protected:
   /// Capture processing time, and allow message sender override
   ///
 
+  /**
+   * Non void process wrapper
+   *
+   * @tparam F
+   * @tparam R
+   * @param actor
+   * @param f
+   * @return
+   */
   template<typename F,
 	  typename R = boost::callable_traits::return_type_t<F>,
 	  typename = std::enable_if_t<!std::is_void_v<R>>>
@@ -92,6 +101,16 @@ protected:
 
 	R r = f(messageSender);
 
+	/*
+	 * If return type is an (un)expected, raise an error
+	 */
+	if constexpr (tl::detail::is_expected<R>::value) {
+	  if (!r) {
+		auto error = caf::make_error(caf::sec::runtime_error, r.error());
+		actor->call_error_handler(error);
+	  }
+	}
+
 	auto processingStopTime_ = std::chrono::steady_clock::now();
 	processingTime_ +=
 		std::chrono::duration_cast<std::chrono::nanoseconds>(processingStopTime_ - processingStartTime_).count();
@@ -99,6 +118,14 @@ protected:
 	return caf::make_result(r);
   }
 
+  /**
+   * Void process wrapper
+   *
+   * @tparam F
+   * @tparam R
+   * @param actor
+   * @param f
+   */
   template<typename F,
 	  typename R = boost::callable_traits::return_type_t<F>,
 	  typename = std::enable_if_t<std::is_void_v<R>>>
@@ -266,7 +293,7 @@ protected:
 		  process(actor,
 				  [=](const caf::strong_actor_ptr &messageSender) { return handleComplete(actor, messageSender); });
 		},
-		[=](GetProcessingTimeAtom) -> caf::result<long> {
+		[=](GetProcessingTimeAtom) {
 		  return process(actor,
 						 [=](const caf::strong_actor_ptr &messageSender) {
 						   return handleGetProcessingTime(actor,
