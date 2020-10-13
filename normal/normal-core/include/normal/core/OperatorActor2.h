@@ -534,22 +534,31 @@ private:
 
   [[nodiscard]] tl::expected<void, std::string> handleComplete(Actor actor,
 															   const caf::strong_actor_ptr &messageSender) {
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Connected operator complete  |  queryId: {}, source: {}", actor->id(),
-				 actor->name(), queryId_.value(), to_string(messageSender));
 
 	auto maybeEntry = operatorDirectory_.find(actor->current_sender()->id());
 	if (maybeEntry == operatorDirectory_.end()) {
 	  return tl::make_unexpected(fmt::format("Complete message received from unexpected sender {}",
 											 to_string(messageSender)));
 	}
-	std::get<3>(maybeEntry->second) = true;
 
-	if (std::get<2>(maybeEntry->second) == OperatorRelationshipType::Producer)
-	  ++numCompleteProducers_;
-	if (std::get<2>(maybeEntry->second) == OperatorRelationshipType::Consumer)
-	  ++numCompleteConsumers_;
+	if(std::get<3>(maybeEntry->second)){
+	  return tl::make_unexpected(fmt::format("Complete message received from already complete operator {}",
+										  to_string(messageSender)));
+	}
+	else{
 
-	return onComplete(actor, messageSender);
+	  SPDLOG_DEBUG("[Actor {} ('{}')]  Connected operator complete  |  queryId: {}, source: {}", actor->id(),
+				   actor->name(), queryId_.value(), to_string(messageSender));
+
+	  std::get<3>(maybeEntry->second) = true;
+
+	  if (std::get<2>(maybeEntry->second) == OperatorRelationshipType::Producer)
+		++numCompleteProducers_;
+	  if (std::get<2>(maybeEntry->second) == OperatorRelationshipType::Consumer)
+		++numCompleteConsumers_;
+
+	  return onComplete(actor, messageSender);
+	}
   };
 
   long handleGetProcessingTime(Actor actor, const caf::strong_actor_ptr &messageSender) {
