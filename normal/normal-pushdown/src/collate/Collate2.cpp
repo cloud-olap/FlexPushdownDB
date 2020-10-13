@@ -7,7 +7,7 @@
 namespace normal::pushdown {
 
 CollateActor::behavior_type CollateFunctor(CollateStatefulActor self,
-										   const char *name,
+										   const std::string &name,
 										   long queryId,
 										   const caf::actor &rootActorHandle,
 										   const caf::actor &segmentCacheActorHandle) {

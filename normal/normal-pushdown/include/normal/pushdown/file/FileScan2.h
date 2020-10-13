@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_FILE_FILESCAN2_H
 
 #include <caf/all.hpp>
+#include <utility>
 
 #include <normal/core/Forward.h>
 #include <normal/core/OperatorActor2.h>
@@ -33,7 +34,7 @@ using FileScanStatefulActor = FileScanActor::stateful_pointer<FileScanState>;
 class FileScanState : public OperatorActorState<FileScanStatefulActor> {
 public:
   void setState(FileScanStatefulActor actor,
-				const char *name,
+				std::string name,
 				const std::string &filePath,
 				FileType fileType,
 				const std::vector<std::string> &columnNames,
@@ -44,7 +45,7 @@ public:
 				const caf::actor &segmentCacheActorHandle,
 				bool scanOnStart = false) {
 
-	OperatorActorState::setBaseState(actor, name, queryId, rootActorHandle, segmentCacheActorHandle);
+	OperatorActorState::setBaseState(actor, std::move(name), queryId, rootActorHandle, segmentCacheActorHandle);
 
 	auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
@@ -179,7 +180,7 @@ private:
 };
 
 FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor actor,
-											 const char *name,
+											 std::string name,
 											 const std::string &filePath,
 											 FileType fileType,
 											 const std::vector<std::string> &columnNames,

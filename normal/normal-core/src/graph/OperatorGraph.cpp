@@ -122,27 +122,27 @@ void graph::OperatorGraph::boot() {
   for (auto &element: operatorDirectory_) {
 	auto op = element.second.getDef();
 	if(op->getType() == "FileScan"){
-//	  auto fileScanOp = std::static_pointer_cast<FileScan>(op);
-//	  auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn(FileScanFunctor,
-//																		  fileScanOp->name().c_str(),
-//																		  fileScanOp->getKernel()->getPath(),
-//																		  fileScanOp->getKernel()->getFileType().value(),
-//																		  fileScanOp->getColumnNames(),
-//																		  fileScanOp->getKernel()->getStartPos(),
-//																		  fileScanOp->getKernel()->getFinishPos(),
-//																		  fileScanOp->getQueryId(),
-//																		  *rootActor_,
-//																		  operatorManager_.lock()->getSegmentCacheActor(),
-//																		  fileScanOp->isScanOnStart()
-//	  );
-//	  if (!actorHandle)
-//		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-//	  element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+	  auto fileScanOp = std::static_pointer_cast<FileScan>(op);
+	  auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn(FileScanFunctor,
+																		  fileScanOp->name(),
+																		  fileScanOp->getKernel()->getPath(),
+																		  fileScanOp->getKernel()->getFileType().value(),
+																		  fileScanOp->getColumnNames(),
+																		  fileScanOp->getKernel()->getStartPos(),
+																		  fileScanOp->getKernel()->getFinishPos(),
+																		  fileScanOp->getQueryId(),
+																		  *rootActor_,
+																		  operatorManager_.lock()->getSegmentCacheActor(),
+																		  fileScanOp->isScanOnStart()
+	  );
+	  if (!actorHandle)
+		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+	  element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
 	}
 	else if(op->getType() == "Collate"){
 	  legacyCollateOperator_ = std::static_pointer_cast<Collate>(op);
 	  collateActorHandle_  = operatorManager_.lock()->getActorSystem()->spawn(CollateFunctor,
-																			  legacyCollateOperator_->name().c_str(),
+																			  legacyCollateOperator_->name(),
 																			  legacyCollateOperator_->getQueryId(),
 																		  *rootActor_,
 																		  operatorManager_.lock()->getSegmentCacheActor()
@@ -369,4 +369,29 @@ size_t graph::OperatorGraph::getNumRequests() {
     }
   }
   return numRequests;
+}
+
+void graph::OperatorGraph::close() {
+  if(rootActor_ != nullptr){
+	for (const auto &element: operatorDirectory_) {
+	  (*rootActor_)->send_exit(element.second.getActorHandle(), caf::exit_reason::user_shutdown);
+	}
+	rootActor_.reset();
+  }
+
+  legacyCollateOperator_.reset();
+}
+
+graph::OperatorGraph::~OperatorGraph() {
+  close();
+}
+
+tl::expected<std::shared_ptr<TupleSet2>, std::string> graph::OperatorGraph::execute() {
+
+  boot();
+  start();
+  join();
+
+  auto tuples = legacyCollateOperator_->tuples();
+  return TupleSet2::create(tuples);
 }

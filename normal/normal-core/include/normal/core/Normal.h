@@ -30,6 +30,7 @@ public:
 
 private:
   std::shared_ptr<OperatorManager> operatorManager_;
+  std::vector<std::shared_ptr<OperatorGraph>> queries_;
 
 };
 

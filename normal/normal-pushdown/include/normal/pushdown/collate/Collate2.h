@@ -38,7 +38,7 @@ using CollateStatefulActor = CollateActor::stateful_pointer<CollateState>;
 class CollateState : public OperatorActorState<CollateStatefulActor> {
 public:
   void setState(CollateStatefulActor actor,
-				const char *name,
+				const std::string &name,
 				long queryId,
 				const caf::actor &rootActorHandle,
 				const caf::actor &segmentCacheActorHandle) {
@@ -125,7 +125,7 @@ private:
 };
 
 CollateActor::behavior_type CollateFunctor(CollateStatefulActor actor,
-										   const char *name,
+										   const std::string &name,
 										   long queryId,
 										   const caf::actor &rootActorHandle,
 										   const caf::actor &segmentCacheActorHandle);

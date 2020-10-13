@@ -19,11 +19,19 @@ std::shared_ptr<Normal> Normal::start() {
 }
 
 void Normal::stop() {
+
+  for(const auto &query: queries_){
+    query->close();
+  }
+  queries_.clear();
+
   operatorManager_->stop();
 }
 
 std::shared_ptr<OperatorGraph> Normal::createQuery() {
-  return OperatorGraph::make(operatorManager_);
+  auto query = OperatorGraph::make(operatorManager_);
+  queries_.push_back(query);
+  return query;
 }
 
 }

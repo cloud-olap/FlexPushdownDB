@@ -19,7 +19,7 @@ class SampleState : public OperatorActorState<SampleActor::stateful_pointer <Sam
 
 public:
 
-  void setState(SampleActor::stateful_pointer <SampleState> self, const char* name_){
+  void setState(SampleActor::stateful_pointer <SampleState> self, const std::string & name_){
 	OperatorActorState::setBaseState(self, name_, 0, nullptr, nullptr);
   }
 
@@ -58,6 +58,6 @@ tl::expected<void, std::string> onComplete(SampleActor::stateful_pointer <Sample
 
 };
 
-SampleActor::behavior_type SampleActorFunctor(SampleActor::stateful_pointer <SampleState> self, const char *name);
+SampleActor::behavior_type SampleActorFunctor(SampleActor::stateful_pointer <SampleState> self, const std::string &name);
 
 #endif //NORMAL_NORMAL_CORE_TEST_SAMPLEOPERATOR_H

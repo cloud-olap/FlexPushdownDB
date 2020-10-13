@@ -55,16 +55,16 @@ class OperatorActorState {
 public:
   virtual ~OperatorActorState() = default;
 
-  const char *name = "<operator>";
+  std::string name = "<operator>";
 
 protected:
 
   void setBaseState(Actor /* actor */,
-					const char *name_,
+					std::string name_,
 					unsigned long queryId,
 					::caf::actor rootActor,
 					::caf::actor segmentCacheActorHandle) {
-	name = name_;
+	name = std::move(name_);
 	queryId_ = queryId;
 	rootActorHandle_ = std::move(rootActor);
 	segmentCacheActorHandle_ = std::move(segmentCacheActorHandle);
