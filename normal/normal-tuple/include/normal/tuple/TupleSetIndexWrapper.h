@@ -124,25 +124,11 @@ public:
 
   [[nodiscard]] tl::expected<void, std::string> put(const std::shared_ptr<::arrow::Table> &table) override {
 
-	int columnIndex = table->schema()->GetFieldIndex(columnName_);
-	if(columnIndex == -1)
-	  return tl::make_unexpected(fmt::format("Cannot add table to TupleSetIndex. Indexed column '{}' not found in given table.", columnName_));
-
-	if((size_t)columnIndex != columnIndex_)
-	  return tl::make_unexpected(fmt::format("Cannot add table to TupleSetIndex. Indexed column '{}' has a different position {} to column in index {}.", columnName_, columnIndex, columnIndex_));
-
-	auto expectedValueRowIndexMap = build(columnIndex_, table_->num_rows(), table);
-	if (!expectedValueRowIndexMap.has_value())
-	  return tl::make_unexpected(expectedValueRowIndexMap.error());
-	auto valueRowIndexMap = expectedValueRowIndexMap.value();
-
-	valueRowMap_.insert(valueRowIndexMap.begin(), valueRowIndexMap.end());
-
-	/**
-	 * need to synchronize schemas (schemas can be the same but in different orders)
-	 */
+  /**
+   * need to synchronize schemas (schemas can be the same but in different orders)
+   */
   std::shared_ptr<::arrow::Table> newTable;
-	auto schema = table_->schema();
+  auto schema = table_->schema();
   if (!schema->Equals(table->schema())) {
     std::vector<std::shared_ptr<::arrow::ChunkedArray>> newChunkedArrays;
     for (auto const &field: schema->fields()) {
@@ -156,6 +142,20 @@ public:
   } else {
     newTable = table;
   }
+
+	int columnIndex = newTable->schema()->GetFieldIndex(columnName_);
+	if(columnIndex == -1)
+	  return tl::make_unexpected(fmt::format("Cannot add table to TupleSetIndex. Indexed column '{}' not found in given table.", columnName_));
+
+	if((size_t)columnIndex != columnIndex_)
+	  return tl::make_unexpected(fmt::format("Cannot add table to TupleSetIndex. Indexed column '{}' has a different position {} to column in index {}.", columnName_, columnIndex, columnIndex_));
+
+	auto expectedValueRowIndexMap = build(columnIndex_, table_->num_rows(), newTable);
+	if (!expectedValueRowIndexMap.has_value())
+	  return tl::make_unexpected(expectedValueRowIndexMap.error());
+	auto valueRowIndexMap = expectedValueRowIndexMap.value();
+
+	valueRowMap_.insert(valueRowIndexMap.begin(), valueRowIndexMap.end());
 
 	auto result = ::arrow::ConcatenateTables({table_, newTable});
 	if (!result.ok())

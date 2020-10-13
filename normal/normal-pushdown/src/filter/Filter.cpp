@@ -100,7 +100,7 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
     sendTuples();
   }
 
-  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_){
     if (weightedSegmentKeys_ && totalNumRows_ > 0 && *applicable_) {
       sendSegmentWeight();
     }
@@ -110,6 +110,7 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 	  assert(this->filtered_->numRows() == 0);
 
 	  ctx()->notifyComplete();
+    hasProcessedAllComplete_ = true;
   }
 }
 

@@ -64,7 +64,6 @@ private:
   std::chrono::steady_clock::time_point startTime_;
   std::chrono::steady_clock::time_point stopTime_;
 
-  bool hasOneComplete_ = false;
 };
 
 }

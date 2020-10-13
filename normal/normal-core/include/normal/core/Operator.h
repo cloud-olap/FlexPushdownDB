@@ -54,6 +54,9 @@ public:
 
   void destroyActor();
 
+protected:
+  bool hasProcessedAllComplete_ = false;
+
 };
 
 } // namespace

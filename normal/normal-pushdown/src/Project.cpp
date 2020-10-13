@@ -120,10 +120,11 @@ void Project::bufferTuples(const core::message::TupleMessage &message) {
 }
 
 void Project::onComplete(const normal::core::message::CompleteMessage &) {
-  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_){
     // Project and send any remaining tuples
     projectAndSendTuples();
 	  ctx()->notifyComplete();
+    hasProcessedAllComplete_ = true;
   }
 }
 
