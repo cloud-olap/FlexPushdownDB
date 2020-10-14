@@ -130,6 +130,14 @@ TEST_CASE ("ssb-query1.1-file-csv-sf0.01-par2-full" * doctest::skip(false)) {
 	  REQUIRE_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
+TEST_CASE ("ssb-query1.1-file-csv-sf0.01-par2-iter50-full" * doctest::skip(false)) {
+	auto n = Normal::start();
+	LocalFileSystemTests::full2(1992, 2, 25, "data/ssb-sf0.01", FileType::CSV, 2, 50, false, n);
+	n->stop();
+
+	  REQUIRE_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
+}
+
 //TEST_CASE ("bloom-par1" * doctest::skip(false)) {
 //  auto n = Normal::start();
 //  LocalFileSystemTests::bloom(1992, 2, 25, "data/ssb-sf0.01",FileType::CSV,  1, true, n);

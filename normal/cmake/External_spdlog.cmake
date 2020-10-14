@@ -1,6 +1,6 @@
 # SPDLog
 
-set(SPDLOG_VERSION "v1.5.0")
+set(SPDLOG_VERSION "v1.8.1")
 set(SPDLOG_GIT_URL "https://github.com/gabime/spdlog.git")
 
 include(ExternalProject)

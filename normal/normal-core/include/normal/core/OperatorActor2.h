@@ -223,8 +223,13 @@ protected:
 	 */
 	actor->attach_functor([=](const caf::error &reason) {
 
-	  SPDLOG_DEBUG("[Actor {} ('{}')]  Operator exit  |  queryId: {}, reason: {}", actor->id(),
-				   actor->name(), queryId_.value(), to_string(reason));
+	  // FIXME: Actor name appears to have been destroyed by this stage, it
+	  //  often comes out as garbage anyway, so we avoid using it. Something
+	  //  to raise with developers.
+	  SPDLOG_DEBUG("[Actor {} ('<name unavailable>')]  Operator exit  |  queryId: {}, reason: {}",
+							   actor->id(),
+							   queryId_.value(),
+							   to_string(reason));
 
 	  onExit(actor, reason);
 	});
@@ -541,11 +546,10 @@ private:
 											 to_string(messageSender)));
 	}
 
-	if(std::get<3>(maybeEntry->second)){
+	if (std::get<3>(maybeEntry->second)) {
 	  return tl::make_unexpected(fmt::format("Complete message received from already complete operator {}",
-										  to_string(messageSender)));
-	}
-	else{
+											 to_string(messageSender)));
+	} else {
 
 	  SPDLOG_DEBUG("[Actor {} ('{}')]  Connected operator complete  |  queryId: {}, source: {}", actor->id(),
 				   actor->name(), queryId_.value(), to_string(messageSender));

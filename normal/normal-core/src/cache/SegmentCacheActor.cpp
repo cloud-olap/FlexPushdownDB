@@ -70,8 +70,12 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
    */
   self->attach_functor([=](const caf::error &reason) {
 
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Segment Cache Actor exit  |  reason: {}", self->id(),
-				 self->name(), to_string(reason));
+	// FIXME: Actor name appears to have been destroyed by this stage, it
+	//  often comes out as garbage anyway, so we avoid using it. Something
+	//  to raise with developers.
+	SPDLOG_DEBUG("[Actor {} ('<name unavailable>')]  Segment Cache exit  |  reason: {}",
+			  self->id(),
+				 to_string(reason));
 
 	self->state.cache.reset();
   });
