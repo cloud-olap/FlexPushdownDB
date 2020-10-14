@@ -54,6 +54,12 @@ public:
   std::vector<std::string> generateSqlBatchSkewWeight(int batchSize);
   std::string generateSqlSkewWeight(std::string queryName, std::string skewLo_predicate, bool high);
 
+  /**
+   * The following is used to generate recurring queries with skewness, recurring order is same as SSB
+   * No weight skewness involved
+   */
+  std::vector<std::string> generateSqlBatchSkewRecurring(int batchSize);
+
 private:
   std::shared_ptr<std::default_random_engine> generator_;
   std::map<std::string, QueryName> queryNameMap_;
