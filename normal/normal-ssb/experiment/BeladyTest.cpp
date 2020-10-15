@@ -160,7 +160,11 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
   }
 }
 
-void generateSegmentKeyAndSqlQueryMappings(normal::sql::Interpreter &i, int numQueries, filesystem::path sql_file_dir_path) {
+void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy,
+                                           std::string bucket_name, std::string dir_prefix, int numQueries, filesystem::path sql_file_dir_path) {
+  normal::sql::Interpreter i(mode, beladyCachingPolicy);
+  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
+  i.boot();
   // populate mapping of SegmentKey->[Query #s Segment is used in] and
   // QueryNumber->[Involved Segment Keys] and set these in the beladyMiniCatalogue
   for (auto queryNum = 1; queryNum <= numQueries; ++queryNum) {
@@ -168,7 +172,6 @@ void generateSegmentKeyAndSqlQueryMappings(normal::sql::Interpreter &i, int numQ
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", queryNum));
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
     // get the related segments from the query:
-//    i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
     i.clearOperatorGraph();
     i.parse(sql);
 
@@ -220,9 +223,8 @@ TEST_CASE ("BeladyExperiment" * doctest::skip(false || SKIP_SUITE)) {
 
   // populate mapping of SegmentKey->[Query #s Segment is used in] and
   // QueryNumber->[Involved Segment Keys] and set these in the beladyMiniCatalogue
-  generateSegmentKeyAndSqlQueryMappings(i, warmBatchSize + executeBatchSize, sql_file_dir_path);
+//  generateSegmentKeyAndSqlQueryMappings(i, warmBatchSize + executeBatchSize, sql_file_dir_path);
   belady->generateCacheDecisions(warmBatchSize + executeBatchSize);
-//  belady->removeUnnecessaryPullUps();
 
   for (auto index = 1; index <= warmBatchSize; ++index) {
     normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);

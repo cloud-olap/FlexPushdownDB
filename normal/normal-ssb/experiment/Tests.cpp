@@ -27,7 +27,8 @@
 
 using namespace normal::ssb;
 
-void generateSegmentKeyAndSqlQueryMappings(normal::sql::Interpreter &i, int numQueries, filesystem::path sql_file_dir_path);
+void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy,
+                                           std::string bucket_name, std::string dir_prefix, int numQueries, filesystem::path sql_file_dir_path);
 
 void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
   auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
@@ -111,7 +112,6 @@ auto execute(normal::sql::Interpreter &i) {
 auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics) {
 //  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
   i.clearOperatorGraph();
-
   i.parse(sql);
 
   // graph is too large
@@ -128,18 +128,12 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 //  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
   SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
 
-  SPDLOG_INFO("Saving metrics. . .");
   if (saveMetrics) {
     i.saveMetrics();
   }
-  SPDLOG_INFO("Metrics saved");
-  SPDLOG_INFO("Saving hit ratios. . .");
   i.saveHitRatios();
-  SPDLOG_INFO("Hit ratios saved");
 
-  SPDLOG_INFO("Resetting operator graph. . .");
   i.getOperatorGraph().reset();
-  SPDLOG_INFO("Done resetting graph");
   return tupleSet;
 }
 
@@ -147,7 +141,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 0, executeBatchSize = 5;
+  const int warmBatchSize = 30, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
@@ -177,20 +171,20 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
+  if (cachingPolicyType == 4) {
+    generateSegmentKeyAndSqlQueryMappings(mode, beladyCachingPolicy, bucket_name, dir_prefix, warmBatchSize + executeBatchSize, sql_file_dir_path);
+    // Generate caching decisions for belady
+    SPDLOG_INFO("Generating belady caching decisions. . .");
+    beladyCachingPolicy->generateCacheDecisions(warmBatchSize + executeBatchSize);
+    SPDLOG_INFO("belady caching decisions generated");
+//    SPDLOG_INFO("Belady caching decisions:\n" + beladyCachingPolicy->printLayoutAfterEveryQuery());
+  }
+
   // interpreter
   normal::sql::Interpreter i(mode, cachingPolicy);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
-
   // execute
   i.boot();
-  if (cachingPolicyType == 4) {
-      // Generate caching decisions for belady
-      generateSegmentKeyAndSqlQueryMappings(i, warmBatchSize + executeBatchSize, sql_file_dir_path);
-      SPDLOG_INFO("Generating belady caching decisions. . .");
-      beladyCachingPolicy->generateCacheDecisions(warmBatchSize + executeBatchSize);
-      SPDLOG_INFO("belady caching decisions generated");
-//      SPDLOG_INFO("Belady caching decisions:\n" + beladyCachingPolicy->printLayoutAfterEveryQuery());
-  }
   SPDLOG_INFO("{} mode start", mode->toString());
   if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
       mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
