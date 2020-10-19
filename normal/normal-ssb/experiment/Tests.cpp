@@ -121,13 +121,12 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   auto tuples = execute(i);
 
   auto tupleSet = TupleSet2::create(tuples);
-  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+//  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 //  if (saveMetrics)
   SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
   SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
 //  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
   SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
-
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -158,20 +157,20 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   }
 
   std::shared_ptr<normal::cache::CachingPolicy> cachingPolicy;
-  std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy;
   std::string cachingPolicyAlias;
   switch (cachingPolicyType) {
     case 1: cachingPolicy = LRUCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lru"; break;
     case 2: cachingPolicy = FBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lfu"; break;
     case 3: cachingPolicy = WFBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "wlfu"; break;
-    case 4: beladyCachingPolicy = BeladyCachingPolicy::make(cacheSize, mode); cachingPolicy = beladyCachingPolicy; cachingPolicyAlias = "bldy"; break;
+    case 4: cachingPolicy = BeladyCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "bldy"; break;
     default: throw std::runtime_error("CachingPolicy not found, type: " + std::to_string(cachingPolicyType));
   }
 
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
-  if (cachingPolicyType == 4) {
+  if (cachingPolicy->id() == BELADY) {
+    auto beladyCachingPolicy = std::static_pointer_cast<normal::cache::BeladyCachingPolicy>(cachingPolicy);
     generateSegmentKeyAndSqlQueryMappings(mode, beladyCachingPolicy, bucket_name, dir_prefix, warmBatchSize + executeBatchSize, sql_file_dir_path);
     // Generate caching decisions for belady
     SPDLOG_INFO("Generating belady caching decisions. . .");
@@ -183,6 +182,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   // interpreter
   normal::sql::Interpreter i(mode, cachingPolicy);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
+
   // execute
   i.boot();
   SPDLOG_INFO("{} mode start", mode->toString());
@@ -191,7 +191,9 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     SPDLOG_INFO("Cache warm phase:");
     for (auto index = 1; index <= warmBatchSize; ++index) {
       SPDLOG_INFO("sql {}", index);
-      normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
+      if (cachingPolicy->id() == BELADY) {
+        normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
+      }
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
       auto sql = ExperimentUtil::read_file(sql_file_path.string());
       executeSql(i, sql, false);
@@ -205,7 +207,9 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   SPDLOG_INFO("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
     SPDLOG_INFO("sql {}", index - warmBatchSize);
-    normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
+    if (cachingPolicy->id() == BELADY) {
+      normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
+    }
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
     executeSql(i, sql, true);
@@ -337,9 +341,9 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
 }
 
 TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
-  size_t cacheSize = 10 * 1024L*1024*1024;
-  int modeType = 4;
-  int cachingPolicyType = 4;
-  mainTest(cacheSize, modeType, cachingPolicyType);
+//  size_t cacheSize = 1024L*1024*1024;
+//  int modeType = 4;
+//  int cachingPolicyType = 2;
+//  mainTest(cacheSize, modeType, cachingPolicyType);
 }
 }
