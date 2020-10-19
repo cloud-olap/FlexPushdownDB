@@ -5,7 +5,7 @@
 #include "normal/ssb/query1_1/S3SelectTests.h"
 
 #include <doctest/doctest.h>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <normal/ssb/Globals.h>
 #include <normal/ssb/query1_1/S3SelectQueries.h>
 #include <normal/ssb/query1_1/SQL.h>
@@ -47,7 +47,7 @@ void S3SelectTests::dateScan(const std::string &s3ObjectDir,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
-											{std::filesystem::absolute(dataDir + "/date.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), lastActual->numRows());
   }
@@ -87,7 +87,7 @@ void S3SelectTests::hybridDateFilter(short year,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
-											{std::filesystem::absolute(dataDir + "/date.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), lastActual->numRows());
   }
@@ -119,7 +119,7 @@ void S3SelectTests::dateFilter(short year,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateFilter(year, "temp"),
-											{std::filesystem::absolute(dataDir + "/date.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }

@@ -5,7 +5,7 @@
 #include "normal/ssb/query1_1/LocalFileSystemTests.h"
 
 #include <doctest/doctest.h>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <normal/ssb/Globals.h>
 #include <normal/ssb/query1_1/LocalFileSystemQueries.h>
 #include <normal/ssb/query1_1/SQL.h>
@@ -41,7 +41,7 @@ void LocalFileSystemTests::dateScan(const std::string &dataDir, FileType fileTyp
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateScan("temp"),
-											{std::filesystem::absolute(dataDir + "/date.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), lastActual->numRows());
   }
@@ -73,7 +73,7 @@ void LocalFileSystemTests::lineOrderScan(const std::string &dataDir, FileType fi
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::lineOrderScan("temp"),
-											{std::filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), lastActual->numRows());
   }
@@ -96,7 +96,7 @@ void LocalFileSystemTests::dateFilter(short year, const std::string &dataDir, Fi
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::dateFilter(year, "temp"),
-								  {std::filesystem::absolute(dataDir + "/date.tbl")});
+								  {std::experimental::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 	CHECK_EQ(expected->size(), actual->numRows());
   }
