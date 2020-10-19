@@ -149,7 +149,7 @@ void S3SelectTests::lineOrderScan(const std::string &s3ObjectDir,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::lineOrderScan("temp"),
-											{filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }
@@ -186,7 +186,7 @@ void S3SelectTests::lineOrderFilter(short discount,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::lineOrderFilter(discount, quantity, "temp"),
-											{filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }
@@ -220,8 +220,8 @@ void S3SelectTests::join(short year,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::join(year, discount, quantity, "temp"),
-											{filesystem::absolute(dataDir + "/date.tbl"),
-											 filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }
@@ -254,8 +254,8 @@ void S3SelectTests::full(short year, short discount, short quantity,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::full(year, discount, quantity, "temp"),
-											{filesystem::absolute(dataDir + "/date.tbl"),
-											 filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	auto expectedName = expected->at(0).at(0).first;
 	auto expectedValue = std::stod(expected->at(0).at(0).second);
 	SPDLOG_INFO("Expected  |  {} = {}", expectedName, expectedValue);
@@ -291,8 +291,8 @@ void S3SelectTests::fullPushDown(short year, short discount, short quantity,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::full(year, discount, quantity, "temp"),
-											{filesystem::absolute(dataDir + "/date.tbl"),
-											 filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	auto expectedName = expected->at(0).at(0).first;
 	auto expectedValue = std::stod(expected->at(0).at(0).second);
 	SPDLOG_INFO("Expected  |  {} = {}", expectedName, expectedValue);
@@ -328,8 +328,8 @@ void S3SelectTests::hybrid(short year, short discount, short quantity,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::full(year, discount, quantity, "temp"),
-											{filesystem::absolute(dataDir + "/date.tbl"),
-											 filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/date.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	auto expectedName = expected->at(0).at(0).first;
 	auto expectedValue = std::stod(expected->at(0).at(0).second);
 	SPDLOG_INFO("Expected  |  {} = {}", expectedName, expectedValue);

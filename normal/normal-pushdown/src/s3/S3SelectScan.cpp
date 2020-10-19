@@ -81,6 +81,7 @@ S3SelectScan::S3SelectScan(std::string name,
 						   bool scanOnStart,
                bool toCache,
                long queryId,
+               std::pair<bool, std::vector<std::string>> enablePushdownProject,
                const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys) :
 	Operator(std::move(name), "S3SelectScan", queryId),
 	s3Bucket_(std::move(s3Bucket)),
@@ -91,10 +92,11 @@ S3SelectScan::S3SelectScan(std::string name,
 	finishOffset_(finishOffset),
 	parseOptions_(parseOptions),
 	s3Client_(std::move(s3Client)),
-	columns_(columnNames_.size()),
+	columns_(enablePushdownProject.first ? columnNames_.size() : enablePushdownProject.second.size()),
 	scanOnStart_(scanOnStart),
 	toCache_(toCache),
-	weightedSegmentKeys_(weightedSegmentKeys) {}
+	enablePushdownProject_(enablePushdownProject),
+  weightedSegmentKeys_(weightedSegmentKeys) {}
 
 std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::string s3Bucket,
@@ -108,6 +110,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 bool scanOnstart,
 												 bool toCache,
 												 long queryId,
+                         std::pair<bool, std::vector<std::string>> enablePushdownProject,
                          std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) {
   return std::make_shared<S3SelectScan>(name,
 										s3Bucket,
@@ -121,6 +124,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										scanOnstart,
 										toCache,
 										queryId,
+										enablePushdownProject,
 										weightedSegmentKeys);
 
 }
@@ -144,12 +148,13 @@ tl::expected<void, std::string> S3SelectScan::s3Select(const TupleSetEventCallba
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
   // combine columns with filterSql
+  auto columnNames = enablePushdownProject_.first ? columnNames_ : enablePushdownProject_.second;
   std::string sql = "";
-  for (auto colIndex = 0; colIndex < columnNames_.size(); colIndex++) {
+  for (auto colIndex = 0; colIndex < columnNames.size(); colIndex++) {
     if (colIndex == 0) {
-      sql += columnNames_[colIndex];
+      sql += columnNames[colIndex];
     } else {
-      sql += ", " + columnNames_[colIndex];
+      sql += ", " + columnNames[colIndex];
     }
   }
   sql = "select " + sql + " from s3Object" + filterSql_;
@@ -241,9 +246,11 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
     // Read the columns not present in the cache
     auto result = s3Select([&](const std::shared_ptr<TupleSet2> &tupleSet) {
 
+        auto columnNames = enablePushdownProject_.first ? columnNames_ : enablePushdownProject_.second;
+
         for (int columnIndex = 0; columnIndex < tupleSet->numColumns(); ++columnIndex) {
 
-          auto columnName = columnNames_.at(columnIndex);
+          auto columnName = columnNames.at(columnIndex);
           auto readColumn = tupleSet->getColumnByIndex(columnIndex).value();
           auto canonicalColumnName = ColumnName::canonicalize(columnName);
           readColumn->setName(canonicalColumnName);
@@ -269,8 +276,15 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
     }
 
     std::vector<std::shared_ptr<Column>> readColumns;
-    for (int col_id = 0; col_id < columns_.size(); col_id++) {
-      auto &arrays = columns_.at(col_id);
+    for (auto const &columnName: columnNames_) {
+      // Find arrays using column names
+      std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>> arrays = nullptr;
+      for (auto const &columnPair: columns_) {
+        if (columnName == columnPair->first) {
+          arrays = columnPair;
+          break;
+        }
+      }
       if (arrays) {
         readColumns.emplace_back(Column::make(arrays->first, arrays->second));
       } else {
@@ -281,7 +295,7 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
         if (!status.ok()) {
           throw std::runtime_error(fmt::format("{}, {}", status.message(), name()));
         }
-        readColumns.emplace_back(Column::make(columnNames_.at(col_id), array));
+        readColumns.emplace_back(Column::make(columnName, array));
       }
     }
 
@@ -289,6 +303,7 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
 
     // Store the read columns in the cache, if not in full-pushdown mode
     if (toCache_) {
+      // TODO: only send caching columns
       requestStoreSegmentsInCache(readTupleSet);
     } else {
       // send segment filter weight
@@ -318,7 +333,7 @@ void S3SelectScan::onReceive(const normal::core::message::Envelope &message) {
 
 void S3SelectScan::onCacheLoadResponse(const scan::ScanMessage &message) {
   columnNames_ = message.getColumnNames();
-  columns_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames_.size());
+  columns_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(enablePushdownProject_.first ? columnNames_.size() : enablePushdownProject_.second.size());
 
   if (message.isResultNeeded()) {
     readAndSendTuples();

@@ -15,6 +15,7 @@
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
 #include <normal/cache/WFBRCachingPolicy.h>
+#include <normal/cache/BeladyCachingPolicy.h>
 #include "ExperimentUtil.h"
 #include "Tests.h"
 #include <normal/ssb/SqlGenerator.h>
@@ -25,6 +26,9 @@
 #define SKIP_SUITE false
 
 using namespace normal::ssb;
+
+void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy,
+                                           std::string bucket_name, std::string dir_prefix, int numQueries, filesystem::path sql_file_dir_path);
 
 void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
   auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
@@ -108,7 +112,6 @@ auto execute(normal::sql::Interpreter &i) {
 auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics) {
 //  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
   i.clearOperatorGraph();
-
   i.parse(sql);
 
   // graph is too large
@@ -124,6 +127,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
 //  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
   SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
+
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -137,9 +141,11 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 0, executeBatchSize = 1;
+  const int warmBatchSize = 30, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
+  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
+  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
+
 
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode;
   std::string modeAlias;
@@ -152,21 +158,31 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   }
 
   std::shared_ptr<normal::cache::CachingPolicy> cachingPolicy;
+  std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy;
   std::string cachingPolicyAlias;
   switch (cachingPolicyType) {
     case 1: cachingPolicy = LRUCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lru"; break;
     case 2: cachingPolicy = FBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lfu"; break;
     case 3: cachingPolicy = WFBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "wlfu"; break;
+    case 4: beladyCachingPolicy = BeladyCachingPolicy::make(cacheSize, mode); cachingPolicy = beladyCachingPolicy; cachingPolicyAlias = "bldy"; break;
     default: throw std::runtime_error("CachingPolicy not found, type: " + std::to_string(cachingPolicyType));
   }
 
   auto currentPath = filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
+  if (cachingPolicyType == 4) {
+    generateSegmentKeyAndSqlQueryMappings(mode, beladyCachingPolicy, bucket_name, dir_prefix, warmBatchSize + executeBatchSize, sql_file_dir_path);
+    // Generate caching decisions for belady
+    SPDLOG_INFO("Generating belady caching decisions. . .");
+    beladyCachingPolicy->generateCacheDecisions(warmBatchSize + executeBatchSize);
+    SPDLOG_INFO("belady caching decisions generated");
+//    SPDLOG_INFO("Belady caching decisions:\n" + beladyCachingPolicy->printLayoutAfterEveryQuery());
+  }
+
   // interpreter
   normal::sql::Interpreter i(mode, cachingPolicy);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
-
   // execute
   i.boot();
   SPDLOG_INFO("{} mode start", mode->toString());
@@ -175,6 +191,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     SPDLOG_INFO("Cache warm phase:");
     for (auto index = 1; index <= warmBatchSize; ++index) {
       SPDLOG_INFO("sql {}", index);
+      normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
       auto sql = ExperimentUtil::read_file(sql_file_path.string());
       executeSql(i, sql, false);
@@ -188,6 +205,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   SPDLOG_INFO("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
     SPDLOG_INFO("sql {}", index - warmBatchSize);
+    normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
     executeSql(i, sql, true);
@@ -319,9 +337,9 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
 }
 
 TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
-  size_t cacheSize = 1024L*1024*1024;
+  size_t cacheSize = 10 * 1024L*1024*1024;
   int modeType = 4;
-  int cachingPolicyType = 2;
+  int cachingPolicyType = 4;
   mainTest(cacheSize, modeType, cachingPolicyType);
 }
 }

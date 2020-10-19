@@ -31,7 +31,7 @@ void LocalFileSystemTests::partFilter(const std::string &category,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::partFilter(category, "temp"),
-											{filesystem::absolute(dataDir + "/part.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/part.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }
@@ -54,8 +54,8 @@ void LocalFileSystemTests::join2x(const std::string &region,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::join2x(region, "temp"),
-											{filesystem::absolute(dataDir + "/supplier.tbl"),
-											 filesystem::absolute(dataDir + "/lineorder.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/supplier.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }
@@ -78,9 +78,9 @@ void LocalFileSystemTests::join3x(const std::string &region,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::join3x(region, "temp"),
-											{filesystem::absolute(dataDir + "/supplier.tbl"),
-											 filesystem::absolute(dataDir + "/lineorder.tbl"),
-											 filesystem::absolute(dataDir + "/date.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/supplier.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/date.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }
@@ -104,10 +104,10 @@ void LocalFileSystemTests::join(const std::string &category,
 
   if (check) {
 	auto expected = TestUtil::executeSQLite(SQL::join(category, region, "temp"),
-											{filesystem::absolute(dataDir + "/supplier.tbl"),
-											 filesystem::absolute(dataDir + "/lineorder.tbl"),
-											 filesystem::absolute(dataDir + "/date.tbl"),
-											 filesystem::absolute(dataDir + "/part.tbl")});
+											{std::experimental::filesystem::absolute(dataDir + "/supplier.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/lineorder.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/date.tbl"),
+											 std::experimental::filesystem::absolute(dataDir + "/part.tbl")});
 	SPDLOG_INFO("Expected  |  numRows: {}", expected->size());
 		CHECK_EQ(expected->size(), actual->numRows());
   }

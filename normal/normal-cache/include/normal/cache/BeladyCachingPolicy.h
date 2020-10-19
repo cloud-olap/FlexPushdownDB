@@ -35,16 +35,13 @@ public:
   std::string showCurrentLayout() override;
 
   void generateCacheDecisions(int numQueries);
-  void removeUnnecessaryPullUps();
   std::string printLayoutAfterEveryQuery();
 
   CachingPolicyId id() override;
 
 private:
   std::vector<std::shared_ptr<SegmentKey>> keysInCache_;
-  // TODO: Change to these to be sets of SegmentKey or some more efficient data structure
-  // Not hugely pressing as we are never dealing with that many segments or calling this too many times
-  std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> queryNumToKeysInCache_;
+  std::unordered_map<int, std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>> queryNumToKeysInCache_;
 
   // Number of queries, this is passed in via generateCacheDecisions
   int numQueries_;
