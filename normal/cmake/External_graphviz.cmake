@@ -1,7 +1,7 @@
 # Graphviz
-set(GRAPHVIZ_VERSION "stable_release_2.42.0")
+
+set(GRAPHVIZ_VERSION "4136626c") # master at 11/10 (cmake starts working at this commit)
 set(GRAPHVIZ_GIT_URL "https://gitlab.com/graphviz/graphviz.git")
-set(GRAPHVIZ_SOURCE_URL "https://graphviz.gitlab.io/pub/graphviz/stable/SOURCES/graphviz.tar.gz")
 
 
 include(ExternalProject)
@@ -27,23 +27,18 @@ set(GRAPHVIZ_PLUGIN_CORE_SHARED_LIB ${GRAPHVIZ_LIB_DIR}/graphviz/${CMAKE_SHARED_
 set(GRAPHVIZ_DOT_LAYOUT_SHARED_LIB ${GRAPHVIZ_LIB_DIR}/graphviz/${CMAKE_SHARED_LIBRARY_PREFIX}gvplugin_dot_layout${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(GRAPHVIZ_NEATO_LAYOUT_SHARED_LIB ${GRAPHVIZ_LIB_DIR}/graphviz/${CMAKE_SHARED_LIBRARY_PREFIX}gvplugin_neato_layout${CMAKE_SHARED_LIBRARY_SUFFIX})
 
+set(GRAPHVIZ_SPARSE_STATIC_LIB ${GRAPHVIZ_BUILD_DIR}/lib/sparse/${CMAKE_SHARED_LIBRARY_PREFIX}sparse${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(GRAPHVIZ_NEATOGEN_STATIC_LIB ${GRAPHVIZ_BUILD_DIR}/lib/neatogen/${CMAKE_SHARED_LIBRARY_PREFIX}neatogen${CMAKE_STATIC_LIBRARY_SUFFIX})
+
 
 # Note the version cloned from git, does not built properly, and nor do the cmake scripts. Need to use autoconf.
 
 ExternalProject_Add(${GRAPHVIZ_BASE}
         PREFIX ${GRAPHVIZ_PREFIX}
-        URL ${GRAPHVIZ_SOURCE_URL}
+        GIT_REPOSITORY ${GRAPHVIZ_GIT_URL}
+        GIT_TAG ${GRAPHVIZ_VERSION}
         UPDATE_DISCONNECTED TRUE
         INSTALL_DIR ${GRAPHVIZ_INSTALL_DIR}
-        CONFIGURE_COMMAND
-            cd ${GRAPHVIZ_BUILD_DIR} &&
-            CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${GRAPHVIZ_SOURCE_DIR}/configure --enable-perl=no --prefix=${GRAPHVIZ_INSTALL_DIR}
-        BUILD_COMMAND
-            cd ${GRAPHVIZ_BUILD_DIR} &&
-            make --silent
-        INSTALL_COMMAND
-            cd ${GRAPHVIZ_BUILD_DIR} &&
-            make --silent install
         BUILD_BYPRODUCTS
         ${GRAPHVIZ_GVC_SHARED_LIB}
         ${GRAPHVIZ_CDT_SHARED_LIB}
@@ -53,6 +48,13 @@ ExternalProject_Add(${GRAPHVIZ_BASE}
         ${GRAPHVIZ_PLUGIN_CORE_SHARED_LIB}
         ${GRAPHVIZ_DOT_LAYOUT_SHARED_LIB}
         ${GRAPHVIZ_NEATO_LAYOUT_SHARED_LIB}
+        ${GRAPHVIZ_SPARSE_STATIC_LIB}
+        ${GRAPHVIZ_NEATOGEN_STATIC_LIB}
+        CMAKE_ARGS
+        -DCMAKE_INSTALL_MESSAGE=NEVER
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+        -DCMAKE_INSTALL_PREFIX=${GRAPHVIZ_INSTALL_DIR}
         )
 
 
@@ -103,9 +105,19 @@ target_link_libraries(graphviz_dot_layout_shared INTERFACE graphviz_cdt_shared)
 target_link_libraries(graphviz_dot_layout_shared INTERFACE graphviz_xdot_shared)
 add_dependencies(graphviz_dot_layout_shared ${GRAPHVIZ_BASE})
 
+add_library(graphviz_sparse_static STATIC IMPORTED)
+set_target_properties(graphviz_sparse_static PROPERTIES IMPORTED_LOCATION ${GRAPHVIZ_SPARSE_STATIC_LIB})
+add_dependencies(graphviz_sparse_static ${GRAPHVIZ_BASE})
+
+add_library(graphviz_neatogen_static STATIC IMPORTED)
+set_target_properties(graphviz_neatogen_static PROPERTIES IMPORTED_LOCATION ${GRAPHVIZ_NEATOGEN_STATIC_LIB})
+add_dependencies(graphviz_neatogen_static ${GRAPHVIZ_BASE})
+
 add_library(graphviz_neato_layout_shared SHARED IMPORTED)
 set_target_properties(graphviz_neato_layout_shared PROPERTIES IMPORTED_LOCATION ${GRAPHVIZ_NEATO_LAYOUT_SHARED_LIB})
 target_include_directories(graphviz_neato_layout_shared INTERFACE ${GRAPHVIZ_INCLUDE_DIR})
+target_link_libraries(graphviz_neato_layout_shared INTERFACE graphviz_sparse_static)
+target_link_libraries(graphviz_neato_layout_shared INTERFACE graphviz_neatogen_static)
 target_link_libraries(graphviz_neato_layout_shared INTERFACE graphviz_gvc_shared)
 target_link_libraries(graphviz_neato_layout_shared INTERFACE graphviz_pathplan_shared)
 target_link_libraries(graphviz_neato_layout_shared INTERFACE graphviz_cgraph_shared)

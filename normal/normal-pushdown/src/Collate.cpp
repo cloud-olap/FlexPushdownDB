@@ -83,4 +83,8 @@ void Collate::onTuple(const normal::core::message::TupleMessage &message) {
   }
 }
 
+void Collate::setTuples(const std::shared_ptr<TupleSet> &Tuples) {
+  tuples_ = Tuples;
+}
+
 }

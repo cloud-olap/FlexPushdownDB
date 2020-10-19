@@ -18,9 +18,12 @@ ExternalProject_Add(${EP_BASE}
         -DCMAKE_C_COMPILER:STRING=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER:STRING=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-        CONFIGURE_COMMAND
+        # This seems to prevent cmake from building sqlite on every build. Basically configure is only done once when
+        # the sources are downloaded and not on each build. A bit of a hack but mostly works.
+        PATCH_COMMAND
         cd ${EP_BUILD_DIR} &&
         CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${EP_SOURCE_DIR}/configure --prefix=${EP_INSTALL_DIR}
+        CONFIGURE_COMMAND ""
         BUILD_COMMAND
         cd ${EP_BUILD_DIR} &&
         make --silent &&

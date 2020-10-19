@@ -49,11 +49,11 @@ void SegmentCacheActor::store(const StoreRequestMessage &msg,
 }
 
 void SegmentCacheActor::weight(const WeightRequestMessage &msg,
-                stateful_actor<SegmentCacheActorState> *self) {
+							   stateful_actor<SegmentCacheActorState> *self) {
   auto cachingPolicy = self->state.cache->getCachingPolicy();
   if (cachingPolicy->id() == WFBR) {
-    auto fbrCachingPolicy = std::static_pointer_cast<WFBRCachingPolicy>(cachingPolicy);
-    fbrCachingPolicy->onWeight(msg.getWeightMap(), msg.getQueryId());
+	auto fbrCachingPolicy = std::static_pointer_cast<WFBRCachingPolicy>(cachingPolicy);
+	fbrCachingPolicy->onWeight(msg.getWeightMap(), msg.getQueryId());
   }
 }
 
@@ -65,6 +65,21 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
   else
 	self->state.cache = SegmentCache::make();
 
+  /**
+   * Handler for actor exit event
+   */
+  self->attach_functor([=](const caf::error &reason) {
+
+	// FIXME: Actor name appears to have been destroyed by this stage, it
+	//  often comes out as garbage anyway, so we avoid using it. Something
+	//  to raise with developers.
+	SPDLOG_DEBUG("[Actor {} ('<name unavailable>')]  Segment Cache exit  |  reason: {}",
+			  self->id(),
+				 to_string(reason));
+
+	self->state.cache.reset();
+  });
+
   return {
 	  [=](LoadAtom, const std::shared_ptr<LoadRequestMessage> &m) {
 		return load(*m, self);
@@ -73,7 +88,7 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
 		store(*m, self);
 	  },
 	  [=](WeightAtom, const std::shared_ptr<WeightRequestMessage> &m) {
-    weight(*m, self);
+		weight(*m, self);
 	  },
 	  [=](GetNumHitsAtom) {
 		return self->state.cache->hitNum();
@@ -81,18 +96,18 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
 	  [=](GetNumMissesAtom) {
 		return self->state.cache->missNum();
 	  },
-    [=](GetCrtQueryNumHitsAtom) {
-    return self->state.cache->crtQueryHitNum();
-    },
-    [=](GetCrtQueryNumMissesAtom) {
-    return self->state.cache->crtQueryMissNum();
-    },
+	  [=](GetCrtQueryNumHitsAtom) {
+		return self->state.cache->crtQueryHitNum();
+	  },
+	  [=](GetCrtQueryNumMissesAtom) {
+		return self->state.cache->crtQueryMissNum();
+	  },
 	  [=](ClearMetricsAtom) {
 		self->state.cache->clearMetrics();
 	  },
-    [=](ClearCrtQueryMetricsAtom) {
-    self->state.cache->clearCrtQueryMetrics();
-    }
+	  [=](ClearCrtQueryMetricsAtom) {
+		self->state.cache->clearCrtQueryMetrics();
+	  }
   };
 }
 

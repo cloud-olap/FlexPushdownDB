@@ -19,8 +19,8 @@ class SampleState : public OperatorActorState<SampleActor::stateful_pointer <Sam
 
 public:
 
-  void setState(SampleActor::stateful_pointer <SampleState> self, const char* name_){
-	OperatorActorState::setBaseState(self, name_, nullptr, nullptr);
+  void setState(SampleActor::stateful_pointer <SampleState> self, const std::string & name_){
+	OperatorActorState::setBaseState(self, name_, 0, nullptr, nullptr);
   }
 
   template<class... Handlers>
@@ -37,19 +37,19 @@ public:
   }
 
 protected:
-  void onStart(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
+tl::expected<void, std::string> onStart(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Start  |  sender: {}", self->id(),
 				 self->name(), to_string(messageSender));
 	tell(self, CompleteAtom::value);
 	self->quit(caf::exit_reason::normal);
   }
 
-  void onStop(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
+tl::expected<void, std::string> onStop(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Stop  |  sender: {}", self->id(),
 				 self->name(), to_string(messageSender));
   }
 
-  void onComplete(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
+tl::expected<void, std::string> onComplete(SampleActor::stateful_pointer <SampleState> self, const caf::strong_actor_ptr &messageSender) override {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Complete  |  sender: {}", self->id(),
 				 self->name(), to_string(messageSender));
 	tell(self, CompleteAtom::value);
@@ -58,6 +58,6 @@ protected:
 
 };
 
-SampleActor::behavior_type SampleActorFunctor(SampleActor::stateful_pointer <SampleState> self, const char *name);
+SampleActor::behavior_type SampleActorFunctor(SampleActor::stateful_pointer <SampleState> self, const std::string &name);
 
 #endif //NORMAL_NORMAL_CORE_TEST_SAMPLEOPERATOR_H

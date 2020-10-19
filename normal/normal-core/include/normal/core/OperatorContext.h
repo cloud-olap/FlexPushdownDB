@@ -25,6 +25,7 @@ private:
   LocalOperatorDirectory operatorMap_;
   caf::actor rootActor_;
   caf::actor segmentCacheActor_;
+  bool complete_ = false;
 
 public:
   OperatorContext(caf::actor rootActor, caf::actor segmentCacheActor);
@@ -41,6 +42,7 @@ public:
   tl::expected<void, std::string> send(const std::shared_ptr<message::Message> &msg, const std::string &recipientId);
 
   void destroyActorHandles();
+  bool isComplete() const;
 };
 
 }

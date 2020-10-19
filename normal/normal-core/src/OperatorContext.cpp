@@ -19,6 +19,9 @@ void OperatorContext::tell(std::shared_ptr<message::Message> &msg) {
 
   assert(this);
 
+  if(complete_)
+	throw std::runtime_error(fmt::format("Cannot tell message to consumers, operator {} ('{}') is complete", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
+
   message::Envelope e(msg);
 
   // Send message to consumers
@@ -86,6 +89,10 @@ void OperatorContext::operatorActor(OperatorActor *operatorActor) {
 void OperatorContext::notifyComplete() {
 
   SPDLOG_DEBUG("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
+  if(complete_)
+    throw std::runtime_error(fmt::format("Cannot complete already completed operator {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
+
+  SPDLOG_INFO("Completing operator  |  operator: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
 
   OperatorActor* operatorActor = this->operatorActor();
 
@@ -101,7 +108,13 @@ void OperatorContext::notifyComplete() {
   // Send message to root actor
   operatorActor->anon_send(rootActor_, e);
 
+  complete_ = true;
+
 //  operatorActor->quit();
+}
+
+bool OperatorContext::isComplete() const {
+  return complete_;
 }
 
 void OperatorContext::destroyActorHandles() {

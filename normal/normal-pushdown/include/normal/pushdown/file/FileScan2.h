@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_FILE_FILESCAN2_H
 
 #include <caf/all.hpp>
+#include <utility>
 
 #include <normal/core/Forward.h>
 #include <normal/core/OperatorActor2.h>
@@ -33,7 +34,7 @@ using FileScanStatefulActor = FileScanActor::stateful_pointer<FileScanState>;
 class FileScanState : public OperatorActorState<FileScanStatefulActor> {
 public:
   void setState(FileScanStatefulActor actor,
-				const char *name,
+				std::string name,
 				const std::string &filePath,
 				FileType fileType,
 				const std::vector<std::string> &columnNames,
@@ -44,14 +45,15 @@ public:
 				const caf::actor &segmentCacheActorHandle,
 				bool scanOnStart = false) {
 
-	OperatorActorState::setBaseState(actor, name, rootActorHandle, segmentCacheActorHandle);
+	OperatorActorState::setBaseState(actor, std::move(name), queryId, rootActorHandle, segmentCacheActorHandle);
+
+	auto canonicalColumnNames = ColumnName::canonicalize(columnNames);
 
 	filePath_ = filePath;
 	fileType_ = fileType;
-	columnNames_ = columnNames;
+	columnNames_ = canonicalColumnNames;
 	startOffset_ = startOffset;
 	finishOffset_ = finishOffset;
-	queryId_ = queryId;
 	scanOnStart_ = scanOnStart;
 
 	kernel_ = FileScanKernel::make(filePath, fileType, startOffset, finishOffset);
@@ -61,8 +63,13 @@ public:
   FileScanActor::behavior_type makeBehavior(FileScanStatefulActor actor, Handlers... handlers) {
 	return OperatorActorState::makeBaseBehavior(
 		actor,
-		[=](ScanAtom, const std::vector<std::string> &columnNames, bool resultNeeded) {
-		  process(actor, [=](const caf::strong_actor_ptr& messageSender) { onScan(actor, messageSender, columnNames); });
+		[=](ScanAtom, const std::vector<std::string> &columnNames, bool /*resultNeeded*/) {
+		  process(actor,
+				  [=](const caf::strong_actor_ptr &messageSender) {
+					return onScan(actor,
+								  messageSender,
+								  columnNames);
+				  });
 		},
 		std::move(handlers)...
 	);
@@ -74,51 +81,52 @@ private:
   std::vector<std::string> columnNames_;
   unsigned long startOffset_;
   unsigned long finishOffset_;
-  long queryId_;
   bool scanOnStart_ = false;
 
   std::unique_ptr<FileScanKernel> kernel_;
 
 protected:
 
-  void onStart(FileScanStatefulActor actor, const caf::strong_actor_ptr& /*messageSender*/) override {
+  tl::expected<void, std::string>
+  onStart(FileScanStatefulActor actor, const caf::strong_actor_ptr & /*messageSender*/) override {
 	if (scanOnStart_) {
-	  readAndSendTuples(actor, columnNames_);
-	  notifyComplete(actor);
+	  return readAndSendTuples(actor, columnNames_)
+		  .and_then([=]() { return notifyComplete(actor); });
 	}
+	return {};
   }
 
-  void onComplete(FileScanStatefulActor actor, const caf::strong_actor_ptr& /*messageSender*/) override {
-	if (isAllProducersComplete()) {
-	  notifyComplete(actor);
+  tl::expected<void, std::string>
+  onComplete(FileScanStatefulActor actor, const caf::strong_actor_ptr & /*messageSender*/) override {
+	if (!isComplete() && isAllProducersComplete()) {
+	  return notifyComplete(actor);
 	}
+	return {};
   }
 
-  void onEnvelope(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const Envelope &envelope) override {
-	onReceive(actor, messageSender, envelope);
+  tl::expected<void, std::string>
+  onEnvelope(FileScanStatefulActor actor,
+			 const caf::strong_actor_ptr &messageSender,
+			 const Envelope &envelope) override {
+	if (envelope.message().type() == "ScanMessage") {
+	  auto scanMessage = dynamic_cast<const ScanMessage &>(envelope.message());
+	  return this->onScan(actor, messageSender, scanMessage.getColumnNames());
+	} else {
+	  return tl::make_unexpected(fmt::format("Unrecognized message type {}", envelope.message().type()));
+	}
   }
 
 private:
-  void onReceive(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const Envelope &message) {
+
+  [[nodiscard]] tl::expected<void, std::string>
+  onScan(FileScanStatefulActor actor,
+		 const caf::strong_actor_ptr &messageSender,
+		 const std::vector<std::string> &columnsToScan) {
 
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Scan  |  sender: {}", actor->id(),
 				 actor->name(), to_string(messageSender));
 
-	if (message.message().type() == "ScanMessage") {
-	  auto scanMessage = dynamic_cast<const ScanMessage &>(message.message());
-	  this->onScan(actor, messageSender, scanMessage.getColumnNames());
-	} else {
-	  // FIXME: Propagate error properly
-	  throw std::runtime_error("Unrecognized message type " + message.message().type());
-	}
-  }
-
-  void onScan(FileScanStatefulActor actor, const caf::strong_actor_ptr& messageSender, const std::vector<std::string> &columnsToScan) {
-
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Envelope  |  sender: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
-
-	readAndSendTuples(actor, columnsToScan);
+	return readAndSendTuples(actor, columnsToScan);
   }
 
   void requestStoreSegmentsInCache(FileScanStatefulActor actor, const std::shared_ptr<TupleSet2> &tupleSet) {
@@ -142,12 +150,13 @@ private:
 	}
 
 	anonymousSend(actor,
-				  getSegmentCacheActorHandle(),
+				  getSegmentCacheActorHandle().value(),
 				  StoreAtom::value,
 				  StoreRequestMessage::make(segmentsToStore, name));
   }
 
-  void readAndSendTuples(FileScanStatefulActor actor, const std::vector<std::string> &columnNames) {
+  [[nodiscard]] tl::expected<void, std::string>
+  readAndSendTuples(FileScanStatefulActor actor, const std::vector<std::string> &columnNames) {
 	// Read the columns not present in the cache
 	/*
 	 * FIXME: Should support reading the file in pieces
@@ -165,13 +174,13 @@ private:
 	}
 
 	std::shared_ptr<Message> message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name);
-	tell(actor, Envelope(message));
+	return tell(actor, Envelope(message));
   }
 
 };
 
 FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor actor,
-											 const char *name,
+											 std::string name,
 											 const std::string &filePath,
 											 FileType fileType,
 											 const std::vector<std::string> &columnNames,

@@ -4,10 +4,12 @@
 
 #include "normal/pushdown/file/FileScan2.h"
 
+#include <utility>
+
 namespace normal::pushdown {
 
 FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor self,
-											 const char *name,
+											 std::string name,
 											 const std::string &filePath,
 											 FileType fileType,
 											 const std::vector<std::string> &columnNames,
@@ -19,7 +21,7 @@ FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor self,
 											 bool scanOnStart) {
 
   self->state.setState(self,
-					   name,
+					   std::move(name),
 					   filePath,
 					   fileType,
 					   columnNames,

@@ -46,18 +46,9 @@ void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
 }
 
 std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest2(const std::shared_ptr<OperatorGraph> &g) {
-
   TestUtil::writeExecutionPlan2(*g);
-
-  g->boot();
-  g->start();
-  g->join();
-
-  auto tuples = std::static_pointer_cast<Collate>(g->getOperator(fmt::format("/query-{}/collate", g->getId())))->tuples();
-
+  auto tupleSet = g->execute().value();
   SPDLOG_INFO("Metrics:\n{}", g->showMetrics());
-
-  auto tupleSet = TupleSet2::create(tuples);
   return tupleSet;
 }
 
@@ -65,7 +56,7 @@ std::shared_ptr<TupleSet2> TestUtil::executeExecutionPlanTest2(const std::shared
  * Runs the given query in sql lite, returning the results or failing the test on an error
  */
 std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>>
-TestUtil::executeSQLite(const std::string &sql, std::vector<std::string> dataFiles) {
+TestUtil::executeSQLite(const std::string &sql, const std::vector<std::string>& dataFiles) {
 
   std::shared_ptr<std::vector<std::vector<std::pair<std::string, std::string>>>> expected;
   auto expectedSQLite3Results = SQLite3::execute(sql, dataFiles);
