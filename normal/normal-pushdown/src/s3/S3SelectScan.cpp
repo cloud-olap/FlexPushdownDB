@@ -280,6 +280,10 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
       // Find arrays using column names
       std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>> arrays = nullptr;
       for (auto const &columnPair: columns_) {
+        if (!columnPair) {
+          // no tuples
+          break;
+        }
         if (columnName == columnPair->first) {
           arrays = columnPair;
           break;
