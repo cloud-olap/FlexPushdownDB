@@ -41,7 +41,7 @@ using OperatorActor2 = ::caf::typed_actor<::caf::reacts_to<ConnectAtom, std::vec
 										  ::caf::reacts_to<StartAtom>,
 										  ::caf::reacts_to<StopAtom>,
 										  ::caf::reacts_to<CompleteAtom>,
-										  ::caf::replies_to<GetProcessingTimeAtom>::with<long>,
+										  ::caf::replies_to<GetProcessingTimeAtom>::with<int64_t>,
 										  ::caf::reacts_to<Envelope>>;
 
 /**
