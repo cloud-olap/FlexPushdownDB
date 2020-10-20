@@ -62,7 +62,8 @@ add_library(normal-pushdown STATIC
         include/normal/pushdown/Forward.h
         include/normal/pushdown/ScanOperator.h
         src/file/FileScan2.cpp include/normal/pushdown/file/FileScan2.h
-        src/collate/Collate2.cpp include/normal/pushdown/collate/Collate2.h)
+        src/collate/Collate2.cpp include/normal/pushdown/collate/Collate2.h
+        include/normal/pushdown/group/GroupKernel.cpp include/normal/pushdown/group/GroupKernel.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
