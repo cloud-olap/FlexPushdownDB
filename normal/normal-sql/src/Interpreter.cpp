@@ -137,9 +137,10 @@ std::string Interpreter::showMetrics() {
   double ec2Price = 1.064, totalCost;
   if (mode_->id() == normal::plan::operator_::mode::ModeId::FullPullup ||
       mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
-    totalCost = totalExecutionTime / 3600 * ec2Price;               // runtime cost
+    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
+            totalExecutionTime / 3600 * ec2Price;                   // runtime cost
   } else {
-    totalCost = ((double) totalNumRequests) * 0.0000004 +           // s3 request cost
+    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
             totalProcessedBytesGiga * 0.002 +                       // s3 scan cost
             totalReturnedBytesGiga * 0.0007 +                       // s3 return cost
             totalExecutionTime / 3600 * ec2Price;                   // runtime cost

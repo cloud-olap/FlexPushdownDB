@@ -227,6 +227,7 @@ tl::expected<void, std::string> S3SelectScan::s3Scan() {
   getObjectRequest.SetKey(Aws::String(s3Object_));
 
   GetObjectOutcome getObjectOutcome = this->s3Client_->GetObject(getObjectRequest);
+  numRequests_++;
 
   if (getObjectOutcome.IsSuccess()) {
     auto &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
