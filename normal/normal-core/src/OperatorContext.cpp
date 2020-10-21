@@ -92,8 +92,6 @@ void OperatorContext::notifyComplete() {
   if(complete_)
     throw std::runtime_error(fmt::format("Cannot complete already completed operator {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
 
-  SPDLOG_INFO("Completing operator  |  operator: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
-
   OperatorActor* operatorActor = this->operatorActor();
 
   std::shared_ptr<message::Message> msg = std::make_shared<message::CompleteMessage>(operatorActor->operator_()->name());
