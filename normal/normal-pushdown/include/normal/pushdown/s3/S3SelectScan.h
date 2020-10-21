@@ -93,7 +93,9 @@ private:
   void onReceive(const Envelope &message) override;
   void onCacheLoadResponse(const scan::ScanMessage &message);
 
-  [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
+  [[nodiscard]] tl::expected<void, std::string> s3Select();
+  [[nodiscard]] tl::expected<void, std::string> s3Scan();
+  void put(const std::shared_ptr<TupleSet2> &tupleSet);
 
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
   std::shared_ptr<TupleSet2> readTuples();

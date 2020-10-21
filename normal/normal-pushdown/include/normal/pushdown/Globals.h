@@ -19,6 +19,7 @@ namespace normal::pushdown {
  * Default number of tuples operators should buffer before sending to consumers
  */
 inline constexpr int DefaultBufferSize = 10000;
+inline constexpr int DefaultS3ScanBufferSize = 100000;
 inline constexpr bool RefinedWeightFunction = true;
 inline constexpr double vNetwork = 0.25852;     // unit: GB/s
 inline constexpr double vS3Scan = 0.43519;      // unit: GB/s
