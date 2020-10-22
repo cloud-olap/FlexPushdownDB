@@ -15,6 +15,7 @@
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/pushdown/aggregate/AggregationFunction.h>
 #include <normal/pushdown/group/GroupKernel.h>
+#include <normal/pushdown/group/GroupKernel2.h>
 
 namespace normal::pushdown::group {
 
@@ -45,7 +46,8 @@ public:
 
 private:
 
-  std::unique_ptr<GroupKernel> kernel_;
+//  std::unique_ptr<GroupKernel> kernel_;
+  std::unique_ptr<GroupKernel2> kernel2_;
 
   void onStart();
   void onTuple(const core::message::TupleMessage &msg);

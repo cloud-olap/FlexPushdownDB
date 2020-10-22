@@ -7,18 +7,17 @@
 
 #include <cstdlib>
 #include <memory>
+#include <utility>
 
 #include <tl/expected.hpp>
-#include <utility>
 #include <arrow/api.h>
-#include <normal/tuple/ArrayAppenderWrapper.h>
 
 namespace normal::pushdown::group {
 
 class GroupKeyElement {
 public:
   virtual ~GroupKeyElement() = default;
-  virtual bool equals(std::shared_ptr<GroupKeyElement> other) = 0;
+  virtual bool equals(const std::shared_ptr<GroupKeyElement> &other) = 0;
   virtual size_t hash() = 0;
   virtual std::string toString() = 0;
 };
@@ -35,7 +34,7 @@ public:
 	return std::hash<CType>()(value);
   };
 
-  bool equals(std::shared_ptr<GroupKeyElement> other) override  {
+  bool equals(const std::shared_ptr<GroupKeyElement> &other) override  {
 	return value == std::static_pointer_cast<GroupKeyElementWrapper<ArrowType>>(other)->value;
   };
 
@@ -57,7 +56,7 @@ public:
 	return std::hash<std::string>()(value);
   };
 
-  bool equals(std::shared_ptr<GroupKeyElement> other) override  {
+  bool equals(const std::shared_ptr<GroupKeyElement> &other) override  {
 	return value == std::static_pointer_cast<GroupKeyElementWrapper<arrow::StringType>>(other)->value;
   };
 

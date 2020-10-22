@@ -13,7 +13,8 @@ Group::Group(const std::string &Name,
 			 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
 			 long queryId) :
 	Operator(Name, "Group", queryId),
-	kernel_(std::make_unique<GroupKernel>(ColumnNames, *AggregateFunctions)) {
+//	kernel_(std::make_unique<GroupKernel>(ColumnNames, *AggregateFunctions)),
+			kernel2_(std::make_unique<GroupKernel2>(ColumnNames, *AggregateFunctions)) {
 }
 
 std::shared_ptr<Group> Group::make(const std::string &Name,
@@ -50,12 +51,16 @@ void Group::onStart() {
 
 void Group::onTuple(const normal::core::message::TupleMessage &message) {
   auto tupleSet = normal::tuple::TupleSet2::create(message.tuples());
-  kernel_->onTuple(*tupleSet);
+//  kernel_->onTuple(*tupleSet);
+  auto expectedGroupResult = kernel2_->group(*tupleSet);
+  if(!expectedGroupResult)
+    throw std::runtime_error(expectedGroupResult.error());
 }
 
 void Group::onComplete(const normal::core::message::CompleteMessage &) {
   if (this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
-	auto groupedTupleSet = kernel_->group();
+//	auto groupedTupleSet = kernel_->group();
+	auto groupedTupleSet = kernel2_->finalise();
 	std::shared_ptr<normal::core::message::Message>
 		tupleMessage =
 		std::make_shared<normal::core::message::TupleMessage>(groupedTupleSet->toTupleSetV1(), this->name());

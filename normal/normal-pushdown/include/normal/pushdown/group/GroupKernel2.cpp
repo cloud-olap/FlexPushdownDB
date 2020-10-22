@@ -193,9 +193,9 @@ std::shared_ptr<arrow::Schema> GroupKernel2::makeOutputSchema() {
 }
 
 tl::expected<std::vector<std::shared_ptr<ArrayAppender>>, std::string>
-makeAppenders(const ::arrow::RecordBatch &recordBatch) {
+makeAppenders(const ::arrow::Schema &schema) {
   std::vector<std::shared_ptr<ArrayAppender>> appenders;
-  for (const auto &field: recordBatch.schema()->fields()) {
+  for (const auto &field: schema.fields()) {
 	auto expectedAppender = ArrayAppenderBuilder::make(field->type(), 0);
 	if (!expectedAppender)
 	  return tl::make_unexpected(expectedAppender.error());
@@ -223,7 +223,7 @@ GroupKernel2::groupRecordBatch(const ::arrow::RecordBatch &recordBatch) {
 	if (maybeAppenderVectorPair == groupArrayAppenderVectorMap_.end()) {
 
 	  // New group, create appender vector
-	  auto expectedAppenders = makeAppenders(recordBatch);
+	  auto expectedAppenders = makeAppenders(*recordBatch.schema());
 	  if (!expectedAppenders)
 		return tl::make_unexpected(expectedAppenders.error());
 	  appenderVector = expectedAppenders.value();
