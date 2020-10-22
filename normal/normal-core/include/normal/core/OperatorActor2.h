@@ -20,6 +20,8 @@
 #include <normal/core/OperatorActor.h>
 #include <normal/core/message/ConnectMessage.h>
 
+#include <stdint.h>
+
 using namespace normal::core::message;
 using namespace boost::callable_traits;
 
@@ -479,7 +481,7 @@ private:
   int numCompleteProducers_ = 0;
   int numCompleteConsumers_ = 0;
 
-  long processingTime_ = 0;
+  int64_t processingTime_ = 0;
 
   ///
   /// Message handlers
@@ -565,7 +567,7 @@ private:
 	}
   };
 
-  long handleGetProcessingTime(Actor actor, const caf::strong_actor_ptr &messageSender) {
+  int64_t handleGetProcessingTime(Actor actor, const caf::strong_actor_ptr &messageSender) {
 	SPDLOG_DEBUG("[Actor {} ('{}')]  Getting operator processing time  |  queryId: {}, source: {}", actor->id(),
 				 actor->name(), queryId_.value(), to_string(messageSender));
 

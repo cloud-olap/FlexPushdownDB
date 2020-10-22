@@ -5,13 +5,17 @@
 #ifndef NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GROUP_GROUP_H
 #define NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GROUP_GROUP_H
 
+#include <string>
+#include <vector>
+#include <memory>
+
 #include <normal/core/Operator.h>
-#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
+
+#include <normal/pushdown/TupleMessage.h>
 #include <normal/pushdown/aggregate/AggregationFunction.h>
-#include <normal/tuple/Scalar.h>
-#include <normal/tuple/TupleSet2.h>
-#include "GroupKey.h"
+#include <normal/pushdown/group/GroupKernel.h>
+#include <normal/pushdown/group/GroupKernel2.h>
 
 namespace normal::pushdown::group {
 
@@ -30,32 +34,24 @@ class Group : public normal::core::Operator {
 
 public:
   Group(const std::string &Name,
-		std::vector<std::string> ColumnNames,
-		std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> AggregateFunctions,
+		const std::vector<std::string> &ColumnNames,
+		const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
 		long queryId = 0);
 
-  static std::shared_ptr<Group> make(const std::string& Name,
-									 const std::vector<std::string>& columnNames,
-									 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>>& AggregateFunctions);
+  static std::shared_ptr<Group> make(const std::string &Name,
+									 const std::vector<std::string> &columnNames,
+									 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions);
 
   void onReceive(const core::message::Envelope &msg) override;
 
 private:
-  std::vector<std::string> columnNames_;
-  std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> aggregateFunctions_;
 
-  std::unordered_map<std::shared_ptr<GroupKey>, std::shared_ptr<normal::tuple::TupleSet2>, GroupKeyPointerHash, GroupKeyPointerPredicate> groupedTuples_;
-  std::unordered_map<std::shared_ptr<GroupKey>, std::vector<std::shared_ptr<aggregate::AggregationResult>>, GroupKeyPointerHash, GroupKeyPointerPredicate> aggregateResults_;
-
-  std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
-  std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
+//  std::unique_ptr<GroupKernel> kernel_;
+  std::unique_ptr<GroupKernel2> kernel2_;
 
   void onStart();
   void onTuple(const core::message::TupleMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
-
-  void cacheInputSchema(const TupleSet &tuples);
-  void buildAndCacheProjector();
 
 };
 
