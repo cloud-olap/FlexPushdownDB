@@ -10,6 +10,8 @@
 #include <normal/core/Normal.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/group/Group.h>
+#include <normal/pushdown/group/GroupKernel.h>
+#include <normal/pushdown/group/GroupKernel2.h>
 #include <normal/pushdown/aggregate/Sum.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
@@ -23,9 +25,47 @@ using namespace normal::pushdown::group;
 using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 
+auto makeTupleSet1() {
+  auto schemaA = ::arrow::schema({::arrow::field("aa", ::arrow::int64()),
+								  ::arrow::field("ab", ::arrow::int64()),
+								  ::arrow::field("ac", ::arrow::int64())});
+
+  auto arrayAA1 = Arrays::make<arrow::Int64Type>({1, 2}).value();
+  auto arrayAA2 = Arrays::make<arrow::Int64Type>({3}).value();
+  auto arrayAA = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAA1, arrayAA2});
+  auto arrayAB1 = Arrays::make<arrow::Int64Type>({4, 5}).value();
+  auto arrayAB2 = Arrays::make<arrow::Int64Type>({6}).value();
+  auto arrayAB = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAB1, arrayAB2});
+  auto arrayAC1 = Arrays::make<arrow::Int64Type>({7, 8}).value();
+  auto arrayAC2 = Arrays::make<arrow::Int64Type>({9}).value();
+  auto arrayAC = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAC1, arrayAC2});
+  auto tableA = arrow::Table::Make(schemaA, {arrayAA, arrayAB, arrayAC});
+  auto tupleSetA = TupleSet2::make(tableA);
+  return tupleSetA;
+}
+
+auto makeTupleSet2() {
+  auto schemaB = ::arrow::schema({::arrow::field("aa", ::arrow::int64()),
+								  ::arrow::field("ab", ::arrow::int64()),
+								  ::arrow::field("ac", ::arrow::int64())});
+
+  auto arrayBA1 = Arrays::make<arrow::Int64Type>({1, 2}).value();
+  auto arrayBA2 = Arrays::make<arrow::Int64Type>({3}).value();
+  auto arrayBA = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayBA1, arrayBA2});
+  auto arrayBB1 = Arrays::make<arrow::Int64Type>({14, 15}).value();
+  auto arrayBB2 = Arrays::make<arrow::Int64Type>({16}).value();
+  auto arrayBB = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayBB1, arrayBB2});
+  auto arrayBC1 = Arrays::make<arrow::Int64Type>({17, 18}).value();
+  auto arrayBC2 = Arrays::make<arrow::Int64Type>({19}).value();
+  auto arrayBC = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayBC1, arrayBC2});
+  auto tableB = arrow::Table::Make(schemaB, {arrayBA, arrayBB, arrayBC});
+  auto tupleSetB = TupleSet2::make(tableB);
+  return tupleSetB;
+}
+
 TEST_SUITE ("group") {
 
-TEST_CASE ("group" * doctest::skip(false)) {
+TEST_CASE ("group-filescan-group-collate" * doctest::skip(false)) {
   {
 	auto n = Normal::start();
 	auto g = n->createQuery();
@@ -84,6 +124,30 @@ TEST_CASE ("group" * doctest::skip(false)) {
 	n->stop();
   }
 	  REQUIRE_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
+}
+
+TEST_CASE ("group-groupkernel2" * doctest::skip(false)) {
+
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
+
+  GroupKernel groupKernel1({"aa"}, expressions);
+  GroupKernel2 groupKernel2({"aa"}, expressions);
+
+  groupKernel1.onTuple(*tupleSet1);
+  groupKernel1.onTuple(*tupleSet2);
+  auto groupedTupleSet1 = groupKernel1.group();
+
+  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
+  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
+  auto groupedTupleSet2 = groupKernel2.finalise();
+
+  SPDLOG_INFO("Output 1:\n{}", groupedTupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+
 }
 
 }
