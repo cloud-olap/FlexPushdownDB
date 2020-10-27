@@ -133,10 +133,18 @@ std::string Interpreter::showMetrics() {
   for (auto const &numRequestsSingle: numRequests_) {
     totalNumRequests += numRequestsSingle;
   }
-  double totalCost = ((double) totalNumRequests) * 0.0000004 +    // s3 request cost
-          totalProcessedBytesGiga * 0.002 +                       // s3 scan cost
-          totalReturnedBytesGiga * 0.0007 +                       // s3 return cost
-          totalExecutionTime / 3600 * 1.064;                      // runtime cost
+
+  double ec2Price = 1.064, totalCost;
+  if (mode_->id() == normal::plan::operator_::mode::ModeId::FullPullup ||
+      mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
+            totalExecutionTime / 3600 * ec2Price;                   // runtime cost
+  } else {
+    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
+            totalProcessedBytesGiga * 0.002 +                       // s3 scan cost
+            totalReturnedBytesGiga * 0.0007 +                       // s3 return cost
+            totalExecutionTime / 3600 * ec2Price;                   // runtime cost
+  }
   std::stringstream formattedCost;
   formattedCost << totalCost << " $";
 

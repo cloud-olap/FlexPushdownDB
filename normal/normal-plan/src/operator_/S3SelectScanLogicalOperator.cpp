@@ -11,6 +11,7 @@
 #include <normal/pushdown/Project.h>
 #include <normal/plan/Globals.h>
 #include <normal/cache/SegmentKey.h>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::plan::operator_;
 using namespace normal::pushdown;
@@ -48,6 +49,8 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
+  auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+  auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
@@ -62,11 +65,11 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
     filterPredicate->simpleCast(filterPredicate->expression());
   }
 
-  auto allColumnNames = std::make_shared<std::vector<std::string>>();
-  allColumnNames->insert(allColumnNames->end(), projectedColumnNames_->begin(), projectedColumnNames_->end());
-  allColumnNames->insert(allColumnNames->end(), predicateColumnNames->begin(), predicateColumnNames->end());
-  auto columnNameSet = std::make_shared<std::set<std::string>>(allColumnNames->begin(), allColumnNames->end());
-  allColumnNames->assign(columnNameSet->begin(), columnNameSet->end());
+  auto allNeededColumnNames = std::make_shared<std::vector<std::string>>();
+  allNeededColumnNames->insert(allNeededColumnNames->end(), projectedColumnNames_->begin(), projectedColumnNames_->end());
+  allNeededColumnNames->insert(allNeededColumnNames->end(), predicateColumnNames->begin(), predicateColumnNames->end());
+  auto columnNameSet = std::make_shared<std::set<std::string>>(allNeededColumnNames->begin(), allNeededColumnNames->end());
+  allNeededColumnNames->assign(columnNameSet->begin(), columnNameSet->end());
 
   /**
    * For each range of each partition, create a s3scan (and a filter if needed)
@@ -89,14 +92,15 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
               s3Partition->getBucket(),
               s3Object,
               "",
-              *allColumnNames,
+              *allNeededColumnNames,
               scanRange.first,
               scanRange.second,
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               true,
               false,
-              queryId);
+              queryId,
+              std::pair<bool, std::vector<std::string>>(false, *allColumnNames));
       operators->emplace_back(scanOp);
 
       // Filter if it has filterPredicate
@@ -106,10 +110,10 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
                 filterPredicate,
                 queryId);
         operators->emplace_back(filter);
-        streamOutPhysicalOperators_->emplace_back(filter);
 
         scanOp->produce(filter);
         filter->consume(scanOp);
+        streamOutPhysicalOperators_->emplace_back(filter);
       } else {
         streamOutPhysicalOperators_->emplace_back(scanOp);
       }
@@ -159,6 +163,8 @@ S3SelectScanLogicalOperator::toOperatorsFullPushdown(int numRanges) {
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
+  auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+  auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
@@ -217,7 +223,8 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
               DefaultS3Client,
               false,
               true,
-              queryId);
+              queryId,
+              std::pair<bool, std::vector<std::string>>(false, *allColumnNames));
       operators->emplace_back(scanOp);
 
       // CacheLoad
@@ -396,6 +403,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               false,
               false,
               queryId,
+              std::pair<bool, std::vector<std::string>>(true, std::vector<std::string>()),
               weightedSegmentKeys);
       operators->emplace_back(s3Select);
 

@@ -44,6 +44,7 @@ public:
 			   bool scanOnStart,
 			   bool toCache,
 			   long queryId,
+         std::pair<bool, std::vector<std::string>> enablePushdownProject,
          const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys);
 
   static std::shared_ptr<S3SelectScan> make(std::string name,
@@ -58,6 +59,7 @@ public:
 											bool scanOnStart = true,
 											bool toCache = false,
 											long queryId = 0,
+                      std::pair<bool, std::vector<std::string>> enablePushdownProject = std::pair<bool, std::vector<std::string>>(true, std::vector<std::string>()),
                       std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys = nullptr);
 
   size_t getProcessedBytes() const;
@@ -68,12 +70,12 @@ private:
   std::string s3Bucket_;
   std::string s3Object_;
   std::string filterSql_;   // "where ...."
-  std::vector<std::string> columnNames_;
+  std::vector<std::string> columnNames_;    // if projection pushdown is disabled, this means the needed column names
   int64_t startOffset_;
   int64_t finishOffset_;
   S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
-  std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;
+  std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;  // no matter whether projection pushdown is enabled, this means the columns read from s3
   size_t processedBytes_ = 0;
   size_t returnedBytes_ = 0;
   size_t numRequests_ = 0;
@@ -85,12 +87,15 @@ private:
    */
   bool scanOnStart_;
   bool toCache_;
+  std::pair<bool, std::vector<std::string>> enablePushdownProject_;
 
   void onStart();
   void onReceive(const Envelope &message) override;
   void onCacheLoadResponse(const scan::ScanMessage &message);
 
-  [[nodiscard]] tl::expected<void, std::string> s3Select(const TupleSetEventCallback &tupleSetEventCallback);
+  [[nodiscard]] tl::expected<void, std::string> s3Select();
+  [[nodiscard]] tl::expected<void, std::string> s3Scan();
+  void put(const std::shared_ptr<TupleSet2> &tupleSet);
 
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
   std::shared_ptr<TupleSet2> readTuples();

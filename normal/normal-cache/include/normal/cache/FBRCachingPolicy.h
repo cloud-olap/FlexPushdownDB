@@ -31,7 +31,11 @@ public:
   CachingPolicyId id() override;
 
 private:
-  std::vector<std::shared_ptr<SegmentKey>> keysInCache_;
+//  std::vector<std::shared_ptr<SegmentKey>> keysInCache_;
+  std::unordered_map<int, std::list<std::shared_ptr<SegmentKey>>> freqMap_;
+  std::unordered_map<std::shared_ptr<SegmentKey>, std::list<std::shared_ptr<SegmentKey>>::iterator, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keyMap_;
+  int minFreq_;
+  std::unordered_set<int> freqSet_;
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keySet_;
 
   /**
@@ -43,10 +47,12 @@ private:
   bool lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
   void addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in, const std::shared_ptr<SegmentKey> &out);
   void removeEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in);
+
   /**
    * For FBR, erasing only erases the element in keyInCache_, but not in keySet_ to keep history hitNum
    */
-  void erase(const std::shared_ptr<SegmentKey> &key);
+  void eraseFreqMap(int freq, std::list<std::shared_ptr<SegmentKey>>::iterator it);
+  void insert(int freq, const std::shared_ptr<SegmentKey> &key);
 };
 
 }

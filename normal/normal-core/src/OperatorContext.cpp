@@ -88,10 +88,9 @@ void OperatorContext::operatorActor(OperatorActor *operatorActor) {
  */
 void OperatorContext::notifyComplete() {
 
+  SPDLOG_DEBUG("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
   if(complete_)
     throw std::runtime_error(fmt::format("Cannot complete already completed operator {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
-
-  SPDLOG_INFO("Completing operator  |  operator: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
 
   OperatorActor* operatorActor = this->operatorActor();
 

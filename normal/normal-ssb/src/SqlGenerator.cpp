@@ -1012,3 +1012,38 @@ std::string SqlGenerator::genSkewWeightQuery4(std::string skewLo_predicate, std:
   //return genSkewWeightQuery1(skewLo_predicate, lo_predicate, aggColumn);
 }
 
+std::vector<std::string> SqlGenerator::generateSqlBatchSkewRecurring(int batchSize) {
+  // collect all skew query names
+  std::vector<std::string> skewQueryNames;
+  for (auto const &queryNameIt: skewQueryNameMap_) {
+    skewQueryNames.emplace_back(queryNameIt.first);
+  }
+
+  // zipfian skewness
+  const int n = 7;
+  const double alpha = 2.0;
+  auto possibilities = zipfian(n, alpha);
+  std::uniform_real_distribution<double> distribution1(0.0, 1.0);
+
+  std::vector<std::string> queries;
+  for (int i = 0; i < batchSize; i++) {
+    // skewLo_predicate
+    double possibility = distribution1(*generator_), sumPossibility = 0.0;
+    int kind = 0;
+    for (int j = 0; j < n; j++) {
+      if (sumPossibility <= possibility && possibility <= sumPossibility + possibilities[j]) {
+        kind = j;
+        break;
+      }
+      sumPossibility += possibilities[j];
+    }
+    std::string skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101,
+                                   (1992 + kind) * 10000 + 1231);
+    // query
+    auto skewQueryName = skewQueryNames[i % skewQueryNames.size()];
+    queries.emplace_back(generateSqlSkew(skewQueryName, skewLo_predicate));
+  }
+
+  return queries;
+}
+
