@@ -58,12 +58,14 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
 }
 
 void Group::onComplete(const normal::core::message::CompleteMessage &) {
-  if (this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
+  if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
 //	auto groupedTupleSet = kernel_->group();
-	auto groupedTupleSet = kernel2_->finalise();
+	auto expectedGroupedTupleSet = kernel2_->finalise();
+	if(!expectedGroupedTupleSet)
+	  throw std::runtime_error(expectedGroupedTupleSet.error());
 	std::shared_ptr<normal::core::message::Message>
 		tupleMessage =
-		std::make_shared<normal::core::message::TupleMessage>(groupedTupleSet->toTupleSetV1(), this->name());
+		std::make_shared<normal::core::message::TupleMessage>(expectedGroupedTupleSet.value()->toTupleSetV1(), this->name());
 	ctx()->tell(tupleMessage);
 
 	ctx()->notifyComplete();

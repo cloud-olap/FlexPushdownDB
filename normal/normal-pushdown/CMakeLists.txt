@@ -65,7 +65,9 @@ add_library(normal-pushdown STATIC
         src/collate/Collate2.cpp include/normal/pushdown/collate/Collate2.h
         include/normal/pushdown/group/GroupKernel.cpp include/normal/pushdown/group/GroupKernel.h
         include/normal/pushdown/group/GroupKernel2.cpp include/normal/pushdown/group/GroupKernel2.h
-        include/normal/pushdown/group/GroupKey2.h)
+        include/normal/pushdown/group/GroupKey2.h
+        include/normal/pushdown/group/AggregateBuilder.cpp include/normal/pushdown/group/AggregateBuilder.h
+        include/normal/pushdown/group/AggregateBuilderWrapper.cpp include/normal/pushdown/group/AggregateBuilderWrapper.h)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

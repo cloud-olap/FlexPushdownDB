@@ -25,6 +25,29 @@ using namespace normal::pushdown::group;
 using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 
+namespace {
+
+auto makeUndefinedTupleSet() {
+  auto tupleSet = TupleSet2::make();
+  return tupleSet;
+}
+
+auto makeEmptyTupleSet() {
+  auto schemaA = ::arrow::schema({::arrow::field("aa", ::arrow::int64()),
+								  ::arrow::field("ab", ::arrow::int64()),
+								  ::arrow::field("ac", ::arrow::int64())});
+
+  auto arrayAA1 = Arrays::make<arrow::Int64Type>({}).value();
+  auto arrayAA = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAA1});
+  auto arrayAB1 = Arrays::make<arrow::Int64Type>({}).value();
+  auto arrayAB = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAB1});
+  auto arrayAC1 = Arrays::make<arrow::Int64Type>({}).value();
+  auto arrayAC = std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{arrayAC1});
+  auto tableA = arrow::Table::Make(schemaA, {arrayAA, arrayAB, arrayAC});
+  auto tupleSetA = TupleSet2::make(tableA);
+  return tupleSetA;
+}
+
 auto makeTupleSet1() {
   auto schemaA = ::arrow::schema({::arrow::field("aa", ::arrow::int64()),
 								  ::arrow::field("ab", ::arrow::int64()),
@@ -61,6 +84,8 @@ auto makeTupleSet2() {
   auto tableB = arrow::Table::Make(schemaB, {arrayBA, arrayBB, arrayBC});
   auto tupleSetB = TupleSet2::make(tableB);
   return tupleSetB;
+}
+
 }
 
 TEST_SUITE ("group") {
@@ -126,7 +151,7 @@ TEST_CASE ("group-filescan-group-collate" * doctest::skip(false)) {
 	  REQUIRE_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("group-groupkernel2" * doctest::skip(false)) {
+TEST_CASE ("group-1xgroupcolumn" * doctest::skip(false)) {
 
   auto tupleSet1 = makeTupleSet1();
   auto tupleSet2 = makeTupleSet2();
@@ -144,10 +169,154 @@ TEST_CASE ("group-groupkernel2" * doctest::skip(false)) {
   REQUIRE(groupKernel2.group(*tupleSet1).has_value());
   REQUIRE(groupKernel2.group(*tupleSet2).has_value());
   auto groupedTupleSet2 = groupKernel2.finalise();
+  REQUIRE(groupedTupleSet2.has_value());
 
   SPDLOG_INFO("Output 1:\n{}", groupedTupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
 
+TEST_CASE ("group-2xgroupcolumn" * doctest::skip(false)) {
+
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
+
+  GroupKernel groupKernel1({"aa", "ab"}, expressions);
+  GroupKernel2 groupKernel2({"aa", "ab"}, expressions);
+
+  groupKernel1.onTuple(*tupleSet1);
+  groupKernel1.onTuple(*tupleSet2);
+  auto groupedTupleSet1 = groupKernel1.group();
+
+	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
+	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
+  auto groupedTupleSet2 = groupKernel2.finalise();
+	  REQUIRE(groupedTupleSet2.has_value());
+
+  SPDLOG_INFO("Output 1:\n{}", groupedTupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("group-0xgroupcolumn" * doctest::skip(false)) {
+
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
+
+  GroupKernel groupKernel1({}, expressions);
+  GroupKernel2 groupKernel2({}, expressions);
+
+  groupKernel1.onTuple(*tupleSet1);
+  groupKernel1.onTuple(*tupleSet2);
+  auto groupedTupleSet1 = groupKernel1.group();
+
+	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
+	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
+  auto groupedTupleSet2 = groupKernel2.finalise();
+	  REQUIRE(groupedTupleSet2.has_value());
+
+  SPDLOG_INFO("Output 1:\n{}", groupedTupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("group-0xaggregates" * doctest::skip(false)) {
+
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{};
+
+  GroupKernel groupKernel1({"aa"}, expressions);
+  GroupKernel2 groupKernel2({"aa"}, expressions);
+
+  groupKernel1.onTuple(*tupleSet1);
+  groupKernel1.onTuple(*tupleSet2);
+  auto groupedTupleSet1 = groupKernel1.group();
+
+	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
+	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
+  auto groupedTupleSet2 = groupKernel2.finalise();
+	  REQUIRE(groupedTupleSet2.has_value());
+
+  SPDLOG_INFO("Output 1:\n{}", groupedTupleSet1->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("group-2xfinalise" * doctest::skip(false)) {
+
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
+
+  GroupKernel2 groupKernel2({"aa"}, expressions);
+
+	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
+	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
+  auto groupedTupleSet21 = groupKernel2.finalise();
+	  REQUIRE(groupedTupleSet21.has_value());
+  auto groupedTupleSet22 = groupKernel2.finalise();
+	  REQUIRE(groupedTupleSet22.has_value());
+
+  SPDLOG_INFO("Output 1:\n{}", groupedTupleSet21.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet22.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("group-uppercase" * doctest::skip(false)) {
+
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  auto sumExpr = std::make_shared<Sum>("sum", cast(col("AB"), float64Type()));
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
+
+  GroupKernel2 groupKernel2({"AA"}, expressions);
+
+	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
+	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
+  auto groupedTupleSet2 = groupKernel2.finalise();
+	  REQUIRE(groupedTupleSet2.has_value());
+
+  SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("group-empty" * doctest::skip(false)) {
+
+  auto tupleSetE = makeEmptyTupleSet();
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
+
+  GroupKernel2 groupKernel2({"aa"}, expressions);
+
+	  REQUIRE(groupKernel2.group(*tupleSetE).has_value());
+	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
+	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
+  auto groupedTupleSet2 = groupKernel2.finalise();
+	  REQUIRE(groupedTupleSet2.has_value());
+
+  SPDLOG_INFO("Output 1:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+}
+
+TEST_CASE ("group-undefined" * doctest::skip(false)) {
+
+  auto tupleSetU = makeUndefinedTupleSet();
+  auto tupleSet1 = makeTupleSet1();
+  auto tupleSet2 = makeTupleSet2();
+
+  auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
+  std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
+
+  GroupKernel2 groupKernel2({"aa"}, expressions);
+
+	  REQUIRE_FALSE(groupKernel2.group(*tupleSetU).has_value());
 }
 
 }

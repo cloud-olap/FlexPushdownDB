@@ -43,7 +43,7 @@ using GroupAggregationResultVectorMap = std::unordered_map<std::shared_ptr<Group
 class GroupKernel2 {
 
 public:
-  GroupKernel2(std::vector<std::string> columnNames,
+  GroupKernel2(const std::vector<std::string>& columnNames,
 			   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions);
 
   /**
@@ -59,7 +59,7 @@ public:
    *
    * @return
    */
-  [[nodiscard]] std::shared_ptr<TupleSet2> finalise();
+  [[nodiscard]] tl::expected<std::shared_ptr<TupleSet2>, std::string> finalise();
 
 private:
   std::vector<std::string> columnNames_;
@@ -86,7 +86,7 @@ private:
    *
    * @return
    */
-  std::shared_ptr<arrow::Schema> makeOutputSchema();
+  tl::expected<std::shared_ptr<arrow::Schema>, std::string> makeOutputSchema();
 
   /**
    * Groups a single record batch
