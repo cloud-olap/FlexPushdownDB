@@ -69,11 +69,10 @@ void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg)
 }
 
 void HashJoinProbe::onComplete(const normal::core::message::CompleteMessage &) {
-  if (ctx()->operatorMap().allComplete(normal::core::OperatorRelationshipType::Producer) && !hasProcessedAllComplete_) {
+  if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(normal::core::OperatorRelationshipType::Producer)) {
 	joinAndSendTuples();
 //    SPDLOG_INFO("Join probe complete: {}", name());
 	ctx()->notifyComplete();
-  hasProcessedAllComplete_ = true;
   }
 }
 

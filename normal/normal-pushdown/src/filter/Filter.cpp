@@ -100,7 +100,7 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
     sendTuples();
   }
 
-  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_){
+  if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
     if (weightedSegmentKeys_ && totalNumRows_ > 0 && *applicable_) {
       sendSegmentWeight();
     }
@@ -110,7 +110,6 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 	  assert(this->filtered_->numRows() == 0);
 
 	  ctx()->notifyComplete();
-    hasProcessedAllComplete_ = true;
 
 //    double speed = (((double) bytesFiltered_) / 1024.0 / 1024.0) / (((double) filterTime_) / 1000000000);
 //    SPDLOG_INFO("Filter time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", filterTime_, bytesFiltered_, speed, totalNumRows_, name());

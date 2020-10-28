@@ -47,7 +47,7 @@ void Shuffle::onStart() {
 }
 
 void Shuffle::onComplete(const CompleteMessage &) {
-  if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_) {
+  if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
     size_t partitionIndex = 0;
     for (const auto &buffer: buffers_) {
       auto sendResult = send(partitionIndex, true);
@@ -57,7 +57,6 @@ void Shuffle::onComplete(const CompleteMessage &) {
     }
 
     ctx()->notifyComplete();
-	  hasProcessedAllComplete_ = true;
 
 	  double shuffleSpeed = (((double) bytesShuffled_) / 1024.0 / 1024.0) / (((double) shuffleTime_) / 1000000000);
 //	  SPDLOG_INFO("Shuffle time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", shuffleTime_, bytesShuffled_, shuffleSpeed, numRowShuffled_, name());

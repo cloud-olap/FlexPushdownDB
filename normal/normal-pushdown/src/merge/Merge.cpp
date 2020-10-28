@@ -68,9 +68,8 @@ void Merge::merge() {
 }
 
 void Merge::onComplete(const CompleteMessage &) {
-  if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_) {
+  if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
 	  ctx()->notifyComplete();
-    hasProcessedAllComplete_ = true;
   }
 }
 

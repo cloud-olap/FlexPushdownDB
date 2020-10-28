@@ -67,7 +67,7 @@ void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
 
 void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 
-  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_) {
+  if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
 //	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
 
 //	std::shared_ptr<normal::core::message::Message>
@@ -84,6 +84,5 @@ void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 	ctx()->tell(message);
 
 	ctx()->notifyComplete();
-	hasProcessedAllComplete_ = true;
   }
 }
