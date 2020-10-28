@@ -47,6 +47,10 @@ private:
   void onTuple(const core::message::TupleMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
 
+  size_t bytesJoinBuild_ = 0;
+  long joinBuildTime_ = 0;
+  long numRows_ = 0;
+
 };
 
 }

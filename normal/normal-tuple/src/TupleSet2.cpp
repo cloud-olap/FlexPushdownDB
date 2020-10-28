@@ -343,3 +343,11 @@ std::shared_ptr<TupleSet2> TupleSet2::make(const std::vector<std::shared_ptr<Col
 
   return make (schema, arrays);
 }
+
+size_t TupleSet2::size() {
+  size_t size = 0;
+  for (int i = 0; i < numColumns(); i++) {
+    size += getColumnByIndex(i).value()->size();
+  }
+  return size;
+}

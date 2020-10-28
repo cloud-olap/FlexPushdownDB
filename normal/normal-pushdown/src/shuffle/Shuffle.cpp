@@ -45,21 +45,16 @@ void Shuffle::onStart() {
 }
 
 void Shuffle::onComplete(const CompleteMessage &) {
-  if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
-//    while (!(tupleArrived_ && onTupleNum_ == 0)) {
-//      std::this_thread::yield();
-//    }
-//    SPDLOG_INFO("Shuffle complete: {}", name());
+  if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_) {
 	  ctx()->notifyComplete();
+	  hasProcessedAllComplete_ = true;
+
+	  double shuffleSpeed = (((double) bytesShuffled_) / 1024.0 / 1024.0) / (((double) shuffleTime_) / 1000000000);
+//	  SPDLOG_INFO("Shuffle time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", shuffleTime_, bytesShuffled_, shuffleSpeed, numRowShuffled_, name());
   }
 }
 
 void Shuffle::onTuple(const TupleMessage &message) {
-//  shuffleLock.lock();
-//  onTupleNum_++;
-//  tupleArrived_ = true;
-////  SPDLOG_INFO("Shuffle onTuple: {}", name());
-//  shuffleLock.unlock();
 
   // Get the tuple set
   auto &&tupleSet = TupleSet2::create(message.tuples());
@@ -82,11 +77,11 @@ void Shuffle::onTuple(const TupleMessage &message) {
     shuffledTupleSets = expectedShuffledTupleSets.value();
   }
 
-  auto endTime = std::chrono::steady_clock::now();
-//  SPDLOG_INFO("Shuffle time: {}, size: {}, name: {}",
-//        std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count(),
-//        tupleSet->numRows(),
-//        name());
+  auto stopTime = std::chrono::steady_clock::now();
+  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  numRowShuffled_ += tupleSet->numRows();
+  bytesShuffled_ += tupleSet->size();
+  shuffleTime_ += time;
 
   // Send the shuffled tuple sets to consumers
   size_t partitionIndex = 0;
@@ -97,7 +92,4 @@ void Shuffle::onTuple(const TupleMessage &message) {
 	++partitionIndex;
   }
 
-//  shuffleLock.lock();
-//  onTupleNum_--;
-//  shuffleLock.unlock();
 }

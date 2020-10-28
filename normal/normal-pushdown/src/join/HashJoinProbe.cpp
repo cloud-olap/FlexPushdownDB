@@ -78,7 +78,16 @@ void HashJoinProbe::onComplete(const normal::core::message::CompleteMessage &) {
 }
 
 void HashJoinProbe::joinAndSendTuples() {
+  auto startTime = std::chrono::steady_clock::now();
+
   auto expectedJoinedTuples = join();
+
+  auto stopTime = std::chrono::steady_clock::now();
+  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  auto bytesJoinProbe = kernel_.getProbeTupleSet().value()->size();
+  double speed = (((double) bytesJoinProbe) / 1024.0 / 1024.0) / (((double) time) / 1000000000);
+//  SPDLOG_INFO("JoinProbe time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", time, bytesJoinProbe, speed, kernel_.probeTupleSet_.value()->numRows(), name());
+
   if (expectedJoinedTuples) {
 	sendTuples(expectedJoinedTuples.value());
   } else {

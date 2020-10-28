@@ -66,6 +66,9 @@ private:
   std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys_;
   long totalNumRows_ = 0;
   long filteredNumRows_ = 0;
+
+  long filterTime_ = 0;
+  size_t bytesFiltered_ = 0;
 };
 
 }

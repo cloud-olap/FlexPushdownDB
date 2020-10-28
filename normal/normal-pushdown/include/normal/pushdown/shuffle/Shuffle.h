@@ -51,6 +51,11 @@ private:
 	std::string columnName_;
 
 	std::vector<std::string> consumers_;
+
+
+  long shuffleTime_ = 0;
+  long numRowShuffled_ = 0;
+  size_t bytesShuffled_ = 0;
 };
 
 }

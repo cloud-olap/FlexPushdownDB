@@ -29,6 +29,8 @@ public:
 
   tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> join();
 
+  const std::optional<std::shared_ptr<TupleSet2>> &getProbeTupleSet() const;
+
 private:
   JoinPredicate pred_;
   std::optional<std::shared_ptr<TupleSetIndex>> buildTupleSetIndex_;

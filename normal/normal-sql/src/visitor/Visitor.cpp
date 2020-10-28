@@ -236,11 +236,13 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
    */
   // visit where_clause (conjunctive exprs currently)
   auto andExpr = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
-  auto res_where_clause = visitWhere_clause(ctx->where_clause());
-  if (res_where_clause.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
-    andExpr->emplace_back(res_where_clause);
-  } else if (res_where_clause.is<std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>>()) {
-    andExpr = res_where_clause;
+  if (ctx->where_clause()) {
+    auto res_where_clause = visitWhere_clause(ctx->where_clause());
+    if (res_where_clause.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
+      andExpr->emplace_back(res_where_clause);
+    } else if (res_where_clause.is<std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>>()) {
+      andExpr = res_where_clause;
+    }
   }
 
   // extract filters and join predicates respectively

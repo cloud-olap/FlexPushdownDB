@@ -254,6 +254,7 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
       scanOp->produce(merge);
       merge->setRightProducer(scanOp);
 
+      std::shared_ptr<Operator> upStreamOfProj;
       // Filter if it has filterPredicate
       if (predicate_) {
         auto filter = filter::Filter::make(
@@ -262,14 +263,30 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
                 queryId,
                 weightedSegmentKeys);
         operators->emplace_back(filter);
-        streamOutPhysicalOperators_->emplace_back(filter);
 
         merge->produce(filter);
         filter->consume(merge);
+        upStreamOfProj = filter;
+//        streamOutPhysicalOperators_->emplace_back(filter);
       } else {
-        streamOutPhysicalOperators_->emplace_back(merge);
+        upStreamOfProj = merge;
+//        streamOutPhysicalOperators_->emplace_back(merge);
       }
 
+      // project
+      auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<expression::gandiva::Expression>>>();
+      for (auto const &projectedColumnName: *projectedColumnNames_) {
+        projectExpressions->emplace_back(expression::gandiva::col(projectedColumnName));
+      }
+      auto project = std::make_shared<Project>(
+          fmt::format("project-{}/{}-{}", s3Bucket, s3Object, rangeId), *projectExpressions, queryId);
+      operators->emplace_back(project);
+
+      // wire up merge2 and project
+      upStreamOfProj->produce(project);
+      project->consume(upStreamOfProj);
+
+      streamOutPhysicalOperators_->emplace_back(project);
       rangeId++;
     }
   }

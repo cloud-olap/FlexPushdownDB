@@ -128,7 +128,7 @@ std::shared_ptr<TupleSet2> GroupKernel2::finalise() {
   groupColumnArrayAppenders.reserve(groupColumnIndices_.size());
   for (const auto &groupColumnIndex: groupColumnIndices_) {
 	groupColumnArrayAppenders
-		.push_back(ArrayAppenderBuilder::make(outputSchema_.value()->fields()[groupColumnIndex]->type(),
+		.push_back(ArrayAppenderBuilder::make(inputSchema_.value()->fields()[groupColumnIndex]->type(),
 											  groupArrayVectorMap_.size()).value());
   }
 
@@ -143,7 +143,8 @@ std::shared_ptr<TupleSet2> GroupKernel2::finalise() {
 	for (const auto &groupArrayVector: groupArrayVectorMap_) {
 	  if (c < groupColumnIndices_.size()) {
 		// Add group column
-		groupColumnArrayAppenders[c]->appendValue(groupArrayVector.second[c], 0);
+		auto groupColumnIndex = groupColumnIndices_[c];
+		groupColumnArrayAppenders[c]->appendValue(groupArrayVector.second[groupColumnIndex], 0);
 	  } else {
 		// Add aggregate column data
 		int aggregateIndex = c - groupColumnIndices_.size();
@@ -158,7 +159,7 @@ std::shared_ptr<TupleSet2> GroupKernel2::finalise() {
 
   // Add appenders and builders to final output arrays
   arrow::ArrayVector outputArrays;
-  outputArrays.reserve(makeOutputSchema()->fields().size());
+  outputArrays.reserve(outputSchema_.value()->fields().size());
   for (const auto &groupColumnArrayAppender: groupColumnArrayAppenders) {
 	outputArrays.push_back(groupColumnArrayAppender->finalize().value());
   }

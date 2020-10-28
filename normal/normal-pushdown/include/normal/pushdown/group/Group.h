@@ -53,6 +53,10 @@ private:
   void onTuple(const core::message::TupleMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
 
+  size_t bytesGrouped_ = 0;
+  long groupTime_ = 0;
+  long numRows_ = 0;
+
 };
 
 }

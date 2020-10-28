@@ -144,3 +144,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
 
   return expectedJoinedTupleSet;
 }
+
+const std::optional<std::shared_ptr<TupleSet2>> &HashJoinProbeKernel2::getProbeTupleSet() const {
+  return probeTupleSet_;
+}
