@@ -9,6 +9,7 @@
 #include <normal/tuple/ColumnBuilder.h>
 #include <normal/pushdown/shuffle/ATTIC/Shuffler.h>
 #include <normal/pushdown/shuffle/ShuffleKernel2.h>
+#include <normal/pushdown/Globals.h>
 
 using namespace normal::pushdown::shuffle;
 using namespace normal::tuple;
@@ -16,7 +17,7 @@ using namespace normal::tuple;
 Shuffle::Shuffle(const std::string &Name, std::string ColumnName, long queryId) :
 	Operator(Name, "Shuffle", queryId), columnName_(std::move(ColumnName)) {}
 
-std::shared_ptr<Shuffle> Shuffle::make(const std::string &Name, const std::string& ColumnName, long queryId){
+std::shared_ptr<Shuffle> Shuffle::make(const std::string &Name, const std::string &ColumnName, long queryId) {
   return std::make_shared<Shuffle>(Name, ColumnName, queryId);
 }
 
@@ -42,16 +43,64 @@ void Shuffle::produce(const std::shared_ptr<Operator> &operator_) {
 
 void Shuffle::onStart() {
   SPDLOG_DEBUG("Starting '{}'  |  columnName: {}, numConsumers: {}", name(), columnName_, consumers_.size());
+  buffers_.resize(consumers_.size(), std::nullopt);
 }
 
 void Shuffle::onComplete(const CompleteMessage &) {
-  if (ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
+  if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
 //    while (!(tupleArrived_ && onTupleNum_ == 0)) {
 //      std::this_thread::yield();
 //    }
 //    SPDLOG_INFO("Shuffle complete: {}", name());
-	  ctx()->notifyComplete();
+
+	size_t partitionIndex = 0;
+	for (const auto &buffer: buffers_) {
+	  auto sendResult = send(partitionIndex, true);
+	  if (!sendResult)
+		throw std::runtime_error(sendResult.error());
+	  ++partitionIndex;
+	}
+
+	ctx()->notifyComplete();
   }
+}
+
+tl::expected<void, std::string> Shuffle::buffer(const std::shared_ptr<TupleSet2> &tupleSet, int partitionIndex) {
+
+  // Add the tuple set to the buffer
+  if (!buffers_[partitionIndex].has_value()) {
+	buffers_[partitionIndex] = tupleSet;
+  } else {
+    const auto &bufferedTupleSet = buffers_[partitionIndex].value();
+	const auto &concatenateResult = TupleSet2::concatenate({bufferedTupleSet, tupleSet});
+	if (!concatenateResult)
+	  return tl::make_unexpected(concatenateResult.error());
+	buffers_[partitionIndex] = concatenateResult.value();
+
+	std::shared_ptr<arrow::Table> combinedTable;
+	auto status = buffers_[partitionIndex].value()->getArrowTable().value()
+		->CombineChunks(arrow::default_memory_pool(), &combinedTable);
+	if (!status.ok())
+	  return tl::make_unexpected(status.message());
+	buffers_[partitionIndex] = TupleSet2::make(combinedTable);
+  }
+
+  return {};
+}
+
+tl::expected<void, std::string> Shuffle::send(int partitionIndex, bool force) {
+
+  // If the tupleset is big enough, send it, then clear the buffer
+  if (force
+	  || (buffers_[partitionIndex].has_value() && buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
+	std::shared_ptr<core::message::Message>
+		tupleMessage =
+		std::make_shared<core::message::TupleMessage>(buffers_[partitionIndex].value()->toTupleSetV1(), name());
+	ctx()->send(tupleMessage, consumers_[partitionIndex]);
+	buffers_[partitionIndex] = std::nullopt;
+  }
+
+  return {};
 }
 
 void Shuffle::onTuple(const TupleMessage &message) {
@@ -62,27 +111,25 @@ void Shuffle::onTuple(const TupleMessage &message) {
 //  shuffleLock.unlock();
 
   // Get the tuple set
-  auto &&tupleSet = TupleSet2::create(message.tuples());
+  const auto &tupleSet = TupleSet2::create(message.tuples());
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;
-  auto startTime = std::chrono::steady_clock::now();
+//  auto startTime = std::chrono::steady_clock::now();
 
   // Check empty
-  if(tupleSet->numRows() == 0){
-    for (size_t s = 0; s < consumers_.size(); ++s) {
-      shuffledTupleSets.emplace_back(TupleSet2::make(tupleSet->schema().value()));
-    }
+  if (tupleSet->numRows() == 0) {
+	for (size_t s = 0; s < consumers_.size(); ++s) {
+	  shuffledTupleSets.emplace_back(TupleSet2::make(tupleSet->schema().value()));
+	}
+  } else {
+	// Shuffle the tuple set
+	auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
+	if (!expectedShuffledTupleSets.has_value()) {
+	  throw std::runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
+	}
+	shuffledTupleSets = expectedShuffledTupleSets.value();
   }
 
-  else {
-    // Shuffle the tuple set
-    auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
-    if (!expectedShuffledTupleSets.has_value()) {
-      throw std::runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
-    }
-    shuffledTupleSets = expectedShuffledTupleSets.value();
-  }
-
-  auto endTime = std::chrono::steady_clock::now();
+//  auto endTime = std::chrono::steady_clock::now();
 //  SPDLOG_INFO("Shuffle time: {}, size: {}, name: {}",
 //        std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count(),
 //        tupleSet->numRows(),
@@ -90,10 +137,14 @@ void Shuffle::onTuple(const TupleMessage &message) {
 
   // Send the shuffled tuple sets to consumers
   size_t partitionIndex = 0;
-  for(const auto& shuffledTupleSet: shuffledTupleSets){
-	std::shared_ptr<core::message::Message>
-		tupleMessage = std::make_shared<core::message::TupleMessage>(shuffledTupleSet->toTupleSetV1(), name());
-	ctx()->send(tupleMessage, consumers_[partitionIndex]);
+  for (const auto &shuffledTupleSet: shuffledTupleSets) {
+	auto bufferAndSendResult = buffer(shuffledTupleSet, partitionIndex)
+		.and_then([&]() { return send(partitionIndex, false); });
+	if (!bufferAndSendResult)
+	  throw std::runtime_error(bufferAndSendResult.error());
+//	std::shared_ptr<core::message::Message>
+//		tupleMessage = std::make_shared<core::message::TupleMessage>(shuffledTupleSet->toTupleSetV1(), name());
+//	ctx()->send(tupleMessage, consumers_[partitionIndex]);
 	++partitionIndex;
   }
 
