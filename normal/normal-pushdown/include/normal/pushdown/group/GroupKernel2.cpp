@@ -4,6 +4,7 @@
 
 #include "GroupKernel2.h"
 #include "GroupKey2.h"
+#include "AggregateBuilderWrapper.h"
 
 #include <utility>
 
@@ -13,9 +14,9 @@
 
 namespace normal::pushdown::group {
 
-GroupKernel2::GroupKernel2(std::vector<std::string> columnNames,
+GroupKernel2::GroupKernel2(const std::vector<std::string>& columnNames,
 						   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions) :
-	columnNames_(std::move(columnNames)),
+	columnNames_(ColumnName::canonicalize(columnNames)),
 	aggregateFunctions_(std::move(aggregateFunctions)) {}
 
 tl::expected<void, std::string> GroupKernel2::group(TupleSet2 &tupleSet) {
@@ -71,37 +72,51 @@ void GroupKernel2::computeGroupAggregates() {
 
 tl::expected<void, std::string> GroupKernel2::cache(const TupleSet2 &tupleSet) {
 
+  if(!tupleSet.getArrowTable().has_value())
+	return tl::make_unexpected(fmt::format("Input tuple set table is undefined"));
+  auto table = tupleSet.getArrowTable().value();
+
   if (!inputSchema_.has_value()) {
 
-	// Cache the schema
-	inputSchema_ = tupleSet.getArrowTable().value()->schema();
+	// Canonicalise and cache the schema
+	std::vector<std::shared_ptr<arrow::Field>> fields;
+	for(const auto &field : table->schema()->fields()){
+	  fields.push_back(field->WithName(ColumnName::canonicalize(field->name())));
+	}
+	inputSchema_ = arrow::schema(fields);
 
 	// Compute field indices
 	for (const auto &columnName: columnNames_) {
-	  groupColumnIndices_.push_back(inputSchema_.value()->GetFieldIndex(columnName));
+	  auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
+	  if (fieldIndex == -1)
+		return tl::make_unexpected(fmt::format("Group column '{}' not found in input schema", columnName));
+	  groupColumnIndices_.push_back(fieldIndex);
 	}
 
 	// Create output schema
-	outputSchema_ = makeOutputSchema();
+	auto expectedOutputSchema = makeOutputSchema();
+	if (!expectedOutputSchema)
+	  return tl::make_unexpected(expectedOutputSchema.error());
+	outputSchema_ = expectedOutputSchema.value();
 
 	return {};
   } else {
 	// Check the schema is the same as the cached schema
-	if (!inputSchema_.value()->Equals(tupleSet.getArrowTable().value()->schema())) {
-	  return tl::make_unexpected(fmt::format("Tuple set schema does not match cached tuple set schema. \n"
+	if (!inputSchema_.value()->Equals(table->schema())) {
+	  return tl::make_unexpected(fmt::format("Input tuple set schema does not match cached input tuple set schema. \n"
 											 "schema:\n"
 											 "{}\n"
 											 "cached schema:\n"
 											 "{}",
 											 inputSchema_.value()->ToString(),
-											 tupleSet.getArrowTable().value()->schema()->ToString()));
+											 table->schema()->ToString()));
 	} else {
 	  return {};
 	}
   }
 }
 
-std::shared_ptr<TupleSet2> GroupKernel2::finalise() {
+tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
 
   // Finalise the appenders
   for (const auto &groupArrayAppenders: groupArrayAppenderVectorMap_) {
@@ -133,10 +148,13 @@ std::shared_ptr<TupleSet2> GroupKernel2::finalise() {
   }
 
   // Create output array builders for aggregate columns
-  std::vector<std::shared_ptr<arrow::ArrayBuilder>> aggregateColumnArrayBuilders;
-  aggregateColumnArrayBuilders.reserve(aggregateFunctions_.size());
+  std::vector<std::shared_ptr<AggregateBuilder>> aggregateBuilders;
+  aggregateBuilders.reserve(aggregateFunctions_.size());
   for (const auto &aggregateFunction: aggregateFunctions_) {
-	aggregateColumnArrayBuilders.push_back(std::make_shared<arrow::DoubleBuilder>());
+	auto expectedAggregateBuilder = makeAggregateBuilder(aggregateFunction->returnType());
+	if(!expectedAggregateBuilder.has_value())
+	  return tl::make_unexpected(expectedAggregateBuilder.error());
+	aggregateBuilders.push_back(expectedAggregateBuilder.value());
   }
 
   for (size_t c = 0; c < (size_t)outputSchema_.value()->num_fields(); ++c) {
@@ -149,9 +167,7 @@ std::shared_ptr<TupleSet2> GroupKernel2::finalise() {
 		// Add aggregate column data
 		int aggregateIndex = c - groupColumnIndices_.size();
 		auto aggregateResult = groupAggregationResultVectorMap_.at(groupArrayVector.first);
-		auto aggregateScalar = aggregateResult.at(aggregateIndex)->evaluate();
-		std::static_pointer_cast<arrow::DoubleBuilder>(aggregateColumnArrayBuilders[aggregateIndex])
-			->Append(Scalar::make(aggregateScalar)->value<double>());
+		aggregateBuilders[aggregateIndex]->append(aggregateResult.at(aggregateIndex));
 	  }
 	}
   }
@@ -163,20 +179,23 @@ std::shared_ptr<TupleSet2> GroupKernel2::finalise() {
   for (const auto &groupColumnArrayAppender: groupColumnArrayAppenders) {
 	outputArrays.push_back(groupColumnArrayAppender->finalize().value());
   }
-  for (const auto &aggregateColumnArrayBuilder: aggregateColumnArrayBuilders) {
-	std::shared_ptr<arrow::Array> outputArray;
-	aggregateColumnArrayBuilder->Finish(&outputArray);
-	outputArrays.push_back(outputArray);
+  for (const auto &aggregateBuilder: aggregateBuilders) {
+	auto expectedOutputArray = aggregateBuilder->finalise();
+	if(!expectedOutputArray.has_value())
+	  return tl::make_unexpected(expectedOutputArray.error());
+	outputArrays.push_back(expectedOutputArray.value());
   }
 
   return TupleSet2::make(outputSchema_.value(), outputArrays);
 }
 
-std::shared_ptr<arrow::Schema> GroupKernel2::makeOutputSchema() {
+tl::expected<std::shared_ptr<arrow::Schema>, std::string> GroupKernel2::makeOutputSchema() {
 
   std::vector<std::shared_ptr<arrow::Field>> fields;
   for (const auto &columnName: columnNames_) {
 	auto field = inputSchema_.value()->GetFieldByName(columnName);
+	if (!field)
+	  return tl::make_unexpected(fmt::format("Group column '{}' not found in input schema", columnName));
 	fields.emplace_back(field);
   }
 

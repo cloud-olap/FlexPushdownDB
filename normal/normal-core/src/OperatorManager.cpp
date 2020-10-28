@@ -115,8 +115,10 @@ OperatorManager::~OperatorManager() {
 }
 
 void OperatorManager::clearCacheMetrics() {
+  // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
   scoped_actor self{*actorSystem};
-  self->send(segmentCacheActor_, ClearMetricsAtom::value);
+  // NOTE: anon_send a bit lighter than send
+  self->anon_send(segmentCacheActor_, ClearMetricsAtom::value);
 }
 
 double OperatorManager::getCrtQueryHitRatio() {
@@ -127,6 +129,7 @@ double OperatorManager::getCrtQueryHitRatio() {
       throw std::runtime_error(to_string(error));
   };
 
+  // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
   scoped_actor self{*actorSystem};
   self->request(segmentCacheActor_, infinite, GetCrtQueryNumHitsAtom::value).receive(
           [&](int numHits) {
@@ -140,7 +143,8 @@ double OperatorManager::getCrtQueryHitRatio() {
           },
           errorHandler);
 
-  self->send(segmentCacheActor_, ClearCrtQueryMetricsAtom::value);
+  // NOTE: anon_send a bit lighter than send
+  self->anon_send(segmentCacheActor_, ClearCrtQueryMetricsAtom::value);
 
   return (crtQueryHitNum + crtQueryMissNum == 0) ? 0.0 : (double) crtQueryHitNum / (double) (crtQueryHitNum + crtQueryMissNum);
 }

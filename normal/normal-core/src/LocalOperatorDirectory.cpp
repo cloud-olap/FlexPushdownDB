@@ -23,23 +23,41 @@ void LocalOperatorDirectory::insert(const LocalOperatorDirectoryEntry& entry) {
     entries_.erase(iter);
   }
   entries_.emplace(entry.name(), entry);
+
+  switch (entry.relationshipType()) {
+  case OperatorRelationshipType::Producer: ++numProducers;
+	break;
+  case OperatorRelationshipType::Consumer: ++numConsumers;
+	break;
+  case OperatorRelationshipType::None: throw std::runtime_error("Unconnected operator not supported");
+    break;
+  }
 }
 
 void LocalOperatorDirectory::setComplete(const std::string& name) {
   auto entry = entries_.find(name);
   if(entry == entries_.end())
     throw std::runtime_error("No entry for actor '" + name + "'");
-  else
-    entry->second.complete(true);
+  else {
+	entry->second.complete(true);
+	switch (entry->second.relationshipType()) {
+	case OperatorRelationshipType::Producer: ++numProducersComplete;
+	  break;
+	case OperatorRelationshipType::Consumer: ++numConsumersComplete;
+	  break;
+	case OperatorRelationshipType::None:throw std::runtime_error("Unconnected operator not supported");
+	  break;
+	}
+  }
 }
 
-bool LocalOperatorDirectory::allComplete() {
-  for(const auto& entry : entries_){
-    if(!entry.second.complete())
-      return false;
-  }
-  return true;
-}
+//bool LocalOperatorDirectory::allComplete() {
+//  for(const auto& entry : entries_){
+//    if(!entry.second.complete())
+//      return false;
+//  }
+//  return true;
+//}
 
 std::string LocalOperatorDirectory::showString() const {
   std::stringstream ss;
@@ -53,15 +71,23 @@ void LocalOperatorDirectory::setIncomplete() {
   for(auto& entry : entries_){
     entry.second.complete(false);
   }
+  numProducersComplete = 0;
+  numConsumersComplete = 0;
 }
 
 bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operatorRelationshipType) {
 //  SPDLOG_DEBUG("Local operator directory:\n{}", showString());
-  for(const auto& entry : entries_){
-    if(entry.second.relationshipType() == operatorRelationshipType && !entry.second.complete())
-      return false;
+//  for(const auto& entry : entries_){
+//    if(entry.second.relationshipType() == operatorRelationshipType && !entry.second.complete())
+//      return false;
+//  }
+//  return true;
+  switch (operatorRelationshipType) {
+  case OperatorRelationshipType::Producer: return numProducersComplete >= numProducers;
+  case OperatorRelationshipType::Consumer: return numConsumersComplete >= numConsumers;
+  case OperatorRelationshipType::None:
+    throw std::runtime_error("Unconnected operator not supported");
   }
-  return true;
 }
 
 void LocalOperatorDirectory::destroyActorHandles(){

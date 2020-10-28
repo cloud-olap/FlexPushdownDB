@@ -58,7 +58,7 @@ RecordBatchShuffler::make(const std::string &columnName,
 						  size_t numRows) {
 
   // Get the shuffle column index, checking the column exists
-  auto shuffleColumnIndex = schema->GetFieldIndex(columnName);
+  auto shuffleColumnIndex = schema->GetFieldIndex(ColumnName::canonicalize(columnName));
   if (shuffleColumnIndex == -1) {
 	return tl::make_unexpected(fmt::format("Shuffle column '{}' does not exist", columnName));
   }
@@ -132,7 +132,7 @@ tl::expected<std::vector<std::shared_ptr<TupleSet2>>, std::string> RecordBatchSh
   for (size_t s = 0; s < shuffledArraysVector_.size(); ++s) {
 
     // check empty
-    if (shuffledArraysVector_[s][0].size() == 0) {
+    if (shuffledArraysVector_[s][0].empty()) {
       shuffledTupleSetVector[s] = TupleSet2::make(Schema::make(schema_));
     }
 

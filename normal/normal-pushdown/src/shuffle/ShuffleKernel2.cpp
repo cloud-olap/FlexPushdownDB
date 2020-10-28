@@ -20,18 +20,14 @@ ShuffleKernel2::shuffle(const std::string &columnName,
   ::arrow::Status status;
 
   // Get the arrow table, checking the tupleset is defined FIXME: This is dumb :(
-  std::shared_ptr<::arrow::Table> table;
-  if (tupleSet.getArrowTable().has_value()) {
-	table = tupleSet.getArrowTable().value();
-  } else {
+  if (!tupleSet.getArrowTable().has_value())
 	return tl::make_unexpected(fmt::format("TupleSet is undefined"));
-  }
+  auto table = tupleSet.getArrowTable().value();
 
   // Create the shuffler
   auto expectedShuffler = RecordBatchShuffler::make(columnName, numSlots, table->schema(), table->num_rows());
-  if (!expectedShuffler.has_value()) {
+  if (!expectedShuffler.has_value())
 	return tl::make_unexpected(expectedShuffler.error());
-  }
   auto shuffler = expectedShuffler.value();
 
   // Read the table a batch at a time
@@ -64,15 +60,13 @@ ShuffleKernel2::shuffle(const std::string &columnName,
 	// Shuffle batch
 	auto expectedResult = shuffler->shuffle(recordBatch);
 //	SPDLOG_INFO("Shuffled {} tuples, column: {}, bytesize: {}", recordBatch->num_rows(), columnName, size);
-	if(!expectedResult.has_value()){
+	if(!expectedResult.has_value())
 	  return tl::make_unexpected(expectedResult.error());
-	}
 
 	// Read a batch
 	recordBatchResult = reader.Next();
-	if (!recordBatchResult.ok()) {
+	if (!recordBatchResult.ok())
 	  return tl::make_unexpected(recordBatchResult.status().message());
-	}
 	recordBatch = *recordBatchResult;
   }
 
