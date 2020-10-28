@@ -24,6 +24,8 @@ class OperatorDirectory {
 
 private:
   MapType entries_;
+  int numOperators_ = 0;
+  int numOperatorsComplete_ = 0;
 
 public:
   void insert(const OperatorDirectoryEntry& entry);
