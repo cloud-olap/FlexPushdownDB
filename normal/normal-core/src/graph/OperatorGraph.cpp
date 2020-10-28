@@ -83,8 +83,7 @@ void graph::OperatorGraph::join() {
   SPDLOG_DEBUG("Waiting for all operators to complete");
 
   auto handle_err = [&](const caf::error &err) {
-	aout(*rootActor_) << "AUT (actor under test) failed: "
-					  << (*rootActor_)->system().render(err) << std::endl;
+	throw std::runtime_error(to_string(err));
   };
 
   bool allComplete = false;
@@ -352,6 +351,8 @@ std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
 //		[&](const caf::error&  error){
 //	  	  throw std::runtime_error(to_string(error));
 //	  	});
+
+	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
       auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
       processedBytes += s3ScanOp->getProcessedBytes();
       returnedBytes += s3ScanOp->getReturnedBytes();
@@ -364,6 +365,7 @@ size_t graph::OperatorGraph::getNumRequests() {
   size_t numRequests = 0;
   for (const auto &entry: operatorDirectory_) {
     if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3SelectScan)) {
+	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
       auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
       numRequests += s3ScanOp->getNumRequests();
     }

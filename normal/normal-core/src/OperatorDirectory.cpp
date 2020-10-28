@@ -12,7 +12,9 @@
 namespace normal::core {
 
 void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
-  entries_.emplace(entry.getDef()->name(), entry);
+  auto inserted = entries_.emplace(entry.getDef()->name(), entry);
+  if(!inserted.second)
+    throw std::runtime_error(fmt::format("Operator '{}' already added to directory", entry.getDef()->name()));
 }
 
 void OperatorDirectory::setComplete(const std::string& name) {
