@@ -151,7 +151,12 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
   std::vector<std::shared_ptr<AggregateBuilder>> aggregateBuilders;
   aggregateBuilders.reserve(aggregateFunctions_.size());
   for (const auto &aggregateFunction: aggregateFunctions_) {
-	auto expectedAggregateBuilder = makeAggregateBuilder(aggregateFunction->returnType());
+  auto returnType = aggregateFunction->returnType();
+  if (!returnType) {
+    // FIXME: if no tuple to group by, the return type is missing, here use DoubleType
+    returnType = std::make_shared<arrow::DoubleType>();
+  }
+	auto expectedAggregateBuilder = makeAggregateBuilder(returnType);
 	if(!expectedAggregateBuilder.has_value())
 	  return tl::make_unexpected(expectedAggregateBuilder.error());
 	aggregateBuilders.push_back(expectedAggregateBuilder.value());

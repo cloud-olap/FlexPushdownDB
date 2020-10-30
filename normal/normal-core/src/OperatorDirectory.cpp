@@ -24,7 +24,7 @@ void OperatorDirectory::setComplete(const std::string& name) {
     throw std::runtime_error("No entry for operator '" + name + "'");
   else {
     if (entry->second.isComplete()) {
-      throw std::runtime_error("Entry for operator '" + name + "'" + "completes twice");
+      throw std::runtime_error("Opdir: Entry for operator '" + name + "'" + "completes twice");
     }
     entry->second.setComplete(true);
   }

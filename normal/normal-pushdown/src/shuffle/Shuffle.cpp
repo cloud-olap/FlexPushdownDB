@@ -89,8 +89,7 @@ tl::expected<void, std::string> Shuffle::buffer(const std::shared_ptr<TupleSet2>
 tl::expected<void, std::string> Shuffle::send(int partitionIndex, bool force) {
 
   // If the tupleset is big enough, send it, then clear the buffer
-  if (force
-	  || (buffers_[partitionIndex].has_value() && buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
+  if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
 	std::shared_ptr<core::message::Message>
 		tupleMessage =
 		std::make_shared<core::message::TupleMessage>(buffers_[partitionIndex].value()->toTupleSetV1(), name());

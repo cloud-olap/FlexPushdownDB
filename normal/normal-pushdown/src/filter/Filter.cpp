@@ -84,10 +84,6 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
     std::shared_ptr<core::message::Message> tupleMessage =
             std::make_shared<core::message::TupleMessage>(emptyTupleSet->toTupleSetV1(), name());
     ctx()->tell(tupleMessage);
-    // complete
-    std::shared_ptr<core::message::Message> completeMessage =
-            std::make_shared<core::message::CompleteMessage>(name());
-    ctx()->tell(completeMessage);
     ctx()->notifyComplete();
   }
 }

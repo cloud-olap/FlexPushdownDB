@@ -39,6 +39,9 @@ void LocalOperatorDirectory::setComplete(const std::string& name) {
   if(entry == entries_.end())
     throw std::runtime_error("No entry for actor '" + name + "'");
   else {
+  if (entry->second.complete()) {
+    throw std::runtime_error("LocalOpdir: Entry for operator '" + name + "'" + "completes twice");
+  }
 	entry->second.complete(true);
 	switch (entry->second.relationshipType()) {
 	case OperatorRelationshipType::Producer: ++numProducersComplete;
