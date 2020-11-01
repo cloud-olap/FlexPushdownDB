@@ -29,6 +29,7 @@
 #include "normal/plan/operator_/CollateLogicalOperator.h"
 #include "normal/plan/operator_/AggregateLogicalOperator.h"
 #include "normal/plan/function/SumLogicalFunction.h"
+#include <normal/plan/operator_/type/OperatorTypes.h>
 
 using namespace normal::core::type;
 using namespace normal::expression;
@@ -203,6 +204,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
 
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<normal::plan::function::AggregateLogicalFunction>>>();
   auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>>();
+  std::set<std::string> projectColumnNames, aggregateColumnNames;
 
   for (const auto &resultColumn: ctx->result_column()) {
     auto resultColumn_Result = visitResult_column(resultColumn);
@@ -216,6 +218,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       for (const auto &columnName: *columnNames) {
         auto tableName = miniCatalogue->findTableOfColumn(columnName);
         projectedColumnNames_map->find(tableName)->second->emplace_back(columnName);
+        aggregateColumnNames.emplace(columnName);
       }
     } else if (resultColumn_Result.is<std::shared_ptr<normal::expression::gandiva::Expression>>()) {
       project = true;
@@ -225,6 +228,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       auto columnName = colExpr.getColumnName();
       auto tableName = miniCatalogue->findTableOfColumn(columnName);
       projectedColumnNames_map->find(tableName)->second->emplace_back(columnName);
+      projectColumnNames.emplace(columnName);
     }
     else{
       throw std::runtime_error("Not yet implemented");
@@ -382,6 +386,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     }
   }
 
+  auto joinNodes = std::make_shared<std::vector<std::shared_ptr<normal::plan::operator_::JoinLogicalOperator>>>();
   /**
    * Make the naive logical plan
    */
@@ -410,6 +415,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
                   leftColumnName, rightColumnName, leftScanNode, rightScanNode);
           joinNode->setName(leftColumnName + ", " + rightColumnName);
           nodes->emplace_back(joinNode);
+          joinNodes->emplace_back(joinNode);
           leftScanNode->setConsumer(joinNode);
           rightScanNode->setConsumer(joinNode);
           lastJoinNode = joinNode;
@@ -433,6 +439,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
                   leftColumnName, rightColumnName, leftScanNode, lastJoinNode);
           joinNode->setName(leftColumnName + ", " + rightColumnName);
           nodes->emplace_back(joinNode);
+          joinNodes->emplace_back(joinNode);
           lastJoinNode->setConsumer(joinNode);
           leftScanNode->setConsumer(joinNode);
           lastJoinNode = joinNode;
@@ -477,6 +484,30 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       finalConsumerNode->setConsumer(projectNode);
       projectNode->setConsumer(collate);
     }
+  }
+
+  /**
+   * Set needed column names for JoinLogicalOperators
+   */
+  for (int i = joinNodes->size() - 1; i >= 0; --i) {
+    auto joinNode = joinNodes->at(i);
+    std::set<std::string> neededColumnNames;
+    if (joinNode->getConsumer()->type()->is(normal::plan::operator_::type::OperatorTypes::groupOperatorType())) {
+      neededColumnNames.insert(groupColumnNames->begin(), groupColumnNames->end());
+      neededColumnNames.insert(aggregateColumnNames.begin(), aggregateColumnNames.end());
+    } else if (joinNode->getConsumer()->type()->is(normal::plan::operator_::type::OperatorTypes::aggregateOperatorType())) {
+      neededColumnNames.insert(aggregateColumnNames.begin(), aggregateColumnNames.end());
+    } else if (joinNode->getConsumer()->type()->is(normal::plan::operator_::type::OperatorTypes::projectOperatorType())) {
+      neededColumnNames.insert(projectColumnNames.begin(), projectColumnNames.end());
+    } else if (joinNode->getConsumer()->type()->is(normal::plan::operator_::type::OperatorTypes::joinOperatorType())) {
+      auto joinConsumer = std::static_pointer_cast<normal::plan::operator_::JoinLogicalOperator>(joinNode->getConsumer());
+      neededColumnNames.insert(joinConsumer->getNeededColumnNames().begin(), joinConsumer->getNeededColumnNames().end());
+      neededColumnNames.emplace(joinConsumer->getLeftColumnName());
+      neededColumnNames.emplace(joinConsumer->getRightColumnName());
+    } else {
+      throw std::runtime_error(fmt::format("Bad logical operator type after JoinLogicalOperator: {}", joinNode->getConsumer()->type()->toString()));
+    }
+    joinNode->setNeededColumnNames(neededColumnNames);
   }
 
   return nodes;

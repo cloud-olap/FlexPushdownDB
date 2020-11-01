@@ -13,11 +13,11 @@
 
 using namespace normal::pushdown::join;
 
-HashJoinProbeKernel2::HashJoinProbeKernel2(JoinPredicate pred) :
-	pred_(std::move(pred)) {}
+HashJoinProbeKernel2::HashJoinProbeKernel2(JoinPredicate pred, std::set<std::string> neededColumnNames) :
+	pred_(std::move(pred)), neededColumnNames_(std::move(neededColumnNames)) {}
 
-HashJoinProbeKernel2 HashJoinProbeKernel2::make(JoinPredicate pred) {
-  return HashJoinProbeKernel2(std::move(pred));
+HashJoinProbeKernel2 HashJoinProbeKernel2::make(JoinPredicate pred, std::set<std::string> neededColumnNames) {
+  return HashJoinProbeKernel2(std::move(pred), std::move(neededColumnNames));
 }
 
 tl::expected<void, std::string> HashJoinProbeKernel2::putBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex> &tupleSetIndex) {
@@ -65,14 +65,23 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   auto buildTable = buildTupleSetIndex_.value()->getTable();
   auto probeTable = probeTupleSet_.value()->getArrowTable().value();
 
-  // Create the output schema
+  // Create the output schema and neededColumnIndice from neededColumns
   std::vector<std::shared_ptr<::arrow::Field>> outputFields;
-  outputFields.reserve(buildTable->schema()->num_fields() + probeTable->schema()->num_fields());
+  std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice;    // <true/false, i> -> ith column in build/probe table
+
   for (int c = 0; c < buildTable->schema()->num_fields(); ++c) {
-	outputFields.emplace_back(buildTable->schema()->fields()[c]);
+    auto field = buildTable->schema()->field(c);
+    if (neededColumnNames_.find(field->name()) != neededColumnNames_.end()) {
+      neededColumnIndice.emplace_back(std::make_shared<std::pair<bool, int>>(true, c));
+      outputFields.emplace_back(field);
+    }
   }
   for (int c = 0; c < probeTable->schema()->num_fields(); ++c) {
-	outputFields.emplace_back(probeTable->schema()->fields()[c]);
+    auto field = probeTable->schema()->field(c);
+    if (neededColumnNames_.find(field->name()) != neededColumnNames_.end()) {
+      neededColumnIndice.emplace_back(std::make_shared<std::pair<bool, int>>(false, c));
+      outputFields.emplace_back(field);
+    }
   }
   auto outputSchema = std::make_shared<::arrow::Schema>(outputFields);
 
@@ -82,7 +91,7 @@ tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinPro
   }
 
   // Create the joiner
-  auto expectedJoiner = RecordBatchJoiner::make(buildTupleSetIndex_.value(), pred_.getRightColumnName(), outputSchema);
+  auto expectedJoiner = RecordBatchJoiner::make(buildTupleSetIndex_.value(), pred_.getRightColumnName(), outputSchema, neededColumnIndice);
   if (!expectedJoiner.has_value()) {
 	return tl::make_unexpected(expectedJoiner.error());
   }

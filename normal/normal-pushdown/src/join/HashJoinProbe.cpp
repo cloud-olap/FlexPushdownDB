@@ -16,9 +16,9 @@
 
 using namespace normal::pushdown::join;
 
-HashJoinProbe::HashJoinProbe(const std::string &name, JoinPredicate pred, long queryId) :
+HashJoinProbe::HashJoinProbe(const std::string &name, JoinPredicate pred, std::set<std::string> neededColumnNames, long queryId) :
 	Operator(name, "HashJoinProbe", queryId),
-	kernel_(HashJoinProbeKernel2::make(std::move(pred))){
+	kernel_(HashJoinProbeKernel2::make(std::move(pred), std::move(neededColumnNames))){
 }
 
 void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {

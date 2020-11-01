@@ -35,6 +35,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogica
     auto joinProbe = std::make_shared<normal::pushdown::join::HashJoinProbe>(
             fmt::format("join-probe-{}-{}-{}", leftColumnName_, rightColumnName_, index),
             normal::pushdown::join::JoinPredicate::create(leftColumnName_,rightColumnName_),
+            neededColumnNames_,
             getQueryId());
     operators->emplace_back(joinProbe);
   }
@@ -63,5 +64,13 @@ const std::string &JoinLogicalOperator::getLeftColumnName() const {
 
 const std::string &JoinLogicalOperator::getRightColumnName() const {
   return rightColumnName_;
+}
+
+void JoinLogicalOperator::setNeededColumnNames(const std::set<std::string> &neededColumnNames) {
+  neededColumnNames_ = neededColumnNames;
+}
+
+const std::set<std::string> &JoinLogicalOperator::getNeededColumnNames() const {
+  return neededColumnNames_;
 }
 

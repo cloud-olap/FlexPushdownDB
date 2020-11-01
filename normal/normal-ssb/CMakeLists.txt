@@ -198,10 +198,6 @@ ENDFOREACH(SSB_query_file)
 # Metadata
 #-----------------------------------------------------------------------------------------------------------------------
 
-configure_file(metadata/ssb-sf1-sortlineorder/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/sort/lineorder_orderdate COPYONLY)
-configure_file(metadata/ssb-sf1-sortlineorder/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/column_length COPYONLY)
-configure_file(metadata/ssb-sf1-sortlineorder/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/schemas COPYONLY)
-configure_file(metadata/ssb-sf1-sortlineorder/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/partitionNums COPYONLY)
 configure_file(metadata/ssb-sf1-sortlineorder/csv/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/sort/lineorder_orderdate COPYONLY)
 configure_file(metadata/ssb-sf1-sortlineorder/csv/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/column_length COPYONLY)
 configure_file(metadata/ssb-sf1-sortlineorder/csv/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf1-sortlineorder/csv/schemas COPYONLY)

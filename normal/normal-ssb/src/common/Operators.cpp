@@ -264,7 +264,9 @@ Operators::makeHashJoinProbeOperators(const std::string &namePrefix,
 														 g->getId(),
 														 namePrefix,
 														 u),
-											 JoinPredicate::create(leftColumnName, rightColumnName));
+											 JoinPredicate::create(leftColumnName, rightColumnName),
+											 // TODO: need to set properly
+                       std::set<std::string>());
 	os.push_back(o);
 	g->put(o);
   }

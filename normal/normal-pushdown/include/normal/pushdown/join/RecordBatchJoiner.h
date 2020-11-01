@@ -13,6 +13,7 @@
 #include <normal/tuple/ArrayAppender.h>
 #include <normal/tuple/ColumnName.h>
 #include <normal/tuple/TupleSet2.h>
+#include <set>
 #include "normal/tuple/TupleSetIndexFinderWrapper.h"
 
 using namespace normal::tuple;
@@ -24,12 +25,14 @@ public:
 
   RecordBatchJoiner(std::shared_ptr<TupleSetIndex> buildTupleSetIndex,
 					std::string probeJoinColumnName,
-					std::shared_ptr<::arrow::Schema> outputSchema);
+					std::shared_ptr<::arrow::Schema> outputSchema,
+          std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice);
 
   static tl::expected<std::shared_ptr<RecordBatchJoiner>, std::string>
   make(const std::shared_ptr<TupleSetIndex> &buildTupleSetIndex,
 	   const std::string &probeJoinColumnName,
-	   const std::shared_ptr<::arrow::Schema> &outputSchema);
+	   const std::shared_ptr<::arrow::Schema> &outputSchema,
+	   const std::vector<std::shared_ptr<std::pair<bool, int>>> &neededColumnIndice);
 
   tl::expected<void, std::string> join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch);
 
@@ -39,6 +42,7 @@ private:
   std::shared_ptr<TupleSetIndex> buildTupleSetIndex_;
   std::string probeJoinColumnName_;
   std::shared_ptr<::arrow::Schema> outputSchema_;
+  std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice_;
   std::vector<::arrow::ArrayVector> joinedArrayVectors_;
 
 };

@@ -11,6 +11,7 @@
 #include "JoinPredicate.h"
 #include "normal/pushdown/join/ATTIC/HashTable.h"
 #include "normal/tuple/TupleSetIndex.h"
+#include <set>
 
 #include <normal/tuple/TupleSet2.h>
 
@@ -21,8 +22,8 @@ namespace normal::pushdown::join {
 class HashJoinProbeKernel2 {
 
 public:
-  explicit HashJoinProbeKernel2(JoinPredicate pred);
-  static HashJoinProbeKernel2 make(JoinPredicate pred);
+  explicit HashJoinProbeKernel2(JoinPredicate pred, std::set<std::string> neededColumnNames);
+  static HashJoinProbeKernel2 make(JoinPredicate pred, std::set<std::string> neededColumnNames);
 
   [[nodiscard]] tl::expected<void, std::string> putBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex>& tupleSetIndex);
   [[nodiscard]] tl::expected<void, std::string> putProbeTupleSet(const std::shared_ptr<TupleSet2>& tupleSet);
@@ -35,6 +36,7 @@ private:
   JoinPredicate pred_;
   std::optional<std::shared_ptr<TupleSetIndex>> buildTupleSetIndex_;
   std::optional<std::shared_ptr<TupleSet2>> probeTupleSet_;
+  std::set<std::string> neededColumnNames_;
 
 };
 

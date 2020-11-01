@@ -28,7 +28,7 @@ namespace normal::pushdown::join {
 class HashJoinProbe : public normal::core::Operator {
 
 public:
-  HashJoinProbe(const std::string &name, JoinPredicate pred, long queryId = 0);
+  HashJoinProbe(const std::string &name, JoinPredicate pred, std::set<std::string> neededColumnNames, long queryId = 0);
 
   void onReceive(const core::message::Envelope &msg) override;
 
