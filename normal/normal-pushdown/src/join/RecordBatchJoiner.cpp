@@ -31,17 +31,16 @@ RecordBatchJoiner::make(const std::shared_ptr<TupleSetIndex> &buildTupleSetIndex
 tl::expected<void, std::string>
 RecordBatchJoiner::join(const std::shared_ptr<::arrow::RecordBatch> &recordBatch) {
 
-  // Combine the chunks in the build table so we have single arrays for each column
-//  std::shared_ptr<::arrow::Table> buildTable;
-//  status = buildTupleSetIndex_->getTable()->CombineChunks(::arrow::default_memory_pool(), &buildTable);
-//  if (!status.ok())
-//	return tl::make_unexpected(status.message());
+  arrow::Status status;
 
-//  buildTupleSetIndex_->validate();
+  // Combine the chunks in the build table so we have single arrays for each column
+  auto combineResult = buildTupleSetIndex_->combine();
+  if (!combineResult)
+    return tl::make_unexpected(combineResult.error());
+
+  //  buildTupleSetIndex_->validate();
 
   auto buildTable = buildTupleSetIndex_->getTable();
-
-  arrow::Status status;
 
   // Get an reference to the probe array to join on
   const auto &probeJoinColumn = recordBatch->GetColumnByName(probeJoinColumnName_);
@@ -132,5 +131,6 @@ RecordBatchJoiner::toTupleSet() {
   auto joinedTable = ::arrow::Table::Make(outputSchema_, chunkedArrays);
   auto joinedTupleSet = TupleSet2::make(joinedTable);
 
+  joinedArrayVectors_.clear();
   return joinedTupleSet;
 }

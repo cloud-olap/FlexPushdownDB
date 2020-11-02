@@ -21,3 +21,7 @@ void AggregateLogicalFunction::expression(const std::shared_ptr<normal::expressi
 void AggregateLogicalFunction::setName(const std::string &name) {
   name_ = name;
 }
+
+const std::string &AggregateLogicalFunction::getName() const {
+  return name_;
+}

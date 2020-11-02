@@ -47,73 +47,39 @@ void HashJoinProbe::onStart() {
 }
 
 void HashJoinProbe::onTuple(const normal::core::message::TupleMessage &msg) {
-//  SPDLOG_INFO("On tuple: {}", name());
-  // Add the tuples to the internal buffer
-  bufferTuples(msg);
-}
-
-void HashJoinProbe::bufferTuples(const normal::core::message::TupleMessage &msg) {
-
+  // Incremental join immediately
   auto tupleSet = TupleSet2::create(msg.tuples());
-  auto result = kernel_.putProbeTupleSet(tupleSet);
-  if(!result) throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
-//  SPDLOG_DEBUG("Buffering tupleSet  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 10000)));
-//  if (!tuples_) {
-//	// Initialise tuples buffer with message contents
-//	tuples_ = tupleSet;
-//  } else {
-//	auto result = tuples_->append(tupleSet);
-//	if(!result.has_value())
-//	  throw std::runtime_error(result.error());
-//  }
+  auto result = kernel_.joinProbeTupleSet(tupleSet);
+  if(!result)
+    throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+
+  // Send
+  send(false);
 }
 
 void HashJoinProbe::onComplete(const normal::core::message::CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(normal::core::OperatorRelationshipType::Producer)) {
-	joinAndSendTuples();
-//    SPDLOG_INFO("Join probe complete: {}", name());
-	ctx()->notifyComplete();
+    send(true);
+  	ctx()->notifyComplete();
   }
-}
-
-void HashJoinProbe::joinAndSendTuples() {
-  auto startTime = std::chrono::steady_clock::now();
-
-  auto expectedJoinedTuples = join();
-
-  auto stopTime = std::chrono::steady_clock::now();
-  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
-  auto bytesJoinProbe = kernel_.getProbeTupleSet().value()->size();
-  double speed = (((double) bytesJoinProbe) / 1024.0 / 1024.0) / (((double) time) / 1000000000);
-//  SPDLOG_INFO("JoinProbe time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", time, bytesJoinProbe, speed, kernel_.probeTupleSet_.value()->numRows(), name());
-
-  if (expectedJoinedTuples) {
-	sendTuples(expectedJoinedTuples.value());
-  } else {
-	// FIXME: Propagate error properly
-	throw std::runtime_error(fmt::format("{}, {}", expectedJoinedTuples.error(), name()));
-  }
-}
-
-tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> HashJoinProbe::join() {
-  return kernel_.join();
-}
-
-void HashJoinProbe::sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &joined) {
-//  SPDLOG_INFO("Join result: \n{}", joined->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  auto v1TupleSet = joined->toTupleSetV1();
-
-  std::shared_ptr<core::message::Message>
-	  tupleMessage = std::make_shared<core::message::TupleMessage>(v1TupleSet, name());
-  ctx()->tell(tupleMessage);
 }
 
 void HashJoinProbe::onHashTable(const TupleSetIndexMessage &msg) {
-  // Add the hashtable to the internal buffer
-  bufferHashTable(msg);
+  // Incremental join immediately
+  auto result = kernel_.joinBuildTupleSetIndex(msg.getTupleSetIndex());
+  if(!result)
+    throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+
+  // Send
+  send(false);
 }
 
-void HashJoinProbe::bufferHashTable(const TupleSetIndexMessage &msg) {
-  auto result = kernel_.putBuildTupleSetIndex(msg.getTupleSetIndex());
-  if(!result) throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+void HashJoinProbe::send(bool force) {
+  auto buffer = kernel_.getBuffer();
+  if (buffer.has_value() && (force || buffer.value()->numRows() >= DefaultBufferSize)) {
+    std::shared_ptr<core::message::Message>
+            tupleMessage = std::make_shared<core::message::TupleMessage>(buffer.value()->toTupleSetV1(), name());
+    ctx()->tell(tupleMessage);
+    kernel_.clear();
+  }
 }

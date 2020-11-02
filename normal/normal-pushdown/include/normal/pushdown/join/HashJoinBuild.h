@@ -47,6 +47,9 @@ private:
   void onTuple(const core::message::TupleMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
 
+  [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet2>& tupleSet);
+  void send(bool force);
+
   size_t bytesJoinBuild_ = 0;
   long joinBuildTime_ = 0;
   long numRows_ = 0;

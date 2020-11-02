@@ -15,8 +15,10 @@
 namespace normal::pushdown::group {
 
 GroupKernel2::GroupKernel2(const std::vector<std::string>& columnNames,
+               const std::vector<std::string>& aggregateColumnNames,
 						   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions) :
-	columnNames_(ColumnName::canonicalize(columnNames)),
+	groupColumnNames_(ColumnName::canonicalize(columnNames)),
+	aggregateColumnNames_(ColumnName::canonicalize(aggregateColumnNames)),
 	aggregateFunctions_(std::move(aggregateFunctions)) {}
 
 tl::expected<void, std::string> GroupKernel2::group(TupleSet2 &tupleSet) {
@@ -35,10 +37,26 @@ tl::expected<void, std::string> GroupKernel2::group(TupleSet2 &tupleSet) {
   if (!groupedArraysResult)
 	return groupedArraysResult;
 
+  // Compute aggregate results for this tupleSet
+  computeGroupAggregates();
+
+  // Clear computed grouped tupleSet
+  groupArrayAppenderVectorMap_.clear();
+  groupArrayVectorMap_.clear();
+
   return {};
 }
 
 void GroupKernel2::computeGroupAggregates() {
+
+  // Finalise the appenders
+  for (const auto &groupArrayAppenders: groupArrayAppenderVectorMap_) {
+    std::vector<std::shared_ptr<arrow::Array>> arrays{};
+    for (const auto &groupArrayAppender: groupArrayAppenders.second) {
+      arrays.push_back(groupArrayAppender->finalize().value());
+    }
+    groupArrayVectorMap_.emplace(groupArrayAppenders.first, arrays);
+  }
 
   // Compute aggregate results for each groupTupleSetPair
   for (const auto &groupTupleSetPair: groupArrayVectorMap_) {
@@ -46,7 +64,7 @@ void GroupKernel2::computeGroupAggregates() {
 	auto groupKey = groupTupleSetPair.first;
 	auto groupArrays = groupTupleSetPair.second;
 
-	auto groupTupleSet = TupleSet2::make(inputSchema_.value(), groupArrays);
+	auto groupTupleSet = TupleSet2::make(aggregateSchema_.value(), groupArrays);
 
 	// Get or initialise the aggregate results for the current group
 	std::vector<std::shared_ptr<AggregationResult>> currentAggregateResults;
@@ -86,12 +104,26 @@ tl::expected<void, std::string> GroupKernel2::cache(const TupleSet2 &tupleSet) {
 	inputSchema_ = arrow::schema(fields);
 
 	// Compute field indices
-	for (const auto &columnName: columnNames_) {
+	for (const auto &columnName: groupColumnNames_) {
 	  auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
 	  if (fieldIndex == -1)
 		return tl::make_unexpected(fmt::format("Group column '{}' not found in input schema", columnName));
 	  groupColumnIndices_.push_back(fieldIndex);
 	}
+
+	for (const auto &columnName: aggregateColumnNames_) {
+    auto fieldIndex = inputSchema_.value()->GetFieldIndex(columnName);
+    if (fieldIndex == -1)
+    return tl::make_unexpected(fmt::format("Aggregate column '{}' not found in input schema", columnName));
+	  aggregateColumnIndices_.push_back(fieldIndex);
+	}
+
+	// Create aggregate schema
+  std::vector<std::shared_ptr<arrow::Field>> aggregateFields;
+  for(const auto &aggregateColumnIndex: aggregateColumnIndices_){
+    aggregateFields.push_back(table->schema()->field(aggregateColumnIndex));
+  }
+  aggregateSchema_ = arrow::schema(aggregateFields);
 
 	// Create output schema
 	auto expectedOutputSchema = makeOutputSchema();
@@ -117,17 +149,6 @@ tl::expected<void, std::string> GroupKernel2::cache(const TupleSet2 &tupleSet) {
 }
 
 tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
-
-  // Finalise the appenders
-  for (const auto &groupArrayAppenders: groupArrayAppenderVectorMap_) {
-	std::vector<std::shared_ptr<arrow::Array>> arrays{};
-	for (const auto &groupArrayAppender: groupArrayAppenders.second) {
-	  arrays.push_back(groupArrayAppender->finalize().value());
-	}
-	groupArrayVectorMap_.emplace(groupArrayAppenders.first, arrays);
-  }
-
-  computeGroupAggregates();
 
   // Finalize the aggregate results
   for (const auto &groupAggregateResults: groupAggregationResultVectorMap_) {
@@ -162,21 +183,22 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
 	aggregateBuilders.push_back(expectedAggregateBuilder.value());
   }
 
-  for (size_t c = 0; c < (size_t)outputSchema_.value()->num_fields(); ++c) {
-	for (const auto &groupArrayVector: groupArrayVectorMap_) {
-	  if (c < groupColumnIndices_.size()) {
-		// Add group column
-		auto groupColumnIndex = groupColumnIndices_[c];
-		groupColumnArrayAppenders[c]->appendValue(groupArrayVector.second[groupColumnIndex], 0);
-	  } else {
-		// Add aggregate column data
-		int aggregateIndex = c - groupColumnIndices_.size();
-		auto aggregateResult = groupAggregationResultVectorMap_.at(groupArrayVector.first);
-		aggregateBuilders[aggregateIndex]->append(aggregateResult.at(aggregateIndex));
-	  }
-	}
-  }
+  for (const auto &groupAggregationResultVector: groupAggregationResultVectorMap_) {
+    auto groupKey = groupAggregationResultVector.first;
+    auto aggregateResultVector = groupAggregationResultVector.second;
+    auto groupKeyArrayVector = groupKeyBuffer_.find(groupKey)->second;
 
+    for (size_t c = 0; c < (size_t)outputSchema_.value()->num_fields(); ++c) {
+      if (c < groupColumnIndices_.size()) {
+        // Add group column
+        groupColumnArrayAppenders[c]->appendValue(groupKeyArrayVector[c], 0);
+      } else {
+        // Add aggregate column data
+        int aggregateIndex = c - groupColumnIndices_.size();
+        aggregateBuilders[aggregateIndex]->append(aggregateResultVector.at(aggregateIndex));
+      }
+    }
+  }
 
   // Add appenders and builders to final output arrays
   arrow::ArrayVector outputArrays;
@@ -197,7 +219,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
 tl::expected<std::shared_ptr<arrow::Schema>, std::string> GroupKernel2::makeOutputSchema() {
 
   std::vector<std::shared_ptr<arrow::Field>> fields;
-  for (const auto &columnName: columnNames_) {
+  for (const auto &columnName: groupColumnNames_) {
 	auto field = inputSchema_.value()->GetFieldByName(columnName);
 	if (!field)
 	  return tl::make_unexpected(fmt::format("Group column '{}' not found in input schema", columnName));
@@ -218,13 +240,14 @@ tl::expected<std::shared_ptr<arrow::Schema>, std::string> GroupKernel2::makeOutp
 }
 
 tl::expected<std::vector<std::shared_ptr<ArrayAppender>>, std::string>
-makeAppenders(const ::arrow::Schema &schema) {
+makeAppenders(const ::arrow::Schema &schema, const std::vector<int> columnIndices) {
   std::vector<std::shared_ptr<ArrayAppender>> appenders;
-  for (const auto &field: schema.fields()) {
-	auto expectedAppender = ArrayAppenderBuilder::make(field->type(), 0);
-	if (!expectedAppender)
-	  return tl::make_unexpected(expectedAppender.error());
-	appenders.push_back(expectedAppender.value());
+  for (auto const &columnIndex: columnIndices) {
+    auto field = schema.field(columnIndex);
+    auto expectedAppender = ArrayAppenderBuilder::make(field->type(), 0);
+    if (!expectedAppender)
+      return tl::make_unexpected(expectedAppender.error());
+    appenders.push_back(expectedAppender.value());
   }
   return appenders;
 }
@@ -248,7 +271,7 @@ GroupKernel2::groupRecordBatch(const ::arrow::RecordBatch &recordBatch) {
 	if (maybeAppenderVectorPair == groupArrayAppenderVectorMap_.end()) {
 
 	  // New group, create appender vector
-	  auto expectedAppenders = makeAppenders(*recordBatch.schema());
+	  auto expectedAppenders = makeAppenders(*recordBatch.schema(), aggregateColumnIndices_);
 	  if (!expectedAppenders)
 		return tl::make_unexpected(expectedAppenders.error());
 	  appenderVector = expectedAppenders.value();
@@ -259,10 +282,29 @@ GroupKernel2::groupRecordBatch(const ::arrow::RecordBatch &recordBatch) {
 	  appenderVector = maybeAppenderVectorPair->second;
 	}
 
-	// Append row data for this group
-	for (int c = 0; c < recordBatch.num_columns(); ++c) {
-	  appenderVector[c]->appendValue(recordBatch.column(c), r);
+	// Append row data of aggregate columns for this group
+	for (size_t c = 0; c < aggregateColumnIndices_.size(); ++c) {
+	  auto aggregateColumnIndex = aggregateColumnIndices_[c];
+	  appenderVector[c]->appendValue(recordBatch.column(aggregateColumnIndex), r);
 	}
+
+	// Buffer the group key into array
+	if (groupKeyBuffer_.find(groupKey) == groupKeyBuffer_.end()) {
+    std::vector<std::shared_ptr<arrow::Array>> arrays;
+    for (auto const groupColumnIndex: groupColumnIndices_) {
+      // Create appender
+      auto expectedGroupKeyAppender = ArrayAppenderBuilder::make(recordBatch.schema()->field(groupColumnIndex)->type(),
+                                                                 1);
+      if (!expectedGroupKeyAppender.has_value())
+        return tl::make_unexpected(expectedGroupKeyAppender.error());
+      auto groupKeyAppender = expectedGroupKeyAppender.value();
+      groupKeyAppender->appendValue(recordBatch.column(groupColumnIndex), r);
+
+      // Finalize into size = 1 array
+      arrays.emplace_back(groupKeyAppender->finalize().value());
+    }
+    groupKeyBuffer_.emplace(groupKey, arrays);
+  }
   }
 
   return {};

@@ -27,6 +27,7 @@ public:
   virtual std::shared_ptr<pushdown::aggregate::AggregationFunction> toExecutorReduceFunction() = 0;
 
   void setName(const std::string &name);
+  const std::string &getName() const;
 
 protected:
   std::string name_;

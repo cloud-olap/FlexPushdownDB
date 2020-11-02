@@ -9,11 +9,13 @@
 using namespace normal::plan::operator_;
 
 normal::plan::operator_::GroupLogicalOperator::GroupLogicalOperator(const std::shared_ptr<std::vector<std::string>> &groupColumnNames,
+                                                                    const std::shared_ptr<std::vector<std::string>> &aggregateColumnNames,
                                                                     const std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> &functions,
                                                                     const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &projectExpression,
                                                                     const std::shared_ptr<LogicalOperator> &producer)
         : LogicalOperator(type::OperatorTypes::groupOperatorType()),
         groupColumnNames_(std::move(groupColumnNames)),
+        aggregateColumnNames_(std::move(aggregateColumnNames)),
         functions_(std::move(functions)),
         projectExpression_(std::move(projectExpression)),
         producer_(std::move(producer)) {}
@@ -30,6 +32,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> GroupLogic
     // FIXME: Defaulting to name -> group
     auto group = std::make_shared<normal::pushdown::group::Group>(fmt::format("group-{}", index),
                                                                   *groupColumnNames_,
+                                                                  *aggregateColumnNames_,
                                                                   expressions,
                                                                   getQueryId());
     operators->emplace_back(group);
@@ -38,11 +41,15 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> GroupLogic
   // add group reduce if needed
   if (numConcurrentUnits_ > 1) {
     auto reduceExpressions = std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
+    std::vector<std::string> aggregateColumnNames;
     for (const auto &function: *functions_) {
       reduceExpressions->emplace_back(function->toExecutorReduceFunction());
+      aggregateColumnNames.emplace_back(function->getName());
     }
+
     auto groupReduce = std::make_shared<normal::pushdown::group::Group>("groupReduce",
                                                                         *groupColumnNames_,
+                                                                        aggregateColumnNames,
                                                                         reduceExpressions,
                                                                         getQueryId());
 

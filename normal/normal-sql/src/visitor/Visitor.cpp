@@ -457,7 +457,11 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       if (project) {
         // group by
         auto groupNode = std::make_shared<normal::plan::operator_::GroupLogicalOperator>(
-                groupColumnNames, aggregateFunctions, projectExpressions, finalConsumerNode);
+                groupColumnNames,
+                std::make_shared<std::vector<std::string>>(aggregateColumnNames.begin(), aggregateColumnNames.end()),
+                aggregateFunctions,
+                projectExpressions,
+                finalConsumerNode);
         groupNode->setName("group");
         nodes->emplace_back(groupNode);
         finalConsumerNode->setConsumer(groupNode);

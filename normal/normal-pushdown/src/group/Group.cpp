@@ -9,25 +9,22 @@ using namespace normal::tuple;
 namespace normal::pushdown::group {
 
 Group::Group(const std::string &Name,
-			 const std::vector<std::string> &ColumnNames,
+			 const std::vector<std::string> &GroupColumnNames,
+			 const std::vector<std::string> &AggregateColumnNames,
 			 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
 			 long queryId) :
 	Operator(Name, "Group", queryId),
 //	kernel_(std::make_unique<GroupKernel>(ColumnNames, *AggregateFunctions)),
-			kernel2_(std::make_unique<GroupKernel2>(ColumnNames, *AggregateFunctions)) {
+			kernel2_(std::make_unique<GroupKernel2>(GroupColumnNames, AggregateColumnNames, *AggregateFunctions)) {
 }
 
 std::shared_ptr<Group> Group::make(const std::string &Name,
-								   const std::vector<std::string> &columnNames,
-								   const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions) {
+								   const std::vector<std::string> &groupColumnNames,
+                   const std::vector<std::string> &aggregateColumnNames,
+								   const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
+								   long queryId) {
 
-  std::vector<std::string> canonicalColumnNames;
-  canonicalColumnNames.reserve(columnNames.size());
-  for (const auto &columnName: columnNames) {
-	canonicalColumnNames.push_back(tuple::ColumnName::canonicalize(columnName));
-  }
-
-  return std::make_shared<Group>(Name, canonicalColumnNames, AggregateFunctions);
+  return std::make_shared<Group>(Name, groupColumnNames, aggregateColumnNames, AggregateFunctions, queryId);
 }
 
 void Group::onReceive(const normal::core::message::Envelope &msg) {
