@@ -38,7 +38,8 @@ add_library(normal-core STATIC
         include/normal/core/Forward.h
         src/OperatorActor2.cpp include/normal/core/OperatorActor2.h
         src/OperatorConnection.cpp include/normal/core/OperatorConnection.h
-        include/normal/core/message/ConnectMessage.cpp include/normal/core/message/ConnectMessage.h)
+        include/normal/core/message/ConnectMessage.cpp include/normal/core/message/ConnectMessage.h
+        src/cache/CacheMetricsMessage.cpp include/normal/core/cache/CacheMetricsMessage.h)
 
 
 target_include_directories(normal-core PUBLIC include)

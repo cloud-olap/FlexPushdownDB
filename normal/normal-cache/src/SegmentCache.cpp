@@ -86,6 +86,8 @@ int SegmentCache::missNum() const {
 void SegmentCache::clearMetrics() {
   hitNum_ = 0;
   missNum_ = 0;
+  hitBytes_ = 0;
+  missBytes_ = 0;
 }
 
 const std::shared_ptr<CachingPolicy> &SegmentCache::getCachingPolicy() const {
@@ -103,4 +105,20 @@ int SegmentCache::crtQueryMissNum() const {
 void SegmentCache::clearCrtQueryMetrics() {
   crtQueryHitNum_ = 0;
   crtQueryMissNum_ = 0;
+}
+
+size_t SegmentCache::hitBytes() const {
+  return hitBytes_;
+}
+
+size_t SegmentCache::missBytes() const {
+  return missBytes_;
+}
+
+void SegmentCache::addHitBytes(size_t hitBytes) {
+  hitBytes_ += hitBytes;
+}
+
+void SegmentCache::addMissBytes(size_t missBytes) {
+  missBytes_ += missBytes;
 }

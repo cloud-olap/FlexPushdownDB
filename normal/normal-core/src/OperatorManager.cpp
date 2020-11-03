@@ -56,8 +56,8 @@ void OperatorManager::boot() {
 }
 
 std::string OperatorManager::showCacheMetrics() {
-  int hitNum;
-  int missNum;
+  int hitNum, missNum;
+  size_t hitBytes, missBytes;
 
   auto errorHandler = [&](const caf::error& error){
 	throw std::runtime_error(to_string(error));
@@ -76,7 +76,20 @@ std::string OperatorManager::showCacheMetrics() {
 	  },
 	  errorHandler);
 
+  self->request(segmentCacheActor_, infinite, GetHitBytesAtom::value).receive(
+    [&](size_t bytesHit) {
+        hitBytes = bytesHit;
+    },
+    errorHandler);
+
+  self->request(segmentCacheActor_, infinite, GetMissBytesAtom::value).receive(
+    [&](size_t bytesMiss) {
+        missBytes = bytesMiss;
+    },
+    errorHandler);
+
   double hitRate = (hitNum + missNum == 0) ? 0.0 : (double) hitNum / (double) (hitNum + missNum);
+  double byteHitRate = (hitBytes + missBytes == 0) ? 0.0 : (double) hitBytes / (double) (hitBytes + missBytes);
 
   std::stringstream ss;
   ss << std::endl;
@@ -92,6 +105,19 @@ std::string OperatorManager::showCacheMetrics() {
   ss << std::left << std::setw(60) << "Hit rate:";
   ss << std::left << std::setw(40) << hitRate;
   ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Hit bytes:";
+  ss << std::left << std::setw(40) << hitBytes;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Miss bytes:";
+  ss << std::left << std::setw(40) << missBytes;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Byte hit rate:";
+  ss << std::left << std::setw(40) << byteHitRate;
+  ss << std::endl;
+
   ss << std::endl;
 
   return ss.str();

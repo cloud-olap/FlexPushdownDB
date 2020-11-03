@@ -34,6 +34,10 @@ public:
   int missNum() const;
   int crtQueryHitNum() const;
   int crtQueryMissNum() const;
+  size_t hitBytes() const;
+  size_t missBytes() const;
+  void addHitBytes(size_t hitBytes);
+  void addMissBytes(size_t missBytes);
   void clearMetrics();
   void clearCrtQueryMetrics();
 
@@ -44,6 +48,8 @@ private:
 	int missNum_ = 0;
 	int crtQueryHitNum_ = 0;
 	int crtQueryMissNum_ = 0;
+	size_t hitBytes_ = 0;
+	size_t missBytes_ = 0;
 };
 
 }
