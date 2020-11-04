@@ -18,7 +18,7 @@ using namespace normal::tuple;
 using namespace normal::pushdown;
 using namespace normal::pushdown::join;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 void runJoinBuild(const std::shared_ptr<TupleSet2> &tupleSet) {
 
@@ -76,12 +76,19 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet1, const std::shared_ptr<Tupl
 //		SPDLOG_DEBUG("INDEX MAP:\n{}", index->toString());
 //		SPDLOG_DEBUG("INDEX TUPLESET:\n{}", indexTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
-		auto probeKernel = HashJoinProbeKernel2::make(JoinPredicate("c_0", "c_0"));
-		result = probeKernel.putBuildTupleSetIndex(index);
+    std::set<std::string> neededColumnNames;
+    for (auto const &field: tupleSet1->schema().value()->fields()) {
+      neededColumnNames.emplace(field->name());
+    }
+    for (auto const &field: tupleSet2->schema().value()->fields()) {
+      neededColumnNames.emplace(field->name());
+    }
+		auto probeKernel = HashJoinProbeKernel2::make(JoinPredicate("c_0", "c_0"), neededColumnNames);
+		result = probeKernel.joinBuildTupleSetIndex(index);
 		if(!result.has_value()) throw std::runtime_error(result.error());
-		result = probeKernel.putProbeTupleSet(tupleSet2);
+		result = probeKernel.joinProbeTupleSet(tupleSet2);
 		if(!result.has_value()) throw std::runtime_error(result.error());
-		joinedTupleSet = *probeKernel.join().value();
+		joinedTupleSet = *probeKernel.getBuffer().value();
 	  });
 
   SPDLOG_DEBUG("Output:\n{}", joinedTupleSet.showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));

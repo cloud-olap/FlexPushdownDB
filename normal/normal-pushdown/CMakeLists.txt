@@ -1,5 +1,8 @@
 project("normal-pushdown" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
+# need to link libraries on mac
+LINK_DIRECTORIES(/usr/local/Cellar/llvm@7/7.1.0_2/lib)
+LINK_DIRECTORIES(/usr/local/Cellar/binutils/2.35.1/lib)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Target
@@ -121,7 +124,7 @@ add_executable(normal-pushdown-benchmark
         bench/MainBenchmark.cpp
         bench/ShuffleBenchmark.cpp
         bench/HashJoinBenchmark.cpp
-        bench/GroupBenchmark.cpp)
+        bench/GroupBenchmark.cpp bench/FilterBenchmark.cpp)
 
 
 target_include_directories(normal-pushdown-benchmark PRIVATE include)

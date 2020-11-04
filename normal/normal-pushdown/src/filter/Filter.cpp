@@ -140,7 +140,6 @@ bool Filter::isApplicable(std::shared_ptr<normal::tuple::TupleSet2> tupleSet) {
 
 void Filter::buildFilter() {
   if(!filter_.has_value()){
-    auto predicateExpression = pred_->expression();
 	filter_ = normal::expression::gandiva::Filter::make(pred_->expression());
 	filter_.value()->compile(received_->schema().value());
   }
