@@ -5,6 +5,7 @@
 #include <normal/plan/operator_/S3SelectScanLogicalOperator.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/expression/gandiva/Column.h>
+#include <normal/expression/gandiva/And.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
@@ -22,9 +23,9 @@ S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
 	ScanLogicalOperator(partitioningScheme) {}
 
 
-std::string S3SelectScanLogicalOperator::genFilterSql(){
-  if (predicate_ != nullptr) {
-    std::string filterStr = predicate_->alias();
+std::string genFilterSql(std::shared_ptr<normal::expression::gandiva::Expression> predicate){
+  if (predicate != nullptr) {
+    std::string filterStr = predicate->alias();
     return " where " + filterStr;
   } else {
     return "";
@@ -32,7 +33,7 @@ std::string S3SelectScanLogicalOperator::genFilterSql(){
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectScanLogicalOperator::toOperators() {
-  validPartitions_ = (!predicate_) ? getPartitioningScheme()->partitions() : getValidPartitions(predicate_);
+//  validPartitions_ = (!predicate_) ? getPartitioningScheme()->partitions() : getValidPartitions(predicate_);
 
   // construct physical operators
   auto mode = getMode();
@@ -53,31 +54,37 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
   auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
-  auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
-  std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
-
-  if (predicate_) {
-    // predicate column names
-    predicateColumnNames = predicate_->involvedColumnNames();
-
-    // simpleCast
-    filterPredicate = filter::FilterPredicate::make(predicate_);
-    filterPredicate->simpleCast(filterPredicate->expression());
-  }
-
-  auto allNeededColumnNames = std::make_shared<std::vector<std::string>>();
-  allNeededColumnNames->insert(allNeededColumnNames->end(), projectedColumnNames_->begin(), projectedColumnNames_->end());
-  allNeededColumnNames->insert(allNeededColumnNames->end(), predicateColumnNames->begin(), predicateColumnNames->end());
-  auto columnNameSet = std::make_shared<std::set<std::string>>(allNeededColumnNames->begin(), allNeededColumnNames->end());
-  allNeededColumnNames->assign(columnNameSet->begin(), columnNameSet->end());
 
   /**
-   * For each range of each partition, create a s3scan (and a filter if needed)
+   * For each range of each valid partition, create a s3scan (and a filter if needed)
    */
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto queryId = getQueryId();
 
-  for (const auto &partition: *validPartitions_) {
+  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+    // Check if valid for predicates (if will get empty result), and extract only useful predicates (can at least filter out some)
+    auto validPair = checkPartitionValid(partition);
+    if (!validPair.first) {
+      continue;
+    }
+    auto finalPredicate = validPair.second;
+
+    // Prepare filterPredicate, neededColumnNames
+    auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
+    std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
+    if (finalPredicate) {
+      // predicate column names
+      predicateColumnNames = finalPredicate->involvedColumnNames();
+      auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
+      predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
+      // filter predicate
+      filterPredicate = filter::FilterPredicate::make(finalPredicate);
+    }
+    auto allNeededColumnNameSet = std::make_shared<std::set<std::string>>(projectedColumnNames_->begin(), projectedColumnNames_->end());
+    allNeededColumnNameSet->insert(predicateColumnNames->begin(), predicateColumnNames->end());
+    auto allNeededColumnNames = std::make_shared<std::vector<std::string>>(allNeededColumnNameSet->begin(), allNeededColumnNameSet->end());
+
+    // Construct
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
@@ -105,7 +112,7 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
 
       std::shared_ptr<Operator> upStreamOfProj;
       // Filter if it has filterPredicate
-      if (predicate_) {
+      if (finalPredicate) {
         auto filter = filter::Filter::make(
                 fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
                 filterPredicate,
@@ -144,10 +151,18 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 S3SelectScanLogicalOperator::toOperatorsFullPushdown(int numRanges) {
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
-  auto filterSql = genFilterSql();
   auto queryId = getQueryId();
 
-  for (const auto &partition: *validPartitions_) {
+  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+    // Check if valid for predicates (if will get empty result), and extract only useful predicates (can at least filter out some)
+    auto validPair = checkPartitionValid(partition);
+    if (!validPair.first) {
+      continue;
+    }
+    auto finalPredicate = validPair.second;
+    auto filterSql = genFilterSql(finalPredicate);
+
+    // Construct
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Object = s3Partition->getObject();
     auto numBytes = s3Partition->getNumBytes();
@@ -182,17 +197,6 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
   auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
-  auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
-  std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
-
-  if (predicate_) {
-    // predicate column names
-    predicateColumnNames = predicate_->involvedColumnNames();
-
-    // simpleCast
-    filterPredicate = filter::FilterPredicate::make(predicate_);
-    filterPredicate->simpleCast(filterPredicate->expression());
-  }
 
   /**
    * For each range in each partition, construct:
@@ -201,7 +205,28 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto queryId = getQueryId();
 
-  for (const auto &partition: *validPartitions_) {
+  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+    // Check if valid for predicates (if will get empty result), and extract only useful predicates (can at least filter out some)
+    auto validPair = checkPartitionValid(partition);
+    if (!validPair.first) {
+      continue;
+    }
+    auto finalPredicate = validPair.second;
+    auto filterSql = genFilterSql(finalPredicate);
+
+    // Prepare filterPredicate, neededColumnNames
+    auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
+    std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
+    if (finalPredicate) {
+      // predicate column names
+      predicateColumnNames = finalPredicate->involvedColumnNames();
+      auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
+      predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
+      // filter predicate
+      filterPredicate = filter::FilterPredicate::make(finalPredicate);
+    }
+
+    // Construct
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
@@ -271,7 +296,7 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
 
       std::shared_ptr<Operator> upStreamOfProj;
       // Filter if it has filterPredicate
-      if (predicate_) {
+      if (finalPredicate) {
         auto filter = filter::Filter::make(
                 fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
                 filterPredicate,
@@ -311,20 +336,6 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
-  auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
-  std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
-
-  if (predicate_) {
-    // predicate column names
-    predicateColumnNames = predicate_->involvedColumnNames();
-    // deduplicate
-    auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
-    predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
-
-    // simpleCast
-    filterPredicate = filter::FilterPredicate::make(predicate_);
-    filterPredicate->simpleCast(filterPredicate->expression());
-  }
 
   /**
    * For each range in each partition, construct:
@@ -335,7 +346,28 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto queryId = getQueryId();
 
-  for (const auto &partition: *validPartitions_) {
+  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+    // Check if valid for predicates (if will get empty result), and extract only useful predicates (can at least filter out some)
+    auto validPair = checkPartitionValid(partition);
+    if (!validPair.first) {
+      continue;
+    }
+    auto finalPredicate = validPair.second;
+    auto filterSql = genFilterSql(finalPredicate);
+
+    // Prepare filterPredicate, neededColumnNames
+    auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
+    std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
+    if (finalPredicate) {
+      // predicate column names
+      predicateColumnNames = finalPredicate->involvedColumnNames();
+      auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
+      predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
+      // filter predicate
+      filterPredicate = filter::FilterPredicate::make(finalPredicate);
+    }
+
+    // Construct
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
@@ -404,7 +436,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
 
       // filter if it has filterPredicate
       std::shared_ptr<normal::core::Operator> leftOpOfMerge2;
-      if (predicate_) {
+      if (finalPredicate) {
         auto filter = filter::Filter::make(
                 fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
                 filterPredicate,
@@ -424,7 +456,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               "s3select - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
-              genFilterSql(),
+              genFilterSql(finalPredicate),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
@@ -479,20 +511,6 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
 
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
-  auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
-  std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
-
-  if (predicate_) {
-    // predicate column names
-    predicateColumnNames = predicate_->involvedColumnNames();
-    // deduplicate
-    auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
-    predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
-
-    // simpleCast
-    filterPredicate = filter::FilterPredicate::make(predicate_);
-    filterPredicate->simpleCast(filterPredicate->expression());
-  }
 
   /**
    * For each range in each partition, construct:
@@ -503,7 +521,28 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
   streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
   auto queryId = getQueryId();
 
-  for (const auto &partition: *validPartitions_) {
+  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+    // Check if valid for predicates (if will get empty result), and extract only useful predicates (can at least filter out some)
+    auto validPair = checkPartitionValid(partition);
+    if (!validPair.first) {
+      continue;
+    }
+    auto finalPredicate = validPair.second;
+    auto filterSql = genFilterSql(finalPredicate);
+
+    // Prepare filterPredicate, neededColumnNames
+    auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
+    std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
+    if (finalPredicate) {
+      // predicate column names
+      predicateColumnNames = finalPredicate->involvedColumnNames();
+      auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
+      predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
+      // filter predicate
+      filterPredicate = filter::FilterPredicate::make(finalPredicate);
+    }
+
+    // Construct
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto s3Bucket = s3Partition->getBucket();
     auto s3Object = s3Partition->getObject();
@@ -546,7 +585,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
               "s3select - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
-              genFilterSql(),
+              genFilterSql(finalPredicate),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
@@ -573,7 +612,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
       merge->setRightProducer(s3Select);
 
       // filter if it has filterPredicate
-      if (predicate_) {
+      if (finalPredicate) {
         auto filter = filter::Filter::make(
                 fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
                 filterPredicate,
@@ -619,31 +658,36 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
 // Belady caching algorithm
 std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> S3SelectScanLogicalOperator::extractSegmentKeys() {
   auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
-  auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
-  std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
-
-  if (predicate_) {
-    // predicate column names
-    predicateColumnNames = predicate_->involvedColumnNames();
-
-    // simpleCast
-    filterPredicate = filter::FilterPredicate::make(predicate_);
-    filterPredicate->simpleCast(filterPredicate->expression());
-  }
-
-  auto allColumnNames = std::make_shared<std::vector<std::string>>();
-  allColumnNames->insert(allColumnNames->end(), projectedColumnNames_->begin(), projectedColumnNames_->end());
-  allColumnNames->insert(allColumnNames->end(), predicateColumnNames->begin(), predicateColumnNames->end());
-  auto columnNameSet = std::make_shared<std::set<std::string>>(allColumnNames->begin(), allColumnNames->end());
-  // use set to remove duplicates
-  allColumnNames->assign(columnNameSet->begin(), columnNameSet->end());
 
   /**
    * Examine range of each partition, and create corresponding segment keys
    */
   auto involvedSegmentKeys = std::make_shared<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>();
 
-  for (const auto &partition: *validPartitions_) {
+  for (const auto &partition: *getPartitioningScheme()->partitions()) {
+    // Check if valid for predicates (if will get empty result), and extract only useful predicates (can at least filter out some)
+    auto validPair = checkPartitionValid(partition);
+    if (!validPair.first) {
+      continue;
+    }
+    auto finalPredicate = validPair.second;
+
+    // Prepare filterPredicate, neededColumnNames
+    auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
+    std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
+    if (finalPredicate) {
+      // predicate column names
+      predicateColumnNames = finalPredicate->involvedColumnNames();
+      auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
+      predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
+      // filter predicate
+      filterPredicate = filter::FilterPredicate::make(finalPredicate);
+    }
+    auto allColumnNameSet = std::make_shared<std::set<std::string>>(projectedColumnNames_->begin(), projectedColumnNames_->end());
+    allColumnNameSet->insert(predicateColumnNames->begin(), predicateColumnNames->end());
+    auto allColumnNames = std::make_shared<std::vector<std::string>>(allColumnNameSet->begin(), allColumnNameSet->end());
+
+    // Construct
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto numBytes = s3Partition->getNumBytes();
     auto segmentRange = SegmentRange::make(0, numBytes);

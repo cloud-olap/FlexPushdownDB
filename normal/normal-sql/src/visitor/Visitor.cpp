@@ -361,16 +361,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     auto tableName = scanNode_pair.first;
     auto scanNode = scanNode_pair.second;
     auto andExpr_vector = filters_map->find(tableName)->second;
-    std::shared_ptr<normal::expression::gandiva::Expression> lastExpr = nullptr;
-    for (const auto &expr: *andExpr_vector) {
-      if (lastExpr == nullptr) {
-        lastExpr = expr;
-        continue;
-      }
-      auto andExpr = and_(lastExpr, expr);
-      lastExpr = andExpr;
-    }
-    scanNode->setPredicate(lastExpr);
+    scanNode->setPredicates(andExpr_vector);
 
     if (simpleScan) {
       for(const auto &scanNode_pair: *scanNodes_map){

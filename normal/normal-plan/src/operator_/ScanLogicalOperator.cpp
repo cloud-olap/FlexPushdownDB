@@ -17,6 +17,7 @@
 #include <normal/expression/gandiva/Or.h>
 
 using namespace normal::plan::operator_;
+using namespace normal::expression::gandiva;
 
 ScanLogicalOperator::ScanLogicalOperator(
 	std::shared_ptr<PartitioningScheme> partitioningScheme) :
@@ -27,12 +28,14 @@ const std::shared_ptr<PartitioningScheme> &ScanLogicalOperator::getPartitioningS
   return partitioningScheme_;
 }
 
-void ScanLogicalOperator::predicate(const std::shared_ptr<expression::gandiva::Expression> &predicate) {
-  predicate_ = predicate;
-}
+void ScanLogicalOperator::setPredicates(const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &predicates) {
+  predicates_ = predicates;
 
-void ScanLogicalOperator::setPredicate(const std::shared_ptr<expression::gandiva::Expression> &predicate) {
-  predicate_ = predicate;
+  // Simple cast
+  for (auto const &predicate: *predicates_) {
+    auto castPredicate = normal::expression::gandiva::simpleCast(predicate);
+    castPredicates_.emplace(predicate->alias(), castPredicate);
+  }
 }
 
 void
@@ -64,206 +67,253 @@ std::optional<double> getNumericValue(std::shared_ptr<normal::expression::gandiv
   }
 }
 
-std::shared_ptr<std::vector<std::shared_ptr<Partition>>> ScanLogicalOperator::getValidPartitions(
-        std::shared_ptr<expression::gandiva::Expression> predicate) {
+bool checkPartitionValid(std::shared_ptr<Partition> partition,
+                        std::shared_ptr<normal::expression::gandiva::Expression> predicate) {
   auto sortedColumns = normal::connector::defaultMiniCatalogue->sortedColumns();
 
-  if (typeid(*predicate) == typeid(expression::gandiva::And)) {
-    auto andExpr = std::static_pointer_cast<expression::gandiva::And>(predicate);
-    auto leftValidPartitions = getValidPartitions(andExpr->getLeft());
-    auto rightValidPartitions = getValidPartitions(andExpr->getRight());
-    // intersection
-    auto leftValidPartitionSet = std::make_shared<std::unordered_set<std::shared_ptr<Partition>, PartitionPointerHash, PartitionPointerPredicate>>();
-    for (auto const &leftValidPartition: *leftValidPartitions) {
-      leftValidPartitionSet->emplace(leftValidPartition);
-    }
-    auto intersectionSet = std::make_shared<std::unordered_set<std::shared_ptr<Partition>, PartitionPointerHash, PartitionPointerPredicate>>();
-    for (auto const &rightValidPartition: *rightValidPartitions) {
-      if (leftValidPartitionSet->find(rightValidPartition) != leftValidPartitionSet->end()) {
-        intersectionSet->emplace(rightValidPartition);
-      }
-    }
-    auto validPartitions = std::make_shared<std::vector<std::shared_ptr<Partition>>>();
-    validPartitions->assign(intersectionSet->begin(), intersectionSet->end());
-    return validPartitions;
+  if (typeid(*predicate) == typeid(And)) {
+    auto andExpr = std::static_pointer_cast<And>(predicate);
+    return checkPartitionValid(partition, andExpr->getLeft()) && checkPartitionValid(partition, andExpr->getRight());
   }
 
-  else if (typeid(*predicate) == typeid(expression::gandiva::Or)) {
-    auto andExpr = std::static_pointer_cast<expression::gandiva::Or>(predicate);
-    auto leftValidPartitions = getValidPartitions(andExpr->getLeft());
-    auto rightValidPartitions = getValidPartitions(andExpr->getRight());
-    // union
-    auto unionSet = std::make_shared<std::unordered_set<std::shared_ptr<Partition>, PartitionPointerHash, PartitionPointerPredicate>>();
-    for (auto const &validPartition: *leftValidPartitions) {
-      unionSet ->emplace(validPartition);
-    }
-    auto validPartitions = std::make_shared<std::vector<std::shared_ptr<Partition>>>();
-    validPartitions->assign(unionSet->begin(), unionSet->end());
-    return validPartitions;
+  else if (typeid(*predicate) == typeid(Or)) {
+    auto orExpr = std::static_pointer_cast<Or>(predicate);
+    return checkPartitionValid(partition, orExpr->getLeft()) || checkPartitionValid(partition, orExpr->getRight());
   }
 
-  else if (typeid(*predicate) == typeid(expression::gandiva::LessThan) ||
-           typeid(*predicate) == typeid(expression::gandiva::LessThanOrEqualTo) ||
-           typeid(*predicate) == typeid(expression::gandiva::GreaterThan) ||
-           typeid(*predicate) == typeid(expression::gandiva::GreaterThanOrEqualTo) ||
-           typeid(*predicate) == typeid(expression::gandiva::EqualTo)) {
-    auto ltExpr = std::static_pointer_cast<expression::gandiva::BinaryExpression>(predicate);
-    auto leftExpr = ltExpr->getLeft();
-    auto rightExpr = ltExpr->getRight();
+  else if (typeid(*predicate) == typeid(LessThan) ||
+           typeid(*predicate) == typeid(LessThanOrEqualTo) ||
+           typeid(*predicate) == typeid(GreaterThan) ||
+           typeid(*predicate) == typeid(GreaterThanOrEqualTo) ||
+           typeid(*predicate) == typeid(EqualTo)) {
+    auto biExpr = std::static_pointer_cast<BinaryExpression>(predicate);
 
-    // try to get valid partitions
-    if (typeid(*leftExpr) == typeid(expression::gandiva::Column)) {
-      auto columnName = std::static_pointer_cast<expression::gandiva::Column>(leftExpr)->getColumnName();
-      if (typeid(*rightExpr) == typeid(expression::gandiva::StringLiteral)) {
-        auto sortedColumnValuesIt = sortedColumns->find(columnName);
-        if (sortedColumnValuesIt != sortedColumns->end()) {
-          auto sortedColumnValues = sortedColumnValuesIt->second;
-          auto predicateValue = std::static_pointer_cast<expression::gandiva::StringLiteral>(rightExpr)->value();
-          auto validPartitions = std::make_shared<std::vector<std::shared_ptr<Partition>>>();
-          for (auto const &partition: *getPartitioningScheme()->partitions()) {
-            auto dataValuePair = sortedColumnValues->find(partition)->second;
-            if (typeid(*predicate) == typeid(expression::gandiva::LessThan)) {
-              if (dataValuePair.first.compare(predicateValue) < 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else if (typeid(*predicate) == typeid(expression::gandiva::LessThanOrEqualTo)) {
-              if (dataValuePair.first.compare(predicateValue) <= 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThan)) {
-              if (dataValuePair.second.compare(predicateValue) > 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThanOrEqualTo)) {
-              if (dataValuePair.second.compare(predicateValue) >= 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else {
-              if (dataValuePair.first.compare(predicateValue) <= 0 && dataValuePair.second.compare(predicateValue) >= 0) {
-                validPartitions->emplace_back(partition);
-              }
-            }
-          }
-          return validPartitions;
-        }
-      } else {
-        auto numericValue = getNumericValue(rightExpr);
-        if (numericValue.has_value()) {
-          auto predicateValue = numericValue.value();
-          auto sortedColumnValuesIt = sortedColumns->find(columnName);
-          if (sortedColumnValuesIt != sortedColumns->end()) {
-            auto sortedColumnValues = sortedColumnValuesIt->second;
-            auto validPartitions = std::make_shared<std::vector<std::shared_ptr<Partition>>>();
-            for (auto const &partition: *getPartitioningScheme()->partitions()) {
-              auto dataValuePair = sortedColumnValues->find(partition)->second;
-              if (typeid(*predicate) == typeid(expression::gandiva::LessThan)) {
-                if (std::stod(dataValuePair.first) < predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else if (typeid(*predicate) == typeid(expression::gandiva::LessThanOrEqualTo)) {
-                if (std::stod(dataValuePair.first) <= predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThan)) {
-                if (std::stod(dataValuePair.second) > predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThanOrEqualTo)) {
-                if (std::stod(dataValuePair.second) >= predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else {
-                if (std::stod(dataValuePair.first) <= predicateValue && std::stod(dataValuePair.second) >= predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              }
-            }
-            return validPartitions;
-          }
-        }
-      }
+    std::shared_ptr<Expression> colExpr, valExpr;
+    bool reverse;
+
+    if (typeid(*biExpr->getLeft()) == typeid(Column)) {
+      colExpr = biExpr->getLeft();
+      valExpr = biExpr->getRight();
+      reverse = false;
+    } else if (typeid(*biExpr->getRight()) == typeid(Column)) {
+      colExpr = biExpr->getRight();
+      valExpr = biExpr->getLeft();
+      reverse = true;
+    } else {
+      return true;
     }
 
-    else if (typeid(*rightExpr) == typeid(expression::gandiva::Column)) {
-      auto columnName = std::static_pointer_cast<expression::gandiva::Column>(rightExpr)->getColumnName();
-      if (typeid(*leftExpr) == typeid(expression::gandiva::StringLiteral)) {
-        auto sortedColumnValuesIt = sortedColumns->find(columnName);
-        if (sortedColumnValuesIt != sortedColumns->end()) {
-          auto sortedColumnValues = sortedColumnValuesIt->second;
-          auto predicateValue = std::static_pointer_cast<expression::gandiva::StringLiteral>(leftExpr)->value();
-          auto validPartitions = std::make_shared<std::vector<std::shared_ptr<Partition>>>();
-          for (auto const &partition: *getPartitioningScheme()->partitions()) {
-            auto dataValuePair = sortedColumnValues->find(partition)->second;
-            if (typeid(*predicate) == typeid(expression::gandiva::LessThan)) {
-              if (dataValuePair.second.compare(predicateValue) > 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else if (typeid(*predicate) == typeid(expression::gandiva::LessThanOrEqualTo)) {
-              if (dataValuePair.second.compare(predicateValue) >= 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThan)) {
-              if (dataValuePair.first.compare(predicateValue) < 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThanOrEqualTo)) {
-              if (dataValuePair.first.compare(predicateValue) <= 0) {
-                validPartitions->emplace_back(partition);
-              }
-            } else {
-              if (dataValuePair.first.compare(predicateValue) <= 0 && dataValuePair.second.compare(predicateValue) >= 0) {
-                validPartitions->emplace_back(partition);
-              }
-            }
-          }
-          return validPartitions;
+    auto columnName = std::static_pointer_cast<Column>(colExpr)->getColumnName();
+    auto sortedColumnValuesIt = sortedColumns->find(columnName);
+    if (sortedColumnValuesIt == sortedColumns->end()) {
+      return true;
+    }
+    auto sortedColumnValues = sortedColumnValuesIt->second;
+    auto dataValuePair = sortedColumnValues->find(partition)->second;
+
+    if (typeid(*valExpr) == typeid(StringLiteral)) {
+      auto predicateValue = std::static_pointer_cast<StringLiteral>(valExpr)->value();
+      if (typeid(*predicate) == typeid(LessThan)) {
+        if (!reverse) {
+          return dataValuePair.first.compare(predicateValue) < 0;
+        } else {
+          return dataValuePair.second.compare(predicateValue) > 0;
+        }
+      } else if (typeid(*predicate) == typeid(LessThanOrEqualTo)) {
+        if (!reverse) {
+          return dataValuePair.first.compare(predicateValue) <= 0;
+        } else {
+          return dataValuePair.second.compare(predicateValue) >= 0;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThan)) {
+        if (!reverse) {
+          return dataValuePair.second.compare(predicateValue) > 0;
+        } else {
+          return dataValuePair.first.compare(predicateValue) < 0;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThanOrEqualTo)) {
+        if (!reverse) {
+          return dataValuePair.second.compare(predicateValue) >= 0;
+        } else {
+          return dataValuePair.first.compare(predicateValue) <= 0;
         }
       } else {
-        auto numericValue = getNumericValue(leftExpr);
-        if (numericValue.has_value()) {
-          auto predicateValue = numericValue.value();
-          auto sortedColumnValuesIt = sortedColumns->find(columnName);
-          if (sortedColumnValuesIt != sortedColumns->end()) {
-            auto sortedColumnValues = sortedColumnValuesIt->second;
-            auto validPartitions = std::make_shared<std::vector<std::shared_ptr<Partition>>>();
-            for (auto const &partition: *getPartitioningScheme()->partitions()) {
-              auto dataValuePair = sortedColumnValues->find(partition)->second;
-              if (typeid(*predicate) == typeid(expression::gandiva::LessThan)) {
-                if (std::stod(dataValuePair.second) > predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else if (typeid(*predicate) == typeid(expression::gandiva::LessThanOrEqualTo)) {
-                if (std::stod(dataValuePair.second) >= predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThan)) {
-                if (std::stod(dataValuePair.first) < predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else if (typeid(*predicate) == typeid(expression::gandiva::GreaterThanOrEqualTo)) {
-                if (std::stod(dataValuePair.first) <= predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              } else {
-                if (std::stod(dataValuePair.first) <= predicateValue && std::stod(dataValuePair.second) >= predicateValue) {
-                  validPartitions->emplace_back(partition);
-                }
-              }
-            }
-            return validPartitions;
-          }
+        return dataValuePair.first.compare(predicateValue) <= 0 && dataValuePair.second.compare(predicateValue) >= 0;
+      }
+    } else {
+      auto numericValue = getNumericValue(valExpr);
+      if (!numericValue.has_value()) {
+        return true;
+      }
+      auto predicateValue = numericValue.value();
+      if (typeid(*predicate) == typeid(LessThan)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.first) < predicateValue;
+        } else {
+          return std::stod(dataValuePair.second) > predicateValue;
         }
+      } else if (typeid(*predicate) == typeid(LessThanOrEqualTo)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.first) <= predicateValue;
+        } else {
+          return std::stod(dataValuePair.second) >= predicateValue;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThan)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.second) > predicateValue;
+        } else {
+          return std::stod(dataValuePair.first) < predicateValue;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThanOrEqualTo)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.second) >= predicateValue;
+        } else {
+          return std::stod(dataValuePair.first) <= predicateValue;
+        }
+      } else {
+        return std::stod(dataValuePair.first) <= predicateValue && std::stod(dataValuePair.second) >= predicateValue;
       }
     }
-
-    // all partitions are valid
-    auto validPartitions = std::make_shared<std::vector<std::shared_ptr<Partition>>>();
-    auto allPartitions = getPartitioningScheme()->partitions();
-    validPartitions->assign(allPartitions->begin(), allPartitions->end());
-    return validPartitions;
   }
 
   else {
-    throw std::runtime_error("Bad filter predicate");
+    throw std::runtime_error(fmt::format("Bad filter predicate: {}", predicate->alias()));
   }
+}
+
+bool checkPredicateNeeded(std::shared_ptr<Partition> partition,
+                          std::shared_ptr<Expression> predicate) {
+  auto sortedColumns = normal::connector::defaultMiniCatalogue->sortedColumns();
+
+  if (typeid(*predicate) == typeid(And)) {
+    auto andExpr = std::static_pointer_cast<And>(predicate);
+    return checkPredicateNeeded(partition, andExpr->getLeft()) || checkPredicateNeeded(partition, andExpr->getRight());
+  }
+
+  else if (typeid(*predicate) == typeid(Or)) {
+    auto orExpr = std::static_pointer_cast<Or>(predicate);
+    return checkPredicateNeeded(partition, orExpr->getLeft()) && checkPredicateNeeded(partition, orExpr->getRight());
+  }
+
+  else if (typeid(*predicate) == typeid(LessThan) ||
+           typeid(*predicate) == typeid(LessThanOrEqualTo) ||
+           typeid(*predicate) == typeid(GreaterThan) ||
+           typeid(*predicate) == typeid(GreaterThanOrEqualTo) ||
+           typeid(*predicate) == typeid(EqualTo)) {
+    auto biExpr = std::static_pointer_cast<BinaryExpression>(predicate);
+
+    std::shared_ptr<Expression> colExpr, valExpr;
+    bool reverse;
+
+    if (typeid(*biExpr->getLeft()) == typeid(Column)) {
+      colExpr = biExpr->getLeft();
+      valExpr = biExpr->getRight();
+      reverse = false;
+    } else if (typeid(*biExpr->getRight()) == typeid(Column)) {
+      colExpr = biExpr->getRight();
+      valExpr = biExpr->getLeft();
+      reverse = true;
+    } else {
+      return true;
+    }
+
+    auto columnName = std::static_pointer_cast<Column>(colExpr)->getColumnName();
+    auto sortedColumnValuesIt = sortedColumns->find(columnName);
+    if (sortedColumnValuesIt == sortedColumns->end()) {
+      return true;
+    }
+    auto sortedColumnValues = sortedColumnValuesIt->second;
+    auto dataValuePair = sortedColumnValues->find(partition)->second;
+
+    if (typeid(*valExpr) == typeid(StringLiteral)) {
+      auto predicateValue = std::static_pointer_cast<StringLiteral>(valExpr)->value();
+      if (typeid(*predicate) == typeid(LessThan)) {
+        if (!reverse) {
+          return dataValuePair.second.compare(predicateValue) >= 0;
+        } else {
+          return dataValuePair.first.compare(predicateValue) <= 0;
+        }
+      } else if (typeid(*predicate) == typeid(LessThanOrEqualTo)) {
+        if (!reverse) {
+          return dataValuePair.second.compare(predicateValue) > 0;
+        } else {
+          return dataValuePair.first.compare(predicateValue) < 0;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThan)) {
+        if (!reverse) {
+          return dataValuePair.first.compare(predicateValue) <= 0;
+        } else {
+          return dataValuePair.second.compare(predicateValue) >= 0;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThanOrEqualTo)) {
+        if (!reverse) {
+          return dataValuePair.first.compare(predicateValue) < 0;
+        } else {
+          return dataValuePair.second.compare(predicateValue) > 0;
+        }
+      } else {
+        return dataValuePair.first.compare(predicateValue) == 0 && dataValuePair.second.compare(predicateValue) == 0;
+      }
+    } else {
+      auto numericValue = getNumericValue(valExpr);
+      if (!numericValue.has_value()) {
+        return true;
+      }
+      auto predicateValue = numericValue.value();
+      if (typeid(*predicate) == typeid(LessThan)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.second) >= predicateValue;
+        } else {
+          return std::stod(dataValuePair.first) <= predicateValue;
+        }
+      } else if (typeid(*predicate) == typeid(LessThanOrEqualTo)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.second) > predicateValue;
+        } else {
+          return std::stod(dataValuePair.first) < predicateValue;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThan)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.first) <= predicateValue;
+        } else {
+          return std::stod(dataValuePair.second) >= predicateValue;
+        }
+      } else if (typeid(*predicate) == typeid(GreaterThanOrEqualTo)) {
+        if (!reverse) {
+          return std::stod(dataValuePair.first) < predicateValue;
+        } else {
+          return std::stod(dataValuePair.second) > predicateValue;
+        }
+      } else {
+        return std::stod(dataValuePair.first) == predicateValue && std::stod(dataValuePair.second) == predicateValue;
+      }
+    }
+  }
+
+  else {
+    throw std::runtime_error(fmt::format("Bad filter predicate: {}", predicate->alias()));
+  }
+}
+
+std::pair<bool, std::shared_ptr<normal::expression::gandiva::Expression>>
+ScanLogicalOperator::checkPartitionValid(std::shared_ptr<Partition> partition) {
+  std::shared_ptr<normal::expression::gandiva::Expression> finalPredicate = nullptr;
+  bool valid = true;
+  for (auto const &predicate: *predicates_) {
+    if (!::checkPartitionValid(partition, predicate)) {
+      valid = false;
+      break;
+    }
+    if (!::checkPredicateNeeded(partition, predicate)) {
+      continue;
+    } else {
+      auto castPredicate = castPredicates_.find(predicate->alias())->second;
+      if (finalPredicate == nullptr) {
+        finalPredicate = castPredicate;
+      } else {
+        finalPredicate = and_(finalPredicate, castPredicate);
+      }
+    }
+  }
+  return std::pair<bool, std::shared_ptr<normal::expression::gandiva::Expression>>(valid, finalPredicate);
 }
