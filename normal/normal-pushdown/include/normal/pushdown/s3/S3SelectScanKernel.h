@@ -32,7 +32,8 @@ public:
 					 std::optional<int64_t> finishPos,
 					 FileType fileType,
 					 std::optional< S3SelectCSVParseOptions> csvParseOptions,
-					 std::shared_ptr<S3Client> s3Client);
+					 std::shared_ptr<S3Client> s3Client,
+					 std::shared_ptr<arrow::Schema> schema);
 
   static std::unique_ptr<S3SelectScanKernel> make(const std::string &s3Bucket,
 												  const std::string &s3Object,
@@ -41,12 +42,15 @@ public:
 												  std::optional<int64_t> finishPos,
 												  FileType fileType,
 												  const std::optional< S3SelectCSVParseOptions> &csvParseOptions,
-												  const std::shared_ptr<S3Client> &s3Client);
+												  const std::shared_ptr<S3Client> &s3Client,
+												  const std::shared_ptr<arrow::Schema>& schema);
 
   tl::expected<std::shared_ptr<TupleSet2>, std::string>
   scan(const std::vector<std::string> &columnNames);
 
-  tl::expected<void, std::string> s3Select(const std::string &sql, const TupleSetEventCallback &tupleSetEventCallback);
+  tl::expected<void, std::string> s3Select(const std::string &sql,
+										   const std::vector<std::string> &columnNames,
+										   const TupleSetEventCallback &tupleSetEventCallback);
 
   [[nodiscard]] const std::string &getS3Bucket() const;
   [[nodiscard]] const std::string &getS3Object() const;
@@ -63,6 +67,7 @@ private:
   FileType fileType_;
   std::optional< S3SelectCSVParseOptions> csvParseOptions_;
   std::shared_ptr<S3Client> s3Client_;
+  std::shared_ptr<arrow::Schema> schema_;
 
 };
 

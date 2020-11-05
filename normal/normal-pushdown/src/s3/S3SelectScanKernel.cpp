@@ -17,8 +17,9 @@ S3SelectScanKernel::S3SelectScanKernel(std::string s3Bucket,
 									   std::optional<int64_t> startPos,
 									   std::optional<int64_t> finishPos,
 									   FileType fileType,
-									   std::optional< S3SelectCSVParseOptions> csvParseOptions,
-									   std::shared_ptr<Aws::S3::S3Client> s3Client)
+									   std::optional<S3SelectCSVParseOptions> csvParseOptions,
+									   std::shared_ptr<Aws::S3::S3Client> s3Client,
+									   std::shared_ptr<arrow::Schema> schema)
 	: s3Bucket_(std::move(s3Bucket)),
 	  s3Object_(std::move(s3Object)),
 	  sql_(std::move(sql)),
@@ -26,7 +27,8 @@ S3SelectScanKernel::S3SelectScanKernel(std::string s3Bucket,
 	  finishPos_(finishPos),
 	  fileType_(fileType),
 	  csvParseOptions_(std::move(csvParseOptions)),
-	  s3Client_(std::move(s3Client)) {}
+	  s3Client_(std::move(s3Client)),
+	  schema_(std::move(schema)) {}
 
 std::unique_ptr<S3SelectScanKernel> S3SelectScanKernel::make(const std::string &s3Bucket,
 															 const std::string &s3Object,
@@ -35,7 +37,8 @@ std::unique_ptr<S3SelectScanKernel> S3SelectScanKernel::make(const std::string &
 															 std::optional<int64_t> finishPos,
 															 FileType fileType,
 															 const std::optional< S3SelectCSVParseOptions> &csvParseOptions,
-															 const std::shared_ptr<Aws::S3::S3Client> &s3Client) {
+															 const std::shared_ptr<Aws::S3::S3Client> &s3Client,
+															 const std::shared_ptr<arrow::Schema>& schema) {
   return std::make_unique<S3SelectScanKernel>(s3Bucket,
 											  s3Object,
 											  sql,
@@ -43,7 +46,8 @@ std::unique_ptr<S3SelectScanKernel> S3SelectScanKernel::make(const std::string &
 											  finishPos,
 											  fileType,
 											  csvParseOptions,
-											  s3Client);
+											  s3Client,
+											  schema);
 
 }
 
@@ -59,9 +63,9 @@ S3SelectScanKernel::scan(const std::vector<std::string> &columnNames) {
   } else {
 	auto sql = fmt::format(sql_, fmt::join(columnNames, ","));
 
-	auto result = s3Select(sql, [&](const std::shared_ptr<TupleSet2> &tupleSetChunk) -> auto {
+	auto result = s3Select(sql, columnNames, [&](const std::shared_ptr<TupleSet2> &tupleSetChunk) -> auto {
 
-	  tupleSetChunk->renameColumns(columnNames);
+//	  tupleSetChunk->renameColumns(columnNames);
 
 	  if (!tupleSet.has_value()) {
 		tupleSet = tupleSetChunk;
@@ -86,6 +90,7 @@ S3SelectScanKernel::scan(const std::vector<std::string> &columnNames) {
 
 tl::expected<void, std::string>
 S3SelectScanKernel::s3Select(const std::string &sql,
+							 const std::vector<std::string> &columnNames,
 							 const S3SelectScanKernel::TupleSetEventCallback &tupleSetEventCallback) {
 
   std::optional<std::string> optionalErrorMessage;
@@ -135,7 +140,7 @@ S3SelectScanKernel::s3Select(const std::string &sql,
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  S3SelectParser s3SelectParser{};
+  S3SelectParser s3SelectParser{columnNames, schema_};
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
