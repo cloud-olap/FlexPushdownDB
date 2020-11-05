@@ -82,6 +82,7 @@ public:
 									bool scanOnStart,
 									int numConcurrentUnits,
 									const std::shared_ptr<S3SelectPartition>& partition,
+									const std::shared_ptr<arrow::Schema>& schema,
 									AWSClient &client,
 									const std::shared_ptr<OperatorGraph> &g);
 

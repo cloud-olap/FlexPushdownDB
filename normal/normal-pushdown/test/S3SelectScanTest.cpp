@@ -153,7 +153,8 @@ TEST_CASE ("s3select-parser" * doctest::skip(false || SKIP_SUITE)) {
 
   for(size_t payloadSize = 1; payloadSize <= data.size(); ++payloadSize) {
 
-	S3SelectParser parser;
+	S3SelectParser parser
+		(std::vector<std::string>(), std::unordered_map<std::string, std::shared_ptr<arrow::Schema>>());
 
 	auto selectionStart = data.begin();
 	auto selectionEnd = selectionStart + std::min<long>(data.end() - selectionStart, payloadSize);

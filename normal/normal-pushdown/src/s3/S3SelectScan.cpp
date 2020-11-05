@@ -177,7 +177,7 @@ tl::expected<void, std::string> S3SelectScan::s3Select() {
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
   std::vector<unsigned char> partial{};
-  S3SelectParser s3SelectParser{};
+  S3SelectParser s3SelectParser({}, {});
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
@@ -231,7 +231,7 @@ tl::expected<void, std::string> S3SelectScan::s3Scan() {
 
   if (getObjectOutcome.IsSuccess()) {
     auto &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
-    S3SelectParser s3SelectParser{};
+    S3SelectParser s3SelectParser({}, {});
     auto readSize = DefaultS3ScanBufferSize - 1;
     char buffer[DefaultS3ScanBufferSize];
 
