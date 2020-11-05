@@ -98,7 +98,7 @@ tl::expected<void, std::string> HashJoinProbeKernel2::joinBuildTupleSetIndex(con
     return tl::make_unexpected(result.error());
 
   // Check empty
-  if (!probeTupleSet_.has_value() || probeTupleSet_.value()->numRows() == 0) {
+  if (!probeTupleSet_.has_value() || probeTupleSet_.value()->numRows() == 0 || tupleSetIndex->size() == 0) {
     return {};
   }
 
@@ -132,7 +132,7 @@ tl::expected<void, std::string> HashJoinProbeKernel2::joinProbeTupleSet(const st
     throw tl::make_unexpected(result.error());
 
   // Check empty
-  if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->size() == 0) {
+  if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->size() == 0 || tupleSet->numRows() == 0) {
     return {};
   }
 

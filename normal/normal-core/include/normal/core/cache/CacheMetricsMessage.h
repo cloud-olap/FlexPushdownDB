@@ -6,6 +6,7 @@
 #define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_CACHEMETRICSMESSAGE_H
 
 #include <normal/core/message/Message.h>
+#include <memory>
 
 using namespace normal::core::message;
 
