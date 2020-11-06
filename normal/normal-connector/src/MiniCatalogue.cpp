@@ -10,12 +10,36 @@
 #include <utility>
 #include <iostream>
 #include <normal/cache/SegmentKey.h>
+#include <arrow/api.h>
+#include <fmt/format.h>
 
 using namespace normal::cache;
 
+namespace {
+
+std::shared_ptr<arrow::DataType> parseDataType(const std::string &s) {
+  if (s == "int16" || s == "short") {
+	return arrow::int16();
+  } else if (s == "int32" || s == "int") {
+	return arrow::int32();
+  } else if (s == "int64" || s == "long") {
+	return arrow::int64();
+  } else if (s == "float32" || s == "float") {
+	return arrow::float32();
+  } else if (s == "float64" || s == "double") {
+	return arrow::float64();
+  } else if (s == "utf8" || s == "string") {
+	return arrow::utf8();
+  } else {
+	throw std::runtime_error(fmt::format("Unrecognized data type string '{}'", s));
+  }
+}
+
+}
+
 normal::connector::MiniCatalogue::MiniCatalogue(
         std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
-        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas,
+        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas,
         std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
         std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
                           SegmentKeyPointerHash, SegmentKeyPointerPredicate>> segmentKeyToSize,
@@ -42,8 +66,8 @@ normal::connector::MiniCatalogue::MiniCatalogue(
   for (auto const &schemaEntry: *schemas_) {
     auto tableName = schemaEntry.first;
     int rowLength = 0;
-    for (auto const &columnName: *schemaEntry.second) {
-      rowLength += columnLengthMap_->find(columnName)->second;
+    for (auto const &field: schemaEntry.second->fields()) {
+      rowLength += columnLengthMap_->find(field->name())->second;
     }
     rowLengthMap_->emplace(tableName, rowLength);
   }
@@ -66,7 +90,7 @@ std::vector<std::string> split(const std::string& str, const std::string& splitS
   return res;
 }
 
-std::vector<std::string> readFileByLines(std::experimental::filesystem::path filePath) {
+std::vector<std::string> readFileByLines(const std::experimental::filesystem::path& filePath) {
   std::ifstream file(filePath.string());
   std::vector<std::string> res;
   std::string str;
@@ -96,16 +120,17 @@ std::shared_ptr<std::unordered_map<std::string, int>> readMetadataColumnLength(c
   return res;
 }
 
-std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> readMetadataSchemas(const std::string& schemaName) {
-  auto res = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
+std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> readMetadataSchemas(const std::string& schemaName) {
+  auto res = std::make_shared<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>>();
   auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("schemas");
   for (auto const &str: readFileByLines(filePath)) {
     auto splitRes = split(str, ":");
-    auto columnNames = std::make_shared<std::vector<std::string>>();
-    for (auto const &columnName: split(splitRes[1], ",")) {
-      columnNames->emplace_back(columnName);
+    std::vector<std::shared_ptr<::arrow::Field>> fields;
+    for (auto const &fieldEntry: split(splitRes[1], ",")) {
+	  auto splitFieldEntry = split(fieldEntry, "/");
+	  fields.push_back(::arrow::field(splitFieldEntry[0], parseDataType(splitFieldEntry[1])));
     }
-    res->emplace(splitRes[0], columnNames);
+    res->emplace(splitRes[0], ::arrow::schema(fields));
   }
   return res;
 }
@@ -122,7 +147,7 @@ std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(
 
 // Create a mapping of segmentKey -> size of segment with values already gathered
 std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
-readMetadataSegmentInfo(std::string s3Bucket, std::string schemaName) {
+readMetadataSegmentInfo(const std::string& s3Bucket, const std::string& schemaName) {
   auto res = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, size_t, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
   auto filePath = std::experimental::filesystem::current_path().append("metadata").append(schemaName).append("segment_info");
   for (auto const &str: readFileByLines(filePath)) {
@@ -200,8 +225,8 @@ const std::shared_ptr<std::vector<std::string>> &normal::connector::MiniCatalogu
 
 std::string normal::connector::MiniCatalogue::findTableOfColumn(const std::string& columnName) {
   for (const auto &schema: *schemas_) {
-    for (const auto &existColumnName: *(schema.second)) {
-      if (existColumnName == columnName) {
+    for (const auto &field: schema.second->fields()) {
+      if (field->name() == columnName) {
         return schema.first;
       }
     }
@@ -209,12 +234,12 @@ std::string normal::connector::MiniCatalogue::findTableOfColumn(const std::strin
   throw std::runtime_error("Column " + columnName + " not found");
 }
 
-std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::getColumnsOfTable(std::string tableName) {
+std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::getColumnsOfTable(const std::string& tableName) {
   auto columns = std::make_shared<std::vector<std::string>>();
   for (const auto &schema: *schemas_) {
     if (schema.first == tableName) {
-      for (const auto &columnName: *(schema.second)) {
-        columns->push_back(columnName);
+      for (const auto &field: schema.second->fields()) {
+        columns->push_back(field->name());
       }
       return columns;
     }
@@ -222,7 +247,7 @@ std::shared_ptr<std::vector<std::string>> normal::connector::MiniCatalogue::getC
   throw std::runtime_error("table " + tableName + " not found");
 }
 
-size_t normal::connector::MiniCatalogue::getSegmentSize(std::shared_ptr<cache::SegmentKey> segmentKey) {
+size_t normal::connector::MiniCatalogue::getSegmentSize(const std::shared_ptr<cache::SegmentKey>& segmentKey) {
   auto key = segmentKeyToSize_->find(segmentKey);
   if (key != segmentKeyToSize_->end()) {
     return segmentKeyToSize_->at(segmentKey);
@@ -231,7 +256,7 @@ size_t normal::connector::MiniCatalogue::getSegmentSize(std::shared_ptr<cache::S
 }
 
 // Used to populate the queryNumToInvolvedSegments_ and segmentKeysToInvolvedQueryNums_ mappings
-void normal::connector::MiniCatalogue::addToSegmentQueryNumMappings(int queryNum, std::shared_ptr<cache::SegmentKey> segmentKey) {
+void normal::connector::MiniCatalogue::addToSegmentQueryNumMappings(int queryNum, const std::shared_ptr<cache::SegmentKey>& segmentKey) {
   auto queryNumKeyEntry = queryNumToInvolvedSegments_->find(queryNum);
   if (queryNumKeyEntry != queryNumToInvolvedSegments_->end()) {
     queryNumKeyEntry->second->emplace_back(segmentKey);
@@ -268,7 +293,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> normal:
 // Return the next query that this segmentKey is used in, if not used again according to the
 // segmentKeysToInvolvedQueryNums_ mapping set via setSegmentKeysToInvolvedQueryNums then return -1
 // Throws runtime exception if segmentKeysToInvolvedQueryNums_ is never set via setSegmentKeysToInvolvedQueryNums
-int normal::connector::MiniCatalogue::querySegmentNextUsedIn(std::shared_ptr<cache::SegmentKey> segmentKey, int currentQuery) {
+int normal::connector::MiniCatalogue::querySegmentNextUsedIn(const std::shared_ptr<cache::SegmentKey>& segmentKey, int currentQuery) {
   auto key = segmentKeysToInvolvedQueryNums_->find(segmentKey);
   if (key != segmentKeysToInvolvedQueryNums_->end()) {
     auto involvedQueriesList = key->second;
@@ -283,7 +308,7 @@ int normal::connector::MiniCatalogue::querySegmentNextUsedIn(std::shared_ptr<cac
   throw std::runtime_error("Error, " + segmentKey->toString() + " next query requested but never should have been used");
 }
 
-double normal::connector::MiniCatalogue::lengthFraction(std::string columnName) {
+double normal::connector::MiniCatalogue::lengthFraction(const std::string& columnName) {
   auto thisLength = columnLengthMap_->find(columnName)->second;
   auto tableName = findTableOfColumn(columnName);
   auto allLength = rowLengthMap_->find(tableName)->second;
@@ -315,6 +340,10 @@ void normal::connector::MiniCatalogue::setCurrentQueryNum(int queryNum) {
   currentQueryNum_ = queryNum;
 }
 
-int normal::connector::MiniCatalogue::getCurrentQueryNum() {
+int normal::connector::MiniCatalogue::getCurrentQueryNum() const {
   return currentQueryNum_;
+}
+
+std::shared_ptr<arrow::Schema> normal::connector::MiniCatalogue::getSchema(const std::string &tableName){
+  return schemas_->at(tableName);
 }

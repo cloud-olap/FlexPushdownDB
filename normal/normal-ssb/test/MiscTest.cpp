@@ -19,6 +19,7 @@
 #include <normal/pushdown/Aggregate.h>
 #include <normal/ssb/TestUtil.h>
 #include <normal/pushdown/Project.h>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::pushdown;
 using namespace normal::pushdown::aggregate;
@@ -29,15 +30,14 @@ using namespace normal::expression;
 using namespace normal::expression::gandiva;
 using namespace std::experimental;
 using namespace normal::ssb;
+using namespace normal::connector;
 
-#define SKIP_SUITE true
-
-TEST_SUITE ("aggregate" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("aggregate" * doctest::skip(false)) {
 
 /**
  * Tests aggregation over large lineorder file with a project operator that ensures tuples are delivered in batches
  */
-TEST_CASE ("large" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("large" * doctest::skip(false)) {
 
   auto aFile = filesystem::absolute("data/ssb-sf1/lineorder.tbl");
   auto numBytesAFile = filesystem::file_size(aFile);
@@ -96,6 +96,11 @@ TEST_CASE ("large" * doctest::skip(false || SKIP_SUITE)) {
 
   mgr->stop();
 
+}
+
+TEST_CASE ("misc-mini-catalogue" * doctest::skip(false)) {
+  auto cat = MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf1-sortlineorder");
+  REQUIRE_EQ(cat->getSchema("date")->GetFieldByName("d_datekey")->type()->id(), arrow::StringType::type_id);
 }
 
 }

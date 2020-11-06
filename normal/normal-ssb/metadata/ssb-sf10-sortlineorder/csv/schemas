@@ -1,5 +1,5 @@
-supplier:s_suppkey,s_name,s_address,s_city,s_nation,s_region,s_phone
-date:d_datekey,d_date,d_dayofweek,d_month,d_year,d_yearmonthnum,d_yearmonth,d_daynuminweek,d_daynuminmonth,d_daynuminyear,d_monthnuminyear,d_weeknuminyear,d_sellingseason,d_lastdayinweekfl,d_lastdayinmonthfl,d_holidayfl,d_weekdayfl
-customer:c_custkey,c_name,c_address,c_city,c_nation,c_region,c_phone,c_mktsegment
-part:p_partkey,p_name,p_mfgr,p_category,p_brand1,p_color,p_type,p_size,p_container
-lineorder:lo_orderkey,lo_linenumber,lo_custkey,lo_partkey,lo_suppkey,lo_orderdate,lo_orderpriority,lo_shippriority,lo_quantity,lo_extendedprice,lo_ordtotalprice,lo_discount,lo_revenue,lo_supplycost,lo_tax,lo_commitdate,lo_shipmode
+supplier:s_suppkey/int32,s_name/utf8,s_address/utf8,s_city/utf8,s_nation/utf8,s_region/utf8,s_phone/utf8
+date:d_datekey/utf8,d_date/utf8,d_dayofweek/utf8,d_month/utf8,d_year/int32,d_yearmonthnum/int32,d_yearmonth/utf8,d_daynuminweek/int32,d_daynuminmonth/int32,d_daynuminyear/int32,d_monthnuminyear/int32,d_weeknuminyear/int32,d_sellingseason/utf8,d_lastdayinweekfl/utf8,d_lastdayinmonthfl/utf8,d_holidayfl/utf8,d_weekdayfl/utf8
+customer:c_custkey/int32,c_name/utf8,c_address/utf8,c_city/utf8,c_nation/utf8,c_region/utf8,c_phone/utf8,c_mktsegment/utf8
+part:p_partkey/int32,p_name/utf8,p_mfgr/utf8,p_category/utf8,p_brand1/utf8,p_color/utf8,p_type/utf8,p_size/int16,p_container/utf8
+lineorder:lo_orderkey/int32,lo_linenumber/int32,lo_custkey/int32,lo_partkey/int32,lo_suppkey/int32,lo_orderdate/utf8,lo_orderpriority/utf8,lo_shippriority/int32,lo_quantity/int32,lo_extendedprice/int32,lo_ordtotalprice/int32,lo_discount/int32,lo_revenue/int32,lo_supplycost/int32,lo_tax/int32,lo_commitdate/utf8,lo_shipmode/utf8
