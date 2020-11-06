@@ -18,7 +18,7 @@ S3Util::listObjects(const std::string& s3Bucket,
   // Create a map of objects to object sizes
   std::unordered_map<std::string, long> partitionMap;
   for (auto &s3Object : s3Objects) {
-	partitionMap.emplace(fmt::format("{}/{}", prefix, s3Object), 0);
+	partitionMap.emplace(s3Object, 0);
   }
 
   // Invoke list object operation on the s3 objects

@@ -99,6 +99,7 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
               s3Partition->getBucket(),
               s3Object,
               "",
+              getName(),
               *allNeededColumnNames,
               scanRange.first,
               scanRange.second,
@@ -175,6 +176,7 @@ S3SelectScanLogicalOperator::toOperatorsFullPushdown(int numRanges) {
               s3Partition->getBucket(),
               s3Object,
               filterSql,
+              getName(),
               *projectedColumnNames_,
               scanRange.first,
               scanRange.second,
@@ -256,6 +258,7 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
               s3Bucket,
               s3Object,
               "",
+              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
@@ -409,6 +412,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               s3Bucket,
               s3Object,
               "",
+              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
@@ -457,6 +461,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               s3Bucket,
               s3Object,
               genFilterSql(finalPredicate),
+              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
@@ -570,6 +575,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
               s3Bucket,
               s3Object,
               "",
+              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
@@ -586,6 +592,7 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
               s3Bucket,
               s3Object,
               genFilterSql(finalPredicate),
+              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,

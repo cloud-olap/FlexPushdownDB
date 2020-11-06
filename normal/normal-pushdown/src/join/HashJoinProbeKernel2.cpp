@@ -64,7 +64,10 @@ join1(const std::shared_ptr<RecordBatchJoiner> &joiner, const std::shared_ptr<Tu
   while (recordBatch) {
 
     // join
-    joiner->join(recordBatch);
+    auto result = joiner->join(recordBatch);
+    if (!result.has_value()) {
+      return tl::make_unexpected(result.error());
+    }
 
     // Read a batch
     recordBatchResult = reader.Next();

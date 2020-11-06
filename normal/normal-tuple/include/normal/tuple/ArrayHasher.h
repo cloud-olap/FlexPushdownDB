@@ -15,12 +15,11 @@
 namespace normal::tuple {
 
 /**
- * Class for obtaining hashes from arrays. Subclassed for each tupe of array.
+ * Class for obtaining hashes from arrays. Subclassed for each type of array.
  */
 class ArrayHasher {
 
 public:
-  explicit ArrayHasher(std::shared_ptr<::arrow::Array> array);
   virtual ~ArrayHasher() = default;
 
   static tl::expected<std::shared_ptr<ArrayHasher>, std::string>
@@ -28,9 +27,25 @@ public:
 
   virtual size_t hash(int64_t i) = 0;
 
-protected:
-  std::shared_ptr<::arrow::Array> array_;
+};
 
+template<typename CType, typename ArrowType>
+class ArrayHasherWrapper : public ArrayHasher {
+
+  using ArrowArrayType = typename ::arrow::TypeTraits<ArrowType>::ArrayType;
+
+public:
+  explicit ArrayHasherWrapper(std::shared_ptr<ArrowArrayType> array) : array_(array) {}
+
+  size_t hash(int64_t i) override {
+    // overrided by each type
+    return 0;
+  }
+
+private:
+  std::shared_ptr<ArrowArrayType> array_;
+  std::hash<CType> hash_;
+  std::hash<::arrow::util::string_view> stringHash_;
 };
 
 }

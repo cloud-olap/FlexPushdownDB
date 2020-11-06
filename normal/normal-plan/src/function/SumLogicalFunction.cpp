@@ -15,11 +15,11 @@ using namespace normal::expression::gandiva;
 normal::plan::function::SumLogicalFunction::SumLogicalFunction() : normal::plan::function::AggregateLogicalFunction("sum") {}
 
 std::shared_ptr<normal::pushdown::aggregate::AggregationFunction> normal::plan::function::SumLogicalFunction::toExecutorFunction() {
-  // FIXME: Defaulting name to sum-{expression.alias()}; Currently only support to cast to Float64Type
+  // FIXME: Defaulting name to sum-{expression.alias()}
   if (name_ == "") {
     name_ = fmt::format("sum-{}", this->expression()->alias());
   }
-  return std::make_shared<normal::pushdown::aggregate::Sum>(name_, operator_::castToFloat64Type(this->expression()));
+  return std::make_shared<normal::pushdown::aggregate::Sum>(name_, this->expression());
 }
 
 std::shared_ptr<normal::pushdown::aggregate::AggregationFunction> normal::plan::function::SumLogicalFunction::toExecutorReduceFunction() {

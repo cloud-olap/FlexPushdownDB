@@ -19,6 +19,12 @@ S3SelectParser::S3SelectParser(std::vector<std::string> columnNames,
 	columnNames_(std::move(columnNames)),
 	schema_(std::move(schema)) {}
 
+
+std::shared_ptr<S3SelectParser> S3SelectParser::make(std::vector<std::string> columnNames,
+                 std::shared_ptr<arrow::Schema> schema) {
+  return std::make_shared<S3SelectParser>(std::move(columnNames), std::move(schema));
+}
+
 /**
  *
  * @param from

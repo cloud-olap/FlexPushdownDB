@@ -29,7 +29,7 @@ std::shared_ptr<arrow::Schema> SSBSchema::date() {
 
   // "19920101","January 1, 1992","Thursday","January",1992,199201,"Jan1992",5,1,1,1,1,"Winter","0","0","1","1"
 
-  auto fields = {::arrow::field(ColumnName::canonicalize("D_DATEKEY"), ::arrow::utf8()),
+  auto fields = {::arrow::field(ColumnName::canonicalize("D_DATEKEY"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("D_DATE"), ::arrow::utf8()),
 				 ::arrow::field(ColumnName::canonicalize("D_DAYOFWEEK"), ::arrow::utf8()),
 				 ::arrow::field(ColumnName::canonicalize("D_MONTH"), ::arrow::utf8()),
@@ -42,10 +42,10 @@ std::shared_ptr<arrow::Schema> SSBSchema::date() {
 				 ::arrow::field(ColumnName::canonicalize("D_MONTHNUMINYEAR"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("D_WEEKNUMINYEAR"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("D_SELLINGSEASON"), ::arrow::utf8()),
-				 ::arrow::field(ColumnName::canonicalize("D_LASTDAYINWEEKFL"), ::arrow::utf8()),
-				 ::arrow::field(ColumnName::canonicalize("D_LASTDAYINMONTHFL"), ::arrow::utf8()),
-				 ::arrow::field(ColumnName::canonicalize("D_HOLIDAYFL"), ::arrow::utf8()),
-				 ::arrow::field(ColumnName::canonicalize("D_WEEKDAYFL"), ::arrow::utf8())};
+				 ::arrow::field(ColumnName::canonicalize("D_LASTDAYINWEEKFL"), ::arrow::boolean()),
+				 ::arrow::field(ColumnName::canonicalize("D_LASTDAYINMONTHFL"), ::arrow::boolean()),
+				 ::arrow::field(ColumnName::canonicalize("D_HOLIDAYFL"), ::arrow::boolean()),
+				 ::arrow::field(ColumnName::canonicalize("D_WEEKDAYFL"), ::arrow::boolean())};
   auto schema = std::make_shared<::arrow::Schema>(fields);
 
   return schema;
@@ -59,7 +59,7 @@ std::shared_ptr<arrow::Schema> SSBSchema::lineOrder() {
 				 ::arrow::field(ColumnName::canonicalize("LO_CUSTKEY"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_PARTKEY"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_SUPPKEY"), ::arrow::int32()),
-				 ::arrow::field(ColumnName::canonicalize("LO_ORDERDATE"), ::arrow::utf8()),
+				 ::arrow::field(ColumnName::canonicalize("LO_ORDERDATE"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_ORDERPRIORITY"), ::arrow::utf8()),
 				 ::arrow::field(ColumnName::canonicalize("LO_SHIPPRIORITY"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_QUANTITY"), ::arrow::int32()),
@@ -69,7 +69,7 @@ std::shared_ptr<arrow::Schema> SSBSchema::lineOrder() {
 				 ::arrow::field(ColumnName::canonicalize("LO_REVENUE"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_TAX"), ::arrow::int32()),
-				 ::arrow::field(ColumnName::canonicalize("LO_COMMITDATE"), ::arrow::utf8()),
+				 ::arrow::field(ColumnName::canonicalize("LO_COMMITDATE"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_SHIPMODE"), ::arrow::utf8())};
 
   auto schema = std::make_shared<::arrow::Schema>(fields);
@@ -87,7 +87,7 @@ std::shared_ptr<arrow::Schema> SSBSchema::part() {
 				 ::arrow::field(ColumnName::canonicalize("P_BRAND1"), ::arrow::utf8()),
 				 ::arrow::field(ColumnName::canonicalize("P_COLOR"), ::arrow::utf8()),
 				 ::arrow::field(ColumnName::canonicalize("P_TYPE"), ::arrow::utf8()),
-				 ::arrow::field(ColumnName::canonicalize("P_SIZE"), ::arrow::int16()),
+				 ::arrow::field(ColumnName::canonicalize("P_SIZE"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("P_CONTAINER"), ::arrow::utf8())};
 
   auto schema = std::make_shared<::arrow::Schema>(fields);

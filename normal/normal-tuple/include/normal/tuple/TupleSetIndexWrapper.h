@@ -60,20 +60,6 @@ public:
 	}
 	auto recordBatch = *recordBatchResult;
 
-//  /**
-//   * compute the size of batch
-//   */
-//  size_t size = 0;
-//  for (int col_id = 0; col_id < recordBatch->num_columns(); col_id++) {
-//    auto array = recordBatch->column(col_id);
-//    for (auto const &buffer: array->data()->buffers) {
-//      size += buffer->size();
-//    }
-//  }
-//  /**
-//   * end
-//   */
-
 	size_t tableRow = rowIndexOffset;
 	while (recordBatch) {
 
@@ -259,9 +245,23 @@ inline std::string TupleSetIndexWrapper<std::string, ::arrow::StringType>::Value
 }
 
 template<>
-inline long TupleSetIndexWrapper<long, ::arrow::Int64Type>::Value(
-	const std::shared_ptr<::arrow::Int64Array> &array,
+inline long TupleSetIndexWrapper<long, ::arrow::Int32Type>::Value(
+	const std::shared_ptr<::arrow::Int32Array> &array,
 	int64_t rowIndex) {
+  return array->Value(rowIndex);
+}
+
+template<>
+inline long TupleSetIndexWrapper<long, ::arrow::Int64Type>::Value(
+        const std::shared_ptr<::arrow::Int64Array> &array,
+        int64_t rowIndex) {
+  return array->Value(rowIndex);
+}
+
+template<>
+inline long TupleSetIndexWrapper<long, ::arrow::DoubleType>::Value(
+        const std::shared_ptr<::arrow::DoubleArray> &array,
+        int64_t rowIndex) {
   return array->Value(rowIndex);
 }
 
@@ -280,11 +280,19 @@ public:
 	  auto expectedValueRowMap = TupleSetIndexWrapper<std::string, ::arrow::StringType>::build(columnIndex, 0, table);
 	  if(!expectedValueRowMap) return tl::make_unexpected(expectedValueRowMap.error());
 	  return std::make_shared<TupleSetIndexWrapper<std::string, ::arrow::StringType>>(table, columnName, columnIndex, expectedValueRowMap.value());
-	} else if (column->type()->id() == ::arrow::Int64Type::type_id) {
-	  auto expectedValueRowMap = TupleSetIndexWrapper<long, ::arrow::Int64Type>::build(columnIndex, 0, table);
+	} else if (column->type()->id() == ::arrow::Int32Type::type_id) {
+	  auto expectedValueRowMap = TupleSetIndexWrapper<long, ::arrow::Int32Type>::build(columnIndex, 0, table);
 	  if(!expectedValueRowMap) return tl::make_unexpected(expectedValueRowMap.error());
-	  return std::make_shared<TupleSetIndexWrapper<long, ::arrow::Int64Type>>(table, columnName, columnIndex, expectedValueRowMap.value());
-	} else {
+	  return std::make_shared<TupleSetIndexWrapper<long, ::arrow::Int32Type>>(table, columnName, columnIndex, expectedValueRowMap.value());
+	} else if (column->type()->id() == ::arrow::Int64Type::type_id) {
+    auto expectedValueRowMap = TupleSetIndexWrapper<long, ::arrow::Int64Type>::build(columnIndex, 0, table);
+    if(!expectedValueRowMap) return tl::make_unexpected(expectedValueRowMap.error());
+    return std::make_shared<TupleSetIndexWrapper<long, ::arrow::Int64Type>>(table, columnName, columnIndex, expectedValueRowMap.value());
+  } else if (column->type()->id() == ::arrow::DoubleType::type_id) {
+    auto expectedValueRowMap = TupleSetIndexWrapper<long, ::arrow::DoubleType>::build(columnIndex, 0, table);
+    if(!expectedValueRowMap) return tl::make_unexpected(expectedValueRowMap.error());
+    return std::make_shared<TupleSetIndexWrapper<long, ::arrow::DoubleType>>(table, columnName, columnIndex, expectedValueRowMap.value());
+  } else {
 	  return tl::make_unexpected(
 		  fmt::format("TupleSetIndex not implemented for type '{}'", column->type()->name()));
 	}

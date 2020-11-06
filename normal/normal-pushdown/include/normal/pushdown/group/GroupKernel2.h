@@ -62,6 +62,8 @@ public:
    */
   [[nodiscard]] tl::expected<std::shared_ptr<TupleSet2>, std::string> finalise();
 
+  bool hasInput();
+
 private:
   std::vector<std::string> groupColumnNames_;
   std::vector<std::string> aggregateColumnNames_;
