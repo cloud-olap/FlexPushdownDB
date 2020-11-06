@@ -11,6 +11,7 @@
 #include <set>
 #include <normal/connector/partition/Partition.h>
 #include <normal/cache/SegmentKey.h>
+#include <arrow/api.h>
 
 namespace normal::connector {
 
@@ -21,7 +22,7 @@ class MiniCatalogue {
 
 public:
   MiniCatalogue(std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
-                std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas,
+                std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas,
                 std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
                 std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,
                         cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeyToSize,
@@ -40,24 +41,26 @@ public:
 
   std::shared_ptr<std::vector<std::string>> tables();
   std::string findTableOfColumn(const std::string& columnName);
-  double lengthFraction(std::string columnName);
+  double lengthFraction(const std::string& columnName);
   int lengthOfRow(const std::string& tableName);
   int lengthOfColumn(const std::string& columnName);
 
   /*
    * Used in Belady
    */
-  std::shared_ptr<std::vector<std::string>> getColumnsOfTable(std::string tableName);
-  size_t getSegmentSize(std::shared_ptr<cache::SegmentKey> segmentKey);
+  std::shared_ptr<std::vector<std::string>> getColumnsOfTable(const std::string& tableName);
+  size_t getSegmentSize(const std::shared_ptr<cache::SegmentKey>& segmentKey);
   std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>> getSegmentsInQuery(int queryNum);
-  void addToSegmentQueryNumMappings(int queryNum, std::shared_ptr<cache::SegmentKey> segmentKey);
-  int querySegmentNextUsedIn(std::shared_ptr<cache::SegmentKey> segmentKey, int currentQuery);
+  void addToSegmentQueryNumMappings(int queryNum, const std::shared_ptr<cache::SegmentKey>& segmentKey);
+  int querySegmentNextUsedIn(const std::shared_ptr<cache::SegmentKey>& segmentKey, int currentQuery);
   void setCurrentQueryNum(int queryNum);
-  int getCurrentQueryNum();
+  int getCurrentQueryNum() const;
+
+  std::shared_ptr<arrow::Schema> getSchema(const std::string &tableName);
 
 private:
   std::shared_ptr<std::unordered_map<std::string, int>> partitionNums_;
-  std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>> schemas_;
+  std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas_;
   std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap_;
   std::shared_ptr<std::unordered_map<std::string, int>> rowLengthMap_;
   std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,

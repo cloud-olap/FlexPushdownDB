@@ -12,13 +12,14 @@
 #include <normal/connector/s3/S3SelectPartition.h>
 
 #include <utility>
-#include <normal/ssb/SSBSchema.h>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::ssb::query1_1;
 using namespace normal::pushdown::aggregate;
 using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 using namespace normal::connector::s3;
+using namespace normal::connector;
 
 namespace {
 
@@ -44,12 +45,15 @@ std::unordered_map<std::string, std::shared_ptr<S3SelectPartition>> discoverPart
 }
 
 std::unordered_map<std::string, std::shared_ptr<arrow::Schema>> getSchemas() {
+
+  auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+
   std::unordered_map<std::string, std::shared_ptr<arrow::Schema>> schemas;
-  schemas.emplace("date", SSBSchema::date());
-  schemas.emplace("part", SSBSchema::part());
-  schemas.emplace("lineorder", SSBSchema::lineOrder());
-  schemas.emplace("supplier", SSBSchema::supplier());
-  schemas.emplace("customer", SSBSchema::customer());
+  schemas.emplace("date", miniCatalogue->getSchema("date"));
+  schemas.emplace("part", miniCatalogue->getSchema("part"));
+  schemas.emplace("lineorder", miniCatalogue->getSchema("lineorder"));
+  schemas.emplace("supplier", miniCatalogue->getSchema("supplier"));
+  schemas.emplace("customer", miniCatalogue->getSchema("customer"));
   return schemas;
 }
 
@@ -74,7 +78,7 @@ S3SelectQueries::dateScanPullUp(const std::string &s3Bucket,
 																		s3ObjectPrefix + "/" + dateFile,
 																		s3Bucket,
 																		fileType,
-																		SSBSchema::date()->field_names(),
+																		getSchemas().at("date")->field_names(),
 																		"select * from s3Object",
 																		true,
 																		numConcurrentUnits,
@@ -108,7 +112,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::dateFilterPullUp(const std::stri
 																		dateFile,
 																		s3Bucket,
 																		fileType,
-																		SSBSchema::date()->field_names(),
+																		getSchemas().at("date")->field_names(),
 																		"select * from s3Object",
 																		true,
 																		numConcurrentUnits,
@@ -196,7 +200,7 @@ S3SelectQueries::lineOrderScanPullUp(const std::string &s3Bucket,
 																			 lineOrderFile,
 																			 s3Bucket,
 																			 fileType,
-																			 SSBSchema::lineOrder()->field_names(),
+																			 getSchemas().at("lineorder")->field_names(),
 																			 "select * from s3Object",
 																			 true,
 																			 numConcurrentUnits,
@@ -233,7 +237,7 @@ S3SelectQueries::lineOrderFilterPullUp(const std::string &s3Bucket,
 																			 lineOrderFile,
 																			 s3Bucket,
 																			 fileType,
-																			 SSBSchema::lineOrder()->field_names(),
+																			 getSchemas().at("lineorder")->field_names(),
 																			 "select * from s3Object",
 																			 true,
 																			 numConcurrentUnits,
@@ -273,7 +277,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 																		dateFile,
 																		s3Bucket,
 																		fileType,
-																		SSBSchema::date()->field_names(),
+																		getSchemas().at("date")->field_names(),
 																		"select * from s3Object",
 																		true,
 																		numConcurrentUnits,
@@ -285,7 +289,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::joinPullUp(const std::string &s3
 																			 lineOrderFile,
 																			 s3Bucket,
 																			 fileType,
-																			 SSBSchema::lineOrder()->field_names(),
+																			 getSchemas().at("lineorder")->field_names(),
 																			 "select * from s3Object",
 																			 true,
 																			 numConcurrentUnits,
@@ -340,7 +344,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 																		dateFile,
 																		s3Bucket,
 																		fileType,
-																		SSBSchema::date()->field_names(),
+																		getSchemas().at("date")->field_names(),
 																		"select * from s3Object",
 																		true,
 																		numConcurrentUnits,
@@ -352,7 +356,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullPullUp(const std::string &s3
 																			 lineOrderFile,
 																			 s3Bucket,
 																			 fileType,
-																			 SSBSchema::lineOrder()->field_names(),
+																			 getSchemas().at("lineorder")->field_names(),
 																			 "select * from s3Object",
 																			 true,
 																			 numConcurrentUnits,
@@ -500,7 +504,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3
 
   auto dateCacheLoads = common::Operators::makeCacheLoadOperators("date",
 																  partitions[dateFile],
-																  SSBSchema::date()->field_names(),
+																  getSchemas().at("date")->field_names(),
 																  numConcurrentUnits,
 																  g);
   auto dateColumns = std::vector<std::string>{"D_DATEKEY", "D_YEAR"};
@@ -520,7 +524,7 @@ std::shared_ptr<OperatorGraph> S3SelectQueries::fullHybrid(const std::string &s3
   auto dateMerges = common::Operators::makeMergeOperators("date", numConcurrentUnits, g);
   auto lineOrderCacheLoads = common::Operators::makeCacheLoadOperators("lineorder",
 																	   partitions[dateFile],
-																	   SSBSchema::lineOrder()->field_names(),
+																	   getSchemas().at("lineorder")->field_names(),
 																	   numConcurrentUnits,
 																	   g);
   auto lineOrderColumns = std::vector<std::string>{"LO_ORDERDATE",
