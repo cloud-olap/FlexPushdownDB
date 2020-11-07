@@ -13,8 +13,13 @@ void AggregationResult::put(const std::string &key, const std::shared_ptr<arrow:
   this->result_->insert_or_assign(key, value);
 }
 
-std::shared_ptr<arrow::Scalar> AggregationResult::get(const std::string &key) {
-  return this->result_->at(key);
+std::optional<std::shared_ptr<arrow::Scalar>> AggregationResult::get(const std::string &key) {
+  auto resIt = this->result_->find(key);
+  if (resIt == this->result_->end()) {
+    return std::nullopt;
+  } else {
+    return resIt->second;
+  }
 }
 
 std::shared_ptr<arrow::Scalar> AggregationResult::get(const std::string &key,

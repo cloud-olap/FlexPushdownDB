@@ -52,8 +52,22 @@ inline std::vector<int64_t> TupleSetIndexFinderWrapper<std::string, ::arrow::Str
 }
 
 template<>
-inline std::vector<int64_t> TupleSetIndexFinderWrapper<long, ::arrow::Int64Type>::find(
+inline std::vector<int64_t> TupleSetIndexFinderWrapper<long, ::arrow::Int32Type>::find(
 	int64_t rowIndex) {
+  auto value = array_->Value(rowIndex);
+  return tupleSetIndex_->find(value);
+}
+
+template<>
+inline std::vector<int64_t> TupleSetIndexFinderWrapper<long, ::arrow::Int64Type>::find(
+        int64_t rowIndex) {
+  auto value = array_->Value(rowIndex);
+  return tupleSetIndex_->find(value);
+}
+
+template<>
+inline std::vector<int64_t> TupleSetIndexFinderWrapper<long, ::arrow::DoubleType>::find(
+        int64_t rowIndex) {
   auto value = array_->Value(rowIndex);
   return tupleSetIndex_->find(value);
 }
@@ -75,19 +89,39 @@ public:
 																						 typedArray);
 
 	  return finder;
-	} else if (tupleSetIndex->type()->id() == ::arrow::Int64Type::type_id) {
+	} else if (tupleSetIndex->type()->id() == ::arrow::Int32Type::type_id) {
 	  auto typedArraySetIndex =
-		  std::static_pointer_cast<TupleSetIndexWrapper<long, ::arrow::Int64Type>>(tupleSetIndex);
-	  auto typedArray = std::static_pointer_cast<::arrow::Int64Array>(array);
+		  std::static_pointer_cast<TupleSetIndexWrapper<long, ::arrow::Int32Type>>(tupleSetIndex);
+	  auto typedArray = std::static_pointer_cast<::arrow::Int32Array>(array);
 
 	  auto finder =
-		  std::make_shared<TupleSetIndexFinderWrapper<long, ::arrow::Int64Type>>(typedArraySetIndex,
+		  std::make_shared<TupleSetIndexFinderWrapper<long, ::arrow::Int32Type>>(typedArraySetIndex,
 																				 typedArray);
 
 	  return finder;
-	} else {
+	} else if (tupleSetIndex->type()->id() == ::arrow::Int64Type::type_id) {
+    auto typedArraySetIndex =
+            std::static_pointer_cast<TupleSetIndexWrapper<long, ::arrow::Int64Type>>(tupleSetIndex);
+    auto typedArray = std::static_pointer_cast<::arrow::Int64Array>(array);
+
+    auto finder =
+            std::make_shared<TupleSetIndexFinderWrapper<long, ::arrow::Int64Type>>(typedArraySetIndex,
+                                                                                   typedArray);
+
+    return finder;
+  } else if (tupleSetIndex->type()->id() == ::arrow::DoubleType::type_id) {
+    auto typedArraySetIndex =
+            std::static_pointer_cast<TupleSetIndexWrapper<long, ::arrow::DoubleType>>(tupleSetIndex);
+    auto typedArray = std::static_pointer_cast<::arrow::DoubleArray>(array);
+
+    auto finder =
+            std::make_shared<TupleSetIndexFinderWrapper<long, ::arrow::DoubleType>>(typedArraySetIndex,
+                                                                                   typedArray);
+
+    return finder;
+  } else {
 	  return tl::make_unexpected(
-		  fmt::format("TupleSetIndexFinder not implemented for type '{}'", tupleSetIndex->type()->id()));
+		  fmt::format("TupleSetIndexFinder not implemented for type '{}'", tupleSetIndex->type()->name()));
 	}
 
   }

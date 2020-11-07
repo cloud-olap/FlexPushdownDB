@@ -23,6 +23,7 @@
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/connector/local-fs/LocalFilePartition.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::ssb::query1_1;
 using namespace std::experimental;
@@ -160,6 +161,7 @@ Operators::makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
 		dateColumns,
 		dateScanRanges[u].first,
 		dateScanRanges[u].second,
+    normal::connector::defaultMiniCatalogue->getSchema("date"),
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);
@@ -193,6 +195,7 @@ Operators::makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
 		dateColumns,
 		dateScanRanges[u].first,
 		dateScanRanges[u].second,
+    normal::connector::defaultMiniCatalogue->getSchema("date"),
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);
@@ -335,6 +338,7 @@ Operators::makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
 		lineOrderColumns,
 		lineOrderScanRanges[u].first,
 		lineOrderScanRanges[u].second,
+    normal::connector::defaultMiniCatalogue->getSchema("lineorder"),
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);
@@ -375,6 +379,7 @@ Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3Objec
 		lineOrderColumns,
 		lineOrderScanRanges[u].first,
 		lineOrderScanRanges[u].second,
+    normal::connector::defaultMiniCatalogue->getSchema("lineorder"),
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);

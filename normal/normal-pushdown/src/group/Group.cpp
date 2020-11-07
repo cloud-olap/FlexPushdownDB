@@ -66,25 +66,29 @@ void Group::onTuple(const normal::core::message::TupleMessage &message) {
 void Group::onComplete(const normal::core::message::CompleteMessage &) {
   if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
 
-    auto startTime = std::chrono::steady_clock::now();
+    if (kernel2_->hasInput()) {
+      auto startTime = std::chrono::steady_clock::now();
 
-//    auto groupedTupleSet = kernel_->group();
-	  auto expectedGroupedTupleSet = kernel2_->finalise();
-    if(!expectedGroupedTupleSet)
-      throw std::runtime_error(expectedGroupedTupleSet.error());
+//      auto groupedTupleSet = kernel_->group();
+      auto expectedGroupedTupleSet = kernel2_->finalise();
+      if (!expectedGroupedTupleSet)
+        throw std::runtime_error(expectedGroupedTupleSet.error());
 
-    auto stopTime = std::chrono::steady_clock::now();
-    auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
-    groupTime_ += time;
-    double speed = (((double) bytesGrouped_) / 1024.0 / 1024.0) / (((double) groupTime_) / 1000000000);
-//    SPDLOG_INFO("Group time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", groupTime_, bytesGrouped_, speed, numRows_, name());
+      auto stopTime = std::chrono::steady_clock::now();
+      auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+      groupTime_ += time;
 
-	std::shared_ptr<normal::core::message::Message>
-		tupleMessage =
-		std::make_shared<normal::core::message::TupleMessage>(expectedGroupedTupleSet.value()->toTupleSetV1(), this->name());
-	ctx()->tell(tupleMessage);
+      double speed = (((double) bytesGrouped_) / 1024.0 / 1024.0) / (((double) groupTime_) / 1000000000);
+//      SPDLOG_INFO("Group time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", groupTime_, bytesGrouped_, speed, numRows_, name());
 
-	ctx()->notifyComplete();
+      std::shared_ptr<normal::core::message::Message>
+              tupleMessage =
+              std::make_shared<normal::core::message::TupleMessage>(expectedGroupedTupleSet.value()->toTupleSetV1(),
+                                                                    this->name());
+      ctx()->tell(tupleMessage);
+    }
+
+    ctx()->notifyComplete();
   }
 }
 

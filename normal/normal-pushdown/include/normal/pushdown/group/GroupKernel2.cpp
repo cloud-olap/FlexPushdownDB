@@ -125,12 +125,6 @@ tl::expected<void, std::string> GroupKernel2::cache(const TupleSet2 &tupleSet) {
   }
   aggregateSchema_ = arrow::schema(aggregateFields);
 
-	// Create output schema
-	auto expectedOutputSchema = makeOutputSchema();
-	if (!expectedOutputSchema)
-	  return tl::make_unexpected(expectedOutputSchema.error());
-	outputSchema_ = expectedOutputSchema.value();
-
 	return {};
   } else {
 	// Check the schema is the same as the cached schema
@@ -174,8 +168,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
   for (const auto &aggregateFunction: aggregateFunctions_) {
   auto returnType = aggregateFunction->returnType();
   if (!returnType) {
-    // FIXME: if no tuple to group by, the return type is missing, here use DoubleType
-    returnType = std::make_shared<arrow::DoubleType>();
+    return tl::make_unexpected("No return type from finalise");
   }
 	auto expectedAggregateBuilder = makeAggregateBuilder(returnType);
 	if(!expectedAggregateBuilder.has_value())
@@ -183,6 +176,13 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
 	aggregateBuilders.push_back(expectedAggregateBuilder.value());
   }
 
+  // Create output schema
+  auto expectedOutputSchema = makeOutputSchema();
+  if (!expectedOutputSchema)
+    return tl::make_unexpected(expectedOutputSchema.error());
+  outputSchema_ = expectedOutputSchema.value();
+
+  // Append values
   for (const auto &groupAggregationResultVector: groupAggregationResultVectorMap_) {
     auto groupKey = groupAggregationResultVector.first;
     auto aggregateResultVector = groupAggregationResultVector.second;
@@ -200,7 +200,7 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> GroupKernel2::finalise() {
     }
   }
 
-  // Add appenders and builders to final output arrays
+  // Finalise appenders to output arrays
   arrow::ArrayVector outputArrays;
   outputArrays.reserve(outputSchema_.value()->fields().size());
   for (const auto &groupColumnArrayAppender: groupColumnArrayAppenders) {
@@ -229,8 +229,7 @@ tl::expected<std::shared_ptr<arrow::Schema>, std::string> GroupKernel2::makeOutp
   for (const auto &function: aggregateFunctions_) {
 	auto returnType = function->returnType();
 	if (!returnType) {
-	  // FIXME: if no tuple to group by, the return type is missing, here use DoubleType
-	  returnType = std::make_shared<arrow::DoubleType>();
+    return tl::make_unexpected("No return type from makeOutputSchema");
 	}
 	std::shared_ptr<arrow::Field> field = arrow::field(function->alias(), returnType);
 	fields.emplace_back(field);
@@ -335,6 +334,10 @@ GroupKernel2::groupTable(const ::arrow::Table &table) {
   }
 
   return {};
+}
+
+bool GroupKernel2::hasInput() {
+  return !groupAggregationResultVectorMap_.empty();
 }
 
 }

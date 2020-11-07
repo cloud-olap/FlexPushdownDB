@@ -23,7 +23,7 @@ public:
    * TODO: This is just the beginnings of a method of getting partition metadata for splitting up work
    *  across partitions. At the moment, just using it to get object sizes.
    */
-  static std::unordered_map<std::string, long> listObjects(std::string s3Bucket, std::string prefix, std::vector<std::string> s3Objects, std::shared_ptr<S3Client> s3Client);
+  static std::unordered_map<std::string, long> listObjects(const std::string& s3Bucket, const std::string& prefix, const std::vector<std::string>& s3Objects, const std::shared_ptr<S3Client>& s3Client);
 
 };
 

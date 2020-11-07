@@ -30,12 +30,6 @@ const std::shared_ptr<PartitioningScheme> &ScanLogicalOperator::getPartitioningS
 
 void ScanLogicalOperator::setPredicates(const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &predicates) {
   predicates_ = predicates;
-
-  // Simple cast
-  for (auto const &predicate: *predicates_) {
-    auto castPredicate = normal::expression::gandiva::simpleCast(predicate);
-    castPredicates_.emplace(predicate->alias(), castPredicate);
-  }
 }
 
 void
@@ -49,7 +43,7 @@ ScanLogicalOperator::streamOutPhysicalOperators() const {
 }
 
 // FIXME: if numeric, compare using double in default
-std::optional<double> getNumericValue(std::shared_ptr<normal::expression::gandiva::Expression> expr) {
+std::optional<double> getNumericValue(const std::shared_ptr<normal::expression::gandiva::Expression>& expr) {
   if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::Int32Type>)) {
     auto typedExpr = std::static_pointer_cast<normal::expression::gandiva::NumericLiteral<::arrow::Int32Type>>(expr);
     return (double) typedExpr->value();
@@ -67,8 +61,8 @@ std::optional<double> getNumericValue(std::shared_ptr<normal::expression::gandiv
   }
 }
 
-bool checkPartitionValid(std::shared_ptr<Partition> partition,
-                        std::shared_ptr<normal::expression::gandiva::Expression> predicate) {
+bool checkPartitionValid(const std::shared_ptr<Partition>& partition,
+                         const std::shared_ptr<normal::expression::gandiva::Expression>& predicate) {
   auto sortedColumns = normal::connector::defaultMiniCatalogue->sortedColumns();
 
   if (typeid(*predicate) == typeid(And)) {
@@ -181,8 +175,8 @@ bool checkPartitionValid(std::shared_ptr<Partition> partition,
   }
 }
 
-bool checkPredicateNeeded(std::shared_ptr<Partition> partition,
-                          std::shared_ptr<Expression> predicate) {
+bool checkPredicateNeeded(const std::shared_ptr<Partition>& partition,
+                          const std::shared_ptr<Expression>& predicate) {
   auto sortedColumns = normal::connector::defaultMiniCatalogue->sortedColumns();
 
   if (typeid(*predicate) == typeid(And)) {
@@ -252,7 +246,7 @@ bool checkPredicateNeeded(std::shared_ptr<Partition> partition,
           return dataValuePair.second.compare(predicateValue) > 0;
         }
       } else {
-        return dataValuePair.first.compare(predicateValue) == 0 && dataValuePair.second.compare(predicateValue) == 0;
+        return dataValuePair.first == predicateValue && dataValuePair.second == predicateValue;
       }
     } else {
       auto numericValue = getNumericValue(valExpr);
@@ -296,7 +290,7 @@ bool checkPredicateNeeded(std::shared_ptr<Partition> partition,
 }
 
 std::pair<bool, std::shared_ptr<normal::expression::gandiva::Expression>>
-ScanLogicalOperator::checkPartitionValid(std::shared_ptr<Partition> partition) {
+ScanLogicalOperator::checkPartitionValid(const std::shared_ptr<Partition>& partition) {
   std::shared_ptr<normal::expression::gandiva::Expression> finalPredicate = nullptr;
   bool valid = true;
   for (auto const &predicate: *predicates_) {
@@ -307,11 +301,10 @@ ScanLogicalOperator::checkPartitionValid(std::shared_ptr<Partition> partition) {
     if (!::checkPredicateNeeded(partition, predicate)) {
       continue;
     } else {
-      auto castPredicate = castPredicates_.find(predicate->alias())->second;
       if (finalPredicate == nullptr) {
-        finalPredicate = castPredicate;
+        finalPredicate = predicate;
       } else {
-        finalPredicate = and_(finalPredicate, castPredicate);
+        finalPredicate = and_(finalPredicate, predicate);
       }
     }
   }

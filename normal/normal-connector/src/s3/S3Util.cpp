@@ -5,14 +5,15 @@
 #include "normal/connector/s3/S3Util.h"
 
 #include <aws/s3/model/ListObjectsRequest.h>
+#include <fmt/format.h>
 
 using namespace normal::connector::s3;
 
 std::unordered_map<std::string, long>
-S3Util::listObjects(std::string s3Bucket,
-					std::string prefix,
-					std::vector<std::string> s3Objects,
-					std::shared_ptr<S3Client> s3Client) {
+S3Util::listObjects(const std::string& s3Bucket,
+					const std::string& prefix,
+					const std::vector<std::string>& s3Objects,
+					const std::shared_ptr<S3Client>& s3Client) {
 
   // Create a map of objects to object sizes
   std::unordered_map<std::string, long> partitionMap;
@@ -31,7 +32,7 @@ S3Util::listObjects(std::string s3Bucket,
     if (res.IsSuccess()) {
       Aws::Vector<Aws::S3::Model::Object> objectList = res.GetResult().GetContents();
       for (auto const &object: objectList) {
-        auto partitionEntry = partitionMap.find(object.GetKey().c_str());
+        auto partitionEntry = partitionMap.find(static_cast<std::string>(object.GetKey()));
         if (partitionEntry != partitionMap.end()) {
           partitionEntry->second = object.GetSize();
         }
