@@ -346,14 +346,9 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
         if (arrays) {
           readColumns.emplace_back(Column::make(arrays->first, arrays->second));
         } else {
-          // Use StringType for all empty columns
-          auto builder = std::make_shared<::arrow::StringBuilder>();
-          std::shared_ptr<arrow::Array> array;
-          auto status = builder->Finish(&array);
-          if (!status.ok()) {
-            throw std::runtime_error(fmt::format("{}, {}", status.message(), name()));
-          }
-          readColumns.emplace_back(Column::make(columnNames_.at(col_id), array));
+          // Make empty column according to schema_
+          auto columnName = columnNames_.at(col_id);
+          readColumns.emplace_back(Column::make(columnName, schema_->GetFieldByName(columnName)->type()));
         }
       }
     }
@@ -376,14 +371,8 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
         if (arrays) {
           readColumns.emplace_back(Column::make(arrays->first, arrays->second));
         } else {
-          // Use StringType for all empty columns
-          auto builder = std::make_shared<::arrow::StringBuilder>();
-          std::shared_ptr<arrow::Array> array;
-          auto status = builder->Finish(&array);
-          if (!status.ok()) {
-            throw std::runtime_error(fmt::format("{}, {}", status.message(), name()));
-          }
-          readColumns.emplace_back(Column::make(columnName, array));
+          // Make empty column according to schema_
+          readColumns.emplace_back(Column::make(columnName, schema_->GetFieldByName(columnName)->type()));
         }
       }
     }
