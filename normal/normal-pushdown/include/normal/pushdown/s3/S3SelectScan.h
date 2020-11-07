@@ -37,10 +37,10 @@ public:
 			   std::string s3Bucket,
 			   std::string s3Object,
 			   std::string filterSql,
-			   std::string tableName,
 			   std::vector<std::string> columnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
+         std::shared_ptr<arrow::Schema> schema,
 			   S3SelectCSVParseOptions parseOptions,
 			   std::shared_ptr<Aws::S3::S3Client> s3Client,
 			   bool scanOnStart,
@@ -53,10 +53,10 @@ public:
 											std::string s3Bucket,
 											std::string s3Object,
 											std::string filterSql,
-											std::string tableName,
 											std::vector<std::string> columnNames,
 											int64_t startOffset,
 											int64_t finishOffset,
+                      std::shared_ptr<arrow::Schema> schema,
 											S3SelectCSVParseOptions parseOptions,
 											std::shared_ptr<Aws::S3::S3Client> s3Client,
 											bool scanOnStart = true,
@@ -73,10 +73,10 @@ private:
   std::string s3Bucket_;
   std::string s3Object_;
   std::string filterSql_;   // "where ...."
-  std::string tableName_;
   std::vector<std::string> columnNames_;    // if projection pushdown is disabled, this means the needed column names
   int64_t startOffset_;
   int64_t finishOffset_;
+  std::shared_ptr<arrow::Schema> schema_;
   S3SelectCSVParseOptions parseOptions_;
   std::shared_ptr<S3SelectParser> parser_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;

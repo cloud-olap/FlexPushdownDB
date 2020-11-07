@@ -8,7 +8,7 @@
 #include <iostream>
 #include <utility>
 #include <memory>
-#include <cstdlib>                                         // for abort
+#include <cstdlib>                                          // for abort
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
@@ -41,18 +41,15 @@
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 
 
-#include "normal/core/message/Message.h"                            // for Message
-#include "normal/tuple/TupleSet.h"                           // for TupleSet
+#include "normal/core/message/Message.h"                    // for Message
+#include "normal/tuple/TupleSet.h"                          // for TupleSet
 #include <normal/pushdown/TupleMessage.h>
-#include <normal/core/message/CompleteMessage.h>
-#include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/connector/MiniCatalogue.h>
 
 #include "normal/pushdown/Globals.h"
-#include "../../../normal-ssb/include/normal/ssb/SSBSchema.h"
 #include <normal/pushdown/cache/CacheHelper.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
@@ -75,10 +72,10 @@ S3SelectScan::S3SelectScan(std::string name,
 						   std::string s3Bucket,
 						   std::string s3Object,
 						   std::string filterSql,
-						   std::string tableName,
 						   std::vector<std::string> columnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
+               std::shared_ptr<arrow::Schema> schema,
 						   S3SelectCSVParseOptions parseOptions,
 						   std::shared_ptr<Aws::S3::S3Client> s3Client,
 						   bool scanOnStart,
@@ -90,10 +87,10 @@ S3SelectScan::S3SelectScan(std::string name,
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
 	filterSql_(std::move(filterSql)),
-	tableName_(std::move(tableName)),
 	columnNames_(std::move(columnNames)),
 	startOffset_(startOffset),
 	finishOffset_(finishOffset),
+	schema_(std::move(schema)),
 	parseOptions_(parseOptions),
 	s3Client_(std::move(s3Client)),
 	columns_(enablePushdownProject.first ? columnNames_.size() : enablePushdownProject.second.size()),
@@ -107,10 +104,10 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::string s3Bucket,
 												 std::string s3Object,
 												 std::string filterSql,
-												 std::string tableName,
 												 std::vector<std::string> columnNames,
 												 int64_t startOffset,
 												 int64_t finishOffset,
+                         std::shared_ptr<arrow::Schema> schema,
 												 S3SelectCSVParseOptions parseOptions,
 												 std::shared_ptr<Aws::S3::S3Client> s3Client,
 												 bool scanOnstart,
@@ -122,10 +119,10 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										s3Bucket,
 										s3Object,
 										filterSql,
-										tableName,
 										columnNames,
 										startOffset,
 										finishOffset,
+										schema,
 										parseOptions,
 										s3Client,
 										scanOnstart,
@@ -138,29 +135,14 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 
 void S3SelectScan::generateParser() {
   // Generate parser according to columns to fetch
-  // FIXME: should make schemas a global map to directly fetch, not this if-else style
-  std::shared_ptr<arrow::Schema> tableSchema;
-  if (tableName_ == "supplier") {
-    tableSchema = SSBSchema::supplier();
-  } else if (tableName_ == "date") {
-    tableSchema = SSBSchema::date();
-  } else if (tableName_ == "customer") {
-    tableSchema = SSBSchema::customer();
-  } else if (tableName_ == "part") {
-    tableSchema = SSBSchema::part();
-  } else if (tableName_ == "lineorder") {
-    tableSchema = SSBSchema::lineOrder();
-  } else {
-    throw std::runtime_error(fmt::format("Unknow table name: {}", tableName_));
-  }
   if (enablePushdownProject_.first) {
     std::vector<std::shared_ptr<::arrow::Field>> fields;
     for (auto const &columnName: columnNames_) {
-      fields.emplace_back(tableSchema->GetFieldByName(columnName));
+      fields.emplace_back(schema_->GetFieldByName(columnName));
     }
     parser_ = S3SelectParser::make(columnNames_, std::make_shared<::arrow::Schema>(fields));
   } else {
-    parser_ = S3SelectParser::make(enablePushdownProject_.second, tableSchema);
+    parser_ = S3SelectParser::make(enablePushdownProject_.second, schema_);
   }
 }
 

@@ -30,6 +30,8 @@ std::shared_ptr<arrow::DataType> parseDataType(const std::string &s) {
 	return arrow::float64();
   } else if (s == "utf8" || s == "string") {
 	return arrow::utf8();
+  } else if (s == "boolean" || s == "bool") {
+  return arrow::boolean();
   } else {
 	throw std::runtime_error(fmt::format("Unrecognized data type string '{}'", s));
   }

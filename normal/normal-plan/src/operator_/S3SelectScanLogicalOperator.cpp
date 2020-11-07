@@ -5,8 +5,6 @@
 #include <normal/plan/operator_/S3SelectScanLogicalOperator.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/expression/gandiva/And.h>
-#include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
 #include <normal/pushdown/Project.h>
@@ -99,10 +97,10 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
               s3Partition->getBucket(),
               s3Object,
               "",
-              getName(),
               *allNeededColumnNames,
               scanRange.first,
               scanRange.second,
+              miniCatalogue->getSchema(getName()),
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               true,
@@ -176,10 +174,10 @@ S3SelectScanLogicalOperator::toOperatorsFullPushdown(int numRanges) {
               s3Partition->getBucket(),
               s3Object,
               filterSql,
-              getName(),
               *projectedColumnNames_,
               scanRange.first,
               scanRange.second,
+              normal::connector::defaultMiniCatalogue->getSchema(getName()),
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               true,
@@ -258,10 +256,10 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
               s3Bucket,
               s3Object,
               "",
-              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
+              miniCatalogue->getSchema(getName()),
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
@@ -412,10 +410,10 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               s3Bucket,
               s3Object,
               "",
-              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
+              normal::connector::defaultMiniCatalogue->getSchema(getName()),
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
@@ -461,10 +459,10 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               s3Bucket,
               s3Object,
               genFilterSql(finalPredicate),
-              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
+              normal::connector::defaultMiniCatalogue->getSchema(getName()),
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
@@ -575,10 +573,10 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
               s3Bucket,
               s3Object,
               "",
-              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
+              normal::connector::defaultMiniCatalogue->getSchema(getName()),
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
@@ -592,10 +590,10 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
               s3Bucket,
               s3Object,
               genFilterSql(finalPredicate),
-              getName(),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
+              normal::connector::defaultMiniCatalogue->getSchema(getName()),
               S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
