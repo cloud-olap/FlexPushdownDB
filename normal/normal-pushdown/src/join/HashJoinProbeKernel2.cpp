@@ -95,15 +95,17 @@ join1(const std::shared_ptr<RecordBatchJoiner> &joiner, const std::shared_ptr<Tu
 
 tl::expected<void, std::string> HashJoinProbeKernel2::joinBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex> &tupleSetIndex) {
 
+  // Buffer tupleSet if having tuples
+  if(tupleSetIndex->size() > 0) {
+    auto result = putBuildTupleSetIndex(tupleSetIndex);
+    if (!result)
+      return tl::make_unexpected(result.error());
+  }
+
   // Check empty
   if (!probeTupleSet_.has_value() || probeTupleSet_.value()->numRows() == 0 || tupleSetIndex->size() == 0) {
     return {};
   }
-
-  // Buffer tupleSetIndex
-  auto result = putBuildTupleSetIndex(tupleSetIndex);
-  if (!result)
-    return tl::make_unexpected(result.error());
 
   // Create output schema
   bufferOutputSchema(tupleSetIndex, probeTupleSet_.value());
@@ -129,15 +131,17 @@ tl::expected<void, std::string> HashJoinProbeKernel2::joinBuildTupleSetIndex(con
 
 tl::expected<void, std::string> HashJoinProbeKernel2::joinProbeTupleSet(const std::shared_ptr<TupleSet2> &tupleSet) {
 
+  // Buffer tupleSet if having tuples
+  if (tupleSet->numRows() > 0) {
+    auto result = putProbeTupleSet(tupleSet);
+    if (!result)
+      return tl::make_unexpected(result.error());
+  }
+
   // Check empty
   if (!buildTupleSetIndex_.has_value() || buildTupleSetIndex_.value()->size() == 0 || tupleSet->numRows() == 0) {
     return {};
   }
-
-  // Buffer tupleSet
-  auto result = putProbeTupleSet(tupleSet);
-  if(!result)
-    return tl::make_unexpected(result.error());
 
   // Create output schema
   bufferOutputSchema(buildTupleSetIndex_.value(), tupleSet);
