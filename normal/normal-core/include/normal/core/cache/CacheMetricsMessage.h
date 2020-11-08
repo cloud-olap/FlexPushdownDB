@@ -15,15 +15,15 @@ namespace normal::core::cache {
 class CacheMetricsMessage : public Message {
 
 public:
-  CacheMetricsMessage(size_t hitBytes, size_t missBytes, const std::string &sender);
-  static std::shared_ptr<CacheMetricsMessage> make(size_t hitBytes, size_t missBytes, const std::string &sender);
+  CacheMetricsMessage(size_t hitNum, size_t missNum, const std::string &sender);
+  static std::shared_ptr<CacheMetricsMessage> make(size_t hitNum, size_t missNum, const std::string &sender);
 
-  size_t getHitBytes() const;
-  size_t getMissBytes() const;
+  size_t getHitNum() const;
+  size_t getMissNum() const;
 
 private:
-  size_t hitBytes_;
-  size_t missBytes_;
+  size_t hitNum_;
+  size_t missNum_;
 };
 
 }

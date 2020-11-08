@@ -44,14 +44,14 @@ public:
   /**
    * The following is used to generate skew benchmark
    */
-  std::vector<std::string> generateSqlBatchSkew(int batchSize);
+  std::vector<std::string> generateSqlBatchSkew(float skewness, int batchSize);
   std::string generateSqlSkew(std::string queryName, std::string skewLo_predicate);
 
   /**
    * The following is used to generate skew benchmark + skew column selectivity (weight)
    * Currently a simple one: 2 high-selectivity columns and 2 low-selectivity columns in lineorder
    */
-  std::vector<std::string> generateSqlBatchSkewWeight(int batchSize);
+  std::vector<std::string> generateSqlBatchSkewWeight(float skewness, int batchSize);
   std::string generateSqlSkewWeight(std::string queryName, std::string skewLo_predicate, bool high);
 
   /**

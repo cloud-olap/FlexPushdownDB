@@ -36,8 +36,6 @@ using GetCrtQueryNumMissesAtom = atom_constant<atom("CNumMisses")>;
 using ClearMetricsAtom = atom_constant<atom("ClrMetrics")>;
 using ClearCrtQueryMetricsAtom = atom_constant<atom("ClrCMetric")>;
 using MetricsAtom = atom_constant<atom("Metrics")>;
-using GetHitBytesAtom = atom_constant<atom("HitBytes")>;
-using GetMissBytesAtom = atom_constant<atom("MissBytes")>;
 
 class SegmentCacheActor {
 

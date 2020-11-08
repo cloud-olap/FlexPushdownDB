@@ -39,11 +39,9 @@ tl::expected<std::shared_ptr<SegmentData>,
 
   auto mapIterator = map_.find(key);
   if (mapIterator == map_.end()) {
-    missNum_++;
     crtQueryMissNum_++;
 	  return tl::unexpected(fmt::format("Segment for key '{}' not found", key->toString()));
   } else {
-    hitNum_++;
     crtQueryHitNum_++;
     auto cacheEntry = mapIterator->second;
     return mapIterator->second;
@@ -86,8 +84,6 @@ int SegmentCache::missNum() const {
 void SegmentCache::clearMetrics() {
   hitNum_ = 0;
   missNum_ = 0;
-  hitBytes_ = 0;
-  missBytes_ = 0;
 }
 
 const std::shared_ptr<CachingPolicy> &SegmentCache::getCachingPolicy() const {
@@ -107,18 +103,10 @@ void SegmentCache::clearCrtQueryMetrics() {
   crtQueryMissNum_ = 0;
 }
 
-size_t SegmentCache::hitBytes() const {
-  return hitBytes_;
+void SegmentCache::addHitNum(size_t hitNum) {
+  hitNum_ += hitNum;
 }
 
-size_t SegmentCache::missBytes() const {
-  return missBytes_;
-}
-
-void SegmentCache::addHitBytes(size_t hitBytes) {
-  hitBytes_ += hitBytes;
-}
-
-void SegmentCache::addMissBytes(size_t missBytes) {
-  missBytes_ += missBytes;
+void SegmentCache::addMissNum(size_t missNum) {
+  missNum_ += missNum;
 }

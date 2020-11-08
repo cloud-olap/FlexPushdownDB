@@ -59,8 +59,8 @@ void SegmentCacheActor::weight(const WeightRequestMessage &msg,
 
 void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
                 stateful_actor<SegmentCacheActorState> *self) {
-  self->state.cache->addHitBytes(msg.getHitBytes());
-  self->state.cache->addMissBytes(msg.getMissBytes());
+  self->state.cache->addHitNum(msg.getHitNum());
+  self->state.cache->addMissNum(msg.getMissNum());
 }
 
 behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
@@ -116,12 +116,6 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
 	  },
 	  [=](MetricsAtom, const std::shared_ptr<CacheMetricsMessage> &m) {
     metrics(*m, self);
-	  },
-	  [=](GetHitBytesAtom) {
-    return self->state.cache->hitBytes();
-	  },
-	  [=](GetMissBytesAtom) {
-    return self->state.cache->missBytes();
 	  }
   };
 }

@@ -203,15 +203,28 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
     }
 
     // Send cache metrics to segmentCacheActor
-    size_t hitBytes, missBytes;
-    if (cachingResultNeeded) {
-      hitBytes = hitSegments.size();
-      missBytes = columnNames_.size() - hitBytes;
-    } else {
-      hitBytes = 0;
-      missBytes = columnNames_.size();
+    size_t hitNum, missNum;
+    // Hybrid
+    if (missOperatorToPushdown_.lock()) {
+      if (cachingResultNeeded) {
+        hitNum = hitSegments.size();
+        missNum = columnNames_.size() - hitNum;
+      } else {
+        hitNum = 0;
+        missNum = columnNames_.size();
+      }
     }
-    ctx()->send(CacheMetricsMessage::make(hitBytes, missBytes, this->name()), "SegmentCache")
+    // Caching only
+    else {
+      if (hitSegments.size() == columnNames_.size()) {
+        hitNum = hitSegments.size();
+        missNum = 0;
+      } else {
+        hitNum = 0;
+        missNum = columnNames_.size();
+      }
+    }
+    ctx()->send(CacheMetricsMessage::make(hitNum, missNum, this->name()), "SegmentCache")
             .map_error([](auto err) { throw std::runtime_error(err); });
   }
 
