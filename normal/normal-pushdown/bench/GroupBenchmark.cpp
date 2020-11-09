@@ -46,7 +46,7 @@ void run(const std::shared_ptr<TupleSet2> &inputTupleSet) {
 		std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 		GroupKernel2 groupKernel({"c_0"}, expressions);
 		groupKernel.group(*inputTupleSet);
-		outputTupleSet = groupKernel.finalise();
+		outputTupleSet = groupKernel.finalise().value();
 	  });
 
 //  SPDLOG_DEBUG("Output:\n{}", outputTupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));

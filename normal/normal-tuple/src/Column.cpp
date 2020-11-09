@@ -151,7 +151,8 @@ size_t Column::size() {
   size_t size = 0;
   for (auto const &chunk: array_->chunks()) {
     for (auto const &buffer: chunk->data()->buffers) {
-      size += buffer->size();
+      if(buffer)
+      	size += buffer->size();
     }
   }
   return size;

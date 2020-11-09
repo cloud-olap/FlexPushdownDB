@@ -249,9 +249,11 @@ CSVParser::concatenateBuffers(std::shared_ptr<::arrow::Buffer> buffer1, std::sha
 
   auto bufferVector = {std::move(buffer1), std::move(buffer2)};
 
-  status = ::arrow::ConcatenateBuffers(bufferVector, ::arrow::default_memory_pool(), &buffer);
-  if (!status.ok())
-	return tl::unexpected(status.ToString());
+  auto expectedBuffer = ::arrow::ConcatenateBuffers(bufferVector, ::arrow::default_memory_pool());
+  if (expectedBuffer.ok())
+    buffer = *expectedBuffer;
+  else
+	return tl::unexpected(expectedBuffer.status().message());
 
   return buffer;
 }

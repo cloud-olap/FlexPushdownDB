@@ -30,8 +30,10 @@ std::vector<std::shared_ptr<::arrow::ChunkedArray>> TupleSetIndex::columns() {
 }
 
 tl::expected<void, std::string> TupleSetIndex::combine() {
-  auto result = table_->CombineChunks(::arrow::default_memory_pool(), &table_);
-  if(!result.ok())
-    return tl::make_unexpected(result.message());
+  auto expectedTable = table_->CombineChunks(::arrow::default_memory_pool());
+  if(expectedTable.ok())
+    table_ = *expectedTable;
+  else
+    return tl::make_unexpected(expectedTable.status().message());
   return {};
 }
