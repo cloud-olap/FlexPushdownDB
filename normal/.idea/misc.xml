@@ -19,7 +19,12 @@
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="CidrRootsConfiguration">
     <excludeRoots>
+      <file path="$PROJECT_DIR$/cmake-build-debug-llvm-10-ninja" />
+      <file path="$PROJECT_DIR$/cmake-build-debug-llvm-7" />
+      <file path="$PROJECT_DIR$/cmake-build-release-llvm-10-ninja" />
+      <file path="$PROJECT_DIR$/cmake-build-release-llvm-7-ninja" />
       <file path="$PROJECT_DIR$/normal-ssb/data/ssb-sf1" />
+      <file path="$PROJECT_DIR$/private" />
     </excludeRoots>
   </component>
   <component name="JavaScriptSettings">
