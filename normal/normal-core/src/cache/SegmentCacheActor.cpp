@@ -61,6 +61,8 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
                 stateful_actor<SegmentCacheActorState> *self) {
   self->state.cache->addHitNum(msg.getHitNum());
   self->state.cache->addMissNum(msg.getMissNum());
+  self->state.cache->addCrtQueryHitNum(msg.getHitNum());
+  self->state.cache->addCrtQueryMissNum(msg.getMissNum());
 }
 
 behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,

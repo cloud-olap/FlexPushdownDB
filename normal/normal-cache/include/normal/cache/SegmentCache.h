@@ -36,6 +36,8 @@ public:
   void addMissNum(size_t missNum);
   int crtQueryHitNum() const;
   int crtQueryMissNum() const;
+  void addCrtQueryHitNum(size_t hitNum);
+  void addCrtQueryMissNum(size_t missNum);
   void clearMetrics();
   void clearCrtQueryMetrics();
 
