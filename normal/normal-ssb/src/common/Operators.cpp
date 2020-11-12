@@ -138,6 +138,7 @@ Operators::makeS3SelectScanPushDownOperators(const std::string &namePrefix,
 											 bool scanOnStart,
 											 int numConcurrentUnits,
 											 const std::shared_ptr<S3SelectPartition>& partition,
+											 const std::shared_ptr<arrow::Schema>& schema,
 											 AWSClient &client, const std::shared_ptr<OperatorGraph> &g) {
 
   std::vector<std::shared_ptr<S3SelectScan2>> os;
@@ -152,6 +153,7 @@ Operators::makeS3SelectScanPushDownOperators(const std::string &namePrefix,
 		scanRanges[u].second,
 		fileType,
 		columns,
+		schema,
 		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		scanOnStart);
@@ -264,7 +266,9 @@ Operators::makeHashJoinProbeOperators(const std::string &namePrefix,
 														 g->getId(),
 														 namePrefix,
 														 u),
-											 JoinPredicate::create(leftColumnName, rightColumnName));
+											 JoinPredicate::create(leftColumnName, rightColumnName),
+											 // TODO: need to set properly
+                       std::set<std::string>());
 	os.push_back(o);
 	g->put(o);
   }

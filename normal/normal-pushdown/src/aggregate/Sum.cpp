@@ -85,20 +85,32 @@ void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::Aggregat
     return accum;
   });
 
-  // Get the current running sum, initialising it if necessary
-  auto currentSum = result->get(SUM_RESULT_KEY, arrow::MakeScalar(0.0));
-
-  auto currentSumWrapped = ScalarHelperBuilder::make(currentSum).value();
-
-  if (batchSum) {
-    auto batchSumWrapped = ScalarHelperBuilder::make(batchSum).value();
-
-    // FIXME: Implement this operator properly
-    currentSumWrapped->operator+=(batchSumWrapped);
+  if (!batchSum) {
+    throw std::runtime_error("No batchSum result");
   }
 
-  // Store the current running sum away again for the next batch of tuples
-  result->put(SUM_RESULT_KEY, currentSumWrapped->asScalar());
+  // Update the current running sum
+  auto expectedCurrentSum = result->get(SUM_RESULT_KEY);
+  if (!expectedCurrentSum.has_value()) {
+    result->put(SUM_RESULT_KEY, batchSum);
+  } else {
+    // Wrap batchSum and currentSum
+    auto expectedBatchSumWrapped = ScalarHelperBuilder::make(batchSum);
+    if (!expectedBatchSumWrapped.has_value()) {
+      throw std::runtime_error(expectedBatchSumWrapped.error());
+    }
+    auto batchSumWrapped = expectedBatchSumWrapped.value();
+
+    auto expectedCurrentSumWrapped = ScalarHelperBuilder::make(expectedCurrentSum.value());
+    if (!expectedCurrentSumWrapped.has_value()) {
+      throw std::runtime_error(expectedBatchSumWrapped.error());
+    }
+    auto currentSumWrapped = expectedCurrentSumWrapped.value();
+
+    // Update
+    currentSumWrapped->operator+=(batchSumWrapped);
+    result->put(SUM_RESULT_KEY, currentSumWrapped->asScalar());
+  }
 }
 
 std::shared_ptr<arrow::DataType> Sum::returnType() {
@@ -106,7 +118,7 @@ std::shared_ptr<arrow::DataType> Sum::returnType() {
 }
 
 void Sum::finalize(std::shared_ptr<aggregate::AggregationResult> result) {
-  result->finalize(result->get(SUM_RESULT_KEY));
+  result->finalize(result->get(SUM_RESULT_KEY).value());
 }
 
 void Sum::buildAndCacheProjector() {

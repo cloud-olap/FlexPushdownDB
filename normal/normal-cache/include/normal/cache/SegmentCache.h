@@ -32,6 +32,8 @@ public:
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
   int hitNum() const;
   int missNum() const;
+  void addHitNum(size_t hitNum);
+  void addMissNum(size_t missNum);
   int crtQueryHitNum() const;
   int crtQueryMissNum() const;
   void clearMetrics();

@@ -26,12 +26,18 @@ public:
   const std::shared_ptr<LogicalOperator> &getLeftProducer() const;
   const std::shared_ptr<LogicalOperator> &getRightProducer() const;
 
+  void setNeededColumnNames(const std::set<std::string> &neededColumnNames);
+  const std::set<std::string> &getNeededColumnNames() const;
+
 private:
   std::string leftColumnName_;
   std::string rightColumnName_;
 
   std::shared_ptr<LogicalOperator> leftProducer_;
   std::shared_ptr<LogicalOperator> rightProducer_;
+
+  // columns needed by downstream operators
+  std::set<std::string> neededColumnNames_;
 };
 
 }

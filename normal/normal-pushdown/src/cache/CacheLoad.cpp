@@ -7,6 +7,7 @@
 #include <normal/pushdown/cache/CacheHelper.h>
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/pushdown/scan/ScanMessage.h>
+#include <normal/core/cache/CacheMetricsMessage.h>
 
 #include <utility>
 
@@ -200,6 +201,31 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
       auto missCachingMessage = std::make_shared<ScanMessage>(missedCachingColumnNames, this->name(), true);
       ctx()->send(missCachingMessage, missOperatorToCache_.lock()->name());
     }
+
+    // Send cache metrics to segmentCacheActor
+    size_t hitNum, missNum;
+    // Hybrid
+    if (missOperatorToPushdown_.lock()) {
+      if (cachingResultNeeded) {
+        hitNum = hitSegments.size();
+        missNum = columnNames_.size() - hitNum;
+      } else {
+        hitNum = 0;
+        missNum = columnNames_.size();
+      }
+    }
+    // Caching only
+    else {
+      if (hitSegments.size() == columnNames_.size()) {
+        hitNum = hitSegments.size();
+        missNum = 0;
+      } else {
+        hitNum = 0;
+        missNum = columnNames_.size();
+      }
+    }
+    ctx()->send(CacheMetricsMessage::make(hitNum, missNum, this->name()), "SegmentCache")
+            .map_error([](auto err) { throw std::runtime_error(err); });
   }
 
   else {

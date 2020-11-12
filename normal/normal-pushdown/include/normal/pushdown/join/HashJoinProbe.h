@@ -28,21 +28,11 @@ namespace normal::pushdown::join {
 class HashJoinProbe : public normal::core::Operator {
 
 public:
-  HashJoinProbe(const std::string &name, JoinPredicate pred, long queryId = 0);
+  HashJoinProbe(const std::string &name, JoinPredicate pred, std::set<std::string> neededColumnNames, long queryId = 0);
 
   void onReceive(const core::message::Envelope &msg) override;
 
 private:
-
-  /**
-   * A buffer of received tuples that are not joined until enough hashtable entries and tuples have been received
-   */
-//  std::shared_ptr<normal::tuple::TupleSet2> tuples_;
-
-  /**
-   * The hashtable
-   */
-//  std::shared_ptr<TupleSetIndex> hashtable_;
 
   HashJoinProbeKernel2 kernel_;
 
@@ -50,12 +40,7 @@ private:
   void onTuple(const core::message::TupleMessage &msg);
   void onHashTable(const TupleSetIndexMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
-
-  void bufferTuples(const core::message::TupleMessage &msg);
-  void bufferHashTable(const TupleSetIndexMessage &msg);
-  void joinAndSendTuples();
-  tl::expected<std::shared_ptr<normal::tuple::TupleSet2>, std::string> join();
-  void sendTuples(const std::shared_ptr<normal::tuple::TupleSet2> &tuples);
+  void send(bool force);
 
 };
 

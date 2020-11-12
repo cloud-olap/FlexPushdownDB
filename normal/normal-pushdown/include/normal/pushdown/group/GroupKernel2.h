@@ -43,7 +43,8 @@ using GroupAggregationResultVectorMap = std::unordered_map<std::shared_ptr<Group
 class GroupKernel2 {
 
 public:
-  GroupKernel2(const std::vector<std::string>& columnNames,
+  GroupKernel2(const std::vector<std::string>& groupColumnNames,
+         const std::vector<std::string>& aggregateColumnNames,
 			   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions);
 
   /**
@@ -61,17 +62,25 @@ public:
    */
   [[nodiscard]] tl::expected<std::shared_ptr<TupleSet2>, std::string> finalise();
 
+  bool hasInput();
+
 private:
-  std::vector<std::string> columnNames_;
+  std::vector<std::string> groupColumnNames_;
+  std::vector<std::string> aggregateColumnNames_;
   std::vector<std::shared_ptr<AggregationFunction>> aggregateFunctions_;
 
   std::vector<int> groupColumnIndices_;
+  std::vector<int> aggregateColumnIndices_;
   std::optional<std::shared_ptr<arrow::Schema>> inputSchema_;
   std::optional<std::shared_ptr<arrow::Schema>> outputSchema_;
+  std::optional<std::shared_ptr<arrow::Schema>> aggregateSchema_;
 
   GroupArrayAppenderVectorMap groupArrayAppenderVectorMap_;
   GroupArrayVectorMap groupArrayVectorMap_;
   GroupAggregationResultVectorMap groupAggregationResultVectorMap_;
+
+  // FIXME: this is a workaround because we cannot append a single scalar to appender directly
+  GroupArrayVectorMap groupKeyBuffer_;
 
   /**
    * Caches input schema, indices to group columns, and makes output schema

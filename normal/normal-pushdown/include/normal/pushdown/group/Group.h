@@ -35,12 +35,15 @@ class Group : public normal::core::Operator {
 public:
   Group(const std::string &Name,
 		const std::vector<std::string> &ColumnNames,
+    const std::vector<std::string> &AggregateColumnNames,
 		const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
 		long queryId = 0);
 
   static std::shared_ptr<Group> make(const std::string &Name,
-									 const std::vector<std::string> &columnNames,
-									 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions);
+									 const std::vector<std::string> &groupColumnNames,
+                   const std::vector<std::string> &aggregateColumnNames,
+									 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
+									 long queryId);
 
   void onReceive(const core::message::Envelope &msg) override;
 
@@ -52,6 +55,10 @@ private:
   void onStart();
   void onTuple(const core::message::TupleMessage &msg);
   void onComplete(const core::message::CompleteMessage &msg);
+
+  size_t bytesGrouped_ = 0;
+  long groupTime_ = 0;
+  long numRows_ = 0;
 
 };
 

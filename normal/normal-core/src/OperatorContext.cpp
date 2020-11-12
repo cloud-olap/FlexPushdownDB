@@ -9,6 +9,7 @@
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/SegmentCacheActor.h>
+#include <normal/core/cache/CacheMetricsMessage.h>
 #include "normal/core/Globals.h"
 #include "normal/core/message/Message.h"
 #include "normal/core/Actors.h"
@@ -48,6 +49,9 @@ tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<mess
     }
     else if(msg->type() == "WeightRequestMessage"){
       operatorActor_->anon_send(segmentCacheActor_, normal::core::cache::WeightAtom::value, std::static_pointer_cast<normal::core::cache::WeightRequestMessage>(msg));
+    }
+    else if(msg->type() == "CacheMetricsMessage"){
+      operatorActor_->anon_send(segmentCacheActor_, normal::core::cache::MetricsAtom::value, std::static_pointer_cast<normal::core::cache::CacheMetricsMessage>(msg));
     }
     else{
       throw std::runtime_error("Unrecognized message " + msg->type());

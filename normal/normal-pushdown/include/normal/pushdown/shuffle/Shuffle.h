@@ -69,6 +69,10 @@ private:
    * @return
    */
   [[nodiscard]] tl::expected<void, std::string> send(int partitionIndex, bool force);
+
+  long shuffleTime_ = 0;
+  long numRowShuffled_ = 0;
+  size_t bytesShuffled_ = 0;
 };
 
 }

@@ -15,25 +15,24 @@ void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
   auto inserted = entries_.emplace(entry.getDef()->name(), entry);
   if(!inserted.second)
     throw std::runtime_error(fmt::format("Operator '{}' already added to directory", entry.getDef()->name()));
+  ++numOperators_;
 }
 
 void OperatorDirectory::setComplete(const std::string& name) {
   auto entry = entries_.find(name);
   if(entry == entries_.end())
     throw std::runtime_error("No entry for operator '" + name + "'");
-  else
+  else {
+    if (entry->second.isComplete()) {
+      throw std::runtime_error("Opdir: Entry for operator '" + name + "'" + "completes twice");
+    }
     entry->second.setComplete(true);
+  }
+  ++numOperatorsComplete_;
 }
 
 bool OperatorDirectory::allComplete() {
-
-  for(const auto& entry : entries_){
-
-    // FIXME: Hack to skip actors that aren't operators (i.e. SegmentCache)
-    if(entry.first != "SegmentCache" && !entry.second.isComplete())
-      return false;
-  }
-  return true;
+  return numOperatorsComplete_ >= numOperators_;
 }
 
 std::string OperatorDirectory::showString() const {

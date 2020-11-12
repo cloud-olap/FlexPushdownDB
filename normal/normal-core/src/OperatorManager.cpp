@@ -56,8 +56,7 @@ void OperatorManager::boot() {
 }
 
 std::string OperatorManager::showCacheMetrics() {
-  int hitNum;
-  int missNum;
+  int hitNum, missNum;
 
   auto errorHandler = [&](const caf::error& error){
 	throw std::runtime_error(to_string(error));
@@ -92,6 +91,7 @@ std::string OperatorManager::showCacheMetrics() {
   ss << std::left << std::setw(60) << "Hit rate:";
   ss << std::left << std::setw(40) << hitRate;
   ss << std::endl;
+
   ss << std::endl;
 
   return ss.str();

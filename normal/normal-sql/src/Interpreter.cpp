@@ -134,7 +134,7 @@ std::string Interpreter::showMetrics() {
     totalNumRequests += numRequestsSingle;
   }
 
-  double ec2Price = 1.064, totalCost;
+  double ec2Price = 1.232, totalCost;
   if (mode_->id() == normal::plan::operator_::mode::ModeId::FullPullup ||
       mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
     totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost

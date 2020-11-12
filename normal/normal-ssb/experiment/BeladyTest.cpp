@@ -19,6 +19,8 @@
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
+#include <iostream>
+#include <fstream>
 
 #define SKIP_SUITE true
 
@@ -28,49 +30,55 @@ using namespace normal::ssb;
 void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix);
 std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics);
 
-size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::string queryColumn, long numBytes) {
-//  // operators
-//  std::vector<std::string> s3Objects = {s3Object};
-//  auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
-//  std::vector<std::string> columns = {queryColumn};
-//  auto lineorderScan = normal::pushdown::S3SelectScan::make(
-//          "SimpleScan-" + s3Object + ":" + queryColumn,
-//          s3Bucket,
-//          s3Object,
-//          "",
-//          columns,
-//          scanRanges[0].first,
-//          scanRanges[0].second,
-//          normal::pushdown::S3SelectCSVParseOptions(",", "\n"),
-//          normal::plan::DefaultS3Client,
-//          true);
-//
-//  auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
-//
-//  // wire up
-//  auto mgr = std::make_shared<OperatorManager>();
-//  lineorderScan->produce(collate);
-//  collate->consume(lineorderScan);
-//  mgr->put(lineorderScan);
-//  mgr->put(collate);
-//
-//  // execute
-//  mgr->boot();
-//  mgr->start();
-//  mgr->join();
-//  auto tuples = std::static_pointer_cast<normal::pushdown::Collate>(mgr->getOperator("collate"))->tuples();
+size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::string tableName, std::string queryColumn, long numBytes) {
+  // operators
+  std::vector<std::string> s3Objects = {s3Object};
+  auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
+  std::vector<std::string> columns = {queryColumn};
+  SPDLOG_INFO("Starting S3SelectScan for: {} column {}", s3Object, queryColumn);
+  auto s3Scan = S3SelectScan::make(
+          "s3select - " + s3Object + "-" + queryColumn,
+          s3Bucket,
+          s3Object,
+          "",
+          columns,     // actually useless, will use columnNames from ScanMessage
+          scanRanges[0].first,
+          scanRanges[0].second,
+          normal::connector::defaultMiniCatalogue->getSchema(tableName),
+          S3SelectCSVParseOptions(",", "\n"),
+          normal::plan::DefaultS3Client,
+          true,
+          true,
+          0);
+
+  auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
+
+  // wire up
+  auto mgr = std::make_shared<OperatorManager>();
+  auto opGraph = std::make_shared<OperatorGraph>(0, mgr);
+  s3Scan->produce(collate);
+  collate->consume(s3Scan);
+  opGraph->put(s3Scan);
+  opGraph->put(collate);
+
+  // execute
+  opGraph->boot();
+  opGraph->start();
+  opGraph->join();
+  auto tuples = std::static_pointer_cast<normal::pushdown::Collate>(opGraph->getOperator("collate"))->tuples();
 //  mgr->stop();
-//
-//  auto tupleSet = TupleSet2::create(tuples);
-//
-//  auto potentialColumn = tupleSet->getColumnByName(queryColumn);
-//  if (!potentialColumn.has_value()) {
-//    SPDLOG_INFO("Failed to get the column for column {} in s3Object {}", queryColumn, s3Object);
-//  }
-//
-//  auto column = potentialColumn.value();
-//  size_t columnSize = column->size();
-//  return columnSize;
+  opGraph->close();
+
+  auto tupleSet = TupleSet2::create(tuples);
+
+  auto potentialColumn = tupleSet->getColumnByName(queryColumn);
+  if (!potentialColumn.has_value()) {
+    SPDLOG_INFO("Failed to get the column for column {} in s3Object {}", queryColumn, s3Object);
+  }
+
+  auto column = potentialColumn.value();
+  size_t columnSize = column->size();
+  return columnSize;
   return 0;
 }
 
@@ -145,19 +153,28 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
         segmentInfo->column = column;
         segmentInfo->startOffset = 0;
         segmentInfo->endOffset = numBytes;
-        segmentInfo->sizeInBytes = getColumnSizeInBytes(s3Bucket, s3Object, column, numBytes);
+        segmentInfo->sizeInBytes = getColumnSizeInBytes(s3Bucket, s3Object, tableName, column, numBytes);
         segmentInfoMetadata->push_back(segmentInfo);
       }
     }
   }
-  std::cout << "\n\nPRINTING OUT SEGMENT INFO\n\n";
+  SPDLOG_INFO("Writing segment info for {} to output.txt", dir_prefix);
+  std::ofstream outputFile;
+  outputFile.open ("output.txt");
   for (auto segmentInfo : *segmentInfoMetadata) {
-    std::cout << segmentInfo->objectName << ","
+//    std::cout << segmentInfo->objectName << ","
+//              << segmentInfo->column << ","
+//              << segmentInfo->startOffset << ","
+//              << segmentInfo->endOffset << ","
+//              << segmentInfo->sizeInBytes << "\n";
+      outputFile << segmentInfo->objectName << ","
               << segmentInfo->column << ","
               << segmentInfo->startOffset << ","
               << segmentInfo->endOffset << ","
               << segmentInfo->sizeInBytes << "\n";
   }
+  outputFile.close();
+//  std::cout.flush();
 }
 
 void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy,
@@ -190,7 +207,15 @@ void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operato
 
 TEST_SUITE ("BeladyTests" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("BeladyExperiment" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("BeladyGenerateMetadata" * doctest::skip(true || SKIP_SUITE)) {
+  spdlog::set_level(spdlog::level::info);
+  std::string bucket_name = "pushdowndb";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
+  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
+  generateBeladyMetadata(bucket_name, dir_prefix);
+}
+
+TEST_CASE ("BeladyExperiment" * doctest::skip(true || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";

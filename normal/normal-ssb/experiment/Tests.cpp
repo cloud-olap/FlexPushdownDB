@@ -133,6 +133,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   i.saveHitRatios();
 
   i.getOperatorGraph().reset();
+  std::this_thread::sleep_for (std::chrono::seconds(2));
   return tupleSet;
 }
 

@@ -22,7 +22,7 @@ using namespace normal::pushdown::group;
 using namespace normal::core::type;
 using namespace normal::expression::gandiva;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 namespace {
 void run(const std::shared_ptr<TupleSet2> &inputTupleSet) {
@@ -44,7 +44,7 @@ void run(const std::shared_ptr<TupleSet2> &inputTupleSet) {
 	  fmt::format("group-{}-rows", inputTupleSet->numRows()), [&] {
 		auto sumExpr = std::make_shared<Sum>("sum", cast(col("c_1"), float64Type()));
 		std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
-		GroupKernel2 groupKernel({"c_0"}, expressions);
+		GroupKernel2 groupKernel({"c_0"}, {"c_1"}, expressions);
 		groupKernel.group(*inputTupleSet);
 		outputTupleSet = groupKernel.finalise().value();
 	  });
@@ -54,9 +54,9 @@ void run(const std::shared_ptr<TupleSet2> &inputTupleSet) {
 }
 }
 
-TEST_SUITE ("group-benchmark" * doctest::skip(false)) {
+TEST_SUITE ("group-benchmark" * doctest::skip(SKIP_SUITE)) {
 
-TEST_CASE ("group-benchmark" * doctest::skip(false)) {
+TEST_CASE ("group-benchmark" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet10 = Sample::sampleCxRIntString(10, 10);
   auto tupleSet100 = Sample::sampleCxRIntString(10, 100);

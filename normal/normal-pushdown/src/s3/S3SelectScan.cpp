@@ -8,7 +8,7 @@
 #include <iostream>
 #include <utility>
 #include <memory>
-#include <cstdlib>                                         // for abort
+#include <cstdlib>                                          // for abort
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
@@ -41,12 +41,9 @@
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 
 
-#include "normal/core/message/Message.h"                            // for Message
-#include "normal/tuple/TupleSet.h"                           // for TupleSet
-#include "normal/pushdown/s3/S3SelectParser.h"
+#include "normal/core/message/Message.h"                    // for Message
+#include "normal/tuple/TupleSet.h"                          // for TupleSet
 #include <normal/pushdown/TupleMessage.h>
-#include <normal/core/message/CompleteMessage.h>
-#include <normal/core/cache/LoadRequestMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/cache/SegmentKey.h>
@@ -78,6 +75,7 @@ S3SelectScan::S3SelectScan(std::string name,
 						   std::vector<std::string> columnNames,
 						   int64_t startOffset,
 						   int64_t finishOffset,
+               std::shared_ptr<arrow::Schema> schema,
 						   S3SelectCSVParseOptions parseOptions,
 						   std::shared_ptr<Aws::S3::S3Client> s3Client,
 						   bool scanOnStart,
@@ -92,13 +90,15 @@ S3SelectScan::S3SelectScan(std::string name,
 	columnNames_(std::move(columnNames)),
 	startOffset_(startOffset),
 	finishOffset_(finishOffset),
+	schema_(std::move(schema)),
 	parseOptions_(parseOptions),
 	s3Client_(std::move(s3Client)),
 	columns_(enablePushdownProject.first ? columnNames_.size() : enablePushdownProject.second.size()),
 	scanOnStart_(scanOnStart),
 	toCache_(toCache),
 	enablePushdownProject_(enablePushdownProject),
-  weightedSegmentKeys_(weightedSegmentKeys) {}
+  weightedSegmentKeys_(weightedSegmentKeys) {
+}
 
 std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::string s3Bucket,
@@ -107,6 +107,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 												 std::vector<std::string> columnNames,
 												 int64_t startOffset,
 												 int64_t finishOffset,
+                         std::shared_ptr<arrow::Schema> schema,
 												 S3SelectCSVParseOptions parseOptions,
 												 std::shared_ptr<Aws::S3::S3Client> s3Client,
 												 bool scanOnstart,
@@ -121,6 +122,7 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										columnNames,
 										startOffset,
 										finishOffset,
+										schema,
 										parseOptions,
 										s3Client,
 										scanOnstart,
@@ -129,6 +131,19 @@ std::shared_ptr<S3SelectScan> S3SelectScan::make(std::string name,
 										enablePushdownProject,
 										weightedSegmentKeys);
 
+}
+
+void S3SelectScan::generateParser() {
+  // Generate parser according to columns to fetch
+  if (enablePushdownProject_.first) {
+    std::vector<std::shared_ptr<::arrow::Field>> fields;
+    for (auto const &columnName: columnNames_) {
+      fields.emplace_back(schema_->GetFieldByName(columnName));
+    }
+    parser_ = S3SelectParser::make(columnNames_, std::make_shared<::arrow::Schema>(fields));
+  } else {
+    parser_ = S3SelectParser::make(enablePushdownProject_.second, schema_);
+  }
 }
 
 tl::expected<void, std::string> S3SelectScan::s3Select() {
@@ -177,7 +192,7 @@ tl::expected<void, std::string> S3SelectScan::s3Select() {
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
   std::vector<unsigned char> partial{};
-  S3SelectParser s3SelectParser{};
+  S3SelectParser s3SelectParser({}, {});
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
@@ -185,7 +200,7 @@ tl::expected<void, std::string> S3SelectScan::s3Select() {
 				 name(),
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
-	std::shared_ptr<TupleSet> tupleSetV1 = s3SelectParser.parsePayload(payload);
+	std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(payload);
 	auto tupleSet = TupleSet2::create(tupleSetV1);
 	put(tupleSet);
   });
@@ -231,7 +246,7 @@ tl::expected<void, std::string> S3SelectScan::s3Scan() {
 
   if (getObjectOutcome.IsSuccess()) {
     auto &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
-    S3SelectParser s3SelectParser{};
+    S3SelectParser s3SelectParser({}, {});
     auto readSize = DefaultS3ScanBufferSize - 1;
     char buffer[DefaultS3ScanBufferSize];
 
@@ -249,7 +264,7 @@ tl::expected<void, std::string> S3SelectScan::s3Scan() {
       returnedBytes_ += strlen(buffer);
       Aws::Vector<unsigned char> charAwsVec(buffer, buffer + readSize);
 
-      std::shared_ptr<TupleSet> tupleSetV1 = s3SelectParser.parsePayload(charAwsVec);
+      std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(charAwsVec);
       auto tupleSet = TupleSet2::create(tupleSetV1);
       put(tupleSet);
     }
@@ -313,6 +328,9 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
 
     SPDLOG_DEBUG(fmt::format("Reading From S3: {}", name()));
 
+    // Generate parser
+    generateParser();
+
     // Read columns from s3
     auto result = enablePushdownProject_.first ? s3Select() : s3Scan();
 
@@ -328,14 +346,9 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
         if (arrays) {
           readColumns.emplace_back(Column::make(arrays->first, arrays->second));
         } else {
-          // Use StringType for all empty columns
-          auto builder = std::make_shared<::arrow::StringBuilder>();
-          std::shared_ptr<arrow::Array> array;
-          auto status = builder->Finish(&array);
-          if (!status.ok()) {
-            throw std::runtime_error(fmt::format("{}, {}", status.message(), name()));
-          }
-          readColumns.emplace_back(Column::make(columnNames_.at(col_id), array));
+          // Make empty column according to schema_
+          auto columnName = columnNames_.at(col_id);
+          readColumns.emplace_back(Column::make(columnName, schema_->GetFieldByName(columnName)->type()));
         }
       }
     }
@@ -358,14 +371,8 @@ std::shared_ptr<TupleSet2> S3SelectScan::readTuples() {
         if (arrays) {
           readColumns.emplace_back(Column::make(arrays->first, arrays->second));
         } else {
-          // Use StringType for all empty columns
-          auto builder = std::make_shared<::arrow::StringBuilder>();
-          std::shared_ptr<arrow::Array> array;
-          auto status = builder->Finish(&array);
-          if (!status.ok()) {
-            throw std::runtime_error(fmt::format("{}, {}", status.message(), name()));
-          }
-          readColumns.emplace_back(Column::make(columnName, array));
+          // Make empty column according to schema_
+          readColumns.emplace_back(Column::make(columnName, schema_->GetFieldByName(columnName)->type()));
         }
       }
     }

@@ -28,8 +28,6 @@ add_library(normal-tuple STATIC
         src/csv/CSVParser.cpp include/normal/tuple/csv/CSVParser.h
         src/ArrayAppender.cpp include/normal/tuple/ArrayAppender.h
         src/ArrayHasher.cpp include/normal/tuple/ArrayHasher.h
-        src/StringArrayHasher.cpp include/normal/tuple/StringArrayHasher.h
-        src/Int64ArrayHasher.cpp include/normal/tuple/Int64ArrayHasher.h
         src/TupleSetIndex.cpp include/normal/tuple/TupleSetIndex.h
         src/TupleSetIndexWrapper.cpp include/normal/tuple/TupleSetIndexWrapper.h
         src/TupleSetIndexFinder.cpp include/normal/tuple/TupleSetIndexFinder.h

@@ -45,9 +45,8 @@ void Collate::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Collate::onComplete(const normal::core::message::CompleteMessage &) {
-  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_){
+  if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
 	ctx()->notifyComplete();
-  hasProcessedAllComplete_ = true;
   }
 }
 

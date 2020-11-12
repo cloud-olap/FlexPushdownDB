@@ -20,6 +20,7 @@
 #include "normal/core/Operator.h"
 #include "normal/tuple/TupleSet.h"
 #include "normal/pushdown/s3/S3SelectCSVParseOptions.h"
+#include "normal/pushdown/s3/S3SelectParser.h"
 
 using namespace normal::core;
 using namespace normal::core::message;
@@ -39,6 +40,7 @@ public:
 			   std::vector<std::string> columnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
+         std::shared_ptr<arrow::Schema> schema,
 			   S3SelectCSVParseOptions parseOptions,
 			   std::shared_ptr<Aws::S3::S3Client> s3Client,
 			   bool scanOnStart,
@@ -54,6 +56,7 @@ public:
 											std::vector<std::string> columnNames,
 											int64_t startOffset,
 											int64_t finishOffset,
+                      std::shared_ptr<arrow::Schema> schema,
 											S3SelectCSVParseOptions parseOptions,
 											std::shared_ptr<Aws::S3::S3Client> s3Client,
 											bool scanOnStart = true,
@@ -73,7 +76,9 @@ private:
   std::vector<std::string> columnNames_;    // if projection pushdown is disabled, this means the needed column names
   int64_t startOffset_;
   int64_t finishOffset_;
+  std::shared_ptr<arrow::Schema> schema_;
   S3SelectCSVParseOptions parseOptions_;
+  std::shared_ptr<S3SelectParser> parser_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;  // no matter whether projection pushdown is enabled, this means the columns read from s3
   size_t processedBytes_ = 0;
@@ -101,6 +106,7 @@ private:
   std::shared_ptr<TupleSet2> readTuples();
   void readAndSendTuples();
   void sendSegmentWeight();
+  void generateParser();
 
   /**
    * used to compute filter weight

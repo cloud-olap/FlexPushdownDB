@@ -84,10 +84,6 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
     std::shared_ptr<core::message::Message> tupleMessage =
             std::make_shared<core::message::TupleMessage>(emptyTupleSet->toTupleSetV1(), name());
     ctx()->tell(tupleMessage);
-    // complete
-    std::shared_ptr<core::message::Message> completeMessage =
-            std::make_shared<core::message::CompleteMessage>(name());
-    ctx()->tell(completeMessage);
     ctx()->notifyComplete();
   }
 }
@@ -100,7 +96,7 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
     sendTuples();
   }
 
-  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_){
+  if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
     if (weightedSegmentKeys_ && totalNumRows_ > 0 && *applicable_) {
       sendSegmentWeight();
     }
@@ -110,7 +106,9 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 	  assert(this->filtered_->numRows() == 0);
 
 	  ctx()->notifyComplete();
-    hasProcessedAllComplete_ = true;
+
+//    double speed = (((double) bytesFiltered_) / 1024.0 / 1024.0) / (((double) filterTime_) / 1000000000);
+//    SPDLOG_INFO("Filter time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", filterTime_, bytesFiltered_, speed, totalNumRows_, name());
   }
 }
 
@@ -142,22 +140,25 @@ bool Filter::isApplicable(std::shared_ptr<normal::tuple::TupleSet2> tupleSet) {
 
 void Filter::buildFilter() {
   if(!filter_.has_value()){
-    auto predicateExpression = pred_->expression();
 	filter_ = normal::expression::gandiva::Filter::make(pred_->expression());
 	filter_.value()->compile(received_->schema().value());
   }
 }
 
 void Filter::filterTuples() {
-
-//  SPDLOG_DEBUG("Filter Input\n{}", received_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
+  auto startTime = std::chrono::steady_clock::now();
 
   filtered_ = filter_.value()->evaluate(*received_);
+//  filtered_ = TupleSet2::make(received_->getArrowTable().value());
   assert(filtered_->validate());
 
   totalNumRows_ += received_->numRows();
   filteredNumRows_ += filtered_->numRows();
-//  SPDLOG_DEBUG("Filter Output\n{}", filtered_->showString(normal::tuple::TupleSetShowOptions(normal::tuple::TupleSetShowOrientation::RowOriented, 100)));
+
+//  auto stopTime = std::chrono::steady_clock::now();
+//  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+//  filterTime_ += time;
+//  bytesFiltered_ += received_->size();
 
   received_->clear();
   assert(received_->validate());

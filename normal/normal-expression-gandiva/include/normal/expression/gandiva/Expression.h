@@ -30,13 +30,15 @@ public:
 protected:
   ::gandiva::NodePtr gandivaExpression_;
 
-  const static inline std::string prefixInt_ = "int:";
-  const static inline std::string prefixFloat_ = "float:";
-
-  static std::shared_ptr<std::string> removePrefixInt(std::string);
-  static std::shared_ptr<std::string> removePrefixFloat(std::string);
-
 };
+
+const inline std::string prefixInt_ = "int:";
+const inline std::string prefixFloat_ = "float:";
+std::shared_ptr<std::string> removePrefixInt(std::string);
+std::shared_ptr<std::string> removePrefixFloat(std::string);
+
+// FIXME: only applicable for ssb queries
+std::shared_ptr<normal::expression::gandiva::Expression> simpleCast(std::shared_ptr<normal::expression::gandiva::Expression> expr);
 
 }
 

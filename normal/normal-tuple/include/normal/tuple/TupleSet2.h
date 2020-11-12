@@ -185,6 +185,8 @@ public:
     return {};
   }
 
+  size_t size();
+
 
 private:
 

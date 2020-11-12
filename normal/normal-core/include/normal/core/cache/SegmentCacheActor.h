@@ -12,6 +12,7 @@
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/core/cache/StoreRequestMessage.h>
 #include <normal/core/cache/WeightRequestMessage.h>
+#include <normal/core/cache/CacheMetricsMessage.h>
 #include <normal/cache/CachingPolicy.h>
 #include <normal/core/Forward.h>
 
@@ -34,6 +35,7 @@ using GetCrtQueryNumHitsAtom = atom_constant<atom("CNumHits")>;
 using GetCrtQueryNumMissesAtom = atom_constant<atom("CNumMisses")>;
 using ClearMetricsAtom = atom_constant<atom("ClrMetrics")>;
 using ClearCrtQueryMetricsAtom = atom_constant<atom("ClrCMetric")>;
+using MetricsAtom = atom_constant<atom("Metrics")>;
 
 class SegmentCacheActor {
 
@@ -45,6 +47,7 @@ public:
 												   stateful_actor<SegmentCacheActorState> *self);
   static void store(const StoreRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
   static void weight(const WeightRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
+  static void metrics(const CacheMetricsMessage &msg, stateful_actor<SegmentCacheActorState> *self);
 
 };
 
@@ -54,5 +57,6 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadResponseM
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadRequestMessage>);
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::StoreRequestMessage>);
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::WeightRequestMessage>);
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::CacheMetricsMessage>);
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTCACHEACTOR_H

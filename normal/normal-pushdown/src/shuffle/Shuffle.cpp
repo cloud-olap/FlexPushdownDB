@@ -48,20 +48,18 @@ void Shuffle::onStart() {
 
 void Shuffle::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
-//    while (!(tupleArrived_ && onTupleNum_ == 0)) {
-//      std::this_thread::yield();
-//    }
-//    SPDLOG_INFO("Shuffle complete: {}", name());
+    size_t partitionIndex = 0;
+    for (const auto &buffer: buffers_) {
+      auto sendResult = send(partitionIndex, true);
+      if (!sendResult)
+        throw std::runtime_error(sendResult.error());
+      ++partitionIndex;
+    }
 
-	size_t partitionIndex = 0;
-	for (const auto &buffer: buffers_) {
-	  auto sendResult = send(partitionIndex, true);
-	  if (!sendResult)
-		throw std::runtime_error(sendResult.error());
-	  ++partitionIndex;
-	}
+    ctx()->notifyComplete();
 
-	ctx()->notifyComplete();
+	  double shuffleSpeed = (((double) bytesShuffled_) / 1024.0 / 1024.0) / (((double) shuffleTime_) / 1000000000);
+//	  SPDLOG_INFO("Shuffle time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", shuffleTime_, bytesShuffled_, shuffleSpeed, numRowShuffled_, name());
   }
 }
 
@@ -91,8 +89,7 @@ tl::expected<void, std::string> Shuffle::buffer(const std::shared_ptr<TupleSet2>
 tl::expected<void, std::string> Shuffle::send(int partitionIndex, bool force) {
 
   // If the tupleset is big enough, send it, then clear the buffer
-  if (force
-	  || (buffers_[partitionIndex].has_value() && buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
+  if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
 	std::shared_ptr<core::message::Message>
 		tupleMessage =
 		std::make_shared<core::message::TupleMessage>(buffers_[partitionIndex].value()->toTupleSetV1(), name());
@@ -104,36 +101,33 @@ tl::expected<void, std::string> Shuffle::send(int partitionIndex, bool force) {
 }
 
 void Shuffle::onTuple(const TupleMessage &message) {
-//  shuffleLock.lock();
-//  onTupleNum_++;
-//  tupleArrived_ = true;
-////  SPDLOG_INFO("Shuffle onTuple: {}", name());
-//  shuffleLock.unlock();
 
   // Get the tuple set
   const auto &tupleSet = TupleSet2::create(message.tuples());
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;
-//  auto startTime = std::chrono::steady_clock::now();
+  auto startTime = std::chrono::steady_clock::now();
 
   // Check empty
-  if (tupleSet->numRows() == 0) {
-	for (size_t s = 0; s < consumers_.size(); ++s) {
-	  shuffledTupleSets.emplace_back(TupleSet2::make(tupleSet->schema().value()));
-	}
-  } else {
-	// Shuffle the tuple set
-	auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
-	if (!expectedShuffledTupleSets.has_value()) {
-	  throw std::runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
-	}
-	shuffledTupleSets = expectedShuffledTupleSets.value();
+  if(tupleSet->numRows() == 0){
+    for (size_t s = 0; s < consumers_.size(); ++s) {
+      shuffledTupleSets.emplace_back(TupleSet2::make(tupleSet->schema().value()));
+    }
   }
 
-//  auto endTime = std::chrono::steady_clock::now();
-//  SPDLOG_INFO("Shuffle time: {}, size: {}, name: {}",
-//        std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count(),
-//        tupleSet->numRows(),
-//        name());
+  else {
+    // Shuffle the tuple set
+    auto expectedShuffledTupleSets = ShuffleKernel2::shuffle(columnName_, consumers_.size(), *tupleSet);
+    if (!expectedShuffledTupleSets.has_value()) {
+      throw std::runtime_error(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
+    }
+    shuffledTupleSets = expectedShuffledTupleSets.value();
+  }
+
+  auto stopTime = std::chrono::steady_clock::now();
+  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  numRowShuffled_ += tupleSet->numRows();
+  bytesShuffled_ += tupleSet->size();
+  shuffleTime_ += time;
 
   // Send the shuffled tuple sets to consumers
   size_t partitionIndex = 0;
@@ -148,7 +142,4 @@ void Shuffle::onTuple(const TupleMessage &message) {
 	++partitionIndex;
   }
 
-//  shuffleLock.lock();
-//  onTupleNum_--;
-//  shuffleLock.unlock();
 }

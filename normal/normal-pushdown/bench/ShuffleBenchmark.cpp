@@ -17,7 +17,7 @@ using namespace normal::tuple;
 using namespace normal::pushdown;
 using namespace normal::pushdown::shuffle;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 void run(const std::shared_ptr<TupleSet2> &tupleSet){
 

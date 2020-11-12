@@ -52,15 +52,26 @@ void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
 
 //  SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
 
-  auto result = kernel_.put(tupleSet);
-  if(!result) throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+  auto startTime = std::chrono::steady_clock::now();
+
+  auto result = buffer(tupleSet);
+  if(!result)
+    throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
+  send(false);
+
+  auto stopTime = std::chrono::steady_clock::now();
+  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  numRows_ += tupleSet->numRows();
+  bytesJoinBuild_ += tupleSet->size();
+  joinBuildTime_ += time;
+
 
 //  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
 }
 
 void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 
-  if(ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer) && !hasProcessedAllComplete_) {
+  if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
 //	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
 
 //	std::shared_ptr<normal::core::message::Message>
@@ -68,12 +79,24 @@ void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 
 //	kernel_.getTupleSetIndex().value()->validate();
 
-	std::shared_ptr<normal::core::message::Message>
-		message = std::make_shared<TupleSetIndexMessage>(kernel_.getTupleSetIndex().value(), name());
+    double speed = (((double) bytesJoinBuild_) / 1024.0 / 1024.0) / (((double) joinBuildTime_) / 1000000000);
+//    SPDLOG_INFO("JoinBuild time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", joinBuildTime_, bytesJoinBuild_, speed, numRows_, name());
 
-	ctx()->tell(message);
+    send(true);
 
-	ctx()->notifyComplete();
-	hasProcessedAllComplete_ = true;
+	  ctx()->notifyComplete();
+  }
+}
+
+tl::expected<void, std::string> HashJoinBuild::buffer(const std::shared_ptr<TupleSet2> &tupleSet) {
+  return kernel_.put(tupleSet);
+}
+
+void HashJoinBuild::send(bool force) {
+  if (kernel_.getTupleSetIndex().has_value() && (force || kernel_.getTupleSetIndex().value()->size() >= DefaultBufferSize)) {
+    std::shared_ptr<normal::core::message::Message> message =
+            std::make_shared<TupleSetIndexMessage>(kernel_.getTupleSetIndex().value(), name());
+    ctx()->tell(message);
+    kernel_.clear();
   }
 }

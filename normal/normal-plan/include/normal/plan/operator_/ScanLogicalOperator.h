@@ -21,30 +21,26 @@ public:
 
   [[nodiscard]] const std::shared_ptr<PartitioningScheme> &getPartitioningScheme() const;
 
-  void predicate(const std::shared_ptr<expression::gandiva::Expression> &predicate);
-
-  void setPredicate(const std::shared_ptr<expression::gandiva::Expression> &predicate);
+  void setPredicates(const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &predicates);
 
   void setProjectedColumnNames(const std::shared_ptr<std::vector<std::string>> &projectedColumnNames);
 
   const std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &streamOutPhysicalOperators() const;
 
 protected:
-  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> getValidPartitions(std::shared_ptr<expression::gandiva::Expression> predicate);
+  std::pair<bool, std::shared_ptr<expression::gandiva::Expression>> checkPartitionValid(const std::shared_ptr<Partition>& partition);
 
   // projected columns, not final projection, but columns that downstream operators need
   // don't include columns that filters need, currently filters are integrated together with scan in logical plan
   std::shared_ptr<std::vector<std::string>> projectedColumnNames_;
 
   // ssb can push all filters to scan nodes, we can also make it more general: filterLogicalOperator
-  std::shared_ptr<expression::gandiva::Expression> predicate_;
+  // conjunctive predicates
+  std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> predicates_;
 
   std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> streamOutPhysicalOperators_;
 
-  std::shared_ptr<std::vector<std::shared_ptr<Partition>>> validPartitions_;
-
 private:
-
   std::shared_ptr<PartitioningScheme> partitioningScheme_;
 
 };
