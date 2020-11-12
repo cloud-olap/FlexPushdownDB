@@ -271,3 +271,6 @@ Temporary Items
 
 # Ignore this data set, too big to check in to git
 /normal-ssb/data/ssb-sf1/
+
+# Local copy of keys etc
+/private/

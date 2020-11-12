@@ -20,6 +20,7 @@
   <component name="CidrRootsConfiguration">
     <excludeRoots>
       <file path="$PROJECT_DIR$/normal-ssb/data/ssb-sf1" />
+      <file path="$PROJECT_DIR$/private" />
     </excludeRoots>
   </component>
   <component name="JavaScriptSettings">

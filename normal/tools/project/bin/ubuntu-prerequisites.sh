@@ -14,14 +14,24 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
       exit
     fi
 
+    apt-get update
+
     # Install development requirements
     apt-get install \
       build-essential \
-      libssl-dev \
-      curl \
+      clang-10 \
+      cmake \
+      ninja-build \
       libcurl4-openssl-dev \
-      qmake \
+      libssl-dev \
+      uuid-dev \
+      zlib1g-dev \
+      libpulse-dev \
+      binutils-dev \
+      bison \
       flex \
-      bison
+      libtool \
+      tcl
+
   fi
 fi
