@@ -134,19 +134,35 @@ std::string Interpreter::showMetrics() {
     totalNumRequests += numRequestsSingle;
   }
 
-  double ec2Price = 1.232, totalCost;
+  // Cost of c5a.8xlarge instance in US West (North California)
+  // All other costs are for the region US West (North California) as well
+  double ec2Price = 1.52, totalCost = 0;
+  double getRequestCost = 0.0;
+  double s3ScanCost = 0.0;
+  double s3ReturnCost = 0.0;
+  double runtimeCost = 0.0;
   if (mode_->id() == normal::plan::operator_::mode::ModeId::FullPullup ||
       mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
-    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
-            totalExecutionTime / 3600 * ec2Price;                   // runtime cost
+    getRequestCost = ((double) totalNumRequests) * 0.00000044;  // GET request cost
+    runtimeCost = totalExecutionTime / 3600 * ec2Price;         // runtime cost
+    totalCost = getRequestCost + runtimeCost;
   } else {
-    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
-            totalProcessedBytesGiga * 0.002 +                       // s3 scan cost
-            totalReturnedBytesGiga * 0.0007 +                       // s3 return cost
-            totalExecutionTime / 3600 * ec2Price;                   // runtime cost
+    getRequestCost = ((double) totalNumRequests) * 0.00000044;  // GET request cost
+    s3ScanCost = totalProcessedBytesGiga * 0.0022;              // s3 scan cost
+    s3ReturnCost = totalReturnedBytesGiga * 0.0008;             // s3 return cost
+    runtimeCost = totalExecutionTime / 3600 * ec2Price;         // runtime cost
+    totalCost = getRequestCost + s3ScanCost + s3ReturnCost + runtimeCost;
   }
   std::stringstream formattedCost;
   formattedCost << totalCost << " $";
+  std::stringstream formattedGetRequestCost;
+  formattedGetRequestCost << getRequestCost << " $";
+  std::stringstream formattedS3ScanCost;
+  formattedS3ScanCost << s3ScanCost << " $";
+  std::stringstream formattedS3ReturnCost;
+  formattedS3ReturnCost << s3ReturnCost << " $";
+  std::stringstream formattedRuntimeCost;
+  formattedRuntimeCost << runtimeCost << " $";
 
   ss << std::left << std::setw(60) << "Total Processed Bytes";
   ss << std::left << std::setw(60) << formattedProcessedBytes.str();
@@ -159,6 +175,18 @@ std::string Interpreter::showMetrics() {
   ss << std::endl;
   ss << std::left << std::setw(60) << "Total Cost";
   ss << std::left << std::setw(60) << formattedCost.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total GET Request Cost";
+  ss << std::left << std::setw(60) << formattedGetRequestCost.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total S3 Scan Cost";
+  ss << std::left << std::setw(60) << formattedS3ScanCost.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total S3 Return Cost";
+  ss << std::left << std::setw(60) << formattedS3ReturnCost.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total Runtime Cost";
+  ss << std::left << std::setw(60) << formattedRuntimeCost.str();
   ss << std::endl;
   ss << std::endl;
 
