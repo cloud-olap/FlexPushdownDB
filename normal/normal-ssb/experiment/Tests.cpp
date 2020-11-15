@@ -197,11 +197,16 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
       }
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
       auto sql = ExperimentUtil::read_file(sql_file_path.string());
-      executeSql(i, sql, false);
+      executeSql(i, sql, true);
       sql_file_dir_path = sql_file_dir_path.parent_path();
     }
     SPDLOG_INFO("Cache warm phase finished");
   }
+
+  // collect warmup metrics for later output
+  std::string warmupMetrics = i.showMetrics();
+  std::string warmupCacheMetrics = i.getOperatorManager()->showCacheMetrics();
+  i.clearMetrics();
 
   i.getOperatorManager()->clearCacheMetrics();
 
@@ -218,15 +223,18 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   }
   SPDLOG_INFO("Execution phase finished");
 
-  SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
+  SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
   SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
 
   auto metricsFilePath = filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
   std::ofstream fout(metricsFilePath.string());
-  fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
-  fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
-  fout << "Cache hit ratios:\n" << i.showHitRatios() << "\n";
+  fout << mode->toString() << " mode finished\n";
+  fout << "Warmup metrics:\n" << warmupMetrics << "\n";
+  fout << "Warmup Cache metrics:\n" << warmupCacheMetrics << "\n";
+  fout << "Execution metrics:\n" << i.showMetrics() << "\n";
+  fout << "Execution Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
+  fout << "All Cache hit ratios:\n" << i.showHitRatios() << "\n";
 //  fout << "Current cache layout:\n" << i.getCachingPolicy()->showCurrentLayout() << "\n";
   fout.flush();
   fout.close();

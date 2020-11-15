@@ -33,6 +33,7 @@ public:
   void stop();
   void saveMetrics();
   void saveHitRatios();
+  void clearMetrics();
   std::string showMetrics();
   std::string showHitRatios();
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;

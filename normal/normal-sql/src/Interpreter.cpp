@@ -226,6 +226,12 @@ void Interpreter::saveMetrics() {
   numRequests_.emplace_back(operatorGraph_->getNumRequests());
 }
 
+void Interpreter::clearMetrics() {
+  executionTimes_.clear();
+  bytesTransferred_.clear();
+  numRequests_.clear();
+}
+
 const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {
   return cachingPolicy_;
 }
