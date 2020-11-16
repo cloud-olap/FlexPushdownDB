@@ -506,8 +506,8 @@ void S3SelectScan::sendSegmentWeight() {
       auto lenCol = (double) miniCatalogue->lengthOfColumn(columnName);
       auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
 
-//      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
-      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan)) / numKey;
+      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
+//      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan)) / numKey;
       weightMap->emplace(segmentKey, weight);
     }
   }
