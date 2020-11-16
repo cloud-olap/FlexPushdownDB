@@ -7,6 +7,7 @@
 
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <set>
 #include <normal/connector/partition/Partition.h>
@@ -26,7 +27,8 @@ public:
                 std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
                 std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,
                         cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeyToSize,
-                std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> queryNumToInvolvedSegments,
+                std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::unordered_set
+                        <std::shared_ptr<cache::SegmentKey>, cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>>> queryNumToInvolvedSegments,
                 std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
                         cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums,
                 std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
@@ -50,7 +52,7 @@ public:
    */
   std::shared_ptr<std::vector<std::string>> getColumnsOfTable(const std::string& tableName);
   size_t getSegmentSize(const std::shared_ptr<cache::SegmentKey>& segmentKey);
-  std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>> getSegmentsInQuery(int queryNum);
+  std::shared_ptr<std::unordered_set<std::shared_ptr<cache::SegmentKey>, cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> getSegmentsInQuery(int queryNum);
   void addToSegmentQueryNumMappings(int queryNum, const std::shared_ptr<cache::SegmentKey>& segmentKey);
   int querySegmentNextUsedIn(const std::shared_ptr<cache::SegmentKey>& segmentKey, int currentQuery);
   void setCurrentQueryNum(int queryNum);
@@ -65,7 +67,7 @@ private:
   std::shared_ptr<std::unordered_map<std::string, int>> rowLengthMap_;
   std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,
   cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeyToSize_;
-  std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> queryNumToInvolvedSegments_;
+  std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::unordered_set<std::shared_ptr<cache::SegmentKey>, cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>>> queryNumToInvolvedSegments_;
   std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
   cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums_;
   int currentQueryNum_;
