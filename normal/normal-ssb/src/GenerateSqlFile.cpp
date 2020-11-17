@@ -34,14 +34,10 @@ int main(int argc, char **argv) {
 
     // Basic workload
     case 1: {
-      // make warm-up batch and execution batch the same, but random order respectively
-      auto warmBatch = sqlGenerator.generateSqlBatchSkew(skewness, size / 2);
-      std::vector<std::string> executionBatch(warmBatch);
-      std::shuffle(warmBatch.begin(), warmBatch.end(), g);
-      std::shuffle(executionBatch.begin(), executionBatch.end(), g);
-
+      auto batch = sqlGenerator.generateSqlBatchSkew(skewness, size);
+      std::shuffle(batch.begin(), batch.end(), g);
       for (int index = 0; index < size; index++) {
-        auto sql = (index < warmBatch.size()) ? warmBatch[index] : executionBatch[index - warmBatch.size()];
+        auto sql = batch[index];
         auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1)));
         writeFile(sql, sql_file_path);
         sql_file_dir_path = sql_file_dir_path.parent_path();
@@ -51,14 +47,10 @@ int main(int argc, char **argv) {
 
     // Weighted workload
     case 2: {
-      // make warm-up batch and execution batch the same, but random order respectively
-      auto warmBatch = sqlGenerator.generateSqlBatchSkewWeight(skewness, size / 2);
-      std::vector<std::string> executionBatch(warmBatch);
-      std::shuffle(warmBatch.begin(), warmBatch.end(), g);
-      std::shuffle(executionBatch.begin(), executionBatch.end(), g);
-
+      auto batch = sqlGenerator.generateSqlBatchSkewWeight(skewness, size);
+      std::shuffle(batch.begin(), batch.end(), g);
       for (int index = 0; index < size; index++) {
-        auto sql = (index < warmBatch.size()) ? warmBatch[index] : executionBatch[index - warmBatch.size()];
+        auto sql = batch[index];
         auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1)));
         writeFile(sql, sql_file_path);
         sql_file_dir_path = sql_file_dir_path.parent_path();
