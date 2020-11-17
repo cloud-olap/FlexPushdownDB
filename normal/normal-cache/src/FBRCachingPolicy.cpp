@@ -212,6 +212,16 @@ void FBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<Segme
   }
 }
 
+std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
+FBRCachingPolicy::getKeysetInCachePolicy() {
+  auto keysetInCachePolicy = std::make_shared<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
+  for (auto const &keyMapIt: keyMap_) {
+    auto segmentKey = keyMapIt.first;
+    keysetInCachePolicy->insert(segmentKey);
+  }
+  return keysetInCachePolicy;
+}
+
 std::string FBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keyMap_.size() << std::endl;

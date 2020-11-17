@@ -183,6 +183,13 @@ void WFBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<Segm
   }
 }
 
+std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
+WFBRCachingPolicy::getKeysetInCachePolicy() {
+  auto keysetInCachePolicy = std::make_shared<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
+  keysetInCachePolicy->insert(keysInCache_.begin(), keysInCache_.end());
+  return keysetInCachePolicy;
+}
+
 std::string WFBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keysInCache_.size() << std::endl;

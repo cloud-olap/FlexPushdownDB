@@ -53,11 +53,11 @@ unsigned long SegmentCache::remove(const std::shared_ptr<SegmentKey> &key) {
 unsigned long SegmentCache::remove(const std::function<bool(const SegmentKey &)> &predicate) {
   unsigned long erasedCount = 0;
   for (const auto &mapEntry: map_) {
-	if (predicate(*mapEntry.first)) {
-	  cachingPolicy_->onRemove(mapEntry.first);
-	  map_.erase(mapEntry.first);
-	  ++erasedCount;
-	}
+    if (predicate(*mapEntry.first)) {
+      cachingPolicy_->onRemove(mapEntry.first);
+      map_.erase(mapEntry.first);
+      ++erasedCount;
+    }
   }
   return erasedCount;
 }
@@ -115,4 +115,20 @@ void SegmentCache::addCrtQueryHitNum(size_t hitNum) {
 
 void SegmentCache::addCrtQueryMissNum(size_t missNum) {
   crtQueryMissNum_ += missNum;
+}
+
+void SegmentCache::checkCacheConsistensyWithCachePolicy() {
+  auto keysInCachePolicy = cachingPolicy_->getKeysetInCachePolicy();
+  if (keysInCachePolicy->size() != map_.size()) {
+    throw std::runtime_error("Error, cache policy key set has different size than segment cache keyset");
+  }
+
+  // make sure all keys in caching policy cache are in segment cache
+  // don't need to worry about checking the other way around since we are comparing sets and they are the same size
+  // so checking one way will show any errors
+  for (auto segmentKey : *keysInCachePolicy) {
+    if (map_.find(segmentKey) == map_.end()) {
+      throw std::runtime_error("Error, cache policy key set has a key not present in the segment cache");
+    }
+  }
 }

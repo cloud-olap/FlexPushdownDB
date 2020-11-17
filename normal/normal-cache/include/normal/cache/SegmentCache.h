@@ -42,6 +42,8 @@ public:
   void clearCrtQueryMetrics();
 
 private:
+  void checkCacheConsistensyWithCachePolicy();
+
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> map_;
 	std::shared_ptr<CachingPolicy> cachingPolicy_;
 	int hitNum_ = 0;

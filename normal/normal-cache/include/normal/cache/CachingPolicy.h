@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <unordered_set>
 #include <normal/plan/mode/Mode.h>
 
 #include "SegmentKey.h"
@@ -58,6 +59,13 @@ public:
    * @return keys of segments to cache next
    */
   virtual std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) = 0;
+
+  /**
+   * Get the keys that the cache policy thinks are stored in the cache
+   *
+   * @return keys of segments that the cache policy thinks are cached
+   */
+  virtual std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() = 0;
 
   /**
    * Show the current cache layout
