@@ -32,14 +32,23 @@ public:
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
   int hitNum() const;
   int missNum() const;
+  int shardHitNum() const;
+  int shardMissNum() const;
   void addHitNum(size_t hitNum);
   void addMissNum(size_t missNum);
+  void addShardHitNum(size_t shardHitNum);
+  void addShardMissNum(size_t shardMissNum);
   int crtQueryHitNum() const;
   int crtQueryMissNum() const;
+  int crtQueryShardHitNum() const;
+  int crtQueryShardMissNum() const;
   void addCrtQueryHitNum(size_t hitNum);
   void addCrtQueryMissNum(size_t missNum);
+  void addCrtQueryShardHitNum(size_t shardHitNum);
+  void addCrtQueryShardMissNum(size_t shardMissNum);
   void clearMetrics();
   void clearCrtQueryMetrics();
+  void clearCrtQueryShardMetrics();
 
 private:
   void checkCacheConsistensyWithCachePolicy();
@@ -48,8 +57,12 @@ private:
 	std::shared_ptr<CachingPolicy> cachingPolicy_;
 	int hitNum_ = 0;
 	int missNum_ = 0;
+	int shardHitNum_ = 0;
+	int shardMissNum_ = 0;
 	int crtQueryHitNum_ = 0;
 	int crtQueryMissNum_ = 0;
+	int crtQueryShardHitNum_ = 0;
+	int crtQueryShardMissNum_ = 0;
 };
 
 }

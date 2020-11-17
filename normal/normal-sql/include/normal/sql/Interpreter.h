@@ -53,6 +53,7 @@ private:
   std::vector<std::pair<size_t, size_t>> bytesTransferred_;
   std::vector<size_t> numRequests_;
   std::vector<double> hitRatios_;
+  std::vector<double> shardHitRatios_;
 };
 
 }

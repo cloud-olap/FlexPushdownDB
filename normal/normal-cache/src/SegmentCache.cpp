@@ -79,9 +79,19 @@ int SegmentCache::missNum() const {
   return missNum_;
 }
 
+int SegmentCache::shardHitNum() const {
+  return shardHitNum_;
+}
+
+int SegmentCache::shardMissNum() const {
+  return shardMissNum_;
+}
+
 void SegmentCache::clearMetrics() {
   hitNum_ = 0;
   missNum_ = 0;
+  shardHitNum_ = 0;
+  shardMissNum_ = 0;
 }
 
 const std::shared_ptr<CachingPolicy> &SegmentCache::getCachingPolicy() const {
@@ -96,9 +106,22 @@ int SegmentCache::crtQueryMissNum() const {
   return crtQueryMissNum_;
 }
 
+int SegmentCache::crtQueryShardHitNum() const {
+  return crtQueryShardHitNum_;
+}
+
+int SegmentCache::crtQueryShardMissNum() const {
+  return crtQueryShardMissNum_;
+}
+
 void SegmentCache::clearCrtQueryMetrics() {
   crtQueryHitNum_ = 0;
   crtQueryMissNum_ = 0;
+}
+
+void SegmentCache::clearCrtQueryShardMetrics() {
+  crtQueryShardHitNum_ = 0;
+  crtQueryShardMissNum_ = 0;
 }
 
 void SegmentCache::addHitNum(size_t hitNum) {
@@ -109,12 +132,28 @@ void SegmentCache::addMissNum(size_t missNum) {
   missNum_ += missNum;
 }
 
+void SegmentCache::addShardHitNum(size_t shardHitNum) {
+  shardHitNum_ += shardHitNum;
+}
+
+void SegmentCache::addShardMissNum(size_t shardMissNum) {
+  shardMissNum_ += shardMissNum;
+}
+
 void SegmentCache::addCrtQueryHitNum(size_t hitNum) {
   crtQueryHitNum_ += hitNum;
 }
 
 void SegmentCache::addCrtQueryMissNum(size_t missNum) {
   crtQueryMissNum_ += missNum;
+}
+
+void SegmentCache::addCrtQueryShardHitNum(size_t shardHitNum) {
+  crtQueryShardHitNum_ += shardHitNum;
+}
+
+void SegmentCache::addCrtQueryShardMissNum(size_t shardMissNum) {
+  crtQueryShardMissNum_ += shardMissNum;
 }
 
 void SegmentCache::checkCacheConsistensyWithCachePolicy() {

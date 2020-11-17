@@ -239,10 +239,15 @@ const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {
 std::string Interpreter::showHitRatios() {
   std::stringstream ss;
   ss << std::endl;
-  int qId = 1;
-  for (auto const &hitRatio: hitRatios_) {
-    ss << std::left << std::setw(60) << qId++;
-    ss << std::left << std::setw(60) << hitRatio;
+  ss << "Hit ratios, Shard Hit Ratios:" << std::endl;
+  ss << std::endl;
+  for (int i = 0; i < hitRatios_.size(); i++) {
+    int qId = i + 1;
+    auto const hitRatio = hitRatios_.at(i);
+    auto const shardHitRatio = shardHitRatios_.at(i);
+    ss << std::left << std::setw(20) << qId;
+    ss << std::left << std::setw(30) << hitRatio;
+    ss << std::left << std::setw(30) << shardHitRatio;
     ss << std::endl;
   }
   return ss.str();
@@ -250,6 +255,7 @@ std::string Interpreter::showHitRatios() {
 
 void Interpreter::saveHitRatios() {
   hitRatios_.emplace_back(operatorManager_->getCrtQueryHitRatio());
+  shardHitRatios_.emplace_back(operatorManager_->getCrtQueryShardHitRatio());
 }
 
 
