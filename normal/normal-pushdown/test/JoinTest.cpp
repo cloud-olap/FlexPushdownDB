@@ -52,7 +52,7 @@ TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false)) {
 	auto joinBuild = HashJoinBuild::create("join-build", "AA");
 	g->put(joinBuild);
 	auto joinProbe = std::make_shared<HashJoinProbe>("join-probe",
-													 JoinPredicate::create("AA", "BA"));
+													 JoinPredicate::create("AA", "BA"), std::set<std::string>{"AA", "BA"}, 0);
 	g->put(joinProbe);
 	auto collate = std::make_shared<Collate>("collate", g->getId());
 	g->put(collate);
@@ -216,7 +216,7 @@ TEST_CASE ("join-test-non-existent-probe-left-column" * doctest::skip(false)) {
   auto tupleSetA = makeTupleSetA();
 
   HashJoinBuildKernel2 buildKernel("aa");
-  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("NON_EXISTENT_COLUMN_NAME", "UNUSED"));
+  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("NON_EXISTENT_COLUMN_NAME", "UNUSED"), {});
 
   // This should succeed
   auto buildKernelPutResult = buildKernel.put(tupleSetA);
@@ -235,7 +235,7 @@ TEST_CASE ("join-test-non-existent-probe-left-column" * doctest::skip(false)) {
 TEST_CASE ("join-test-non-existent-probe-right-column" * doctest::skip(false)) {
   auto tupleSetA = makeTupleSetA();
 
-  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("UNUSED", "NON_EXISTENT_COLUMN_NAME"));
+  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("UNUSED", "NON_EXISTENT_COLUMN_NAME"), {});
 
   // This should fail
   auto probeKernelPutProbeResult = probeKernel.putProbeTupleSet(tupleSetA);
@@ -248,7 +248,7 @@ TEST_CASE ("join-test-empty-build-tupleset" * doctest::skip(false)) {
   auto tupleSetB = makeTupleSetB();
 
   HashJoinBuildKernel2 buildKernel("aa");
-  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"));
+  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"), {"aa", "ba"});
 
   // This should succeed
   auto buildKernelPutResult = buildKernel.put(tupleSetA);
@@ -264,11 +264,11 @@ TEST_CASE ("join-test-empty-build-tupleset" * doctest::skip(false)) {
 	  REQUIRE(probeKernelPutBuildIndexResult);
 
   // This should succeed
-  auto probeKernelPutProbeResult = probeKernel.putProbeTupleSet(tupleSetB);
+  auto probeKernelPutProbeResult = probeKernel.joinProbeTupleSet(tupleSetB);
 	  REQUIRE(probeKernelPutProbeResult);
 
   // This should succeed
-  auto joinResult = probeKernel.join();
+  auto joinResult = probeKernel.getBuffer();
 	  REQUIRE(joinResult);
   auto tupleSetJoined = joinResult.value();
 
@@ -283,7 +283,7 @@ TEST_CASE ("join-test-empty-probe-tupleset" * doctest::skip(false)) {
   auto tupleSetB = makeEmptyTupleSetB();
 
   HashJoinBuildKernel2 buildKernel("aa");
-  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"));
+  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"), {"aa", "ba"});
 
   // This should succeed
   auto buildKernelPutResult = buildKernel.put(tupleSetA);
@@ -299,11 +299,11 @@ TEST_CASE ("join-test-empty-probe-tupleset" * doctest::skip(false)) {
 	  REQUIRE(probeKernelPutBuildIndexResult);
 
   // This should succeed
-  auto probeKernelPutProbeResult = probeKernel.putProbeTupleSet(tupleSetB);
+  auto probeKernelPutProbeResult = probeKernel.joinProbeTupleSet(tupleSetB);
 	  REQUIRE(probeKernelPutProbeResult);
 
   // This should succeed
-  auto joinResult = probeKernel.join();
+  auto joinResult = probeKernel.getBuffer();
 	  REQUIRE(joinResult);
   auto tupleSetJoined = joinResult.value();
 
@@ -317,7 +317,7 @@ TEST_CASE ("join-test-default" * doctest::skip(false)) {
   auto tupleSetB = makeTupleSetB();
 
   HashJoinBuildKernel2 buildKernel("aa");
-  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"));
+  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"), {"aa", "ba"});
 
   auto buildKernelPutResult = buildKernel.put(tupleSetA);
 	  REQUIRE(buildKernelPutResult.has_value());
@@ -329,11 +329,13 @@ TEST_CASE ("join-test-default" * doctest::skip(false)) {
   auto probeKernelPutBuildIndexResult = probeKernel.putBuildTupleSetIndex(tupleSetIndex);
 	  REQUIRE(probeKernelPutBuildIndexResult);
 
-  auto probeKernelPutProbeTupleResult = probeKernel.putProbeTupleSet(tupleSetB);
+  auto probeKernelPutProbeTupleResult = probeKernel.joinProbeTupleSet(tupleSetB);
 	  REQUIRE(probeKernelPutProbeTupleResult);
 
-  auto joinResult = probeKernel.join();
+  auto joinResult = probeKernel.getBuffer();
 	  REQUIRE(joinResult);
+
+    SPDLOG_DEBUG(joinResult.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
 TEST_CASE ("join-test-2xbatches" * doctest::skip(false)) {
@@ -348,7 +350,7 @@ TEST_CASE ("join-test-2xbatches" * doctest::skip(false)) {
 //  SPDLOG_DEBUG(tupleSetB2->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
   HashJoinBuildKernel2 buildKernel("aa");
-  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"));
+  HashJoinProbeKernel2 probeKernel(JoinPredicate::create("aa", "ba"), {"aa", "ba"});
 
   auto buildKernelPutResult1 = buildKernel.put(tupleSetA1);
 	  REQUIRE(buildKernelPutResult1.has_value());
@@ -366,13 +368,13 @@ TEST_CASE ("join-test-2xbatches" * doctest::skip(false)) {
   auto probeKernelPutProbeTupleResult1 = probeKernel.putProbeTupleSet(tupleSetB1);
 	  REQUIRE(probeKernelPutProbeTupleResult1);
 
-  auto probeKernelPutProbeTupleResult2 = probeKernel.putProbeTupleSet(tupleSetB2);
+  auto probeKernelPutProbeTupleResult2 = probeKernel.joinProbeTupleSet(tupleSetB2);
 	  REQUIRE(probeKernelPutProbeTupleResult2);
 
-  auto joinResult = probeKernel.join();
+  auto joinResult = probeKernel.getBuffer();
 	  REQUIRE(joinResult);
 
-//  SPDLOG_DEBUG(joinResult.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_DEBUG(joinResult.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 
 }
 

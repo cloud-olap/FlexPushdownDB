@@ -31,6 +31,8 @@ public:
   const std::optional<std::shared_ptr<normal::tuple::TupleSet2>> &getBuffer() const;
   void clear();
 
+  [[nodiscard]] tl::expected<void, std::string> putBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex>& tupleSetIndex);
+  [[nodiscard]] tl::expected<void, std::string> putProbeTupleSet(const std::shared_ptr<TupleSet2>& tupleSet);
 private:
   JoinPredicate pred_;
   std::optional<std::shared_ptr<TupleSetIndex>> buildTupleSetIndex_;
@@ -40,8 +42,6 @@ private:
   std::vector<std::shared_ptr<std::pair<bool, int>>> neededColumnIndice_;   // <true/false, i> -> ith column in build/probe table
   std::optional<std::shared_ptr<normal::tuple::TupleSet2>> buffer_;
 
-  [[nodiscard]] tl::expected<void, std::string> putBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex>& tupleSetIndex);
-  [[nodiscard]] tl::expected<void, std::string> putProbeTupleSet(const std::shared_ptr<TupleSet2>& tupleSet);
   [[nodiscard]] tl::expected<void, std::string> buffer(const std::shared_ptr<TupleSet2>& tupleSet);
   void bufferOutputSchema(const std::shared_ptr<TupleSetIndex> &tupleSetIndex, const std::shared_ptr<TupleSet2> &tupleSet);
 

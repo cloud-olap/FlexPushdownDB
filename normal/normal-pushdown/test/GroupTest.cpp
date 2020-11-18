@@ -113,7 +113,7 @@ TEST_CASE ("group-filescan-group-collate" * doctest::skip(false)) {
 		std::make_shared<std::vector<std::shared_ptr<normal::pushdown::aggregate::AggregationFunction>>>();
 	expressions2->push_back(sumExpr);
 
-	auto group = Group::make("group", {"AA"}, expressions2);
+	auto group = Group::make("group", {"AA"}, {"sum"}, expressions2, 0);
 	g->put(group);
 	auto collate = std::make_shared<Collate>("collate", g->getId());
 	g->put(collate);
@@ -160,7 +160,7 @@ TEST_CASE ("group-1xgroupcolumn" * doctest::skip(false)) {
   std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 
   GroupKernel groupKernel1({"aa"}, expressions);
-  GroupKernel2 groupKernel2({"aa"}, expressions);
+  GroupKernel2 groupKernel2({"aa"}, {"sum"}, expressions);
 
   groupKernel1.onTuple(*tupleSet1);
   groupKernel1.onTuple(*tupleSet2);
@@ -184,7 +184,7 @@ TEST_CASE ("group-2xgroupcolumn" * doctest::skip(false)) {
   std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 
   GroupKernel groupKernel1({"aa", "ab"}, expressions);
-  GroupKernel2 groupKernel2({"aa", "ab"}, expressions);
+  GroupKernel2 groupKernel2({"aa", "ab"}, {"sum"}, expressions);
 
   groupKernel1.onTuple(*tupleSet1);
   groupKernel1.onTuple(*tupleSet2);
@@ -208,7 +208,7 @@ TEST_CASE ("group-0xgroupcolumn" * doctest::skip(false)) {
   std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 
   GroupKernel groupKernel1({}, expressions);
-  GroupKernel2 groupKernel2({}, expressions);
+  GroupKernel2 groupKernel2({}, {"sum"}, expressions);
 
   groupKernel1.onTuple(*tupleSet1);
   groupKernel1.onTuple(*tupleSet2);
@@ -231,7 +231,7 @@ TEST_CASE ("group-0xaggregates" * doctest::skip(false)) {
   std::vector<std::shared_ptr<AggregationFunction>> expressions{};
 
   GroupKernel groupKernel1({"aa"}, expressions);
-  GroupKernel2 groupKernel2({"aa"}, expressions);
+  GroupKernel2 groupKernel2({"aa"}, {"sum"}, expressions);
 
   groupKernel1.onTuple(*tupleSet1);
   groupKernel1.onTuple(*tupleSet2);
@@ -254,7 +254,7 @@ TEST_CASE ("group-2xfinalise" * doctest::skip(false)) {
   auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
   std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 
-  GroupKernel2 groupKernel2({"aa"}, expressions);
+  GroupKernel2 groupKernel2({"aa"}, {"sum"}, expressions);
 
 	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
 	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
@@ -275,7 +275,7 @@ TEST_CASE ("group-uppercase" * doctest::skip(false)) {
   auto sumExpr = std::make_shared<Sum>("sum", cast(col("AB"), float64Type()));
   std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 
-  GroupKernel2 groupKernel2({"AA"}, expressions);
+  GroupKernel2 groupKernel2({"AA"}, {"sum"}, expressions);
 
 	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
 	  REQUIRE(groupKernel2.group(*tupleSet2).has_value());
@@ -294,7 +294,7 @@ TEST_CASE ("group-empty" * doctest::skip(false)) {
   auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
   std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 
-  GroupKernel2 groupKernel2({"aa"}, expressions);
+  GroupKernel2 groupKernel2({"aa"}, {"sum"}, expressions);
 
 	  REQUIRE(groupKernel2.group(*tupleSetE).has_value());
 	  REQUIRE(groupKernel2.group(*tupleSet1).has_value());
@@ -314,7 +314,7 @@ TEST_CASE ("group-undefined" * doctest::skip(false)) {
   auto sumExpr = std::make_shared<Sum>("sum", cast(col("ab"), float64Type()));
   std::vector<std::shared_ptr<AggregationFunction>> expressions{sumExpr};
 
-  GroupKernel2 groupKernel2({"aa"}, expressions);
+  GroupKernel2 groupKernel2({"aa"}, {"sum"}, expressions);
 
 	  REQUIRE_FALSE(groupKernel2.group(*tupleSetU).has_value());
 }
