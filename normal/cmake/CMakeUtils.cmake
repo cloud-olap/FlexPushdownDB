@@ -30,9 +30,6 @@ function(setDefaults)
 
     add_compile_options(-Wall -Wextra -pedantic)
 
-    # Fix for strange issue with clang not producing debug info
-    add_compile_options(-fstandalone-debug)
-
 #    # Needed so we compile with CLang standard library, we use the CMake variable instead of the functions so
 #    # we can pass the needed flags to external project cmake invocations
 ##    add_compile_options(-stdlib=libc++)
@@ -54,6 +51,9 @@ function(setDefaults)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+
+        # Fix for strange issue with clang not producing debug info
+        add_compile_options(-fstandalone-debug)
     endif()
 
 endfunction()

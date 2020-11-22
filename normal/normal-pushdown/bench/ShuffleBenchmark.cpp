@@ -17,8 +17,6 @@ using namespace normal::tuple;
 using namespace normal::pushdown;
 using namespace normal::pushdown::shuffle;
 
-#define SKIP_SUITE true
-
 void run(const std::shared_ptr<TupleSet2> &tupleSet){
 
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;
@@ -51,9 +49,9 @@ void run(const std::shared_ptr<TupleSet2> &tupleSet){
 //  }
 }
 
-TEST_SUITE ("shuffle-benchmark" * doctest::skip(SKIP_SUITE)) {
+TEST_SUITE ("shuffle-benchmark" * doctest::skip(false)) {
 
-TEST_CASE ("shuffle-benchmark-scaling" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("shuffle-benchmark-scaling" * doctest::skip(false)) {
 
   auto tupleSet100 = Sample::sampleCxRString(10, 100);
   auto tupleSet1000 = Sample::sampleCxRString(10, 1000);

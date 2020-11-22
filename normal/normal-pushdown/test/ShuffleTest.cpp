@@ -13,11 +13,9 @@ using namespace normal::tuple;
 using namespace normal::pushdown;
 using namespace normal::pushdown::shuffle;
 
-#define SKIP_SUITE true
+TEST_SUITE ("shuffle" * doctest::skip(false)) {
 
-TEST_SUITE ("shuffle" * doctest::skip(SKIP_SUITE)) {
-
-TEST_CASE ("shuffle" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("shuffle" * doctest::skip(false)) {
 
   auto stringType = arrow::utf8();
 
@@ -53,7 +51,7 @@ TEST_CASE ("shuffle" * doctest::skip(false || SKIP_SUITE)) {
   }
 }
 
-TEST_CASE ("shuffle-empty" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("shuffle-empty" * doctest::skip(false)) {
 
   auto stringType = arrow::utf8();
 
