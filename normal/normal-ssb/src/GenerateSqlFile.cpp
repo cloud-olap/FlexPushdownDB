@@ -58,12 +58,11 @@ int main(int argc, char **argv) {
       break;
     }
 
-    // Recurring workload
+    // Recurring workload in SSB order
     case 3: {
-      auto recurSize = atoi(argv[4]);
-      auto recurBatch = sqlGenerator.generateSqlBatchSkew(skewness, recurSize);
+      auto recurBatch = sqlGenerator.generateSqlBatchSkewRecurring(skewness);
       for (int index = 0; index < size; index++) {
-        auto sql = recurBatch[index % recurSize];
+        auto sql = recurBatch[index % recurBatch.size()];
         auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1)));
         writeFile(sql, sql_file_path);
         sql_file_dir_path = sql_file_dir_path.parent_path();
@@ -73,7 +72,15 @@ int main(int argc, char **argv) {
 
     // One-hot workload
     case 4: {
-      // TODO
+      auto hotPercentage = skewness;
+      auto batch = sqlGenerator.generateSqlBatchHotQuery(hotPercentage, size);
+      std::shuffle(batch.begin(), batch.end(), g);
+      for (int index = 0; index < size; index++) {
+        auto sql = batch[index];
+        auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1)));
+        writeFile(sql, sql_file_path);
+        sql_file_dir_path = sql_file_dir_path.parent_path();
+      }
       break;
     }
 
