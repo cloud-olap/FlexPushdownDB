@@ -89,9 +89,11 @@ ParquetReader::read(const std::vector<std::string> &columnNames, unsigned long s
 				 std::back_inserter(canonicalColumnNames),
 				 [](auto name) -> auto { return ColumnName::canonicalize(name); });
 
-  status = table->RenameColumns(canonicalColumnNames, &table);
-	if(!status.ok())
-	  return tl::make_unexpected(status.message());
+  auto expectedTable = table->RenameColumns(canonicalColumnNames);
+  if (expectedTable.ok())
+	table = *expectedTable;
+  else
+	return tl::make_unexpected(expectedTable.status().message());
 
   auto tupleSet = TupleSet2::make(table);
   return tupleSet;

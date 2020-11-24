@@ -68,11 +68,11 @@ ShuffleKernel::shuffle(const std::string &columnName,
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSetVector{numPartitions};
   for (size_t i = 0; i < shuffledRecordBatchesVector.size(); ++i) {
 	std::shared_ptr<::arrow::Table> shuffledTable;
-	status = ::arrow::Table::FromRecordBatches(shuffledRecordBatchesVector[i], &shuffledTable);
-	if (!status.ok()) {
-	  return tl::unexpected{fmt::format(status.message())};
-	}
-	shuffledTupleSetVector[i] = TupleSet2::make(shuffledTable);
+	auto expectedTable = ::arrow::Table::FromRecordBatches(shuffledRecordBatchesVector[i]);
+	if (expectedTable.ok())
+	  shuffledTupleSetVector[i] = TupleSet2::make(*expectedTable);
+	else
+	  return tl::unexpected{fmt::format(expectedTable.status().message())};
   }
 
   return shuffledTupleSetVector;

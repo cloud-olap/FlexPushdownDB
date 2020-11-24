@@ -8,10 +8,10 @@ include(CMakeUtils)
 setDefaults()
 
 # Gandiva requires LLVM 7 and anything linking to it must use the same version
-if ((NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR (NOT CMAKE_CXX_COMPILER_VERSION MATCHES "7.*"))
-    message(FATAL_ERROR "Illegal compiler - '${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}'.
-     Gandiva requires Clang version 7")
-endif()
+#if ((NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR (NOT CMAKE_CXX_COMPILER_VERSION MATCHES "7.*"))
+#    message(FATAL_ERROR "Illegal compiler - '${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}'.
+#     Gandiva requires Clang version 7")
+#endif()
 
 
 include(Configure_LLVM)
