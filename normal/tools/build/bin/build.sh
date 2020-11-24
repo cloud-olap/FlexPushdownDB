@@ -12,13 +12,13 @@ PROJECT_DIR=$(readlink -f "${SCRIPT_PATH}/../../..")
 BUILD_TYPE="RelWithDebInfo"
 
 cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-      -DCMAKE_C_COMPILER=/usr/bin/clang-7 \
-      -DCMAKE_CXX_COMPILER=/usr/bin/clang++-7 \
+      -DCMAKE_C_COMPILER=/usr/bin/clang-10 \
+      -DCMAKE_CXX_COMPILER=/usr/bin/clang++-10 \
       -GNinja \
       -S "${PROJECT_DIR}" \
-      -B "${PROJECT_DIR}/cmake-build-${BUILD_TYPE,,}-llvm-7-ninja/"
+      -B "${PROJECT_DIR}/cmake-build-${BUILD_TYPE,,}-llvm-10-ninja/"
 
 cmake --build \
-      "${PROJECT_DIR}/cmake-build-${BUILD_TYPE,,}-llvm-7-ninja/" \
+      "${PROJECT_DIR}/cmake-build-${BUILD_TYPE,,}-llvm-10-ninja/" \
       --target all  \
       -- -j32
