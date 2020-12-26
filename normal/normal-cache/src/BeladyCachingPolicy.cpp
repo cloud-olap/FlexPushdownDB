@@ -367,3 +367,7 @@ void BeladyCachingPolicy::compareExpectedCachedKeysToActual(int queryNumberJustF
 CachingPolicyId BeladyCachingPolicy::id() {
   return BELADY;
 }
+
+void BeladyCachingPolicy::onNewQuery() {
+
+}

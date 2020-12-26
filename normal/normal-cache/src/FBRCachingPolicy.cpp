@@ -10,8 +10,6 @@
 using namespace normal::cache;
 
 bool FBRCachingPolicy::lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
-//  return (key1->getMetadata()->hitNum() / key1->getMetadata()->size())
-//       < (key2->getMetadata()->hitNum() / key2->getMetadata()->size());
   return (key1->getMetadata()->hitNum())
          < (key2->getMetadata()->hitNum());
 }
@@ -236,4 +234,8 @@ std::string FBRCachingPolicy::showCurrentLayout() {
 
 CachingPolicyId FBRCachingPolicy::id() {
   return FBR;
+}
+
+void FBRCachingPolicy::onNewQuery() {
+
 }

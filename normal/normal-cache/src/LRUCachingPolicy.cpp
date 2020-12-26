@@ -93,4 +93,8 @@ CachingPolicyId LRUCachingPolicy::id() {
   return LRU;
 }
 
+void LRUCachingPolicy::onNewQuery() {
+
+}
+
 

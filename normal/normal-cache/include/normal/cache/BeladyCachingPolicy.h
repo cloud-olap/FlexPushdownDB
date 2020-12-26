@@ -42,6 +42,7 @@ public:
   std::string printLayoutAfterEveryQuery();
 
   CachingPolicyId id() override;
+  void onNewQuery() override;
 
 private:
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keysInCache_;

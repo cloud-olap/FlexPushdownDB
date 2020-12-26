@@ -75,3 +75,7 @@ const std::shared_ptr<SegmentMetadata> &SegmentKey::getMetadata() const {
 const std::string &SegmentKey::getColumnName() const {
   return columnName_;
 }
+
+void SegmentKey::setMetadata(const std::shared_ptr<SegmentMetadata> &metadata) {
+    metadata_ = metadata;
+}

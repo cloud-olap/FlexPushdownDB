@@ -14,6 +14,7 @@
 #include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
+#include <normal/cache/FBRSCachingPolicy.h>
 #include <normal/cache/WFBRCachingPolicy.h>
 #include <normal/cache/BeladyCachingPolicy.h>
 #include "ExperimentUtil.h"
@@ -100,6 +101,7 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
 }
 
 auto execute(normal::sql::Interpreter &i) {
+  i.getCachingPolicy()->onNewQuery();
   i.getOperatorGraph()->boot();
   i.getOperatorGraph()->start();
   i.getOperatorGraph()->join();
@@ -133,7 +135,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   i.saveHitRatios();
 
   i.getOperatorGraph().reset();
-  std::this_thread::sleep_for (std::chrono::seconds(2));
+//  std::this_thread::sleep_for (std::chrono::seconds(2));
   return tupleSet;
 }
 
@@ -161,7 +163,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   std::string cachingPolicyAlias;
   switch (cachingPolicyType) {
     case 1: cachingPolicy = LRUCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lru"; break;
-    case 2: cachingPolicy = FBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lfu"; break;
+    case 2: cachingPolicy = FBRSCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lfu"; break;
     case 3: cachingPolicy = WFBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "wlfu"; break;
     case 4: cachingPolicy = BeladyCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "bldy"; break;
     default: throw std::runtime_error("CachingPolicy not found, type: " + std::to_string(cachingPolicyType));
@@ -226,6 +228,9 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
   SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
+    SPDLOG_INFO("OnLoad time: {}", i.getCachingPolicy()->onLoadTime);
+    SPDLOG_INFO("OnStore time: {}", i.getCachingPolicy()->onStoreTime);
+    SPDLOG_INFO("OnToCache time: {}", i.getCachingPolicy()->onToCacheTime);
 
   auto metricsFilePath = filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
   std::ofstream fout(metricsFilePath.string());

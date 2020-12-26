@@ -79,10 +79,20 @@ public:
    */
   virtual CachingPolicyId id() = 0;
 
+  /**
+   * Some updates (FBRS, WFBR) when a new query comes
+   */
+  virtual void onNewQuery() = 0;
+
 protected:
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
   size_t maxSize_;
   size_t freeSize_;
+
+public:
+    size_t onLoadTime = 0;
+    size_t onStoreTime = 0;
+    size_t onToCacheTime = 0;
 };
 
 }

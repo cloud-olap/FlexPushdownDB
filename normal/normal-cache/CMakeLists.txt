@@ -17,7 +17,8 @@ add_library(normal-cache STATIC
         src/FBRCachingPolicy.cpp include/normal/cache/FBRCachingPolicy.h
         src/Globals.cpp 
         src/WFBRCachingPolicy.cpp include/normal/cache/WFBRCachingPolicy.h
-        src/BeladyCachingPolicy.cpp include/normal/cache/BeladyCachingPolicy.h)
+        src/BeladyCachingPolicy.cpp include/normal/cache/BeladyCachingPolicy.h
+        src/FBRSCachingPolicy.cpp include/normal/cache/FBRSCachingPolicy.h)
 
 target_include_directories(normal-cache PUBLIC include)
 

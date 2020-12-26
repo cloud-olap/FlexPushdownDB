@@ -909,7 +909,7 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkewWeight(float skewness
 
     // column selectivity
     int kind1 = distribution3(*generator_);
-    queries.emplace_back(generateSqlSkewWeight(skewWeightQueryName, skewLo_predicate, kind1 > 40));
+    queries.emplace_back(generateSqlSkewWeight(skewWeightQueryName, skewLo_predicate, kind1 > 50));
   }
 
   return queries;
