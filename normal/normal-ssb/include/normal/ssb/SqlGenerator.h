@@ -58,7 +58,12 @@ public:
    * The following is used to generate recurring queries with skewness, recurring order is same as SSB
    * No weight skewness involved
    */
-  std::vector<std::string> generateSqlBatchSkewRecurring(int batchSize);
+  std::vector<std::string> generateSqlBatchSkewRecurring(float skewness);
+
+  /**
+   * The following is used to generate the hot-query workload
+   */
+  std::vector<std::string> generateSqlBatchHotQuery(float percentage, int batchSize);
 
 private:
   std::shared_ptr<std::default_random_engine> generator_;

@@ -1038,38 +1038,81 @@ std::string SqlGenerator::genSkewWeightQuery4(std::string skewLo_predicate, std:
   //return genSkewWeightQuery1(skewLo_predicate, lo_predicate, aggColumn);
 }
 
-std::vector<std::string> SqlGenerator::generateSqlBatchSkewRecurring(int batchSize) {
-  // collect all skew query names
-  std::vector<std::string> skewQueryNames;
-  for (auto const &queryNameIt: skewQueryNameMap_) {
-    skewQueryNames.emplace_back(queryNameIt.first);
+std::vector<std::string> SqlGenerator::generateSqlBatchSkewRecurring(float skewness) {
+  std::vector<std::string> queryNames{"skewQuery2_1", "skewQuery2_2", "skewQuery2_3",
+                                      "skewQuery3_1", "skewQuery3_2", "skewQuery3_3", "skewQuery3_4",
+                                      "skewQuery4_1", "skewQuery4_2", "skewQuery4_3"};
+  std::vector<std::string> queries;
+  const auto batchSize = queryNames.size();
+
+  // Generate total 10 skewLo_predicates
+  const int n = 7;
+  auto possibilities = zipfian(n, skewness);
+  std::vector<std::string> skewLo_predicates;
+
+  for (size_t kind = 0; kind < possibilities.size(); kind++) {
+    auto numThisKind = round(possibilities[kind] * ((double) batchSize));
+    std::string skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101,
+                                               (1992 + kind) * 10000 + 1231);
+    for (int i = 0; i < numThisKind; i++) {
+      skewLo_predicates.emplace_back(skewLo_predicate);
+    }
   }
 
-  // zipfian skewness
-  const int n = 7;
-  const double alpha = 2.0;
-  auto possibilities = zipfian(n, alpha);
-  std::uniform_real_distribution<double> distribution1(0.0, 1.0);
+  while (skewLo_predicates.size() > queryNames.size()) {
+    skewLo_predicates.erase(skewLo_predicates.begin());
+  }
 
-  std::vector<std::string> queries;
-  for (int i = 0; i < batchSize; i++) {
-    // skewLo_predicate
-    double possibility = distribution1(*generator_), sumPossibility = 0.0;
-    int kind = 0;
-    for (int j = 0; j < n; j++) {
-      if (sumPossibility <= possibility && possibility <= sumPossibility + possibilities[j]) {
-        kind = j;
-        break;
-      }
-      sumPossibility += possibilities[j];
-    }
-    std::string skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101,
-                                   (1992 + kind) * 10000 + 1231);
-    // query
-    auto skewQueryName = skewQueryNames[i % skewQueryNames.size()];
-    queries.emplace_back(generateSqlSkew(skewQueryName, skewLo_predicate));
+  while (skewLo_predicates.size() < queryNames.size()) {
+    skewLo_predicates.emplace_back("(lo_orderdate between 19930101 and 19931231)");
+  }
+
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::shuffle(skewLo_predicates.begin(), skewLo_predicates.end(), g);
+
+  // Generate queries
+  for (int i = 0; i < queryNames.size(); i++) {
+    queries.emplace_back(generateSqlSkew(queryNames[i], skewLo_predicates[i]));
   }
 
   return queries;
 }
 
+std::vector<std::string> SqlGenerator::generateSqlBatchHotQuery(float percentage, int batchSize) {
+  std::vector<std::string> queries;
+
+  // Collect all skew query names
+  std::vector<std::string> skewQueryNames;
+  for (auto const &queryNameIt: skewQueryNameMap_) {
+    skewQueryNames.emplace_back(queryNameIt.first);
+  }
+
+  // The hot query
+  const int n = 7;
+  std::uniform_int_distribution<int> distribution1(0, n - 1);
+  std::uniform_int_distribution<int> distribution2(0,skewQueryNames.size() - 1);
+  int skewLo_predicateIndex = distribution1(*generator_);
+  std::string skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + skewLo_predicateIndex) * 10000 + 101,
+                                             (1992 + skewLo_predicateIndex) * 10000 + 1231);
+  int skewQueryIndex = distribution2(*generator_);
+  auto skewQueryName = skewQueryNames[skewQueryIndex];
+
+  std::string hotQuery = generateSqlSkew(skewQueryName, skewLo_predicate);
+  for (int i = 0; i < (int)(batchSize*percentage); i++) {
+    queries.emplace_back(hotQuery);
+  }
+
+  // Rest in the uniform distribution
+  auto restNum = batchSize - (int)(batchSize*percentage);
+  for (int i = 0; i < restNum; i++) {
+    skewLo_predicateIndex = i % n;
+    skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + skewLo_predicateIndex) * 10000 + 101,
+                                   (1992 + skewLo_predicateIndex) * 10000 + 1231);
+    skewQueryIndex = distribution2(*generator_);
+    skewQueryName = skewQueryNames[skewQueryIndex];
+    queries.emplace_back(generateSqlSkew(skewQueryName, skewLo_predicate));
+  }
+
+  return queries;
+}
