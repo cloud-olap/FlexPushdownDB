@@ -47,6 +47,8 @@ public:
 
   size_t hash();
 
+    void setMetadata(const std::shared_ptr<SegmentMetadata> &metadata);
+
 private:
   std::shared_ptr<Partition> partition_;
   std::string columnName_;

@@ -38,8 +38,8 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   config.scheme = Aws::Http::Scheme::HTTP;
   config.maxConnections = 1024; // Default = 25
   config.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>(ALLOCATION_TAG, 0, 0); // Disable retries
-  config.connectTimeoutMs = 50000;
-  config.requestTimeoutMs = 90000;
+  config.connectTimeoutMs = 500000;
+  config.requestTimeoutMs = 900000;
   // Default is to create and dispatch to thread with async methods, we don't use async so default is ideal
   config.executor = Aws::MakeShared<Aws::Utils::Threading::DefaultExecutor>(ALLOCATION_TAG);
   config.verifySSL = false;
