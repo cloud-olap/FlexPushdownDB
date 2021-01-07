@@ -22,6 +22,9 @@
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
+#include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
+#include <aws/s3/S3Client.h>
+#include <thread>
 
 #define SKIP_SUITE false
 
@@ -135,6 +138,40 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   i.getOperatorGraph().reset();
   std::this_thread::sleep_for (std::chrono::seconds(2));
   return tupleSet;
+}
+
+void simpleGetRequest(int requestNum) {
+  Aws::S3::Model::GetObjectRequest getObjectRequest;
+  getObjectRequest.SetBucket(Aws::String("pushdowndb"));
+  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  getObjectRequest.SetKey(Aws::String(requestKey));
+
+  SPDLOG_INFO("Starting s3 GetObject request: {}", requestNum);
+  auto startTime = std::chrono::steady_clock::now();
+  Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::plan::DefaultS3Client->GetObject(getObjectRequest);
+  auto stopTime = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  if (getObjectOutcome.IsSuccess()) {
+    SPDLOG_INFO("Got result of s3 GetObject request: {}, took: {}", requestNum, (double) (duration) / 1000000000.0);
+  } else {
+    const auto& err = getObjectOutcome.GetError();
+    SPDLOG_INFO("Failed to get result of s3 GetObject request: {}, took: {}, error={}", requestNum, (double) (duration) / 1000000000.0, err.GetMessage());
+  }
+}
+
+void normal::ssb::concurrentGetTest(int numRequests) {
+  spdlog::set_level(spdlog::level::info);
+  std::vector<std::thread> threadVector = std::vector<std::thread>();
+  auto startTime = std::chrono::steady_clock::now();
+  for (int i = 0; i < numRequests; i++) {
+    threadVector.emplace_back(std::thread([i](){simpleGetRequest(i);}));
+  }
+  for(auto& t: threadVector) {
+    t.join();
+  }
+  auto stopTime = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  SPDLOG_INFO("{} Concurrent Get requests took: {}sec", numRequests, (double) (duration) / 1000000000.0);
 }
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType) {
