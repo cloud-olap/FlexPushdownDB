@@ -124,7 +124,7 @@ add_executable(normal-pushdown-benchmark
         bench/MainBenchmark.cpp
         bench/ShuffleBenchmark.cpp
         bench/HashJoinBenchmark.cpp
-        bench/GroupBenchmark.cpp bench/FilterBenchmark.cpp)
+        bench/GroupBenchmark.cpp bench/FilterBenchmark.cpp bench/CSVtoArrowParserBenchmark.cpp)
 
 
 target_include_directories(normal-pushdown-benchmark PRIVATE include)
