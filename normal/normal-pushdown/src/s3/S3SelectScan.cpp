@@ -200,9 +200,13 @@ tl::expected<void, std::string> S3SelectScan::s3Select() {
 				 name(),
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
 	std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(payload);
 	auto tupleSet = TupleSet2::create(tupleSetV1);
 	put(tupleSet);
+	std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+	auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+	selectConvertTimeNS_ += conversionTime;
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
 	SPDLOG_DEBUG("S3 Select StatsEvent  |  name: {}, scanned: {}, processed: {}, returned: {}",
@@ -226,7 +230,10 @@ tl::expected<void, std::string> S3SelectScan::s3Select() {
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
+  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
   auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
+  std::chrono::steady_clock::time_point stopTransferConvertTime = std::chrono::steady_clock::now();
+  selectTransferAndConvertNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferConvertTime - startTransferConvertTime).count();
   numRequests_++;
 
   if (optionalErrorMessage.has_value()) {
@@ -241,7 +248,12 @@ tl::expected<void, std::string> S3SelectScan::s3Scan() {
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object_));
 
+  std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
   GetObjectOutcome getObjectOutcome = this->s3Client_->GetObject(getObjectRequest);
+  std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
+  auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
+  getTransferTimeNS_ += transferTime;
+  SPDLOG_INFO("Finished {}", name());
   numRequests_++;
 
   if (getObjectOutcome.IsSuccess()) {
@@ -254,6 +266,7 @@ tl::expected<void, std::string> S3SelectScan::s3Scan() {
     SPDLOG_DEBUG("S3 Scan starts  |  name: {}", name());
     retrievedFile.getline(buffer, readSize);
 
+    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     // Get content
     while (!retrievedFile.eof()) {
       memset(buffer, 0, DefaultS3ScanBufferSize);
@@ -268,6 +281,9 @@ tl::expected<void, std::string> S3SelectScan::s3Scan() {
       auto tupleSet = TupleSet2::create(tupleSetV1);
       put(tupleSet);
     }
+    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+    getConvertTimeNS_ += conversionTime;
 
     return {};
   }
@@ -453,6 +469,22 @@ size_t S3SelectScan::getReturnedBytes() const {
 
 size_t S3SelectScan::getNumRequests() const {
   return numRequests_;
+}
+
+size_t S3SelectScan::getGetTransferTimeNS() const {
+  return getTransferTimeNS_;
+}
+
+size_t S3SelectScan::getGetConvertTimeNS() const {
+  return getConvertTimeNS_;
+}
+
+size_t S3SelectScan::getSelectTransferAndConvertTimeNS() const {
+  return selectTransferAndConvertNS_;
+}
+
+size_t S3SelectScan::getSelectConvertTimeNS() const {
+  return selectConvertTimeNS_;
 }
 
 int subStrNum(const std::string& str, const std::string& sub) {

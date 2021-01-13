@@ -48,6 +48,8 @@ public:
   tl::expected<long, std::string> getElapsedTime();
   std::pair<size_t, size_t> getBytesTransferred();
   size_t getNumRequests();
+  std::pair<size_t, size_t> getGetTransferConvertTimesNS();
+  std::pair<size_t, size_t> getSelectTransferConvertTimesNS();
   std::string showMetrics();
   [[nodiscard]] const long &getId() const;
 

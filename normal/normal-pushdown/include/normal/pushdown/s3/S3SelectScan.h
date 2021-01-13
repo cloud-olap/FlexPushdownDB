@@ -69,6 +69,11 @@ public:
   size_t getReturnedBytes() const;
   size_t getNumRequests() const;
 
+  size_t getGetTransferTimeNS() const;
+  size_t getGetConvertTimeNS() const;
+  size_t getSelectTransferAndConvertTimeNS() const;
+  size_t getSelectConvertTimeNS() const;
+
 private:
   std::string s3Bucket_;
   std::string s3Object_;
@@ -84,6 +89,12 @@ private:
   size_t processedBytes_ = 0;
   size_t returnedBytes_ = 0;
   size_t numRequests_ = 0;
+
+  size_t getTransferTimeNS_ = 0;
+  size_t getConvertTimeNS_ = 0;
+
+  size_t selectTransferAndConvertNS_ = 0;
+  size_t selectConvertTimeNS_ = 0;
 
   /**
    * Flags:
