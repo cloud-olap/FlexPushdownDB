@@ -17,7 +17,8 @@ using namespace normal::tuple;
 tl::expected<void, std::string> Converter::csvToParquet(const std::string &inFile,
 														const std::string &outFile,
 														const ::arrow::Schema &schema,
-														int rowGroupSize) {
+														int rowGroupSize,
+														::parquet::Compression::type compressionType) {
 
   auto absoluteInFile = std::experimental::filesystem::absolute(inFile);
   auto absoluteOutFile = std::experimental::filesystem::absolute(outFile);
@@ -28,13 +29,17 @@ tl::expected<void, std::string> Converter::csvToParquet(const std::string &inFil
   auto inputStream = *expectedInputStream;
 
   auto read_options = arrow::csv::ReadOptions::Defaults();
+  read_options.skip_rows = 1;
   read_options.use_threads = true;
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto convert_options = arrow::csv::ConvertOptions::Defaults();
+  std::vector<std::string> columnNames;
   std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
   for (const auto &field: schema.fields()) {
-	columnTypes.emplace(field->name(), field->type());
+    columnNames.emplace_back(field->name());
+    columnTypes.emplace(field->name(), field->type());
   }
+  read_options.column_names = columnNames;
   convert_options.column_types = columnTypes;
 
   auto expectedReader = ::arrow::csv::TableReader::Make(::arrow::default_memory_pool(),
@@ -59,7 +64,7 @@ tl::expected<void, std::string> Converter::csvToParquet(const std::string &inFil
 
   auto writerProperties = ::parquet::WriterProperties::Builder()
 	  .max_row_group_length(rowGroupSize)
-	  ->compression(::parquet::Compression::type::SNAPPY)
+	  ->compression(compressionType)
 	  ->build();
 
   auto arrowWriterProperties = ::parquet::ArrowWriterProperties::Builder()

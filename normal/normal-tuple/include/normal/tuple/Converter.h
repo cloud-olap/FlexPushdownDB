@@ -9,6 +9,7 @@
 #include <string>
 
 #include <arrow/api.h>
+#include <parquet/arrow/writer.h>
 
 namespace normal::tuple {
 
@@ -18,7 +19,8 @@ public:
   static tl::expected<void, std::string> csvToParquet(const std::string &inFile,
 													  const std::string &outFile,
 													  const ::arrow::Schema &schema,
-													  int rowGroupSize);
+													  int rowGroupSize,
+													  ::parquet::Compression::type compressionType);
 };
 
 }
