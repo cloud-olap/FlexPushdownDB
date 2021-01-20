@@ -153,16 +153,15 @@ Operators::makeDateS3SelectScanOperators(const std::string &s3ObjectDir,
   std::vector<std::shared_ptr<S3SelectScan>> dateScanOperators;
   auto dateScanRanges = Util::ranges<long>(0, numBytesDateFile, numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto dateScan = S3SelectScan::make(
+	auto dateScan = S3Get::make(
 		fmt::format("/query-{}/date-scan-{}", g->getId(), u),
 		s3Bucket,
 		dateFile,
-		"select * from s3object",
+		dateColumns,
 		dateColumns,
 		dateScanRanges[u].first,
 		dateScanRanges[u].second,
     normal::connector::defaultMiniCatalogue->getSchema("date"),
-		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);
 	dateScanOperators.push_back(dateScan);
@@ -187,16 +186,16 @@ Operators::makeDateS3SelectScanPushDownOperators(const std::string &s3ObjectDir,
   std::vector<std::shared_ptr<S3SelectScan>> dateScanOperators;
   auto dateScanRanges = Util::ranges<long>(0, numBytesDateFile, numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto dateScan = S3SelectScan::make(
+	auto dateScan = S3Select::make(
 		fmt::format("/query-{}/date-scan-{}", g->getId(), u),
 		s3Bucket,
 		dateFile,
 		fmt::format("select D_DATEKEY, D_YEAR from s3Object where cast(D_YEAR as int) = {}", year),
 		dateColumns,
+		dateColumns,
 		dateScanRanges[u].first,
 		dateScanRanges[u].second,
     normal::connector::defaultMiniCatalogue->getSchema("date"),
-		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);
 	dateScanOperators.push_back(dateScan);
@@ -330,16 +329,15 @@ Operators::makeLineOrderS3SelectScanOperators(const std::string &s3ObjectDir,
   std::vector<std::shared_ptr<S3SelectScan>> lineOrderScanOperators;
   auto lineOrderScanRanges = Util::ranges<long>(0, numBytesLineOrderFile, numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto lineOrderScan = S3SelectScan::make(
+	auto lineOrderScan = S3Get::make(
 		fmt::format("/query-{}/lineorder-scan-{}", g->getId(), u),
 		s3Bucket,
 		lineOrderFile,
-		"select * from s3object",
+		lineOrderColumns,
 		lineOrderColumns,
 		lineOrderScanRanges[u].first,
 		lineOrderScanRanges[u].second,
     normal::connector::defaultMiniCatalogue->getSchema("lineorder"),
-		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);
 	lineOrderScanOperators.push_back(lineOrderScan);
@@ -359,15 +357,14 @@ Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3Objec
   auto lineOrderFile = s3ObjectDir + "/lineorder.tbl";
   auto numBytesLineOrderFile = partitionMap.find(lineOrderFile)->second;
 
-  std::vector<std::string> lineOrderColumns =
-	  {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
+  std::vector<std::string> lineOrderColumns = {"LO_ORDERDATE", "LO_QUANTITY", "LO_EXTENDEDPRICE", "LO_DISCOUNT", "LO_REVENUE"};
   int discountLower = discount - 1;
   int discountUpper = discount + 1;
 
   std::vector<std::shared_ptr<S3SelectScan>> lineOrderScanOperators;
   auto lineOrderScanRanges = Util::ranges<long>(0, numBytesLineOrderFile, numConcurrentUnits);
   for (int u = 0; u < numConcurrentUnits; ++u) {
-	auto lineOrderScan = S3SelectScan::make(
+	auto lineOrderScan = S3Select::make(
 		fmt::format("/query-{}/lineorder-scan-{}", g->getId(), u),
 		s3Bucket,
 		lineOrderFile,
@@ -377,10 +374,10 @@ Operators::makeLineOrderS3SelectScanPushdownOperators(const std::string &s3Objec
 			discountUpper,
 			quantity),
 		lineOrderColumns,
+		lineOrderColumns,
 		lineOrderScanRanges[u].first,
 		lineOrderScanRanges[u].second,
     normal::connector::defaultMiniCatalogue->getSchema("lineorder"),
-		S3SelectCSVParseOptions(",", "\n"),
 		client.defaultS3Client(),
 		true);
 	lineOrderScanOperators.push_back(lineOrderScan);

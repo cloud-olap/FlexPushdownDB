@@ -18,7 +18,7 @@
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
-#include <normal/pushdown/s3/S3SelectScan.h>
+#include <normal/pushdown/s3/S3Select.h>
 #include <iostream>
 #include <fstream>
 
@@ -36,16 +36,16 @@ size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::str
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
   std::vector<std::string> columns = {queryColumn};
   SPDLOG_INFO("Starting S3SelectScan for: {} column {}", s3Object, queryColumn);
-  auto s3Scan = S3SelectScan::make(
+  auto s3Scan = S3Select::make(
           "s3select - " + s3Object + "-" + queryColumn,
           s3Bucket,
           s3Object,
           "",
-          columns,     // actually useless, will use columnNames from ScanMessage
+          columns,
+          columns,
           scanRanges[0].first,
           scanRanges[0].second,
           normal::connector::defaultMiniCatalogue->getSchema(tableName),
-          S3SelectCSVParseOptions(",", "\n"),
           normal::plan::DefaultS3Client,
           true,
           true,
