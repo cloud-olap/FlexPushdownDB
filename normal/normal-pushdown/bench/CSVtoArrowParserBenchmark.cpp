@@ -12,7 +12,7 @@
 #include <iostream>
 #include <random>
 #include <functional>
-#include <normal/pushdown/s3/S3SelectParser.h>
+#include <normal/pushdown/s3/S3CSVParser.h>
 #include "normal/pushdown/Globals.h"
 #include <normal/tuple/TupleSet2.h>
 
@@ -95,10 +95,10 @@ void S3SelectScanPut(std::shared_ptr<TupleSet2> tupleSet, std::vector<std::strin
 size_t runS3Scan(const std::shared_ptr<std::stringstream> csvStream, std::vector<std::string> columnNames, std::shared_ptr<arrow::Schema> schema){
   std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
   // Code copied from from s3Scan() in S3SelectScan.cpp
-  S3SelectParser s3SelectParser({}, {});
+  S3CSVParser s3CSVParser({}, {});
   auto readSize = DefaultS3ScanBufferSize - 1;
   char buffer[DefaultS3ScanBufferSize];
-  auto parser = S3SelectParser::make(columnNames, schema);
+  auto parser = S3CSVParser::make(columnNames, schema);
 
   auto columns = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames.size());
 
@@ -130,8 +130,8 @@ void runS3SelectScan(Aws::Vector<unsigned char> inputData, std::vector<std::stri
   // Code copied from from generateParser() in S3SelectScan.cpp
   // Including this in runtime as this must be done for parsing the data, even though it is done before the
   // data is converted
-  S3SelectParser s3SelectParser({}, {});
-  auto parser = S3SelectParser::make(columnNames, schema);
+  S3CSVParser s3CSVParser({}, {});
+  auto parser = S3CSVParser::make(columnNames, schema);
 
   auto columns = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames.size());
 

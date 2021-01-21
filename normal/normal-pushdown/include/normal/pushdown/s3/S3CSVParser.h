@@ -2,8 +2,8 @@
 // Created by matt on 14/12/19.
 //
 
-#ifndef NORMAL_NORMAL_PUSHDOWN_SRC_S3_S3SELECTPARSER_H
-#define NORMAL_NORMAL_PUSHDOWN_SRC_S3_S3SELECTPARSER_H
+#ifndef NORMAL_NORMAL_PUSHDOWN_SRC_S3_S3CSVPARSER_H
+#define NORMAL_NORMAL_PUSHDOWN_SRC_S3_S3CSVPARSER_H
 
 #include <string>
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
@@ -20,7 +20,7 @@ using namespace normal::tuple;
 
 namespace normal::pushdown {
 
-class S3SelectParser {
+class S3CSVParser {
 
 private:
 
@@ -32,10 +32,10 @@ private:
   std::vector<unsigned char> partial{};
 
 public:
-  S3SelectParser(std::vector<std::string> columnNames,
+  S3CSVParser(std::vector<std::string> columnNames,
 				 std::shared_ptr<arrow::Schema> schema);
 
-  static std::shared_ptr<S3SelectParser> make(std::vector<std::string> columnNames,
+  static std::shared_ptr<S3CSVParser> make(std::vector<std::string> columnNames,
                                               std::shared_ptr<arrow::Schema> schema);
 
   std::shared_ptr<TupleSet> parseCompletePayload(

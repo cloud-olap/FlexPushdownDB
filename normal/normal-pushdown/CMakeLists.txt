@@ -14,7 +14,7 @@ add_library(normal-pushdown STATIC
         src/s3/S3SelectScan.cpp include/normal/pushdown/s3/S3SelectScan.h
         src/file/FileScan.cpp include/normal/pushdown/file/FileScan.h
         src/Aggregate.cpp include/normal/pushdown/Aggregate.h
-        src/s3/S3SelectParser.cpp include/normal/pushdown/s3/S3SelectParser.h
+        src/s3/S3CSVParser.cpp include/normal/pushdown/s3/S3CSVParser.h
         src/aggregate/AggregationResult.cpp include/normal/pushdown/aggregate/AggregationResult.h
         src/aggregate/Sum.cpp include/normal/pushdown/aggregate/Sum.h
         src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h

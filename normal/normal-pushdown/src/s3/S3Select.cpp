@@ -90,7 +90,7 @@ S3Select::S3Select(std::string name,
   for (auto const &columnName: returnedS3ColumnNames_) {
     fields.emplace_back(schema_->GetFieldByName(columnName));
   }
-  parser_ = S3SelectParser::make(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
+  parser_ = S3CSVParser::make(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
 }
 
 std::shared_ptr<S3Select> S3Select::make(const std::string& name,
@@ -124,6 +124,22 @@ std::shared_ptr<S3Select> S3Select::make(const std::string& name,
 
 }
 
+InputSerialization S3Select::getInputSerialization() {
+  InputSerialization inputSerialization;
+  if (s3Object_.find("csv") != std::string::npos) {
+    CSVInput csvInput;
+    csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
+    // This is the standard field delimiter and record delimiter for S3 Select, so it is hardcoded here
+    csvInput.SetFieldDelimiter(",");
+    csvInput.SetRecordDelimiter("\n");
+    inputSerialization.SetCSV(csvInput);
+  } else if (s3Object_.find("parquet") != std::string::npos) {
+    ParquetInput parquetInput;
+    inputSerialization.SetParquet(parquetInput);
+  }
+  return inputSerialization;
+}
+
 tl::expected<void, std::string> S3Select::s3Select() {
 
   // s3select request
@@ -155,22 +171,14 @@ tl::expected<void, std::string> S3Select::s3Select() {
 
   selectObjectContentRequest.SetExpression(sql.c_str());
 
-  CSVInput csvInput;
-  csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
-  // This is the standard field delimiter and record delimiter for S3 Select, so it is hardcoded here
-  csvInput.SetFieldDelimiter(",");
-  csvInput.SetRecordDelimiter("\n");
-  InputSerialization inputSerialization;
-  inputSerialization.SetCSV(csvInput);
+  InputSerialization inputSerialization = getInputSerialization();
+
   selectObjectContentRequest.SetInputSerialization(inputSerialization);
 
   CSVOutput csvOutput;
   OutputSerialization outputSerialization;
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
-
-  std::vector<unsigned char> partial{};
-  S3SelectParser s3SelectParser({}, {});
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {

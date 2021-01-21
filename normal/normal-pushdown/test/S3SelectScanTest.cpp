@@ -17,7 +17,7 @@
 #include <normal/core/Normal.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/connector/s3/S3SelectPartition.h>
-#include <normal/pushdown/s3/S3SelectParser.h>
+#include <normal/pushdown/s3/S3CSVParser.h>
 
 #include "TestUtil.h"
 
@@ -145,7 +145,7 @@ TEST_CASE ("s3select-scan-v1-csv" * doctest::skip(false || SKIP_SUITE)) {
   client.shutdown();
 }
 
-TEST_CASE ("s3select-parser" * doctest::skip(false || SKIP_SUITE)) {
+TEST_CASE ("s3csv-parser" * doctest::skip(false || SKIP_SUITE)) {
 
   Aws::Vector<unsigned char> data{'1', ',', '2', ',', '3', '\n',
 								  '4', ',', '5', ',', '6', '\n',
@@ -153,7 +153,7 @@ TEST_CASE ("s3select-parser" * doctest::skip(false || SKIP_SUITE)) {
 
   for(size_t payloadSize = 1; payloadSize <= data.size(); ++payloadSize) {
 
-	S3SelectParser parser
+	S3CSVParser parser
 		(std::vector<std::string>(), std::unordered_map<std::string, std::shared_ptr<arrow::Schema>>());
 
 	auto selectionStart = data.begin();

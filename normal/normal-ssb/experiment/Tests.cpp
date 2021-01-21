@@ -71,11 +71,25 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
     auto partitionNum = partitionNumEntry.second;
     auto objects = std::make_shared<std::vector<std::string>>();
     if (partitionNum == 1) {
-      objects->emplace_back(dir_prefix + tableName + ".tbl");
+      if (dir_prefix.find("csv") != std::string::npos) {
+        objects->emplace_back(dir_prefix + tableName + ".tbl");
+      } else if (dir_prefix.find("parquet") != std::string::npos) {
+        objects->emplace_back(dir_prefix + tableName + ".parquet");
+      } else {
+        // something went wrong, this will cause an error later
+        SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
+      }
       s3ObjectsMap->emplace(tableName, objects);
     } else {
       for (int i = 0; i < partitionNum; i++) {
-        objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
+        if (dir_prefix.find("csv") != std::string::npos) {
+          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
+        } else if (dir_prefix.find("parquet") != std::string::npos) {
+          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.parquet.{2}", dir_prefix, tableName, i));
+        } else {
+          // something went wrong, this will cause an error later
+          SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
+        }
       }
       s3ObjectsMap->emplace(tableName, objects);
     }
@@ -127,6 +141,8 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output size: {}", tupleSet->size());
+  SPDLOG_INFO("Output rows: {}", tupleSet->numRows());
 //  if (saveMetrics)
   SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
   SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);

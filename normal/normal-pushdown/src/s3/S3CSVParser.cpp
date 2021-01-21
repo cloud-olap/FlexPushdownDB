@@ -3,7 +3,7 @@
 //
 
 
-#include "normal/pushdown/s3/S3SelectParser.h"
+#include "normal/pushdown/s3/S3CSVParser.h"
 #include <arrow/csv/api.h>                              // for ReadOptions
 #include <arrow/io/api.h>                              // for BufferedI...
 #include <arrow/api.h>                                 // for default_m...
@@ -14,15 +14,15 @@
 
 namespace normal::pushdown {
 
-S3SelectParser::S3SelectParser(std::vector<std::string> columnNames,
+S3CSVParser::S3CSVParser(std::vector<std::string> columnNames,
 							   std::shared_ptr<arrow::Schema> schema) :
 	columnNames_(std::move(columnNames)),
 	schema_(std::move(schema)) {}
 
 
-std::shared_ptr<S3SelectParser> S3SelectParser::make(std::vector<std::string> columnNames,
+std::shared_ptr<S3CSVParser> S3CSVParser::make(std::vector<std::string> columnNames,
                  std::shared_ptr<arrow::Schema> schema) {
-  return std::make_shared<S3SelectParser>(std::move(columnNames), std::move(schema));
+  return std::make_shared<S3CSVParser>(std::move(columnNames), std::move(schema));
 }
 
 /**
@@ -31,7 +31,7 @@ std::shared_ptr<S3SelectParser> S3SelectParser::make(std::vector<std::string> co
  * @param to
  * @return
  */
-std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
+std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
 	const Aws::Vector<unsigned char>::iterator &from,
 	const Aws::Vector<unsigned char>::iterator &to) {
 
@@ -108,7 +108,7 @@ std::shared_ptr<TupleSet> S3SelectParser::parseCompletePayload(
   return tupleSet;
 }
 
-std::shared_ptr<TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char> &payload) {
+std::shared_ptr<TupleSet> S3CSVParser::parsePayload(Aws::Vector<unsigned char> &payload) {
   return parse(payload)->value();
 }
 
@@ -118,7 +118,7 @@ std::shared_ptr<TupleSet> S3SelectParser::parsePayload(Aws::Vector<unsigned char
  * @return
  */
 tl::expected<std::optional<std::shared_ptr<TupleSet>>,
-			 std::string> S3SelectParser::parse(Aws::Vector<unsigned char> &payload) {
+			 std::string> S3CSVParser::parse(Aws::Vector<unsigned char> &payload) {
 
   SPDLOG_TRACE({
 				 Aws::String payloadString(payload.begin(), payload.end());
@@ -162,7 +162,7 @@ tl::expected<std::optional<std::shared_ptr<TupleSet>>,
 
   if (pos > 0) {
 	std::shared_ptr<TupleSet>
-		tupleSet = S3SelectParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
+		tupleSet = S3CSVParser::parseCompletePayload(payload.begin(), payload.begin() + pos);
 
 	return tupleSet;
   } else {

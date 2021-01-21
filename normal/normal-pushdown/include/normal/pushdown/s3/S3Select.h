@@ -43,8 +43,9 @@ class S3Select: public S3SelectScan {
 
   private:
     std::string filterSql_;   // "where ...."
-    std::shared_ptr<S3SelectParser> parser_;
+    std::shared_ptr<S3CSVParser> parser_;
 
+    Aws::S3::Model::InputSerialization getInputSerialization();
     [[nodiscard]] tl::expected<void, std::string> s3Select();
 
     void processScanMessage(const scan::ScanMessage &message) override;

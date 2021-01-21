@@ -200,8 +200,13 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   auto valuePairs = readMetadataSort(schemaName, "lineorder_orderdate");
   std::string s3ObjectDir = schemaName + "lineorder_sharded/";
   for (int i = 0; i < (int) valuePairs->size(); i++) {
-    sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
+    if (s3ObjectDir.find("csv") != std::string::npos) {
+      sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
                           valuePairs->at(i));
+    } else { // (s3ObjectDir.find("parquet") != std::string::npos) {
+      sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.parquet." + std::to_string(i)),
+                          valuePairs->at(i));
+    }
   }
   sortedColumns->emplace("lo_orderdate", sortedValues);
 

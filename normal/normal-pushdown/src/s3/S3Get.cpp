@@ -83,8 +83,6 @@ S3Get::S3Get(std::string name,
                std::move(returnedS3ColumnNames), std::move(neededColumnNames),
                startOffset, finishOffset, std::move(schema),
                std::move(s3Client), scanOnStart, toCache, queryId, std::move(weightedSegmentKeys)) {
-  // TODO: Modify this so that there is support for Parquet (Might want to use a different parser implementation)
-  parser_ = S3SelectParser::make(returnedS3ColumnNames_, schema_);
 }
 
 std::shared_ptr<S3Get> S3Get::make(const std::string& name,
@@ -116,6 +114,36 @@ std::shared_ptr<S3Get> S3Get::make(const std::string& name,
 
 }
 
+void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
+  auto readSize = DefaultS3ScanBufferSize - 1;
+  char buffer[DefaultS3ScanBufferSize];
+
+  auto parser = S3CSVParser::make(returnedS3ColumnNames_, schema_);
+
+  // Discard column names
+  SPDLOG_DEBUG("S3 Scan starts  |  name: {}", name());
+  retrievedFile.getline(buffer, readSize);
+
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+  // Get content
+  while (!retrievedFile.eof()) {
+    memset(buffer, 0, DefaultS3ScanBufferSize);
+
+    SPDLOG_DEBUG("S3 Scan buffer  |  name: {}, numBytes: {}", name(), readSize);
+    retrievedFile.read(buffer, readSize);
+    processedBytes_ += strlen(buffer);
+    returnedBytes_ += strlen(buffer);
+    Aws::Vector<unsigned char> charAwsVec(buffer, buffer + readSize);
+
+    std::shared_ptr<TupleSet> tupleSetV1 = parser->parsePayload(charAwsVec);
+    auto tupleSet = TupleSet2::create(tupleSetV1);
+    put(tupleSet);
+  }
+  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+  getConvertTimeNS_ += conversionTime;
+}
+
 tl::expected<void, std::string> S3Get::s3Get() {
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
@@ -130,32 +158,11 @@ tl::expected<void, std::string> S3Get::s3Get() {
 
   if (getObjectOutcome.IsSuccess()) {
     auto &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
-    S3SelectParser s3SelectParser({}, {});
-    auto readSize = DefaultS3ScanBufferSize - 1;
-    char buffer[DefaultS3ScanBufferSize];
-
-    // Discard column names
-    SPDLOG_DEBUG("S3 Scan starts  |  name: {}", name());
-    retrievedFile.getline(buffer, readSize);
-
-    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-    // Get content
-    while (!retrievedFile.eof()) {
-      memset(buffer, 0, DefaultS3ScanBufferSize);
-
-      SPDLOG_DEBUG("S3 Scan buffer  |  name: {}, numBytes: {}", name(), readSize);
-      retrievedFile.read(buffer, readSize);
-      processedBytes_ += strlen(buffer);
-      returnedBytes_ += strlen(buffer);
-      Aws::Vector<unsigned char> charAwsVec(buffer, buffer + readSize);
-
-      std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(charAwsVec);
-      auto tupleSet = TupleSet2::create(tupleSetV1);
-      put(tupleSet);
+    if (s3Object_.find("csv") != std::string::npos) {
+      readCSVFile(retrievedFile);
+    } else { // (s3Object_.find("parquet") != std::string::npos)
+      // TODO Add support for parsing a returned parquet file
     }
-    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-    getConvertTimeNS_ += conversionTime;
 
     return {};
   }

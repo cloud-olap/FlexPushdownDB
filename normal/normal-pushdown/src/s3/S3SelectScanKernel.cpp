@@ -3,7 +3,7 @@
 //
 
 #include <normal/pushdown/s3/S3SelectScanKernel.h>
-#include <normal/pushdown/s3/S3SelectParser.h>
+#include <normal/pushdown/s3/S3CSVParser.h>
 #include <utility>
 
 using namespace Aws::Client;
@@ -140,7 +140,7 @@ S3SelectScanKernel::s3Select(const std::string &sql,
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  S3SelectParser s3SelectParser{columnNames, schema_};
+  S3CSVParser s3CSVParser{columnNames, schema_};
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
@@ -150,7 +150,7 @@ S3SelectScanKernel::s3Select(const std::string &sql,
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
 
-	auto expectedTupleSet = s3SelectParser.parse(payload);
+	auto expectedTupleSet = s3CSVParser.parse(payload);
 
 	// Check for error
 	if (!expectedTupleSet.has_value()) {

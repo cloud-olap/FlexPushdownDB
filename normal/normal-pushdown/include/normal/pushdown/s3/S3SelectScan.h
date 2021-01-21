@@ -20,7 +20,7 @@
 #include "normal/core/Operator.h"
 #include "normal/tuple/TupleSet.h"
 #include "normal/pushdown/s3/S3SelectCSVParseOptions.h"
-#include "normal/pushdown/s3/S3SelectParser.h"
+#include "normal/pushdown/s3/S3CSVParser.h"
 
 using namespace normal::core;
 using namespace normal::core::message;

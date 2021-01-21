@@ -39,8 +39,7 @@ class S3Get : public S3SelectScan {
                                           const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys = nullptr);
 
   private:
-    std::shared_ptr<S3SelectParser> parser_;
-
+    void readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
     [[nodiscard]] tl::expected<void, std::string> s3Get();
 
     void processScanMessage(const scan::ScanMessage &message) override;
