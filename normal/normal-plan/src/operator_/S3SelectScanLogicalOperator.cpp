@@ -404,11 +404,12 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
       auto miniCatalogue = normal::connector::defaultMiniCatalogue;
       auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
       // s3Scan
-      auto s3Scan = S3Get::make(
-              "s3get (to cache) - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
+      auto s3Scan = S3Select::make(
+              "s3select (to cache) - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
-              *allColumnNames,
+              "",
+              *projectedColumnNames_,
               *projectedColumnNames_,
               scanRange.first,
               scanRange.second,

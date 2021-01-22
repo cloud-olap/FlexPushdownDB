@@ -86,11 +86,7 @@ S3Select::S3Select(std::string name,
                startOffset, finishOffset, std::move(schema),
                std::move(s3Client), scanOnStart, toCache, queryId, std::move(weightedSegmentKeys)),
 	filterSql_(std::move(filterSql)) {
-  std::vector<std::shared_ptr<::arrow::Field>> fields;
-  for (auto const &columnName: returnedS3ColumnNames_) {
-    fields.emplace_back(schema_->GetFieldByName(columnName));
-  }
-  parser_ = S3CSVParser::make(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
+
 }
 
 std::shared_ptr<S3Select> S3Select::make(const std::string& name,
@@ -122,6 +118,14 @@ std::shared_ptr<S3Select> S3Select::make(const std::string& name,
 										queryId,
 										weightedSegmentKeys);
 
+}
+
+void S3Select::generateParser() {
+  std::vector<std::shared_ptr<::arrow::Field>> fields;
+  for (auto const &columnName: returnedS3ColumnNames_) {
+    fields.emplace_back(schema_->GetFieldByName(columnName));
+  }
+  parser_ = S3CSVParser::make(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
 }
 
 InputSerialization S3Select::getInputSerialization() {
@@ -278,12 +282,12 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
 }
 
 void S3Select::processScanMessage(const scan::ScanMessage &message) {
-  // FIXME: This is legacy code I kept when breaking up S3SelectScan. It implies we might later change the values of
-  //        returnedS3ColumnNames_ and columnsReadFromS3_. If this is not supposed to ever occur we should remove it.
-  //        It seems like we should know what columns we need at query processing time but maybe not for hybrid.
+  // This is for hybrid caching as we later determine which columns to pull up
   returnedS3ColumnNames_ = message.getColumnNames();
   neededColumnNames_ = message.getColumnNames();
   columnsReadFromS3_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(returnedS3ColumnNames_.size());
+  // Need to update parser as we have modified the columns we are reading from S3
+  generateParser();
 };
 
 int subStrNum(const std::string& str, const std::string& sub) {

@@ -232,7 +232,8 @@ std::shared_ptr<TupleSet2> S3Get::readTuples() {
 }
 
 void S3Get::processScanMessage(const scan::ScanMessage &message) {
-  // FIXME: This is legacy code I kept when breaking up S3SelectScan. Look at same function in S3Select.cpp for info.
+  // This is for hybrid caching as we later determine which columns to pull up
+  // Though currently this is only called for SELECT in our system
   neededColumnNames_ = message.getColumnNames();
 };
 
