@@ -61,6 +61,13 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
                 stateful_actor<SegmentCacheActorState> *self) {
   self->state.cache->addHitNum(msg.getHitNum());
   self->state.cache->addMissNum(msg.getMissNum());
+  self->state.cache->addShardHitNum(msg.getShardHitNum());
+  self->state.cache->addShardMissNum(msg.getShardMissNum());
+
+  self->state.cache->addCrtQueryHitNum(msg.getHitNum());
+  self->state.cache->addCrtQueryMissNum(msg.getMissNum());
+  self->state.cache->addCrtQueryShardHitNum(msg.getShardHitNum());
+  self->state.cache->addCrtQueryShardMissNum(msg.getShardMissNum());
 }
 
 behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
@@ -102,17 +109,32 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
 	  [=](GetNumMissesAtom) {
 		return self->state.cache->missNum();
 	  },
+	  [=](GetNumShardHitsAtom) {
+		return self->state.cache->shardHitNum();
+	  },
+	  [=](GetNumShardMissesAtom) {
+		return self->state.cache->shardMissNum();
+	  },
 	  [=](GetCrtQueryNumHitsAtom) {
 		return self->state.cache->crtQueryHitNum();
 	  },
 	  [=](GetCrtQueryNumMissesAtom) {
 		return self->state.cache->crtQueryMissNum();
 	  },
+	  [=](GetCrtQueryNumShardHitsAtom) {
+		return self->state.cache->crtQueryShardHitNum();
+	  },
+	  [=](GetCrtQueryNumShardMissesAtom) {
+		return self->state.cache->crtQueryShardMissNum();
+	  },
 	  [=](ClearMetricsAtom) {
 		self->state.cache->clearMetrics();
 	  },
 	  [=](ClearCrtQueryMetricsAtom) {
 		self->state.cache->clearCrtQueryMetrics();
+	  },
+	  [=](ClearCrtQueryShardMetricsAtom) {
+	  self->state.cache->clearCrtQueryShardMetrics();
 	  },
 	  [=](MetricsAtom, const std::shared_ptr<CacheMetricsMessage> &m) {
     metrics(*m, self);

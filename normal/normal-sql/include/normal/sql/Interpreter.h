@@ -33,6 +33,7 @@ public:
   void stop();
   void saveMetrics();
   void saveHitRatios();
+  void clearMetrics();
   std::string showMetrics();
   std::string showHitRatios();
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
@@ -51,7 +52,10 @@ private:
   std::vector<double> executionTimes_;
   std::vector<std::pair<size_t, size_t>> bytesTransferred_;
   std::vector<size_t> numRequests_;
+  std::vector<std::pair<size_t, size_t>> getTransferConvertNS_;
+  std::vector<std::pair<size_t, size_t>> selectTransferConvertNS_;
   std::vector<double> hitRatios_;
+  std::vector<double> shardHitRatios_;
 };
 
 }

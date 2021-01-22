@@ -204,6 +204,16 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
 
     // Send cache metrics to segmentCacheActor
     size_t hitNum, missNum;
+    size_t shardHitNum, shardMissNum;
+    // if not every segment is a hit then we have to either pull up or scan this shard in s3, so it is a shard miss
+    // otherwise it is a shard hit
+    if (hitSegments.size() == columnNames_.size()) {
+      shardHitNum = 1;
+      shardMissNum = 0;
+    } else {
+      shardHitNum = 0;
+      shardMissNum = 1;
+    }
     // Hybrid
     if (missOperatorToPushdown_.lock()) {
       if (cachingResultNeeded) {
@@ -224,7 +234,7 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
         missNum = columnNames_.size();
       }
     }
-    ctx()->send(CacheMetricsMessage::make(hitNum, missNum, this->name()), "SegmentCache")
+    ctx()->send(CacheMetricsMessage::make(hitNum, missNum, shardHitNum, shardMissNum, this->name()), "SegmentCache")
             .map_error([](auto err) { throw std::runtime_error(err); });
   }
 

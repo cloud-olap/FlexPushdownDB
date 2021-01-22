@@ -129,24 +129,78 @@ std::string Interpreter::showMetrics() {
   std::stringstream formattedReturnedBytes;
   formattedReturnedBytes << totalReturnedBytes << " B" << " ("
                          << totalReturnedBytesGiga << " GB)";
+
+  size_t totalGetTransferTimeNS = 0, totalGetConvertTimeNS = 0;
+  for (auto const &getTransferConvertTimeNS: getTransferConvertNS_) {
+    totalGetTransferTimeNS += getTransferConvertTimeNS.first;
+    totalGetConvertTimeNS += getTransferConvertTimeNS.second;
+  }
+  std::stringstream formattedAverageGetTransferRate;
+  std::stringstream formattedAverageGetConvertRate;
+  if (totalGetTransferTimeNS > 0 && totalGetConvertTimeNS > 0) {
+    double averageGetTransferRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) totalGetTransferTimeNS / 1.0e9);
+    double averageGetConversionRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) totalGetConvertTimeNS / 1.0e9);
+    formattedAverageGetTransferRate << averageGetTransferRateMBs << " MB/s/req";
+    formattedAverageGetConvertRate << averageGetConversionRateMBs << " MB/s/req";
+  } else {
+    formattedAverageGetTransferRate << "NA";
+    formattedAverageGetConvertRate << "NA";
+  }
+
+  size_t totalSelectTransferConvertTimeNS = 0, totalSelectConvertTimeNS = 0;
+  for (auto const &transferConvertTimeNS: selectTransferConvertNS_) {
+    totalSelectTransferConvertTimeNS += transferConvertTimeNS.first;
+    totalSelectConvertTimeNS += transferConvertTimeNS.second;
+  }
+  std::stringstream formattedAverageSelectTransferRate;
+  std::stringstream formattedAverageSelectConvertRate;
+  if (totalSelectTransferConvertTimeNS > 0 && totalSelectConvertTimeNS > 0) {
+    // Making the assumption that transfer and convert don't occur at same time, which seems plausible since
+    // each request appears to be pinned to one cpu. If anything this overestimates transfer rate since if
+    // transfer occurs at same time as convert then transfer is taking even longer and is slower than estimated here
+    double averageSelectTransferRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) (totalSelectTransferConvertTimeNS-totalSelectConvertTimeNS) / 1.0e9);
+    double averageSelectConvertRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) totalSelectConvertTimeNS / 1.0e9);
+    formattedAverageSelectTransferRate << averageSelectTransferRateMBs << " MB/s/req";
+    formattedAverageSelectConvertRate << averageSelectConvertRateMBs << " MB/s/req";
+  } else {
+    formattedAverageSelectTransferRate << "NA";
+    formattedAverageSelectConvertRate << "NA";
+  }
+
   size_t totalNumRequests = 0;
   for (auto const &numRequestsSingle: numRequests_) {
     totalNumRequests += numRequestsSingle;
   }
 
-  double ec2Price = 1.232, totalCost;
+  // Cost of c5a.8xlarge instance in US West (North California)
+  // All other costs are for the region US West (North California) as well
+  double ec2Price = 1.52, totalCost = 0;
+  double getRequestCost = 0.0;
+  double s3ScanCost = 0.0;
+  double s3ReturnCost = 0.0;
+  double runtimeCost = 0.0;
   if (mode_->id() == normal::plan::operator_::mode::ModeId::FullPullup ||
       mode_->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
-    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
-            totalExecutionTime / 3600 * ec2Price;                   // runtime cost
+    getRequestCost = ((double) totalNumRequests) * 0.00000044;  // GET request cost
+    runtimeCost = totalExecutionTime / 3600 * ec2Price;         // runtime cost
+    totalCost = getRequestCost + runtimeCost;
   } else {
-    totalCost = ((double) totalNumRequests) * 0.0000004 +           // request cost
-            totalProcessedBytesGiga * 0.002 +                       // s3 scan cost
-            totalReturnedBytesGiga * 0.0007 +                       // s3 return cost
-            totalExecutionTime / 3600 * ec2Price;                   // runtime cost
+    getRequestCost = ((double) totalNumRequests) * 0.00000044;  // GET request cost
+    s3ScanCost = totalProcessedBytesGiga * 0.0022;              // s3 scan cost
+    s3ReturnCost = totalReturnedBytesGiga * 0.0008;             // s3 return cost
+    runtimeCost = totalExecutionTime / 3600 * ec2Price;         // runtime cost
+    totalCost = getRequestCost + s3ScanCost + s3ReturnCost + runtimeCost;
   }
   std::stringstream formattedCost;
   formattedCost << totalCost << " $";
+  std::stringstream formattedGetRequestCost;
+  formattedGetRequestCost << getRequestCost << " $";
+  std::stringstream formattedS3ScanCost;
+  formattedS3ScanCost << s3ScanCost << " $";
+  std::stringstream formattedS3ReturnCost;
+  formattedS3ReturnCost << s3ReturnCost << " $";
+  std::stringstream formattedRuntimeCost;
+  formattedRuntimeCost << runtimeCost << " $";
 
   ss << std::left << std::setw(60) << "Total Processed Bytes";
   ss << std::left << std::setw(60) << formattedProcessedBytes.str();
@@ -154,24 +208,52 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(60) << "Total Returned Bytes";
   ss << std::left << std::setw(60) << formattedReturnedBytes.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "Average GET Transfer Rate";
+  ss << std::left << std::setw(60) << formattedAverageGetTransferRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Average GET Convert Rate";
+  ss << std::left << std::setw(60) << formattedAverageGetConvertRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Appx Average Select Transfer Rate";
+  ss << std::left << std::setw(60) << formattedAverageSelectTransferRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Average Select Convert Rate";
+  ss << std::left << std::setw(60) << formattedAverageSelectConvertRate.str();
+  ss << std::endl;
   ss << std::left << std::setw(60) << "Total Request amount";
   ss << std::left << std::setw(60) << totalNumRequests;
   ss << std::endl;
   ss << std::left << std::setw(60) << "Total Cost";
   ss << std::left << std::setw(60) << formattedCost.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "Total GET Request Cost";
+  ss << std::left << std::setw(60) << formattedGetRequestCost.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total S3 Scan Cost";
+  ss << std::left << std::setw(60) << formattedS3ScanCost.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total S3 Return Cost";
+  ss << std::left << std::setw(60) << formattedS3ReturnCost.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total Runtime Cost";
+  ss << std::left << std::setw(60) << formattedRuntimeCost.str();
+  ss << std::endl;
   ss << std::endl;
 
   ss << std::left << std::setw(120) << "Query Execution Times and Bytes Transferred" << std::endl;
   ss << std::setfill(' ');
-  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
-  ss << std::left << std::setw(15) << "Query";
-  ss << std::left << std::setw(30) << "Execution Time";
+  ss << std::left << std::setw(8) << "Query";
+  ss << std::left << std::setw(18) << "Execution Time";
   ss << std::left << std::setw(30) << "Processed Bytes";
   ss << std::left << std::setw(30) << "Returned Bytes";
+  ss << std::left << std::setw(16) << "GET Transfer";
+  ss << std::left << std::setw(16) << "GET Convert";
+  ss << std::left << std::setw(18) << "Select Transfer";
+  ss << std::left << std::setw(18) << "Select Convert";
   ss << std::endl;
-  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
   for (int qid = 1; qid <= executionTimes_.size(); ++qid) {
     std::stringstream formattedProcessingTime1;
@@ -182,10 +264,43 @@ std::string Interpreter::showMetrics() {
     std::stringstream formattedReturnedBytes1;
     formattedReturnedBytes1 << bytesTransferred_[qid - 1].second << " B" << " ("
                             << ((double)bytesTransferred_[qid - 1].second / 1024.0 / 1024.0 / 1024.0) << " GB)";
-    ss << std::left << std::setw(15) << std::to_string(qid);
-    ss << std::left << std::setw(30) << formattedProcessingTime1.str();
+    std::stringstream formattedGetTransferRate;
+    std::stringstream formattedGetConvertRate;
+    formattedGetTransferRate.precision(4);
+    formattedGetConvertRate.precision(4);
+    if (getTransferConvertNS_[qid - 1].first > 0 && getTransferConvertNS_[qid - 1].second > 0) {
+      formattedGetTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+                                  ((double) getTransferConvertNS_[qid - 1].first / 1.0e9) << " MB/s/req";
+      formattedGetConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+                                 ((double) getTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
+    } else {
+      formattedGetTransferRate << "NA";
+      formattedGetConvertRate << "NA";
+    }
+    std::stringstream formattedSelectTransferRate;
+    std::stringstream formattedSelectConvertRate;
+    formattedSelectTransferRate.precision(4);
+    formattedSelectConvertRate.precision(4);
+    if (selectTransferConvertNS_[qid - 1].first > 0 && selectTransferConvertNS_[qid - 1].second > 0) {
+      // Making the assumption that transfer and convert don't occur at same time, which seems plausible since
+      // each request appears to be pinned to one cpu. If anything this overestimates transfer rate since if
+      // transfer occurs at same time as convert then transfer is taking even longer and is slower than estimated here
+      formattedSelectTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+                                     ((double) (selectTransferConvertNS_[qid - 1].first - selectTransferConvertNS_[qid - 1].second) / 1.0e9) << " MB/s/req";
+      formattedSelectConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+                                    ((double) selectTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
+    } else {
+      formattedSelectTransferRate << "NA";
+      formattedSelectConvertRate << "NA";
+    }
+    ss << std::left << std::setw(8) << std::to_string(qid);
+    ss << std::left << std::setw(18) << formattedProcessingTime1.str();
     ss << std::left << std::setw(30) << formattedProcessedBytes1.str();
     ss << std::left << std::setw(30) << formattedReturnedBytes1.str();
+    ss << std::left << std::setw(16) << formattedGetTransferRate.str();
+    ss << std::left << std::setw(16) << formattedGetConvertRate.str();
+    ss << std::left << std::setw(18) << formattedSelectTransferRate.str();
+    ss << std::left << std::setw(18) << formattedSelectConvertRate.str();
     ss << std::endl;
   }
 
@@ -195,7 +310,17 @@ std::string Interpreter::showMetrics() {
 void Interpreter::saveMetrics() {
   executionTimes_.emplace_back((double) (operatorGraph_->getElapsedTime().value()) / 1000000000.0);
   bytesTransferred_.emplace_back(operatorGraph_->getBytesTransferred());
+  getTransferConvertNS_.emplace_back(operatorGraph_->getGetTransferConvertTimesNS());
+  selectTransferConvertNS_.emplace_back(operatorGraph_->getSelectTransferConvertTimesNS());
   numRequests_.emplace_back(operatorGraph_->getNumRequests());
+}
+
+void Interpreter::clearMetrics() {
+  executionTimes_.clear();
+  bytesTransferred_.clear();
+  getTransferConvertNS_.clear();
+  selectTransferConvertNS_.clear();
+  numRequests_.clear();
 }
 
 const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {
@@ -205,10 +330,15 @@ const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {
 std::string Interpreter::showHitRatios() {
   std::stringstream ss;
   ss << std::endl;
-  int qId = 1;
-  for (auto const &hitRatio: hitRatios_) {
-    ss << std::left << std::setw(60) << qId++;
-    ss << std::left << std::setw(60) << hitRatio;
+  ss << "Hit ratios, Shard Hit Ratios:" << std::endl;
+  ss << std::endl;
+  for (int i = 0; i < hitRatios_.size(); i++) {
+    int qId = i + 1;
+    auto const hitRatio = hitRatios_.at(i);
+    auto const shardHitRatio = shardHitRatios_.at(i);
+    ss << std::left << std::setw(20) << qId;
+    ss << std::left << std::setw(30) << hitRatio;
+    ss << std::left << std::setw(30) << shardHitRatio;
     ss << std::endl;
   }
   return ss.str();
@@ -216,6 +346,7 @@ std::string Interpreter::showHitRatios() {
 
 void Interpreter::saveHitRatios() {
   hitRatios_.emplace_back(operatorManager_->getCrtQueryHitRatio());
+  shardHitRatios_.emplace_back(operatorManager_->getCrtQueryShardHitRatio());
 }
 
 

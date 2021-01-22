@@ -45,7 +45,8 @@ normal::connector::MiniCatalogue::MiniCatalogue(
         std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
         std::shared_ptr<std::unordered_map<std::shared_ptr<SegmentKey>, size_t,
                           SegmentKeyPointerHash, SegmentKeyPointerPredicate>> segmentKeyToSize,
-        std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>> queryNumToInvolvedSegments,
+        std::shared_ptr<std::unordered_map<int, std::shared_ptr<std::unordered_set
+                        <std::shared_ptr<cache::SegmentKey>, cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>>> queryNumToInvolvedSegments,
         std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
                           cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums,
         std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
@@ -199,13 +200,18 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   auto valuePairs = readMetadataSort(schemaName, "lineorder_orderdate");
   std::string s3ObjectDir = schemaName + "lineorder_sharded/";
   for (int i = 0; i < (int) valuePairs->size(); i++) {
-    sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
+    if (s3ObjectDir.find("csv") != std::string::npos) {
+      sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
                           valuePairs->at(i));
+    } else { // (s3ObjectDir.find("parquet") != std::string::npos) {
+      sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.parquet." + std::to_string(i)),
+                          valuePairs->at(i));
+    }
   }
   sortedColumns->emplace("lo_orderdate", sortedValues);
 
   // initialize this as empty and populate it if necessary
-  auto queryNumToInvolvedSegments = std::make_shared<std::unordered_map<int, std::shared_ptr<std::vector<std::shared_ptr<cache::SegmentKey>>>>>();
+  auto queryNumToInvolvedSegments = std::make_shared<std::unordered_map<int, std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>>>();
 
   // segmentKey to size
   auto segmentKeyToSize = readMetadataSegmentInfo(s3Bucket, schemaName);
@@ -261,11 +267,11 @@ size_t normal::connector::MiniCatalogue::getSegmentSize(const std::shared_ptr<ca
 void normal::connector::MiniCatalogue::addToSegmentQueryNumMappings(int queryNum, const std::shared_ptr<cache::SegmentKey>& segmentKey) {
   auto queryNumKeyEntry = queryNumToInvolvedSegments_->find(queryNum);
   if (queryNumKeyEntry != queryNumToInvolvedSegments_->end()) {
-    queryNumKeyEntry->second->emplace_back(segmentKey);
+    queryNumKeyEntry->second->insert(segmentKey);
   } else {
     // first time seeing this queryNum, create a map entry for it
-    auto segmentKeys = std::make_shared<std::vector<std::shared_ptr<cache::SegmentKey>>>();
-    segmentKeys->emplace_back(segmentKey);
+    auto segmentKeys = std::make_shared<std::unordered_set<std::shared_ptr<cache::SegmentKey>, cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>();
+    segmentKeys->insert(segmentKey);
     queryNumToInvolvedSegments_->emplace(queryNum, segmentKeys);
   }
 
@@ -282,7 +288,7 @@ void normal::connector::MiniCatalogue::addToSegmentQueryNumMappings(int queryNum
 
 // Throws runtime exception if queryNum not present, which ensures failing fast in case of queryNum not being present
 // If use cases of this method expand we can change this if necessary.
-std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> normal::connector::MiniCatalogue::getSegmentsInQuery(int queryNum) {
+std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> normal::connector::MiniCatalogue::getSegmentsInQuery(int queryNum) {
   auto key = queryNumToInvolvedSegments_->find(queryNum);
   if (key != queryNumToInvolvedSegments_->end()) {
     return key->second;

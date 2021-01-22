@@ -10,6 +10,7 @@
 #include <list>
 #include <forward_list>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "SegmentKey.h"
 #include "CachingPolicy.h"
@@ -27,8 +28,10 @@ public:
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   void onLoad(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;
+  std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   std::string showCurrentLayout() override;
   CachingPolicyId id() override;
+  void onNewQuery() override;
 
 private:
   std::list<std::shared_ptr<SegmentKey>> usageQueue_;

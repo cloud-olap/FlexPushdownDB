@@ -14,6 +14,7 @@
 #include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
+#include <normal/cache/FBRSCachingPolicy.h>
 #include <normal/cache/WFBRCachingPolicy.h>
 #include <normal/cache/BeladyCachingPolicy.h>
 #include "ExperimentUtil.h"
@@ -22,6 +23,9 @@
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
+#include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
+#include <aws/s3/S3Client.h>
+#include <thread>
 
 #define SKIP_SUITE false
 
@@ -67,11 +71,25 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
     auto partitionNum = partitionNumEntry.second;
     auto objects = std::make_shared<std::vector<std::string>>();
     if (partitionNum == 1) {
-      objects->emplace_back(dir_prefix + tableName + ".tbl");
+      if (dir_prefix.find("csv") != std::string::npos) {
+        objects->emplace_back(dir_prefix + tableName + ".tbl");
+      } else if (dir_prefix.find("parquet") != std::string::npos) {
+        objects->emplace_back(dir_prefix + tableName + ".parquet");
+      } else {
+        // something went wrong, this will cause an error later
+        SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
+      }
       s3ObjectsMap->emplace(tableName, objects);
     } else {
       for (int i = 0; i < partitionNum; i++) {
-        objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
+        if (dir_prefix.find("csv") != std::string::npos) {
+          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
+        } else if (dir_prefix.find("parquet") != std::string::npos) {
+          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.parquet.{2}", dir_prefix, tableName, i));
+        } else {
+          // something went wrong, this will cause an error later
+          SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
+        }
       }
       s3ObjectsMap->emplace(tableName, objects);
     }
@@ -100,6 +118,7 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
 }
 
 auto execute(normal::sql::Interpreter &i) {
+  i.getCachingPolicy()->onNewQuery();
   i.getOperatorGraph()->boot();
   i.getOperatorGraph()->start();
   i.getOperatorGraph()->join();
@@ -122,6 +141,8 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tupleSet = TupleSet2::create(tuples);
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+  SPDLOG_INFO("Output size: {}", tupleSet->size());
+  SPDLOG_INFO("Output rows: {}", tupleSet->numRows());
 //  if (saveMetrics)
   SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
   SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
@@ -133,8 +154,42 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   i.saveHitRatios();
 
   i.getOperatorGraph().reset();
-  std::this_thread::sleep_for (std::chrono::seconds(2));
+//  std::this_thread::sleep_for (std::chrono::seconds(2));
   return tupleSet;
+}
+
+void simpleGetRequest(int requestNum) {
+  Aws::S3::Model::GetObjectRequest getObjectRequest;
+  getObjectRequest.SetBucket(Aws::String("pushdowndb"));
+  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  getObjectRequest.SetKey(Aws::String(requestKey));
+
+  SPDLOG_INFO("Starting s3 GetObject request: {}", requestNum);
+  auto startTime = std::chrono::steady_clock::now();
+  Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::plan::DefaultS3Client->GetObject(getObjectRequest);
+  auto stopTime = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  if (getObjectOutcome.IsSuccess()) {
+    SPDLOG_INFO("Got result of s3 GetObject request: {}, took: {}", requestNum, (double) (duration) / 1000000000.0);
+  } else {
+    const auto& err = getObjectOutcome.GetError();
+    SPDLOG_INFO("Failed to get result of s3 GetObject request: {}, took: {}, error={}", requestNum, (double) (duration) / 1000000000.0, err.GetMessage());
+  }
+}
+
+void normal::ssb::concurrentGetTest(int numRequests) {
+  spdlog::set_level(spdlog::level::info);
+  std::vector<std::thread> threadVector = std::vector<std::thread>();
+  auto startTime = std::chrono::steady_clock::now();
+  for (int i = 0; i < numRequests; i++) {
+    threadVector.emplace_back(std::thread([i](){simpleGetRequest(i);}));
+  }
+  for(auto& t: threadVector) {
+    t.join();
+  }
+  auto stopTime = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  SPDLOG_INFO("{} Concurrent Get requests took: {}sec", numRequests, (double) (duration) / 1000000000.0);
 }
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType) {
@@ -161,7 +216,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   std::string cachingPolicyAlias;
   switch (cachingPolicyType) {
     case 1: cachingPolicy = LRUCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lru"; break;
-    case 2: cachingPolicy = FBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lfu"; break;
+    case 2: cachingPolicy = FBRSCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "lfu"; break;
     case 3: cachingPolicy = WFBRCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "wlfu"; break;
     case 4: cachingPolicy = BeladyCachingPolicy::make(cacheSize, mode); cachingPolicyAlias = "bldy"; break;
     default: throw std::runtime_error("CachingPolicy not found, type: " + std::to_string(cachingPolicyType));
@@ -197,11 +252,16 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
       }
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
       auto sql = ExperimentUtil::read_file(sql_file_path.string());
-      executeSql(i, sql, false);
+      executeSql(i, sql, true);
       sql_file_dir_path = sql_file_dir_path.parent_path();
     }
     SPDLOG_INFO("Cache warm phase finished");
   }
+
+  // collect warmup metrics for later output
+  std::string warmupMetrics = i.showMetrics();
+  std::string warmupCacheMetrics = i.getOperatorManager()->showCacheMetrics();
+  i.clearMetrics();
 
   i.getOperatorManager()->clearCacheMetrics();
 
@@ -218,15 +278,21 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   }
   SPDLOG_INFO("Execution phase finished");
 
-  SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
+  SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
   SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
+    SPDLOG_INFO("OnLoad time: {}", i.getCachingPolicy()->onLoadTime);
+    SPDLOG_INFO("OnStore time: {}", i.getCachingPolicy()->onStoreTime);
+    SPDLOG_INFO("OnToCache time: {}", i.getCachingPolicy()->onToCacheTime);
 
   auto metricsFilePath = filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
   std::ofstream fout(metricsFilePath.string());
-  fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
-  fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
-  fout << "Cache hit ratios:\n" << i.showHitRatios() << "\n";
+  fout << mode->toString() << " mode finished\n";
+  fout << "Warmup metrics:\n" << warmupMetrics << "\n";
+  fout << "Warmup Cache metrics:\n" << warmupCacheMetrics << "\n";
+  fout << "Execution metrics:\n" << i.showMetrics() << "\n";
+  fout << "Execution Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";
+  fout << "All Cache hit ratios:\n" << i.showHitRatios() << "\n";
 //  fout << "Current cache layout:\n" << i.getCachingPolicy()->showCurrentLayout() << "\n";
   fout.flush();
   fout.close();

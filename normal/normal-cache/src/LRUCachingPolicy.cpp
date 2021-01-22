@@ -74,6 +74,13 @@ LRUCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
   return segmentKeys;
 }
 
+std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
+LRUCachingPolicy::getKeysetInCachePolicy() {
+  auto keysetInCachePolicy = std::make_shared<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
+  keysetInCachePolicy->insert(usageQueue_.begin(), usageQueue_.end());
+  return keysetInCachePolicy;
+}
+
 std::string LRUCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   for (auto const &segmentKey: usageQueue_) {
@@ -84,6 +91,10 @@ std::string LRUCachingPolicy::showCurrentLayout() {
 
 CachingPolicyId LRUCachingPolicy::id() {
   return LRU;
+}
+
+void LRUCachingPolicy::onNewQuery() {
+
 }
 
 

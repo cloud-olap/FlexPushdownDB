@@ -10,8 +10,6 @@
 using namespace normal::cache;
 
 bool FBRCachingPolicy::lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2) {
-//  return (key1->getMetadata()->hitNum() / key1->getMetadata()->size())
-//       < (key2->getMetadata()->hitNum() / key2->getMetadata()->size());
   return (key1->getMetadata()->hitNum())
          < (key2->getMetadata()->hitNum());
 }
@@ -212,6 +210,16 @@ void FBRCachingPolicy::removeEstimateCachingDecision(const std::shared_ptr<Segme
   }
 }
 
+std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>
+FBRCachingPolicy::getKeysetInCachePolicy() {
+  auto keysetInCachePolicy = std::make_shared<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>();
+  for (auto const &keyMapIt: keyMap_) {
+    auto segmentKey = keyMapIt.first;
+    keysetInCachePolicy->insert(segmentKey);
+  }
+  return keysetInCachePolicy;
+}
+
 std::string FBRCachingPolicy::showCurrentLayout() {
   std::stringstream ss;
   ss << "Total numbers: " << keyMap_.size() << std::endl;
@@ -226,4 +234,8 @@ std::string FBRCachingPolicy::showCurrentLayout() {
 
 CachingPolicyId FBRCachingPolicy::id() {
   return FBR;
+}
+
+void FBRCachingPolicy::onNewQuery() {
+
 }

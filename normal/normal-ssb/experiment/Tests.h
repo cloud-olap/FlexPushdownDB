@@ -9,6 +9,7 @@
 
 namespace normal::ssb {
   void mainTest(size_t cacheSize, int modeType, int cachingPolicyType);
+  void concurrentGetTest(int numRequests);
 }
 
 #endif //NORMAL_TESTS_H

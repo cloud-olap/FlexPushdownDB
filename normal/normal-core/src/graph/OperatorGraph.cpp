@@ -19,6 +19,8 @@
 #include <normal/pushdown/collate/Collate2.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/s3/S3SelectScan2.h>
+#include <normal/pushdown/s3/S3Select.h>
+#include <normal/pushdown/s3/S3Get.h>
 #include <normal/core/message/ConnectMessage.h>
 
 
@@ -298,10 +300,10 @@ std::string graph::OperatorGraph::showMetrics() {
 							<< " secs)";
 	std::stringstream formattedProcessingPercentage;
 	formattedProcessingPercentage << (processingFraction * 100.0);
-	ss << std::left << std::setw(60) << operatorName;
-	ss << std::left << std::setw(40) << formattedProcessingTime.str();
-	ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
-	ss << std::endl;
+//	ss << std::left << std::setw(60) << operatorName;
+//	ss << std::left << std::setw(40) << formattedProcessingTime.str();
+//	ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
+//	ss << std::endl;
   }
 
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
@@ -329,6 +331,48 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(60) << "Returned Bytes";
   ss << std::left << std::setw(60) << formattedReturnedBytes.str();
   ss << std::endl;
+
+  auto getTransferConvertTimesNS = getGetTransferConvertTimesNS();
+  std::stringstream formattedGetTransferRate;
+  std::stringstream formattedGetConvertRate;
+  if (getTransferConvertTimesNS.first > 0 && getTransferConvertTimesNS.second > 0) {
+    formattedGetTransferRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
+                             ((double) getTransferConvertTimesNS.first / 1.0e9) << " MB/s/req";
+    formattedGetConvertRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
+                            ((double) getTransferConvertTimesNS.second / 1.0e9) << " MB/s/req";
+  } else {
+    formattedGetTransferRate << "NA";
+    formattedGetConvertRate << "NA";
+  }
+  // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
+  // so this should approximate to per core rates rather than just per request, as one request maps to a core
+  ss << std::left << std::setw(60) << "S3 GET Data Transfer Rate";
+  ss << std::left << std::setw(60) << formattedGetTransferRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "S3 GET Data Convert rate";
+  ss << std::left << std::setw(60) << formattedGetConvertRate.str();
+  ss << std::endl;
+
+  auto selectTransferConvertTimesNS = getSelectTransferConvertTimesNS();
+  std::stringstream formattedSelectTransferRate;
+  std::stringstream formattedSelectConvertRate;
+  if (selectTransferConvertTimesNS.first > 0 && selectTransferConvertTimesNS.second > 0) {
+    formattedSelectTransferRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
+          ((double)(selectTransferConvertTimesNS.first - selectTransferConvertTimesNS.second)  / 1.0e9) << " MB/s/req";
+    formattedSelectConvertRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
+          ((double)selectTransferConvertTimesNS.second / 1.0e9) << " MB/s/req";
+  } else {
+    formattedSelectTransferRate << "NA";
+    formattedSelectConvertRate << "NA";
+  }
+  // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
+  // so this should approximate to per core rates rather than just per request, as one request maps to a core
+  ss << std::left << std::setw(60) << "Appx S3 Select Data Transfer Rate";
+  ss << std::left << std::setw(60) << formattedSelectTransferRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "S3 Select Data Convert rate";
+  ss << std::left << std::setw(60) << formattedSelectConvertRate.str();
+  ss << std::endl;
   ss << std::endl;
 
   return ss.str();
@@ -342,7 +386,8 @@ std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
   size_t processedBytes = 0;
   size_t returnedBytes = 0;
   for (const auto &entry: operatorDirectory_) {
-    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3SelectScan)) {
+    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
+        typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
 //	  (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetMetricsAtom::value).receive(
 //	  	[&](std::pair<size_t, size_t> metrics) {
 //		  processedBytes += metrics.first;
@@ -364,13 +409,62 @@ std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
 size_t graph::OperatorGraph::getNumRequests() {
   size_t numRequests = 0;
   for (const auto &entry: operatorDirectory_) {
-    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3SelectScan)) {
+    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
+        typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
 	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
       auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
       numRequests += s3ScanOp->getNumRequests();
     }
   }
   return numRequests;
+}
+
+std::pair<size_t, size_t> graph::OperatorGraph::getGetTransferConvertTimesNS() {
+  size_t getTransferTimeNS = 0;
+  size_t getConvertTimeNS = 0;
+  for (const auto &entry: operatorDirectory_) {
+    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
+        typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
+//	  (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetMetricsAtom::value).receive(
+//	  	[&](std::pair<size_t, size_t> metrics) {
+//		  processedBytes += metrics.first;
+//		  returnedBytes += metrics.second;
+//		},
+//		[&](const caf::error&  error){
+//	  	  throw std::runtime_error(to_string(error));
+//	  	});
+
+	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
+      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
+      getTransferTimeNS += s3ScanOp->getGetTransferTimeNS();
+      getConvertTimeNS += s3ScanOp->getGetConvertTimeNS();
+	}
+  }
+  return std::pair<size_t, size_t>(getTransferTimeNS, getConvertTimeNS);
+}
+
+std::pair<size_t, size_t> graph::OperatorGraph::getSelectTransferConvertTimesNS() {
+  size_t selectTransferAndConvertTimeNS = 0;
+  size_t selectConvertTimeNS = 0;
+  for (const auto &entry: operatorDirectory_) {
+    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
+        typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
+//	  (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetMetricsAtom::value).receive(
+//	  	[&](std::pair<size_t, size_t> metrics) {
+//		  processedBytes += metrics.first;
+//		  returnedBytes += metrics.second;
+//		},
+//		[&](const caf::error&  error){
+//	  	  throw std::runtime_error(to_string(error));
+//	  	});
+
+	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
+      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
+      selectTransferAndConvertTimeNS += s3ScanOp->getSelectTransferAndConvertTimeNS();
+      selectConvertTimeNS += s3ScanOp->getSelectConvertTimeNS();
+	}
+  }
+  return std::pair<size_t, size_t>(selectTransferAndConvertTimeNS, selectConvertTimeNS);
 }
 
 void graph::OperatorGraph::close() {

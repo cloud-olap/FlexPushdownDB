@@ -28,7 +28,9 @@ public:
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;
   std::string showCurrentLayout() override;
+  std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   CachingPolicyId id() override;
+  void onNewQuery() override;
 
 private:
 //  std::vector<std::shared_ptr<SegmentKey>> keysInCache_;

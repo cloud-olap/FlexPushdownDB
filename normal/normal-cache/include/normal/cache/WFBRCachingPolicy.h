@@ -23,18 +23,21 @@ public:
   void onRemove(const std::shared_ptr<SegmentKey> &key) override;
   std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>> onStore(const std::shared_ptr<SegmentKey> &key) override;
   std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) override;
+  std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   std::string showCurrentLayout() override;
   CachingPolicyId id() override;
+  void onNewQuery() override;
 
 private:
   std::vector<std::shared_ptr<SegmentKey>> keysInCache_;
+  std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keySetInCache_;
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keySet_;
 
   /**
-   * Store cache replacement decisions
+   * tmp data structures for onToCache()  (OTC: onToCache)
    */
-  std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keysToReplace_;
-  std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> estimateCachingDecisions_;
+  size_t freeSizeOTC_;
+  std::vector<std::shared_ptr<SegmentKey>> keysInCacheOTC_;
 
   /**
    * WeightRequestMessage are sent from both S3SelectScan and filter in hybrid caching, they are contain weight
@@ -44,8 +47,7 @@ private:
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> weightUpdatedKeys_;
 
   bool lessValue(const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
-  void addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in, const std::shared_ptr<SegmentKey> &out);
-  void removeEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in);
+
   /**
    * For WFBR, erasing only erases the element in keyInCache_, but not in keySet_ to keep history hitNum
    */

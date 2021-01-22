@@ -20,7 +20,7 @@
 #include "normal/core/Operator.h"
 #include "normal/tuple/TupleSet.h"
 #include "normal/pushdown/s3/S3SelectCSVParseOptions.h"
-#include "normal/pushdown/s3/S3SelectParser.h"
+#include "normal/pushdown/s3/S3CSVParser.h"
 
 using namespace normal::core;
 using namespace normal::core::message;
@@ -29,61 +29,51 @@ using namespace normal::core::cache;
 namespace normal::pushdown {
 
 class S3SelectScan : public normal::core::Operator {
-
-  typedef std::function<void(const std::shared_ptr<TupleSet2> &)> TupleSetEventCallback;
-
 public:
   S3SelectScan(std::string name,
+			   std::string type,
 			   std::string s3Bucket,
 			   std::string s3Object,
-			   std::string filterSql,
-			   std::vector<std::string> columnNames,
+			   std::vector<std::string> returnedS3ColumnNames,
+			   std::vector<std::string> neededColumnNames,
 			   int64_t startOffset,
 			   int64_t finishOffset,
          std::shared_ptr<arrow::Schema> schema,
-			   S3SelectCSVParseOptions parseOptions,
 			   std::shared_ptr<Aws::S3::S3Client> s3Client,
 			   bool scanOnStart,
 			   bool toCache,
 			   long queryId,
-         std::pair<bool, std::vector<std::string>> enablePushdownProject,
-         const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys);
+         std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys);
 
-  static std::shared_ptr<S3SelectScan> make(std::string name,
-											std::string s3Bucket,
-											std::string s3Object,
-											std::string filterSql,
-											std::vector<std::string> columnNames,
-											int64_t startOffset,
-											int64_t finishOffset,
-                      std::shared_ptr<arrow::Schema> schema,
-											S3SelectCSVParseOptions parseOptions,
-											std::shared_ptr<Aws::S3::S3Client> s3Client,
-											bool scanOnStart = true,
-											bool toCache = false,
-											long queryId = 0,
-                      std::pair<bool, std::vector<std::string>> enablePushdownProject = std::pair<bool, std::vector<std::string>>(true, std::vector<std::string>()),
-                      std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys = nullptr);
+  [[nodiscard]] size_t getProcessedBytes() const;
+  [[nodiscard]] size_t getReturnedBytes() const;
+  [[nodiscard]] size_t getNumRequests() const;
 
-  size_t getProcessedBytes() const;
-  size_t getReturnedBytes() const;
-  size_t getNumRequests() const;
+  [[nodiscard]] size_t getGetTransferTimeNS() const;
+  [[nodiscard]] size_t getGetConvertTimeNS() const;
+  [[nodiscard]] size_t getSelectTransferAndConvertTimeNS() const;
+  [[nodiscard]] size_t getSelectConvertTimeNS() const;
 
-private:
+protected:
   std::string s3Bucket_;
   std::string s3Object_;
-  std::string filterSql_;   // "where ...."
-  std::vector<std::string> columnNames_;    // if projection pushdown is disabled, this means the needed column names
+  std::vector<std::string> returnedS3ColumnNames_;
+	std::vector<std::string> neededColumnNames_;
   int64_t startOffset_;
   int64_t finishOffset_;
   std::shared_ptr<arrow::Schema> schema_;
-  S3SelectCSVParseOptions parseOptions_;
-  std::shared_ptr<S3SelectParser> parser_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
-  std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columns_;  // no matter whether projection pushdown is enabled, this means the columns read from s3
+  // the columns that are read from s3 (SELECT vs GET will differ depending on the projection for Select)
+  std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columnsReadFromS3_;
   size_t processedBytes_ = 0;
   size_t returnedBytes_ = 0;
   size_t numRequests_ = 0;
+
+  size_t getTransferTimeNS_ = 0;
+  size_t getConvertTimeNS_ = 0;
+
+  size_t selectTransferAndConvertNS_ = 0;
+  size_t selectConvertTimeNS_ = 0;
 
   /**
    * Flags:
@@ -92,21 +82,19 @@ private:
    */
   bool scanOnStart_;
   bool toCache_;
-  std::pair<bool, std::vector<std::string>> enablePushdownProject_;
 
   void onStart();
   void onReceive(const Envelope &message) override;
   void onCacheLoadResponse(const scan::ScanMessage &message);
+  virtual void processScanMessage(const scan::ScanMessage &message) = 0;
 
-  [[nodiscard]] tl::expected<void, std::string> s3Select();
-  [[nodiscard]] tl::expected<void, std::string> s3Scan();
   void put(const std::shared_ptr<TupleSet2> &tupleSet);
 
   void requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> &tupleSet);
-  std::shared_ptr<TupleSet2> readTuples();
-  void readAndSendTuples();
+  virtual std::shared_ptr<TupleSet2> readTuples() = 0;
+  virtual int getPredicateNum() = 0;
+  virtual void readAndSendTuples();
   void sendSegmentWeight();
-  void generateParser();
 
   /**
    * used to compute filter weight

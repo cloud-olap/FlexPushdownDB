@@ -216,6 +216,21 @@ configure_file(metadata/ssb-sf100-sortlineorder/csv/schemas ${CMAKE_CURRENT_BINA
 configure_file(metadata/ssb-sf100-sortlineorder/csv/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/partitionNums COPYONLY)
 configure_file(metadata/ssb-sf100-sortlineorder/csv/segment_info ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/segment_info COPYONLY)
 
+configure_file(metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/column_length COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/schemas COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_2GB_lineorder/partitionNums COPYONLY)
+
+configure_file(metadata/ssb-sf100-sortlineorder/parquet/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/parquet/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/parquet/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/parquet/column_length COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/parquet/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/parquet/schemas COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/parquet/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/parquet/partitionNums COPYONLY)
+
+configure_file(metadata/ssb-sf100-sortlineorder/snappy_parquet/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/snappy_parquet/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/snappy_parquet/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/snappy_parquet/column_length COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/snappy_parquet/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/snappy_parquet/schemas COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/snappy_parquet/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/snappy_parquet/partitionNums COPYONLY)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Diagnostics
 #-----------------------------------------------------------------------------------------------------------------------

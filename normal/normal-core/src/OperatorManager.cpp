@@ -57,6 +57,7 @@ void OperatorManager::boot() {
 
 std::string OperatorManager::showCacheMetrics() {
   int hitNum, missNum;
+  int shardHitNum, shardMissNum;
 
   auto errorHandler = [&](const caf::error& error){
 	throw std::runtime_error(to_string(error));
@@ -77,6 +78,20 @@ std::string OperatorManager::showCacheMetrics() {
 
   double hitRate = (hitNum + missNum == 0) ? 0.0 : (double) hitNum / (double) (hitNum + missNum);
 
+  self->request(segmentCacheActor_, infinite, GetNumShardHitsAtom::value).receive(
+	  [&](int numShardHits) {
+		shardHitNum = numShardHits;
+	  },
+	  errorHandler);
+
+  self->request(segmentCacheActor_, infinite, GetNumShardMissesAtom::value).receive(
+	  [&](int numShardMisses) {
+		shardMissNum = numShardMisses;
+	  },
+	  errorHandler);
+
+  double shardHitRate = (shardHitNum + shardMissNum == 0) ? 0.0 : (double) shardHitNum / (double) (shardHitNum + shardMissNum);
+
   std::stringstream ss;
   ss << std::endl;
 
@@ -90,6 +105,18 @@ std::string OperatorManager::showCacheMetrics() {
 
   ss << std::left << std::setw(60) << "Hit rate:";
   ss << std::left << std::setw(40) << hitRate;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Shard Hit num:";
+  ss << std::left << std::setw(40) << shardHitNum;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Shard Miss num:";
+  ss << std::left << std::setw(40) << shardMissNum;
+  ss << std::endl;
+
+  ss << std::left << std::setw(60) << "Shard Hit rate:";
+  ss << std::left << std::setw(40) << shardHitRate;
   ss << std::endl;
 
   ss << std::endl;
@@ -147,6 +174,34 @@ double OperatorManager::getCrtQueryHitRatio() {
   self->anon_send(segmentCacheActor_, ClearCrtQueryMetricsAtom::value);
 
   return (crtQueryHitNum + crtQueryMissNum == 0) ? 0.0 : (double) crtQueryHitNum / (double) (crtQueryHitNum + crtQueryMissNum);
+}
+
+double OperatorManager::getCrtQueryShardHitRatio() {
+  int crtQueryShardHitNum;
+  int crtQueryShardMissNum;
+
+  auto errorHandler = [&](const caf::error& error){
+      throw std::runtime_error(to_string(error));
+  };
+
+  // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
+  scoped_actor self{*actorSystem};
+  self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardHitsAtom::value).receive(
+          [&](int numShardHits) {
+              crtQueryShardHitNum = numShardHits;
+          },
+          errorHandler);
+
+  self->request(segmentCacheActor_, infinite, GetCrtQueryNumShardMissesAtom::value).receive(
+          [&](int numShardMisses) {
+              crtQueryShardMissNum = numShardMisses;
+          },
+          errorHandler);
+
+  // NOTE: anon_send a bit lighter than send
+  self->anon_send(segmentCacheActor_, ClearCrtQueryShardMetricsAtom::value);
+
+  return (crtQueryShardHitNum + crtQueryShardMissNum == 0) ? 0.0 : (double) crtQueryShardHitNum / (double) (crtQueryShardHitNum + crtQueryShardMissNum);
 }
 
 }

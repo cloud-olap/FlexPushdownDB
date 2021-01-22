@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <unordered_set>
 #include <normal/plan/mode/Mode.h>
 
 #include "SegmentKey.h"
@@ -60,6 +61,13 @@ public:
   virtual std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) = 0;
 
   /**
+   * Get the keys that the cache policy thinks are stored in the cache
+   *
+   * @return keys of segments that the cache policy thinks are cached
+   */
+  virtual std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() = 0;
+
+  /**
    * Show the current cache layout
    */
   virtual std::string showCurrentLayout() = 0;
@@ -71,10 +79,20 @@ public:
    */
   virtual CachingPolicyId id() = 0;
 
+  /**
+   * Some updates (FBRS, WFBR) when a new query comes
+   */
+  virtual void onNewQuery() = 0;
+
 protected:
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
   size_t maxSize_;
   size_t freeSize_;
+
+public:
+    size_t onLoadTime = 0;
+    size_t onStoreTime = 0;
+    size_t onToCacheTime = 0;
 };
 
 }

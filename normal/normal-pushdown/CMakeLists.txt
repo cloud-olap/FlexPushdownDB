@@ -14,7 +14,7 @@ add_library(normal-pushdown STATIC
         src/s3/S3SelectScan.cpp include/normal/pushdown/s3/S3SelectScan.h
         src/file/FileScan.cpp include/normal/pushdown/file/FileScan.h
         src/Aggregate.cpp include/normal/pushdown/Aggregate.h
-        src/s3/S3SelectParser.cpp include/normal/pushdown/s3/S3SelectParser.h
+        src/s3/S3CSVParser.cpp include/normal/pushdown/s3/S3CSVParser.h
         src/aggregate/AggregationResult.cpp include/normal/pushdown/aggregate/AggregationResult.h
         src/aggregate/Sum.cpp include/normal/pushdown/aggregate/Sum.h
         src/aggregate/AggregationFunction.cpp include/normal/pushdown/aggregate/AggregationFunction.h
@@ -70,7 +70,8 @@ add_library(normal-pushdown STATIC
         include/normal/pushdown/group/GroupKernel2.cpp include/normal/pushdown/group/GroupKernel2.h
         include/normal/pushdown/group/GroupKey2.h
         include/normal/pushdown/group/AggregateBuilder.cpp include/normal/pushdown/group/AggregateBuilder.h
-        include/normal/pushdown/group/AggregateBuilderWrapper.cpp include/normal/pushdown/group/AggregateBuilderWrapper.h)
+        include/normal/pushdown/group/AggregateBuilderWrapper.cpp include/normal/pushdown/group/AggregateBuilderWrapper.h
+        include/normal/pushdown/s3/S3Select.h include/normal/pushdown/s3/S3Get.h src/s3/S3Select.cpp src/s3/S3Get.cpp)
 
 target_include_directories(normal-pushdown PUBLIC include)
 
@@ -124,7 +125,7 @@ add_executable(normal-pushdown-benchmark
         bench/MainBenchmark.cpp
         bench/ShuffleBenchmark.cpp
         bench/HashJoinBenchmark.cpp
-        bench/GroupBenchmark.cpp bench/FilterBenchmark.cpp)
+        bench/GroupBenchmark.cpp bench/FilterBenchmark.cpp bench/CSVtoArrowParserBenchmark.cpp)
 
 
 target_include_directories(normal-pushdown-benchmark PRIVATE include)

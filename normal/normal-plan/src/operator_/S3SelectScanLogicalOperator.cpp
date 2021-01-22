@@ -3,7 +3,8 @@
 //
 
 #include <normal/plan/operator_/S3SelectScanLogicalOperator.h>
-#include <normal/pushdown/s3/S3SelectScan.h>
+#include <normal/pushdown/s3/S3Select.h>
+#include <normal/pushdown/s3/S3Get.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
@@ -92,21 +93,19 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
     int rangeId = 0;
     for (const auto &scanRange: scanRanges) {
       // S3Scan
-      auto scanOp = S3SelectScan::make(
-              "s3scan - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+      auto scanOp = S3Get::make(
+              "s3get - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Partition->getBucket(),
               s3Object,
-              "",
+              *allColumnNames,
               *allNeededColumnNames,
               scanRange.first,
               scanRange.second,
               miniCatalogue->getSchema(getName()),
-              S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               true,
               false,
-              queryId,
-              std::pair<bool, std::vector<std::string>>(false, *allColumnNames));
+              queryId);
       operators->emplace_back(scanOp);
 
       std::shared_ptr<Operator> upStreamOfProj;
@@ -169,16 +168,16 @@ S3SelectScanLogicalOperator::toOperatorsFullPushdown(int numRanges) {
 
     int rangeId = 0;
     for (const auto &scanRange: scanRanges) {
-      auto scanOp = S3SelectScan::make(
+      auto scanOp = S3Select::make(
               "s3select - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Partition->getBucket(),
               s3Object,
               filterSql,
               *projectedColumnNames_,
+              *projectedColumnNames_,
               scanRange.first,
               scanRange.second,
               normal::connector::defaultMiniCatalogue->getSchema(getName()),
-              S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               true,
               false,
@@ -251,21 +250,19 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
       }
 
       // S3SelectScan
-      auto scanOp = S3SelectScan::make(
-              "s3scan - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
+      auto scanOp = S3Get::make(
+              "s3get - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
-              "",
-              *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
+              *allColumnNames,
+              *projectedColumnNames_,
               scanRange.first,
               scanRange.second,
               miniCatalogue->getSchema(getName()),
-              S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
               true,
-              queryId,
-              std::pair<bool, std::vector<std::string>>(false, *allColumnNames));
+              queryId);
       operators->emplace_back(scanOp);
 
       // CacheLoad
@@ -404,17 +401,18 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
               queryId);
       operators->emplace_back(cacheLoad);
 
+      auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+      auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
       // s3Scan
-      auto s3Scan = S3SelectScan::make(
-              "s3scan (to cache) - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
+      auto s3Scan = S3Get::make(
+              "s3get (to cache) - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
-              "",
-              *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
+              *allColumnNames,
+              *projectedColumnNames_,
               scanRange.first,
               scanRange.second,
               normal::connector::defaultMiniCatalogue->getSchema(getName()),
-              S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
               true,
@@ -454,21 +452,20 @@ S3SelectScanLogicalOperator::toOperatorsHybridCaching(int numRanges) {
       }
 
       // s3Select
-      auto s3Select = S3SelectScan::make(
+      auto s3Select = S3Select::make(
               "s3select - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
               genFilterSql(finalPredicate),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
+              *projectedColumnNames_,
               scanRange.first,
               scanRange.second,
               normal::connector::defaultMiniCatalogue->getSchema(getName()),
-              S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
               false,
               queryId,
-              std::pair<bool, std::vector<std::string>>(true, std::vector<std::string>()),
               weightedSegmentKeys);
       operators->emplace_back(s3Select);
 
@@ -567,17 +564,18 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
               queryId);
       operators->emplace_back(cacheLoad);
 
+      auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+      auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
       // s3Scan
-      auto s3Scan = S3SelectScan::make(
-              "s3scan (to cache) - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
+      auto s3Scan = S3Get::make(
+              "s3get (to cache) - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
-              "",
+              *allColumnNames,
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
               scanRange.first,
               scanRange.second,
               normal::connector::defaultMiniCatalogue->getSchema(getName()),
-              S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
               true,
@@ -585,16 +583,16 @@ S3SelectScanLogicalOperator::toOperatorsHybridCachingLast(int numRanges) {
       operators->emplace_back(s3Scan);
 
       // s3Select
-      auto s3Select = S3SelectScan::make(
+      auto s3Select = S3Select::make(
               "s3select - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
               s3Bucket,
               s3Object,
               genFilterSql(finalPredicate),
               *projectedColumnNames_,     // actually useless, will use columnNames from ScanMessage
+              *projectedColumnNames_,
               scanRange.first,
               scanRange.second,
               normal::connector::defaultMiniCatalogue->getSchema(getName()),
-              S3SelectCSVParseOptions(",", "\n"),
               DefaultS3Client,
               false,
               false,

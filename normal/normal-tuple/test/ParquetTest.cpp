@@ -4,7 +4,7 @@
 
 
 #include <memory>
-#include <filesystem>
+#include <experimental/filesystem>
 
 #include <doctest/doctest.h>
 #include <fmt/format.h>
@@ -23,14 +23,14 @@ const char *getCurrentTestSuiteName();
 
 tl::expected<void, std::string> convert(const std::string& inFile, const std::string& outFile, int rowGroupSize) {
 
-  std::filesystem::create_directories(std::filesystem::absolute(outFile).remove_filename());
+  std::experimental::filesystem::create_directories(std::experimental::filesystem::absolute(outFile).remove_filename());
 
   auto fields = {::arrow::field("A", ::arrow::int32()),
 				 ::arrow::field("B", ::arrow::int32()),
 				 ::arrow::field("C", ::arrow::int32())};
   auto schema = std::make_shared<::arrow::Schema>(fields);
 
-  auto result = Converter::csvToParquet(inFile, outFile, *schema, rowGroupSize);
+  auto result = Converter::csvToParquet(inFile, outFile, *schema, rowGroupSize, ::parquet::Compression::type::SNAPPY);
 
   return result;
 }
@@ -54,7 +54,7 @@ TEST_CASE ("parquet-read-byte-range" * doctest::skip(false || SKIP_SUITE)) {
   auto result = convert(inFile, outFile, 300);
 	  CHECK_MESSAGE(result.has_value(), result.error());
 
-  auto size = std::filesystem::file_size(outFile);
+  auto size = std::experimental::filesystem::file_size(outFile);
   auto scanRanges = Util::ranges<int>(0, size, 3);
 
   auto expectedReader = ParquetReader::make(outFile);
