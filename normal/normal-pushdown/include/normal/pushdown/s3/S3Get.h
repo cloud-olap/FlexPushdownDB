@@ -40,6 +40,7 @@ class S3Get : public S3SelectScan {
 
   private:
     void readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
+    void readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
     [[nodiscard]] tl::expected<void, std::string> s3Get();
 
     void processScanMessage(const scan::ScanMessage &message) override;

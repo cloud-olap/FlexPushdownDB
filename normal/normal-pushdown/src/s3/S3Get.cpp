@@ -50,6 +50,7 @@
 
 #include "normal/pushdown/Globals.h"
 #include <normal/pushdown/cache/CacheHelper.h>
+#include <parquet/arrow/reader.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
 namespace arrow { class MemoryPool; }
@@ -115,6 +116,7 @@ std::shared_ptr<S3Get> S3Get::make(const std::string& name,
 }
 
 void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   auto readSize = DefaultS3ScanBufferSize - 1;
   char buffer[DefaultS3ScanBufferSize];
 
@@ -124,7 +126,6 @@ void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retri
   SPDLOG_DEBUG("S3 Scan starts  |  name: {}", name());
   retrievedFile.getline(buffer, readSize);
 
-  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   // Get content
   while (!retrievedFile.eof()) {
     memset(buffer, 0, DefaultS3ScanBufferSize);
@@ -139,6 +140,34 @@ void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retri
     auto tupleSet = TupleSet2::create(tupleSetV1);
     put(tupleSet);
   }
+  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+  getConvertTimeNS_ += conversionTime;
+}
+
+void S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+  std::string parquetFileString(std::istreambuf_iterator<char>(retrievedFile), {});
+  // From offline calculations this seems approximately correct
+  processedBytes_ += parquetFileString.size();
+  returnedBytes_ += parquetFileString.size();
+  auto bufferedReader = std::make_shared<arrow::io::BufferReader>(parquetFileString);
+
+  std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
+  arrow::MemoryPool *pool = arrow::default_memory_pool();
+  arrow::Status st = parquet::arrow::OpenFile(bufferedReader, pool, &arrow_reader);
+
+  if (!st.ok()) {
+    SPDLOG_ERROR("Error opening file for {}\nError: {}", name(), st.message());
+  }
+  std::shared_ptr<arrow::Table> table;
+  st = arrow_reader->ReadTable(&table);
+  if (!st.ok()) {
+    SPDLOG_ERROR("Error reading parquet data for {}\nError: {}", name(), st.message());
+  }
+  auto tupleSetV1 = TupleSet::make(table);
+  auto tupleSet = TupleSet2::create(tupleSetV1);
+  put(tupleSet);
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
   auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
   getConvertTimeNS_ += conversionTime;
@@ -161,7 +190,7 @@ tl::expected<void, std::string> S3Get::s3Get() {
     if (s3Object_.find("csv") != std::string::npos) {
       readCSVFile(retrievedFile);
     } else { // (s3Object_.find("parquet") != std::string::npos)
-      // TODO Add support for parsing a returned parquet file
+      readParquetFile(retrievedFile);
     }
 
     return {};
