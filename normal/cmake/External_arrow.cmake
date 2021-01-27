@@ -68,6 +68,7 @@ ExternalProject_Add(${ARROW_BASE}
         -DARROW_IPC:BOOL=OFF
         -DARROW_PARQUET:BOOL=ON
         -DARROW_WITH_SNAPPY:BOOL=ON
+        -DARROW_WITH_ZLIB:BOOL=ON
         -DARROW_JEMALLOC:BOOL=ON
         -DARROW_GANDIVA:BOOL=ON
         -DARROW_DEPENDENCY_SOURCE=BUNDLED
@@ -140,6 +141,7 @@ target_link_libraries(arrow_static INTERFACE arrow_bundled_dependencies_static)
 #target_link_libraries(arrow_static INTERFACE re2_static)
 #target_link_libraries(arrow_static INTERFACE snappy_static)
 target_link_libraries(arrow_static INTERFACE pthread)
+target_link_libraries(arrow_static INTERFACE z)
 add_dependencies(arrow_static ${ARROW_BASE})
 
 add_library(arrow_shared SHARED IMPORTED)
@@ -150,6 +152,7 @@ target_link_libraries(arrow_shared INTERFACE arrow_bundled_dependencies_static)
 #target_link_libraries(arrow_shared INTERFACE re2_static)
 #target_link_libraries(arrow_shared INTERFACE snappy_static)
 target_link_libraries(arrow_shared INTERFACE pthread)
+target_link_libraries(arrow_shared INTERFACE z)
 add_dependencies(arrow_shared ${ARROW_BASE})
 
 # Gandiva needs LLVM version 7 or 7.1

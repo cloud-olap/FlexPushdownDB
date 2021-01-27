@@ -86,7 +86,7 @@ S3Select::S3Select(std::string name,
                startOffset, finishOffset, std::move(schema),
                std::move(s3Client), scanOnStart, toCache, queryId, std::move(weightedSegmentKeys)),
 	filterSql_(std::move(filterSql)) {
-
+  generateParser();
 }
 
 std::shared_ptr<S3Select> S3Select::make(const std::string& name,
@@ -137,11 +137,24 @@ InputSerialization S3Select::getInputSerialization() {
     csvInput.SetFieldDelimiter(",");
     csvInput.SetRecordDelimiter("\n");
     inputSerialization.SetCSV(csvInput);
+    if (s3Object_.find("gz") != std::string::npos) {
+      inputSerialization.SetCompressionType(CompressionType::GZIP);
+    } else if (s3Object_.find("bz2") != std::string::npos) {
+      inputSerialization.SetCompressionType(CompressionType::BZIP2);
+    }
   } else if (s3Object_.find("parquet") != std::string::npos) {
     ParquetInput parquetInput;
     inputSerialization.SetParquet(parquetInput);
   }
   return inputSerialization;
+}
+
+bool S3Select::scanRangeSupported() {
+  if (s3Object_.find("gz") != std::string::npos ||
+      s3Object_.find("bz2") != std::string::npos) {
+    return false;
+  }
+  return true;
 }
 
 tl::expected<void, std::string> S3Select::s3Select() {
@@ -155,11 +168,13 @@ tl::expected<void, std::string> S3Select::s3Select() {
   selectObjectContentRequest.SetBucket(bucketName);
   selectObjectContentRequest.SetKey(Aws::String(s3Object_));
 
-  ScanRange scanRange;
-  scanRange.SetStart(startOffset_);
-  scanRange.SetEnd(finishOffset_);
+  if (scanRangeSupported()) {
+    ScanRange scanRange;
+    scanRange.SetStart(startOffset_);
+    scanRange.SetEnd(finishOffset_);
 
-  selectObjectContentRequest.SetScanRange(scanRange);
+    selectObjectContentRequest.SetScanRange(scanRange);
+  }
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
   // combine columns with filterSql

@@ -66,30 +66,17 @@ void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string
   // get partitionNums
   auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
   auto partitionNums = normal::connector::defaultMiniCatalogue->partitionNums();
+  std::string fileExtension = normal::connector::getFileExtensionByDirPrefix(dir_prefix);
   for (auto const &partitionNumEntry: *partitionNums) {
     auto tableName = partitionNumEntry.first;
     auto partitionNum = partitionNumEntry.second;
     auto objects = std::make_shared<std::vector<std::string>>();
     if (partitionNum == 1) {
-      if (dir_prefix.find("csv") != std::string::npos) {
-        objects->emplace_back(dir_prefix + tableName + ".tbl");
-      } else if (dir_prefix.find("parquet") != std::string::npos) {
-        objects->emplace_back(dir_prefix + tableName + ".parquet");
-      } else {
-        // something went wrong, this will cause an error later
-        SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
-      }
+      objects->emplace_back(dir_prefix + tableName + fileExtension);
       s3ObjectsMap->emplace(tableName, objects);
     } else {
-      for (int i = 0; i < partitionNum; i++) {
-        if (dir_prefix.find("csv") != std::string::npos) {
-          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i));
-        } else if (dir_prefix.find("parquet") != std::string::npos) {
-          objects->emplace_back(fmt::format("{0}{1}_sharded/{1}.parquet.{2}", dir_prefix, tableName, i));
-        } else {
-          // something went wrong, this will cause an error later
-          SPDLOG_ERROR("Unknown file name to use for directory with prefix: {}", dir_prefix);
-        }
+      for (int j = 0; j < partitionNum; j++) {
+        objects->emplace_back(fmt::format("{0}{1}_sharded/{1}{2}.{3}", dir_prefix, tableName, fileExtension, j));
       }
       s3ObjectsMap->emplace(tableName, objects);
     }

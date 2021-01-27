@@ -46,6 +46,8 @@ class S3Select: public S3SelectScan {
     std::shared_ptr<S3CSVParser> parser_;
 
     void generateParser();
+    // Scan range not supported for GZIP and BZIP2 CSV, likely not support for parquet compression either
+    bool scanRangeSupported();
     Aws::S3::Model::InputSerialization getInputSerialization();
     [[nodiscard]] tl::expected<void, std::string> s3Select();
 

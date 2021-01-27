@@ -199,14 +199,10 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
           PartitionPointerHash, PartitionPointerPredicate>>();
   auto valuePairs = readMetadataSort(schemaName, "lineorder_orderdate");
   std::string s3ObjectDir = schemaName + "lineorder_sharded/";
+  std::string fileExtension = normal::connector::getFileExtensionByDirPrefix(s3ObjectDir);
   for (int i = 0; i < (int) valuePairs->size(); i++) {
-    if (s3ObjectDir.find("csv") != std::string::npos) {
-      sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.tbl." + std::to_string(i)),
+    sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder" + fileExtension + "." + std::to_string(i)),
                           valuePairs->at(i));
-    } else { // (s3ObjectDir.find("parquet") != std::string::npos) {
-      sortedValues->emplace(std::make_shared<S3SelectPartition>(s3Bucket, s3ObjectDir + "lineorder.parquet." + std::to_string(i)),
-                          valuePairs->at(i));
-    }
   }
   sortedColumns->emplace("lo_orderdate", sortedValues);
 
@@ -354,4 +350,27 @@ int normal::connector::MiniCatalogue::getCurrentQueryNum() const {
 
 std::shared_ptr<arrow::Schema> normal::connector::MiniCatalogue::getSchema(const std::string &tableName){
   return schemas_->at(tableName);
+}
+
+std::string normal::connector::getFileExtensionByDirPrefix(std::string dir_prefix) {
+  if (dir_prefix.find("csv") != std::string::npos) {
+    if (dir_prefix.find("gzip") != std::string::npos) {
+      return ".gz.tbl";
+    } else if (dir_prefix.find("bzip2") != std::string::npos) {
+      return ".bz2.tbl";
+    } else {
+      return ".tbl";
+    }
+  } else if (dir_prefix.find("parquet") != std::string::npos) {
+    if (dir_prefix.find("snappy") != std::string::npos) {
+      return ".snappy.parquet";
+    } else if (dir_prefix.find("gzip") != std::string::npos) {
+      return ".gzip.parquet";
+    } else {
+      return ".parquet";
+    }
+  } else {
+    // something went wrong, we either don't support this file type yet or an error occurred earlier
+    throw std::runtime_error("Unknown file name to use for directory with prefix: " + dir_prefix);
+  }
 }
