@@ -9,6 +9,9 @@
 #include <memory>
 #include <cstdlib>                                          // for abort
 
+#include "zlib.h"
+#include "zconf.h"
+
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
 #include <aws/core/utils/threading/Executor.h>
@@ -116,7 +119,6 @@ std::shared_ptr<S3Get> S3Get::make(const std::string& name,
 }
 
 void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
-  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   auto readSize = DefaultS3ScanBufferSize - 1;
   char buffer[DefaultS3ScanBufferSize];
 
@@ -140,15 +142,124 @@ void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retri
     auto tupleSet = TupleSet2::create(tupleSetV1);
     put(tupleSet);
   }
-  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-  getConvertTimeNS_ += conversionTime;
+}
+
+// Currently this deflates at ~60MB/s
+bool gzipInflate( const std::string& compressedBytes, std::string& uncompressedBytes ) {
+  if ( compressedBytes.size() == 0 ) {
+    uncompressedBytes = compressedBytes ;
+    return true ;
+  }
+
+  unsigned half_length = compressedBytes.size() / 2;
+
+  unsigned uncompLength = compressedBytes.size() * 3;
+  // GZIP compression reduces size by ~1/3 so estimate allocating this much at the start
+  char* uncomp = (char*) calloc( sizeof(char), uncompLength);
+
+  z_stream strm;
+  strm.next_in = (Bytef *) compressedBytes.c_str();
+  strm.avail_in = compressedBytes.size() ;
+  strm.total_out = 0;
+  strm.zalloc = Z_NULL;
+  strm.zfree = Z_NULL;
+
+  bool done = false ;
+
+  if (inflateInit2(&strm, (16+MAX_WBITS)) != Z_OK) {
+    free( uncomp );
+    return false;
+  }
+
+  while (!done) {
+    // If our output buffer is too small
+    if (strm.total_out >= uncompLength ) {
+      // Increase size of output buffer
+      char* uncomp2 = (char*) calloc( sizeof(char), uncompLength + half_length );
+      memcpy( uncomp2, uncomp, uncompLength );
+      uncompLength += half_length ;
+      free( uncomp );
+      uncomp = uncomp2 ;
+    }
+
+    strm.next_out = (Bytef *) (uncomp + strm.total_out);
+    strm.avail_out = uncompLength - strm.total_out;
+
+    // Inflate another chunk.
+    int err = inflate (&strm, Z_SYNC_FLUSH);
+    if (err == Z_STREAM_END) done = true;
+    else if (err != Z_OK)  {
+      break;
+    }
+  }
+
+  if (inflateEnd (&strm) != Z_OK) {
+    free( uncomp );
+    return false;
+  }
+
+  uncompressedBytes = std::string(uncomp);
+  free( uncomp );
+  return true ;
+}
+
+void S3Get::readGZIPCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
+// TODO: Get this working with boost, as boost has support for gzip and bzip2 which will simplify this.
+//       It is also likely optimized more than the above code and so it should be faster.
+//       This is probably not necessary for now as Airmettle doesn't have full support for compressed data.
+//
+//  example using boost:
+//  std::stringstream decompressed;
+//
+//  boost::iostreams::filtering_streambuf<boost::iostreams::input> out;
+//  out.push(boost::iostreams::gzip_decompressor());
+//  out.push(compressed);
+//  boost::iostreams::copy(out, decompressed);
+  std::string decompressedData;
+  std::string gzipString(std::istreambuf_iterator<char>(retrievedFile), {});
+  // From offline comparisons this is correct or at least approximately correct
+  processedBytes_ += gzipString.size();
+  returnedBytes_ += gzipString.size();
+  if (!gzipInflate(gzipString, decompressedData)) {
+    SPDLOG_ERROR("Error deflating gzip file from S3 for {}", name());
+  }
+
+  auto parse_options = arrow::csv::ParseOptions::Defaults();
+  auto read_options = arrow::csv::ReadOptions::Defaults();
+  read_options.use_threads = false;
+  read_options.skip_rows = 1; // Skip the header
+  read_options.column_names = returnedS3ColumnNames_;
+  auto convert_options = arrow::csv::ConvertOptions::Defaults();
+  std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
+  for(const auto &columnName: returnedS3ColumnNames_){
+	  columnTypes.emplace(columnName, schema_->GetFieldByName(columnName)->type());
+  }
+  convert_options.column_types = columnTypes;
+
+  // Create a reader
+  auto reader = std::make_shared<arrow::io::BufferReader>(decompressedData);
+
+  // Instantiate TableReader from input stream and options
+  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
+														reader,
+														read_options,
+														parse_options,
+														convert_options);
+  if (!makeReaderResult.ok())
+	throw std::runtime_error(fmt::format(
+		"Cannot parse S3 payload  |  Could not create a table reader, error: '{}'",
+		makeReaderResult.status().message()));
+  auto tableReader = *makeReaderResult;
+
+  // Parse the payload and create the tupleset
+  auto tupleSetV1 = TupleSet::make(tableReader);
+  auto tupleSet = TupleSet2::create(tupleSetV1);
+  put(tupleSet);
 }
 
 void S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
-  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   std::string parquetFileString(std::istreambuf_iterator<char>(retrievedFile), {});
-  // From offline calculations this seems approximately correct
+  // From offline comparisons this is correct or at least approximately correct
   processedBytes_ += parquetFileString.size();
   returnedBytes_ += parquetFileString.size();
   auto bufferedReader = std::make_shared<arrow::io::BufferReader>(parquetFileString);
@@ -168,9 +279,6 @@ void S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &r
   auto tupleSetV1 = TupleSet::make(table);
   auto tupleSet = TupleSet2::create(tupleSetV1);
   put(tupleSet);
-  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-  getConvertTimeNS_ += conversionTime;
 }
 
 tl::expected<void, std::string> S3Get::s3Get() {
@@ -186,12 +294,20 @@ tl::expected<void, std::string> S3Get::s3Get() {
   numRequests_++;
 
   if (getObjectOutcome.IsSuccess()) {
+    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     auto &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
     if (s3Object_.find("csv") != std::string::npos) {
-      readCSVFile(retrievedFile);
+      if (s3Object_.find("gz") != std::string::npos) {
+        readGZIPCSVFile(retrievedFile);
+      } else {
+        readCSVFile(retrievedFile);
+      }
     } else { // (s3Object_.find("parquet") != std::string::npos)
       readParquetFile(retrievedFile);
     }
+    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+    getConvertTimeNS_ += conversionTime;
 
     return {};
   }
