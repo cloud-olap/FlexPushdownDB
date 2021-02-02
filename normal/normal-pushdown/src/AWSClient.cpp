@@ -34,7 +34,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 500000000);
 
   Aws::Client::ClientConfiguration config;
-  config.region = Aws::Region::US_WEST_1;
+//  config.region = Aws::Region::US_WEST_1;
   config.scheme = Aws::Http::Scheme::HTTP;
   config.maxConnections = 1024; // Default = 25
   config.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>(ALLOCATION_TAG, 0, 0); // Disable retries
@@ -46,12 +46,18 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   config.readRateLimiter = limiter;
   config.writeRateLimiter = limiter;
 
+  config.endpointOverride = "54.219.101.189:80/s3/test";
+  Aws::String accessKeyId = "test-test";
+  Aws::String secretKey = "test";
+  Aws::Auth::AWSCredentials airmettleCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
+
   s3Client = Aws::MakeShared<Aws::S3::S3Client>(
 	  ALLOCATION_TAG,
-	  Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+//	  Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+    airmettleCredentials,
 	  config,
 	  Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
-	  true);
+	  false);
 
   return s3Client;
 }

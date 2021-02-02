@@ -355,17 +355,17 @@ std::shared_ptr<arrow::Schema> normal::connector::MiniCatalogue::getSchema(const
 std::string normal::connector::getFileExtensionByDirPrefix(std::string dir_prefix) {
   if (dir_prefix.find("csv") != std::string::npos) {
     if (dir_prefix.find("gzip") != std::string::npos) {
-      return ".gz.tbl";
+      return std::string(".gz.tbl");
     } else {
-      return ".tbl";
+      return std::string(".tbl");
     }
   } else if (dir_prefix.find("parquet") != std::string::npos) {
     if (dir_prefix.find("snappy") != std::string::npos) {
-      return ".snappy.parquet";
+      return std::string(".snappy.parquet");
     } else if (dir_prefix.find("gzip") != std::string::npos) {
-      return ".gzip.parquet";
+      return std::string(".gzip.parquet");
     } else {
-      return ".parquet";
+      return std::string(".parquet");
     }
   } else {
     // something went wrong, we either don't support this file type yet or an error occurred earlier

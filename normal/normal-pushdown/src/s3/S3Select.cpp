@@ -168,13 +168,13 @@ tl::expected<void, std::string> S3Select::s3Select() {
   selectObjectContentRequest.SetBucket(bucketName);
   selectObjectContentRequest.SetKey(Aws::String(s3Object_));
 
-  if (scanRangeSupported()) {
-    ScanRange scanRange;
-    scanRange.SetStart(startOffset_);
-    scanRange.SetEnd(finishOffset_);
-
-    selectObjectContentRequest.SetScanRange(scanRange);
-  }
+//  if (scanRangeSupported()) {
+//    ScanRange scanRange;
+//    scanRange.SetStart(startOffset_);
+//    scanRange.SetEnd(finishOffset_);
+//
+//    selectObjectContentRequest.SetScanRange(scanRange);
+//  }
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
   // combine columns with filterSql
@@ -205,13 +205,16 @@ tl::expected<void, std::string> S3Select::s3Select() {
 				 name(),
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
-  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-	std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(payload);
-	auto tupleSet = TupleSet2::create(tupleSetV1);
-	put(tupleSet);
-	std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-	auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-	selectConvertTimeNS_ += conversionTime;
+	if (payload.size() > 0) {
+    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+    std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(payload);
+    auto tupleSet = TupleSet2::create(tupleSetV1);
+    put(tupleSet);
+    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            stopConversionTime - startConversionTime).count();
+    selectConvertTimeNS_ += conversionTime;
+  }
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
 	SPDLOG_DEBUG("S3 Select StatsEvent  |  name: {}, scanned: {}, processed: {}, returned: {}",
@@ -236,7 +239,7 @@ tl::expected<void, std::string> S3Select::s3Select() {
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
   std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
-  auto selectObjectContentOutcome = this->s3Client_->SelectObjectContent(selectObjectContentRequest);
+  auto selectObjectContentOutcome = s3Client_->SelectObjectContent(selectObjectContentRequest);
   std::chrono::steady_clock::time_point stopTransferConvertTime = std::chrono::steady_clock::now();
   selectTransferAndConvertNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferConvertTime - startTransferConvertTime).count();
   numRequests_++;

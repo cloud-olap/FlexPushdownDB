@@ -27,6 +27,22 @@
 #include <aws/s3/S3Client.h>
 #include <thread>
 
+#include <aws/core/utils/memory/stl/AWSString.h>
+#include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
+#include <aws/core/Aws.h>
+#include <aws/s3/model/SelectObjectContentRequest.h>
+#include <aws/core/client/ClientConfiguration.h>
+#include <aws/s3/model/CSVInput.h>                          // for CSVInput
+#include <aws/s3/model/CSVOutput.h>                         // for CSVOutput
+#include <aws/s3/model/ExpressionType.h>                    // for Expressio...
+#include <aws/s3/model/FileHeaderInfo.h>                    // for FileHeade...
+#include <aws/s3/model/InputSerialization.h>                // for InputSeri...
+#include <aws/s3/model/OutputSerialization.h>               // for OutputSer...
+#include <aws/s3/model/RecordsEvent.h>                      // for RecordsEvent
+#include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
+#include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
+#include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
+
 #define SKIP_SUITE false
 
 using namespace normal::ssb;
@@ -145,15 +161,97 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   return tupleSet;
 }
 
+void simpleSelectRequest() {
+  Aws::S3::Model::SelectObjectContentRequest selectObjectContentRequest;
+//  std::string bucketName = "demo-bucket";
+//  std::string keyName = "data.csv";
+//  std::string sql = "SELECT col2, col5, col9, col13, col29, col61, col91 FROM s3object WHERE cast(col1 as int) = 0;";
+  std::string bucketName = "pushdowndb";
+  std::string keyName = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl.0";
+//  std::string sql = "select lo_orderkey from s3object where lo_orderdate > 0;";
+  std::string sql = "select lo_revenue, lo_supplycost from s3Object where cast(lo_orderdate as int) <= 19920102;";
+  selectObjectContentRequest.SetBucket(Aws::String(bucketName));
+  selectObjectContentRequest.SetKey(Aws::String(keyName));
+
+//  if (scanRangeSupported()) {
+//    ScanRange scanRange;
+//    scanRange.SetStart(startOffset_);
+//    scanRange.SetEnd(finishOffset_);
+//
+//    selectObjectContentRequest.SetScanRange(scanRange);
+//  }
+  selectObjectContentRequest.SetExpressionType(Aws::S3::Model::ExpressionType::SQL);
+  selectObjectContentRequest.SetExpression(sql.c_str());
+
+  Aws::S3::Model::InputSerialization inputSerialization;
+  Aws::S3::Model::CSVInput csvInput;
+  csvInput.SetFileHeaderInfo(Aws::S3::Model::FileHeaderInfo::USE);
+  // This is the standard field delimiter and record delimiter for S3 Select, so it is hardcoded here
+  csvInput.SetFieldDelimiter(",");
+  csvInput.SetRecordDelimiter("\n");
+  inputSerialization.SetCSV(csvInput);
+
+  selectObjectContentRequest.SetInputSerialization(inputSerialization);
+
+  Aws::S3::Model::CSVOutput csvOutput;
+  Aws::S3::Model::OutputSerialization outputSerialization;
+  outputSerialization.SetCSV(csvOutput);
+  selectObjectContentRequest.SetOutputSerialization(outputSerialization);
+
+  Aws::S3::Model::SelectObjectContentHandler handler;
+  handler.SetRecordsEventCallback([&](const Aws::S3::Model::RecordsEvent &recordsEvent) {
+	SPDLOG_INFO("S3 Select RecordsEvent  | size: {}",
+				 recordsEvent.GetPayload().size());
+	auto payload = recordsEvent.GetPayload();
+  });
+  handler.SetStatsEventCallback([&](const Aws::S3::Model::StatsEvent &statsEvent) {
+	SPDLOG_INFO("S3 Select StatsEvent  | scanned: {}, processed: {}, returned: {}",
+				 statsEvent.GetDetails().GetBytesScanned(),
+				 statsEvent.GetDetails().GetBytesProcessed(),
+				 statsEvent.GetDetails().GetBytesReturned());
+	SPDLOG_INFO("Processed bytes: {}\n Returned Bytes: {}", statsEvent.GetDetails().GetBytesProcessed(), statsEvent.GetDetails().GetBytesReturned());
+  });
+  handler.SetEndEventCallback([&]() {
+	SPDLOG_INFO("S3 Select done");
+  });
+  handler.SetOnErrorCallback([&](const Aws::Client::AWSError<S3Errors> &errors) {
+	SPDLOG_INFO("S3 Select Error  | message: {}",
+				 std::string(errors.GetMessage()));
+//	optionalErrorMessage = std::optional(errors.GetMessage());
+  });
+
+  selectObjectContentRequest.SetEventStreamHandler(handler);
+
+  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
+  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
+  auto selectObjectContentOutcome = normal::pushdown::AWSClient::defaultS3Client()->SelectObjectContent(selectObjectContentRequest);
+  SPDLOG_INFO("Finished select request for {}/{}", bucketName, keyName);
+  if (selectObjectContentOutcome.IsSuccess()) {
+    SPDLOG_INFO("Select request for {}/{} was a success!", bucketName, keyName);
+  } else {
+    SPDLOG_INFO("Select request for {}/{} was a failure, error= ", bucketName, keyName, selectObjectContentOutcome.GetError().GetMessage());
+  }
+}
+
 void simpleGetRequest(int requestNum) {
   Aws::S3::Model::GetObjectRequest getObjectRequest;
-  getObjectRequest.SetBucket(Aws::String("pushdowndb"));
-  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  Aws::String bucketName;
+  if (requestNum % 2 == 1) {
+    bucketName = "demo-bucket";
+  } else {
+    bucketName = "demobucket";
+  }
+  getObjectRequest.SetBucket(Aws::String(bucketName));
+//  getObjectRequest.SetBucket(Aws::String("demo-bucket"));
+//  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  auto requestKey = "data.csv";
+
   getObjectRequest.SetKey(Aws::String(requestKey));
 
-  SPDLOG_INFO("Starting s3 GetObject request: {}", requestNum);
+  SPDLOG_INFO("Starting s3 GetObject request: {} for {}/{}", requestNum, bucketName, requestKey);
   auto startTime = std::chrono::steady_clock::now();
-  Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::plan::DefaultS3Client->GetObject(getObjectRequest);
+  Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::pushdown::AWSClient::defaultS3Client()->GetObject(getObjectRequest);
+//  Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::pushdown::AWSClient::defaultS3Client()->GetObject(getObjectRequest);
   auto stopTime = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
   if (getObjectOutcome.IsSuccess()) {
@@ -183,9 +281,9 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 30, executeBatchSize = 50;
+  const int warmBatchSize = 0, executeBatchSize = 2;
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
+  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
 
 
@@ -225,7 +323,6 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   // interpreter
   normal::sql::Interpreter i(mode, cachingPolicy);
   configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
-
   // execute
   i.boot();
   SPDLOG_INFO("{} mode start", mode->toString());

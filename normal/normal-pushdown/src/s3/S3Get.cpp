@@ -287,7 +287,7 @@ tl::expected<void, std::string> S3Get::s3Get() {
   getObjectRequest.SetKey(Aws::String(s3Object_));
 
   std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
-  GetObjectOutcome getObjectOutcome = this->s3Client_->GetObject(getObjectRequest);
+  GetObjectOutcome getObjectOutcome = s3Client_->GetObject(getObjectRequest);
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
   getTransferTimeNS_ += transferTime;
