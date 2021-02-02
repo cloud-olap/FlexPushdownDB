@@ -14,7 +14,7 @@
 namespace normal::pushdown {
 
 void AWSClient::init() {
-  options_.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Info;
+  options_.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Debug;
   Aws::InitAPI(options_);
 }
 

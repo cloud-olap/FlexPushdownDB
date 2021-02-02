@@ -42,6 +42,7 @@
 #include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
 #include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
+#include <aws/s3/model/ListObjectsRequest.h>
 
 #define SKIP_SUITE false
 
@@ -224,7 +225,8 @@ void simpleSelectRequest() {
 
   std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
   SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
-  auto selectObjectContentOutcome = normal::pushdown::AWSClient::defaultS3Client()->SelectObjectContent(selectObjectContentRequest);
+//  auto selectObjectContentOutcome = normal::pushdown::AWSClient::defaultS3Client()->SelectObjectContent(selectObjectContentRequest);
+  auto selectObjectContentOutcome = normal::plan::DefaultS3Client->SelectObjectContent(selectObjectContentRequest);
   SPDLOG_INFO("Finished select request for {}/{}", bucketName, keyName);
   if (selectObjectContentOutcome.IsSuccess()) {
     SPDLOG_INFO("Select request for {}/{} was a success!", bucketName, keyName);
@@ -236,21 +238,18 @@ void simpleSelectRequest() {
 void simpleGetRequest(int requestNum) {
   Aws::S3::Model::GetObjectRequest getObjectRequest;
   Aws::String bucketName;
-  if (requestNum % 2 == 1) {
-    bucketName = "demo-bucket";
-  } else {
-    bucketName = "demobucket";
-  }
+  bucketName = "demo-bucket";
+//  bucketName = "pushdowndb";
   getObjectRequest.SetBucket(Aws::String(bucketName));
-//  getObjectRequest.SetBucket(Aws::String("demo-bucket"));
 //  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
-  auto requestKey = "data.csv";
+//  auto requestKey = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  auto requestKey = "minidata.csv";
 
   getObjectRequest.SetKey(Aws::String(requestKey));
 
   SPDLOG_INFO("Starting s3 GetObject request: {} for {}/{}", requestNum, bucketName, requestKey);
   auto startTime = std::chrono::steady_clock::now();
-  Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::pushdown::AWSClient::defaultS3Client()->GetObject(getObjectRequest);
+  Aws::S3::Model::GetObjectOutcome getObjectOutcome =  normal::plan::DefaultS3Client->GetObject(getObjectRequest);
 //  Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::pushdown::AWSClient::defaultS3Client()->GetObject(getObjectRequest);
   auto stopTime = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
@@ -280,8 +279,34 @@ void normal::ssb::concurrentGetTest(int numRequests) {
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType) {
   spdlog::set_level(spdlog::level::info);
 
+  // Uncomment following blocks to do a smaller test
+  // Invoke list object operation on the s3 objects
+//  Aws::S3::Model::ListObjectsRequest listObjectsRequest;
+//  listObjectsRequest.WithBucket("demo-bucket");
+//  SPDLOG_INFO("Doing list objects request. . .");
+//  auto res = normal::pushdown::AWSClient::defaultS3Client()->ListObjects(listObjectsRequest);
+//  if (res.IsSuccess()) {
+//    Aws::Vector<Aws::S3::Model::Object> objectList = res.GetResult().GetContents();
+//    for (auto const &object: objectList) {
+//      SPDLOG_INFO("{}", object.GetKey());
+//    }
+//  } else {
+//    SPDLOG_INFO("Error listing buckets: {}", res.GetError().GetMessage());
+//  }
+
+  int numRequests = 3;
+  for (int i = 0; i < numRequests; i++) {
+    simpleGetRequest(i);
+  }
+  std::this_thread::sleep_for (std::chrono::seconds(60));
+  simpleGetRequest(numRequests + 1);
+
+  if (true){
+    return;
+  }
+
   // parameters
-  const int warmBatchSize = 0, executeBatchSize = 2;
+  const int warmBatchSize = 0, executeBatchSize = 80;
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
