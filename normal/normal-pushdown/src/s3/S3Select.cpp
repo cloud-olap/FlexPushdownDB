@@ -206,6 +206,8 @@ tl::expected<void, std::string> S3Select::s3Select() {
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
 	if (payload.size() > 0) {
+	  // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
+	  returnedBytes_ += payload.size();
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(payload);
     auto tupleSet = TupleSet2::create(tupleSetV1);
@@ -223,7 +225,7 @@ tl::expected<void, std::string> S3Select::s3Select() {
 				 statsEvent.GetDetails().GetBytesProcessed(),
 				 statsEvent.GetDetails().GetBytesReturned());
 	processedBytes_ += statsEvent.GetDetails().GetBytesProcessed();
-	returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
+//	returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
   });
   handler.SetEndEventCallback([&]() {
 	SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",

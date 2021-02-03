@@ -29,7 +29,7 @@ S3Util::listObjects(const std::string& s3Bucket,
   bool done = false;
 
   while (!done) {
-    auto res = normal::pushdown::AWSClient::defaultS3Client()->ListObjects(listObjectsRequest);
+    auto res = s3Client->ListObjects(listObjectsRequest);
     if (res.IsSuccess()) {
       Aws::Vector<Aws::S3::Model::Object> objectList = res.GetResult().GetContents();
       for (auto const &object: objectList) {

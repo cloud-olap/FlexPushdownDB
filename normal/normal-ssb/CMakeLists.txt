@@ -216,6 +216,11 @@ configure_file(metadata/ssb-sf100-sortlineorder/csv/schemas ${CMAKE_CURRENT_BINA
 configure_file(metadata/ssb-sf100-sortlineorder/csv/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/partitionNums COPYONLY)
 configure_file(metadata/ssb-sf100-sortlineorder/csv/segment_info ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv/segment_info COPYONLY)
 
+configure_file(metadata/ssb-sf100-sortlineorder/csv_150MB/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_150MB/sort/lineorder_orderdate COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv_150MB/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_150MB/column_length COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv_150MB/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_150MB/schemas COPYONLY)
+configure_file(metadata/ssb-sf100-sortlineorder/csv_150MB/partitionNums ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/csv_150MB/partitionNums COPYONLY)
+
 configure_file(metadata/ssb-sf100-sortlineorder/gzip_compression1_csv/sort/lineorder_orderdate ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/gzip_compression1_csv/sort/lineorder_orderdate COPYONLY)
 configure_file(metadata/ssb-sf100-sortlineorder/gzip_compression1_csv/column_length ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/gzip_compression1_csv/column_length COPYONLY)
 configure_file(metadata/ssb-sf100-sortlineorder/gzip_compression1_csv/schemas ${CMAKE_CURRENT_BINARY_DIR}/metadata/ssb-sf100-sortlineorder/gzip_compression1_csv/schemas COPYONLY)
