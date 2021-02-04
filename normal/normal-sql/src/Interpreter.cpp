@@ -137,14 +137,19 @@ std::string Interpreter::showMetrics() {
   }
   std::stringstream formattedAverageGetTransferRate;
   std::stringstream formattedAverageGetConvertRate;
+  std::stringstream formattedAverageGetTransferAndConvertRate;
   if (totalGetTransferTimeNS > 0 && totalGetConvertTimeNS > 0) {
     double averageGetTransferRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) totalGetTransferTimeNS / 1.0e9);
-    double averageGetConversionRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) totalGetConvertTimeNS / 1.0e9);
+    double averageGetConvertRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) totalGetConvertTimeNS / 1.0e9);
+    double averageGetTransferAndConvertRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) /
+            (((double) totalGetTransferTimeNS + totalGetConvertTimeNS) / 1.0e9);
     formattedAverageGetTransferRate << averageGetTransferRateMBs << " MB/s/req";
-    formattedAverageGetConvertRate << averageGetConversionRateMBs << " MB/s/req";
+    formattedAverageGetConvertRate << averageGetConvertRateMBs << " MB/s/req";
+    formattedAverageGetTransferAndConvertRate << averageGetTransferAndConvertRateMBs << " MB/s/req";
   } else {
     formattedAverageGetTransferRate << "NA";
     formattedAverageGetConvertRate << "NA";
+    formattedAverageGetTransferAndConvertRate << "NA";
   }
 
   size_t totalSelectTransferConvertTimeNS = 0, totalSelectConvertTimeNS = 0;
@@ -154,17 +159,21 @@ std::string Interpreter::showMetrics() {
   }
   std::stringstream formattedAverageSelectTransferRate;
   std::stringstream formattedAverageSelectConvertRate;
+  std::stringstream formattedAverageSelectTransferAndConvertRate;
   if (totalSelectTransferConvertTimeNS > 0 && totalSelectConvertTimeNS > 0) {
     // Making the assumption that transfer and convert don't occur at same time, which seems plausible since
     // each request appears to be pinned to one cpu. If anything this overestimates transfer rate since if
     // transfer occurs at same time as convert then transfer is taking even longer and is slower than estimated here
     double averageSelectTransferRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) (totalSelectTransferConvertTimeNS-totalSelectConvertTimeNS) / 1.0e9);
     double averageSelectConvertRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) totalSelectConvertTimeNS / 1.0e9);
+    double averageSelectTransferAndConvertRateMBs = ((double)totalReturnedBytes / 1024.0 / 1024.0) / ((double) (totalSelectTransferConvertTimeNS) / 1.0e9);
     formattedAverageSelectTransferRate << averageSelectTransferRateMBs << " MB/s/req";
     formattedAverageSelectConvertRate << averageSelectConvertRateMBs << " MB/s/req";
+    formattedAverageSelectTransferAndConvertRate << averageSelectTransferAndConvertRateMBs << " MB/s/req";
   } else {
     formattedAverageSelectTransferRate << "NA";
     formattedAverageSelectConvertRate << "NA";
+    formattedAverageSelectTransferAndConvertRate << "NA";
   }
 
   size_t totalNumRequests = 0;
@@ -214,11 +223,17 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(60) << "Average GET Convert Rate";
   ss << std::left << std::setw(60) << formattedAverageGetConvertRate.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "Average GET Transfer and Convert Rate";
+  ss << std::left << std::setw(60) << formattedAverageGetTransferAndConvertRate.str();
+  ss << std::endl;
   ss << std::left << std::setw(60) << "Appx Average Select Transfer Rate";
   ss << std::left << std::setw(60) << formattedAverageSelectTransferRate.str();
   ss << std::endl;
   ss << std::left << std::setw(60) << "Average Select Convert Rate";
   ss << std::left << std::setw(60) << formattedAverageSelectConvertRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Average Select Transfer And Convert Rate";
+  ss << std::left << std::setw(60) << formattedAverageSelectTransferAndConvertRate.str();
   ss << std::endl;
   ss << std::left << std::setw(60) << "Total Request amount";
   ss << std::left << std::setw(60) << totalNumRequests;
@@ -248,10 +263,13 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(18) << "Execution Time";
   ss << std::left << std::setw(30) << "Processed Bytes";
   ss << std::left << std::setw(30) << "Returned Bytes";
-  ss << std::left << std::setw(16) << "GET Transfer";
-  ss << std::left << std::setw(16) << "GET Convert";
-  ss << std::left << std::setw(18) << "Select Transfer";
-  ss << std::left << std::setw(18) << "Select Convert";
+  ss << std::left << std::setw(25) << "GET Transfer+Convert";
+  ss << std::left << std::setw(25) << "Select Transfer+Convert";
+  ss << std::left << std::setw(22) << "% Data S3 Selected";
+//  ss << std::left << std::setw(16) << "GET Transfer";
+//  ss << std::left << std::setw(16) << "GET Convert";
+//  ss << std::left << std::setw(18) << "Select Transfer";
+//  ss << std::left << std::setw(18) << "Select Convert";
   ss << std::endl;
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
@@ -264,43 +282,64 @@ std::string Interpreter::showMetrics() {
     std::stringstream formattedReturnedBytes1;
     formattedReturnedBytes1 << bytesTransferred_[qid - 1].second << " B" << " ("
                             << ((double)bytesTransferred_[qid - 1].second / 1024.0 / 1024.0 / 1024.0) << " GB)";
-    std::stringstream formattedGetTransferRate;
-    std::stringstream formattedGetConvertRate;
-    formattedGetTransferRate.precision(4);
-    formattedGetConvertRate.precision(4);
+//    std::stringstream formattedGetTransferRate;
+//    std::stringstream formattedGetConvertRate;
+//    formattedGetTransferRate.precision(4);
+//    formattedGetConvertRate.precision(4);
+    std::stringstream formattedGetTransferConvertRate;
+    formattedGetTransferConvertRate.precision(4);
     if (getTransferConvertNS_[qid - 1].first > 0 && getTransferConvertNS_[qid - 1].second > 0) {
-      formattedGetTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-                                  ((double) getTransferConvertNS_[qid - 1].first / 1.0e9) << " MB/s/req";
-      formattedGetConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-                                 ((double) getTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
+//      formattedGetTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+//                                  ((double) getTransferConvertNS_[qid - 1].first / 1.0e9) << " MB/s/req";
+//      formattedGetConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+//                                 ((double) getTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
+      formattedGetTransferConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+                                 (((double) getTransferConvertNS_[qid - 1].first + getTransferConvertNS_[qid - 1].second) / 1.0e9) << " MB/s/req";
     } else {
-      formattedGetTransferRate << "NA";
-      formattedGetConvertRate << "NA";
+//      formattedGetTransferRate << "NA";
+//      formattedGetConvertRate << "NA";
+      formattedGetTransferConvertRate << "NA";
     }
-    std::stringstream formattedSelectTransferRate;
-    std::stringstream formattedSelectConvertRate;
-    formattedSelectTransferRate.precision(4);
-    formattedSelectConvertRate.precision(4);
+//    std::stringstream formattedSelectTransferRate;
+//    std::stringstream formattedSelectConvertRate;
+//    formattedSelectTransferRate.precision(4);
+//    formattedSelectConvertRate.precision(4);
+    std::stringstream formattedSelectTransferConvertRate;
+    formattedSelectTransferConvertRate.precision(4);
     if (selectTransferConvertNS_[qid - 1].first > 0 && selectTransferConvertNS_[qid - 1].second > 0) {
       // Making the assumption that transfer and convert don't occur at same time, which seems plausible since
       // each request appears to be pinned to one cpu. If anything this overestimates transfer rate since if
       // transfer occurs at same time as convert then transfer is taking even longer and is slower than estimated here
-      formattedSelectTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-                                     ((double) (selectTransferConvertNS_[qid - 1].first - selectTransferConvertNS_[qid - 1].second) / 1.0e9) << " MB/s/req";
-      formattedSelectConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-                                    ((double) selectTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
+//      formattedSelectTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+//                                     ((double) (selectTransferConvertNS_[qid - 1].first - selectTransferConvertNS_[qid - 1].second) / 1.0e9) << " MB/s/req";
+//      formattedSelectConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+//                                    ((double) selectTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
+      formattedSelectTransferConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
+                                     ((double) (selectTransferConvertNS_[qid - 1].first) / 1.0e9) << " MB/s/req";
     } else {
-      formattedSelectTransferRate << "NA";
-      formattedSelectConvertRate << "NA";
+//      formattedSelectTransferRate << "NA";
+//      formattedSelectConvertRate << "NA";
+      formattedSelectTransferConvertRate << "NA";
+    }
+    // FIXME: This only works if the query is entires pushdown, as the bytes transferred is grouped together for
+    //        select and get requests, so they are not differentiated
+    std::stringstream formattedS3SelectSelectivity;
+    if (bytesTransferred_[qid - 1].second && selectTransferConvertNS_[qid - 1].first > 0 && getTransferConvertNS_[qid - 1].first == 0) {
+      formattedS3SelectSelectivity << (double) bytesTransferred_[qid - 1].second / (double) bytesTransferred_[qid - 1].first;
+    } else {
+      formattedS3SelectSelectivity << "NA";
     }
     ss << std::left << std::setw(8) << std::to_string(qid);
     ss << std::left << std::setw(18) << formattedProcessingTime1.str();
     ss << std::left << std::setw(30) << formattedProcessedBytes1.str();
     ss << std::left << std::setw(30) << formattedReturnedBytes1.str();
-    ss << std::left << std::setw(16) << formattedGetTransferRate.str();
-    ss << std::left << std::setw(16) << formattedGetConvertRate.str();
-    ss << std::left << std::setw(18) << formattedSelectTransferRate.str();
-    ss << std::left << std::setw(18) << formattedSelectConvertRate.str();
+//    ss << std::left << std::setw(16) << formattedGetTransferRate.str();
+//    ss << std::left << std::setw(16) << formattedGetConvertRate.str();
+//    ss << std::left << std::setw(18) << formattedSelectTransferRate.str();
+//    ss << std::left << std::setw(18) << formattedSelectConvertRate.str();
+    ss << std::left << std::setw(25) << formattedGetTransferConvertRate.str();
+    ss << std::left << std::setw(25) << formattedSelectTransferConvertRate.str();
+    ss << std::left << std::setw(22) << formattedS3SelectSelectivity.str();
     ss << std::endl;
   }
 

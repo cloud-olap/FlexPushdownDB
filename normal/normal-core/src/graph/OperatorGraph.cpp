@@ -335,14 +335,18 @@ std::string graph::OperatorGraph::showMetrics() {
   auto getTransferConvertTimesNS = getGetTransferConvertTimesNS();
   std::stringstream formattedGetTransferRate;
   std::stringstream formattedGetConvertRate;
+  std::stringstream formattedGetTransferConvertRate;
   if (getTransferConvertTimesNS.first > 0 && getTransferConvertTimesNS.second > 0) {
     formattedGetTransferRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
                              ((double) getTransferConvertTimesNS.first / 1.0e9) << " MB/s/req";
     formattedGetConvertRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
                             ((double) getTransferConvertTimesNS.second / 1.0e9) << " MB/s/req";
+    formattedGetTransferConvertRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
+                            (((double) getTransferConvertTimesNS.first + getTransferConvertTimesNS.second) / 1.0e9) << " MB/s/req";
   } else {
     formattedGetTransferRate << "NA";
     formattedGetConvertRate << "NA";
+    formattedGetTransferConvertRate << "NA";
   }
   // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
   // so this should approximate to per core rates rather than just per request, as one request maps to a core
@@ -352,18 +356,33 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(60) << "S3 GET Data Convert rate";
   ss << std::left << std::setw(60) << formattedGetConvertRate.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "S3 GET Data Transfer and Convert rate";
+  ss << std::left << std::setw(60) << formattedGetTransferConvertRate.str();
+  ss << std::endl;
 
   auto selectTransferConvertTimesNS = getSelectTransferConvertTimesNS();
   std::stringstream formattedSelectTransferRate;
   std::stringstream formattedSelectConvertRate;
+  std::stringstream formattedSelectTransferConvertRate;
   if (selectTransferConvertTimesNS.first > 0 && selectTransferConvertTimesNS.second > 0) {
     formattedSelectTransferRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
           ((double)(selectTransferConvertTimesNS.first - selectTransferConvertTimesNS.second)  / 1.0e9) << " MB/s/req";
     formattedSelectConvertRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
           ((double)selectTransferConvertTimesNS.second / 1.0e9) << " MB/s/req";
+    formattedSelectTransferConvertRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
+          ((double)(selectTransferConvertTimesNS.first)  / 1.0e9) << " MB/s/req";
   } else {
     formattedSelectTransferRate << "NA";
     formattedSelectConvertRate << "NA";
+    formattedSelectTransferConvertRate << "NA";
+  }
+  // FIXME: This only works if the query is entires pushdown, as the bytes transferred is grouped together for
+  //        select and get requests, so they are not differentiated
+  std::stringstream formattedS3SelectSelectivity;
+  if (bytesTransferred.second > 0 && selectTransferConvertTimesNS.first > 0 && getTransferConvertTimesNS.second == 0) {
+    formattedS3SelectSelectivity << (double) bytesTransferred.second / (double) bytesTransferred.first;
+  } else {
+    formattedS3SelectSelectivity << "NA";
   }
   // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
   // so this should approximate to per core rates rather than just per request, as one request maps to a core
@@ -372,6 +391,12 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::endl;
   ss << std::left << std::setw(60) << "S3 Select Data Convert rate";
   ss << std::left << std::setw(60) << formattedSelectConvertRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "S3 Select Data Transfer + Convert rate";
+  ss << std::left << std::setw(60) << formattedSelectTransferConvertRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "% Data S3 Selected";
+  ss << std::left << std::setw(60) << formattedS3SelectSelectivity.str();
   ss << std::endl;
   ss << std::endl;
 
