@@ -174,13 +174,6 @@ void simpleSelectRequest() {
   selectObjectContentRequest.SetBucket(Aws::String(bucketName));
   selectObjectContentRequest.SetKey(Aws::String(keyName));
 
-//  if (scanRangeSupported()) {
-//    ScanRange scanRange;
-//    scanRange.SetStart(startOffset_);
-//    scanRange.SetEnd(finishOffset_);
-//
-//    selectObjectContentRequest.SetScanRange(scanRange);
-//  }
   selectObjectContentRequest.SetExpressionType(Aws::S3::Model::ExpressionType::SQL);
   selectObjectContentRequest.SetExpression(sql.c_str());
 
@@ -278,9 +271,9 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   spdlog::set_level(spdlog::level::info);
 
   // parameters
-  const int warmBatchSize = 0, executeBatchSize = 30;
+  const int warmBatchSize = 30, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf100-sortlineorder/csv_150MB/";
+  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
 
 
@@ -314,7 +307,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     SPDLOG_INFO("Generating belady caching decisions. . .");
     beladyCachingPolicy->generateCacheDecisions(warmBatchSize + executeBatchSize);
     SPDLOG_INFO("belady caching decisions generated");
-//    SPDLOG_INFO("Belady caching decisions:\n" + beladyCachingPolicy->printLayoutAfterEveryQuery());
+    SPDLOG_DEBUG("Belady caching decisions:\n" + beladyCachingPolicy->printLayoutAfterEveryQuery());
   }
 
   // interpreter

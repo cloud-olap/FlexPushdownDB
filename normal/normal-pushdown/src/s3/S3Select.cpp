@@ -50,6 +50,7 @@
 
 #include "normal/pushdown/Globals.h"
 #include <normal/pushdown/cache/CacheHelper.h>
+#include <normal/plan/Globals.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
 namespace arrow { class MemoryPool; }
@@ -168,13 +169,17 @@ tl::expected<void, std::string> S3Select::s3Select() {
   selectObjectContentRequest.SetBucket(bucketName);
   selectObjectContentRequest.SetKey(Aws::String(s3Object_));
 
-//  if (scanRangeSupported()) {
-//    ScanRange scanRange;
-//    scanRange.SetStart(startOffset_);
-//    scanRange.SetEnd(finishOffset_);
-//
-//    selectObjectContentRequest.SetScanRange(scanRange);
-//  }
+  // Unscure if Airmettle supports this, and we are scanning the entire
+  // file anyway so leaving it out when running with Airmettle for now.
+  if (!normal::plan::useAirmettle) {
+    if (scanRangeSupported()) {
+      ScanRange scanRange;
+      scanRange.SetStart(startOffset_);
+      scanRange.SetEnd(finishOffset_);
+
+      selectObjectContentRequest.SetScanRange(scanRange);
+    }
+  }
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
   // combine columns with filterSql

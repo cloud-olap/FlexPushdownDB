@@ -10,6 +10,7 @@
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
 #include <aws/core/client/DefaultRetryStrategy.h>
+#include <normal/plan/Globals.h>
 
 namespace normal::pushdown {
 
@@ -43,21 +44,33 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   // Default is to create and dispatch to thread with async methods, we don't use async so default is ideal
   config.executor = Aws::MakeShared<Aws::Utils::Threading::DefaultExecutor>(ALLOCATION_TAG);
   config.verifySSL = false;
+  // Commented this out as turning it off increase transfer rate. It appears that having this set
+  // reduces transfer rate even if the chosen value is very high.
 //  config.readRateLimiter = limiter;
 //  config.writeRateLimiter = limiter;
 
-//  config.endpointOverride = "54.219.101.189:80/s3/test";
-//  Aws::String accessKeyId = "test-test";
-//  Aws::String secretKey = "test";
-//  Aws::Auth::AWSCredentials airmettleCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
+  if (normal::plan::useAirmettle) {
+    SPDLOG_INFO("Using Airmettle Client");
+    config.endpointOverride = "54.219.101.189:80/s3/test";
+    Aws::String accessKeyId = "test-test";
+    Aws::String secretKey = "test";
+    Aws::Auth::AWSCredentials airmettleCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
 
-  s3Client = Aws::MakeShared<Aws::S3::S3Client>(
-	  ALLOCATION_TAG,
-	  Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
-//    airmettleCredentials,
-	  config,
-	  Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
-	  false);
+    s3Client = Aws::MakeShared<Aws::S3::S3Client>(
+      ALLOCATION_TAG,
+      airmettleCredentials,
+      config,
+      Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+      false);
+  } else {
+    SPDLOG_INFO("Using S3 Client");
+    s3Client = Aws::MakeShared<Aws::S3::S3Client>(
+      ALLOCATION_TAG,
+      Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+      config,
+      Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+      true);
+  }
 
   return s3Client;
 }
