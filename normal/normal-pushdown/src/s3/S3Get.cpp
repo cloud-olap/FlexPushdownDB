@@ -119,29 +119,42 @@ std::shared_ptr<S3Get> S3Get::make(const std::string& name,
 }
 
 void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
-  auto readSize = DefaultS3ScanBufferSize - 1;
-  char buffer[DefaultS3ScanBufferSize];
+  // Put this logic in S3CSVParser
+  std::string csvString(std::istreambuf_iterator<char>(retrievedFile), {});
+  processedBytes_ += csvString.size();
+  returnedBytes_ += csvString.size();
 
-  auto parser = S3CSVParser::make(returnedS3ColumnNames_, schema_);
 
-  // Discard column names
-  SPDLOG_DEBUG("S3 Scan starts  |  name: {}", name());
-  retrievedFile.getline(buffer, readSize);
-
-  // Get content
-  while (!retrievedFile.eof()) {
-    memset(buffer, 0, DefaultS3ScanBufferSize);
-
-    SPDLOG_DEBUG("S3 Scan buffer  |  name: {}, numBytes: {}", name(), readSize);
-    retrievedFile.read(buffer, readSize);
-    processedBytes_ += strlen(buffer);
-    returnedBytes_ += strlen(buffer);
-    Aws::Vector<unsigned char> charAwsVec(buffer, buffer + readSize);
-
-    std::shared_ptr<TupleSet> tupleSetV1 = parser->parsePayload(charAwsVec);
-    auto tupleSet = TupleSet2::create(tupleSetV1);
-    put(tupleSet);
+  auto parse_options = arrow::csv::ParseOptions::Defaults();
+  auto read_options = arrow::csv::ReadOptions::Defaults();
+  read_options.use_threads = false;
+  read_options.skip_rows = 1; // Skip the header
+  read_options.column_names = returnedS3ColumnNames_;
+  auto convert_options = arrow::csv::ConvertOptions::Defaults();
+  std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
+  for(const auto &columnName: returnedS3ColumnNames_){
+	  columnTypes.emplace(columnName, schema_->GetFieldByName(columnName)->type());
   }
+  convert_options.column_types = columnTypes;
+
+  // Create a reader
+  auto reader = std::make_shared<arrow::io::BufferReader>(csvString);
+  // Instantiate TableReader from input stream and options
+  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
+														reader,
+														read_options,
+														parse_options,
+														convert_options);
+  if (!makeReaderResult.ok())
+	throw std::runtime_error(fmt::format(
+		"Cannot parse S3 payload  |  Could not create a table reader, error: '{}'",
+		makeReaderResult.status().message()));
+  auto tableReader = *makeReaderResult;
+
+  // Parse the payload and create the tupleset
+  auto tupleSetV1 = TupleSet::make(tableReader);
+  auto tupleSet = TupleSet2::create(tupleSetV1);
+  put(tupleSet);
 }
 
 // Currently this deflates at ~60MB/s

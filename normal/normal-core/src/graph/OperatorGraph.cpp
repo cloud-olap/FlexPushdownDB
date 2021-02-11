@@ -469,7 +469,7 @@ std::pair<size_t, size_t> graph::OperatorGraph::getGetTransferConvertTimesNS() {
 }
 
 std::pair<size_t, size_t> graph::OperatorGraph::getSelectTransferConvertTimesNS() {
-  size_t selectTransferAndConvertTimeNS = 0;
+  size_t selectTransferTimeNS = 0;
   size_t selectConvertTimeNS = 0;
   for (const auto &entry: operatorDirectory_) {
     if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
@@ -485,11 +485,11 @@ std::pair<size_t, size_t> graph::OperatorGraph::getSelectTransferConvertTimesNS(
 
 	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
       auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
-      selectTransferAndConvertTimeNS += s3ScanOp->getSelectTransferAndConvertTimeNS();
+      selectTransferTimeNS += s3ScanOp->getSelectTransferTimeNS();
       selectConvertTimeNS += s3ScanOp->getSelectConvertTimeNS();
 	}
   }
-  return std::pair<size_t, size_t>(selectTransferAndConvertTimeNS, selectConvertTimeNS);
+  return std::pair<size_t, size_t>(selectTransferTimeNS, selectConvertTimeNS);
 }
 
 void graph::OperatorGraph::close() {

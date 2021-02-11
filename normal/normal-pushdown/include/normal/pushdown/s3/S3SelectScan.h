@@ -51,7 +51,7 @@ public:
 
   [[nodiscard]] size_t getGetTransferTimeNS() const;
   [[nodiscard]] size_t getGetConvertTimeNS() const;
-  [[nodiscard]] size_t getSelectTransferAndConvertTimeNS() const;
+  [[nodiscard]] size_t getSelectTransferTimeNS() const;
   [[nodiscard]] size_t getSelectConvertTimeNS() const;
 
 protected:
@@ -63,7 +63,6 @@ protected:
   int64_t finishOffset_;
   std::shared_ptr<arrow::Schema> schema_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
-  // the columns that are read from s3 (SELECT vs GET will differ depending on the projection for Select)
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columnsReadFromS3_;
   size_t processedBytes_ = 0;
   size_t returnedBytes_ = 0;
@@ -72,7 +71,7 @@ protected:
   size_t getTransferTimeNS_ = 0;
   size_t getConvertTimeNS_ = 0;
 
-  size_t selectTransferAndConvertNS_ = 0;
+  size_t selectTransferTimeNS_ = 0;
   size_t selectConvertTimeNS_ = 0;
 
   /**

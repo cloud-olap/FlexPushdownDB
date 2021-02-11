@@ -169,7 +169,7 @@ tl::expected<void, std::string> S3Select::s3Select() {
   selectObjectContentRequest.SetBucket(bucketName);
   selectObjectContentRequest.SetKey(Aws::String(s3Object_));
 
-  // Unscure if Airmettle supports this, and we are scanning the entire
+  // Unsure if Airmettle supports this, and we are scanning the entire
   // file anyway so leaving it out when running with Airmettle for now.
   if (!normal::plan::useAirmettle) {
     if (scanRangeSupported()) {
@@ -212,15 +212,16 @@ tl::expected<void, std::string> S3Select::s3Select() {
 	auto payload = recordsEvent.GetPayload();
 	if (payload.size() > 0) {
 	  // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
-	  returnedBytes_ += payload.size();
-    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-    std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(payload);
-    auto tupleSet = TupleSet2::create(tupleSetV1);
-    put(tupleSet);
-    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+	  if (normal::plan::useAirmettle) {
+      returnedBytes_ += payload.size();
+    }
+	  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+	  s3Result_.insert(s3Result_.end(), payload.begin(), payload.end());
+	  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            stopConversionTime - startConversionTime).count();
+        stopConversionTime - startConversionTime).count();
     selectConvertTimeNS_ += conversionTime;
+    selectTransferTimeNS_ -= conversionTime;
   }
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
@@ -230,7 +231,9 @@ tl::expected<void, std::string> S3Select::s3Select() {
 				 statsEvent.GetDetails().GetBytesProcessed(),
 				 statsEvent.GetDetails().GetBytesReturned());
 	processedBytes_ += statsEvent.GetDetails().GetBytesProcessed();
-//	returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
+	if (!normal::plan::useAirmettle) {
+    returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
+  }
   });
   handler.SetEndEventCallback([&]() {
 	SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",
@@ -245,11 +248,20 @@ tl::expected<void, std::string> S3Select::s3Select() {
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
-  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
   auto selectObjectContentOutcome = s3Client_->SelectObjectContent(selectObjectContentRequest);
-  std::chrono::steady_clock::time_point stopTransferConvertTime = std::chrono::steady_clock::now();
-  selectTransferAndConvertNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferConvertTime - startTransferConvertTime).count();
+  std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
+  selectTransferTimeNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
   numRequests_++;
+
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+  std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(s3Result_);
+  auto tupleSet = TupleSet2::create(tupleSetV1);
+  put(tupleSet);
+  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
+          stopConversionTime - startConversionTime).count();
+  selectConvertTimeNS_ += conversionTime;
 
   if (optionalErrorMessage.has_value()) {
 	return tl::unexpected(optionalErrorMessage.value());

@@ -207,8 +207,8 @@ size_t S3SelectScan::getGetConvertTimeNS() const {
   return getConvertTimeNS_;
 }
 
-size_t S3SelectScan::getSelectTransferAndConvertTimeNS() const {
-  return selectTransferAndConvertNS_;
+size_t S3SelectScan::getSelectTransferTimeNS() const {
+  return selectTransferTimeNS_;
 }
 
 size_t S3SelectScan::getSelectConvertTimeNS() const {
