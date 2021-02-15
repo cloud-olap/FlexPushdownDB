@@ -40,7 +40,7 @@ add_library(normal-tuple STATIC
         src/FileType.cpp include/normal/tuple/FileType.h
         src/FileReaderBuilder.cpp include/normal/tuple/FileReaderBuilder.h
         src/CSVReader.cpp include/normal/tuple/CSVReader.h
-        src/ArrayAppenderWrapper.cpp include/normal/tuple/ArrayAppenderWrapper.h)
+        src/ArrayAppenderWrapper.cpp include/normal/tuple/ArrayAppenderWrapper.h include/normal/tuple/arrow/ArrowCSVInputStream.h src/arrow/ArrowCSVInputStream.cpp)
 
 target_include_directories(normal-tuple PUBLIC include)
 

@@ -54,6 +54,7 @@
 #include "normal/pushdown/Globals.h"
 #include <normal/pushdown/cache/CacheHelper.h>
 #include <parquet/arrow/reader.h>
+#include <normal/tuple/arrow/ArrowCSVInputStream.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
 namespace arrow { class MemoryPool; }
@@ -119,12 +120,8 @@ std::shared_ptr<S3Get> S3Get::make(const std::string& name,
 }
 
 void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
-  // Put this logic in S3CSVParser
-  std::string csvString(std::istreambuf_iterator<char>(retrievedFile), {});
-  processedBytes_ += csvString.size();
-  returnedBytes_ += csvString.size();
-
-
+  // TODO: Move this logic to a dedicated class, perhaps S3CSVParser.cpp
+  //       we should just be passing the input stream to it.
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto read_options = arrow::csv::ReadOptions::Defaults();
   read_options.use_threads = false;
@@ -137,11 +134,11 @@ void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retri
   }
   convert_options.column_types = columnTypes;
 
-  // Create a reader
-  auto reader = std::make_shared<arrow::io::BufferReader>(csvString);
+  // Create a input stream
+  auto csvInputStream = std::make_shared<ArrowCSVInputStream>(retrievedFile);
   // Instantiate TableReader from input stream and options
   auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
-														reader,
+														csvInputStream,
 														read_options,
 														parse_options,
 														convert_options);
@@ -153,6 +150,9 @@ void S3Get::readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retri
 
   // Parse the payload and create the tupleset
   auto tupleSetV1 = TupleSet::make(tableReader);
+  uint64_t numBytes = csvInputStream->Tell().ValueOrDie();
+  processedBytes_ += numBytes;
+  returnedBytes_ += numBytes;
   auto tupleSet = TupleSet2::create(tupleSetV1);
   put(tupleSet);
 }
@@ -228,6 +228,8 @@ void S3Get::readGZIPCSVFile(std::basic_iostream<char, std::char_traits<char>> &r
 //  out.push(boost::iostreams::gzip_decompressor());
 //  out.push(compressed);
 //  boost::iostreams::copy(out, decompressed);
+
+//  std::chrono::steady_clock::time_point startDecompressionRate = std::chrono::steady_clock::now();
   std::string decompressedData;
   std::string gzipString(std::istreambuf_iterator<char>(retrievedFile), {});
   // From offline comparisons this is correct or at least approximately correct
@@ -236,6 +238,8 @@ void S3Get::readGZIPCSVFile(std::basic_iostream<char, std::char_traits<char>> &r
   if (!gzipInflate(gzipString, decompressedData)) {
     SPDLOG_ERROR("Error deflating gzip file from S3 for {}", name());
   }
+//  std::chrono::steady_clock::time_point stopDecompressionRate = std::chrono::steady_clock::now();
+//  auto decompressionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopDecompressionRate - startDecompressionRate).count();
 
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto read_options = arrow::csv::ReadOptions::Defaults();
@@ -268,6 +272,9 @@ void S3Get::readGZIPCSVFile(std::basic_iostream<char, std::char_traits<char>> &r
   auto tupleSetV1 = TupleSet::make(tableReader);
   auto tupleSet = TupleSet2::create(tupleSetV1);
   put(tupleSet);
+//  std::chrono::steady_clock::time_point stopConversionRate = std::chrono::steady_clock::now();
+//  double decompressionRate = ((double) returnedBytes_ / 1024.0 / 1024.0) /  ((double) decompressionTime / 1.0e9);
+//  SPDLOG_INFO("Decompression Rate: {} MB/s", decompressionRate);
 }
 
 void S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
@@ -308,7 +315,7 @@ tl::expected<void, std::string> S3Get::s3Get() {
 
   if (getObjectOutcome.IsSuccess()) {
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-    auto &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
+    Aws::IOStream &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
     if (s3Object_.find("csv") != std::string::npos) {
       if (s3Object_.find("gz") != std::string::npos) {
         readGZIPCSVFile(retrievedFile);
