@@ -2,24 +2,24 @@
 // Created by Matt Woicik on 2/10/21.
 //
 
-#include "normal/tuple/arrow/ArrowCSVInputStream.h"
+#include "normal/tuple/arrow/ArrowAWSInputStream.h"
 #include "arrow/type_fwd.h"
 #include "arrow/buffer.h"
 #include "arrow/memory_pool.h"
 #include "arrow/status.h"
 #include "arrow/util/future.h"
 
-ArrowCSVInputStream::ArrowCSVInputStream(std::basic_iostream<char, std::char_traits<char>> &file):
+ArrowAWSInputStream::ArrowAWSInputStream(std::basic_iostream<char, std::char_traits<char>> &file):
   underlyingFile_(file) {
 }
 
-ArrowCSVInputStream::~ArrowCSVInputStream() {
+ArrowAWSInputStream::~ArrowAWSInputStream() {
   for (auto & allocation : allocations_) {
     free(allocation);
   }
 }
 
-arrow::Result<int64_t> ArrowCSVInputStream::Read(int64_t nbytes, void* out) {
+arrow::Result<int64_t> ArrowAWSInputStream::Read(int64_t nbytes, void* out) {
   underlyingFile_.read(static_cast<char *>(out), nbytes);
   int64_t bytesRead = underlyingFile_.gcount();
   position_ += bytesRead;
@@ -27,7 +27,7 @@ arrow::Result<int64_t> ArrowCSVInputStream::Read(int64_t nbytes, void* out) {
 }
 
 
-arrow::Result<std::shared_ptr<arrow::Buffer>> ArrowCSVInputStream::Read(int64_t nbytes) {
+arrow::Result<std::shared_ptr<arrow::Buffer>> ArrowAWSInputStream::Read(int64_t nbytes) {
   char* bytes = (char*) malloc(nbytes);
   allocations_.emplace_back(bytes);
   underlyingFile_.read(bytes, nbytes);
@@ -37,14 +37,14 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> ArrowCSVInputStream::Read(int64_t 
   return arrow::Result<std::shared_ptr<arrow::Buffer>>(buffer);
 }
 
-bool ArrowCSVInputStream::closed() const {
+bool ArrowAWSInputStream::closed() const {
   return false;
 }
 
-arrow::Status ArrowCSVInputStream::Close() {
+arrow::Status ArrowAWSInputStream::Close() {
   return arrow::Status();
 }
 
-arrow::Result<int64_t> ArrowCSVInputStream::Tell() const {
+arrow::Result<int64_t> ArrowAWSInputStream::Tell() const {
   return arrow::Result<int64_t>(position_);
 }

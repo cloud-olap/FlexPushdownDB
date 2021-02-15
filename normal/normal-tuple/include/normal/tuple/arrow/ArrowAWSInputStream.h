@@ -2,15 +2,15 @@
 // Created by Matt Woicik on 2/10/21.
 //
 
-#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_NEWREADABLE_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_NEWREADABLE_H
+#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWCSVINPUTSTREAM_H
+#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWCSVINPUTSTREAM_H
 
 #include <arrow/io/interfaces.h>
 
-class ArrowCSVInputStream : public arrow::io::InputStream {
+class ArrowAWSInputStream : public arrow::io::InputStream {
   public:
-    explicit ArrowCSVInputStream(std::basic_iostream<char, std::char_traits<char>> &file);
-    ~ArrowCSVInputStream();
+    explicit ArrowAWSInputStream(std::basic_iostream<char, std::char_traits<char>> &file);
+    ~ArrowAWSInputStream();
 
     /// \brief Read data from current file position.
     ///
@@ -44,4 +44,4 @@ class ArrowCSVInputStream : public arrow::io::InputStream {
     std::vector<char*> allocations_;
 };
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_NEWREADABLE_H
+#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWCSVINPUTSTREAM_H

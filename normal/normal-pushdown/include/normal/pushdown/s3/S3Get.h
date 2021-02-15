@@ -39,8 +39,7 @@ class S3Get : public S3SelectScan {
                                           const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys = nullptr);
 
   private:
-    void readCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
-    void readGZIPCSVFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
+    void readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
     void readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
     [[nodiscard]] tl::expected<void, std::string> s3Get();
 
