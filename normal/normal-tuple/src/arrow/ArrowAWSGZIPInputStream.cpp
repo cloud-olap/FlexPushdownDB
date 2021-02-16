@@ -38,7 +38,7 @@ void ArrowAWSGZIPInputStream::resetZStream(int64_t bytesToRead) {
   if (compressedBytesRead < bytesToRead) {
     underlyingFileEmpty_ = true;
   }
-  position_ += compressedBytesRead;
+  processedCompressedBytes += compressedBytesRead;
 
   currentZStream_.next_in = (unsigned char*) compressedBytes;
   currentZStream_.avail_in = compressedBytesRead;
@@ -79,7 +79,7 @@ arrow::Result<std::shared_ptr<arrow::Buffer>> ArrowAWSGZIPInputStream::Read(int6
       throw std::runtime_error("Error reading zstream");
     }
   }
-
+  returnedUncompressedBytes += bytesOutput;
   std::shared_ptr<arrow::Buffer> buffer = arrow::Buffer::Wrap(outputBytes, bytesOutput);
   return arrow::Result<std::shared_ptr<arrow::Buffer>>(buffer);
 }
@@ -93,5 +93,5 @@ arrow::Status ArrowAWSGZIPInputStream::Close() {
 }
 
 arrow::Result<int64_t> ArrowAWSGZIPInputStream::Tell() const {
-  return arrow::Result<int64_t>(position_);
+  return arrow::Result<int64_t>(processedCompressedBytes);
 }

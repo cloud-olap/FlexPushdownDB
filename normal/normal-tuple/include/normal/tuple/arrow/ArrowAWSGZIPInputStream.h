@@ -42,7 +42,8 @@ class ArrowAWSGZIPInputStream : public arrow::io::InputStream {
 
   protected:
     std::basic_iostream<char, std::char_traits<char>>& underlyingFile_;
-    int64_t position_ = 0;
+    int64_t processedCompressedBytes = 0;
+    int64_t returnedUncompressedBytes = 0;
     bool underlyingFileEmpty_ = false; // set to true once all bytes have been read from underlying file
     std::vector<char*> allocations_;
     z_stream currentZStream_;
