@@ -66,8 +66,8 @@ std::shared_ptr<arrow::Schema> SSBSchema::lineOrder() {
 				 ::arrow::field(ColumnName::canonicalize("LO_EXTENDEDPRICE"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_ORDTOTALPRICE"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_DISCOUNT"), ::arrow::int32()),
-				 ::arrow::field(ColumnName::canonicalize("LO_REVENUE"), ::arrow::int32()),
-				 ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int32()),
+				 ::arrow::field(ColumnName::canonicalize("LO_REVENUE"), ::arrow::int64()),
+				 ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int64()),
 				 ::arrow::field(ColumnName::canonicalize("LO_TAX"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_COMMITDATE"), ::arrow::int32()),
 				 ::arrow::field(ColumnName::canonicalize("LO_SHIPMODE"), ::arrow::utf8())};

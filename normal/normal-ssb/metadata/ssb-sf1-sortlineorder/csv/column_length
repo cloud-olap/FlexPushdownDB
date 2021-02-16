@@ -10,8 +10,8 @@ lo_quantity,4
 lo_extendedprice,4
 lo_ordtotalprice,4
 lo_discount,4
-lo_revenue,4
-lo_supplycost,4
+lo_revenue,8
+lo_supplycost,8
 lo_tax,4
 lo_commitdate,4
 lo_shipmode,10
