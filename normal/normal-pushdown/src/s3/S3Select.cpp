@@ -254,14 +254,17 @@ tl::expected<void, std::string> S3Select::s3Select() {
   selectTransferTimeNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
   numRequests_++;
 
-  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-  std::shared_ptr<TupleSet> tupleSetV1 = parser_->parsePayload(s3Result_);
-  auto tupleSet = TupleSet2::create(tupleSetV1);
-  put(tupleSet);
-  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-          stopConversionTime - startConversionTime).count();
-  selectConvertTimeNS_ += conversionTime;
+  // If no results are returned then there is nothing to process
+  if (s3Result_.size() > 0) {
+    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+    std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
+    auto tupleSet = TupleSet2::create(tupleSetV1);
+    put(tupleSet);
+    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            stopConversionTime - startConversionTime).count();
+    selectConvertTimeNS_ += conversionTime;
+  }
 
   if (optionalErrorMessage.has_value()) {
 	return tl::unexpected(optionalErrorMessage.value());
