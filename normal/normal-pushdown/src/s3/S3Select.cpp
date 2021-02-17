@@ -277,7 +277,7 @@ tl::expected<void, std::string> S3Select::s3Select() {
 std::shared_ptr<TupleSet2> S3Select::readTuples() {
   std::shared_ptr<TupleSet2> readTupleSet;
 
-  if (returnedS3ColumnNames_.empty()) {
+  if (neededColumnNames_.empty()) {
     readTupleSet = TupleSet2::make2();
   } else {
 
