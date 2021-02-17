@@ -44,6 +44,15 @@
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 #include <aws/s3/model/ListObjectsRequest.h>
 
+#include <arrow/csv/options.h>                              // for ReadOptions
+#include <arrow/csv/reader.h>                               // for TableReader
+#include <arrow/io/buffered.h>                              // for BufferedI...
+#include <arrow/io/memory.h>                                // for BufferReader
+#include <arrow/type_fwd.h>                                 // for default_m...
+#include <normal/tuple/arrow/ArrowAWSInputStream.h>
+#include <normal/tuple/arrow/ArrowAWSGZIPInputStream.h>
+#include "normal/ssb/SSBSchema.h"
+
 #define SKIP_SUITE false
 
 using namespace normal::ssb;
@@ -132,7 +141,7 @@ auto execute(normal::sql::Interpreter &i) {
   return tuples;
 }
 
-auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics) {
+auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, std::string outputFileName = "") {
 //  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
   i.clearOperatorGraph();
   i.parse(sql);
@@ -144,6 +153,15 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   auto tuples = execute(i);
 
   auto tupleSet = TupleSet2::create(tuples);
+  if (writeResults) {
+    auto outputdir = filesystem::current_path().append("outputs");
+    filesystem::create_directory(outputdir);
+    auto outputFile = outputdir.append(outputFileName);
+    std::ofstream fout(outputFile.string());
+    fout << "Output  |\n" << tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, tupleSet->numRows()));
+    fout.flush();
+    fout.close();
+  }
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
   SPDLOG_INFO("Output size: {}", tupleSet->size());
   SPDLOG_INFO("Output rows: {}", tupleSet->numRows());
@@ -230,12 +248,13 @@ void simpleSelectRequest() {
 void simpleGetRequest(int requestNum) {
   Aws::S3::Model::GetObjectRequest getObjectRequest;
   Aws::String bucketName;
-  bucketName = "demo-bucket";
-//  bucketName = "pushdowndb";
+//  bucketName = "demo-bucket";
+  bucketName = "pushdowndb";
   getObjectRequest.SetBucket(Aws::String(bucketName));
-//  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  auto requestKey = "ssb-sf100-sortlineorder/gzip_compression1_csv/lineorder_sharded/lineorder.gz.tbl." + std::to_string(requestNum);
+//  auto requestKey = "ssb-sf0.01/csv/supplier.tbl";
 //  auto requestKey = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
-  auto requestKey = "minidata.csv";
+//  auto requestKey = "minidata.csv";
 
   getObjectRequest.SetKey(Aws::String(requestKey));
 
@@ -249,7 +268,46 @@ void simpleGetRequest(int requestNum) {
   } else {
     const auto& err = getObjectOutcome.GetError();
     SPDLOG_INFO("Failed to get result of s3 GetObject request: {}, took: {}, error={}", requestNum, (double) (duration) / 1000000000.0, err.GetMessage());
+    return;
   }
+  auto &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
+//  std::string csvString(std::istreambuf_iterator<char>(retrievedFile), {});
+
+  auto parse_options = arrow::csv::ParseOptions::Defaults();
+  auto read_options = arrow::csv::ReadOptions::Defaults();
+  read_options.use_threads = false;
+  read_options.skip_rows = 1;
+  read_options.autogenerate_column_names = false;
+  auto convert_options = arrow::csv::ConvertOptions::Defaults();
+  auto schema = SSBSchema::lineOrder();
+  std::vector<std::string> columnNames;
+  std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
+  for (const auto &field: schema->fields()) {
+    columnNames.emplace_back(field->name());
+    columnTypes.emplace(field->name(), field->type());
+  }
+  read_options.column_names = columnNames;
+  convert_options.column_types = columnTypes;
+
+
+  // Create a reader
+//  auto reader = std::make_shared<ArrowAWSInputStream>(retrievedFile);
+  auto reader = std::make_shared<ArrowAWSGZIPInputStream>(retrievedFile);
+//  auto reader = std::make_shared<arrow::io::BufferReader>(csvString);
+  // Instantiate TableReader from input stream and options
+  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
+														reader,
+														read_options,
+														parse_options,
+														convert_options);
+  if (!makeReaderResult.ok())
+	throw std::runtime_error(fmt::format(
+		"Cannot parse S3 payload  |  Could not create a table reader, error: '{}'",
+		makeReaderResult.status().message()));
+  auto tableReader = *makeReaderResult;
+  auto tupleSetV1 = TupleSet::make(tableReader);
+  auto tupleSet = TupleSet2::create(tupleSetV1);
+  SPDLOG_INFO("Num rows = {}", tupleSet->numRows());
 }
 
 void normal::ssb::concurrentGetTest(int numRequests) {
@@ -267,7 +325,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
   SPDLOG_INFO("{} Concurrent Get requests took: {}sec", numRequests, (double) (duration) / 1000000000.0);
 }
 
-void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType) {
+void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, bool writeResults) {
   spdlog::set_level(spdlog::level::info);
 
   // parameters
@@ -326,7 +384,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
       }
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
       auto sql = ExperimentUtil::read_file(sql_file_path.string());
-      executeSql(i, sql, true);
+      executeSql(i, sql, true, writeResults, fmt::format("{}output.txt", index));
       sql_file_dir_path = sql_file_dir_path.parent_path();
     }
     SPDLOG_INFO("Cache warm phase finished");
@@ -347,7 +405,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     }
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
-    executeSql(i, sql, true);
+    executeSql(i, sql, true, writeResults, fmt::format("{}output.txt", index));
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
   SPDLOG_INFO("Execution phase finished");

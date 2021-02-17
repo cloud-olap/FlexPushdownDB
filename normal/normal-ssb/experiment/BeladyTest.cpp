@@ -28,7 +28,7 @@ using namespace normal::ssb;
 
 // not the best solution, should make a header file down the road most likely but this will work for now
 void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix);
-std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics);
+std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, std::string outputFileName = "");
 
 size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::string tableName, std::string queryColumn, long numBytes) {
   // operators

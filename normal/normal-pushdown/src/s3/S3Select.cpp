@@ -255,6 +255,7 @@ tl::expected<void, std::string> S3Select::s3Select() {
   numRequests_++;
 
   // If no results are returned then there is nothing to process
+//  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
   if (s3Result_.size() > 0) {
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());

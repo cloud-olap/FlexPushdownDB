@@ -38,7 +38,12 @@ int main(int argc, char **argv) {
   SPDLOG_INFO("Cache size: {}", cacheSize);
   SPDLOG_INFO("Mode type: {}", modeType);
   SPDLOG_INFO("CachingPolicy type: {}", cachingPolicyType);
-  mainTest(cacheSize, modeType, cachingPolicyType);
+  if (argc < 5) {
+    mainTest(cacheSize, modeType, cachingPolicyType, false);
+  } else {
+    bool writeResults = atoi(argv[4]);
+    mainTest(cacheSize, modeType, cachingPolicyType, writeResults);
+  }
 
   return 0;
 }
