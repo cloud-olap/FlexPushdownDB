@@ -52,7 +52,13 @@
 #include <normal/pushdown/cache/CacheHelper.h>
 #include <parquet/arrow/reader.h>
 #include <normal/tuple/arrow/ArrowAWSInputStream.h>
-#include <normal/tuple/arrow/ArrowAWSGZIPInputStream.h>
+//#include <normal/tuple/arrow/ArrowAWSGZIPInputStream.h>
+#include <normal/tuple/arrow/ArrowAWSGZIPInputStream2.h>
+#include <normal/tuple/arrow/ArrowAWSGZIPInputStream3.h>
+
+#ifdef __AVX2__
+#include <normal/tuple/arrow/CSVToArrowSIMDParser.h>
+#endif
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
 namespace arrow { class MemoryPool; }
@@ -191,16 +197,36 @@ tl::expected<void, std::string> S3Get::s3Get() {
 
   if (getObjectOutcome.IsSuccess()) {
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-    Aws::IOStream &retrievedFile = getObjectOutcome.GetResultWithOwnership().GetBody();
+    auto getResult = getObjectOutcome.GetResultWithOwnership();
+    int64_t resultSize = getResult.GetContentLength();
+    Aws::IOStream &retrievedFile = getResult.GetBody();
     if (s3Object_.find("csv") != std::string::npos) {
       std::shared_ptr<arrow::io::InputStream> inputStream;
       if (s3Object_.find("gz") != std::string::npos) {
-         inputStream = std::make_shared<ArrowAWSGZIPInputStream>(retrievedFile);
+#ifdef __AVX2__
+        auto parser = CSVToArrowSIMDParser(name(), 128 * 1024, retrievedFile, true, schema_, true);
+        auto tupleSet = parser.constructTupleSet();
+        put(tupleSet);
+        processedBytes_ += resultSize;
+        returnedBytes_ += resultSize;
+#elif
+        inputStream = std::make_shared<ArrowAWSGZIPInputStream3>(retrievedFile, resultSize);
+        readCSVFile(inputStream);
+#endif
       } else {
+#ifdef __AVX2__
+        auto parser = CSVToArrowSIMDParser(name(), 128 * 1024, retrievedFile, true, schema_, false);
+        auto tupleSet = parser.constructTupleSet();
+        put(tupleSet);
+        processedBytes_ += resultSize;
+        returnedBytes_ += resultSize;
+#elif
         inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
+        readCSVFile(inputStream);
+#endif
       }
-      readCSVFile(inputStream);
     } else { // (s3Object_.find("parquet") != std::string::npos)
+      // TODO: Set this to use an inputstream as is done above
       readParquetFile(retrievedFile);
     }
     std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
