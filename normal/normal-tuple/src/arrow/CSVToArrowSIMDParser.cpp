@@ -12,13 +12,13 @@
 #include <cstdint>
 #include <cstdlib>
 
-CSVToArrowSIMDParser::CSVToArrowSIMDParser(std::string &callerName,
+CSVToArrowSIMDParser::CSVToArrowSIMDParser(std::string callerName,
                                            uint64_t parseChunkSize,
                                            std::basic_iostream<char, std::char_traits<char>> &file,
                                            bool discardHeader,
                                            std::shared_ptr<arrow::Schema> schema,
                                            bool gzipCompressed):
-  callerName_(std::move(callerName)),
+  callerName_(callerName),
   parseChunkSize_(parseChunkSize),
   discardHeader_(discardHeader),
   schema_(schema) {
@@ -46,7 +46,6 @@ void CSVToArrowSIMDParser::add64ByteDummyRowToBuffer() {
     }
     char finalChar = i == numCols - 1 ? 0x0a : ',';
     buffer_[bufferBytesUtilized_++] = finalChar;
-    bufferBytesUtilized_++;
   }
 }
 

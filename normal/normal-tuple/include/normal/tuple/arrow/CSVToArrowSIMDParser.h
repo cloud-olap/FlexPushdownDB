@@ -17,7 +17,7 @@ public:
   // The header is discarded and the schema passed in is used and assumed to be valid.
   // If the header is in the file input then set discardHeader to true so that it can be ignored
   // otherwise set discardHeader to false
-  explicit CSVToArrowSIMDParser(std::string &callerName,
+  explicit CSVToArrowSIMDParser(std::string callerName,
                                 uint64_t parseChunkSize,
                                 std::basic_iostream<char, std::char_traits<char>> &file,
                                 bool discardHeader,
