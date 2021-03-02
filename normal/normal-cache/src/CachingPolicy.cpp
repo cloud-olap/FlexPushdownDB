@@ -8,3 +8,7 @@ using namespace normal::cache;
 
 CachingPolicy::CachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
   maxSize_(maxSize), freeSize_(maxSize), mode_(mode) {}
+
+size_t CachingPolicy::getFreeSize() const {
+  return freeSize_;
+}

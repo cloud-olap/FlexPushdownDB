@@ -65,6 +65,14 @@ public:
    */
   std::vector<std::string> generateSqlBatchHotQuery(float percentage, int batchSize);
 
+  /**
+   * The following is used to generated two consecutive queries for model evaluation,
+   * where the first is for caching. Ignore join, aggregation and group by.
+   * @param: hit ratio is expected, may be slightly different from the real
+   * @param: rowPer and nCol together contribute to k
+   */
+  std::vector<std::string> generateSqlForMathModel(double hitRatio, double rowPer, int nCol);
+
 private:
   std::shared_ptr<std::default_random_engine> generator_;
   std::map<std::string, QueryName> queryNameMap_;

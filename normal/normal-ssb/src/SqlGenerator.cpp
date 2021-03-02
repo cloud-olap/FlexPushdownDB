@@ -6,7 +6,8 @@
 #include <random>
 #include <iostream>
 #include <spdlog/spdlog.h>
-#include <math.h>
+#include <cmath>
+#include <ctime>
 
 using namespace normal::ssb;
 
@@ -1115,4 +1116,68 @@ std::vector<std::string> SqlGenerator::generateSqlBatchHotQuery(float percentage
   }
 
   return queries;
+}
+
+// Adjust date by a number of days +/-
+void DatePlusDays( struct tm* date, int days )
+{
+  const time_t ONE_DAY = 24 * 60 * 60 ;
+
+  // Seconds since start of epoch
+  time_t date_seconds = mktime( date ) + (days * ONE_DAY) ;
+
+  // Update caller's date
+  // Use localtime because mktime converts to UTC so may change date
+  *date = *localtime( &date_seconds ) ; ;
+}
+
+std::vector<std::string> SqlGenerator::generateSqlForMathModel(double hitRatio, double rowPer, int nCol) {
+  std::vector<std::string> lineOrderColumns =
+          {"lo_orderkey", "lo_linenumber", "lo_custkey", "lo_partkey", "lo_suppkey", "lo_orderdate",
+           "lo_orderpriority", "lo_shippriority", "lo_quantity", "lo_extendedprice", "lo_ordtotalprice",
+           "lo_discount", "lo_revenue", "lo_supplycost", "lo_tax", "lo_commitdate", "lo_shipmode"};
+  std::string columns;
+  for (int i = 0; i < nCol; i++) {
+    columns += lineOrderColumns[i] + ", ";
+  }
+  columns = columns.substr(0, columns.length() - 2);
+
+  // make use of k
+  std::string predicate = "lo_quantity <= " + std::to_string((int) (50 * rowPer));
+  std::cout << "Predicate: " << predicate << std::endl;
+
+  // make use of hit ratio
+  int days = (int) (365.0 * hitRatio);
+  tm date = tm();
+  date.tm_mday = 1;
+  date.tm_mon = 1 - 1;
+  date.tm_year = 1992 - 1900;
+  DatePlusDays(&date, days);
+  int endDate = (date.tm_year + 1900) * 10000 + (date.tm_mon + 1) * 100 + date.tm_mday;
+  std::cout << "End date: " << endDate << std::endl;
+
+  // query for caching
+  std::string sql1 = fmt::format(
+          "select {}\n"
+          "from lineorder\n"
+          "where ({})"
+          "  and (lo_orderdate between 19920101 and {});\n",
+          columns,
+          predicate,
+          endDate
+  );
+
+  // query for measurement
+  std::string sql2 = fmt::format(
+          "select {}\n"
+          "from lineorder\n"
+          "where ({})"
+          "  and (lo_orderdate between 19920101 and 19921231);\n",
+          columns,
+          predicate
+  );
+
+  std::cout << sql1 << std::endl;
+  std::cout << sql2 << std::endl;
+  return std::vector<std::string>{sql1, sql2};
 }

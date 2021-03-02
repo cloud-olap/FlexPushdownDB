@@ -84,6 +84,8 @@ public:
    */
   virtual void onNewQuery() = 0;
 
+  size_t getFreeSize() const;
+
 protected:
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
   size_t maxSize_;

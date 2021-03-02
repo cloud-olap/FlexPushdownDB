@@ -6,6 +6,7 @@
 #include <experimental/filesystem>
 #include <fstream>
 #include <normal/ssb/SqlGenerator.h>
+#include <iostream>
 
 using namespace normal::ssb;
 
@@ -84,8 +85,22 @@ int main(int argc, char **argv) {
       break;
     }
 
+    case 5: {
+      auto hitRatio = strtod(argv[2], nullptr);
+      auto rowPer = strtod(argv[3], nullptr);
+      auto nCol = strtod(argv[4], nullptr);
+      auto batch = sqlGenerator.generateSqlForMathModel(hitRatio, rowPer, nCol);
+      for (size_t index = 0; index < batch.size(); index++) {
+        auto sql = batch[index];
+        auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1)));
+        writeFile(sql, sql_file_path);
+        sql_file_dir_path = sql_file_dir_path.parent_path();
+      }
+      break;
+    }
+
     default:
-      throw std::runtime_error("Workload tyoe not found, type: " + std::to_string(type));
+      throw std::runtime_error("Workload type not found, type: " + std::to_string(type));
   }
 
   return 0;
