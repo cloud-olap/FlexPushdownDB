@@ -28,7 +28,7 @@ function(setDefaults)
 
 #    set(CMAKE_VERBOSE_MAKEFILE ON CACHE INTERNAL "CMAKE_VERBOSE_MAKEFILE")
 
-    add_compile_options(-Wall -Wextra -pedantic)
+    add_compile_options(-march=native -Wall -Wextra -pedantic)
 
 #    # Needed so we compile with CLang standard library, we use the CMake variable instead of the functions so
 #    # we can pass the needed flags to external project cmake invocations

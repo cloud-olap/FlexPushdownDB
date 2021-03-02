@@ -42,7 +42,11 @@ add_library(normal-tuple STATIC
         src/CSVReader.cpp include/normal/tuple/CSVReader.h
         src/ArrayAppenderWrapper.cpp include/normal/tuple/ArrayAppenderWrapper.h
         src/arrow/ArrowAWSInputStream.cpp include/normal/tuple/arrow/ArrowAWSInputStream.h
-        src/arrow/ArrowAWSGZIPInputStream.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream.h)
+        src/arrow/ArrowAWSGZIPInputStream.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream.h
+        include/normal/tuple/arrow/ArrowAWSGZIPInputStream2.h src/arrow/ArrowAWSGZIPInputStream2.cpp
+        src/arrow/ArrowAWSGZIPInputStream3.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream3.h
+        src/arrow/CSVToArrowSIMDParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDParser.h
+        include/normal/tuple/arrow/SIMDParserHelpers.h src/arrow/SIMDParserHelpers.cpp)
 
 target_include_directories(normal-tuple PUBLIC include)
 
@@ -52,7 +56,10 @@ target_link_libraries(normal-tuple PRIVATE LLVM-filesystem)
 target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)
-
+target_link_libraries(normal-tuple PUBLIC deflate)
+# Ideally use cloudflare instead of z-ng, however don't have CMake working yet
+# Follow download instructions here: https://github.com/zlib-ng/zlib-ng to get linking working
+target_link_libraries(normal-tuple PUBLIC z-ng)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Test

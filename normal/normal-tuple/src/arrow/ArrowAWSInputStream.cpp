@@ -8,6 +8,7 @@
 #include "arrow/memory_pool.h"
 #include "arrow/status.h"
 #include "arrow/util/future.h"
+#include <arrow/api.h>
 
 ArrowAWSInputStream::ArrowAWSInputStream(std::basic_iostream<char, std::char_traits<char>> &file):
   underlyingFile_(file) {

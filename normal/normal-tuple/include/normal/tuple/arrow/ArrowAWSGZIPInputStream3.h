@@ -1,20 +1,17 @@
 //
-// Created by Matt Woicik on 2/15/21.
+// Created by Matt Woicik on 2/22/21.
 //
 
-#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM_H
+#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM3_H
+#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM3_H
 
 #include <arrow/io/interfaces.h>
-#include <zlib.h>
-#include <zconf.h>
+#include <libdeflate.h>
 
-class ArrowAWSGZIPInputStream : public arrow::io::InputStream {
+class ArrowAWSGZIPInputStream3 : public arrow::io::InputStream {
   public:
-    explicit ArrowAWSGZIPInputStream(std::basic_iostream<char, std::char_traits<char>> &file);
-    ~ArrowAWSGZIPInputStream();
-
-    void resetZStream(int64_t bytesToRead);
+    explicit ArrowAWSGZIPInputStream3(std::basic_iostream<char, std::char_traits<char>> &file, int64_t inputSize);
+    ~ArrowAWSGZIPInputStream3();
 
     /// \brief Read data from current file position.
     ///
@@ -33,8 +30,7 @@ class ArrowAWSGZIPInputStream : public arrow::io::InputStream {
 
     arrow::Status Close() override;
 
-    /// \brief Return the position in this stream, when complete this is the total number of bytes read from
-    /// the passed in file
+    /// \brief Return the position in this stream
     arrow::Result<int64_t> Tell() const override;
 
     /// \brief Return whether the stream is closed
@@ -44,14 +40,14 @@ class ArrowAWSGZIPInputStream : public arrow::io::InputStream {
 
 
   protected:
-    std::basic_iostream<char, std::char_traits<char>>& underlyingFile_;
-    int64_t processedCompressedBytes = 0;
-    int64_t returnedUncompressedBytes = 0;
+    int64_t processedCompressedBytes_ = 0;
+    int64_t returnedUncompressedBytes_ = 0;
     int64_t decompressionTimeNS_ = 0;
-    bool underlyingFileEmpty_ = false; // set to true once all bytes have been read from underlying file
     std::vector<char*> allocations_;
-    z_stream currentZStream_;
+    char* outputBytes_;
+    int64_t outputBytesLocation_;
+    int64_t outputBytesRemaining_;
 };
 
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM_H
+#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_ARROWGZIPCSVINPUTSTREAM2_H
