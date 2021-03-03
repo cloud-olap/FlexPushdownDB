@@ -11,6 +11,7 @@
 #include <aws/s3/S3Client.h>
 #include <aws/core/client/DefaultRetryStrategy.h>
 #include <normal/plan/Globals.h>
+#include <normal/pushdown/Globals.h>
 
 namespace normal::pushdown {
 
@@ -30,9 +31,6 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   static const char *ALLOCATION_TAG = "Normal";
 
   std::shared_ptr<Aws::S3::S3Client> s3Client;
-//  std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
-
-//  limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, 500000000);
 
   Aws::Client::ClientConfiguration config;
   config.region = Aws::Region::US_WEST_1;
@@ -44,10 +42,15 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   // Default is to create and dispatch to thread with async methods, we don't use async so default is ideal
   config.executor = Aws::MakeShared<Aws::Utils::Threading::DefaultExecutor>(ALLOCATION_TAG);
   config.verifySSL = false;
+
   // Commented this out as turning it off increase transfer rate. It appears that having this set
   // reduces transfer rate even if the chosen value is very high.
-//  config.readRateLimiter = limiter;
-//  config.writeRateLimiter = limiter;
+  if (normal::pushdown::NetworkLimit > 0) {
+    std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
+    limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, normal::pushdown::NetworkLimit);
+    config.readRateLimiter = limiter;
+    config.writeRateLimiter = limiter;
+  }
 
   if (normal::plan::useAirmettle) {
     SPDLOG_INFO("Using Airmettle Client");

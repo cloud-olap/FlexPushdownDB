@@ -27,16 +27,24 @@ public:
   [[nodiscard]] std::shared_ptr<core::graph::OperatorGraph> &getOperatorGraph();
   void parse(const std::string& sql);
   void put(const std::shared_ptr<connector::Catalogue> &catalogue);
-  const std::shared_ptr<plan::LogicalPlan> &getLogicalPlan() const;
   void clearOperatorGraph();
   void boot();
   void stop();
   void saveMetrics();
   void saveHitRatios();
   void clearMetrics();
+  void clearHitRatios();
   std::string showMetrics();
   std::string showHitRatios();
+
+  const std::shared_ptr<plan::LogicalPlan> &getLogicalPlan() const;
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
+  const std::vector<double> &getExecutionTimes() const;
+  const std::vector<std::pair<size_t, size_t>> &getBytesTransferred() const;
+  const std::vector<std::pair<size_t, size_t>> &getGetTransferConvertNs() const;
+  const std::vector<std::pair<size_t, size_t>> &getSelectTransferConvertNs() const;
+  const std::vector<double> &getHitRatios() const;
+  const std::vector<double> &getShardHitRatios() const;
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>> catalogues_;

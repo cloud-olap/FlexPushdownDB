@@ -137,6 +137,10 @@ FBRSCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<Segment
     auto keysToCache = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
     auto miniCatalogue = normal::connector::defaultMiniCatalogue;
 
+    // used only in testing math model
+    if (!allowFetchSegments)
+      return keysToCache;
+
     // FIXME: an estimation here, if freeSizeOTC_ >= c * maxSize_, we try to cache all segments
     //  Because we cannot know the size of segmentData before bringing it back
     if (freeSizeOTC_ >= maxSize_ * 0.1 && freeSizeOTC_ >= 100*1024*1024) {

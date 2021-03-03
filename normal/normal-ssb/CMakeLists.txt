@@ -170,7 +170,8 @@ add_executable(normal-ssb-experiment
         experiment/HardcodedPlanTestSinglePartition.cpp
         experiment/HardcodedPlanTestMultiPartition.cpp
         experiment/SqliteTest.cpp experiment/BeladyTest.cpp
-        experiment/Tests.h)
+        experiment/Tests.h
+        experiment/MathModelTest.cpp experiment/MathModelTest.h)
 
 target_link_libraries(normal-ssb-experiment doctest::doctest)
 target_link_libraries(normal-ssb-experiment Backward::Backward)

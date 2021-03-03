@@ -24,6 +24,7 @@ inline constexpr bool RefinedWeightFunction = true;
 inline constexpr double vNetwork = 0.24419;     // unit: GB/s
 inline constexpr double vS3Scan = 3.88424;      // unit: GB/s
 inline constexpr double vS3Filter = 0.084907;   // unit: GPred/s
+inline size_t NetworkLimit = 0;
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GLOBALS_H

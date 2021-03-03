@@ -360,6 +360,11 @@ void Interpreter::clearMetrics() {
   numRequests_.clear();
 }
 
+void Interpreter::clearHitRatios() {
+  hitRatios_.clear();
+  shardHitRatios_.clear();
+}
+
 const std::shared_ptr<CachingPolicy> &Interpreter::getCachingPolicy() const {
   return cachingPolicy_;
 }
@@ -384,6 +389,30 @@ std::string Interpreter::showHitRatios() {
 void Interpreter::saveHitRatios() {
   hitRatios_.emplace_back(operatorManager_->getCrtQueryHitRatio());
   shardHitRatios_.emplace_back(operatorManager_->getCrtQueryShardHitRatio());
+}
+
+const std::vector<double> &Interpreter::getExecutionTimes() const {
+  return executionTimes_;
+}
+
+const std::vector<std::pair<size_t, size_t>> &Interpreter::getBytesTransferred() const {
+  return bytesTransferred_;
+}
+
+const std::vector<std::pair<size_t, size_t>> &Interpreter::getGetTransferConvertNs() const {
+  return getTransferConvertNS_;
+}
+
+const std::vector<std::pair<size_t, size_t>> &Interpreter::getSelectTransferConvertNs() const {
+  return selectTransferConvertNS_;
+}
+
+const std::vector<double> &Interpreter::getHitRatios() const {
+  return hitRatios_;
+}
+
+const std::vector<double> &Interpreter::getShardHitRatios() const {
+  return shardHitRatios_;
 }
 
 
