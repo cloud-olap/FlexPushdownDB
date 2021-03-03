@@ -55,7 +55,7 @@
 #include "normal/ssb/SSBSchema.h"
 
 #ifdef __AVX2__
-#include <normal/tuple/arrow/CSVToArrowSIMDParser.h>
+#include <normal/tuple/arrow/CSVToArrowSIMDStreamParser.h>
 #endif
 
 #define SKIP_SUITE false
@@ -292,7 +292,7 @@ uint64_t simpleGetRequest(int requestNum) {
 
 #ifdef __AVX2__
   std::string callerName = "testCaller";
-  auto parser = CSVToArrowSIMDParser(callerName, 128 * 1024, retrievedFile, true, schema, false);
+  auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, false);
   auto tupleSet = parser.constructTupleSet();
   auto convertStopTime = std::chrono::steady_clock::now();
   auto convertDurationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(convertStopTime - convertStartTime).count();
