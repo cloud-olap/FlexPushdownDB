@@ -44,9 +44,8 @@ add_library(normal-tuple STATIC
         src/arrow/ArrowAWSInputStream.cpp include/normal/tuple/arrow/ArrowAWSInputStream.h
         src/arrow/ArrowAWSGZIPInputStream.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream.h
         include/normal/tuple/arrow/ArrowAWSGZIPInputStream2.h src/arrow/ArrowAWSGZIPInputStream2.cpp
-        src/arrow/ArrowAWSGZIPInputStream3.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream3.h
-        src/arrow/CSVToArrowSIMDParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDParser.h
-        include/normal/tuple/arrow/SIMDParserHelpers.h src/arrow/SIMDParserHelpers.cpp)
+        src/arrow/CSVToArrowSIMDStreamParser.cpp include/normal/tuple/arrow/CSVToArrowSIMDStreamParser.h
+        include/normal/tuple/arrow/SIMDParserHelpers.h src/arrow/SIMDParserHelpers.cpp include/normal/tuple/arrow/CSVToArrowSIMDChunkParser.h src/arrow/CSVToArrowSIMDChunkParser.cpp)
 
 target_include_directories(normal-tuple PUBLIC include)
 

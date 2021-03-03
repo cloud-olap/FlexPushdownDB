@@ -54,10 +54,9 @@
 #include <normal/tuple/arrow/ArrowAWSInputStream.h>
 //#include <normal/tuple/arrow/ArrowAWSGZIPInputStream.h>
 #include <normal/tuple/arrow/ArrowAWSGZIPInputStream2.h>
-#include <normal/tuple/arrow/ArrowAWSGZIPInputStream3.h>
 
 #ifdef __AVX2__
-#include <normal/tuple/arrow/CSVToArrowSIMDParser.h>
+#include <normal/tuple/arrow/CSVToArrowSIMDStreamParser.h>
 #endif
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
@@ -204,23 +203,23 @@ tl::expected<void, std::string> S3Get::s3Get() {
       std::shared_ptr<arrow::io::InputStream> inputStream;
       if (s3Object_.find("gz") != std::string::npos) {
 #ifdef __AVX2__
-        auto parser = CSVToArrowSIMDParser(name(), 128 * 1024, retrievedFile, true, schema_, true);
+        auto parser = CSVToArrowSIMDStreamParser(name(), 128 * 1024, retrievedFile, true, schema_, true);
         auto tupleSet = parser.constructTupleSet();
         put(tupleSet);
         processedBytes_ += resultSize;
         returnedBytes_ += resultSize;
-#elif
+#else
         inputStream = std::make_shared<ArrowAWSGZIPInputStream3>(retrievedFile, resultSize);
         readCSVFile(inputStream);
 #endif
       } else {
 #ifdef __AVX2__
-        auto parser = CSVToArrowSIMDParser(name(), 128 * 1024, retrievedFile, true, schema_, false);
+        auto parser = CSVToArrowSIMDStreamParser(name(), 128 * 1024, retrievedFile, true, schema_, false);
         auto tupleSet = parser.constructTupleSet();
         put(tupleSet);
         processedBytes_ += resultSize;
         returnedBytes_ += resultSize;
-#elif
+#else
         inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
         readCSVFile(inputStream);
 #endif

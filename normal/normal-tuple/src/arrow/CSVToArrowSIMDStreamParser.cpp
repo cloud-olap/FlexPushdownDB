@@ -4,7 +4,7 @@
 
 #ifdef __AVX2__
 
-#include "normal/tuple/arrow/CSVToArrowSIMDParser.h"
+#include "normal/tuple/arrow/CSVToArrowSIMDStreamParser.h"
 #include "normal/tuple/arrow/ArrowAWSInputStream.h"
 #include "normal/tuple/arrow/ArrowAWSGZIPInputStream2.h"
 #include <spdlog/common.h>
@@ -12,12 +12,12 @@
 #include <cstdint>
 #include <cstdlib>
 
-CSVToArrowSIMDParser::CSVToArrowSIMDParser(std::string callerName,
-                                           uint64_t parseChunkSize,
-                                           std::basic_iostream<char, std::char_traits<char>> &file,
-                                           bool discardHeader,
-                                           std::shared_ptr<arrow::Schema> schema,
-                                           bool gzipCompressed):
+CSVToArrowSIMDStreamParser::CSVToArrowSIMDStreamParser(std::string callerName,
+                                                       uint64_t parseChunkSize,
+                                                       std::basic_iostream<char, std::char_traits<char>> &file,
+                                                       bool discardHeader,
+                                                       std::shared_ptr<arrow::Schema> schema,
+                                                       bool gzipCompressed):
   callerName_(callerName),
   parseChunkSize_(parseChunkSize),
   discardHeader_(discardHeader),
@@ -34,29 +34,28 @@ CSVToArrowSIMDParser::CSVToArrowSIMDParser(std::string callerName,
   bufferCapacity_ = parseChunkSize_ + 256;
   bufferCapacity_ += 64 - bufferCapacity_ % 64;
   buffer_ = (char *) aligned_alloc(64, bufferCapacity_);
+  numColumns_ = schema_->num_fields();
 }
 
-void CSVToArrowSIMDParser::add64ByteDummyRowToBuffer() {
-  int numCols = schema_->num_fields();
-  int dummyColWidth = ceil(64.0 / (float) numCols);
-  assert(numCols > 0);
-  for (int i = 0; i < numCols; i++) {
+void CSVToArrowSIMDStreamParser::add64ByteDummyRowToBuffer() {
+  int dummyColWidth = ceil(64.0 / (float) numColumns_);
+  for (int i = 0; i < numColumns_; i++) {
     for (int j = 0; j < dummyColWidth - 1; j++) {
       buffer_[bufferBytesUtilized_++] = '1';
     }
-    char finalChar = i == numCols - 1 ? 0x0a : ',';
+    char finalChar = i == numColumns_ - 1 ? 0x0a : ',';
     buffer_[bufferBytesUtilized_++] = finalChar;
   }
 }
 
 
-CSVToArrowSIMDParser::~CSVToArrowSIMDParser() {
+CSVToArrowSIMDStreamParser::~CSVToArrowSIMDStreamParser() {
   if (buffer_ != NULL) {
     free(buffer_);
   }
 }
 
-uint64_t CSVToArrowSIMDParser::loadBuffer() {
+uint64_t CSVToArrowSIMDStreamParser::loadBuffer() {
   bufferBytesUtilized_ = 0;
   // Need a dummy row to start the buffer to avoid special first element handling as this parser finds the indices of
   // delimiters. If we are discarding the header and we haven't done so yet we can just use that as our dummy buffer
@@ -108,14 +107,15 @@ uint64_t CSVToArrowSIMDParser::loadBuffer() {
     }
   }
   add64ByteDummyRowToBuffer();
-  // now clear rest of buffer (this is necessary as leftover "," in memory can cause parsing issues as it becomes
-  // hard to determine which rows are from this read and which ones are from previous reads.
-  memset(buffer_ + bufferBytesUtilized_, 0, bufferCapacity_ - bufferBytesUtilized_ + 1);
+  // now clear rest of buffer or last 64 bytes (this is necessary as leftover "," in memory can cause parsing issues as
+  // it becomes hard to determine which rows are from this read and which ones are from previous reads.
+  uint64_t bytesToZero = bufferCapacity_ - bufferBytesUtilized_ + 1 > 64 ? 64 : bufferCapacity_ - bufferBytesUtilized_ + 1;
+  memset(buffer_ + bufferBytesUtilized_, 0, bytesToZero);
 
   return fileBytesRead + partialBytes;
 }
 
-std::string CSVToArrowSIMDParser::printSurroundingBufferUntilEnd(ParsedCSV & pcsv, uint64_t pcsvIndex) {
+std::string CSVToArrowSIMDStreamParser::printSurroundingBufferUntilEnd(ParsedCSV & pcsv, uint64_t pcsvIndex) {
   std::stringstream ss;
   // Print out previous 50 pcsv indices to the failed pcsvIndex and all indicues until the end of the buffer
   // If more output is needed to debug error modify this value
@@ -129,19 +129,18 @@ std::string CSVToArrowSIMDParser::printSurroundingBufferUntilEnd(ParsedCSV & pcs
   return ss.str();
 }
 
-void CSVToArrowSIMDParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
-  int columns = schema_->num_fields();
-  int rows = pcsv.n_indexes / columns - 2; // -2 as two dummy rows at start and end
+void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
+  int rows = pcsv.n_indexes / numColumns_ - 2; // -2 as two dummy rows at start and end
 
-  for (int col = 0; col < schema_->num_fields(); col++) {
+  for (int col = 0; col < numColumns_; col++) {
     auto field = schema_->field(col);
-    int64_t pcsvStartingIndex = columns - 1 + col;
+    int64_t pcsvStartingIndex = numColumns_ - 1 + col;
     int64_t startEndOffset = startEndOffsets_[col];
     // TODO: Make this more generic, probably one for numerical types, boolean, and then string (utf8)
     //       Try to reduce the amount of copied code between this method and dumpToArrayBuilderRowwise
     if (datatypes_[col] == arrow::Type::INT32) {
       std::shared_ptr<arrow::Int32Builder> builder = std::static_pointer_cast<arrow::Int32Builder>(arrayBuilders_[col]);
-      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * columns - 1 + columns; pcsvIndex += columns) {
+      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * numColumns_ - 1 + numColumns_; pcsvIndex += numColumns_) {
         uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
         uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
         assert(endingIndex >= startingIndex);
@@ -159,7 +158,7 @@ void CSVToArrowSIMDParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
       }
     } else if (datatypes_[col] == arrow::Type::INT64) {
       std::shared_ptr<arrow::Int64Builder> builder = std::static_pointer_cast<arrow::Int64Builder>(arrayBuilders_[col]);
-      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * columns - 1 + columns; pcsvIndex += columns) {
+      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * numColumns_ - 1 + numColumns_; pcsvIndex += numColumns_) {
         uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
         uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
         assert(endingIndex >= startingIndex);
@@ -177,7 +176,7 @@ void CSVToArrowSIMDParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
       }
     } else if (datatypes_[col] == arrow::Type::STRING) {
       std::shared_ptr<arrow::StringBuilder> builder = std::static_pointer_cast<arrow::StringBuilder>(arrayBuilders_[col]);
-      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * columns - 1 + columns; pcsvIndex += columns) {
+      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * numColumns_ - 1 + numColumns_; pcsvIndex += numColumns_) {
         uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
         uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
         try {
@@ -194,12 +193,12 @@ void CSVToArrowSIMDParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
                        "error: {}\n"
                        "remaining buffer:\n{}\nEnd of remaining buffer", pcsvIndex, pcsvIndex + 1, pcsv.n_indexes,
                        startingIndex, endingIndex - startingIndex + 1, fullValue,
-                       columns, rows, e.what(), remainingBuffer);
+                       numColumns_, rows, e.what(), remainingBuffer);
         }
       }
     } else if (datatypes_[col] == arrow::Type::BOOL) {
       std::shared_ptr<arrow::BooleanBuilder> builder = std::static_pointer_cast<arrow::BooleanBuilder>(arrayBuilders_[col]);
-      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * columns - 1 + columns; pcsvIndex += columns) {
+      for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * numColumns_ - 1 + numColumns_; pcsvIndex += numColumns_) {
         uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
         uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
         assert(endingIndex >= startingIndex);
@@ -216,14 +215,13 @@ void CSVToArrowSIMDParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
   }
 }
 
-void CSVToArrowSIMDParser::dumpToArrayBuilderRowWise(ParsedCSV & pcsv) {
-  uint32_t columns = schema_->num_fields();
-  uint32_t rows = (pcsv.n_indexes / columns) - 2; // -2 as two dummy rows at start and end
-  uint64_t pcsvStartingIndex = columns - 1;
+void CSVToArrowSIMDStreamParser::dumpToArrayBuilderRowWise(ParsedCSV & pcsv) {
+  uint32_t rows = (pcsv.n_indexes / numColumns_) - 2; // -2 as two dummy rows at start and end
+  uint64_t pcsvStartingIndex = numColumns_ - 1;
 
   int currentColumn = 0;
-  for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * columns - 1 + columns; pcsvIndex++) {
-    uint64_t col = currentColumn++ % columns;
+  for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * numColumns_ - 1 + numColumns_; pcsvIndex++) {
+    uint64_t col = currentColumn++ % numColumns_;
     uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffsets_[col];
     uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffsets_[col];
     assert(endingIndex >= startingIndex);
@@ -253,7 +251,7 @@ void CSVToArrowSIMDParser::dumpToArrayBuilderRowWise(ParsedCSV & pcsv) {
                        "Rows: {}, cols: {}, first valid pcsvindex: {}, first invalid pcsv index: {}\n"
                        "pcsvStartingIndex: {}, pcsvEndingIndex: {}, pcsvIndices: {}\n"
                        "startingIndex in buffer: {}, size was {}, full value is: {}\n"
-                       "error: {}", callerName_, rows, columns, columns - 1, rows * columns - 1 + columns, pcsvIndex, pcsvIndex + 1, pcsv.n_indexes,
+                       "error: {}", callerName_, rows, numColumns_, numColumns_ - 1, rows * numColumns_ - 1 + numColumns_, pcsvIndex, pcsvIndex + 1, pcsv.n_indexes,
                        startingIndex, endingIndex - startingIndex + 1, fullValue, e.what());
       }
     } else if (datatypes_[col] == arrow::Type::INT64) {
@@ -283,7 +281,7 @@ void CSVToArrowSIMDParser::dumpToArrayBuilderRowWise(ParsedCSV & pcsv) {
   }
 }
 
-void CSVToArrowSIMDParser::prettyPrintPCSV(ParsedCSV & pcsv) {
+void CSVToArrowSIMDStreamParser::prettyPrintPCSV(ParsedCSV & pcsv) {
   std::stringstream ss;
   if (pcsv.n_indexes > 0) {
     for (size_t j = 0; j < pcsv.indexes[0]; j++) {
@@ -305,7 +303,7 @@ void CSVToArrowSIMDParser::prettyPrintPCSV(ParsedCSV & pcsv) {
   SPDLOG_DEBUG("Buffer contains:\n{}", ss.str());
 }
 
-void CSVToArrowSIMDParser::initializeDataStructures(ParsedCSV & pcsv) {
+void CSVToArrowSIMDStreamParser::initializeDataStructures(ParsedCSV & pcsv) {
   uint32_t columns = schema_->num_fields();
   uint32_t rows = (pcsv.n_indexes / columns) - 2; // -2 as two dummy rows at start and end
   // if rows is == 0 and we called this something went wrong in an earlier step.
@@ -340,7 +338,7 @@ void CSVToArrowSIMDParser::initializeDataStructures(ParsedCSV & pcsv) {
   }
 }
 
-std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDParser::constructTupleSet() {
+std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDStreamParser::constructTupleSet() {
   uint64_t bytesReadFromFile = loadBuffer();
   if (bytesReadFromFile == 0) {
     // empty file, return empty TupleSet

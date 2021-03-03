@@ -126,7 +126,11 @@ void S3Select::generateParser() {
   for (auto const &columnName: returnedS3ColumnNames_) {
     fields.emplace_back(schema_->GetFieldByName(columnName));
   }
+#ifdef __AVX2__
+  simdParser_ = std::make_shared<CSVToArrowSIMDChunkParser>(name(), 128 * 1024, std::make_shared<::arrow::Schema>(fields));
+#else
   parser_ = S3CSVParser::make(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
+#endif
 }
 
 InputSerialization S3Select::getInputSerialization() {
@@ -216,7 +220,11 @@ tl::expected<void, std::string> S3Select::s3Select() {
       returnedBytes_ += payload.size();
     }
 	  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+#ifdef __AVX2__
+    simdParser_->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+#else
 	  s3Result_.insert(s3Result_.end(), payload.begin(), payload.end());
+#endif
 	  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
         stopConversionTime - startConversionTime).count();
@@ -256,16 +264,21 @@ tl::expected<void, std::string> S3Select::s3Select() {
 
   // If no results are returned then there is nothing to process
 //  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
-  if (s3Result_.size() > 0) {
-    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-    std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+
+#ifdef __AVX2__
+  auto tupleSet = simdParser_->outputCompletedTupleSet();
+  put(tupleSet);
+#else
+  if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
     auto tupleSet = TupleSet2::create(tupleSetV1);
     put(tupleSet);
-    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            stopConversionTime - startConversionTime).count();
-    selectConvertTimeNS_ += conversionTime;
   }
+#endif
+  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
+          stopConversionTime - startConversionTime).count();
+  selectConvertTimeNS_ += conversionTime;
 
   if (optionalErrorMessage.has_value()) {
 	return tl::unexpected(optionalErrorMessage.value());

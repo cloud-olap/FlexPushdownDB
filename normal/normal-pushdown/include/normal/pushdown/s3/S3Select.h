@@ -6,6 +6,9 @@
 #define NORMAL_NORMAL_CORE_SRC_S3SELECT_H
 
 #include "normal/pushdown/s3/S3SelectScan.h"
+#ifdef __AVX2__
+#include "normal/tuple/arrow/CSVToArrowSIMDChunkParser.h"
+#endif
 
 namespace normal::pushdown {
 class S3Select: public S3SelectScan {
@@ -44,6 +47,9 @@ class S3Select: public S3SelectScan {
   private:
     std::string filterSql_;   // "where ...."
     std::shared_ptr<S3CSVParser> parser_;
+#ifdef __AVX2__
+    std::shared_ptr<CSVToArrowSIMDChunkParser> simdParser_;
+#endif
     Aws::Vector<unsigned char> s3Result_{};
 
     void generateParser();

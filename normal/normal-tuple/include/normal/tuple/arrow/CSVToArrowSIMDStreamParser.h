@@ -3,8 +3,8 @@
 //
 
 #ifdef __AVX2__
-#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDPARSER2_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDPARSER2_H
+#ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDSTREAMPARSER_H
+#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDSTREAMPARSER_H
 
 #include <arrow/api.h>
 #include <immintrin.h>
@@ -12,18 +12,18 @@
 #include "normal/tuple/TupleSet.h"
 #include "normal/tuple/TupleSet2.h"
 
-class CSVToArrowSIMDParser {
+class CSVToArrowSIMDStreamParser {
 public:
   // The header is discarded and the schema passed in is used and assumed to be valid.
   // If the header is in the file input then set discardHeader to true so that it can be ignored
   // otherwise set discardHeader to false
-  explicit CSVToArrowSIMDParser(std::string callerName,
-                                uint64_t parseChunkSize,
-                                std::basic_iostream<char, std::char_traits<char>> &file,
-                                bool discardHeader,
-                                std::shared_ptr<arrow::Schema> schema,
-                                bool gzipCompressed);
-  ~CSVToArrowSIMDParser();
+  explicit CSVToArrowSIMDStreamParser(std::string callerName,
+                                      uint64_t parseChunkSize,
+                                      std::basic_iostream<char, std::char_traits<char>> &file,
+                                      bool discardHeader,
+                                      std::shared_ptr<arrow::Schema> schema,
+                                      bool gzipCompressed);
+  ~CSVToArrowSIMDStreamParser();
 
   std::shared_ptr<normal::tuple::TupleSet2> constructTupleSet();
 
@@ -51,6 +51,7 @@ private:
   char* buffer_ = NULL;
   uint64_t bufferCapacity_ = 0;
   uint64_t bufferBytesUtilized_ = 0;
+  uint64_t numColumns_;
   bool discardHeader_; // If true we ignore the first line of input
   std::shared_ptr<arrow::Schema> schema_;
   std::vector<arrow::Type::type> datatypes_;
@@ -60,6 +61,6 @@ private:
   std::vector<char> partial_;
 };
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDPARSER2_H
+#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDSTREAMPARSER_H
 
 #endif
