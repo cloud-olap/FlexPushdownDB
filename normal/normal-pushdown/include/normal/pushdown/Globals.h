@@ -20,6 +20,7 @@ namespace normal::pushdown {
  */
 inline constexpr int DefaultBufferSize = 10000;
 inline constexpr int DefaultS3ScanBufferSize = 100000;
+inline constexpr int DefaultS3ConversionBufferSize = 128 * 1024;
 inline constexpr bool RefinedWeightFunction = true;
 inline constexpr double vNetwork = 0.24419;     // unit: GB/s
 inline constexpr double vS3Scan = 3.88424;      // unit: GB/s

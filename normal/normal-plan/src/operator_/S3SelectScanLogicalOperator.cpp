@@ -119,24 +119,11 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
 
         scanOp->produce(filter);
         filter->consume(scanOp);
-        upStreamOfProj = filter;
+        streamOutPhysicalOperators_->emplace_back(filter);
       } else {
-        upStreamOfProj = scanOp;
+        streamOutPhysicalOperators_->emplace_back(scanOp);
       }
-
-      // project
-      auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<expression::gandiva::Expression>>>();
-      for (auto const &projectedColumnName: *projectedColumnNames_) {
-        projectExpressions->emplace_back(expression::gandiva::col(projectedColumnName));
-      }
-      auto project = std::make_shared<Project>(
-              fmt::format("project-{}/{}-{}", s3Bucket, s3Object, rangeId), *projectExpressions, queryId);
-      operators->emplace_back(project);
-
-      upStreamOfProj->produce(project);
-      project->consume(upStreamOfProj);
-
-      streamOutPhysicalOperators_->emplace_back(project);
+      // No project needed as S3Get does a project based on the neededColumns input
 
       rangeId++;
     }
@@ -304,25 +291,12 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
 
         merge->produce(filter);
         filter->consume(merge);
-        upStreamOfProj = filter;
+        streamOutPhysicalOperators_->emplace_back(filter);
       } else {
-        upStreamOfProj = merge;
+        streamOutPhysicalOperators_->emplace_back(merge);
       }
+      // No project needed as S3Get does a project based on the neededColumns input
 
-      // project
-      auto projectExpressions = std::make_shared<std::vector<std::shared_ptr<expression::gandiva::Expression>>>();
-      for (auto const &projectedColumnName: *projectedColumnNames_) {
-        projectExpressions->emplace_back(expression::gandiva::col(projectedColumnName));
-      }
-      auto project = std::make_shared<Project>(
-          fmt::format("project-{}/{}-{}", s3Bucket, s3Object, rangeId), *projectExpressions, queryId);
-      operators->emplace_back(project);
-
-      // wire up merge2 and project
-      upStreamOfProj->produce(project);
-      project->consume(upStreamOfProj);
-
-      streamOutPhysicalOperators_->emplace_back(project);
       rangeId++;
     }
   }

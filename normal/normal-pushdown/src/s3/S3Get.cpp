@@ -122,9 +122,7 @@ std::shared_ptr<S3Get> S3Get::make(const std::string& name,
 
 }
 
-void S3Get::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream) {
-  // TODO: Move this logic to a dedicated class, perhaps S3CSVParser.cpp
-  //       we should just be passing the input stream to it.
+std::shared_ptr<TupleSet2> S3Get::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream) {
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto read_options = arrow::csv::ReadOptions::Defaults();
   read_options.use_threads = false;
@@ -136,6 +134,7 @@ void S3Get::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStrea
 	  columnTypes.emplace(columnName, schema_->GetFieldByName(columnName)->type());
   }
   convert_options.column_types = columnTypes;
+  convert_options.include_columns = neededColumnNames_;
 
   // Instantiate TableReader from input stream and options
   auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
@@ -151,38 +150,38 @@ void S3Get::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStrea
 
   // Parse the payload and create the tupleset
   auto tupleSetV1 = TupleSet::make(tableReader);
-  uint64_t numBytes = arrowInputStream->Tell().ValueOrDie();
-  processedBytes_ += numBytes;
-  returnedBytes_ += numBytes;
   auto tupleSet = TupleSet2::create(tupleSetV1);
-  put(tupleSet);
+  return tupleSet;
 }
 
-void S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
+std::shared_ptr<TupleSet2> S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
   std::string parquetFileString(std::istreambuf_iterator<char>(retrievedFile), {});
-  // From offline comparisons this is correct or at least approximately correct
-  processedBytes_ += parquetFileString.size();
-  returnedBytes_ += parquetFileString.size();
   auto bufferedReader = std::make_shared<arrow::io::BufferReader>(parquetFileString);
 
   std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
   arrow::MemoryPool *pool = arrow::default_memory_pool();
   arrow::Status st = parquet::arrow::OpenFile(bufferedReader, pool, &arrow_reader);
+  arrow_reader->set_use_threads(false);
 
   if (!st.ok()) {
     SPDLOG_ERROR("Error opening file for {}\nError: {}", name(), st.message());
   }
   std::shared_ptr<arrow::Table> table;
-  st = arrow_reader->ReadTable(&table);
+  // only read the needed columns from the file
+  std::vector<int> neededColumnIndices;
+  for (auto fieldName : neededColumnNames_) {
+    neededColumnIndices.emplace_back(schema_->GetFieldIndex(fieldName));
+  }
+  st = arrow_reader->ReadTable(neededColumnIndices, &table);
   if (!st.ok()) {
     SPDLOG_ERROR("Error reading parquet data for {}\nError: {}", name(), st.message());
   }
   auto tupleSetV1 = TupleSet::make(table);
   auto tupleSet = TupleSet2::create(tupleSetV1);
-  put(tupleSet);
+  return tupleSet;
 }
 
-tl::expected<void, std::string> S3Get::s3Get() {
+std::shared_ptr<TupleSet2> S3Get::s3Get() {
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object_));
@@ -195,49 +194,50 @@ tl::expected<void, std::string> S3Get::s3Get() {
   numRequests_++;
 
   if (getObjectOutcome.IsSuccess()) {
+    std::shared_ptr<TupleSet2> tupleSet;
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     auto getResult = getObjectOutcome.GetResultWithOwnership();
     int64_t resultSize = getResult.GetContentLength();
+    processedBytes_ += resultSize;
+    returnedBytes_ += resultSize;
+    std::vector<std::shared_ptr<arrow::Field>> fields;
+    for (auto column : neededColumnNames_) {
+      fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
+    }
+    auto outputSchema = std::make_shared<::arrow::Schema>(fields);
     Aws::IOStream &retrievedFile = getResult.GetBody();
     if (s3Object_.find("csv") != std::string::npos) {
       std::shared_ptr<arrow::io::InputStream> inputStream;
       if (s3Object_.find("gz") != std::string::npos) {
 #ifdef __AVX2__
-        auto parser = CSVToArrowSIMDStreamParser(name(), 128 * 1024, retrievedFile, true, schema_, true);
-        auto tupleSet = parser.constructTupleSet();
-        put(tupleSet);
-        processedBytes_ += resultSize;
-        returnedBytes_ += resultSize;
+        auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, retrievedFile, true, schema_, outputSchema, true);
+        tupleSet = parser.constructTupleSet();
 #else
-        inputStream = std::make_shared<ArrowAWSGZIPInputStream3>(retrievedFile, resultSize);
-        readCSVFile(inputStream);
+        inputStream = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile, resultSize);
+        tupleSet = readCSVFile(inputStream);
 #endif
       } else {
 #ifdef __AVX2__
-        auto parser = CSVToArrowSIMDStreamParser(name(), 128 * 1024, retrievedFile, true, schema_, false);
-        auto tupleSet = parser.constructTupleSet();
-        put(tupleSet);
-        processedBytes_ += resultSize;
-        returnedBytes_ += resultSize;
+        auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, retrievedFile, true, schema_, outputSchema, false);
+        tupleSet = parser.constructTupleSet();
 #else
         inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
-        readCSVFile(inputStream);
+        tupleSet = readCSVFile(inputStream);
 #endif
       }
     } else { // (s3Object_.find("parquet") != std::string::npos)
-      // TODO: Set this to use an inputstream as is done above
-      readParquetFile(retrievedFile);
+      tupleSet = readParquetFile(retrievedFile);
     }
     std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
     getConvertTimeNS_ += conversionTime;
 
-    return {};
+    return tupleSet;
   }
 
   else {
     const auto& err = getObjectOutcome.GetError();
-    return tl::unexpected(err.GetMessage().c_str());
+    throw std::runtime_error(fmt::format("{}, {}", err.GetMessage(), name()));
   }
 }
 
@@ -251,37 +251,7 @@ std::shared_ptr<TupleSet2> S3Get::readTuples() {
     SPDLOG_DEBUG("Reading From S3: {}", name());
 
     // Read columns from s3
-    auto result = s3Get();
-
-    if (!result.has_value()) {
-      throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
-    }
-
-    std::vector<std::shared_ptr<Column>> readColumns;
-
-    // An implicit projection on the entire object to get needed columns
-    for (auto const &columnName: neededColumnNames_) {
-      // Find arrays using column names
-      std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>> arrays = nullptr;
-      for (auto const &columnPair: columnsReadFromS3_) {
-        if (!columnPair) {
-          // no tuples
-          break;
-        }
-        if (columnName == columnPair->first) {
-          arrays = columnPair;
-          break;
-        }
-      }
-      if (arrays) {
-        readColumns.emplace_back(Column::make(arrays->first, arrays->second));
-      } else {
-        // Make empty column according to schema_
-        readColumns.emplace_back(Column::make(columnName, schema_->GetFieldByName(columnName)->type()));
-      }
-    }
-
-    readTupleSet = TupleSet2::make(readColumns);
+    readTupleSet = s3Get();
 
     // Store the read columns in the cache, if not in full-pushdown mode
     if (toCache_) {

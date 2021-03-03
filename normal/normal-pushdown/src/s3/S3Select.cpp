@@ -127,7 +127,7 @@ void S3Select::generateParser() {
     fields.emplace_back(schema_->GetFieldByName(columnName));
   }
 #ifdef __AVX2__
-  simdParser_ = std::make_shared<CSVToArrowSIMDChunkParser>(name(), 128 * 1024, std::make_shared<::arrow::Schema>(fields));
+  simdParser_ = std::make_shared<CSVToArrowSIMDChunkParser>(name(), DefaultS3ConversionBufferSize, std::make_shared<::arrow::Schema>(fields));
 #else
   parser_ = S3CSVParser::make(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
 #endif
@@ -162,7 +162,7 @@ bool S3Select::scanRangeSupported() {
   return true;
 }
 
-tl::expected<void, std::string> S3Select::s3Select() {
+std::shared_ptr<TupleSet2> S3Select::s3Select() {
 
   // s3select request
   std::optional<std::string> optionalErrorMessage;
@@ -266,25 +266,26 @@ tl::expected<void, std::string> S3Select::s3Select() {
 //  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
 
+  std::shared_ptr<TupleSet2> tupleSet;
 #ifdef __AVX2__
-  auto tupleSet = simdParser_->outputCompletedTupleSet();
-  put(tupleSet);
+  tupleSet = simdParser_->outputCompletedTupleSet();
 #else
   if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
     auto tupleSet = TupleSet2::create(tupleSetV1);
     put(tupleSet);
+  } else {
+    tupleSet = TupleSet2::make2();
   }
 #endif
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
   auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
           stopConversionTime - startConversionTime).count();
   selectConvertTimeNS_ += conversionTime;
-
   if (optionalErrorMessage.has_value()) {
-	return tl::unexpected(optionalErrorMessage.value());
-  } else {
-	return {};
+    throw std::runtime_error(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
   }
+
+  return tupleSet;
 }
 
 std::shared_ptr<TupleSet2> S3Select::readTuples() {
@@ -297,27 +298,7 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
     SPDLOG_DEBUG("Reading From S3: {}", name());
 
     // Read columns from s3
-    auto result = s3Select();
-
-    if (!result.has_value()) {
-      throw std::runtime_error(fmt::format("{}, {}", result.error(), name()));
-    }
-
-    std::vector<std::shared_ptr<Column>> readColumns;
-
-    for (int col_id = 0; col_id < returnedS3ColumnNames_.size(); col_id++) {
-      auto &arrays = columnsReadFromS3_.at(col_id);
-      if (arrays) {
-        readColumns.emplace_back(Column::make(arrays->first, arrays->second));
-      } else {
-        // Make empty column according to schema_
-        auto columnName = returnedS3ColumnNames_.at(col_id);
-        readColumns.emplace_back(Column::make(columnName, schema_->GetFieldByName(columnName)->type()));
-      }
-    }
-
-
-    readTupleSet = TupleSet2::make(readColumns);
+    readTupleSet = s3Select();
 
     // Store the read columns in the cache, if not in full-pushdown mode
     if (toCache_) {

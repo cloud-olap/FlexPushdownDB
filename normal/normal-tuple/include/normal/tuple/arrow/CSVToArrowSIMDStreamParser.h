@@ -17,11 +17,14 @@ public:
   // The header is discarded and the schema passed in is used and assumed to be valid.
   // If the header is in the file input then set discardHeader to true so that it can be ignored
   // otherwise set discardHeader to false
+  // Process columns specified by outputSchema. outputSchema assumes to have the same ordering of fields as in
+  // inputSchema (as this seems to be the way that we handle it already in Get, so this avoids a check in our processing)
   explicit CSVToArrowSIMDStreamParser(std::string callerName,
                                       uint64_t parseChunkSize,
                                       std::basic_iostream<char, std::char_traits<char>> &file,
                                       bool discardHeader,
-                                      std::shared_ptr<arrow::Schema> schema,
+                                      std::shared_ptr<arrow::Schema> inputSchema,
+                                      std::shared_ptr<arrow::Schema> outputSchema,
                                       bool gzipCompressed);
   ~CSVToArrowSIMDStreamParser();
 
@@ -30,7 +33,6 @@ public:
 private:
 
   void dumpToArrayBuilderColumnWise(ParsedCSV & pcsv);
-  void dumpToArrayBuilderRowWise(ParsedCSV & pcsv);
 
   std::string printSurroundingBufferUntilEnd(ParsedCSV & pcsv, uint64_t pcsvIndex);
 
@@ -51,9 +53,10 @@ private:
   char* buffer_ = NULL;
   uint64_t bufferCapacity_ = 0;
   uint64_t bufferBytesUtilized_ = 0;
-  uint64_t numColumns_;
+  uint64_t inputNumColumns_;
   bool discardHeader_; // If true we ignore the first line of input
-  std::shared_ptr<arrow::Schema> schema_;
+  std::shared_ptr<arrow::Schema> inputSchema_; // The schema of the CSV data passed in
+  std::shared_ptr<arrow::Schema> outputSchema_; // The output schema to produce, ignoring converting any columns omitted from inputSchema_
   std::vector<arrow::Type::type> datatypes_;
   std::vector<std::shared_ptr<arrow::ArrayBuilder>> arrayBuilders_;
   std::vector<bool> columnStartsWithQuote_;

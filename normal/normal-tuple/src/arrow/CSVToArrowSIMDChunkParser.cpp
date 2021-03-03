@@ -120,7 +120,6 @@ void CSVToArrowSIMDChunkParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
     int64_t pcsvStartingIndex = numColumns_ - 1 + col;
     int64_t startEndOffset = startEndOffsets_[col];
     // TODO: Make this more generic, probably one for numerical types, boolean, and then string (utf8)
-    //       Try to reduce the amount of copied code between this method and dumpToArrayBuilderRowwise
     if (datatypes_[col] == arrow::Type::INT32) {
       std::shared_ptr<arrow::Int32Builder> builder = std::static_pointer_cast<arrow::Int32Builder>(arrayBuilders_[col]);
       for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * numColumns_ - 1 + numColumns_; pcsvIndex += numColumns_) {
@@ -198,72 +197,6 @@ void CSVToArrowSIMDChunkParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) {
   }
 }
 
-void CSVToArrowSIMDChunkParser::dumpToArrayBuilderRowWise(ParsedCSV & pcsv) {
-  uint32_t rows = (pcsv.n_indexes / numColumns_) - 2; // -2 as two dummy rows at start and end
-  uint64_t pcsvStartingIndex = numColumns_ - 1;
-
-  int currentColumn = 0;
-  for (int pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * numColumns_ - 1 + numColumns_; pcsvIndex++) {
-    uint64_t col = currentColumn++ % numColumns_;
-    uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffsets_[col];
-    uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffsets_[col];
-    assert(endingIndex >= startingIndex);
-    if (datatypes_[col] == arrow::Type::INT32) {
-      std::shared_ptr<arrow::Int32Builder> builder = std::static_pointer_cast<arrow::Int32Builder>(arrayBuilders_[col]);
-      bool negative = buffer_[startingIndex] == '-';
-      startingIndex += negative;
-      int32_t val = 0;
-      while (startingIndex <= endingIndex) {
-        char currentChar = buffer_[startingIndex++];
-        val = val * 10 + currentChar - '0';
-      }
-      // Bit trick to conditionally negate, though likely compiler already does thisi
-      // source: https://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
-      val = (val ^ -negative) + negative;
-      builder->Append(val);
-    } else if (datatypes_[col] == arrow::Type::STRING) {
-      std::shared_ptr<arrow::StringBuilder> builder = std::static_pointer_cast<arrow::StringBuilder>(arrayBuilders_[col]);
-      try {
-        assert(endingIndex >= startingIndex);
-        std::string val(buffer_ + startingIndex, endingIndex - startingIndex + 1);
-        builder->Append(val);
-      } catch (std::exception& e) {
-          std::string fullValue(buffer_ + pcsv.indexes[pcsvIndex], pcsv.indexes[pcsvIndex + 1] - pcsv.indexes[pcsvIndex] + 1);
-          SPDLOG_ERROR("Got exception reading utf8\n"
-                       "Caller was: {}\n"
-                       "Rows: {}, cols: {}, first valid pcsvindex: {}, first invalid pcsv index: {}\n"
-                       "pcsvStartingIndex: {}, pcsvEndingIndex: {}, pcsvIndices: {}\n"
-                       "startingIndex in buffer: {}, size was {}, full value is: {}\n"
-                       "error: {}", callerName_, rows, numColumns_, numColumns_ - 1, rows * numColumns_ - 1 + numColumns_, pcsvIndex, pcsvIndex + 1, pcsv.n_indexes,
-                       startingIndex, endingIndex - startingIndex + 1, fullValue, e.what());
-      }
-    } else if (datatypes_[col] == arrow::Type::INT64) {
-      std::shared_ptr<arrow::Int64Builder> builder = std::static_pointer_cast<arrow::Int64Builder>(arrayBuilders_[col]);
-      bool negative = buffer_[startingIndex] == '-';
-      startingIndex += negative;
-      int64_t val = 0;
-      while (startingIndex <= endingIndex) {
-        char currentChar = buffer_[startingIndex++];
-        val = val * 10 + currentChar - '0';
-      }
-      // Bit trick to conditionally negate, though likely compiler already does this
-      // source: https://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
-      val = (val ^ -negative) + negative;
-      builder->Append(val);
-    } else if (datatypes_[col] == arrow::Type::BOOL) {
-      std::shared_ptr<arrow::BooleanBuilder> builder = std::static_pointer_cast<arrow::BooleanBuilder>(arrayBuilders_[col]);
-      std::string val(buffer_ + startingIndex, endingIndex - startingIndex + 1);
-      bool boolVal = false;
-      if (strcmp(val.c_str(), "true") || val == "1") {
-        boolVal = true;
-      }
-      builder->Append(boolVal);
-    } else {
-      throw std::runtime_error(fmt::format("Error, arrow type not supported for SIMD processing yet for column: ", schema_->field(col)->name().c_str()));
-    }
-  }
-}
-
 void CSVToArrowSIMDChunkParser::prettyPrintPCSV(ParsedCSV & pcsv) {
   std::stringstream ss;
   if (pcsv.n_indexes > 0) {
@@ -332,7 +265,6 @@ void CSVToArrowSIMDChunkParser::parseAndReadInData() {
 
   try {
     dumpToArrayBuilderColumnWise(pcsv_);
-//      dumpToArrayBuilderRowWise(pcsv);
   } catch (std::exception &e) {
     SPDLOG_ERROR("Got exception reading SIMD input: {}", e.what());
   }

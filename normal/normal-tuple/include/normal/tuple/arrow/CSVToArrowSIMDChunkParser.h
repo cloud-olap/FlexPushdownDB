@@ -28,7 +28,6 @@ private:
   void parseAndReadInData();
 
   void dumpToArrayBuilderColumnWise(ParsedCSV & pcsv);
-  void dumpToArrayBuilderRowWise(ParsedCSV & pcsv);
 
   std::string printSurroundingBufferUntilEnd(ParsedCSV & pcsv, uint64_t pcsvIndex);
 

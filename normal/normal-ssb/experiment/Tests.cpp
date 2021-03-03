@@ -257,12 +257,12 @@ uint64_t simpleGetRequest(int requestNum) {
   bucketName = "pushdowndb";
   getObjectRequest.SetBucket(Aws::String(bucketName));
 //  auto requestKey = "ssb-sf100-sortlineorder/gzip_compression1_csv/lineorder_sharded/lineorder.gz.tbl." + std::to_string(requestNum);
-//  auto requestKey = "ssb-sf0.01/csv/date.tbl";
-//  auto schema = SSBSchema::date();
+  auto requestKey = "ssb-sf0.01/csv/date.tbl";
+  auto schema = SSBSchema::date();
 //  auto requestKey = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
 //  auto requestKey = "minidata.csv";
-  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
-  auto schema = SSBSchema::lineOrder();
+//  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+//  auto schema = SSBSchema::lineOrder();
 //  auto requestKey = "ssb-sf100-sortlineorder/csv/customer_sharded/customer.tbl." + std::to_string(requestNum);
 //  auto schema = SSBSchema::customer();
 //  auto requestKey = "ssb-sf100-sortlineorder/csv/supplier.tbl";
@@ -291,13 +291,18 @@ uint64_t simpleGetRequest(int requestNum) {
 //  std::string csvString(std::istreambuf_iterator<char>(retrievedFile), {});
 
 #ifdef __AVX2__
+//  auto fields = {::arrow::field(ColumnName::canonicalize("D_MONTH"), ::arrow::utf8()),
+//       ::arrow::field(ColumnName::canonicalize("D_MONTHNUMINYEAR"), ::arrow::int32()),
+//       ::arrow::field(ColumnName::canonicalize("D_LASTDAYINMONTHFL"), ::arrow::boolean()),
+//       ::arrow::field(ColumnName::canonicalize("D_HOLIDAYFL"), ::arrow::boolean())};
+//  auto outputSchema = std::make_shared<::arrow::Schema>(fields);
   std::string callerName = "testCaller";
-  auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, false);
+  auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, schema, false);
   auto tupleSet = parser.constructTupleSet();
   auto convertStopTime = std::chrono::steady_clock::now();
   auto convertDurationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(convertStopTime - convertStartTime).count();
   SPDLOG_DEBUG("Num rows = {}", tupleSet->numRows());
-//  SPDLOG_DEBUG("{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, tupleSet->numRows())));
+  SPDLOG_DEBUG("{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, tupleSet->numRows())));
 //  SPDLOG_INFO("Total time                         : {}ms", convertDurationNs / 1.0e6);
 //  SPDLOG_INFO("Convert result of s3 GetObject request: {}, took: {}sec, {}ns, rate = {}MB/s", requestNum, (double) (convertDurationNs) / 1.0e9,
 //              convertDurationNs,((double) resultSize / 1024.0 / 1024.0) / ((double)(convertDurationNs) / 1.0e9));
