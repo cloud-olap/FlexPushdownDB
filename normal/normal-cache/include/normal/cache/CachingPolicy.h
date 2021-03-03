@@ -92,10 +92,13 @@ protected:
   size_t freeSize_;
 
 public:
-    size_t onLoadTime = 0;
-    size_t onStoreTime = 0;
-    size_t onToCacheTime = 0;
+  size_t onLoadTime = 0;
+  size_t onStoreTime = 0;
+  size_t onToCacheTime = 0;
 };
+
+// used only in testing math model
+inline bool allowFetchSegments = true;
 
 }
 

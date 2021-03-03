@@ -71,6 +71,8 @@ private:
   size_t bytesFiltered_ = 0;
 };
 
+inline bool recordSpeeds = false;
+inline std::vector<double> speeds;
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_FILTER_FILTER_H
