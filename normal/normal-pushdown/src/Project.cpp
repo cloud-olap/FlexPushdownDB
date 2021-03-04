@@ -46,7 +46,7 @@ void Project::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Project::projectAndSendTuples() {
-  if(tuples_) {
+  if(tuples_ && tuples_->numRows() > 0) {
 
     std::vector<std::shared_ptr<arrow::Field>> fields;
     std::vector<std::shared_ptr<arrow::ChunkedArray>> arrowColumns;

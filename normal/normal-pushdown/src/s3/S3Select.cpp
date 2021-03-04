@@ -272,7 +272,6 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
 #else
   if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
     auto tupleSet = TupleSet2::create(tupleSetV1);
-    put(tupleSet);
   } else {
     tupleSet = TupleSet2::make2();
   }
