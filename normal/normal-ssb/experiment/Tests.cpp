@@ -181,7 +181,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   i.saveHitRatios();
 
   i.getOperatorGraph().reset();
-//  std::this_thread::sleep_for (std::chrono::seconds(2));
+  std::this_thread::sleep_for (std::chrono::seconds(2));
   return tupleSet;
 }
 
@@ -364,8 +364,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
 }
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, bool writeResults) {
-  spdlog::set_level(spdlog::level::info);
-
+  spdlog::set_level(spdlog::level::off);
   // parameters
   const int warmBatchSize = 30, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
