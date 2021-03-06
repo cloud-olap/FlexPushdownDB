@@ -94,17 +94,27 @@ int main(int, char **) {
 //  convertFile("/datagen/home/ec2-user/ssb-dbgen/lineorder.tbl.0", "/datagen/home/ec2-user/ssb-dbgen/lineorder.snappy.parquet.0",
 //              ::parquet::Compression::type::SNAPPY, *SSBSchema::lineOrder());
 
-  std::unordered_map<std::string, int> tableToShards = {
-	  {"customer", 20},
+//  std::unordered_map<std::string, int> tableToShards16MB = {
+//	  {"customer", 20},
+//	  {"date", 1},
+//	  {"lineorder", 4001},
+//	  {"part", 10},
+//	  {"supplier", 1}
+//  };
+
+  std::unordered_map<std::string, int> tableToShards163MB = {
+	  {"customer", 1},
 	  {"date", 1},
-	  {"lineorder", 4001},
-	  {"part", 10},
+	  {"lineorder", 400},
+	  {"part", 1},
 	  {"supplier", 1}
   };
 
-  // This path is not pretty, I mounted the data on another volume to the instance running this
-  convertWithShards("/datagen/home/ec2-user/original_data/csv", "/datagen/home/ec2-user/original_data/snappy_parquet",
-                    tableToShards, ::parquet::Compression::type::SNAPPY, "snappy.parquet");
+  convertWithShards("/datagen/csv_150MB", "/datagen/parquet_150MB",
+                    tableToShards163MB, ::parquet::Compression::type::UNCOMPRESSED, "parquet");
+
+  convertWithShards("/datagen/csv_150MB", "/datagen/gzip_parquet_150MB",
+                  tableToShards163MB, ::parquet::Compression::type::GZIP, "gzip.parquet");
 
   return EXIT_SUCCESS;
 }

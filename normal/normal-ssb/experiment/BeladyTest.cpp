@@ -94,29 +94,29 @@ struct segment_info_t {
 // This info has already been added in the corresponding metadata files so it is not written to one.
 // This requires the other corresponding metadata files to be set up
 // so that at least the partition numbers and columns for each schema are known
-void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
+void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix, std::string output_file) {
   // store this mapping so we can get the corresponding s3Object path without the schema later
   auto s3ObjectToS3ObjectMinusSchemaMap = std::make_shared<std::unordered_map<std::string, std::string>>();
 
   // get partitionNums
   auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
   auto partitionNums = normal::cache::beladyMiniCatalogue->partitionNums();
-
+  std::string fileExtension = normal::connector::getFileExtensionByDirPrefix(dir_prefix);
   for (auto const &partitionNumEntry: *partitionNums) {
     auto tableName = partitionNumEntry.first;
     auto partitionNum = partitionNumEntry.second;
     auto objects = std::make_shared<std::vector<std::string>>();
 
     if (partitionNum == 1) {
-      std::string s3Object = dir_prefix + tableName + ".tbl";
-      std::string s3ObjectMinusSchema = tableName + ".tbl";
+      std::string s3Object = dir_prefix + tableName + fileExtension;
+      std::string s3ObjectMinusSchema = tableName + fileExtension;
       objects->emplace_back(s3Object);
       s3ObjectsMap->emplace(tableName, objects);
       s3ObjectToS3ObjectMinusSchemaMap->emplace(s3Object, s3ObjectMinusSchema);
     } else {
       for (int i = 0; i < partitionNum; i++) {
-        std::string s3Object = fmt::format("{0}{1}_sharded/{1}.tbl.{2}", dir_prefix, tableName, i);
-        std::string s3ObjectMinusSchema = fmt::format("{0}_sharded/{0}.tbl.{1}", tableName, i);
+        std::string s3Object = fmt::format("{0}{1}_sharded/{1}{2}.{3}", dir_prefix, tableName, fileExtension, i);
+        std::string s3ObjectMinusSchema = fmt::format("{0}_sharded/{0}{1}.{2}", tableName, fileExtension, i);
         objects->emplace_back(s3Object);
         s3ObjectToS3ObjectMinusSchemaMap->emplace(s3Object, s3ObjectMinusSchema);
       }
@@ -153,16 +153,21 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
         segmentInfo->column = column;
         segmentInfo->startOffset = 0;
         segmentInfo->endOffset = numBytes;
-        segmentInfo->sizeInBytes = getColumnSizeInBytes(s3Bucket, s3Object, tableName, column, numBytes);
+//        segmentInfo->sizeInBytes = getColumnSizeInBytes(s3Bucket, s3Object, tableName, column, numBytes);
         segmentInfoMetadata->push_back(segmentInfo);
       }
     }
   }
-  SPDLOG_INFO("Writing segment info for {} to output.txt", dir_prefix);
+  SPDLOG_INFO("Writing segment info for {} to {}", dir_prefix, output_file);
   std::ofstream outputFile;
-  outputFile.open ("output.txt");
+  outputFile.open (output_file);
   for (auto segmentInfo : *segmentInfoMetadata) {
 //    std::cout << segmentInfo->objectName << ","
+//              << segmentInfo->column << ","
+//              << segmentInfo->startOffset << ","
+//              << segmentInfo->endOffset << ","
+//              << segmentInfo->sizeInBytes << "\n";
+//      outputFile << segmentInfo->objectName << ","
 //              << segmentInfo->column << ","
 //              << segmentInfo->startOffset << ","
 //              << segmentInfo->endOffset << ","
@@ -170,8 +175,7 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix) {
       outputFile << segmentInfo->objectName << ","
               << segmentInfo->column << ","
               << segmentInfo->startOffset << ","
-              << segmentInfo->endOffset << ","
-              << segmentInfo->sizeInBytes << "\n";
+              << segmentInfo->endOffset << "\n";
   }
   outputFile.close();
 //  std::cout.flush();
@@ -209,10 +213,29 @@ TEST_SUITE ("BeladyTests" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("BeladyGenerateMetadata" * doctest::skip(true || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
+
+  std::string outputDirName = "partial_segment_infos";
+  auto outputdir = filesystem::current_path().append(outputDirName);
+  filesystem::create_directory(outputdir);
+
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf10-sortlineorder/csv/";
-  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
-  generateBeladyMetadata(bucket_name, dir_prefix);
+  std::string path_prefix = "ssb-sf100-sortlineorder/";
+  std::vector<std::string> paths_to_generate_metadata_for = {
+          "gzip_compression1_csv",
+          "gzip_compression9_csv",
+          "gzip_parquet",
+          "snappy_parquet",
+          "parquet",
+          "gzip_compression1_150MB_csv",
+          "gzip_compression9_150MB_csv",
+          "parquet_150MB",
+          "gzip_parquet_150MB"
+  };
+  for (std::string path : paths_to_generate_metadata_for) {
+    std::string dir_prefix = "ssb-sf100-sortlineorder/" + path + "/";
+    normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
+    generateBeladyMetadata(bucket_name, dir_prefix, outputDirName + "/" + path + "_segment_info");
+  }
 }
 
 TEST_CASE ("BeladyExperiment" * doctest::skip(true || SKIP_SUITE)) {
