@@ -76,6 +76,34 @@ std::string showMeasurementMetrics(const Interpreter& i, const std::shared_ptr<n
   return ss.str();
 }
 
+double measureLocalSpeed(normal::sql::Interpreter& i, filesystem::path& sql_file_dir_path) {
+  SPDLOG_INFO("Measurement for local bandwidth:");
+  filter::recordSpeeds = true;
+
+  i.clearMetrics();
+  i.clearHitRatios();
+  auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 2));
+  auto sql = ExperimentUtil::read_file(sql_file_path.string());
+  executeSql(i, sql, true, false, "");
+  sql_file_dir_path = sql_file_dir_path.parent_path();
+  SPDLOG_INFO("Query 1 for local bandwidth finished, hit ratio: {}", i.getHitRatios()[0]);
+  auto time1 = i.getExecutionTimes()[0];
+  auto megaBytesFiltered = (double)filter::totalBytesFiltered_ / 1024.0 / 1024.0;
+  filter::totalBytesFiltered_ = 0;
+
+//  i.clearMetrics();
+//  i.clearHitRatios();
+//  sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 3));
+//  sql = ExperimentUtil::read_file(sql_file_path.string());
+//  executeSql(i, sql, true, false, "");
+//  sql_file_dir_path = sql_file_dir_path.parent_path();
+//  SPDLOG_INFO("Query 2 for local bandwidth finished, hit ratio: {}", i.getHitRatios()[0]);
+//  auto time2 = i.getExecutionTimes()[0];
+
+  filter::recordSpeeds = false;
+  return megaBytesFiltered / (time1);
+}
+
 void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   spdlog::set_level(spdlog::level::info);
   std::stringstream ss;
@@ -101,7 +129,7 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   }
 
   // parameters
-  const size_t cacheSize = 6L * 1024 * 1024 * 1024;   // 6GB
+  const size_t cacheSize = 12L * 1024 * 1024 * 1024;
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
 
@@ -138,21 +166,21 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
     SPDLOG_INFO("Query for measurement:");
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 2));
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
-    if (mode->id() == normal::plan::operator_::mode::ModeId::PullupCaching)
-      filter::recordSpeeds = true;
     executeSql(i, sql, true, false, "");
+    sql_file_dir_path = sql_file_dir_path.parent_path();
     SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
     SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
-    if (mode->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
-      localSpeed = ((double)filter::totalBytesFiltered_ / 1024.0 / 1024.0) / (i.getExecutionTimes()[0]);
-      filter::recordSpeeds = false;
-      filter::totalBytesFiltered_ = 0;
-    }
-    i.getOperatorGraph().reset();
-    i.stop();
+    ss << showMeasurementMetrics(i, mode);
 
     normal::cache::allowFetchSegments = true;
-    ss << showMeasurementMetrics(i, mode);
+
+    // query for measuring local bandwidth
+    if (mode->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+      localSpeed = measureLocalSpeed(i, sql_file_dir_path);
+    }
+
+    i.getOperatorGraph().reset();
+    i.stop();
   }
 
   std::stringstream formattedLocalSpeed;

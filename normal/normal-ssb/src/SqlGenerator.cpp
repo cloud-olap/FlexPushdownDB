@@ -1177,7 +1177,16 @@ std::vector<std::string> SqlGenerator::generateSqlForMathModel(double hitRatio, 
           predicate
   );
 
+  // query for measurement without local processing
+  std::string sql3 = fmt::format(
+          "select {}\n"
+          "from lineorder\n"
+          "where (lo_orderdate between 19920101 and 19921231);\n",
+          columns
+  );
+
   std::cout << sql1 << std::endl;
   std::cout << sql2 << std::endl;
-  return std::vector<std::string>{sql1, sql2};
+  std::cout << sql3 << std::endl;
+  return std::vector<std::string>{sql1, sql2, sql3};
 }
