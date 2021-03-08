@@ -107,10 +107,11 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 
 	  ctx()->notifyComplete();
 
-    double speed = (((double) bytesFiltered_) / 1024.0 / 1024.0) / (((double) filterTime_) / 1000000000);
-    if (recordSpeeds)
-      speeds.emplace_back(speed);
-//    SPDLOG_INFO("Filter time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", filterTime_, bytesFiltered_, speed, totalNumRows_, name());
+    if (recordSpeeds) {
+//      double speed = (((double) bytesFiltered_) / 1024.0 / 1024.0) / (((double) filterTime_) / 1000000000);
+//      SPDLOG_INFO("Filter time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", filterTime_, bytesFiltered_, speed, totalNumRows_, name());
+      totalBytesFiltered_ += bytesFiltered_;
+    }
   }
 }
 

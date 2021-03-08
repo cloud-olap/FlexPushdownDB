@@ -72,7 +72,7 @@ private:
 };
 
 inline bool recordSpeeds = false;
-inline std::vector<double> speeds;
+inline size_t totalBytesFiltered_ = 0;
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_FILTER_FILTER_H

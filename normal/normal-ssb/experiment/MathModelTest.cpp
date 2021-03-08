@@ -79,8 +79,6 @@ std::string showMeasurementMetrics(const Interpreter& i, const std::shared_ptr<n
 void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   spdlog::set_level(spdlog::level::info);
   std::stringstream ss;
-  ss << std::endl;
-  ss << std::left << std::setw(120) << "Metrics of query for measurement" << std::endl;
   ss << std::setfill(' ');
   ss << std::left << std::setw(180) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
@@ -145,24 +143,24 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
     executeSql(i, sql, true, false, "");
     SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
     SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
+    if (mode->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+      localSpeed = ((double)filter::totalBytesFiltered_ / 1024.0 / 1024.0) / (i.getExecutionTimes()[0]);
+      filter::recordSpeeds = false;
+      filter::totalBytesFiltered_ = 0;
+    }
     i.getOperatorGraph().reset();
     i.stop();
-    if (mode->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
-      localSpeed = std::accumulate(filter::speeds.begin(), filter::speeds.end(), 0.0) / filter::speeds.size();
-      filter::recordSpeeds = false;
-      filter::speeds.clear();
-    }
 
     normal::cache::allowFetchSegments = true;
-    ss << showMeasurementMetrics(i, mode) << std::endl;
+    ss << showMeasurementMetrics(i, mode);
   }
 
   std::stringstream formattedLocalSpeed;
-  formattedLocalSpeed << localSpeed << " MB/s/req";
+  formattedLocalSpeed << localSpeed << " MB/s";
 
   std::stringstream formattedNetworkSpeed;
   if (networkLimit > 0)
-    formattedNetworkSpeed << (double) (networkLimit / 1024.0 / 1024.0) << " MB/s/req";
+    formattedNetworkSpeed << (double) (networkLimit / 1024.0 / 1024.0) << " MB/s";
   else
     formattedNetworkSpeed << "Unlimited";
 
@@ -174,4 +172,12 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   ss << std::endl;
 
   SPDLOG_INFO("Metrics summary:\n{}", ss.str());
+
+  // Output to file
+  auto metricsFilePath = filesystem::current_path().append("math_model_metrics");
+  std::ofstream fout;
+  fout.open(metricsFilePath.string(), std::ofstream::out | std::ofstream::app);
+  fout << ss.str();
+  fout.flush();
+  fout.close();
 }

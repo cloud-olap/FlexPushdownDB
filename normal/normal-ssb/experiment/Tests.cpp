@@ -168,13 +168,13 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
     fout.close();
   }
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-  SPDLOG_INFO("Output size: {}", tupleSet->size());
-  SPDLOG_INFO("Output rows: {}", tupleSet->numRows());
+//  SPDLOG_INFO("Output size: {}", tupleSet->size());
+//  SPDLOG_INFO("Output rows: {}", tupleSet->numRows());
 //  if (saveMetrics)
-  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
+//  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
   SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
 //  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
-  SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
+//  SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
   if (saveMetrics) {
     i.saveMetrics();
   }
@@ -366,7 +366,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, bool writeResults) {
   spdlog::set_level(spdlog::level::off);
   // parameters
-  const int warmBatchSize = 30, executeBatchSize = 50;
+  const int warmBatchSize = 1, executeBatchSize = 1;
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
