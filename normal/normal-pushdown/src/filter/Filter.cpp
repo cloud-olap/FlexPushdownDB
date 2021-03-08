@@ -108,8 +108,6 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 	  ctx()->notifyComplete();
 
     if (recordSpeeds) {
-//      double speed = (((double) bytesFiltered_) / 1024.0 / 1024.0) / (((double) filterTime_) / 1000000000);
-//      SPDLOG_INFO("Filter time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", filterTime_, bytesFiltered_, speed, totalNumRows_, name());
       totalBytesFiltered_ += bytesFiltered_;
     }
   }
@@ -149,7 +147,6 @@ void Filter::buildFilter() {
 }
 
 void Filter::filterTuples() {
-  auto startTime = std::chrono::steady_clock::now();
 
   filtered_ = filter_.value()->evaluate(*received_);
   assert(filtered_->validate());
@@ -157,9 +154,6 @@ void Filter::filterTuples() {
   totalNumRows_ += received_->numRows();
   filteredNumRows_ += filtered_->numRows();
 
-  auto stopTime = std::chrono::steady_clock::now();
-  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
-  filterTime_ += time;
   bytesFiltered_ += received_->size();
 
   received_->clear();
