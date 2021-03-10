@@ -82,7 +82,7 @@ private:
 
 std::string getFileExtensionByDirPrefix(std::string dir_prefix);
 
-const static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue =
+inline std::shared_ptr<MiniCatalogue> defaultMiniCatalogue =
         MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf100-sortlineorder/csv/");
 
 }

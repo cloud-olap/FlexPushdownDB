@@ -185,15 +185,16 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   return tupleSet;
 }
 
-void simpleSelectRequest() {
+void simpleSelectRequest(int index) {
   Aws::S3::Model::SelectObjectContentRequest selectObjectContentRequest;
 //  std::string bucketName = "demo-bucket";
 //  std::string keyName = "data.csv";
 //  std::string sql = "SELECT col2, col5, col9, col13, col29, col61, col91 FROM s3object WHERE cast(col1 as int) = 0;";
   std::string bucketName = "pushdowndb";
-  std::string keyName = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl.0";
+  std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.{}", index);
 //  std::string sql = "select lo_orderkey from s3object where lo_orderdate > 0;";
-  std::string sql = "select lo_revenue, lo_supplycost from s3Object where cast(lo_orderdate as int) <= 19920102;";
+  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
+                    "where cast(lo_quantity as int) <= 10;";
   selectObjectContentRequest.SetBucket(Aws::String(bucketName));
   selectObjectContentRequest.SetKey(Aws::String(keyName));
 
@@ -217,7 +218,7 @@ void simpleSelectRequest() {
 
   Aws::S3::Model::SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const Aws::S3::Model::RecordsEvent &recordsEvent) {
-	SPDLOG_INFO("S3 Select RecordsEvent  | size: {}",
+	SPDLOG_DEBUG("S3 Select RecordsEvent  | size: {}",
 				 recordsEvent.GetPayload().size());
 	auto payload = recordsEvent.GetPayload();
   });
@@ -226,10 +227,10 @@ void simpleSelectRequest() {
 				 statsEvent.GetDetails().GetBytesScanned(),
 				 statsEvent.GetDetails().GetBytesProcessed(),
 				 statsEvent.GetDetails().GetBytesReturned());
-	SPDLOG_INFO("Processed bytes: {}\n Returned Bytes: {}", statsEvent.GetDetails().GetBytesProcessed(), statsEvent.GetDetails().GetBytesReturned());
+	SPDLOG_DEBUG("Processed bytes: {}\n Returned Bytes: {}", statsEvent.GetDetails().GetBytesProcessed(), statsEvent.GetDetails().GetBytesReturned());
   });
   handler.SetEndEventCallback([&]() {
-	SPDLOG_INFO("S3 Select done");
+	SPDLOG_INFO("S3 Select done: {}", index);
   });
   handler.SetOnErrorCallback([&](const Aws::Client::AWSError<S3Errors> &errors) {
 	SPDLOG_INFO("S3 Select Error  | message: {}",
@@ -239,15 +240,15 @@ void simpleSelectRequest() {
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
-  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
-  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
+//  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
+//  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
   auto selectObjectContentOutcome = normal::plan::DefaultS3Client->SelectObjectContent(selectObjectContentRequest);
-  SPDLOG_INFO("Finished select request for {}/{}", bucketName, keyName);
-  if (selectObjectContentOutcome.IsSuccess()) {
-    SPDLOG_INFO("Select request for {}/{} was a success!", bucketName, keyName);
-  } else {
-    SPDLOG_INFO("Select request for {}/{} was a failure, error= ", bucketName, keyName, selectObjectContentOutcome.GetError().GetMessage());
-  }
+//  SPDLOG_INFO("Finished select request for {}/{}", bucketName, keyName);
+//  if (selectObjectContentOutcome.IsSuccess()) {
+//    SPDLOG_INFO("Select request for {}/{} was a success!", bucketName, keyName);
+//  } else {
+//    SPDLOG_INFO("Select request for {}/{} was a failure, error= ", bucketName, keyName, selectObjectContentOutcome.GetError().GetMessage());
+//  }
 }
 
 uint64_t simpleGetRequest(int requestNum) {
@@ -257,12 +258,12 @@ uint64_t simpleGetRequest(int requestNum) {
   bucketName = "pushdowndb";
   getObjectRequest.SetBucket(Aws::String(bucketName));
 //  auto requestKey = "ssb-sf100-sortlineorder/gzip_compression1_csv/lineorder_sharded/lineorder.gz.tbl." + std::to_string(requestNum);
-  auto requestKey = "ssb-sf0.01/csv/date.tbl";
-  auto schema = SSBSchema::date();
+//  auto requestKey = "ssb-sf0.01/csv/date.tbl";
+//  auto schema = SSBSchema::date();
 //  auto requestKey = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
 //  auto requestKey = "minidata.csv";
-//  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
-//  auto schema = SSBSchema::lineOrder();
+  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  auto schema = SSBSchema::lineOrder();
 //  auto requestKey = "ssb-sf100-sortlineorder/csv/customer_sharded/customer.tbl." + std::to_string(requestNum);
 //  auto schema = SSBSchema::customer();
 //  auto requestKey = "ssb-sf100-sortlineorder/csv/supplier.tbl";
@@ -277,9 +278,10 @@ uint64_t simpleGetRequest(int requestNum) {
   auto requestDurationUs = std::chrono::duration_cast<std::chrono::nanoseconds>(requestStopTime - requestStartTime).count();
   uint64_t resultSize;
   if (getObjectOutcome.IsSuccess()) {
-//    resultSize = getObjectOutcome.GetResult().GetContentLength();
+    resultSize = getObjectOutcome.GetResult().GetContentLength();
 //    SPDLOG_INFO("Got result of s3 GetObject request: {}, took: {}sec, rate = {}MB/s", requestNum, (double) (requestDurationUs) / 1.0e9,
 //                ((double) resultSize / 1024.0 / 1024.0) / ((double)(requestDurationUs) / 1.0e9));
+    SPDLOG_INFO("GET request finishes: {}, length: {}", requestNum, resultSize);
   } else {
     const auto& err = getObjectOutcome.GetError();
     SPDLOG_INFO("Failed to get result of s3 GetObject request: {}, took: {}, error={}", requestNum, (double) (requestDurationUs) / 1.0e9, err.GetMessage());
@@ -290,62 +292,77 @@ uint64_t simpleGetRequest(int requestNum) {
   resultSize = getObjectOutcome.GetResult().GetContentLength();
 //  std::string csvString(std::istreambuf_iterator<char>(retrievedFile), {});
 
-#ifdef __AVX2__
-//  auto fields = {::arrow::field(ColumnName::canonicalize("D_MONTH"), ::arrow::utf8()),
-//       ::arrow::field(ColumnName::canonicalize("D_MONTHNUMINYEAR"), ::arrow::int32()),
-//       ::arrow::field(ColumnName::canonicalize("D_LASTDAYINMONTHFL"), ::arrow::boolean()),
-//       ::arrow::field(ColumnName::canonicalize("D_HOLIDAYFL"), ::arrow::boolean())};
-//  auto outputSchema = std::make_shared<::arrow::Schema>(fields);
-  std::string callerName = "testCaller";
-  auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, schema, false);
-  auto tupleSet = parser.constructTupleSet();
-  auto convertStopTime = std::chrono::steady_clock::now();
-  auto convertDurationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(convertStopTime - convertStartTime).count();
-  SPDLOG_DEBUG("Num rows = {}", tupleSet->numRows());
-  SPDLOG_DEBUG("{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, tupleSet->numRows())));
-//  SPDLOG_INFO("Total time                         : {}ms", convertDurationNs / 1.0e6);
-//  SPDLOG_INFO("Convert result of s3 GetObject request: {}, took: {}sec, {}ns, rate = {}MB/s", requestNum, (double) (convertDurationNs) / 1.0e9,
-//              convertDurationNs,((double) resultSize / 1024.0 / 1024.0) / ((double)(convertDurationNs) / 1.0e9));
-  return convertDurationNs;
-#else
-  auto parse_options = arrow::csv::ParseOptions::Defaults();
-  auto read_options = arrow::csv::ReadOptions::Defaults();
-  read_options.use_threads = false;
-  read_options.skip_rows = 1;
-  read_options.autogenerate_column_names = false;
-  auto convert_options = arrow::csv::ConvertOptions::Defaults();
-  std::vector<std::string> columnNames;
-  std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
-  for (const auto &field: schema->fields()) {
-    columnNames.emplace_back(field->name());
-    columnTypes.emplace(field->name(), field->type());
+//#ifdef __AVX2__
+////  auto fields = {::arrow::field(ColumnName::canonicalize("D_MONTH"), ::arrow::utf8()),
+////       ::arrow::field(ColumnName::canonicalize("D_MONTHNUMINYEAR"), ::arrow::int32()),
+////       ::arrow::field(ColumnName::canonicalize("D_LASTDAYINMONTHFL"), ::arrow::boolean()),
+////       ::arrow::field(ColumnName::canonicalize("D_HOLIDAYFL"), ::arrow::boolean())};
+////  auto outputSchema = std::make_shared<::arrow::Schema>(fields);
+//  std::string callerName = "testCaller";
+//  auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, schema, false);
+//  auto tupleSet = parser.constructTupleSet();
+//  auto convertStopTime = std::chrono::steady_clock::now();
+//  auto convertDurationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(convertStopTime - convertStartTime).count();
+//  SPDLOG_DEBUG("Num rows = {}", tupleSet->numRows());
+//  SPDLOG_DEBUG("{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, tupleSet->numRows())));
+////  SPDLOG_INFO("Total time                         : {}ms", convertDurationNs / 1.0e6);
+////  SPDLOG_INFO("Convert result of s3 GetObject request: {}, took: {}sec, {}ns, rate = {}MB/s", requestNum, (double) (convertDurationNs) / 1.0e9,
+////              convertDurationNs,((double) resultSize / 1024.0 / 1024.0) / ((double)(convertDurationNs) / 1.0e9));
+//  return convertDurationNs;
+//#else
+//  auto parse_options = arrow::csv::ParseOptions::Defaults();
+//  auto read_options = arrow::csv::ReadOptions::Defaults();
+//  read_options.use_threads = false;
+//  read_options.skip_rows = 1;
+//  read_options.autogenerate_column_names = false;
+//  auto convert_options = arrow::csv::ConvertOptions::Defaults();
+//  std::vector<std::string> columnNames;
+//  std::unordered_map<std::string, std::shared_ptr<::arrow::DataType>> columnTypes;
+//  for (const auto &field: schema->fields()) {
+//    columnNames.emplace_back(field->name());
+//    columnTypes.emplace(field->name(), field->type());
+//  }
+//  read_options.column_names = columnNames;
+//  convert_options.column_types = columnTypes;
+//
+//
+//  // Create a reader
+//  auto reader = std::make_shared<ArrowAWSInputStream>(retrievedFile);
+////  auto reader = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile);
+////  auto reader = std::make_shared<arrow::io::BufferReader>(csvString);
+//  // Instantiate TableReader from input stream and options
+//  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
+//														reader,
+//														read_options,
+//														parse_options,
+//														convert_options);
+//  if (!makeReaderResult.ok())
+//	throw std::runtime_error(fmt::format(
+//		"Cannot parse S3 payload  |  Could not create a table reader, error: '{}'",
+//		makeReaderResult.status().message()));
+//  auto tableReader = *makeReaderResult;
+//  auto tupleSetV1 = TupleSet::make(tableReader);
+//  auto tupleSet = TupleSet2::create(tupleSetV1);
+//  SPDLOG_INFO("Num rows = {}", tupleSet->numRows());
+//  auto convertStopTime = std::chrono::steady_clock::now();
+//  auto convertDurationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(convertStopTime - convertStartTime).count();
+//  return convertDurationNs;
+//#endif
+}
+
+void normal::ssb::concurrentSelectTest(int numRequests) {
+  spdlog::set_level(spdlog::level::info);
+  std::vector<std::thread> threadVector = std::vector<std::thread>();
+  auto startTime = std::chrono::steady_clock::now();
+  for (int i = 0; i < numRequests; i++) {
+    threadVector.emplace_back(std::thread([i](){simpleSelectRequest(i);}));
   }
-  read_options.column_names = columnNames;
-  convert_options.column_types = columnTypes;
-
-
-  // Create a reader
-  auto reader = std::make_shared<ArrowAWSInputStream>(retrievedFile);
-//  auto reader = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile);
-//  auto reader = std::make_shared<arrow::io::BufferReader>(csvString);
-  // Instantiate TableReader from input stream and options
-  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
-														reader,
-														read_options,
-														parse_options,
-														convert_options);
-  if (!makeReaderResult.ok())
-	throw std::runtime_error(fmt::format(
-		"Cannot parse S3 payload  |  Could not create a table reader, error: '{}'",
-		makeReaderResult.status().message()));
-  auto tableReader = *makeReaderResult;
-  auto tupleSetV1 = TupleSet::make(tableReader);
-  auto tupleSet = TupleSet2::create(tupleSetV1);
-  SPDLOG_INFO("Num rows = {}", tupleSet->numRows());
-  auto convertStopTime = std::chrono::steady_clock::now();
-  auto convertDurationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(convertStopTime - convertStartTime).count();
-  return convertDurationNs;
-#endif
+  for(auto& t: threadVector) {
+    t.join();
+  }
+  auto stopTime = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
+  SPDLOG_INFO("{} Concurrent Select requests took: {}sec", numRequests, (double) (duration) / 1000000000.0);
 }
 
 void normal::ssb::concurrentGetTest(int numRequests) {

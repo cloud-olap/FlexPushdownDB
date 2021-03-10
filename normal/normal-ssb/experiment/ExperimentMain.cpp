@@ -26,7 +26,16 @@ int main(int argc, char **argv) {
     mathModelTest(networkLimit);
   }
 
-  // main test
+  // concurrent request test
+  else if (std::string(argv[1]) == "-cS") {
+    auto partitionNum = (int) (atoi(argv[2]));
+    concurrentSelectTest(partitionNum);
+  } else if (std::string(argv[1]) == "-cG") {
+    auto partitionNum = (int) (atoi(argv[2]));
+    concurrentGetTest(partitionNum);
+  }
+
+    // main test
   else {
     auto cacheSize = (size_t) (atof(argv[1]) * 1024 * 1024 * 1024);
     auto modeType = atoi(argv[2]);
