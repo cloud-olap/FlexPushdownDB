@@ -8,7 +8,7 @@
 #include <cstddef>
 
 namespace normal::ssb {
-  void mainTest(size_t cacheSize, int modeType, int cachingPolicyType, bool writeResults);
+  void mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults);
   void concurrentGetTest(int numRequests);
 }
 

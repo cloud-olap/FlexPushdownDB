@@ -12,6 +12,7 @@ using namespace normal::ssb;
 
 #define BACKWARD_HAS_BFD 1
 #include <backward.hpp>
+#include <normal/connector/MiniCatalogue.h>
 
 backward::SignalHandling sh;
 
@@ -20,14 +21,32 @@ const char* getCurrentTestSuiteName() { return doctest::detail::g_cs->currentTes
 
 int main(int argc, char **argv) {
 
+  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf100-sortlineorder/csv/");
   // math model test
   if (std::string(argv[1]) == "-m") {
     auto networkLimit = (size_t) (atof(argv[2]) * 1024 * 1024 * 1024 / 8);
     mathModelTest(networkLimit);
   }
+  // means we are specifying a different defaultMiniCatalogue directoy to use
+  else if (std::string(argv[1]) == "-d") {
+    std::string dirPrefix = argv[2];
+    auto cacheSize = (size_t) (atof(argv[3]) * 1024 * 1024 * 1024);
+    auto modeType = atoi(argv[4]);
+    auto cachingPolicyType = atoi(argv[5]);
+    SPDLOG_INFO("Cache size: {}", cacheSize);
+    SPDLOG_INFO("Mode type: {}", modeType);
+    SPDLOG_INFO("CachingPolicy type: {}", cachingPolicyType);
+    if (argc < 7) {
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, false);
+    } else {
+      bool writeResults = atoi(argv[6]);
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, writeResults);
+    }
+  }
 
   // main test
   else {
+    std::string dirPrefix = "ssb-sf100-sortlineorder/csv/";
     auto cacheSize = (size_t) (atof(argv[1]) * 1024 * 1024 * 1024);
     auto modeType = atoi(argv[2]);
     auto cachingPolicyType = atoi(argv[3]);
@@ -35,10 +54,10 @@ int main(int argc, char **argv) {
     SPDLOG_INFO("Mode type: {}", modeType);
     SPDLOG_INFO("CachingPolicy type: {}", cachingPolicyType);
     if (argc < 5) {
-      mainTest(cacheSize, modeType, cachingPolicyType, false);
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, false);
     } else {
       bool writeResults = atoi(argv[4]);
-      mainTest(cacheSize, modeType, cachingPolicyType, writeResults);
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, writeResults);
     }
   }
 

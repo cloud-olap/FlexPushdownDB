@@ -363,13 +363,13 @@ void normal::ssb::concurrentGetTest(int numRequests) {
   SPDLOG_INFO("{} Concurrent Get requests took: {}sec", numRequests, (double) (duration) / 1000000000.0);
 }
 
-void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, bool writeResults) {
+void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults) {
   spdlog::set_level(spdlog::level::off);
   // parameters
-  const int warmBatchSize = 1, executeBatchSize = 1;
+  const int warmBatchSize = 0, executeBatchSize = 168;
   std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
-  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
+  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
+  normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
 
 
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode;
@@ -397,7 +397,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   if (cachingPolicy->id() == BELADY) {
     auto beladyCachingPolicy = std::static_pointer_cast<normal::cache::BeladyCachingPolicy>(cachingPolicy);
-    generateSegmentKeyAndSqlQueryMappings(mode, beladyCachingPolicy, bucket_name, dir_prefix, warmBatchSize + executeBatchSize, sql_file_dir_path);
+    generateSegmentKeyAndSqlQueryMappings(mode, beladyCachingPolicy, bucket_name, dirPrefix, warmBatchSize + executeBatchSize, sql_file_dir_path);
     // Generate caching decisions for belady
     SPDLOG_INFO("Generating belady caching decisions. . .");
     beladyCachingPolicy->generateCacheDecisions(warmBatchSize + executeBatchSize);
@@ -407,7 +407,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   // interpreter
   normal::sql::Interpreter i(mode, cachingPolicy);
-  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
+  configureS3ConnectorMultiPartition(i, bucket_name, dirPrefix);
   // execute
   i.boot();
   SPDLOG_INFO("{} mode start", mode->toString());
@@ -447,7 +447,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   }
   SPDLOG_INFO("Execution phase finished");
 
-  SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
+  SPDLOG_INFO("{} mode finished in dirPrefix: {}\nExecution metrics:\n{}", mode->toString(), dirPrefix, i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
   SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
     SPDLOG_INFO("OnLoad time: {}", i.getCachingPolicy()->onLoadTime);
@@ -456,7 +456,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   auto metricsFilePath = filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
   std::ofstream fout(metricsFilePath.string());
-  fout << mode->toString() << " mode finished\n";
+  fout << mode->toString() << " mode finished in dirPrefix:" << dirPrefix << "\n";
   fout << "Warmup metrics:\n" << warmupMetrics << "\n";
   fout << "Warmup Cache metrics:\n" << warmupCacheMetrics << "\n";
   fout << "Execution metrics:\n" << i.showMetrics() << "\n";

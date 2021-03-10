@@ -186,6 +186,9 @@ std::string Interpreter::showMetrics() {
 //  // Cost of c5n.9xlarge instance in US West (North California)
 //  // All other costs are for the region US West (North California) as well
 //  double ec2Price = 2.43, totalCost = 0;
+//  // Cost of c5a.16xlarge instance in US West (North California)
+//  // All other costs are for the region US West (North California) as well
+//  double ec2Price = 3.04, totalCost = 0;
   double getRequestCost = 0.0;
   double s3ScanCost = 0.0;
   double s3ReturnCost = 0.0;
