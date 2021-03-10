@@ -11,6 +11,7 @@
 #include <normal/pushdown/filter/Filter.h>
 #include <normal/pushdown/Globals.h>
 #include <numeric>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::ssb;
 using namespace normal::sql;
@@ -129,9 +130,10 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   }
 
   // parameters
-  const size_t cacheSize = 12L * 1024 * 1024 * 1024;
+  const size_t cacheSize = 64L * 1024 * 1024 * 1024;
   std::string bucket_name = "pushdowndb";
   std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
+  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
 
   // modes
   std::vector<std::shared_ptr<normal::plan::operator_::mode::Mode>> modes;
