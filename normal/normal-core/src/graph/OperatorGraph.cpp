@@ -155,10 +155,17 @@ void graph::OperatorGraph::boot() {
 	else {
 	  auto ctx = std::make_shared<normal::core::OperatorContext>(*rootActor_, operatorManager_.lock()->getSegmentCacheActor());
 	  op->create(ctx);
-	  auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn<normal::core::OperatorActor>(op);
-	  if (!actorHandle)
-		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
-	  element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+	  if (op->getType() == "S3Select") {
+	    auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn<normal::core::OperatorActor, detached>(op);
+	    if (!actorHandle)
+      throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+      element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+	  } else {
+	    auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn<normal::core::OperatorActor>(op);
+	    if (!actorHandle)
+      throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+      element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
+	  }
 	}
   }
 }

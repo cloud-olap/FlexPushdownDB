@@ -163,127 +163,134 @@ bool S3Select::scanRangeSupported() {
 }
 
 std::shared_ptr<TupleSet2> S3Select::s3Select() {
-
-  // s3select request
-  std::optional<std::string> optionalErrorMessage;
-
-  Aws::String bucketName = Aws::String(s3Bucket_);
-
-  SelectObjectContentRequest selectObjectContentRequest;
-  selectObjectContentRequest.SetBucket(bucketName);
-  selectObjectContentRequest.SetKey(Aws::String(s3Object_));
-
-  // Unsure if Airmettle supports this, and we are scanning the entire
-  // file anyway so leaving it out when running with Airmettle for now.
-  if (!normal::plan::useAirmettle) {
-    if (scanRangeSupported()) {
-      ScanRange scanRange;
-      scanRange.SetStart(startOffset_);
-      scanRange.SetEnd(finishOffset_);
-
-      selectObjectContentRequest.SetScanRange(scanRange);
-    }
-  }
-  selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
-
-  // combine columns with filterSql
-  std::string sql = "";
-  for (auto colIndex = 0; colIndex < neededColumnNames_.size(); colIndex++) {
-    if (colIndex == 0) {
-      sql += neededColumnNames_[colIndex];
-    } else {
-      sql += ", " + neededColumnNames_[colIndex];
-    }
-  }
-  sql = "select " + sql + " from s3Object" + filterSql_;
-
-  selectObjectContentRequest.SetExpression(sql.c_str());
-
-  InputSerialization inputSerialization = getInputSerialization();
-
-  selectObjectContentRequest.SetInputSerialization(inputSerialization);
-
-  CSVOutput csvOutput;
-  OutputSerialization outputSerialization;
-  outputSerialization.SetCSV(csvOutput);
-  selectObjectContentRequest.SetOutputSerialization(outputSerialization);
-
-  SelectObjectContentHandler handler;
-  handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
-	SPDLOG_DEBUG("S3 Select RecordsEvent  |  name: {}, size: {}",
-				 name(),
-				 recordsEvent.GetPayload().size());
-	auto payload = recordsEvent.GetPayload();
-	if (payload.size() > 0) {
-	  // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
-	  if (normal::plan::useAirmettle) {
-      returnedBytes_ += payload.size();
-    }
-	  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-#ifdef __AVX2__
-    simdParser_->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
-#else
-	  s3Result_.insert(s3Result_.end(), payload.begin(), payload.end());
-#endif
-	  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        stopConversionTime - startConversionTime).count();
-    selectConvertTimeNS_ += conversionTime;
-    selectTransferTimeNS_ -= conversionTime;
-  }
-  });
-  handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
-	SPDLOG_DEBUG("S3 Select StatsEvent  |  name: {}, scanned: {}, processed: {}, returned: {}",
-				 name(),
-				 statsEvent.GetDetails().GetBytesScanned(),
-				 statsEvent.GetDetails().GetBytesProcessed(),
-				 statsEvent.GetDetails().GetBytesReturned());
-	processedBytes_ += statsEvent.GetDetails().GetBytesProcessed();
-	if (!normal::plan::useAirmettle) {
-    returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
-  }
-  });
-  handler.SetEndEventCallback([&]() {
-	SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",
-				 name());
-  });
-  handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
-	SPDLOG_DEBUG("S3 Select Error  |  name: {}, message: {}",
-				 name(),
-				 std::string(errors.GetMessage()));
-	optionalErrorMessage = std::optional(errors.GetMessage());
-  });
-
-  selectObjectContentRequest.SetEventStreamHandler(handler);
-
-  std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
-  auto selectObjectContentOutcome = s3Client_->SelectObjectContent(selectObjectContentRequest);
-  std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
-  selectTransferTimeNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
-  numRequests_++;
-
-  // If no results are returned then there is nothing to process
-//  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
-  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-
   std::shared_ptr<TupleSet2> tupleSet;
-#ifdef __AVX2__
-  tupleSet = simdParser_->outputCompletedTupleSet();
-#else
-  if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
-    auto tupleSet = TupleSet2::create(tupleSetV1);
-  } else {
-    tupleSet = TupleSet2::make2();
-  }
-#endif
-  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-          stopConversionTime - startConversionTime).count();
-  selectConvertTimeNS_ += conversionTime;
-  if (optionalErrorMessage.has_value()) {
-    throw std::runtime_error(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
-  }
+  selectRequestComplete_ = false;
+  while (!selectRequestComplete_) {
+    generateParser();
+    // s3select request
+    std::optional<std::string> optionalErrorMessage;
 
+    Aws::String bucketName = Aws::String(s3Bucket_);
+
+    SelectObjectContentRequest selectObjectContentRequest;
+    selectObjectContentRequest.SetBucket(bucketName);
+    selectObjectContentRequest.SetKey(Aws::String(s3Object_));
+
+    // Unsure if Airmettle supports this, and we are scanning the entire
+    // file anyway so leaving it out when running with Airmettle for now.
+    if (!normal::plan::useAirmettle) {
+      if (scanRangeSupported()) {
+        ScanRange scanRange;
+        scanRange.SetStart(startOffset_);
+        scanRange.SetEnd(finishOffset_);
+
+        selectObjectContentRequest.SetScanRange(scanRange);
+      }
+    }
+    selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
+
+    // combine columns with filterSql
+    std::string sql = "";
+    for (auto colIndex = 0; colIndex < neededColumnNames_.size(); colIndex++) {
+      if (colIndex == 0) {
+        sql += neededColumnNames_[colIndex];
+      } else {
+        sql += ", " + neededColumnNames_[colIndex];
+      }
+    }
+    sql = "select " + sql + " from s3Object" + filterSql_;
+
+    selectObjectContentRequest.SetExpression(sql.c_str());
+
+    InputSerialization inputSerialization = getInputSerialization();
+
+    selectObjectContentRequest.SetInputSerialization(inputSerialization);
+
+    CSVOutput csvOutput;
+    OutputSerialization outputSerialization;
+    outputSerialization.SetCSV(csvOutput);
+    selectObjectContentRequest.SetOutputSerialization(outputSerialization);
+
+    SelectObjectContentHandler handler;
+    handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
+        SPDLOG_DEBUG("S3 Select RecordsEvent  |  name: {}, size: {}",
+                     name(),
+                     recordsEvent.GetPayload().size());
+        auto payload = recordsEvent.GetPayload();
+        if (payload.size() > 0) {
+          // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
+          if (normal::plan::useAirmettle) {
+            returnedBytes_ += payload.size();
+          }
+          std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+#ifdef __AVX2__
+          simdParser_->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+#else
+          s3Result_.insert(s3Result_.end(), payload.begin(), payload.end());
+#endif
+          std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+          auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                  stopConversionTime - startConversionTime).count();
+          selectConvertTimeNS_ += conversionTime;
+          selectTransferTimeNS_ -= conversionTime;
+        }
+    });
+    handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
+        SPDLOG_DEBUG("S3 Select StatsEvent  |  name: {}, scanned: {}, processed: {}, returned: {}",
+                     name(),
+                     statsEvent.GetDetails().GetBytesScanned(),
+                     statsEvent.GetDetails().GetBytesProcessed(),
+                     statsEvent.GetDetails().GetBytesReturned());
+        processedBytes_ += statsEvent.GetDetails().GetBytesProcessed();
+        if (!normal::plan::useAirmettle) {
+          returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
+        }
+    });
+    handler.SetEndEventCallback([&]() {
+        SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",
+                     name());
+        selectRequestComplete_ = true;
+    });
+    handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
+        SPDLOG_DEBUG("S3 Select Error  |  name: {}, message: {}",
+                     name(),
+                     std::string(errors.GetMessage()));
+        optionalErrorMessage = std::optional(errors.GetMessage());
+    });
+
+    selectObjectContentRequest.SetEventStreamHandler(handler);
+
+    std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
+    auto selectObjectContentOutcome = s3Client_->SelectObjectContent(selectObjectContentRequest);
+    std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
+    selectTransferTimeNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            stopTransferTime - startTransferTime).count();
+    numRequests_++;
+    if (!selectRequestComplete_) {
+      continue;
+    }
+
+    // If no results are returned then there is nothing to process
+    //  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
+    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+
+#ifdef __AVX2__
+    tupleSet = simdParser_->outputCompletedTupleSet();
+#else
+    if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
+      auto tupleSet = TupleSet2::create(tupleSetV1);
+    } else {
+      tupleSet = TupleSet2::make2();
+    }
+#endif
+    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            stopConversionTime - startConversionTime).count();
+    selectConvertTimeNS_ += conversionTime;
+    if (optionalErrorMessage.has_value()) {
+      throw std::runtime_error(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
+    }
+  }
   return tupleSet;
 }
 

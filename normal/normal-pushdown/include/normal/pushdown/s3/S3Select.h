@@ -46,6 +46,7 @@ class S3Select: public S3SelectScan {
 
   private:
     std::string filterSql_;   // "where ...."
+    volatile bool selectRequestComplete_;
     std::shared_ptr<S3CSVParser> parser_;
 #ifdef __AVX2__
     std::shared_ptr<CSVToArrowSIMDChunkParser> simdParser_;
