@@ -51,6 +51,10 @@ CSVToArrowSIMDChunkParser::~CSVToArrowSIMDChunkParser() {
   free(pcsv_.indexes);
 }
 
+bool CSVToArrowSIMDChunkParser::isInitialized() {
+  return initialized_;
+}
+
 void CSVToArrowSIMDChunkParser::loadBuffer(char* data, uint64_t &sizeRemaining, uint64_t &dataIndex, bool lastLine) {
   bufferBytesUtilized_ = 0;
   // Need a dummy row to start the buffer to avoid special first element handling as this parser finds the indices of

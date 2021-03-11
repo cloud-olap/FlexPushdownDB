@@ -22,6 +22,8 @@ public:
   void parseChunk(char* data, uint64_t size);
   std::shared_ptr<normal::tuple::TupleSet2> outputCompletedTupleSet();
 
+  bool isInitialized();
+
 private:
   // Parse data in buffer with delimiters as filled out in pcsv. Initialize data structures if necessary and output
   // results to array builders.
