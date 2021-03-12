@@ -278,31 +278,34 @@ uint64_t simpleGetRequest(int requestNum) {
     getObjectRequest.SetKey(Aws::String(requestKey));
 
 //  SPDLOG_INFO("Starting s3 GetObject request: {} for {}/{}", requestNum, bucketName, requestKey);
-
+  Aws::S3::Model::GetObjectResult getResult;
+  while (true) {
     Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::plan::DefaultS3Client->GetObject(getObjectRequest);
-    Aws::S3::Model::GetObjectResult getResult;
     uint64_t resultSize;
     if (getObjectOutcome.IsSuccess()) {
       auto requestStopTime = std::chrono::steady_clock::now();
       auto requestDurationUs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-            requestStopTime - requestStartTime).count();
+              requestStopTime - requestStartTime).count();
       getResult = getObjectOutcome.GetResultWithOwnership();
       resultSize = getObjectOutcome.GetResult().GetContentLength();
 //    SPDLOG_INFO("Got result of s3 GetObject request: {}, took: {}sec, rate = {}MB/s", requestNum, (double) (requestDurationUs) / 1.0e9,
 //                ((double) resultSize / 1024.0 / 1024.0) / ((double)(requestDurationUs) / 1.0e9));
-      SPDLOG_INFO("GET request finishes: {}, length: {}, took: {}sec", requestNum, resultSize, (double) (requestDurationUs) / 1.0e9);
-      return requestDurationUs;
+      SPDLOG_INFO("GET request finishes: {}, length: {}, took: {}sec, rate: {}MB/s", requestNum, resultSize,
+                  (double) (requestDurationUs) / 1.0e9, ((double) resultSize / 1024.0 / 1024.0) / ((double)(requestDurationUs) / 1.0e9));
+      break;
+//      return requestDurationUs;
     } else {
 //      auto requestDurationUs = std::chrono::duration_cast<std::chrono::nanoseconds>(
 //            requestStopTime - requestStartTime).count();
 //      const auto &err = getObjectOutcome.GetError();
 //      SPDLOG_INFO("Failed to get result of s3 GetObject request: {}, took: {}, error={}", requestNum,
 //                  (double) (requestDurationUs) / 1.0e9, err.GetMessage());
-      return 0;
+//      return 0;
     }
+  }
+  return 0;
 //  auto convertStartTime = std::chrono::steady_clock::now();
 //  auto &retrievedFile = getResult.GetBody();
-//    return 0;
 //  std::string csvString(std::istreambuf_iterator<char>(retrievedFile), {});
 //#ifdef __AVX2__
 ////  auto fields = {::arrow::field(ColumnName::canonicalize("D_MONTH"), ::arrow::utf8()),
@@ -390,9 +393,12 @@ void normal::ssb::concurrentGetTest(int numRequests) {
   for(auto& t: threadVector) {
     t.join();
   }
+  // change this depending on shard size in test function above
+  double shardSizeInGB = 16.3 / 1024.;
   auto stopTime = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
-  SPDLOG_INFO("{} Concurrent Get requests took: {}sec", numRequests, (double) (duration) / 1000000000.0);
+  SPDLOG_INFO("{} Concurrent Get requests took: {}sec\n Machine transfer rate: {}GB/s", numRequests, (double) (duration) / 1.0e9,
+              (((double) numRequests * shardSizeInGB) / ((double) (duration) / 1.0e9)));
 }
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults) {

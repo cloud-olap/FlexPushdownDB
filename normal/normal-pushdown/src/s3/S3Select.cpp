@@ -258,7 +258,9 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
 
   // retry loop for S3 Select request
   selectRequestComplete_ = false;
-  while (!selectRequestComplete_) {
+  // Sleep for 0.01sec on failure, no need to busy spin the entire time while waiting to try again
+  uint64_t retrySleepTimeMS = 10;
+  while (true) {
     // create a new parser to use as the current one has results from the previous request
     if (simdParser_->isInitialized()) {
       generateParser();
@@ -269,6 +271,10 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
     std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
     selectTransferTimeNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
             stopTransferTime - startTransferTime).count();
+    if (selectRequestComplete_) {
+      break;
+    }
+    std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
   // If the request doesn't complete we don't count it in our costs as these requests seem to fail before sending
   // messages to S3. This occurs when sending many S3 Select requests in parallel from our machine.
