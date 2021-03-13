@@ -34,31 +34,20 @@ std::string showMeasurementMetrics(const double executionTime,
                                    const size_t selectConvertNS,
                                    const double hitRatio,
                                    const std::shared_ptr<normal::plan::operator_::mode::Mode>& mode) {
-  // collect
+  // collect metrics
   std::stringstream formattedProcessingTime1;
-//  formattedProcessingTime1 << i.getExecutionTimes()[0] << " secs";
   formattedProcessingTime1 << executionTime << " secs";
 
   std::stringstream formattedProcessedBytes1;
-//  formattedProcessedBytes1 << i.getBytesTransferred()[0].first << " B" << " ("
-//                           << ((double)i.getBytesTransferred()[0].first / 1024.0 / 1024.0 / 1024.0) << " GB)";
   formattedProcessedBytes1 << processedBytes << " B" << " ("
                            << ((double) processedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
   std::stringstream formattedReturnedBytes1;
-//  formattedReturnedBytes1 << i.getBytesTransferred()[0].second << " B" << " ("
-//                          << ((double)i.getBytesTransferred()[0].second / 1024.0 / 1024.0 / 1024.0) << " GB)";
   formattedReturnedBytes1 << returnedBytes << " B" << " ("
                           << ((double) returnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
   std::stringstream formattedGetTransferConvertRate;
   formattedGetTransferConvertRate.precision(4);
-//  if (i.getGetTransferConvertNs()[0].first > 0 && i.getGetTransferConvertNs()[0].second > 0) {
-//    formattedGetTransferConvertRate << ((double) i.getBytesTransferred()[0].second / 1024.0 / 1024.0) /
-//                                       (((double) i.getGetTransferConvertNs()[0].first + i.getGetTransferConvertNs()[0].second) / 1.0e9) << " MB/s/req";
-//  } else {
-//    formattedGetTransferConvertRate << "NA";
-//  }
   if (getTransferNS > 0 && getConvertNS > 0) {
     formattedGetTransferConvertRate << ((double) returnedBytes / 1024.0 / 1024.0) /
                                        ((double) (getTransferNS + getConvertNS) / 1.0e9) << " MB/s/req";
@@ -68,12 +57,6 @@ std::string showMeasurementMetrics(const double executionTime,
 
   std::stringstream formattedSelectTransferConvertRate;
   formattedSelectTransferConvertRate.precision(4);
-//  if (i.getSelectTransferConvertNs()[0].first > 0 && i.getSelectTransferConvertNs()[0].second > 0) {
-//    formattedSelectTransferConvertRate << ((double) i.getBytesTransferred()[0].second / 1024.0 / 1024.0) /
-//                                          ((double) (i.getSelectTransferConvertNs()[0].first + i.getSelectTransferConvertNs()[0].second) / 1.0e9) << " MB/s/req";
-//  } else {
-//    formattedSelectTransferConvertRate << "NA";
-//  }
   if (selectTransferNS > 0 && selectConvertNS > 0) {
     formattedSelectTransferConvertRate << ((double) returnedBytes / 1024.0 / 1024.0) /
                                           ((double) (selectTransferNS + selectConvertNS) / 1.0e9) << " MB/s/req";
@@ -82,11 +65,6 @@ std::string showMeasurementMetrics(const double executionTime,
   }
 
   std::stringstream formattedS3SelectSelectivity;
-//  if (i.getBytesTransferred()[0].second && i.getSelectTransferConvertNs()[0].first > 0 && i.getGetTransferConvertNs()[0].first == 0) {
-//    formattedS3SelectSelectivity << (double) i.getBytesTransferred()[0].second / (double) i.getBytesTransferred()[0].first;
-//  } else {
-//    formattedS3SelectSelectivity << "NA";
-//  }
   if (returnedBytes && selectTransferNS > 0 && getTransferNS == 0) {
     formattedS3SelectSelectivity << (double) returnedBytes / (double) processedBytes;
   } else {
@@ -94,10 +72,9 @@ std::string showMeasurementMetrics(const double executionTime,
   }
 
   std::stringstream formattedHitRatio;
-//  formattedHitRatio << i.getHitRatios()[0];
   formattedHitRatio << hitRatio;
 
-  // format
+  // format metrics
   std::stringstream ss;
   ss << std::left << std::setw(20) << mode->toString();
   ss << std::left << std::setw(18) << formattedProcessingTime1.str();
@@ -163,8 +140,8 @@ void normal::ssb::MathModelTest::runTest() {  // unit: B/s
     normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
   }
 
-  // parameters
-  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucketName_, dirPrefix_);
+  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(
+          bucketName_, dirPrefix_);
 
   // modes
   std::vector<std::shared_ptr<normal::plan::operator_::mode::Mode>> modes;
