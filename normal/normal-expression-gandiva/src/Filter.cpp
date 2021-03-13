@@ -19,9 +19,6 @@ std::shared_ptr<Filter> Filter::make(const std::shared_ptr<Expression> &Pred) {
 }
 
 std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::TupleSet2 &tupleSet) {
-
-//  std::lock_guard<std::mutex> g(BigGlobalLock);
-
   if (tupleSet.schema().has_value()) {
 
 	auto filteredTupleSet = normal::tuple::TupleSet2::make(tupleSet.schema().value());
@@ -33,7 +30,8 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 
 	std::shared_ptr<arrow::RecordBatch> batch;
 	arrow::TableBatchReader reader(*arrowTable);
-	reader.set_chunksize(normal::tuple::DefaultChunkSize); // FIXME: Fails if this is not set, not sure why???
+  // Maximum chunk size Gandiva filter evaluates at a time
+	reader.set_chunksize(normal::tuple::DefaultChunkSize);
 	arrowStatus = reader.ReadNext(&batch);
 	if (!arrowStatus.ok()) {
 	  throw std::runtime_error(arrowStatus.message());
@@ -42,10 +40,8 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 	while (batch != nullptr) {
 
 	  assert(batch->ValidateFull().ok());
-
 	  std::shared_ptr<::gandiva::SelectionVector> selection_vector;
-	  auto status = ::gandiva::SelectionVector::MakeInt16(batch->num_rows(), ::arrow::default_memory_pool(), &selection_vector);
-
+	  auto status = ::gandiva::SelectionVector::MakeInt32(batch->num_rows(), ::arrow::default_memory_pool(), &selection_vector);
 	  if (!status.ok()) {
 		throw std::runtime_error(status.message());
 	  }
@@ -106,6 +102,8 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
 }
 
 void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &schema) {
+  // Use lock the compilation phase as it is not necessarily thread safe
+  std::lock_guard<std::mutex> g(BigGlobalLock);
   // Compile the expressions
   pred_->compile(schema->getSchema());
 
@@ -165,7 +163,7 @@ std::shared_ptr<::gandiva::Projector> normal::expression::gandiva::buildGandivaP
     std::shared_ptr<::gandiva::Projector> gandivaProjector;
     auto status = ::gandiva::Projector::Make(schema->getSchema(),
                                         fieldExpressions,
-                                        ::gandiva::SelectionVector::MODE_UINT16,
+                                        ::gandiva::SelectionVector::MODE_UINT32,
                                         ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
                                         &gandivaProjector);
 

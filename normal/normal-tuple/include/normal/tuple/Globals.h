@@ -15,7 +15,7 @@ namespace normal::tuple {
 /**
  * Default number of records per arrow chunk when processing record batches
  */
-inline constexpr int DefaultChunkSize = 10000;
+inline constexpr int DefaultChunkSize = 100000;
 
 }
 
