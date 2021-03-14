@@ -404,7 +404,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults) {
   spdlog::set_level(spdlog::level::info);
   // parameters
-  const int warmBatchSize = 0, executeBatchSize = 10;
+  const int warmBatchSize = 30, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
@@ -463,6 +463,13 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
       sql_file_dir_path = sql_file_dir_path.parent_path();
     }
     SPDLOG_INFO("Cache warm phase finished");
+  } else {
+    // execute one query to avoid first-run latency
+    SPDLOG_INFO("First-run query:");
+    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 1));
+    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    executeSql(i, sql, false, false, fmt::format("{}output.txt", index));
+    sql_file_dir_path = sql_file_dir_path.parent_path();
   }
 
   // collect warmup metrics for later output
