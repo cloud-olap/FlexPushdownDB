@@ -4,13 +4,24 @@ import subprocess
 import sys
 
 metrics_file = 'math_model_metrics'
+repeatTimes = 2
 oneMinuteInSeconds = 60
+oldNumLines, newNumLines = 0, 0
+
+
+def num_file_lines(filePath):
+    res = subprocess.run(['wc', '-l', filePath], stdout=subprocess.PIPE)
+    output = res.stdout.decode('utf-8')
+    strs = output.split()
+    return int(strs[0])
 
 
 def expVary_h():
+    global oldNumLines, newNumLines
+
     os.system('rm math_model_metrics')
     # make parameters
-    r_c_pairs = [[0.1, 5], [0.5, 5], [0.5, 10], [0.8, 10], [0.9, 15], [0.9, 17]]
+    r_c_pairs = [[0.1, 5], [0.5, 5], [0.5, 10], [0.9, 10], [0.9, 17]]
     network = 0
     hs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
@@ -28,30 +39,39 @@ def expVary_h():
                 file.write('\nh:' + str(param['h']) + ' r:' + str(param['r']) + ' nCol:' + str(param['nCol']) + '\n')
             os.system('./normal-ssb-query-generate-file 5 ' + \
                       str(param['h']) + ' ' + str(param['r']) + ' ' + str(param['nCol']))
-            # os.system('./normal-ssb-experiment -m ' + str(param['network']))
             while True:
-                command = ["./normal-ssb-experiment", '-m', str(param['network'])]
+                command = ["./normal-ssb-experiment", '-m', str(param['network']), str(repeatTimes)]
                 print("Running: " + " ".join(command))
-                # p = subprocess.Popen('./normal-ssb-experiment -m ' + str(param['network']))
                 p = subprocess.Popen(command)
-                success = True
+                # catch timeout
+                timeout = False
                 try:
-                    p.wait(oneMinuteInSeconds)
+                    p.wait(oneMinuteInSeconds * repeatTimes * 2)
                 except subprocess.TimeoutExpired:
                     p.kill()
                     time.sleep(5)
+                    timeout = True
+                # catch crash during execution
+                newNumLines = num_file_lines(metrics_file)
+                print("!!!! OLDNUMLINES:", oldNumLines)
+                print("!!!! NEWNUMLINES:", newNumLines)
+                # if newNumLines - oldNumLines == 10 and not timeout:
+                if not timeout:
+                    break
+                else:
                     print('retry')
-                    success = False
-                if success: break
+            oldNumLines = newNumLines
         os.system('mv math_model_metrics math_model_metrics_vary-h_' + 'r-' + \
                   str(r_c_pair[0]) + '_nCol-' + str(r_c_pair[1]) + '_network-' + str(network))
 
 
 def expVary_network():
+    global oldNumLines, newNumLines
+
     os.system('rm math_model_metrics')
     # make parameters
     r_c_pairs = [[0.1, 5], [0.5, 10], [0.9, 17]]
-    networks = [25, 22.5, 20, 17.5, 15, 12.5, 10, 7.5, 5]
+    networks = [25, 22.5, 20, 17.5, 15, 12.5, 10]
     hs = [0.2, 0.5, 0.8]
 
     parameter_sets = []
@@ -69,21 +89,27 @@ def expVary_network():
                 file.write('\nh:' + str(param['h']) + ' r:' + str(param['r']) + ' nCol:' + str(param['nCol']) + '\n')
             os.system('./normal-ssb-query-generate-file 5 ' + \
                       str(param['h']) + ' ' + str(param['r']) + ' ' + str(param['nCol']))
-            # os.system('./normal-ssb-experiment -m ' + str(param['network']))
             while True:
-                command = ["./normal-ssb-experiment", '-m', str(param['network'])]
+                command = ["./normal-ssb-experiment", '-m', str(param['network']), str(repeatTimes)]
                 print("Running: " + " ".join(command))
-                # p = subprocess.Popen('./normal-ssb-experiment -m ' + str(param['network']))
                 p = subprocess.Popen(command)
-                success = True
+                # catch timeout
+                timeout = False
                 try:
-                    p.wait(oneMinuteInSeconds * (25 / param['network']))
+                    p.wait(oneMinuteInSeconds * (25 / param['network']) * repeatTimes * 2)
                 except subprocess.TimeoutExpired:
                     p.kill()
                     time.sleep(5)
+                    timeout = True
+                # catch crash during execution
+                newNumLines = num_file_lines(metrics_file)
+                print("!!!! OLDNUMLINES:", oldNumLines)
+                print("!!!! NEWNUMLINES:", newNumLines)
+                # if newNumLines - oldNumLines == 10 and not timeout:
+                if not timeout:
+                    break
+                else:
                     print('retry')
-                    success = False
-                if success: break
         h = parameter_set[0]['h']
         r = parameter_set[0]['r']
         nCol = parameter_set[0]['nCol']
@@ -92,11 +118,14 @@ def expVary_network():
 
 
 if len(sys.argv) < 2:
-    exit("Lack parameter")
+    exit("Lack parameter, at least 1")
 
 if sys.argv[1] == '-h':
     expVary_h()
 elif sys.argv[1] == '-n':
     expVary_network()
 else:
+    print(num_file_lines("math_model.py"))
     exit("Bad parameter: " + sys.argv[1])
+
+os.system("sudo shutdown -h now")

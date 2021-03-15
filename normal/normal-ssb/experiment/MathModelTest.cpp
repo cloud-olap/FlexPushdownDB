@@ -151,10 +151,12 @@ void normal::ssb::MathModelTest::runTest() {  // unit: B/s
 
   // as now we make many S3 requests at the same time, the first batch of requests meet a huge delay (5 secs)
   // so run one pushdown query first
+  SPDLOG_INFO("Beginning query to aviod first-run latency:");
   runTestSingleMode(normal::plan::operator_::mode::Modes::fullPushdownMode(), false);
 
   // test on each mode
   for (int k = 0; k < numRuns_; k++) {
+    SPDLOG_INFO("Trial {}:", k + 1);
     for (auto const& mode: modes) {
       runTestSingleMode(mode, true);
     }
@@ -162,23 +164,31 @@ void normal::ssb::MathModelTest::runTest() {  // unit: B/s
 
   // compute avg for each metrics value and format them
   for (auto const& mode: modes) {
-    auto metricsVec = metricsMap_.find(mode->toString())->second;
-    double avgExecutionTime = std::accumulate(metricsVec.executionTimeVec.begin(), metricsVec.executionTimeVec.end(), 0.0) / metricsVec.executionTimeVec.size();
-    size_t avgProcessedBytes = std::accumulate(metricsVec.processedBytesVec.begin(), metricsVec.processedBytesVec.end(), 0.0) / metricsVec.processedBytesVec.size();
-    size_t avgReturnedBytes = std::accumulate(metricsVec.returnedBytesVec.begin(), metricsVec.returnedBytesVec.end(), 0.0) / metricsVec.returnedBytesVec.size();
-    size_t avgGetTransferNS = std::accumulate(metricsVec.getTransferNSVec.begin(), metricsVec.getTransferNSVec.end(), 0.0) / metricsVec.getTransferNSVec.size();
-    size_t avgGetConvertNS = std::accumulate(metricsVec.getConvertNSVec.begin(), metricsVec.getConvertNSVec.end(), 0.0) / metricsVec.getConvertNSVec.size();
-    size_t avgSelectTransferNS = std::accumulate(metricsVec.selectTransferNSVec.begin(), metricsVec.selectTransferNSVec.end(), 0.0) / metricsVec.selectTransferNSVec.size();
-    size_t avgSelectConvertNS = std::accumulate(metricsVec.selectConvertNSVec.begin(), metricsVec.selectConvertNSVec.end(), 0.0) / metricsVec.selectConvertNSVec.size();
-    double avgHitRatio = std::accumulate(metricsVec.hitRatioVec.begin(), metricsVec.hitRatioVec.end(), 0.0) / metricsVec.hitRatioVec.size();
-    ss << showMeasurementMetrics (avgExecutionTime,
-                                  avgProcessedBytes,
-                                  avgReturnedBytes,
-                                  avgGetTransferNS,
-                                  avgGetConvertNS,
-                                  avgSelectTransferNS,
-                                  avgSelectConvertNS,
-                                  avgHitRatio,
+    auto& metricsVec = metricsMap_.find(mode->toString())->second;
+    int minId = 0;
+    double minExecutionTime = metricsVec.executionTimeVec[0];
+    for (int id = 1; id < (int) metricsVec.executionTimeVec.size(); id++) {
+      if (metricsVec.executionTimeVec[id] < minExecutionTime) {
+        minId = id;
+        minExecutionTime = metricsVec.executionTimeVec[id];
+      }
+    }
+//    double avgExecutionTime = std::accumulate(metricsVec.executionTimeVec.begin(), metricsVec.executionTimeVec.end(), 0.0) / metricsVec.executionTimeVec.size();
+//    size_t avgProcessedBytes = std::accumulate(metricsVec.processedBytesVec.begin(), metricsVec.processedBytesVec.end(), 0.0) / metricsVec.processedBytesVec.size();
+//    size_t avgReturnedBytes = std::accumulate(metricsVec.returnedBytesVec.begin(), metricsVec.returnedBytesVec.end(), 0.0) / metricsVec.returnedBytesVec.size();
+//    size_t avgGetTransferNS = std::accumulate(metricsVec.getTransferNSVec.begin(), metricsVec.getTransferNSVec.end(), 0.0) / metricsVec.getTransferNSVec.size();
+//    size_t avgGetConvertNS = std::accumulate(metricsVec.getConvertNSVec.begin(), metricsVec.getConvertNSVec.end(), 0.0) / metricsVec.getConvertNSVec.size();
+//    size_t avgSelectTransferNS = std::accumulate(metricsVec.selectTransferNSVec.begin(), metricsVec.selectTransferNSVec.end(), 0.0) / metricsVec.selectTransferNSVec.size();
+//    size_t avgSelectConvertNS = std::accumulate(metricsVec.selectConvertNSVec.begin(), metricsVec.selectConvertNSVec.end(), 0.0) / metricsVec.selectConvertNSVec.size();
+//    double avgHitRatio = std::accumulate(metricsVec.hitRatioVec.begin(), metricsVec.hitRatioVec.end(), 0.0) / metricsVec.hitRatioVec.size();
+    ss << showMeasurementMetrics (metricsVec.executionTimeVec[minId],
+                                  metricsVec.processedBytesVec[minId],
+                                  metricsVec.returnedBytesVec[minId],
+                                  metricsVec.getTransferNSVec[minId],
+                                  metricsVec.getConvertNSVec[minId],
+                                  metricsVec.selectTransferNSVec[minId],
+                                  metricsVec.selectConvertNSVec[minId],
+                                  metricsVec.hitRatioVec[minId],
                                   mode);
   }
 
@@ -248,7 +258,7 @@ void normal::ssb::MathModelTest::runTestSingleMode(
   if (saveMetrics) {
     auto metricsPair = metricsMap_.find(mode->toString());
     if (metricsPair != metricsMap_.end()) {
-      auto metricsVec = metricsPair->second;
+      auto& metricsVec = metricsPair->second;
       metricsVec.executionTimeVec.emplace_back(i.getExecutionTimes()[0]);
       metricsVec.processedBytesVec.emplace_back(i.getBytesTransferred()[0].first);
       metricsVec.returnedBytesVec.emplace_back(i.getBytesTransferred()[0].second);
