@@ -17,52 +17,64 @@ using namespace normal::ssb;
 using namespace normal::sql;
 using namespace normal::pushdown;
 
+MathModelTest::MathModelTest(size_t networkLimit, int numRuns) :
+  networkLimit_(networkLimit),
+  numRuns_(numRuns) {}
+
 // not the best solution, should make a header file down the road most likely but this will work for now
 void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix);
 std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, std::string outputFileName = "");
 
-std::string showMeasurementMetrics(const Interpreter& i, const std::shared_ptr<normal::plan::operator_::mode::Mode>& mode) {
-  // collect
+std::string showMeasurementMetrics(const double executionTime,
+                                   const size_t processedBytes,
+                                   const size_t returnedBytes,
+                                   const size_t getTransferNS,
+                                   const size_t getConvertNS,
+                                   const size_t selectTransferNS,
+                                   const size_t selectConvertNS,
+                                   const double hitRatio,
+                                   const std::shared_ptr<normal::plan::operator_::mode::Mode>& mode) {
+  // collect metrics
   std::stringstream formattedProcessingTime1;
-  formattedProcessingTime1 << i.getExecutionTimes()[0] << " secs";
+  formattedProcessingTime1 << executionTime << " secs";
 
   std::stringstream formattedProcessedBytes1;
-  formattedProcessedBytes1 << i.getBytesTransferred()[0].first << " B" << " ("
-                           << ((double)i.getBytesTransferred()[0].first / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  formattedProcessedBytes1 << processedBytes << " B" << " ("
+                           << ((double) processedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
   std::stringstream formattedReturnedBytes1;
-  formattedReturnedBytes1 << i.getBytesTransferred()[0].second << " B" << " ("
-                          << ((double)i.getBytesTransferred()[0].second / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  formattedReturnedBytes1 << returnedBytes << " B" << " ("
+                          << ((double) returnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
 
   std::stringstream formattedGetTransferConvertRate;
   formattedGetTransferConvertRate.precision(4);
-  if (i.getGetTransferConvertNs()[0].first > 0 && i.getGetTransferConvertNs()[0].second > 0) {
-    formattedGetTransferConvertRate << ((double) i.getBytesTransferred()[0].second / 1024.0 / 1024.0) /
-                                       (((double) i.getGetTransferConvertNs()[0].first + i.getGetTransferConvertNs()[0].second) / 1.0e9) << " MB/s/req";
+  if (getTransferNS > 0 && getConvertNS > 0) {
+    formattedGetTransferConvertRate << ((double) returnedBytes / 1024.0 / 1024.0) /
+                                       ((double) (getTransferNS + getConvertNS) / 1.0e9) << " MB/s/req";
   } else {
     formattedGetTransferConvertRate << "NA";
   }
 
   std::stringstream formattedSelectTransferConvertRate;
   formattedSelectTransferConvertRate.precision(4);
-  if (i.getSelectTransferConvertNs()[0].first > 0 && i.getSelectTransferConvertNs()[0].second > 0) {
-    formattedSelectTransferConvertRate << ((double) i.getBytesTransferred()[0].second / 1024.0 / 1024.0) /
-                                          ((double) (i.getSelectTransferConvertNs()[0].first + i.getSelectTransferConvertNs()[0].second) / 1.0e9) << " MB/s/req";
+  if (selectTransferNS > 0 && selectConvertNS > 0) {
+    formattedSelectTransferConvertRate << ((double) returnedBytes / 1024.0 / 1024.0) /
+                                          ((double) (selectTransferNS + selectConvertNS) / 1.0e9) << " MB/s/req";
   } else {
     formattedSelectTransferConvertRate << "NA";
   }
 
   std::stringstream formattedS3SelectSelectivity;
-  if (i.getBytesTransferred()[0].second && i.getSelectTransferConvertNs()[0].first > 0 && i.getGetTransferConvertNs()[0].first == 0) {
-    formattedS3SelectSelectivity << (double) i.getBytesTransferred()[0].second / (double) i.getBytesTransferred()[0].first;
+  if (returnedBytes && selectTransferNS > 0 && getTransferNS == 0) {
+    formattedS3SelectSelectivity << (double) returnedBytes / (double) processedBytes;
   } else {
     formattedS3SelectSelectivity << "NA";
   }
 
   std::stringstream formattedHitRatio;
-  formattedHitRatio << i.getHitRatios()[0];
+  formattedHitRatio << hitRatio;
 
-  // format
+  // format metrics
   std::stringstream ss;
   ss << std::left << std::setw(20) << mode->toString();
   ss << std::left << std::setw(18) << formattedProcessingTime1.str();
@@ -105,7 +117,7 @@ double measureLocalSpeed(normal::sql::Interpreter& i, filesystem::path& sql_file
   return megaBytesFiltered / (time1);
 }
 
-void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
+void normal::ssb::MathModelTest::runTest() {  // unit: B/s
   spdlog::set_level(spdlog::level::info);
   std::stringstream ss;
   ss << std::setfill(' ');
@@ -123,17 +135,13 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   ss << std::left << std::setw(180) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
 
-  double localSpeed;
-  if (networkLimit > 0) {
-    normal::pushdown::NetworkLimit = networkLimit;
+  if (networkLimit_ > 0) {
+    normal::pushdown::NetworkLimit = networkLimit_;
     normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
   }
 
-  // parameters
-  const size_t cacheSize = 64L * 1024 * 1024 * 1024;
-  std::string bucket_name = "pushdowndb";
-  std::string dir_prefix = "ssb-sf100-sortlineorder/csv/";
-  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
+  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(
+          bucketName_, dirPrefix_);
 
   // modes
   std::vector<std::shared_ptr<normal::plan::operator_::mode::Mode>> modes;
@@ -141,56 +149,47 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   modes.emplace_back(normal::plan::operator_::mode::Modes::pullupCachingMode());
   modes.emplace_back(normal::plan::operator_::mode::Modes::hybridCachingMode());
 
+  // as now we make many S3 requests at the same time, the first batch of requests meet a huge delay (5 secs)
+  // so run one pushdown query first
+  runTestSingleMode(normal::plan::operator_::mode::Modes::fullPushdownMode(), false);
+
   // test on each mode
-  for (auto const& mode: modes) {
-    auto cachingPolicy = FBRSCachingPolicy::make(cacheSize, mode);  // caching policy doesn't matter here
-    auto sql_file_dir_path = filesystem::current_path().append("sql/generated");
-    normal::sql::Interpreter i(mode, cachingPolicy);
-    configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
-    SPDLOG_INFO("{} mode:", mode->toString());
-    i.boot();
-
-    // query for caching
-    if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
-        mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
-      SPDLOG_INFO("Query for caching:");
-      auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 1));
-      auto sql = ExperimentUtil::read_file(sql_file_path.string());
-      executeSql(i, sql, true, false, "");
-      sql_file_dir_path = sql_file_dir_path.parent_path();
+  for (int k = 0; k < numRuns_; k++) {
+    for (auto const& mode: modes) {
+      runTestSingleMode(mode, true);
     }
-
-    normal::cache::allowFetchSegments = false;
-    i.clearMetrics();
-    i.clearHitRatios();
-
-    // query for measurement
-    SPDLOG_INFO("Query for measurement:");
-    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 2));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
-    executeSql(i, sql, true, false, "");
-    sql_file_dir_path = sql_file_dir_path.parent_path();
-    SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
-    SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
-    ss << showMeasurementMetrics(i, mode);
-
-    normal::cache::allowFetchSegments = true;
-
-    // query for measuring local bandwidth
-    if (mode->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
-      localSpeed = measureLocalSpeed(i, sql_file_dir_path);
-    }
-
-    i.getOperatorGraph().reset();
-    i.stop();
   }
 
+  // compute avg for each metrics value and format them
+  for (auto const& mode: modes) {
+    auto metricsVec = metricsMap_.find(mode->toString())->second;
+    double avgExecutionTime = std::accumulate(metricsVec.executionTimeVec.begin(), metricsVec.executionTimeVec.end(), 0.0) / metricsVec.executionTimeVec.size();
+    size_t avgProcessedBytes = std::accumulate(metricsVec.processedBytesVec.begin(), metricsVec.processedBytesVec.end(), 0.0) / metricsVec.processedBytesVec.size();
+    size_t avgReturnedBytes = std::accumulate(metricsVec.returnedBytesVec.begin(), metricsVec.returnedBytesVec.end(), 0.0) / metricsVec.returnedBytesVec.size();
+    size_t avgGetTransferNS = std::accumulate(metricsVec.getTransferNSVec.begin(), metricsVec.getTransferNSVec.end(), 0.0) / metricsVec.getTransferNSVec.size();
+    size_t avgGetConvertNS = std::accumulate(metricsVec.getConvertNSVec.begin(), metricsVec.getConvertNSVec.end(), 0.0) / metricsVec.getConvertNSVec.size();
+    size_t avgSelectTransferNS = std::accumulate(metricsVec.selectTransferNSVec.begin(), metricsVec.selectTransferNSVec.end(), 0.0) / metricsVec.selectTransferNSVec.size();
+    size_t avgSelectConvertNS = std::accumulate(metricsVec.selectConvertNSVec.begin(), metricsVec.selectConvertNSVec.end(), 0.0) / metricsVec.selectConvertNSVec.size();
+    double avgHitRatio = std::accumulate(metricsVec.hitRatioVec.begin(), metricsVec.hitRatioVec.end(), 0.0) / metricsVec.hitRatioVec.size();
+    ss << showMeasurementMetrics (avgExecutionTime,
+                                  avgProcessedBytes,
+                                  avgReturnedBytes,
+                                  avgGetTransferNS,
+                                  avgGetConvertNS,
+                                  avgSelectTransferNS,
+                                  avgSelectConvertNS,
+                                  avgHitRatio,
+                                  mode);
+  }
+
+  // format local and network speed
   std::stringstream formattedLocalSpeed;
-  formattedLocalSpeed << localSpeed << " MB/s";
+  double avgLocalSpeed = std::accumulate(localSpeedVec_.begin(), localSpeedVec_.end(), 0.0) / localSpeedVec_.size();
+  formattedLocalSpeed << avgLocalSpeed << " MB/s";
 
   std::stringstream formattedNetworkSpeed;
-  if (networkLimit > 0)
-    formattedNetworkSpeed << (double) (networkLimit / 1024.0 / 1024.0) << " MB/s";
+  if (networkLimit_ > 0)
+    formattedNetworkSpeed << (double) (networkLimit_ / 1024.0 / 1024.0) << " MB/s";
   else
     formattedNetworkSpeed << "Unlimited";
 
@@ -211,3 +210,77 @@ void normal::ssb::mathModelTest(size_t networkLimit) {  // unit: B/s
   fout.flush();
   fout.close();
 }
+
+void normal::ssb::MathModelTest::runTestSingleMode(
+        const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
+        bool saveMetrics) {
+  auto cachingPolicy = FBRSCachingPolicy::make(cacheSize_, mode);  // caching policy doesn't matter here
+  auto sql_file_dir_path = filesystem::current_path().append("sql/generated");
+  normal::sql::Interpreter i(mode, cachingPolicy);
+  configureS3ConnectorMultiPartition(i, bucketName_, dirPrefix_);
+  SPDLOG_INFO("{} mode:", mode->toString());
+  i.boot();
+
+  // query for caching
+  if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
+      mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
+    SPDLOG_INFO("Query for caching:");
+    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 1));
+    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    executeSql(i, sql, true, false, "");
+    sql_file_dir_path = sql_file_dir_path.parent_path();
+  }
+
+  normal::cache::allowFetchSegments = false;
+  i.clearMetrics();
+  i.clearHitRatios();
+
+  // query for measurement
+  SPDLOG_INFO("Query for measurement:");
+  auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 2));
+  auto sql = ExperimentUtil::read_file(sql_file_path.string());
+  executeSql(i, sql, true, false, "");
+  sql_file_dir_path = sql_file_dir_path.parent_path();
+  SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
+  SPDLOG_INFO("Cache hit ratios:\n{}", i.showHitRatios());
+
+  // save metrics
+  if (saveMetrics) {
+    auto metricsPair = metricsMap_.find(mode->toString());
+    if (metricsPair != metricsMap_.end()) {
+      auto metricsVec = metricsPair->second;
+      metricsVec.executionTimeVec.emplace_back(i.getExecutionTimes()[0]);
+      metricsVec.processedBytesVec.emplace_back(i.getBytesTransferred()[0].first);
+      metricsVec.returnedBytesVec.emplace_back(i.getBytesTransferred()[0].second);
+      metricsVec.getTransferNSVec.emplace_back(i.getGetTransferConvertNs()[0].first);
+      metricsVec.getConvertNSVec.emplace_back(i.getGetTransferConvertNs()[0].second);
+      metricsVec.selectTransferNSVec.emplace_back(i.getSelectTransferConvertNs()[0].first);
+      metricsVec.selectConvertNSVec.emplace_back(i.getSelectTransferConvertNs()[0].second);
+      metricsVec.hitRatioVec.emplace_back(i.getHitRatios()[0]);
+    } else {
+      MetricsVec metricsVec{
+              std::vector<double>{i.getExecutionTimes()[0]},
+              std::vector<size_t>{i.getBytesTransferred()[0].first},
+              std::vector<size_t>{i.getBytesTransferred()[0].second},
+              std::vector<size_t>{i.getGetTransferConvertNs()[0].first},
+              std::vector<size_t>{i.getGetTransferConvertNs()[0].second},
+              std::vector<size_t>{i.getSelectTransferConvertNs()[0].first},
+              std::vector<size_t>{i.getSelectTransferConvertNs()[0].second},
+              std::vector<double>{i.getHitRatios()[0]}
+      };
+      metricsMap_.emplace(mode->toString(), metricsVec);
+    }
+  }
+
+  normal::cache::allowFetchSegments = true;
+
+  // query for measuring local bandwidth
+  if (mode->id() == normal::plan::operator_::mode::ModeId::PullupCaching) {
+    auto localSpeed = measureLocalSpeed(i, sql_file_dir_path);
+    localSpeedVec_.emplace_back(localSpeed);
+  }
+
+  i.getOperatorGraph().reset();
+  i.stop();
+}
+

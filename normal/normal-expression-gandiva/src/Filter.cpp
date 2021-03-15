@@ -101,81 +101,41 @@ std::shared_ptr<normal::tuple::TupleSet2> Filter::evaluate(const normal::tuple::
   }
 }
 
-void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &schema) {
-  // Use lock the compilation phase as it is not necessarily thread safe
+void Filter::compile(const std::shared_ptr<normal::tuple::Schema> &Schema) {
   std::lock_guard<std::mutex> g(BigGlobalLock);
+
   // Compile the expressions
-  pred_->compile(schema->getSchema());
+  pred_->compile(Schema->getSchema());
 
-  // build ::gandiva::Filter
   auto gandivaCondition = ::gandiva::TreeExprBuilder::MakeCondition(pred_->getGandivaExpression());
-  gandivaFilter_ = buildGandivaFilter(gandivaCondition, schema);
 
-  // build ::gandiva::Projector
-  gandivaProjector_ = buildGandivaProjector(schema);
-}
+//  SPDLOG_INFO("Filter predicate:\n{}", gandivaCondition_->ToString());
 
-std::shared_ptr<::gandiva::Filter> normal::expression::gandiva::buildGandivaFilter(
-        const std::shared_ptr<::gandiva::Condition> &gandivaCondition,
-        const std::shared_ptr<normal::tuple::Schema> &schema) {
-  auto gandivaConditionStr = gandivaCondition->ToString();
-  auto schemaStr = schema->getSchema()->ToString();
-  auto key = gandivaConditionStr + ", " + schemaStr;
-  auto gandivaFilterPair = gandivaFilterMap_.find(key);
-
-  if (gandivaFilterPair != gandivaFilterMap_.end()) {
-    return gandivaFilterPair->second;
-  } else {
-//    SPDLOG_INFO("Build gandiva filter: {}", gandivaConditionStr);
-    // Build a filter for the predicate.
-    std::shared_ptr<::gandiva::Filter> gandivaFilter;
-    auto status = ::gandiva::Filter::Make(schema->getSchema(),
-                                          gandivaCondition,
-                                          ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
-                                          &gandivaFilter);
-    if (!status.ok()) {
-      throw std::runtime_error(status.message());
-    }
-    gandivaFilterMap_.emplace(key, gandivaFilter);
-    return gandivaFilter;
-  }
-}
-
-std::shared_ptr<::gandiva::Projector> normal::expression::gandiva::buildGandivaProjector(
-        const std::shared_ptr<normal::tuple::Schema>& schema) {
-  auto schemaStr = schema->getSchema()->ToString();
-  const auto& key = schemaStr;
-  auto gandivaProjectorPair = gandivaProjectorMap_.find(key);
-
-  if (gandivaProjectorPair != gandivaProjectorMap_.end()) {
-    return gandivaProjectorPair->second;
-  } else {
-//    SPDLOG_INFO("Build gandiva projector: {}", schemaStr);
-    // Create a pass through expression
-    std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
-    for (const auto &field: schema->fields()) {
-      auto gandivaField = ::gandiva::TreeExprBuilder::MakeField(field);
-      auto fieldExpression = ::gandiva::TreeExprBuilder::MakeExpression(gandivaField, field);
-      fieldExpressions.push_back(fieldExpression);
-    }
-
-    // Build a projector for the pass through expression
-    std::shared_ptr<::gandiva::Projector> gandivaProjector;
-    auto status = ::gandiva::Projector::Make(schema->getSchema(),
-                                        fieldExpressions,
-                                        ::gandiva::SelectionVector::MODE_UINT32,
+  // Build a filter for the predicate.
+  auto status = ::gandiva::Filter::Make(Schema->getSchema(),
+                                        gandivaCondition,
                                         ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
-                                        &gandivaProjector);
-
-    if (!status.ok()) {
-      throw std::runtime_error(status.message());
-    }
-    gandivaProjectorMap_.emplace(key, gandivaProjector);
-    return gandivaProjector;
+                                        &gandivaFilter_);
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
   }
-}
 
-void normal::expression::gandiva::clearGandivaProjectorAndFilter() {
-  gandivaFilterMap_.clear();
-  gandivaProjectorMap_.clear();
+  // Create a pass through expression
+  std::vector<std::shared_ptr<::gandiva::Expression>> fieldExpressions;
+  for (const auto &field: Schema->fields()) {
+    auto gandivaField = ::gandiva::TreeExprBuilder::MakeField(field);
+    auto fieldExpression = ::gandiva::TreeExprBuilder::MakeExpression(gandivaField, field);
+    fieldExpressions.push_back(fieldExpression);
+  }
+
+  // Build a projector for the pass through expression
+  status = ::gandiva::Projector::Make(Schema->getSchema(),
+                                      fieldExpressions,
+                                      ::gandiva::SelectionVector::MODE_UINT32,
+                                      ::gandiva::ConfigurationBuilder::DefaultConfiguration(),
+                                      &gandivaProjector_);
+
+  if (!status.ok()) {
+    throw std::runtime_error(status.message());
+  }
 }

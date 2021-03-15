@@ -30,28 +30,6 @@ private:
   std::shared_ptr<::gandiva::Projector> gandivaProjector_;
 };
 
-/**
- * A global map to store compiled ::gandiva::Project and ::gandiva::Filter
- */
-inline std::map<std::string, std::shared_ptr<::gandiva::Filter>> gandivaFilterMap_;
-inline std::map<std::string, std::shared_ptr<::gandiva::Projector>> gandivaProjectorMap_;
-
-/**
- * Build and store ::gandiva::Filter
- */
-std::shared_ptr<::gandiva::Filter> buildGandivaFilter(const std::shared_ptr<::gandiva::Condition> &gandivaCondition,
-                                                      const std::shared_ptr<normal::tuple::Schema> &schema);
-
-/**
- * Build and store ::gandiva::Projector
- */
-std::shared_ptr<::gandiva::Projector> buildGandivaProjector(const std::shared_ptr<normal::tuple::Schema> &schema);
-
-/**
- * Clear ::gandiva::Projector and ::gandiva::Filter maps
- */
-void clearGandivaProjectorAndFilter();
-
 }
 
 #endif //NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_FILTER_H
