@@ -268,9 +268,9 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(18) << "Execution Time";
   ss << std::left << std::setw(30) << "Processed Bytes";
   ss << std::left << std::setw(30) << "Returned Bytes";
-  ss << std::left << std::setw(25) << "GET Transfer+Convert";
-  ss << std::left << std::setw(25) << "Select Transfer+Convert";
-  ss << std::left << std::setw(22) << "% Data S3 Selected";
+  ss << std::left << std::setw(20) << "GET Tran+Conv";
+  ss << std::left << std::setw(20) << "Select Tran+Conv";
+  ss << std::left << std::setw(22) << "Data S3 Selected";
 //  ss << std::left << std::setw(16) << "GET Transfer";
 //  ss << std::left << std::setw(16) << "GET Convert";
 //  ss << std::left << std::setw(18) << "Select Transfer";
@@ -329,7 +329,7 @@ std::string Interpreter::showMetrics() {
     //        select and get requests, so they are not differentiated
     std::stringstream formattedS3SelectSelectivity;
     if (bytesTransferred_[qid - 1].second && selectTransferConvertNS_[qid - 1].first > 0 && getTransferConvertNS_[qid - 1].first == 0) {
-      formattedS3SelectSelectivity << (double) bytesTransferred_[qid - 1].second / (double) bytesTransferred_[qid - 1].first;
+      formattedS3SelectSelectivity << ((double) bytesTransferred_[qid - 1].second / (double) bytesTransferred_[qid - 1].first) * 100.0 << "%";
     } else {
       formattedS3SelectSelectivity << "NA";
     }
@@ -341,8 +341,8 @@ std::string Interpreter::showMetrics() {
 //    ss << std::left << std::setw(16) << formattedGetConvertRate.str();
 //    ss << std::left << std::setw(18) << formattedSelectTransferRate.str();
 //    ss << std::left << std::setw(18) << formattedSelectConvertRate.str();
-    ss << std::left << std::setw(25) << formattedGetTransferConvertRate.str();
-    ss << std::left << std::setw(25) << formattedSelectTransferConvertRate.str();
+    ss << std::left << std::setw(20) << formattedGetTransferConvertRate.str();
+    ss << std::left << std::setw(20) << formattedSelectTransferConvertRate.str();
     ss << std::left << std::setw(22) << formattedS3SelectSelectivity.str();
     ss << std::endl;
   }
