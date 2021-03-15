@@ -366,7 +366,7 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(60) << "S3 GET Data Convert rate";
   ss << std::left << std::setw(60) << formattedGetConvertRate.str();
   ss << std::endl;
-  ss << std::left << std::setw(60) << "S3 GET Data Transfer and Convert rate";
+  ss << std::left << std::setw(60) << "S3 GET Data Transfer + Convert rate";
   ss << std::left << std::setw(60) << formattedGetTransferConvertRate.str();
   ss << std::endl;
 
@@ -386,13 +386,13 @@ std::string graph::OperatorGraph::showMetrics() {
     formattedSelectConvertRate << "NA";
     formattedSelectTransferConvertRate << "NA";
   }
-  // FIXME: This only works if the query is entires pushdown, as the bytes transferred is grouped together for
+  // FIXME: This only works if the query is entirely pushdown, as the bytes transferred is grouped together for
   //        select and get requests, so they are not differentiated
-  std::stringstream formattedS3SelectSelectivity;
+  std::stringstream formattedS3SelectSelectivityPercent;
   if (bytesTransferred.second > 0 && selectTransferConvertTimesNS.first > 0 && getTransferConvertTimesNS.second == 0) {
-    formattedS3SelectSelectivity << (double) bytesTransferred.second / (double) bytesTransferred.first;
+    formattedS3SelectSelectivityPercent << (double) bytesTransferred.second / (double) bytesTransferred.first * 100 << "%";
   } else {
-    formattedS3SelectSelectivity << "NA";
+    formattedS3SelectSelectivityPercent << "NA";
   }
   // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
   // so this should approximate to per core rates rather than just per request, as one request maps to a core
@@ -406,7 +406,7 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(60) << formattedSelectTransferConvertRate.str();
   ss << std::endl;
   ss << std::left << std::setw(60) << "% Data S3 Selected";
-  ss << std::left << std::setw(60) << formattedS3SelectSelectivity.str();
+  ss << std::left << std::setw(60) << formattedS3SelectSelectivityPercent.str();
   ss << std::endl;
   ss << std::endl;
 
