@@ -21,6 +21,7 @@
 #include <normal/pushdown/s3/S3SelectScan2.h>
 #include <normal/pushdown/s3/S3Select.h>
 #include <normal/pushdown/s3/S3Get.h>
+#include <normal/pushdown/filter/Filter.h>
 #include <normal/core/message/ConnectMessage.h>
 
 
@@ -291,6 +292,8 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
 
+  std::map<std::string, size_t> opTypeToRuntime;
+
   for (auto &entry : operatorDirectory_) {
 	auto operatorName = entry.first;
 //	auto processingTime = entry.second.getOperatorContext().lock()->operatorActor()->getProcessingTime();
@@ -298,11 +301,18 @@ std::string graph::OperatorGraph::showMetrics() {
 	long processingTime;
 	(*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
 		[&](long time) {
-		  processingTime = time;
+		   processingTime = time;
 		},
 		[&](const caf::error&  error){
 		  throw std::runtime_error(to_string(error));
 		});
+	auto op = entry.second.getDef();
+	std::string type = op->getType();
+	if (opTypeToRuntime.find(type) == opTypeToRuntime.end()) {
+	  opTypeToRuntime.emplace(type, processingTime);
+	} else {
+    opTypeToRuntime[type] = opTypeToRuntime[type] + processingTime;
+	}
 //	auto processingTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeSpan->second.second - timeSpan->second.first).count();
 	auto processingFraction = (double)processingTime / (double)totalProcessingTime;
 	std::stringstream formattedProcessingTime;
@@ -314,6 +324,19 @@ std::string graph::OperatorGraph::showMetrics() {
 //	ss << std::left << std::setw(40) << formattedProcessingTime.str();
 //	ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
 //	ss << std::endl;
+  }
+
+  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+  ss << std::endl;
+
+  for (auto const& opTime : opTypeToRuntime) {
+    std::stringstream formattedOpTime;
+    formattedOpTime << ((double) opTime.second / 1000000000.0) << " secs";
+    ss << std::left << std::setw(60) << opTime.first;
+    ss << std::left << std::setw(40) << formattedOpTime.str();
+    ss << std::left << std::setw(20) << ((double) opTime.second / (double) totalProcessingTime) * 100.0;
+    ss << std::endl;
   }
 
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
@@ -358,8 +381,8 @@ std::string graph::OperatorGraph::showMetrics() {
     formattedGetConvertRate << "NA";
     formattedGetTransferConvertRate << "NA";
   }
-  // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
-  // so this should approximate to per core rates rather than just per request, as one request maps to a core
+  // Caf actor framework seems to converge #workers -> # cores for non detached workers, and each worker runs to
+  // completion. This should approximate to per core rates rather than just per request, as one request maps to a core
   ss << std::left << std::setw(60) << "S3 GET Data Transfer Rate";
   ss << std::left << std::setw(60) << formattedGetTransferRate.str();
   ss << std::endl;
@@ -394,8 +417,6 @@ std::string graph::OperatorGraph::showMetrics() {
   } else {
     formattedS3SelectSelectivityPercent << "NA";
   }
-  // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
-  // so this should approximate to per core rates rather than just per request, as one request maps to a core
   ss << std::left << std::setw(60) << "Appx S3 Select Data Transfer Rate";
   ss << std::left << std::setw(60) << formattedSelectTransferRate.str();
   ss << std::endl;
@@ -405,10 +426,40 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(60) << "S3 Select Data Transfer + Convert rate";
   ss << std::left << std::setw(60) << formattedSelectTransferConvertRate.str();
   ss << std::endl;
-  ss << std::left << std::setw(60) << "% Data S3 Selected";
+  ss << std::left << std::setw(60) << "S3 Selectivity";
   ss << std::left << std::setw(60) << formattedS3SelectSelectivityPercent.str();
   ss << std::endl;
+
+  auto filterTimeNSInputOutputBytes = getFilterTimeNSInputOutputBytes();
+  size_t filterTimeNS = std::get<0>(filterTimeNSInputOutputBytes);
+  size_t filterInputBytes = std::get<1>(filterTimeNSInputOutputBytes);
+  size_t filterOutputBytes = std::get<2>(filterTimeNSInputOutputBytes);
+  std::stringstream formattedLocalFilterRateGBs;
+  std::stringstream formattedLocalFilterGB;
+  std::stringstream formattedLocalFilterSelectivity;
+  if (filterTimeNS > 0 && filterTimeNS > 0) {
+    double filterGB = ((double)filterInputBytes / 1024.0 / 1024.0 / 1024.0);
+    formattedLocalFilterRateGBs << filterGB / ((double)filterTimeNS  / 1.0e9) << " GB/s/req";
+    formattedLocalFilterGB << filterGB << " GB";
+    formattedLocalFilterSelectivity << ((double) filterOutputBytes / (double) filterInputBytes) * 100 << "%";
+  } else {
+    formattedLocalFilterRateGBs << "NA";
+    formattedLocalFilterGB << "NA";
+    formattedLocalFilterSelectivity << "NA";
+  }
+  // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
+  // so this should approximate to per core rates rather than just per request, as one request maps to a core
+  ss << std::left << std::setw(60) << "Local filter rate";
+  ss << std::left << std::setw(60) << formattedLocalFilterRateGBs.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "Local filter bytes";
+  ss << std::left << std::setw(60) << formattedLocalFilterGB.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Local filter selectivity (bytes)";
+  ss << std::left << std::setw(60) << formattedLocalFilterSelectivity.str();
+  ss << std::endl;
+  ss << std::endl;
+
 
   return ss.str();
 }
@@ -500,6 +551,31 @@ std::pair<size_t, size_t> graph::OperatorGraph::getSelectTransferConvertTimesNS(
 	}
   }
   return std::pair<size_t, size_t>(selectTransferTimeNS, selectConvertTimeNS);
+}
+
+std::tuple<size_t, size_t, size_t> graph::OperatorGraph::getFilterTimeNSInputOutputBytes() {
+  size_t timeNS = 0;
+  size_t inputBytes = 0;
+  size_t outputBytes = 0;
+  for (const auto &entry: operatorDirectory_) {
+    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::filter::Filter)) {
+//	  (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetMetricsAtom::value).receive(
+//	  	[&](std::pair<size_t, size_t> metrics) {
+//		  processedBytes += metrics.first;
+//		  returnedBytes += metrics.second;
+//		},
+//		[&](const caf::error&  error){
+//	  	  throw std::runtime_error(to_string(error));
+//	  	});
+
+      // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
+      auto filterOp = std::static_pointer_cast<normal::pushdown::filter::Filter>(entry.second.getDef());
+      timeNS += filterOp->getFilterTimeNS();
+      inputBytes += filterOp->getFilterInputBytes();
+      outputBytes += filterOp->getFilterOutputBytes();
+	  }
+  }
+  return std::tuple<size_t, size_t, size_t>(timeNS, inputBytes, outputBytes);
 }
 
 void graph::OperatorGraph::close() {

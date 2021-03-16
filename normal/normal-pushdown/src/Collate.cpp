@@ -46,6 +46,14 @@ void Collate::onReceive(const normal::core::message::Envelope &message) {
 
 void Collate::onComplete(const normal::core::message::CompleteMessage &) {
   if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
+    if (tables_.size() > 0) {
+      tables_.push_back(tuples_->table());
+      const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
+      if (!res.ok())
+        abort();
+      tuples_->table(*res);
+      tables_.clear();
+    }
 	ctx()->notifyComplete();
   }
 }
@@ -71,14 +79,17 @@ void Collate::onTuple(const normal::core::message::TupleMessage &message) {
     assert(message.tuples());
     tuples_ = message.tuples();
   } else {
-    auto tables = std::vector<std::shared_ptr<arrow::Table>>();
-    std::shared_ptr<arrow::Table> table;
-    tables.push_back(message.tuples()->table());
-    tables.push_back(tuples_->table());
-    const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables);
-    if (!res.ok())
-      abort();
-    tuples_->table(*res);
+//    auto tables = std::vector<std::shared_ptr<arrow::Table>>();
+//    std::shared_ptr<arrow::Table> table;
+    tables_.push_back(message.tuples()->table());
+    if (tables_.size() > tablesCutoff_) {
+      tables_.push_back(tuples_->table());
+      const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables_);
+      if (!res.ok())
+        abort();
+      tuples_->table(*res);
+      tables_.clear();
+    }
   }
 }
 

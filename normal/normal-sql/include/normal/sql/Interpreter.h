@@ -45,6 +45,7 @@ public:
   const std::vector<std::pair<size_t, size_t>> &getSelectTransferConvertNs() const;
   const std::vector<double> &getHitRatios() const;
   const std::vector<double> &getShardHitRatios() const;
+  const std::vector<std::tuple<size_t, size_t, size_t>> &getFilterTimeNsInputOutputBytes() const;
 
 private:
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>> catalogues_;
@@ -64,6 +65,7 @@ private:
   std::vector<std::pair<size_t, size_t>> selectTransferConvertNS_;
   std::vector<double> hitRatios_;
   std::vector<double> shardHitRatios_;
+  std::vector<std::tuple<size_t, size_t, size_t>> filterTimeNSInputOutputBytes_;
 };
 
 }

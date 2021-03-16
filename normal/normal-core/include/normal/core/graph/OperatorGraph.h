@@ -50,6 +50,7 @@ public:
   size_t getNumRequests();
   std::pair<size_t, size_t> getGetTransferConvertTimesNS();
   std::pair<size_t, size_t> getSelectTransferConvertTimesNS();
+  std::tuple<size_t, size_t, size_t> getFilterTimeNSInputOutputBytes();
   std::string showMetrics();
   [[nodiscard]] const long &getId() const;
 

@@ -71,6 +71,7 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
   }
 
   if (*applicable_) {
+    std::chrono::steady_clock::time_point startFilterTime = std::chrono::steady_clock::now();
     bufferTuples(tupleSet);
 //    SPDLOG_INFO("Filter onTuple: {}, {}, {}", tupleSet->numRows(), received_->numRows(), name());
     buildFilter();
@@ -78,6 +79,9 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
       filterTuples();
       sendTuples();
     }
+    std::chrono::steady_clock::time_point stopFilterTime = std::chrono::steady_clock::now();
+    auto filterTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopFilterTime - startFilterTime).count();
+    filterTimeNS_ += filterTime;
   } else {
     // empty table
     auto emptyTupleSet = normal::tuple::TupleSet2::make2();
@@ -92,8 +96,12 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 //  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
 
   if(received_->getArrowTable().has_value()) {
+    std::chrono::steady_clock::time_point startFilterTime = std::chrono::steady_clock::now();
     filterTuples();
     sendTuples();
+    std::chrono::steady_clock::time_point stopFilterTime = std::chrono::steady_clock::now();
+    auto filterTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopFilterTime - startFilterTime).count();
+    filterTimeNS_ += filterTime;
   }
 
   if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)){
@@ -108,7 +116,7 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
 	  ctx()->notifyComplete();
 
     if (recordSpeeds) {
-      totalBytesFiltered_ += bytesFiltered_;
+      totalBytesFiltered_ += inputBytesFiltered_;
     }
   }
 }
@@ -147,20 +155,19 @@ void Filter::buildFilter() {
 }
 
 void Filter::filterTuples() {
-
+  inputBytesFiltered_ += received_->size();
+  totalNumRows_ += received_->numRows();
   filtered_ = filter_.value()->evaluate(*received_);
   assert(filtered_->validate());
 
-  totalNumRows_ += received_->numRows();
   filteredNumRows_ += filtered_->numRows();
-
-  bytesFiltered_ += received_->size();
 
   received_->clear();
   assert(received_->validate());
 }
 
 void Filter::sendTuples() {
+  outputBytesFiltered_ += filtered_->size();
   std::shared_ptr<core::message::Message> tupleMessage =
 	  std::make_shared<core::message::TupleMessage>(filtered_->toTupleSetV1(), name());
 
@@ -219,4 +226,16 @@ void Filter::sendSegmentWeight() {
 
   ctx()->send(core::cache::WeightRequestMessage::make(weightMap, getQueryId(), name()), "SegmentCache")
           .map_error([](auto err) { throw std::runtime_error(err); });
+}
+
+size_t Filter::getFilterTimeNS() {
+  return filterTimeNS_;
+}
+
+size_t Filter::getFilterInputBytes() {
+  return inputBytesFiltered_;
+}
+
+size_t Filter::getFilterOutputBytes() {
+  return outputBytesFiltered_;
 }

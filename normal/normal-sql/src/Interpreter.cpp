@@ -180,6 +180,26 @@ std::string Interpreter::showMetrics() {
     totalNumRequests += numRequestsSingle;
   }
 
+  size_t filterTimeNS = 0, filterInputBytes = 0, filterOutputBytes = 0;
+  for (auto const &filterTimeNSInputOutputByte: filterTimeNSInputOutputBytes_) {
+    filterTimeNS += std::get<0>(filterTimeNSInputOutputByte);
+    filterInputBytes += std::get<1>(filterTimeNSInputOutputByte);
+    filterOutputBytes += std::get<2>(filterTimeNSInputOutputByte);
+  }
+  std::stringstream formattedLocalFilterRateGBs;
+  std::stringstream formattedLocalFilterGB;
+  std::stringstream formattedLocalFilterSelectivity;
+  if (filterTimeNS > 0 && filterTimeNS > 0) {
+    double filterGB = ((double)filterInputBytes / 1024.0 / 1024.0 / 1024.0);
+    formattedLocalFilterRateGBs << filterGB / ((double)filterTimeNS  / 1.0e9) << " GB/s/req";
+    formattedLocalFilterGB << filterGB << " GB";
+    formattedLocalFilterSelectivity << ((double) filterOutputBytes / (double) filterInputBytes) * 100 << "%";
+  } else {
+    formattedLocalFilterRateGBs << "NA";
+    formattedLocalFilterGB << "NA";
+    formattedLocalFilterSelectivity << "NA";
+  }
+
   // Cost of c5a.8xlarge instance in US West (North California)
   // All other costs are for the region US West (North California) as well
   double ec2Price = 1.52, totalCost = 0;
@@ -240,6 +260,15 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(60) << "Average Select Transfer And Convert Rate";
   ss << std::left << std::setw(60) << formattedAverageSelectTransferAndConvertRate.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "Local filter rate";
+  ss << std::left << std::setw(60) << formattedLocalFilterRateGBs.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Local filter bytes";
+  ss << std::left << std::setw(60) << formattedLocalFilterGB.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Local filter selectivity (bytes)";
+  ss << std::left << std::setw(60) << formattedLocalFilterSelectivity.str();
+  ss << std::endl;
   ss << std::left << std::setw(60) << "Total Request amount";
   ss << std::left << std::setw(60) << totalNumRequests;
   ss << std::endl;
@@ -270,7 +299,7 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(30) << "Returned Bytes";
   ss << std::left << std::setw(20) << "GET Tran+Conv";
   ss << std::left << std::setw(20) << "Select Tran+Conv";
-  ss << std::left << std::setw(22) << "Data S3 Selected";
+  ss << std::left << std::setw(10) << "S3 Selectivity";
 //  ss << std::left << std::setw(16) << "GET Transfer";
 //  ss << std::left << std::setw(16) << "GET Convert";
 //  ss << std::left << std::setw(18) << "Select Transfer";
@@ -356,6 +385,7 @@ void Interpreter::saveMetrics() {
   getTransferConvertNS_.emplace_back(operatorGraph_->getGetTransferConvertTimesNS());
   selectTransferConvertNS_.emplace_back(operatorGraph_->getSelectTransferConvertTimesNS());
   numRequests_.emplace_back(operatorGraph_->getNumRequests());
+  filterTimeNSInputOutputBytes_.emplace_back(operatorGraph_->getFilterTimeNSInputOutputBytes());
 }
 
 void Interpreter::clearMetrics() {
@@ -364,6 +394,7 @@ void Interpreter::clearMetrics() {
   getTransferConvertNS_.clear();
   selectTransferConvertNS_.clear();
   numRequests_.clear();
+  filterTimeNSInputOutputBytes_.clear();
 }
 
 void Interpreter::clearHitRatios() {
@@ -421,4 +452,7 @@ const std::vector<double> &Interpreter::getShardHitRatios() const {
   return shardHitRatios_;
 }
 
+const std::vector<std::tuple<size_t, size_t, size_t>> &Interpreter::getFilterTimeNsInputOutputBytes() const {
+  return filterTimeNSInputOutputBytes_;
+}
 

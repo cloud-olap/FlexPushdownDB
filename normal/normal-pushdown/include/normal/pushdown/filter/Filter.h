@@ -29,6 +29,10 @@ public:
 
   void onReceive(const core::message::Envelope &Envelope) override;
 
+  size_t getFilterTimeNS();
+  size_t getFilterInputBytes();
+  size_t getFilterOutputBytes();
+
 private:
   std::shared_ptr<FilterPredicate> pred_;
 
@@ -67,8 +71,9 @@ private:
   long totalNumRows_ = 0;
   long filteredNumRows_ = 0;
 
-  long filterTime_ = 0;
-  size_t bytesFiltered_ = 0;
+  size_t filterTimeNS_ = 0;
+  size_t inputBytesFiltered_ = 0;
+  size_t outputBytesFiltered_ = 0;
 };
 
 inline bool recordSpeeds = false;

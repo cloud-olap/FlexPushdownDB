@@ -26,6 +26,9 @@ class Collate : public normal::core::Operator {
 
 private:
   std::shared_ptr<TupleSet> tuples_;
+private:
+  std::vector<std::shared_ptr<arrow::Table>> tables_;
+  int tablesCutoff_ = 20;
   void onStart();
 
   void onComplete(const normal::core::message::CompleteMessage &message);
