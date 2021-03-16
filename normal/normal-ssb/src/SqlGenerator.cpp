@@ -1147,7 +1147,7 @@ std::vector<std::string> SqlGenerator::generateSqlForMathModel(double hitRatio, 
   std::cout << "Predicate: " << predicate << std::endl;
 
   // make use of hit ratio
-  int days = (int) (365.0 * hitRatio);
+  int days = (int) (365.0 * 2 * hitRatio);
   tm date = tm();
   date.tm_mday = 1;
   date.tm_mon = 1 - 1;
@@ -1172,7 +1172,7 @@ std::vector<std::string> SqlGenerator::generateSqlForMathModel(double hitRatio, 
           "select {}\n"
           "from lineorder\n"
           "where ({})"
-          "  and (lo_orderdate between 19920101 and 19921231);\n",
+          "  and (lo_orderdate between 19920101 and 19931231);\n",
           columns,
           predicate
   );
@@ -1181,7 +1181,7 @@ std::vector<std::string> SqlGenerator::generateSqlForMathModel(double hitRatio, 
   std::string sql3 = fmt::format(
           "select {}\n"
           "from lineorder\n"
-          "where (lo_orderdate between 19920101 and 19921231);\n",
+          "where (lo_orderdate between 19920101 and 19931231);\n",
           columns
   );
 
