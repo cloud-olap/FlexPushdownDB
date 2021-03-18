@@ -29,7 +29,7 @@ struct MetricsVec {
 class MathModelTest {
 
 public:
-  MathModelTest(size_t networkLimit, int numRuns);
+  MathModelTest(size_t networkLimit, size_t chunkSize, int numRuns);
 
     /**
      * Run two consecutive queries in all modes for math model evaluation
@@ -45,6 +45,7 @@ private:
   const std::string dirPrefix_ = "ssb-sf100-sortlineorder/csv/";
 
   size_t networkLimit_;
+  size_t chunkSize_;
   int numRuns_;
 
   // metrics for calculating average

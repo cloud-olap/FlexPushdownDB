@@ -25,8 +25,9 @@ int main(int argc, char **argv) {
   // math model test
   if (std::string(argv[1]) == "-m") {
     auto networkLimit = (size_t) (atof(argv[2]) * 1024 * 1024 * 1024 / 8);
-    auto numRuns = atoi(argv[3]);
-    MathModelTest mathModelTest(networkLimit, numRuns);
+    auto chunkSize = (size_t) (atol(argv[3]));
+    auto numRuns = atoi(argv[4]);
+    MathModelTest mathModelTest(networkLimit, chunkSize, numRuns);
     mathModelTest.runTest();
   }
   // means we are specifying a different defaultMiniCatalogue directoy to use
