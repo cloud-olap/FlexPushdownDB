@@ -202,10 +202,10 @@ std::string Interpreter::showMetrics() {
 
   // Cost of c5a.8xlarge instance in US West (North California)
   // All other costs are for the region US West (North California) as well
-  double ec2Price = 1.52, totalCost = 0;
-//  // Cost of c5n.9xlarge instance in US West (North California)
-//  // All other costs are for the region US West (North California) as well
-//  double ec2Price = 2.43, totalCost = 0;
+//  double ec2Price = 1.52, totalCost = 0;
+  // Cost of c5n.9xlarge instance in US West (North California)
+  // All other costs are for the region US West (North California) as well
+  double ec2Price = 2.43, totalCost = 0;
 //  // Cost of c5a.16xlarge instance in US West (North California)
 //  // All other costs are for the region US West (North California) as well
 //  double ec2Price = 3.04, totalCost = 0;
@@ -373,6 +373,65 @@ std::string Interpreter::showMetrics() {
     ss << std::left << std::setw(20) << formattedGetTransferConvertRate.str();
     ss << std::left << std::setw(20) << formattedSelectTransferConvertRate.str();
     ss << std::left << std::setw(22) << formattedS3SelectSelectivity.str();
+    ss << std::endl;
+  }
+
+  ss << std::endl;
+  ss << std::left << std::setw(120) << "Pushdown and Local filter stats" << std::endl;
+  ss << std::setfill(' ');
+  ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+  ss << std::left << std::setw(8) << "Query";
+  ss << std::left << std::setw(20) << "Returned GB";
+  ss << std::left << std::setw(20) << "Processed GB";
+  ss << std::left << std::setw(20) << "Return %";
+  ss << std::left << std::setw(30) << "GB Filtered Locally";
+  ss << std::left << std::setw(30) << "Local Filter Speed/req";
+  ss << std::left << std::setw(20) << "Local Filter %";
+  ss << std::endl;
+  ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
+  ss << std::setfill(' ');
+  for (int qid = 1; qid <= executionTimes_.size(); ++qid) {
+    std::stringstream formattedProcessedGB;
+    std::stringstream formattedReturnedGB;
+    std::stringstream formattedReturnedPercentage;
+
+    double processedGB = ((double)bytesTransferred_[qid - 1].first / 1024.0 / 1024.0 / 1024.0);
+    double returnedGB = ((double)bytesTransferred_[qid - 1].second / 1024.0 / 1024.0 / 1024.0);
+    formattedProcessedGB << processedGB << " GB";
+    formattedReturnedGB << returnedGB << " GB";
+    if (processedGB > 0) {
+      formattedReturnedPercentage << (returnedGB / processedGB) * 100.0 << "%";
+    } else {
+      formattedReturnedPercentage << "NA";
+    }
+
+    auto filterTimeNSInputOutputByte = filterTimeNSInputOutputBytes_[qid - 1];
+    double filterTimeSec = (double) std::get<0>(filterTimeNSInputOutputByte) / 1.0e9;
+    double filterInputGB = (double) std::get<1>(filterTimeNSInputOutputByte) / 1024.0 / 1024.0 / 1024.0;
+    double filterOutputGB = (double) std::get<2>(filterTimeNSInputOutputByte) / 1024.0 / 1024.0 / 1024.0;
+
+    std::stringstream formattedLocalFilteredGB;
+    std::stringstream formattedLocalFilterSpeed;
+    std::stringstream formattedLocalFilterPercent;
+    if (filterInputGB > 0) {
+      formattedLocalFilteredGB << filterInputGB << " GB";
+      formattedLocalFilterSpeed << filterInputGB / filterTimeSec << " GB/s";
+      formattedLocalFilterPercent << (filterOutputGB / filterInputGB) * 100.0 << "%";
+    } else {
+      formattedLocalFilteredGB << "NA";
+      formattedLocalFilterSpeed << "NA";
+      formattedLocalFilterPercent << "NA";
+    }
+
+
+    ss << std::left << std::setw(8) << std::to_string(qid);
+    ss << std::left << std::setw(20) << formattedReturnedGB.str();
+    ss << std::left << std::setw(20) << formattedProcessedGB.str();
+    ss << std::left << std::setw(20) << formattedReturnedPercentage.str();
+    ss << std::left << std::setw(30) << formattedLocalFilteredGB.str();
+    ss << std::left << std::setw(30) << formattedLocalFilterSpeed.str();
+    ss << std::left << std::setw(30) << formattedLocalFilterPercent.str();
     ss << std::endl;
   }
 
