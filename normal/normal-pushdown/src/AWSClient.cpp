@@ -56,27 +56,50 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
     config.writeRateLimiter = limiter;
   }
 
-  if (normal::plan::useAirmettle) {
-    SPDLOG_INFO("Using Airmettle Client");
-    config.endpointOverride = "54.219.101.189:80/s3/test";
-    Aws::String accessKeyId = "test-test";
-    Aws::String secretKey = "test";
-    Aws::Auth::AWSCredentials airmettleCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
+  switch (normal::plan::s3ClientType) {
+    case normal::plan::S3: {
+      SPDLOG_INFO("Using S3 Client");
+      s3Client = Aws::MakeShared<Aws::S3::S3Client>(
+              ALLOCATION_TAG,
+              Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+              config,
+              Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+              true);
+      break;
+    }
+    case normal::plan::Airmettle: {
+      SPDLOG_INFO("Using Airmettle Client");
+      config.endpointOverride = "54.219.101.189:80/s3/test";
+      Aws::String accessKeyId = "test-test";
+      Aws::String secretKey = "test";
+      Aws::Auth::AWSCredentials airmettleCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
 
-    s3Client = Aws::MakeShared<Aws::S3::S3Client>(
-      ALLOCATION_TAG,
-      airmettleCredentials,
-      config,
-      Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
-      false);
-  } else {
-    SPDLOG_INFO("Using S3 Client");
-    s3Client = Aws::MakeShared<Aws::S3::S3Client>(
-      ALLOCATION_TAG,
-      Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
-      config,
-      Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
-      true);
+      s3Client = Aws::MakeShared<Aws::S3::S3Client>(
+              ALLOCATION_TAG,
+              airmettleCredentials,
+              config,
+              Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+              false);
+      break;
+    }
+    case normal::plan::Minio: {
+      SPDLOG_INFO("Using Minio Client");
+      config.endpointOverride = "172.31.16.21:9000";
+      Aws::String accessKeyId = "minioadmin";
+      Aws::String secretKey = "minioadmin";
+      Aws::Auth::AWSCredentials minioCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
+
+      s3Client = Aws::MakeShared<Aws::S3::S3Client>(
+              ALLOCATION_TAG,
+              minioCredentials,
+              config,
+              Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+              false);
+      break;
+    }
+    default: {
+      throw std::runtime_error("Bad S3ClientType");
+    }
   }
 
   return s3Client;

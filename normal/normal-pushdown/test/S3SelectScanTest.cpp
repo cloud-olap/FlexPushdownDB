@@ -17,7 +17,6 @@
 #include <normal/core/Normal.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/connector/s3/S3SelectPartition.h>
-#include <normal/pushdown/s3/S3SelectParser.h>
 
 #include "TestUtil.h"
 

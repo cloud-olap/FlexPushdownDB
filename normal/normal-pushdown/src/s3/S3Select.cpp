@@ -174,7 +174,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
 
   // Unsure if Airmettle supports this, and we are scanning the entire
   // file anyway so leaving it out when running with Airmettle for now.
-  if (!normal::plan::useAirmettle) {
+  if (normal::plan::s3ClientType != normal::plan::Airmettle) {
     if (scanRangeSupported()) {
       ScanRange scanRange;
       scanRange.SetStart(startOffset_);
@@ -215,7 +215,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
     auto payload = recordsEvent.GetPayload();
     if (payload.size() > 0) {
       // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
-      if (normal::plan::useAirmettle) {
+      if (normal::plan::s3ClientType == normal::plan::Airmettle) {
         returnedBytes_ += payload.size();
       }
       std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
@@ -238,7 +238,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
                  statsEvent.GetDetails().GetBytesProcessed(),
                  statsEvent.GetDetails().GetBytesReturned());
     processedBytes_ += statsEvent.GetDetails().GetBytesProcessed();
-    if (!normal::plan::useAirmettle) {
+    if (normal::plan::s3ClientType != normal::plan::Airmettle) {
       returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
     }
   });

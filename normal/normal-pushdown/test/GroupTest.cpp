@@ -88,9 +88,11 @@ auto makeTupleSet2() {
 
 }
 
-TEST_SUITE ("group") {
+#define SKIP_SUITE true
 
-TEST_CASE ("group-filescan-group-collate" * doctest::skip(false)) {
+TEST_SUITE ("group" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("group-filescan-group-collate" * doctest::skip(false || SKIP_SUITE)) {
   {
 	auto n = Normal::start();
 	auto g = n->createQuery();
@@ -151,7 +153,7 @@ TEST_CASE ("group-filescan-group-collate" * doctest::skip(false)) {
 	  REQUIRE_EQ(::arrow::default_memory_pool()->bytes_allocated(), 0);
 }
 
-TEST_CASE ("group-1xgroupcolumn" * doctest::skip(false)) {
+TEST_CASE ("group-1xgroupcolumn" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet1 = makeTupleSet1();
   auto tupleSet2 = makeTupleSet2();
@@ -175,7 +177,7 @@ TEST_CASE ("group-1xgroupcolumn" * doctest::skip(false)) {
   SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("group-2xgroupcolumn" * doctest::skip(false)) {
+TEST_CASE ("group-2xgroupcolumn" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet1 = makeTupleSet1();
   auto tupleSet2 = makeTupleSet2();
@@ -199,7 +201,7 @@ TEST_CASE ("group-2xgroupcolumn" * doctest::skip(false)) {
   SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("group-0xgroupcolumn" * doctest::skip(false)) {
+TEST_CASE ("group-0xgroupcolumn" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet1 = makeTupleSet1();
   auto tupleSet2 = makeTupleSet2();
@@ -223,7 +225,7 @@ TEST_CASE ("group-0xgroupcolumn" * doctest::skip(false)) {
   SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("group-0xaggregates" * doctest::skip(false)) {
+TEST_CASE ("group-0xaggregates" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet1 = makeTupleSet1();
   auto tupleSet2 = makeTupleSet2();
@@ -246,7 +248,7 @@ TEST_CASE ("group-0xaggregates" * doctest::skip(false)) {
   SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("group-2xfinalise" * doctest::skip(false)) {
+TEST_CASE ("group-2xfinalise" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet1 = makeTupleSet1();
   auto tupleSet2 = makeTupleSet2();
@@ -267,7 +269,7 @@ TEST_CASE ("group-2xfinalise" * doctest::skip(false)) {
   SPDLOG_INFO("Output 2:\n{}", groupedTupleSet22.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("group-uppercase" * doctest::skip(false)) {
+TEST_CASE ("group-uppercase" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSet1 = makeTupleSet1();
   auto tupleSet2 = makeTupleSet2();
@@ -285,7 +287,7 @@ TEST_CASE ("group-uppercase" * doctest::skip(false)) {
   SPDLOG_INFO("Output 2:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("group-empty" * doctest::skip(false)) {
+TEST_CASE ("group-empty" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSetE = makeEmptyTupleSet();
   auto tupleSet1 = makeTupleSet1();
@@ -305,7 +307,7 @@ TEST_CASE ("group-empty" * doctest::skip(false)) {
   SPDLOG_INFO("Output 1:\n{}", groupedTupleSet2.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("group-undefined" * doctest::skip(false)) {
+TEST_CASE ("group-undefined" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSetU = makeUndefinedTupleSet();
   auto tupleSet1 = makeTupleSet1();

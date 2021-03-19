@@ -14,9 +14,15 @@
 
 namespace normal::plan {
 
+enum S3ClientType {
+  S3,
+  Airmettle,
+  Minio
+};
+
 inline constexpr int NumRanges = 1;
 inline constexpr int JoinParallelDegree = 48;
-inline constexpr bool useAirmettle = false;
+inline S3ClientType s3ClientType = Minio;
 inline std::shared_ptr<Aws::S3::S3Client> DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
 }
 

@@ -14,7 +14,7 @@
 
 using namespace normal::tuple;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 TEST_SUITE ("bloom-join" * doctest::skip(SKIP_SUITE)) {
 
