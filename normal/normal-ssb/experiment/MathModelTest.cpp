@@ -17,8 +17,9 @@ using namespace normal::ssb;
 using namespace normal::sql;
 using namespace normal::pushdown;
 
-MathModelTest::MathModelTest(size_t networkLimit, int numRuns) :
+MathModelTest::MathModelTest(size_t networkLimit, size_t chunkSize, int numRuns) :
   networkLimit_(networkLimit),
+  chunkSize_(chunkSize),
   numRuns_(numRuns) {}
 
 // not the best solution, should make a header file down the road most likely but this will work for now
@@ -135,9 +136,13 @@ void normal::ssb::MathModelTest::runTest() {  // unit: B/s
   ss << std::left << std::setw(180) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
 
+  // set parameters
   if (networkLimit_ > 0) {
     normal::pushdown::NetworkLimit = networkLimit_;
     normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
+  }
+  if (chunkSize_ > 0) {
+    normal::tuple::DefaultChunkSize = chunkSize_;
   }
 
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(
@@ -151,7 +156,7 @@ void normal::ssb::MathModelTest::runTest() {  // unit: B/s
 
   // as now we make many S3 requests at the same time, the first batch of requests meet a huge delay (5 secs)
   // so run one pushdown query first
-  SPDLOG_INFO("Beginning query to aviod first-run latency:");
+  SPDLOG_INFO("Beginning query to avoid first-run latency:");
   runTestSingleMode(normal::plan::operator_::mode::Modes::fullPushdownMode(), false);
 
   // test on each mode

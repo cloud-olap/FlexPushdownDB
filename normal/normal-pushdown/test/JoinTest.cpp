@@ -19,9 +19,11 @@ using namespace normal::pushdown;
 using namespace normal::pushdown::join;
 using namespace normal::pushdown::test;
 
-TEST_SUITE ("join-test" * doctest::skip(false)) {
+#define SKIP_SUITE true
 
-TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false)) {
+TEST_SUITE ("join-test" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   {
 	auto n = Normal::start();
@@ -201,7 +203,7 @@ auto makeTupleSetB() {
   return tupleSetB;
 }
 
-TEST_CASE ("join-test-non-existent-build-column" * doctest::skip(false)) {
+TEST_CASE ("join-test-non-existent-build-column" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSetA = makeTupleSetA();
 
@@ -212,7 +214,7 @@ TEST_CASE ("join-test-non-existent-build-column" * doctest::skip(false)) {
 	  REQUIRE_FALSE(buildKernelPutResult.has_value());
 }
 
-TEST_CASE ("join-test-non-existent-probe-left-column" * doctest::skip(false)) {
+TEST_CASE ("join-test-non-existent-probe-left-column" * doctest::skip(false || SKIP_SUITE)) {
   auto tupleSetA = makeTupleSetA();
 
   HashJoinBuildKernel2 buildKernel("aa");
@@ -232,7 +234,7 @@ TEST_CASE ("join-test-non-existent-probe-left-column" * doctest::skip(false)) {
 	  REQUIRE_FALSE(probeKernelPutBuildIndexResult);
 }
 
-TEST_CASE ("join-test-non-existent-probe-right-column" * doctest::skip(false)) {
+TEST_CASE ("join-test-non-existent-probe-right-column" * doctest::skip(false || SKIP_SUITE)) {
   auto tupleSetA = makeTupleSetA();
 
   HashJoinProbeKernel2 probeKernel(JoinPredicate::create("UNUSED", "NON_EXISTENT_COLUMN_NAME"), {});
@@ -242,7 +244,7 @@ TEST_CASE ("join-test-non-existent-probe-right-column" * doctest::skip(false)) {
 	  REQUIRE_FALSE(probeKernelPutProbeResult);
 }
 
-TEST_CASE ("join-test-empty-build-tupleset" * doctest::skip(false)) {
+TEST_CASE ("join-test-empty-build-tupleset" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSetA = makeEmptyTupleSetA();
   auto tupleSetB = makeTupleSetB();
@@ -277,7 +279,7 @@ TEST_CASE ("join-test-empty-build-tupleset" * doctest::skip(false)) {
 	  REQUIRE_EQ(tupleSetJoined->numRows(), 0);
 }
 
-TEST_CASE ("join-test-empty-probe-tupleset" * doctest::skip(false)) {
+TEST_CASE ("join-test-empty-probe-tupleset" * doctest::skip(false || SKIP_SUITE)) {
 
   auto tupleSetA = makeTupleSetA();
   auto tupleSetB = makeEmptyTupleSetB();
@@ -312,7 +314,7 @@ TEST_CASE ("join-test-empty-probe-tupleset" * doctest::skip(false)) {
 	  REQUIRE_EQ(tupleSetJoined->numRows(), 0);
 }
 
-TEST_CASE ("join-test-default" * doctest::skip(false)) {
+TEST_CASE ("join-test-default" * doctest::skip(false || SKIP_SUITE)) {
   auto tupleSetA = makeTupleSetA();
   auto tupleSetB = makeTupleSetB();
 
@@ -338,7 +340,7 @@ TEST_CASE ("join-test-default" * doctest::skip(false)) {
     SPDLOG_DEBUG(joinResult.value()->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 }
 
-TEST_CASE ("join-test-2xbatches" * doctest::skip(false)) {
+TEST_CASE ("join-test-2xbatches" * doctest::skip(false || SKIP_SUITE)) {
   auto tupleSetA1 = makeTupleSetA();
   auto tupleSetA2 = makeTupleSetA();
   auto tupleSetB1 = makeTupleSetB();
