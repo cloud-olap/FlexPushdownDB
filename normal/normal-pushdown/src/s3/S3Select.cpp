@@ -216,7 +216,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
     if (payload.size() > 0) {
       // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
       if (normal::plan::useAirmettle) {
-        returnedBytes_ += payload.size();
+        s3SelectScanStats_.returnedBytes += payload.size();
       }
       std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
 #ifdef __AVX2__
@@ -227,8 +227,8 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
       std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
       auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
               stopConversionTime - startConversionTime).count();
-      selectConvertTimeNS_ += conversionTime;
-      selectTransferTimeNS_ -= conversionTime;
+      s3SelectScanStats_.selectConvertTimeNS += conversionTime;
+      s3SelectScanStats_.selectTransferTimeNS -= conversionTime;
     }
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
@@ -237,9 +237,9 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
                  statsEvent.GetDetails().GetBytesScanned(),
                  statsEvent.GetDetails().GetBytesProcessed(),
                  statsEvent.GetDetails().GetBytesReturned());
-    processedBytes_ += statsEvent.GetDetails().GetBytesProcessed();
+    s3SelectScanStats_.processedBytes += statsEvent.GetDetails().GetBytesProcessed();
     if (!normal::plan::useAirmettle) {
-      returnedBytes_ += statsEvent.GetDetails().GetBytesReturned();
+      s3SelectScanStats_.returnedBytes += statsEvent.GetDetails().GetBytesReturned();
     }
   });
   handler.SetEndEventCallback([&]() {
@@ -269,7 +269,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
     std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
     auto selectObjectContentOutcome = s3Client_->SelectObjectContent(selectObjectContentRequest);
     std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
-    selectTransferTimeNS_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
+    s3SelectScanStats_.selectTransferTimeNS += std::chrono::duration_cast<std::chrono::nanoseconds>(
             stopTransferTime - startTransferTime).count();
     if (selectRequestComplete_) {
       break;
@@ -278,7 +278,13 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
   }
   // If the request doesn't complete we don't count it in our costs as these requests seem to fail before sending
   // messages to S3. This occurs when sending many S3 Select requests in parallel from our machine.
-  numRequests_++;
+  s3SelectScanStats_.numRequests++;
+
+  // Airmettle doesn't trigger necessarily trigger the SetStatsEventCallback above (at least not yet)
+  // so if this happens we estimate the value here
+  if (s3SelectScanStats_.processedBytes == 0) {
+    s3SelectScanStats_.processedBytes += finishOffset_ - startOffset_;
+  }
 
   //  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
@@ -296,7 +302,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
   auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
           stopConversionTime - startConversionTime).count();
-  selectConvertTimeNS_ += conversionTime;
+  s3SelectScanStats_.selectConvertTimeNS += conversionTime;
   if (optionalErrorMessage.has_value()) {
     throw std::runtime_error(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
   }
@@ -322,7 +328,7 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
       requestStoreSegmentsInCache(readTupleSet);
     } else {
       // send segment filter weight
-      if (weightedSegmentKeys_ && processedBytes_ > 0) {
+      if (weightedSegmentKeys_ && s3SelectScanStats_.processedBytes > 0) {
         sendSegmentWeight();
       }
     }

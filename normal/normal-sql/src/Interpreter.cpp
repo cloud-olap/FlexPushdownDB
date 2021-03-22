@@ -117,24 +117,40 @@ std::string Interpreter::showMetrics() {
   ss << std::endl;
 
   size_t totalProcessedBytes = 0, totalReturnedBytes = 0;
-  for (auto const &bytesTransferredSingle: bytesTransferred_) {
-    totalProcessedBytes += bytesTransferredSingle.first;
-    totalReturnedBytes += bytesTransferredSingle.second;
+  size_t totalGetTransferTimeNS = 0, totalGetConvertTimeNS = 0;
+  size_t totalSelectTransferTimeNS = 0, totalSelectConvertTimeNS = 0;
+  size_t totalNumRequests = 0;
+  size_t arrowOutputBytes = 0;
+  for (normal::pushdown::S3SelectScanStats stats: s3SelectScanStats_) {
+    totalProcessedBytes += stats.processedBytes;
+    totalReturnedBytes += stats.returnedBytes;
+    totalGetTransferTimeNS += stats.getTransferTimeNS;
+    totalGetConvertTimeNS += stats.getConvertTimeNS;
+    totalSelectTransferTimeNS += stats.selectTransferTimeNS;
+    totalSelectConvertTimeNS += stats.selectConvertTimeNS;
+    totalNumRequests += stats.numRequests;
+    arrowOutputBytes += stats.outputBytes;
   }
+
   double totalProcessedBytesGiga = ((double)totalProcessedBytes / 1024.0 / 1024.0 / 1024.0);
   double totalReturnedBytesGiga = ((double)totalReturnedBytes / 1024.0 / 1024.0 / 1024.0);
+  double totalArrowBytesGiga = ((double)arrowOutputBytes / 1024.0 / 1024.0 / 1024.0);
   std::stringstream formattedProcessedBytes;
   formattedProcessedBytes << totalProcessedBytes << " B" << " ("
                           << totalProcessedBytesGiga << " GB)";
   std::stringstream formattedReturnedBytes;
   formattedReturnedBytes << totalReturnedBytes << " B" << " ("
                          << totalReturnedBytesGiga << " GB)";
-
-  size_t totalGetTransferTimeNS = 0, totalGetConvertTimeNS = 0;
-  for (auto const &getTransferConvertTimeNS: getTransferConvertNS_) {
-    totalGetTransferTimeNS += getTransferConvertTimeNS.first;
-    totalGetConvertTimeNS += getTransferConvertTimeNS.second;
+  std::stringstream formattedArrowOutputBytes;
+  formattedArrowOutputBytes << arrowOutputBytes << " B" << " ("
+                            << totalArrowBytesGiga << " GB)";
+  std::stringstream formattedStorageFormatToArrowSize;
+  if (arrowOutputBytes > 0) {
+    formattedStorageFormatToArrowSize << totalReturnedBytes / arrowOutputBytes << "x";
+  } else {
+    formattedStorageFormatToArrowSize << "NA";
   }
+
   std::stringstream formattedAverageGetTransferRate;
   std::stringstream formattedAverageGetConvertRate;
   std::stringstream formattedAverageGetTransferAndConvertRate;
@@ -152,11 +168,6 @@ std::string Interpreter::showMetrics() {
     formattedAverageGetTransferAndConvertRate << "NA";
   }
 
-  size_t totalSelectTransferTimeNS = 0, totalSelectConvertTimeNS = 0;
-  for (auto const &transferConvertTimeNS: selectTransferConvertNS_) {
-    totalSelectTransferTimeNS += transferConvertTimeNS.first;
-    totalSelectConvertTimeNS += transferConvertTimeNS.second;
-  }
   std::stringstream formattedAverageSelectTransferRate;
   std::stringstream formattedAverageSelectConvertRate;
   std::stringstream formattedAverageSelectTransferAndConvertRate;
@@ -173,11 +184,6 @@ std::string Interpreter::showMetrics() {
     formattedAverageSelectTransferRate << "NA";
     formattedAverageSelectConvertRate << "NA";
     formattedAverageSelectTransferAndConvertRate << "NA";
-  }
-
-  size_t totalNumRequests = 0;
-  for (auto const &numRequestsSingle: numRequests_) {
-    totalNumRequests += numRequestsSingle;
   }
 
   size_t filterTimeNS = 0, filterInputBytes = 0, filterOutputBytes = 0;
@@ -242,6 +248,12 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(60) << "Total Returned Bytes";
   ss << std::left << std::setw(60) << formattedReturnedBytes.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "Total Arrow Converted Bytes";
+  ss << std::left << std::setw(60) << formattedArrowOutputBytes.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Total Storage/Compute Data Ratio";
+  ss << std::left << std::setw(60) << formattedStorageFormatToArrowSize.str();
+  ss << std::endl;
   ss << std::left << std::setw(60) << "Average GET Transfer Rate";
   ss << std::left << std::setw(60) << formattedAverageGetTransferRate.str();
   ss << std::endl;
@@ -300,65 +312,43 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(20) << "GET Tran+Conv";
   ss << std::left << std::setw(20) << "Select Tran+Conv";
   ss << std::left << std::setw(10) << "S3 Selectivity";
-//  ss << std::left << std::setw(16) << "GET Transfer";
-//  ss << std::left << std::setw(16) << "GET Convert";
-//  ss << std::left << std::setw(18) << "Select Transfer";
-//  ss << std::left << std::setw(18) << "Select Convert";
   ss << std::endl;
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
   for (int qid = 1; qid <= executionTimes_.size(); ++qid) {
+    normal::pushdown::S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
     std::stringstream formattedProcessingTime1;
     formattedProcessingTime1 << executionTimes_[qid - 1] << " secs";
     std::stringstream formattedProcessedBytes1;
-    formattedProcessedBytes1 << bytesTransferred_[qid - 1].first << " B" << " ("
-                             << ((double)bytesTransferred_[qid - 1].first / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    formattedProcessedBytes1 << stats.processedBytes << " B" << " ("
+                             << ((double)stats.processedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
     std::stringstream formattedReturnedBytes1;
-    formattedReturnedBytes1 << bytesTransferred_[qid - 1].second << " B" << " ("
-                            << ((double)bytesTransferred_[qid - 1].second / 1024.0 / 1024.0 / 1024.0) << " GB)";
-//    std::stringstream formattedGetTransferRate;
-//    std::stringstream formattedGetConvertRate;
-//    formattedGetTransferRate.precision(4);
-//    formattedGetConvertRate.precision(4);
+    formattedReturnedBytes1 << stats.returnedBytes << " B" << " ("
+                            << ((double)stats.returnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
     std::stringstream formattedGetTransferConvertRate;
     formattedGetTransferConvertRate.precision(4);
-    if (getTransferConvertNS_[qid - 1].first > 0 && getTransferConvertNS_[qid - 1].second > 0) {
-//      formattedGetTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-//                                  ((double) getTransferConvertNS_[qid - 1].first / 1.0e9) << " MB/s/req";
-//      formattedGetConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-//                                 ((double) getTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
-      formattedGetTransferConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-                                 (((double) getTransferConvertNS_[qid - 1].first + getTransferConvertNS_[qid - 1].second) / 1.0e9) << " MB/s/req";
+    if (stats.getTransferTimeNS > 0 && stats.getConvertTimeNS > 0) {
+      formattedGetTransferConvertRate << ((double) stats.returnedBytes / 1024.0 / 1024.0) /
+                                 (((double) (stats.getTransferTimeNS + stats.getConvertTimeNS)) / 1.0e9) << " MB/s/req";
     } else {
-//      formattedGetTransferRate << "NA";
-//      formattedGetConvertRate << "NA";
       formattedGetTransferConvertRate << "NA";
     }
-//    std::stringstream formattedSelectTransferRate;
-//    std::stringstream formattedSelectConvertRate;
-//    formattedSelectTransferRate.precision(4);
-//    formattedSelectConvertRate.precision(4);
+
     std::stringstream formattedSelectTransferConvertRate;
     formattedSelectTransferConvertRate.precision(4);
-    if (selectTransferConvertNS_[qid - 1].first > 0 && selectTransferConvertNS_[qid - 1].second > 0) {
-      // Making the assumption that transfer and convert don't occur at same time, which seems plausible since
-      // each request appears to be pinned to one cpu.
-//      formattedSelectTransferRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-//                                     ((double) (selectTransferConvertNS_[qid - 1].first) / 1.0e9) << " MB/s/req";
-//      formattedSelectConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-//                                    ((double) selectTransferConvertNS_[qid - 1].second / 1.0e9) << " MB/s/req";
-      formattedSelectTransferConvertRate << ((double) bytesTransferred_[qid - 1].second / 1024.0 / 1024.0) /
-                                     ((double) (selectTransferConvertNS_[qid - 1].first + selectTransferConvertNS_[qid - 1].second) / 1.0e9) << " MB/s/req";
+    if (stats.selectTransferTimeNS > 0 && stats.selectConvertTimeNS > 0) {
+      formattedSelectTransferConvertRate << ((double) stats.returnedBytes / 1024.0 / 1024.0) /
+                                     ((double) (stats.selectTransferTimeNS + stats.selectConvertTimeNS) / 1.0e9) << " MB/s/req";
     } else {
-//      formattedSelectTransferRate << "NA";
-//      formattedSelectConvertRate << "NA";
       formattedSelectTransferConvertRate << "NA";
     }
     // FIXME: This only works if the query is entirely pushdown, as the bytes transferred is grouped together for
     //        select and get requests, so they are not differentiated
     std::stringstream formattedS3SelectSelectivity;
-    if (bytesTransferred_[qid - 1].second && selectTransferConvertNS_[qid - 1].first > 0 && getTransferConvertNS_[qid - 1].first == 0) {
-      formattedS3SelectSelectivity << ((double) bytesTransferred_[qid - 1].second / (double) bytesTransferred_[qid - 1].first) * 100.0 << "%";
+    if (stats.returnedBytes > 0 && stats.processedBytes &&
+        stats.selectTransferTimeNS > 0 && stats.getConvertTimeNS == 0) {
+      formattedS3SelectSelectivity << ((double) stats.returnedBytes / (double) stats.processedBytes) * 100.0 << "%";
     } else {
       formattedS3SelectSelectivity << "NA";
     }
@@ -366,10 +356,6 @@ std::string Interpreter::showMetrics() {
     ss << std::left << std::setw(18) << formattedProcessingTime1.str();
     ss << std::left << std::setw(30) << formattedProcessedBytes1.str();
     ss << std::left << std::setw(30) << formattedReturnedBytes1.str();
-//    ss << std::left << std::setw(16) << formattedGetTransferRate.str();
-//    ss << std::left << std::setw(16) << formattedGetConvertRate.str();
-//    ss << std::left << std::setw(18) << formattedSelectTransferRate.str();
-//    ss << std::left << std::setw(18) << formattedSelectConvertRate.str();
     ss << std::left << std::setw(20) << formattedGetTransferConvertRate.str();
     ss << std::left << std::setw(20) << formattedSelectTransferConvertRate.str();
     ss << std::left << std::setw(22) << formattedS3SelectSelectivity.str();
@@ -382,28 +368,41 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
   ss << std::left << std::setw(8) << "Query";
-  ss << std::left << std::setw(20) << "Returned GB";
-  ss << std::left << std::setw(20) << "Processed GB";
-  ss << std::left << std::setw(20) << "Return %";
-  ss << std::left << std::setw(30) << "GB Filtered Locally";
-  ss << std::left << std::setw(30) << "Local Filter Speed/req";
-  ss << std::left << std::setw(20) << "Local Filter %";
+  ss << std::left << std::setw(15) << "Returned GB";
+  ss << std::left << std::setw(12) << "Return %";
+  ss << std::left << std::setw(30) << "Storage/Compute Data Ratio";
+  ss << std::left << std::setw(25) << "GB Filtered Locally";
+  ss << std::left << std::setw(25) << "Local Filter Speed/req";
+  ss << std::left << std::setw(17) << "Local Filter %";
+  ss << std::left << std::setw(20) << "Conv Output Rate";
   ss << std::endl;
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
   for (int qid = 1; qid <= executionTimes_.size(); ++qid) {
-    std::stringstream formattedProcessedGB;
+    normal::pushdown::S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
     std::stringstream formattedReturnedGB;
     std::stringstream formattedReturnedPercentage;
 
-    double processedGB = ((double)bytesTransferred_[qid - 1].first / 1024.0 / 1024.0 / 1024.0);
-    double returnedGB = ((double)bytesTransferred_[qid - 1].second / 1024.0 / 1024.0 / 1024.0);
-    formattedProcessedGB << processedGB << " GB";
+    double processedGB = ((double)stats.processedBytes / 1024.0 / 1024.0 / 1024.0);
+    double returnedGB = ((double)stats.returnedBytes / 1024.0 / 1024.0 / 1024.0);
     formattedReturnedGB << returnedGB << " GB";
     if (processedGB > 0) {
       formattedReturnedPercentage << (returnedGB / processedGB) * 100.0 << "%";
     } else {
       formattedReturnedPercentage << "NA";
+    }
+
+    double arrowOutputMB = ((double)stats.outputBytes / 1024.0 / 1024.0);
+    double arrowOutputGB = ((double)stats.outputBytes / 1024.0 / 1024.0 / 1024.0);
+    std::stringstream formattedStorageFormatToArrowSizeX;
+    std::stringstream formattedConversionOutputRate;
+    if (arrowOutputGB > 0) {
+      formattedStorageFormatToArrowSizeX << returnedGB / arrowOutputGB << "x";
+      formattedConversionOutputRate << (double)arrowOutputMB /
+              ((double)(stats.getConvertTimeNS + stats.selectConvertTimeNS) / 1.0e9) << " MB/s/req";
+    } else {
+      formattedStorageFormatToArrowSizeX << "NA";
+      formattedConversionOutputRate << "NA";
     }
 
     auto filterTimeNSInputOutputByte = filterTimeNSInputOutputBytes_[qid - 1];
@@ -426,12 +425,13 @@ std::string Interpreter::showMetrics() {
 
 
     ss << std::left << std::setw(8) << std::to_string(qid);
-    ss << std::left << std::setw(20) << formattedReturnedGB.str();
-    ss << std::left << std::setw(20) << formattedProcessedGB.str();
-    ss << std::left << std::setw(20) << formattedReturnedPercentage.str();
-    ss << std::left << std::setw(30) << formattedLocalFilteredGB.str();
-    ss << std::left << std::setw(30) << formattedLocalFilterSpeed.str();
-    ss << std::left << std::setw(30) << formattedLocalFilterPercent.str();
+    ss << std::left << std::setw(15) << formattedReturnedGB.str();
+    ss << std::left << std::setw(12) << formattedReturnedPercentage.str();
+    ss << std::left << std::setw(30) << formattedStorageFormatToArrowSizeX.str();
+    ss << std::left << std::setw(25) << formattedLocalFilteredGB.str();
+    ss << std::left << std::setw(25) << formattedLocalFilterSpeed.str();
+    ss << std::left << std::setw(17) << formattedLocalFilterPercent.str();
+    ss << std::left << std::setw(20) << formattedConversionOutputRate.str();
     ss << std::endl;
   }
 
@@ -440,19 +440,13 @@ std::string Interpreter::showMetrics() {
 
 void Interpreter::saveMetrics() {
   executionTimes_.emplace_back((double) (operatorGraph_->getElapsedTime().value()) / 1000000000.0);
-  bytesTransferred_.emplace_back(operatorGraph_->getBytesTransferred());
-  getTransferConvertNS_.emplace_back(operatorGraph_->getGetTransferConvertTimesNS());
-  selectTransferConvertNS_.emplace_back(operatorGraph_->getSelectTransferConvertTimesNS());
-  numRequests_.emplace_back(operatorGraph_->getNumRequests());
+  s3SelectScanStats_.emplace_back(operatorGraph_->getAggregateS3SelectScanStats());
   filterTimeNSInputOutputBytes_.emplace_back(operatorGraph_->getFilterTimeNSInputOutputBytes());
 }
 
 void Interpreter::clearMetrics() {
   executionTimes_.clear();
-  bytesTransferred_.clear();
-  getTransferConvertNS_.clear();
-  selectTransferConvertNS_.clear();
-  numRequests_.clear();
+  s3SelectScanStats_.clear();
   filterTimeNSInputOutputBytes_.clear();
 }
 
@@ -491,16 +485,8 @@ const std::vector<double> &Interpreter::getExecutionTimes() const {
   return executionTimes_;
 }
 
-const std::vector<std::pair<size_t, size_t>> &Interpreter::getBytesTransferred() const {
-  return bytesTransferred_;
-}
-
-const std::vector<std::pair<size_t, size_t>> &Interpreter::getGetTransferConvertNs() const {
-  return getTransferConvertNS_;
-}
-
-const std::vector<std::pair<size_t, size_t>> &Interpreter::getSelectTransferConvertNs() const {
-  return selectTransferConvertNS_;
+const std::vector<normal::pushdown::S3SelectScanStats> &Interpreter::getS3SelectScanStats() const {
+  return s3SelectScanStats_;
 }
 
 const std::vector<double> &Interpreter::getHitRatios() const {

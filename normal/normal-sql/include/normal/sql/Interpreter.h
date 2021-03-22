@@ -40,9 +40,7 @@ public:
   const std::shared_ptr<plan::LogicalPlan> &getLogicalPlan() const;
   const std::shared_ptr<CachingPolicy> &getCachingPolicy() const;
   const std::vector<double> &getExecutionTimes() const;
-  const std::vector<std::pair<size_t, size_t>> &getBytesTransferred() const;
-  const std::vector<std::pair<size_t, size_t>> &getGetTransferConvertNs() const;
-  const std::vector<std::pair<size_t, size_t>> &getSelectTransferConvertNs() const;
+  const std::vector<normal::pushdown::S3SelectScanStats> &getS3SelectScanStats() const;
   const std::vector<double> &getHitRatios() const;
   const std::vector<double> &getShardHitRatios() const;
   const std::vector<std::tuple<size_t, size_t, size_t>> &getFilterTimeNsInputOutputBytes() const;
@@ -59,10 +57,7 @@ private:
    * About result metrics
    */
   std::vector<double> executionTimes_;
-  std::vector<std::pair<size_t, size_t>> bytesTransferred_;
-  std::vector<size_t> numRequests_;
-  std::vector<std::pair<size_t, size_t>> getTransferConvertNS_;
-  std::vector<std::pair<size_t, size_t>> selectTransferConvertNS_;
+  std::vector<normal::pushdown::S3SelectScanStats> s3SelectScanStats_;
   std::vector<double> hitRatios_;
   std::vector<double> shardHitRatios_;
   std::vector<std::tuple<size_t, size_t, size_t>> filterTimeNSInputOutputBytes_;

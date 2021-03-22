@@ -18,6 +18,7 @@
 #include <normal/core/Forward.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/pushdown/collate/Collate2.h>
+#include <normal/pushdown/s3/S3SelectScan.h>
 
 using namespace normal::core;
 using namespace normal::core::cache;
@@ -46,10 +47,7 @@ public:
   void write_graph(const std::string &file);
   std::shared_ptr<Operator> getOperator(const std::string &);
   tl::expected<long, std::string> getElapsedTime();
-  std::pair<size_t, size_t> getBytesTransferred();
-  size_t getNumRequests();
-  std::pair<size_t, size_t> getGetTransferConvertTimesNS();
-  std::pair<size_t, size_t> getSelectTransferConvertTimesNS();
+  S3SelectScanStats getAggregateS3SelectScanStats();
   std::tuple<size_t, size_t, size_t> getFilterTimeNSInputOutputBytes();
   std::string showMetrics();
   [[nodiscard]] const long &getId() const;

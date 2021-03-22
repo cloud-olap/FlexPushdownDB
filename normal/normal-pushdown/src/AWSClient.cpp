@@ -35,9 +35,9 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   Aws::Client::ClientConfiguration config;
   config.region = Aws::Region::US_WEST_1;
   config.scheme = Aws::Http::Scheme::HTTP;
-  // This value has been tuned for c5a.4xlarge and c5a.8xlarge, any more connections than this and aggregate
+  // This value has been tuned for c5a.4xlarge, c5a.8xlarge, and c5n.9xlarge, any more connections than this and aggregate
   // network performance degrades rather than remaining constant
-  // This value makes many low selectivity S3 Select requests much faster as it utilizes more network bandwidth for them.
+  // This value makes low selectivity S3 Select requests much faster as it utilizes more network bandwidth for them.
   // S3 Select requests with high selectivity are unaffected, as are GET requests (so for GET we don't run it in parallel)
   config.maxConnections = 200; // Default = 25
   config.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>(ALLOCATION_TAG, 0, 0); // Disable retries

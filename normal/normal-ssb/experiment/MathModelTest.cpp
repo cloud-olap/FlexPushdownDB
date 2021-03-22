@@ -256,26 +256,27 @@ void normal::ssb::MathModelTest::runTestSingleMode(
 
   // save metrics
   if (saveMetrics) {
+    normal::pushdown::S3SelectScanStats s3SelectScanStats = i.getS3SelectScanStats()[0];
     auto metricsPair = metricsMap_.find(mode->toString());
     if (metricsPair != metricsMap_.end()) {
       auto& metricsVec = metricsPair->second;
       metricsVec.executionTimeVec.emplace_back(i.getExecutionTimes()[0]);
-      metricsVec.processedBytesVec.emplace_back(i.getBytesTransferred()[0].first);
-      metricsVec.returnedBytesVec.emplace_back(i.getBytesTransferred()[0].second);
-      metricsVec.getTransferNSVec.emplace_back(i.getGetTransferConvertNs()[0].first);
-      metricsVec.getConvertNSVec.emplace_back(i.getGetTransferConvertNs()[0].second);
-      metricsVec.selectTransferNSVec.emplace_back(i.getSelectTransferConvertNs()[0].first);
-      metricsVec.selectConvertNSVec.emplace_back(i.getSelectTransferConvertNs()[0].second);
+      metricsVec.processedBytesVec.emplace_back(s3SelectScanStats.processedBytes);
+      metricsVec.returnedBytesVec.emplace_back(s3SelectScanStats.returnedBytes);
+      metricsVec.getTransferNSVec.emplace_back(s3SelectScanStats.getTransferTimeNS);
+      metricsVec.getConvertNSVec.emplace_back(s3SelectScanStats.getConvertTimeNS);
+      metricsVec.selectTransferNSVec.emplace_back(s3SelectScanStats.selectTransferTimeNS);
+      metricsVec.selectConvertNSVec.emplace_back(s3SelectScanStats.selectConvertTimeNS);
       metricsVec.hitRatioVec.emplace_back(i.getHitRatios()[0]);
     } else {
       MetricsVec metricsVec{
               std::vector<double>{i.getExecutionTimes()[0]},
-              std::vector<size_t>{i.getBytesTransferred()[0].first},
-              std::vector<size_t>{i.getBytesTransferred()[0].second},
-              std::vector<size_t>{i.getGetTransferConvertNs()[0].first},
-              std::vector<size_t>{i.getGetTransferConvertNs()[0].second},
-              std::vector<size_t>{i.getSelectTransferConvertNs()[0].first},
-              std::vector<size_t>{i.getSelectTransferConvertNs()[0].second},
+              std::vector<size_t>{s3SelectScanStats.processedBytes},
+              std::vector<size_t>{s3SelectScanStats.returnedBytes},
+              std::vector<size_t>{s3SelectScanStats.getTransferTimeNS},
+              std::vector<size_t>{s3SelectScanStats.getConvertTimeNS},
+              std::vector<size_t>{s3SelectScanStats.selectTransferTimeNS},
+              std::vector<size_t>{s3SelectScanStats.selectConvertTimeNS},
               std::vector<double>{i.getHitRatios()[0]}
       };
       metricsMap_.emplace(mode->toString(), metricsVec);

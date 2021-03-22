@@ -28,6 +28,20 @@ using namespace normal::core::cache;
 
 namespace normal::pushdown {
 
+// Struct for passing around S3 GET/Select statistics
+typedef struct S3SelectScanStats {
+  size_t processedBytes; // bytes read in storage backend
+  size_t returnedBytes;  // bytes returned from storage backen
+  size_t outputBytes;    // bytes in the arrow result output from this operation
+  size_t numRequests;    // number of requests sent to storage backend
+  // For now we could combine the following into two variables as all current modes only do GET or Select
+  // Leaving them separated so that we can easily support mixing GET/Select together in the future.
+  size_t getTransferTimeNS;
+  size_t getConvertTimeNS;
+  size_t selectTransferTimeNS;
+  size_t selectConvertTimeNS;
+} S3SelectScanStats;
+
 class S3SelectScan : public normal::core::Operator {
 public:
   S3SelectScan(std::string name,
@@ -45,14 +59,7 @@ public:
 			   long queryId,
          std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys);
 
-  [[nodiscard]] size_t getProcessedBytes() const;
-  [[nodiscard]] size_t getReturnedBytes() const;
-  [[nodiscard]] size_t getNumRequests() const;
-
-  [[nodiscard]] size_t getGetTransferTimeNS() const;
-  [[nodiscard]] size_t getGetConvertTimeNS() const;
-  [[nodiscard]] size_t getSelectTransferTimeNS() const;
-  [[nodiscard]] size_t getSelectConvertTimeNS() const;
+  S3SelectScanStats getS3SelectScanStats();
 
 protected:
   std::string s3Bucket_;
@@ -64,15 +71,9 @@ protected:
   std::shared_ptr<arrow::Schema> schema_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columnsReadFromS3_;
-  size_t processedBytes_ = 0;
-  size_t returnedBytes_ = 0;
-  size_t numRequests_ = 0;
 
-  size_t getTransferTimeNS_ = 0;
-  size_t getConvertTimeNS_ = 0;
+  S3SelectScanStats s3SelectScanStats_ = {0, 0, 0, 0 , 0, 0 ,0, 0};
 
-  size_t selectTransferTimeNS_ = 0;
-  size_t selectConvertTimeNS_ = 0;
 
   /**
    * Flags:

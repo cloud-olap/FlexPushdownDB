@@ -17,7 +17,6 @@
 #include <normal/pushdown/file/FileScan2.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/pushdown/collate/Collate2.h>
-#include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/s3/S3SelectScan2.h>
 #include <normal/pushdown/s3/S3Select.h>
 #include <normal/pushdown/s3/S3Get.h>
@@ -351,31 +350,59 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::endl;
   ss << std::endl;
 
-  auto bytesTransferred = getBytesTransferred();
+  S3SelectScanStats s3SelectScanStats = getAggregateS3SelectScanStats();
+
   std::stringstream formattedProcessedBytes;
-  formattedProcessedBytes << bytesTransferred.first << " B" << " ("
-                          << ((double)bytesTransferred.first / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  formattedProcessedBytes << s3SelectScanStats.processedBytes << " B" << " ("
+                          << ((double)s3SelectScanStats.processedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
   std::stringstream formattedReturnedBytes;
-  formattedReturnedBytes << bytesTransferred.second << " B" << " ("
-                         << ((double)bytesTransferred.second / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  formattedReturnedBytes << s3SelectScanStats.returnedBytes << " B" << " ("
+                         << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+  std::stringstream formattedArrowConvertedBytes;
+  formattedArrowConvertedBytes << s3SelectScanStats.outputBytes << " B" << " ("
+                         << ((double)s3SelectScanStats.outputBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+  std::stringstream formattedConversionOutputRate;
+  if (s3SelectScanStats.getConvertTimeNS + s3SelectScanStats.selectConvertTimeNS > 0) {
+    formattedConversionOutputRate << ((double) s3SelectScanStats.outputBytes / 1024.0 / 1024.0) /
+                                     ((double) (s3SelectScanStats.getConvertTimeNS +
+                                                s3SelectScanStats.selectConvertTimeNS) / 1.0e9) << " MB/s/req";
+  } else {
+    formattedConversionOutputRate << "NA";
+  }
+
+  std::stringstream formattedStorageFormatToArrowSizeX;
+  if (s3SelectScanStats.outputBytes > 0) {
+    formattedStorageFormatToArrowSizeX << (double) s3SelectScanStats.returnedBytes / (double) s3SelectScanStats.outputBytes << "x";
+  } else {
+    formattedStorageFormatToArrowSizeX << "NA";
+  }
   ss << std::left << std::setw(60) << "Processed Bytes";
   ss << std::left << std::setw(60) << formattedProcessedBytes.str();
   ss << std::endl;
   ss << std::left << std::setw(60) << "Returned Bytes";
   ss << std::left << std::setw(60) << formattedReturnedBytes.str();
   ss << std::endl;
+  ss << std::left << std::setw(60) << "Arrow Converted Bytes";
+  ss << std::left << std::setw(60) << formattedArrowConvertedBytes.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Conversion Output Rate";
+  ss << std::left << std::setw(60) << formattedConversionOutputRate.str();
+  ss << std::endl;
+  ss << std::left << std::setw(60) << "Storage/Compute Data Ratio";
+  ss << std::left << std::setw(60) << formattedStorageFormatToArrowSizeX.str();
+  ss << std::endl;
 
-  auto getTransferConvertTimesNS = getGetTransferConvertTimesNS();
   std::stringstream formattedGetTransferRate;
   std::stringstream formattedGetConvertRate;
   std::stringstream formattedGetTransferConvertRate;
-  if (getTransferConvertTimesNS.first > 0 && getTransferConvertTimesNS.second > 0) {
-    formattedGetTransferRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
-                             ((double) getTransferConvertTimesNS.first / 1.0e9) << " MB/s/req";
-    formattedGetConvertRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
-                            ((double) getTransferConvertTimesNS.second / 1.0e9) << " MB/s/req";
-    formattedGetTransferConvertRate << ((double) bytesTransferred.second / 1024.0 / 1024.0) /
-                            (((double) getTransferConvertTimesNS.first + getTransferConvertTimesNS.second) / 1.0e9) << " MB/s/req";
+  if (s3SelectScanStats.getTransferTimeNS > 0 && s3SelectScanStats.getConvertTimeNS > 0) {
+    formattedGetTransferRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                             ((double) s3SelectScanStats.getTransferTimeNS / 1.0e9) << " MB/s/req";
+    formattedGetConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                            ((double) s3SelectScanStats.getConvertTimeNS / 1.0e9) << " MB/s/req";
+    formattedGetTransferConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                            (((double) s3SelectScanStats.getTransferTimeNS + s3SelectScanStats.getConvertTimeNS) / 1.0e9) << " MB/s/req";
   } else {
     formattedGetTransferRate << "NA";
     formattedGetConvertRate << "NA";
@@ -393,27 +420,32 @@ std::string graph::OperatorGraph::showMetrics() {
   ss << std::left << std::setw(60) << formattedGetTransferConvertRate.str();
   ss << std::endl;
 
-  auto selectTransferConvertTimesNS = getSelectTransferConvertTimesNS();
   std::stringstream formattedSelectTransferRate;
   std::stringstream formattedSelectConvertRate;
   std::stringstream formattedSelectTransferConvertRate;
-  if (selectTransferConvertTimesNS.first > 0 && selectTransferConvertTimesNS.second > 0) {
-    formattedSelectTransferRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
-          ((double)(selectTransferConvertTimesNS.first - selectTransferConvertTimesNS.second)  / 1.0e9) << " MB/s/req";
-    formattedSelectConvertRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
-          ((double)selectTransferConvertTimesNS.second / 1.0e9) << " MB/s/req";
-    formattedSelectTransferConvertRate << ((double)bytesTransferred.second / 1024.0 / 1024.0) /
-          ((double)(selectTransferConvertTimesNS.first)  / 1.0e9) << " MB/s/req";
+  if (s3SelectScanStats.selectTransferTimeNS > 0 && s3SelectScanStats.selectConvertTimeNS > 0) {
+    formattedSelectTransferRate << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+          ((double)(s3SelectScanStats.selectTransferTimeNS)  / 1.0e9) << " MB/s/req";
+    formattedSelectConvertRate << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+          ((double)s3SelectScanStats.selectConvertTimeNS / 1.0e9) << " MB/s/req";
+    formattedSelectTransferConvertRate << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+          ((double)(s3SelectScanStats.selectTransferTimeNS + s3SelectScanStats.selectConvertTimeNS)  / 1.0e9) << " MB/s/req";
   } else {
     formattedSelectTransferRate << "NA";
     formattedSelectConvertRate << "NA";
     formattedSelectTransferConvertRate << "NA";
   }
-  // FIXME: This only works if the query is entirely pushdown, as the bytes transferred is grouped together for
-  //        select and get requests, so they are not differentiated
+  // FIXME: This only works if the query is entirely pushdown (it only uses S3 Select and never GET), as the bytes
+  //        transferred is grouped together for select and get requests, so they are not differentiated
+  //        If we decide to eventually allow GET and Select requests to be in the same query for a mode we will need
+  //        to have a way to differentiate this (this isn't the case for now though so it is fine)
+  //        Also note that some storage backends such as Airmettle don't tell use processedBytes, in which case
+  //        we estimate this value with the select range.
   std::stringstream formattedS3SelectSelectivityPercent;
-  if (bytesTransferred.second > 0 && selectTransferConvertTimesNS.first > 0 && getTransferConvertTimesNS.second == 0) {
-    formattedS3SelectSelectivityPercent << (double) bytesTransferred.second / (double) bytesTransferred.first * 100 << "%";
+  if (s3SelectScanStats.returnedBytes > 0 && s3SelectScanStats.processedBytes &&
+      s3SelectScanStats.selectTransferTimeNS > 0 && s3SelectScanStats.getConvertTimeNS == 0) {
+    formattedS3SelectSelectivityPercent << (double) s3SelectScanStats.returnedBytes /
+                                           (double) s3SelectScanStats.processedBytes * 100 << "%";
   } else {
     formattedS3SelectSelectivityPercent << "NA";
   }
@@ -468,9 +500,8 @@ const long &graph::OperatorGraph::getId() const {
   return id_;
 }
 
-std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
-  size_t processedBytes = 0;
-  size_t returnedBytes = 0;
+S3SelectScanStats graph::OperatorGraph::getAggregateS3SelectScanStats() {
+  S3SelectScanStats aggregateS3SelectScanStats = {0, 0, 0, 0 , 0, 0 ,0, 0}; // initialize all fields to 0
   for (const auto &entry: operatorDirectory_) {
     if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
         typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
@@ -484,73 +515,20 @@ std::pair<size_t, size_t> graph::OperatorGraph::getBytesTransferred() {
 //	  	});
 
 	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
-      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
-      processedBytes += s3ScanOp->getProcessedBytes();
-      returnedBytes += s3ScanOp->getReturnedBytes();
-	}
+      auto s3SelectScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
+      S3SelectScanStats currentS3SelectScanStats = s3SelectScanOp->getS3SelectScanStats();
+      // Add these s3SelectScanStats to our aggregate stats
+      aggregateS3SelectScanStats.processedBytes += currentS3SelectScanStats.processedBytes;
+      aggregateS3SelectScanStats.returnedBytes += currentS3SelectScanStats.returnedBytes;
+      aggregateS3SelectScanStats.outputBytes += currentS3SelectScanStats.outputBytes;
+      aggregateS3SelectScanStats.numRequests += currentS3SelectScanStats.numRequests;
+      aggregateS3SelectScanStats.getTransferTimeNS += currentS3SelectScanStats.getTransferTimeNS;
+      aggregateS3SelectScanStats.getConvertTimeNS += currentS3SelectScanStats.getConvertTimeNS;
+      aggregateS3SelectScanStats.selectTransferTimeNS += currentS3SelectScanStats.selectTransferTimeNS;
+      aggregateS3SelectScanStats.selectConvertTimeNS += currentS3SelectScanStats.selectConvertTimeNS;
+	  }
   }
-  return std::pair<size_t, size_t>(processedBytes, returnedBytes);
-}
-
-size_t graph::OperatorGraph::getNumRequests() {
-  size_t numRequests = 0;
-  for (const auto &entry: operatorDirectory_) {
-    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
-        typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
-	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
-      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
-      numRequests += s3ScanOp->getNumRequests();
-    }
-  }
-  return numRequests;
-}
-
-std::pair<size_t, size_t> graph::OperatorGraph::getGetTransferConvertTimesNS() {
-  size_t getTransferTimeNS = 0;
-  size_t getConvertTimeNS = 0;
-  for (const auto &entry: operatorDirectory_) {
-    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
-        typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
-//	  (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetMetricsAtom::value).receive(
-//	  	[&](std::pair<size_t, size_t> metrics) {
-//		  processedBytes += metrics.first;
-//		  returnedBytes += metrics.second;
-//		},
-//		[&](const caf::error&  error){
-//	  	  throw std::runtime_error(to_string(error));
-//	  	});
-
-	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
-      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
-      getTransferTimeNS += s3ScanOp->getGetTransferTimeNS();
-      getConvertTimeNS += s3ScanOp->getGetConvertTimeNS();
-	}
-  }
-  return std::pair<size_t, size_t>(getTransferTimeNS, getConvertTimeNS);
-}
-
-std::pair<size_t, size_t> graph::OperatorGraph::getSelectTransferConvertTimesNS() {
-  size_t selectTransferTimeNS = 0;
-  size_t selectConvertTimeNS = 0;
-  for (const auto &entry: operatorDirectory_) {
-    if (typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Select) ||
-        typeid(*entry.second.getDef()) == typeid(normal::pushdown::S3Get)) {
-//	  (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetMetricsAtom::value).receive(
-//	  	[&](std::pair<size_t, size_t> metrics) {
-//		  processedBytes += metrics.first;
-//		  returnedBytes += metrics.second;
-//		},
-//		[&](const caf::error&  error){
-//	  	  throw std::runtime_error(to_string(error));
-//	  	});
-
-	  // FIXME: Really need to get metrics with a message as above (just interrogating the operator directly is unsafe).
-      auto s3ScanOp = std::static_pointer_cast<normal::pushdown::S3SelectScan>(entry.second.getDef());
-      selectTransferTimeNS += s3ScanOp->getSelectTransferTimeNS();
-      selectConvertTimeNS += s3ScanOp->getSelectConvertTimeNS();
-	}
-  }
-  return std::pair<size_t, size_t>(selectTransferTimeNS, selectConvertTimeNS);
+  return aggregateS3SelectScanStats;
 }
 
 std::tuple<size_t, size_t, size_t> graph::OperatorGraph::getFilterTimeNSInputOutputBytes() {

@@ -190,16 +190,16 @@ std::shared_ptr<TupleSet2> S3Get::s3Get() {
   GetObjectOutcome getObjectOutcome = s3Client_->GetObject(getObjectRequest);
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
-  getTransferTimeNS_ += transferTime;
-  numRequests_++;
+  s3SelectScanStats_.getTransferTimeNS += transferTime;
+  s3SelectScanStats_.numRequests++;
 
   if (getObjectOutcome.IsSuccess()) {
     std::shared_ptr<TupleSet2> tupleSet;
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     auto getResult = getObjectOutcome.GetResultWithOwnership();
     int64_t resultSize = getResult.GetContentLength();
-    processedBytes_ += resultSize;
-    returnedBytes_ += resultSize;
+    s3SelectScanStats_.processedBytes += resultSize;
+    s3SelectScanStats_.returnedBytes += resultSize;
     std::vector<std::shared_ptr<arrow::Field>> fields;
     for (auto column : neededColumnNames_) {
       fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
@@ -230,7 +230,7 @@ std::shared_ptr<TupleSet2> S3Get::s3Get() {
     }
     std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-    getConvertTimeNS_ += conversionTime;
+    s3SelectScanStats_.getConvertTimeNS += conversionTime;
 
     return tupleSet;
   }
@@ -259,7 +259,7 @@ std::shared_ptr<TupleSet2> S3Get::readTuples() {
       requestStoreSegmentsInCache(readTupleSet);
     } else {
       // send segment filter weight
-      if (weightedSegmentKeys_ && processedBytes_ > 0) {
+      if (weightedSegmentKeys_ && s3SelectScanStats_.processedBytes > 0) {
         sendSegmentWeight();
       }
     }

@@ -107,6 +107,7 @@ void S3SelectScan::onStart() {
 void S3SelectScan::readAndSendTuples() {
   auto readTupleSet = readTuples();
   SPDLOG_DEBUG("{} -> {} rows", name(), readTupleSet->numRows());
+  s3SelectScanStats_.outputBytes += readTupleSet->size();
   std::shared_ptr<normal::core::message::Message>
           message = std::make_shared<TupleMessage>(readTupleSet->toTupleSetV1(), this->name());
   ctx()->tell(message);
@@ -187,42 +188,18 @@ void S3SelectScan::requestStoreSegmentsInCache(const std::shared_ptr<TupleSet2> 
   CacheHelper::requestStoreSegmentsInCache(tupleSet, partition, startOffset_, finishOffset_, name(), ctx());
 }
 
-size_t S3SelectScan::getProcessedBytes() const {
-  return processedBytes_;
-}
-
-size_t S3SelectScan::getReturnedBytes() const {
-  return returnedBytes_;
-}
-
-size_t S3SelectScan::getNumRequests() const {
-  return numRequests_;
-}
-
-size_t S3SelectScan::getGetTransferTimeNS() const {
-  return getTransferTimeNS_;
-}
-
-size_t S3SelectScan::getGetConvertTimeNS() const {
-  return getConvertTimeNS_;
-}
-
-size_t S3SelectScan::getSelectTransferTimeNS() const {
-  return selectTransferTimeNS_;
-}
-
-size_t S3SelectScan::getSelectConvertTimeNS() const {
-  return selectConvertTimeNS_;
+S3SelectScanStats S3SelectScan::getS3SelectScanStats() {
+  return s3SelectScanStats_;
 }
 
 void S3SelectScan::sendSegmentWeight() {
-  auto filteredBytes = (double) returnedBytes_;
+  auto filteredBytes = (double) s3SelectScanStats_.returnedBytes;
   double projectFraction = 0.0;
   auto miniCatalogue = normal::connector::defaultMiniCatalogue;
   for (auto const &returnedColumnName: returnedS3ColumnNames_) {
     projectFraction += miniCatalogue->lengthFraction(returnedColumnName);
   }
-  double totalBytes = projectFraction * ((double) processedBytes_);
+  double totalBytes = projectFraction * ((double) s3SelectScanStats_.processedBytes);
   auto selectivity = filteredBytes / totalBytes;
   double predicateNum = getPredicateNum();
 
