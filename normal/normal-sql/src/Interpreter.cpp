@@ -146,7 +146,7 @@ std::string Interpreter::showMetrics() {
                             << totalArrowBytesGiga << " GB)";
   std::stringstream formattedStorageFormatToArrowSize;
   if (arrowOutputBytes > 0) {
-    formattedStorageFormatToArrowSize << totalReturnedBytes / arrowOutputBytes << "x";
+    formattedStorageFormatToArrowSize << (double) totalReturnedBytes /  (double) arrowOutputBytes << "x";
   } else {
     formattedStorageFormatToArrowSize << "NA";
   }
