@@ -196,7 +196,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
     std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.{}", index);
 //  std::string sql = "select lo_orderkey from s3object where lo_orderdate > 0;";
     std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
-                      "where cast(lo_quantity as int) <= 10;";
+                      "where cast(lo_quantity as int) <= 10";
     selectObjectContentRequest.SetBucket(Aws::String(bucketName));
     selectObjectContentRequest.SetKey(Aws::String(keyName));
 
@@ -404,7 +404,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults) {
   spdlog::set_level(spdlog::level::info);
   // parameters
-  const int warmBatchSize = 30, executeBatchSize = 50;
+  const int warmBatchSize = 50, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);

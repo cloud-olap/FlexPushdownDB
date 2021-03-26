@@ -27,6 +27,9 @@ int main(int argc, char **argv) {
   auto size = atoi(argv[2]);
   auto skewness = atof(argv[3]);
   SqlGenerator sqlGenerator;
+  if (argc >= 5) {
+    sqlGenerator.setLineorderRowSelectivity(atof(argv[4]));
+  }
   std::random_device rd;
   std::mt19937 g(rd());
 
@@ -35,10 +38,12 @@ int main(int argc, char **argv) {
 
     // Basic workload
     case 1: {
-      auto batch = sqlGenerator.generateSqlBatchSkew(skewness, size);
-      std::shuffle(batch.begin(), batch.end(), g);
+      auto warmupBatch = sqlGenerator.generateSqlBatchSkew(skewness, size / 2);
+      std::vector<std::string> executionBatch(warmupBatch);
+      std::shuffle(warmupBatch.begin(), warmupBatch.end(), g);
+      std::shuffle(executionBatch.begin(), executionBatch.end(), g);
       for (int index = 0; index < size; index++) {
-        auto sql = batch[index];
+        auto sql = (index < warmupBatch.size()) ? warmupBatch[index] : executionBatch[index - warmupBatch.size()];
         auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1)));
         writeFile(sql, sql_file_path);
         sql_file_dir_path = sql_file_dir_path.parent_path();

@@ -95,15 +95,15 @@ std::string SqlGenerator::generateSql(std::string queryName) {
 
 std::string SqlGenerator::genQuery1_1() {
   auto d_year = genD_year();
-  auto lo_discount = genLo_discount();
-  auto lo_quantity = genLo_quantity();
+  auto lo_discount = genLo_discount(3, 7);
+  auto lo_quantity = genLo_quantity(15, 30);
   return fmt::format(
           "select sum(lo_extendedprice * lo_discount) as revenue\n"
           "from lineorder, date\n"
           "where lo_orderdate = d_datekey\n"
           "  and d_year = {}\n"
           "  and (lo_discount between {} and {})\n"
-          "  and lo_quantity < {};",
+          "  and lo_quantity < {};\n",
           d_year,
           lo_discount - 1,
           lo_discount + 1,
@@ -113,15 +113,15 @@ std::string SqlGenerator::genQuery1_1() {
 
 std::string SqlGenerator::genQuery1_2() {
   auto d_yearmonthnum = genD_yearmonthnum();
-  auto lo_discount = genLo_discount();
-  auto lo_quantity = genLo_quantity();
+  auto lo_discount = genLo_discount(3, 7);
+  auto lo_quantity = genLo_quantity(15, 30);
   return fmt::format(
           "select sum(lo_extendedprice * lo_discount) as revenue\n"
           "from lineorder, date\n"
           "where lo_orderdate = d_datekey\n"
           "  and d_yearmonthnum = {}\n"
           "  and (lo_discount between {} and {})\n"
-          "  and (lo_quantity between {} and {});",
+          "  and (lo_quantity between {} and {});\n",
           d_yearmonthnum,
           lo_discount - 1,
           lo_discount + 1,
@@ -133,8 +133,8 @@ std::string SqlGenerator::genQuery1_2() {
 std::string SqlGenerator::genQuery1_3() {
   auto d_weeknuminyear = genD_weeknuminyear();
   auto d_year = genD_year();
-  auto lo_discount = genLo_discount();
-  auto lo_quantity = genLo_quantity();
+  auto lo_discount = genLo_discount(3, 7);
+  auto lo_quantity = genLo_quantity(15, 30);
   return fmt::format(
           "select sum(lo_extendedprice * lo_discount) as revenue\n"
           "from lineorder, date\n"
@@ -142,7 +142,7 @@ std::string SqlGenerator::genQuery1_3() {
           "  and d_weeknuminyear = {}\n"
           "  and d_year = {}\n"
           "  and (lo_discount between {} and {})\n"
-          "  and (lo_quantity between {} and {});",
+          "  and (lo_quantity between {} and {});\n",
           d_weeknuminyear,
           d_year,
           lo_discount - 1,
@@ -166,7 +166,7 @@ std::string SqlGenerator::genQuery2_1() {
           "  and s_region = '{}'\n"
           "  and {}\n"
           "group by d_year, p_brand1\n"
-          "order by d_year, p_brand1;",
+          "order by d_year, p_brand1;\n",
           p_category,
           s_region,
           lo_predicate
@@ -189,7 +189,7 @@ std::string SqlGenerator::genQuery2_2() {
           "  and s_region = '{}'\n"
           "  and {}\n"
           "group by d_year, p_brand1\n"
-          "order by d_year, p_brand1;",
+          "order by d_year, p_brand1;\n",
           p_brand1_0,
           p_brand1_1,
           s_region,
@@ -211,7 +211,7 @@ std::string SqlGenerator::genQuery2_3() {
           "  and s_region = '{}'\n"
           "  and {}\n"
           "group by d_year, p_brand1\n"
-          "order by d_year, p_brand1;",
+          "order by d_year, p_brand1;\n",
           p_brand1,
           s_region,
           lo_predicate
@@ -236,7 +236,7 @@ std::string SqlGenerator::genQuery3_1() {
           "  and d_year <= {2}\n"
           "  and {3}\n"
           "group by c_nation, s_nation, d_year\n"
-          "order by d_year asc, revenue desc;",
+          "order by d_year asc, revenue desc;\n",
           region,
           d_year_pair.first,
           d_year_pair.second,
@@ -262,7 +262,7 @@ std::string SqlGenerator::genQuery3_2() {
           "  and d_year <= {2}\n"
           "  and {3}\n"
           "group by c_city, s_city, d_year\n"
-          "order by d_year asc, revenue desc;",
+          "order by d_year asc, revenue desc;\n",
           nation,
           d_year_pair.first,
           d_year_pair.second,
@@ -289,7 +289,7 @@ std::string SqlGenerator::genQuery3_3() {
           "  and d_year <= {3}\n"
           "  and {4}\n"
           "group by c_city, s_city, d_year\n"
-          "order by d_year asc, revenue desc;",
+          "order by d_year asc, revenue desc;\n",
           city1,
           city2,
           d_year_pair.first,
@@ -314,7 +314,7 @@ std::string SqlGenerator::genQuery3_4() {
           "  and d_yearmonth = '{2}'\n"
           "  and {3}\n"
           "group by c_city, s_city, d_year\n"
-          "order by d_year asc, revenue desc;",
+          "order by d_year asc, revenue desc;\n",
           city1,
           city2,
           d_yearmonth,
@@ -339,7 +339,7 @@ std::string SqlGenerator::genQuery4_1() {
           "  and (p_mfgr = '{1}' or p_mfgr = '{2}')\n"
           "  and {3}\n"
           "group by d_year, c_nation\n"
-          "order by d_year, c_nation;",
+          "order by d_year, c_nation;\n",
           region,
           p_mfgr1,
           p_mfgr2,
@@ -367,7 +367,7 @@ std::string SqlGenerator::genQuery4_2() {
           "  and (p_mfgr = '{3}' or p_mfgr = '{4}')\n"
           "  and {5}\n"
           "group by d_year, s_nation, p_category\n"
-          "order by d_year, s_nation, p_category;",
+          "order by d_year, s_nation, p_category;\n",
           region,
           d_year1,
           d_year2,
@@ -395,7 +395,7 @@ std::string SqlGenerator::genQuery4_3() {
           "  and p_category = '{}'\n"
           "  and {}\n"
           "group by d_year, s_city, p_brand1\n"
-          "order by d_year, s_city, p_brand1;",
+          "order by d_year, s_city, p_brand1;\n",
           s_nation,
           d_year1,
           d_year2,
@@ -438,13 +438,13 @@ std::string SqlGenerator::genD_yearmonth() {
   return month + std::to_string(year);
 }
 
-int SqlGenerator::genLo_discount() {
-  std::uniform_int_distribution<int> distribution(3,7);
+int SqlGenerator::genLo_discount(int min, int max) {
+  std::uniform_int_distribution<int> distribution(min, max);
   return distribution(*generator_);
 }
 
-int SqlGenerator::genLo_quantity() {
-  std::uniform_int_distribution<int> distribution(15,30);
+int SqlGenerator::genLo_quantity(int min, int max) {
+  std::uniform_int_distribution<int> distribution(min, max);
   return distribution(*generator_);
 }
 
@@ -499,12 +499,16 @@ std::string SqlGenerator::genLo_predicate() {
   auto kind = distribution(*generator_);
   switch (kind % numKinds) {
     case 0: {
-      auto lo_discount = genLo_discount();
-      return "(lo_discount between " + std::to_string(lo_discount - 1) + " and " + std::to_string(lo_discount + 1) + ")";
+      int lo_discountFullRange = 10;    // from SSB definition
+      int lo_discountRange = lo_discountFullRange * lineorderRowSelectivity_;
+      auto lo_discountLeft = genLo_discount(0, lo_discountFullRange - lo_discountRange);
+      return "(lo_discount between " + std::to_string(lo_discountLeft) + " and " + std::to_string(lo_discountLeft + lo_discountRange) + ")";
     }
     case 1: {
-      auto lo_quantity = genLo_quantity();
-      return "(lo_quantity between " + std::to_string(lo_quantity - 4) + " and " + std::to_string(lo_quantity + 5) + ")";
+      int lo_quantityFullRange = 50;    // from SSB definition
+      int lo_quantityRange = lo_quantityFullRange * lineorderRowSelectivity_;
+      auto lo_quantityLeft = genLo_quantity(0, lo_quantityFullRange - lo_quantityRange);
+      return "(lo_quantity between " + std::to_string(lo_quantityLeft) + " and " + std::to_string(lo_quantityLeft + lo_quantityRange) + ")";
     }
     default:
       throw std::runtime_error("Unimplemented lo_predicate kind");
@@ -645,7 +649,7 @@ std::string SqlGenerator::genSkewQuery2_1(std::string skewLo_predicate, std::str
           "  and {}\n"
           "  and {}\n"
           "group by d_yearmonthnum, p_brand1\n"
-          "order by d_yearmonthnum, p_brand1;",
+          "order by d_yearmonthnum, p_brand1;\n",
           aggColumn,
           p_category,
           s_region,
@@ -670,7 +674,7 @@ std::string SqlGenerator::genSkewQuery2_2(std::string skewLo_predicate, std::str
           "  and {}\n"
           "  and {}\n"
           "group by d_yearmonthnum, p_brand1\n"
-          "order by d_yearmonthnum, p_brand1;",
+          "order by d_yearmonthnum, p_brand1;\n",
           aggColumn,
           p_brand1_0,
           p_brand1_1,
@@ -694,7 +698,7 @@ std::string SqlGenerator::genSkewQuery2_3(std::string skewLo_predicate, std::str
           "  and {}\n"
           "  and {}\n"
           "group by d_yearmonthnum, p_brand1\n"
-          "order by d_yearmonthnum, p_brand1;",
+          "order by d_yearmonthnum, p_brand1;\n",
           aggColumn,
           p_brand1,
           s_region,
@@ -716,7 +720,7 @@ std::string SqlGenerator::genSkewQuery3_1(std::string skewLo_predicate, std::str
           "  and {2}\n"
           "  and {3}\n"
           "group by c_nation, s_nation, d_yearmonthnum\n"
-          "order by d_yearmonthnum asc, revenue desc;",
+          "order by d_yearmonthnum asc, revenue desc;\n",
           aggColumn,
           region,
           lo_predicate,
@@ -737,7 +741,7 @@ std::string SqlGenerator::genSkewQuery3_2(std::string skewLo_predicate, std::str
           "  and {2}\n"
           "  and {3}\n"
           "group by c_city, s_city, d_yearmonthnum\n"
-          "order by d_yearmonthnum asc, revenue desc;",
+          "order by d_yearmonthnum asc, revenue desc;\n",
           aggColumn,
           nation,
           lo_predicate,
@@ -759,7 +763,7 @@ std::string SqlGenerator::genSkewQuery3_3(std::string skewLo_predicate, std::str
           "  and {3}\n"
           "  and {4}\n"
           "group by c_city, s_city, d_yearmonthnum\n"
-          "order by d_yearmonthnum asc, revenue desc;",
+          "order by d_yearmonthnum asc, revenue desc;\n",
           aggColumn,
           city1,
           city2,
@@ -782,7 +786,7 @@ std::string SqlGenerator::genSkewQuery3_4(std::string skewLo_predicate, std::str
           "  and {3}\n"
           "  and {4}\n"
           "group by c_city, s_city, d_yearmonthnum\n"
-          "order by d_yearmonthnum asc, revenue desc;",
+          "order by d_yearmonthnum asc, revenue desc;\n",
           aggColumn,
           city1,
           city2,
@@ -808,7 +812,7 @@ std::string SqlGenerator::genSkewQuery4_1(std::string skewLo_predicate, std::str
           "  and {4}\n"
           "  and {5}\n"
           "group by d_yearmonthnum, c_nation\n"
-          "order by d_yearmonthnum, c_nation;",
+          "order by d_yearmonthnum, c_nation;\n",
           aggColumn,
           region,
           p_mfgr1,
@@ -835,7 +839,7 @@ std::string SqlGenerator::genSkewQuery4_2(std::string skewLo_predicate, std::str
           "  and {4}\n"
           "  and {5}\n"
           "group by d_yearmonthnum, s_nation, p_category\n"
-          "order by d_yearmonthnum, s_nation, p_category;",
+          "order by d_yearmonthnum, s_nation, p_category;\n",
           aggColumn,
           region,
           p_mfgr1,
@@ -860,7 +864,7 @@ std::string SqlGenerator::genSkewQuery4_3(std::string skewLo_predicate, std::str
           "  and {}\n"
           "  and {}\n"
           "group by d_yearmonthnum, s_city, p_brand1\n"
-          "order by d_yearmonthnum, s_city, p_brand1;",
+          "order by d_yearmonthnum, s_city, p_brand1;\n",
           aggColumn,
           s_nation,
           p_category,
@@ -1189,4 +1193,8 @@ std::vector<std::string> SqlGenerator::generateSqlForMathModel(double hitRatio, 
   std::cout << sql2 << std::endl;
   std::cout << sql3 << std::endl;
   return std::vector<std::string>{sql1, sql2, sql3};
+}
+
+void SqlGenerator::setLineorderRowSelectivity(double lineorderRowSelectivity) {
+  lineorderRowSelectivity_ = lineorderRowSelectivity;
 }
