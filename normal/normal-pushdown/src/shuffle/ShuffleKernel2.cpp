@@ -3,7 +3,8 @@
 //
 
 #include "normal/pushdown/shuffle/ShuffleKernel2.h"
-#include "normal/pushdown/shuffle/RecordBatchShuffler.h"
+#include "normal/pushdown/shuffle/ATTIC/RecordBatchShuffler.h"
+#include "normal/pushdown/shuffle/RecordBatchShuffler2.h"
 
 #include <string>
 
@@ -25,7 +26,7 @@ ShuffleKernel2::shuffle(const std::string &columnName,
   auto table = tupleSet.getArrowTable().value();
 
   // Create the shuffler
-  auto expectedShuffler = RecordBatchShuffler::make(columnName, numSlots, table->schema(), table->num_rows());
+  auto expectedShuffler = RecordBatchShuffler2::make(columnName, numSlots, table->schema(), table->num_rows());
   if (!expectedShuffler.has_value())
 	return tl::make_unexpected(expectedShuffler.error());
   auto shuffler = expectedShuffler.value();
@@ -41,25 +42,10 @@ ShuffleKernel2::shuffle(const std::string &columnName,
   }
   auto recordBatch = *recordBatchResult;
 
-//  /**
-//   * compute the size of batch
-//   */
-//   size_t size = 0;
-//   for (int col_id = 0; col_id < recordBatch->num_columns(); col_id++) {
-//     auto array = recordBatch->column(col_id);
-//     for (auto const &buffer: array->data()->buffers) {
-//       size += buffer->size();
-//     }
-//   }
-//  /**
-//   * end
-//   */
-
   while (recordBatch) {
 
 	// Shuffle batch
 	auto expectedResult = shuffler->shuffle(recordBatch);
-//	SPDLOG_INFO("Shuffled {} tuples, column: {}, bytesize: {}", recordBatch->num_rows(), columnName, size);
 	if(!expectedResult.has_value())
 	  return tl::make_unexpected(expectedResult.error());
 

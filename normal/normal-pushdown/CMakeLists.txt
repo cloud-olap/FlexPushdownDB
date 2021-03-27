@@ -43,7 +43,7 @@ add_library(normal-pushdown STATIC
         src/merge/MergeKernel.cpp include/normal/pushdown/merge/MergeKernel.h
         src/scan/ScanMessage.cpp include/normal/pushdown/scan/ScanMessage.h
         src/shuffle/ATTIC/ShuffleKernel.cpp include/normal/pushdown/shuffle/ATTIC/ShuffleKernel.h
-        src/shuffle/RecordBatchShuffler.cpp include/normal/pushdown/shuffle/RecordBatchShuffler.h
+        src/shuffle/ATTIC/RecordBatchShuffler.cpp include/normal/pushdown/shuffle/ATTIC/RecordBatchShuffler.h
         src/shuffle/ShuffleKernel2.cpp include/normal/pushdown/shuffle/ShuffleKernel2.h
         src/join/ATTIC/HashJoinBuildKernel.cpp include/normal/pushdown/join/ATTIC/HashJoinBuildKernel.h
         src/join/ATTIC/HashJoinProbeKernel.cpp include/normal/pushdown/join/ATTIC/HashJoinProbeKernel.h
@@ -71,7 +71,8 @@ add_library(normal-pushdown STATIC
         include/normal/pushdown/group/GroupKey2.h
         include/normal/pushdown/group/AggregateBuilder.cpp include/normal/pushdown/group/AggregateBuilder.h
         include/normal/pushdown/group/AggregateBuilderWrapper.cpp include/normal/pushdown/group/AggregateBuilderWrapper.h
-        include/normal/pushdown/s3/S3Select.h include/normal/pushdown/s3/S3Get.h src/s3/S3Select.cpp src/s3/S3Get.cpp)
+        include/normal/pushdown/s3/S3Select.h include/normal/pushdown/s3/S3Get.h src/s3/S3Select.cpp src/s3/S3Get.cpp
+        include/normal/pushdown/shuffle/RecordBatchShuffler2.h src/shuffle/RecordBatchShuffler2.cpp)
 
 target_include_directories(normal-pushdown PUBLIC include)
 

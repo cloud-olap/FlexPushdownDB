@@ -10,7 +10,7 @@
 
 using namespace normal::pushdown;
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 void listObjects(std::shared_ptr<Aws::S3::S3Client>& s3Client) {
   Aws::S3::Model::ListObjectsRequest listObjectsRequest;

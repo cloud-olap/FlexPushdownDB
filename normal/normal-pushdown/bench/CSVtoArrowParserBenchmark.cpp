@@ -16,7 +16,7 @@
 #include "normal/pushdown/Globals.h"
 #include <normal/tuple/TupleSet2.h>
 
-#define SKIP_SUITE false
+#define SKIP_SUITE true
 
 namespace normal::pushdown {
 std::shared_ptr<std::stringstream> sampleCxRIntCSVIOStream(int numCols, int numRows) {
