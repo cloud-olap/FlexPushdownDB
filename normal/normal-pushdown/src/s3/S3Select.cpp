@@ -87,7 +87,6 @@ S3Select::S3Select(std::string name,
                startOffset, finishOffset, std::move(schema),
                std::move(s3Client), scanOnStart, toCache, queryId, std::move(weightedSegmentKeys)),
 	filterSql_(std::move(filterSql)) {
-  generateParser();
 }
 
 std::shared_ptr<S3Select> S3Select::make(const std::string& name,
@@ -121,17 +120,26 @@ std::shared_ptr<S3Select> S3Select::make(const std::string& name,
 
 }
 
-void S3Select::generateParser() {
+#ifdef __AVX2__
+std::shared_ptr<CSVToArrowSIMDChunkParser> S3Select::generateSIMDParser() {
   std::vector<std::shared_ptr<::arrow::Field>> fields;
   for (auto const &columnName: returnedS3ColumnNames_) {
     fields.emplace_back(schema_->GetFieldByName(columnName));
   }
-#ifdef __AVX2__
-  simdParser_ = std::make_shared<CSVToArrowSIMDChunkParser>(name(), DefaultS3ConversionBufferSize, std::make_shared<::arrow::Schema>(fields));
-#else
-  parser_ = S3CSVParser::make(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
-#endif
+  auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), DefaultS3ConversionBufferSize,
+                                                                std::make_shared<::arrow::Schema>(fields));
+  return simdParser;
 }
+#endif
+std::shared_ptr<S3CSVParser> S3Select::generateParser() {
+  std::vector<std::shared_ptr<::arrow::Field>> fields;
+  for (auto const &columnName: returnedS3ColumnNames_) {
+    fields.emplace_back(schema_->GetFieldByName(columnName));
+  }
+  auto parser = std::make_shared<S3CSVParser>(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
+  return parser;
+}
+
 
 InputSerialization S3Select::getInputSerialization() {
   InputSerialization inputSerialization;
@@ -155,15 +163,24 @@ InputSerialization S3Select::getInputSerialization() {
 }
 
 bool S3Select::scanRangeSupported() {
+  // S3 only supports support uncompressed CSV and we don't yet support Parquet
   if (s3Object_.find("gz") != std::string::npos ||
-      s3Object_.find("bz2") != std::string::npos) {
+      s3Object_.find("bz2") != std::string::npos ||
+      s3Object_.find("csv") == std::string::npos) {
     return false;
   }
   return true;
 }
 
-std::shared_ptr<TupleSet2> S3Select::s3Select() {
-  // s3select request
+std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOffset) {
+  // Create the necessary parser
+#ifdef __AVX2__
+  auto simdParser = generateSIMDParser();
+#else
+  auto parser = generateParser();
+#endif
+  // create s3select request (must create a new one for each call as different start/end offsets require a new
+  // S3Select request object
   std::optional<std::string> optionalErrorMessage;
 
   Aws::String bucketName = Aws::String(s3Bucket_);
@@ -172,13 +189,13 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
   selectObjectContentRequest.SetBucket(bucketName);
   selectObjectContentRequest.SetKey(Aws::String(s3Object_));
 
-  // Unsure if Airmettle supports this, and we are scanning the entire
-  // file anyway so leaving it out when running with Airmettle for now.
+  // Airmettle says they do not fully support byte range scans so
+  // leave it out when running with Airmettle.
   if (normal::plan::s3ClientType != normal::plan::Airmettle) {
     if (scanRangeSupported()) {
       ScanRange scanRange;
-      scanRange.SetStart(startOffset_);
-      scanRange.SetEnd(finishOffset_);
+      scanRange.SetStart(startOffset);
+      scanRange.SetEnd(endOffset);
 
       selectObjectContentRequest.SetScanRange(scanRange);
     }
@@ -216,19 +233,23 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
     if (payload.size() > 0) {
       // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
       if (normal::plan::s3ClientType == normal::plan::Airmettle) {
+        splitReqLock_.lock();
         s3SelectScanStats_.returnedBytes += payload.size();
+        splitReqLock_.unlock();
       }
       std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
 #ifdef __AVX2__
-      simdParser_->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+      simdParser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
 #else
       s3Result_.insert(s3Result_.end(), payload.begin(), payload.end());
 #endif
       std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
       auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
               stopConversionTime - startConversionTime).count();
+      splitReqLock_.lock();
       s3SelectScanStats_.selectConvertTimeNS += conversionTime;
       s3SelectScanStats_.selectTransferTimeNS -= conversionTime;
+      splitReqLock_.unlock();
     }
   });
   handler.SetStatsEventCallback([&](const StatsEvent &statsEvent) {
@@ -237,15 +258,17 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
                  statsEvent.GetDetails().GetBytesScanned(),
                  statsEvent.GetDetails().GetBytesProcessed(),
                  statsEvent.GetDetails().GetBytesReturned());
+    splitReqLock_.lock();
     s3SelectScanStats_.processedBytes += statsEvent.GetDetails().GetBytesProcessed();
     if (normal::plan::s3ClientType != normal::plan::Airmettle) {
       s3SelectScanStats_.returnedBytes += statsEvent.GetDetails().GetBytesReturned();
     }
+    splitReqLock_.unlock();
   });
+
   handler.SetEndEventCallback([&]() {
     SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",
                  name());
-    selectRequestComplete_ = true;
   });
   handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
     SPDLOG_DEBUG("S3 Select Error  |  name: {}, message: {}",
@@ -257,40 +280,42 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
   selectObjectContentRequest.SetEventStreamHandler(handler);
 
   // retry loop for S3 Select request
-  selectRequestComplete_ = false;
   // Sleep for 0.01sec on failure, no need to busy spin the entire time while waiting to try again
   uint64_t retrySleepTimeMS = 10;
   while (true) {
-    // create a new parser to use as the current one has results from the previous request
-    if (simdParser_->isInitialized()) {
-      generateParser();
+#ifdef __AVX2__
+    // Create a new parser to use if the current one has results from the previous request
+    // We could alternatively reset the object but doing this is easier and the overhead is likely very minimal
+    if (simdParser->isInitialized()) {
+      simdParser = generateSIMDParser();
     }
+#endif
 
     std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
     auto selectObjectContentOutcome = s3Client_->SelectObjectContent(selectObjectContentRequest);
     std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
+    splitReqLock_.lock();
     s3SelectScanStats_.selectTransferTimeNS += std::chrono::duration_cast<std::chrono::nanoseconds>(
             stopTransferTime - startTransferTime).count();
-    if (selectRequestComplete_) {
+    splitReqLock_.unlock();
+    if (selectObjectContentOutcome.IsSuccess()) {
       break;
     }
     std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
   // If the request doesn't complete we don't count it in our costs as these requests seem to fail before sending
-  // messages to S3. This occurs when sending many S3 Select requests in parallel from our machine.
+  // messages to S3 (some internal AWS CPP SDK event most likely causes this).
+  // This sometimes occurs when sending many S3 Select requests in parallel from our machine, though setting
+  // maxConnections in AWSClient to a safe value mitigates this issue.
+  splitReqLock_.lock();
   s3SelectScanStats_.numRequests++;
-
-  // Airmettle doesn't trigger necessarily trigger the SetStatsEventCallback above (at least not yet)
-  // so if this happens we estimate the value here
-  if (s3SelectScanStats_.processedBytes == 0) {
-    s3SelectScanStats_.processedBytes += finishOffset_ - startOffset_;
-  }
+  splitReqLock_.unlock();
 
   //  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   std::shared_ptr<TupleSet2> tupleSet;
 #ifdef __AVX2__
-  tupleSet = simdParser_->outputCompletedTupleSet();
+  tupleSet = simdParser->outputCompletedTupleSet();
 #else
   // If no results are returned then there is nothing to process
   if (s3Result_.size() > 0) {std::shared_ptr<TupleSet> tupleSetV1 = parser_->parseCompletePayload(s3Result_.begin(), s3Result_.end());
@@ -302,12 +327,74 @@ std::shared_ptr<TupleSet2> S3Select::s3Select() {
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
   auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
           stopConversionTime - startConversionTime).count();
+  splitReqLock_.lock();
   s3SelectScanStats_.selectConvertTimeNS += conversionTime;
+  splitReqLock_.unlock();
   if (optionalErrorMessage.has_value()) {
     throw std::runtime_error(fmt::format("{}, {}", optionalErrorMessage.value(), name()));
   }
 
   return tupleSet;
+}
+
+void S3Select::s3SelectIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset) {
+  std::shared_ptr<TupleSet2> readTupleSet = s3Select(startOffset, endOffset);
+  splitReqLock_.lock();
+  splitReqNumToTable_.insert(std::pair<int, std::shared_ptr<arrow::Table>>(reqNum, readTupleSet->getArrowTable().value()));
+  splitReqLock_.unlock();
+}
+
+std::shared_ptr<TupleSet2> S3Select::s3SelectParallelReqs() {
+  int totalReqs = 0;
+  uint64_t currentStartOffset = 0;
+
+  // Spawn all of the requests
+  std::vector<std::thread> threadVector = std::vector<std::thread>();
+  while (currentStartOffset < finishOffset_) {
+    totalReqs += 1;
+    uint64_t reqEndOffset = currentStartOffset + DefaultS3SelectRangeSize;
+    if (reqEndOffset > finishOffset_) {
+      reqEndOffset = finishOffset_;
+    }
+    // If there is only a little bit of data left to scan just combine it in this request rather than
+    // starting a new request.
+    if ((double) (finishOffset_ - reqEndOffset) < (double) (DefaultS3SelectRangeSize * 0.30)) {
+      reqEndOffset = finishOffset_;
+    }
+    threadVector.emplace_back(std::thread([&, totalReqs, currentStartOffset, reqEndOffset]() {
+      s3SelectIndividualReq(totalReqs, currentStartOffset, reqEndOffset);
+    }));
+    currentStartOffset = reqEndOffset + 1;
+  }
+
+  // Wait for all requests to finish
+  for (auto &t: threadVector) {
+    t.join();
+  }
+
+  // Now join together all of the arrow tables
+  std::vector<std::shared_ptr<arrow::Table>> tables;
+  for (int i = 1; i <= totalReqs; i++) {
+    std::shared_ptr<arrow::Table> currentTable = splitReqNumToTable_[i];
+    // Don't need to concatenate empty tables
+    if (currentTable->num_rows() > 0) {
+      tables.push_back(currentTable);
+    }
+  }
+
+  // Create and return the TupleSet2 result
+  if (tables.size() == 0) {
+    return TupleSet2::make2();
+  } else if (tables.size() == 1) {
+    auto tupleSetV1 = normal::tuple::TupleSet::make(tables[0]);
+    return normal::tuple::TupleSet2::create(tupleSetV1);
+  } else {
+    const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables);
+    if (!res.ok())
+      abort();
+    auto tupleSetV1 = normal::tuple::TupleSet::make(*res);
+    return normal::tuple::TupleSet2::create(tupleSetV1);
+  }
 }
 
 std::shared_ptr<TupleSet2> S3Select::readTuples() {
@@ -320,7 +407,17 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
     SPDLOG_DEBUG("Reading From S3: {}", name());
 
     // Read columns from s3
-    readTupleSet = s3Select();
+    if (normal::plan::s3ClientType == normal::plan::S3 && scanRangeSupported()
+        && (finishOffset_ - startOffset_ > DefaultS3SelectRangeSize)) {
+      readTupleSet = s3SelectParallelReqs();
+    } else {
+      readTupleSet = s3Select(startOffset_, finishOffset_);
+    }
+    // Airmettle doesn't trigger necessarily trigger the SetStatsEventCallback in s3Select (at least not yet)
+    // so if this happens we estimate the value here
+    if (s3SelectScanStats_.processedBytes == 0) {
+      s3SelectScanStats_.processedBytes += finishOffset_ - startOffset_;
+    }
 
     // Store the read columns in the cache, if not in full-pushdown mode
     if (toCache_) {
@@ -343,8 +440,6 @@ void S3Select::processScanMessage(const scan::ScanMessage &message) {
   returnedS3ColumnNames_ = message.getColumnNames();
   neededColumnNames_ = message.getColumnNames();
   columnsReadFromS3_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(returnedS3ColumnNames_.size());
-  // Need to update parser as we have modified the columns we are reading from S3
-  generateParser();
 };
 
 int subStrNum(const std::string& str, const std::string& sub) {

@@ -68,6 +68,11 @@ std::optional<std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>>
 FBRSCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
     auto startTime = std::chrono::steady_clock::now();
 
+    // Used for math model
+    if (!normal::cache::allowFetchSegments) {
+      return std::nullopt;
+    }
+
     // decide whether to cache
     std::shared_ptr<SegmentKey> realKey;
     auto keyEntry = keySet_.find(key);

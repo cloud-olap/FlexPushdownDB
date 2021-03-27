@@ -52,6 +52,8 @@ public:
 
   std::string showCacheMetrics();
   void clearCacheMetrics();
+  void clearCrtQueryMetrics();
+  void clearCrtQueryShardMetrics();
   double getCrtQueryHitRatio();
   double getCrtQueryShardHitRatio();
 

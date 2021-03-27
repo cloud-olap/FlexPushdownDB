@@ -148,6 +148,20 @@ void OperatorManager::clearCacheMetrics() {
   self->anon_send(segmentCacheActor_, ClearMetricsAtom::value);
 }
 
+void OperatorManager::clearCrtQueryMetrics() {
+  // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
+  scoped_actor self{*actorSystem};
+  // NOTE: anon_send a bit lighter than send
+  self->anon_send(segmentCacheActor_, ClearCrtQueryMetricsAtom::value);
+}
+
+void OperatorManager::clearCrtQueryShardMetrics() {
+  // NOTE: Creating a new scoped_actor will work, but can use rootActor_ as well
+  scoped_actor self{*actorSystem};
+// NOTE: anon_send a bit lighter than send
+  self->anon_send(segmentCacheActor_, ClearCrtQueryShardMetricsAtom::value);
+}
+
 double OperatorManager::getCrtQueryHitRatio() {
   int crtQueryHitNum;
   int crtQueryMissNum;

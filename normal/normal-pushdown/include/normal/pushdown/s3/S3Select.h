@@ -46,18 +46,27 @@ class S3Select: public S3SelectScan {
 
   private:
     std::string filterSql_;   // "where ...."
-    volatile bool selectRequestComplete_;
     std::shared_ptr<S3CSVParser> parser_;
+
+    // Used for collecting all results for split requests that are run in parallel, and for having a
+    // locks on shared variables when requests are split.
+    std::mutex splitReqLock_;
+    std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
+
 #ifdef __AVX2__
-    std::shared_ptr<CSVToArrowSIMDChunkParser> simdParser_;
+    std::shared_ptr<CSVToArrowSIMDChunkParser> generateSIMDParser();
 #endif
+    std::shared_ptr<S3CSVParser> generateParser();
     Aws::Vector<unsigned char> s3Result_{};
 
-    void generateParser();
-    // Scan range not supported for GZIP and BZIP2 CSV, likely not support for parquet compression either
+    // Scan range not supported in AWS for GZIP and BZIP2 CSV. We also don't support this for parquet yet either
+    // as that is more complicated due to involving parquet metadata and we haven't had a chance to implement this yet
     bool scanRangeSupported();
     Aws::S3::Model::InputSerialization getInputSerialization();
-    std::shared_ptr<TupleSet2> s3Select();
+    std::shared_ptr<TupleSet2> s3Select(int64_t startOffset, int64_t endOffset);
+    std::shared_ptr<TupleSet2> s3SelectParallelReqs();
+    // Wrapper function to encapsulate a thread spawned when making parallel requests
+    void s3SelectIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset);
 
     void processScanMessage(const scan::ScanMessage &message) override;
 

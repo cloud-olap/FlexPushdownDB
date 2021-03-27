@@ -30,7 +30,18 @@ int main(int argc, char **argv) {
     MathModelTest mathModelTest(networkLimit, chunkSize, numRuns);
     mathModelTest.runTest();
   }
-  // means we are specifying a different defaultMiniCatalogue directoy to use
+  // performance model test
+  else if (std::string(argv[1]) == "-pm") {
+    std::string dirPrefix = argv[2];
+    auto modeType = atoi(argv[3]);
+    auto cacheLoadQueries = atoi(argv[4]);
+    auto warmupQueriesPerColSize = atoi(argv[5]);
+    auto columnSizesToTest = atoi(argv[6]);
+    auto rowSelectivityValuesToTest = atoi(argv[7]);
+    perfBatchRun(modeType, dirPrefix, cacheLoadQueries,
+                 warmupQueriesPerColSize, columnSizesToTest, rowSelectivityValuesToTest);
+  }
+  // means we are specifying a different defaultMiniCatalogue directory to use
   else if (std::string(argv[1]) == "-d") {
     std::string dirPrefix = argv[2];
     auto cacheSize = (size_t) (atof(argv[3]) * 1024 * 1024 * 1024);
