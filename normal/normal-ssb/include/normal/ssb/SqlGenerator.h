@@ -38,6 +38,8 @@ class SqlGenerator {
 
 public:
   SqlGenerator();
+  void setLineorderRowSelectivity(double lineorderRowSelectivity);
+
   std::vector<std::string> generateSqlBatch(int batchSize);
   std::string generateSql(std::string queryName);
 
@@ -78,6 +80,7 @@ private:
   std::map<std::string, QueryName> queryNameMap_;
   std::map<std::string, SkewQueryName> skewQueryNameMap_;
   std::map<std::string, SkewWeightQueryName> skewWeightQueryNameMap_;
+  double lineorderRowSelectivity_ = 0.2;    // default from SSB
 
   std::string genQuery1_1();
   std::string genQuery1_2();
@@ -98,8 +101,8 @@ private:
   int genD_weeknuminyear();
   std::string genD_yearmonth();
   std::string genD_dayofweek();
-  int genLo_discount();
-  int genLo_quantity();
+  int genLo_discount(int min, int max);
+  int genLo_quantity(int min, int max);
   std::string genLo_predicate();
   int genP_category_num();
   int genP_brand1_num();
