@@ -1,8 +1,8 @@
 project(normal-ssb VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 # need to link libraries on mac
-LINK_DIRECTORIES(/usr/local/Cellar/llvm@7/7.1.0_2/lib)
-LINK_DIRECTORIES(/usr/local/Cellar/binutils/2.35.1/lib)
+LINK_DIRECTORIES(/usr/local/opt/llvm@11/lib)
+LINK_DIRECTORIES(/usr/local/opt/binutils/lib)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SSB common classes
@@ -148,16 +148,17 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/data/ssb-sf0.01/parquet/supplier.snappy
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-ssb-query-generate
-        src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h)
+        src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h
+        src/SqlTransformer.cpp include/normal/ssb/SqlTransformer.h)
 
-target_link_libraries(normal-ssb-query-generate PRIVATE doctest::doctest)
-target_link_libraries(normal-ssb-query-generate PRIVATE normal-ssb)
+target_link_libraries(normal-ssb-query-generate PUBLIC spdlog::spdlog)
+target_link_libraries(normal-ssb-query-generate PUBLIC fmt::fmt)
+target_include_directories(normal-ssb-query-generate PUBLIC include)
 
 add_executable(normal-ssb-query-generate-file
         src/GenerateSqlFile.cpp)
 
 target_link_libraries(normal-ssb-query-generate-file PRIVATE normal-ssb-query-generate)
-target_link_libraries(normal-ssb-query-generate-file PRIVATE normal-ssb)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Experiment

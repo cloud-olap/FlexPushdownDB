@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_SQLGENERATOR_H
 #define NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_SQLGENERATOR_H
 
-#include <normal/ssb/Globals.h>
+#include <memory>
 #include <map>
 #include <random>
 
