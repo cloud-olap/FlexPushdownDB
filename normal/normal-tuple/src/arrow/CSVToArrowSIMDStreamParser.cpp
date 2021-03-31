@@ -18,12 +18,14 @@ CSVToArrowSIMDStreamParser::CSVToArrowSIMDStreamParser(std::string callerName,
                                                        bool discardHeader,
                                                        std::shared_ptr<arrow::Schema> inputSchema,
                                                        std::shared_ptr<arrow::Schema> outputSchema,
-                                                       bool gzipCompressed):
+                                                       bool gzipCompressed,
+                                                       char csvFileDelimiter):
   callerName_(callerName),
   parseChunkSize_(parseChunkSize),
   discardHeader_(discardHeader),
   inputSchema_(inputSchema),
-  outputSchema_(outputSchema) {
+  outputSchema_(outputSchema),
+  csvFileDelimiter_(csvFileDelimiter) {
   if (gzipCompressed) {
     inputStream_ = std::make_shared<ArrowAWSGZIPInputStream2>(file);
   } else {
@@ -45,7 +47,7 @@ void CSVToArrowSIMDStreamParser::add64ByteDummyRowToBuffer() {
     for (int j = 0; j < dummyColWidth - 1; j++) {
       buffer_[bufferBytesUtilized_++] = '1';
     }
-    char finalChar = i == inputNumColumns_ - 1 ? 0x0a : ',';
+    char finalChar = i == inputNumColumns_ - 1 ? 0x0a : csvFileDelimiter_;
     buffer_[bufferBytesUtilized_++] = finalChar;
   }
 }
@@ -109,7 +111,7 @@ uint64_t CSVToArrowSIMDStreamParser::loadBuffer() {
     }
   }
   add64ByteDummyRowToBuffer();
-  // now clear rest of buffer or last 64 bytes (this is necessary as leftover "," in memory can cause parsing issues as
+  // now clear rest of buffer or last 64 bytes (this is necessary as leftover delimiters in memory can cause parsing issues as
   // it becomes hard to determine which rows are from this read and which ones are from previous reads.
   uint64_t bytesToZero = bufferCapacity_ - bufferBytesUtilized_ + 1 > 64 ? 64 : bufferCapacity_ - bufferBytesUtilized_ + 1;
   memset(buffer_ + bufferBytesUtilized_, 0, bytesToZero);
@@ -233,7 +235,7 @@ void CSVToArrowSIMDStreamParser::prettyPrintPCSV(ParsedCSV & pcsv) {
     if ( buffer_[pcsv.indexes[i]] == '\n') {
       ss << "\n";
     } else {
-      ss << ",";
+      ss << csvFileDelimiter_;
     }
     if (i != pcsv.n_indexes-1) {
       for (size_t j = pcsv.indexes[i] + 1; j < pcsv.indexes[i+1]; j++) {
@@ -300,7 +302,7 @@ std::shared_ptr<normal::tuple::TupleSet2> CSVToArrowSIMDStreamParser::constructT
   bool initialized = false;
   do {
     // 64 added in source code, believe it is a precaution
-    find_indexes(reinterpret_cast<const uint8_t *>(buffer_), bufferBytesUtilized_ + 64, pcsv);
+    find_indexes(reinterpret_cast<const uint8_t *>(buffer_), bufferBytesUtilized_ + 64, pcsv, csvFileDelimiter_);
     rows += (pcsv.n_indexes / inputNumColumns_) - 2; // -2 as two dummy rows at start and end
     if (!initialized) {
       initializeDataStructures(pcsv);

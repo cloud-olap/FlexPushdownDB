@@ -16,7 +16,8 @@ class CSVToArrowSIMDChunkParser {
 public:
   explicit CSVToArrowSIMDChunkParser(std::string callerName,
                                       uint64_t parseChunkSize,
-                                      std::shared_ptr<arrow::Schema> schema);
+                                      std::shared_ptr<arrow::Schema> schema,
+                                      char csvFileDelimiter);
   ~CSVToArrowSIMDChunkParser();
 
   void parseChunk(char* data, uint64_t size);
@@ -61,6 +62,7 @@ private:
   std::vector<uint64_t> startEndOffsets_;
   std::vector<char> partial_;
   bool initialized_ = false;
+  char csvFileDelimiter_;
 };
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDPARSER2_H

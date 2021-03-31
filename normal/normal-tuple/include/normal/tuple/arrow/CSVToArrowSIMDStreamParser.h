@@ -25,7 +25,8 @@ public:
                                       bool discardHeader,
                                       std::shared_ptr<arrow::Schema> inputSchema,
                                       std::shared_ptr<arrow::Schema> outputSchema,
-                                      bool gzipCompressed);
+                                      bool gzipCompressed,
+                                      char csvFileDelimiter);
   ~CSVToArrowSIMDStreamParser();
 
   std::shared_ptr<normal::tuple::TupleSet2> constructTupleSet();
@@ -62,6 +63,7 @@ private:
   std::vector<bool> columnStartsWithQuote_;
   std::vector<uint64_t> startEndOffsets_;
   std::vector<char> partial_;
+  char csvFileDelimiter_;
 };
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDSTREAMPARSER_H

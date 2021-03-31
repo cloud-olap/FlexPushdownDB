@@ -37,6 +37,15 @@ std::shared_ptr<arrow::DataType> parseDataType(const std::string &s) {
   }
 }
 
+char getCsvFileDelimiterForSchema(const std::string& schemaName) {
+  // This is fine for now as only ssb-sf100-sortlineorder/csv_150MB/ uses a non comma delimiter among CSV files
+  if (schemaName == "ssb-sf100-sortlineorder/csv_150MB/") {
+    return '|';
+  } else {
+    return ',';
+  }
+}
+
 }
 
 normal::connector::MiniCatalogue::MiniCatalogue(
@@ -51,7 +60,8 @@ normal::connector::MiniCatalogue::MiniCatalogue(
                           cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums,
         std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
         std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
-                std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns) :
+                std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns,
+        char csvFileDelimiter) :
         partitionNums_(std::move(partitionNums)),
         schemas_(std::move(schemas)),
         columnLengthMap_(std::move(columnLengthMap)),
@@ -59,7 +69,8 @@ normal::connector::MiniCatalogue::MiniCatalogue(
         queryNumToInvolvedSegments_(std::move(queryNumToInvolvedSegments)),
         segmentKeysToInvolvedQueryNums_(std::move(segmentKeysToInvolvedQueryNums)),
         defaultJoinOrder_(std::move(defaultJoinOrder)),
-        sortedColumns_(std::move(sortedColumns)) {
+        sortedColumns_(std::move(sortedColumns)),
+        csvFileDelimiter_(csvFileDelimiter) {
 
   // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
   currentQueryNum_ = 1;
@@ -216,7 +227,8 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
   auto segmentKeysToInvolvedQueryNums = std::make_shared<std::unordered_map<std::shared_ptr<cache::SegmentKey>, std::shared_ptr<std::set<int>>,
                           cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>();
 
-  return std::make_shared<MiniCatalogue>(partitionNums, schemas, columnLengthMap, segmentKeyToSize, queryNumToInvolvedSegments, segmentKeysToInvolvedQueryNums, defaultJoinOrder, sortedColumns);
+  char csvFileDelimiter = getCsvFileDelimiterForSchema(schemaName);
+  return std::make_shared<MiniCatalogue>(partitionNums, schemas, columnLengthMap, segmentKeyToSize, queryNumToInvolvedSegments, segmentKeysToInvolvedQueryNums, defaultJoinOrder, sortedColumns, csvFileDelimiter);
 }
 
 const std::shared_ptr<std::unordered_map<std::string, int>> &normal::connector::MiniCatalogue::partitionNums() const {
@@ -350,6 +362,10 @@ int normal::connector::MiniCatalogue::getCurrentQueryNum() const {
 
 std::shared_ptr<arrow::Schema> normal::connector::MiniCatalogue::getSchema(const std::string &tableName){
   return schemas_->at(tableName);
+}
+
+char normal::connector::MiniCatalogue::getCSVFileDelimiter() {
+  return csvFileDelimiter_;
 }
 
 std::string normal::connector::getFileExtensionByDirPrefix(std::string dir_prefix) {

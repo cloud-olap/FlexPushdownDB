@@ -28,6 +28,14 @@ inline constexpr double vNetwork = 0.24419;     // unit: GB/s
 inline constexpr double vS3Scan = 3.88424;      // unit: GB/s
 inline constexpr double vS3Filter = 0.084907;   // unit: GPred/s
 inline size_t NetworkLimit = 0;
+
+// These parameters are for running GET in parallel as a detached operation
+// We only want to convert ~max cores results at a time since otherwise we get very bad cache thrashing
+// that degrades system performance. Additionally setting a variable sleep retry interval appears to make parallel GET
+// requests perform much faster than using a fixed interval.
+inline constexpr int maxConcurrentGetConversions = 36; // Set to ~#cores
+inline constexpr int minimumGetSleepRetryTimeMS = 5;
+inline constexpr int variableGetSleepRetryTimeMS = 15;
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GLOBALS_H

@@ -28,15 +28,18 @@ private:
 
   std::vector<std::string> columnNames_;
   std::shared_ptr<arrow::Schema> schema_;
+  char csvDelimiter_;
 
   std::vector<unsigned char> partial{};
 
 public:
   S3CSVParser(std::vector<std::string> columnNames,
-				 std::shared_ptr<arrow::Schema> schema);
+				 std::shared_ptr<arrow::Schema> schema,
+				 char csvDelimiter);
 
   static std::shared_ptr<S3CSVParser> make(std::vector<std::string> columnNames,
-                                              std::shared_ptr<arrow::Schema> schema);
+                                              std::shared_ptr<arrow::Schema> schema,
+                                              char csvDelimiter);
 
   std::shared_ptr<TupleSet> parseCompletePayload(
       const std::vector<unsigned char, Aws::Allocator<unsigned char>>::iterator &from,

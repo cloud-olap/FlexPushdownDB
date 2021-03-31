@@ -59,6 +59,8 @@
 #include <normal/tuple/arrow/CSVToArrowSIMDChunkParser.h>
 #endif
 
+#include "normal/pushdown/s3/S3Get.h"
+
 #define SKIP_SUITE false
 
 using namespace normal::ssb;
@@ -159,6 +161,9 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   auto tuples = execute(i);
 
   auto tupleSet = TupleSet2::create(tuples);
+  // Once the query is done there should be no active get conversion in S3Get.cpp, so this value should be 0 unless
+  // there are background caching operations still performing GET/Select.
+  SPDLOG_INFO("Done with query, activeGetConversions = {}", normal::pushdown::activeGetConversions);
   if (writeResults) {
     auto outputdir = filesystem::current_path().append("outputs");
     filesystem::create_directory(outputdir);
@@ -225,7 +230,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   // Only worrying about parser performance when AVX instructions are on as that is the test setup we run in
   // so only added support for that here rather than adding non AVX converting too
 #ifdef __AVX2__
-    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema);
+    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
 #endif
   Aws::S3::Model::SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const Aws::S3::Model::RecordsEvent &recordsEvent) {
@@ -259,7 +264,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   while (true) {
     // create a new parser to use as the current one has results from the previous request
     if (parser->isInitialized()) {
-      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema);
+      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
     }
 //  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
 //  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
@@ -348,7 +353,7 @@ uint64_t simpleGetRequest(int requestNum) {
   auto &retrievedFile = getResult.GetBody();
 #ifdef __AVX2__
   std::string callerName = "testCaller";
-  auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, schema, false);
+  auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, schema, false, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
   auto tupleSet = parser.constructTupleSet();
   while (true) {
     if (getConvertLock.try_lock()) {

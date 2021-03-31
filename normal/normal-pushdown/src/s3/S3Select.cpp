@@ -126,8 +126,10 @@ std::shared_ptr<CSVToArrowSIMDChunkParser> S3Select::generateSIMDParser() {
   for (auto const &columnName: returnedS3ColumnNames_) {
     fields.emplace_back(schema_->GetFieldByName(columnName));
   }
+  // The delimiter for S3 output is always ',' so this is hardcoded
   auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), DefaultS3ConversionBufferSize,
-                                                                std::make_shared<::arrow::Schema>(fields));
+                                                                std::make_shared<::arrow::Schema>(fields),
+                                                                ',');
   return simdParser;
 }
 #endif
@@ -136,7 +138,8 @@ std::shared_ptr<S3CSVParser> S3Select::generateParser() {
   for (auto const &columnName: returnedS3ColumnNames_) {
     fields.emplace_back(schema_->GetFieldByName(columnName));
   }
-  auto parser = std::make_shared<S3CSVParser>(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields));
+  auto parser = std::make_shared<S3CSVParser>(returnedS3ColumnNames_, std::make_shared<::arrow::Schema>(fields),
+                normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
   return parser;
 }
 
@@ -146,8 +149,8 @@ InputSerialization S3Select::getInputSerialization() {
   if (s3Object_.find("csv") != std::string::npos) {
     CSVInput csvInput;
     csvInput.SetFileHeaderInfo(FileHeaderInfo::USE);
-    // This is the standard field delimiter and record delimiter for S3 Select, so it is hardcoded here
-    csvInput.SetFieldDelimiter(",");
+    std::string delimiter = std::string(1, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+    csvInput.SetFieldDelimiter(Aws::String(delimiter));
     csvInput.SetRecordDelimiter("\n");
     inputSerialization.SetCSV(csvInput);
     if (s3Object_.find("gz") != std::string::npos) {

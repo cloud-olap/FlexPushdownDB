@@ -8,6 +8,12 @@
 #include "normal/pushdown/s3/S3SelectScan.h"
 
 namespace normal::pushdown {
+
+// This is for controlling the maximum number of GET requests converting data at the same time
+// as per maxConcurrentGetConversions in normal-pushdown/include/normal/pushdown/Globals.h
+extern std::mutex GetConvertLock;
+extern int activeGetConversions;
+
 class S3Get : public S3SelectScan {
   public:
     S3Get(std::string name,

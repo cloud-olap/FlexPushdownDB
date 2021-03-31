@@ -15,14 +15,16 @@
 namespace normal::pushdown {
 
 S3CSVParser::S3CSVParser(std::vector<std::string> columnNames,
-							   std::shared_ptr<arrow::Schema> schema) :
+							   std::shared_ptr<arrow::Schema> schema,
+							   char csvDelimiter) :
 	columnNames_(std::move(columnNames)),
-	schema_(std::move(schema)) {}
+	schema_(std::move(schema)),
+	csvDelimiter_(csvDelimiter){}
 
 
 std::shared_ptr<S3CSVParser> S3CSVParser::make(std::vector<std::string> columnNames,
-                 std::shared_ptr<arrow::Schema> schema) {
-  return std::make_shared<S3CSVParser>(std::move(columnNames), std::move(schema));
+                 std::shared_ptr<arrow::Schema> schema, char csvDelimiter) {
+  return std::make_shared<S3CSVParser>(std::move(columnNames), std::move(schema), csvDelimiter);
 }
 
 /**
@@ -39,6 +41,7 @@ std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
   //  SPDLOG_DEBUG("records '{}'", records);
 
   auto parse_options = arrow::csv::ParseOptions::Defaults();
+  parse_options.delimiter = csvDelimiter_;
   auto read_options = arrow::csv::ReadOptions::Defaults();
   read_options.use_threads = false;
   read_options.autogenerate_column_names = false;

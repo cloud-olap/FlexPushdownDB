@@ -12,10 +12,12 @@
 
 CSVToArrowSIMDChunkParser::CSVToArrowSIMDChunkParser(std::string callerName,
                                                        uint64_t parseChunkSize,
-                                                       std::shared_ptr<arrow::Schema> schema):
+                                                       std::shared_ptr<arrow::Schema> schema,
+                                                       char csvFileDelimiter):
   callerName_(callerName),
   parseChunkSize_(parseChunkSize),
-  schema_(schema) {
+  schema_(schema),
+  csvFileDelimiter_(csvFileDelimiter) {
   // Need to allocate allocate at least 64 bytes at end so that the last of the input can be processed since we
   // process in 64 byte chunks
   // Allocate additional 256 - 64 to pad with dummy first row and last row that are >= 64 bytes. We can likely reduce
@@ -38,7 +40,7 @@ void CSVToArrowSIMDChunkParser::add64ByteDummyRowToBuffer() {
     for (int j = 0; j < dummyColWidth - 1; j++) {
       buffer_[bufferBytesUtilized_++] = '1';
     }
-    char finalChar = i == numColumns_ - 1 ? 0x0a : ',';
+    char finalChar = i == numColumns_ - 1 ? 0x0a : csvFileDelimiter_;
     buffer_[bufferBytesUtilized_++] = finalChar;
   }
 }
@@ -96,7 +98,7 @@ void CSVToArrowSIMDChunkParser::loadBuffer(char* data, uint64_t &sizeRemaining, 
     }
   }
   add64ByteDummyRowToBuffer();
-  // now clear rest of buffer or last 64 bytes (this is necessary as leftover "," in memory can cause parsing issues as
+  // now clear rest of buffer or last 64 bytes (this is necessary as leftover delimiters in memory can cause parsing issues as
   // it becomes hard to determine which rows are from this read and which ones are from previous reads.
   uint64_t bytesToZero = bufferCapacity_ - bufferBytesUtilized_ + 1 > 64 ? 64 : bufferCapacity_ - bufferBytesUtilized_ + 1;
   memset(buffer_ + bufferBytesUtilized_, 0, bytesToZero);
@@ -212,7 +214,7 @@ void CSVToArrowSIMDChunkParser::prettyPrintPCSV(ParsedCSV & pcsv) {
     if ( buffer_[pcsv.indexes[i]] == '\n') {
       ss << "\n";
     } else {
-      ss << ",";
+      ss << csvFileDelimiter_;
     }
     if (i != pcsv.n_indexes-1) {
       for (size_t j = pcsv.indexes[i] + 1; j < pcsv.indexes[i+1]; j++) {
@@ -260,7 +262,7 @@ void CSVToArrowSIMDChunkParser::initializeDataStructures(ParsedCSV & pcsv) {
 void CSVToArrowSIMDChunkParser::parseAndReadInData() {
   uint32_t columns = schema_->num_fields();
   // 64 added in source code, believe it is a precaution
-  find_indexes(reinterpret_cast<const uint8_t *>(buffer_), bufferBytesUtilized_ + 64, pcsv_);
+  find_indexes(reinterpret_cast<const uint8_t *>(buffer_), bufferBytesUtilized_ + 64, pcsv_, csvFileDelimiter_);
   rowsRead_ += (pcsv_.n_indexes / columns) - 2; // -2 as two dummy rows at start and end
   if (!initialized_) {
     initializeDataStructures(pcsv_);

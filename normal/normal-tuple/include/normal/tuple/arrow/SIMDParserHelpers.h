@@ -19,6 +19,6 @@ typedef struct simd_input {
   __m256i hi;
 } simd_input;
 
-bool find_indexes(const uint8_t * buf, size_t len, struct ParsedCSV & pcsv);
+bool find_indexes(const uint8_t * buf, size_t len, struct ParsedCSV & pcsv, char delimiter);
 #endif //NORMAL_SIMDPARSERHELPERS_H
 #endif

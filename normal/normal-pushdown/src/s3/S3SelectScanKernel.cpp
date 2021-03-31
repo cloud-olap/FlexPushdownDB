@@ -5,6 +5,7 @@
 #include <normal/pushdown/s3/S3SelectScanKernel.h>
 #include <normal/pushdown/s3/S3CSVParser.h>
 #include <utility>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace Aws::Client;
 using namespace Aws::S3;
@@ -140,7 +141,7 @@ S3SelectScanKernel::s3Select(const std::string &sql,
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  S3CSVParser s3CSVParser{columnNames, schema_};
+  S3CSVParser s3CSVParser{columnNames, schema_, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter()};
 
   SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {

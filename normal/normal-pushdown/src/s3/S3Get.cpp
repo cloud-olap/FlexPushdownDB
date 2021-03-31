@@ -74,6 +74,10 @@ using namespace normal::core::cache;
 using namespace normal::pushdown::cache;
 
 namespace normal::pushdown {
+
+std::mutex GetConvertLock;
+int activeGetConversions = 0;
+
 S3Get::S3Get(std::string name,
 						   std::string s3Bucket,
 						   std::string s3Object,
@@ -187,58 +191,81 @@ std::shared_ptr<TupleSet2> S3Get::s3Get() {
   getObjectRequest.SetKey(Aws::String(s3Object_));
 
   std::chrono::steady_clock::time_point startTransferTime = std::chrono::steady_clock::now();
-  GetObjectOutcome getObjectOutcome = s3Client_->GetObject(getObjectRequest);
+  GetObjectOutcome getObjectOutcome;
+  int maxRetryAttempts = 100;
+  int attempts = 0;
+  while (true) {
+    attempts++;
+    getObjectOutcome = s3Client_->GetObject(getObjectRequest);
+    if (getObjectOutcome.IsSuccess()) {
+      break;
+    }
+    if (attempts > maxRetryAttempts) {
+      const auto& err = getObjectOutcome.GetError();
+      throw std::runtime_error(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
+    }
+    // Something went wrong with AWS API on our end or remotely, wait and try again
+    std::this_thread::sleep_for (std::chrono::milliseconds(minimumGetSleepRetryTimeMS));
+  }
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
   s3SelectScanStats_.getTransferTimeNS += transferTime;
   s3SelectScanStats_.numRequests++;
 
-  if (getObjectOutcome.IsSuccess()) {
-    std::shared_ptr<TupleSet2> tupleSet;
-    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-    auto getResult = getObjectOutcome.GetResultWithOwnership();
-    int64_t resultSize = getResult.GetContentLength();
-    s3SelectScanStats_.processedBytes += resultSize;
-    s3SelectScanStats_.returnedBytes += resultSize;
-    std::vector<std::shared_ptr<arrow::Field>> fields;
-    for (auto column : neededColumnNames_) {
-      fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
-    }
-    auto outputSchema = std::make_shared<::arrow::Schema>(fields);
-    Aws::IOStream &retrievedFile = getResult.GetBody();
-    if (s3Object_.find("csv") != std::string::npos) {
-      std::shared_ptr<arrow::io::InputStream> inputStream;
-      if (s3Object_.find("gz") != std::string::npos) {
-#ifdef __AVX2__
-        auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, retrievedFile, true, schema_, outputSchema, true);
-        tupleSet = parser.constructTupleSet();
-#else
-        inputStream = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile, resultSize);
-        tupleSet = readCSVFile(inputStream);
-#endif
+  std::shared_ptr<TupleSet2> tupleSet;
+  auto getResult = getObjectOutcome.GetResultWithOwnership();
+  int64_t resultSize = getResult.GetContentLength();
+  s3SelectScanStats_.processedBytes += resultSize;
+  s3SelectScanStats_.returnedBytes += resultSize;
+  std::vector<std::shared_ptr<arrow::Field>> fields;
+  for (auto column : neededColumnNames_) {
+    fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
+  }
+  auto outputSchema = std::make_shared<::arrow::Schema>(fields);
+  while (true) {
+    if (GetConvertLock.try_lock()) {
+      if (activeGetConversions < maxConcurrentGetConversions) {
+        activeGetConversions++;
+        GetConvertLock.unlock();
+        break;
       } else {
-#ifdef __AVX2__
-        auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, retrievedFile, true, schema_, outputSchema, false);
-        tupleSet = parser.constructTupleSet();
-#else
-        inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
-        tupleSet = readCSVFile(inputStream);
-#endif
+        GetConvertLock.unlock();
       }
-    } else { // (s3Object_.find("parquet") != std::string::npos)
-      tupleSet = readParquetFile(retrievedFile);
     }
-    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-    s3SelectScanStats_.getConvertTimeNS += conversionTime;
-
-    return tupleSet;
+    std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableGetSleepRetryTimeMS + minimumGetSleepRetryTimeMS));
   }
-
-  else {
-    const auto& err = getObjectOutcome.GetError();
-    throw std::runtime_error(fmt::format("{}, {}", err.GetMessage(), name()));
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
+  Aws::IOStream &retrievedFile = getResult.GetBody();
+  if (s3Object_.find("csv") != std::string::npos) {
+    std::shared_ptr<arrow::io::InputStream> inputStream;
+    if (s3Object_.find("gz") != std::string::npos) {
+#ifdef __AVX2__
+      auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, retrievedFile, true, schema_, outputSchema, true, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+      tupleSet = parser.constructTupleSet();
+#else
+      inputStream = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile, resultSize);
+      tupleSet = readCSVFile(inputStream);
+#endif
+    } else {
+#ifdef __AVX2__
+      auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, retrievedFile, true, schema_, outputSchema, false, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+      tupleSet = parser.constructTupleSet();
+#else
+      inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
+      tupleSet = readCSVFile(inputStream);
+#endif
+    }
+  } else { // (s3Object_.find("parquet") != std::string::npos)
+    tupleSet = readParquetFile(retrievedFile);
   }
+  GetConvertLock.lock();
+  activeGetConversions--;
+  GetConvertLock.unlock();
+  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+  s3SelectScanStats_.getConvertTimeNS += conversionTime;
+
+  return tupleSet;
 }
 
 std::shared_ptr<TupleSet2> S3Get::readTuples() {

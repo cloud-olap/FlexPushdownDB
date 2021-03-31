@@ -144,7 +144,7 @@ inline void flatten_bits(uint32_t *base_ptr, uint32_t &base,
   }
 }
 
-bool find_indexes(const uint8_t * buf, size_t len, struct ParsedCSV & pcsv) {
+bool find_indexes(const uint8_t * buf, size_t len, struct ParsedCSV & pcsv, char delimiter) {
   // does the previous iteration end inside a double-quote pair?
   uint64_t prev_iter_inside_quote = 0ULL;  // either all zeros or all ones
 
@@ -169,7 +169,7 @@ bool find_indexes(const uint8_t * buf, size_t len, struct ParsedCSV & pcsv) {
 //        std::stringstream quote_mask_ss;
 //        quote_mask_ss << x;
 //        SPDLOG_DEBUG("quote mask:{}", quote_mask_ss.str());
-        uint64_t sep = cmp_mask_against_input(in, ',');
+        uint64_t sep = cmp_mask_against_input(in, delimiter);
         uint64_t end = cmp_mask_against_input(in, 0x0a);
         fields[b] = (end | sep) & ~quote_mask;
 //        std::bitset<64> y(fields[b]);
@@ -187,7 +187,7 @@ bool find_indexes(const uint8_t * buf, size_t len, struct ParsedCSV & pcsv) {
   for (; idx < lenminus64; idx += 64) {
       simd_input in = fill_input(buf+idx);
       uint64_t quote_mask = find_quote_mask(in, prev_iter_inside_quote);
-      uint64_t sep = cmp_mask_against_input(in, ',');
+      uint64_t sep = cmp_mask_against_input(in, delimiter);
       uint64_t end = cmp_mask_against_input(in, 0x0a);
     // note - a bit of a high-wire act here with quotes
     // we can't put something inside the quotes with the CR

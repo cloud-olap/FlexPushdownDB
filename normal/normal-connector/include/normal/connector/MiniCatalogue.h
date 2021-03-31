@@ -33,7 +33,8 @@ public:
                         cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>> segmentKeysToInvolvedQueryNums,
                 std::shared_ptr<std::vector<std::string>> defaultJoinOrder,
                 std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
-                        std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns);
+                        std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns,
+                char csvFileDelimiter);
   static std::shared_ptr<MiniCatalogue> defaultMiniCatalogue(const std::string& s3Bucket, const std::string& schemaName);
 
   [[nodiscard]] const std::shared_ptr<std::unordered_map<std::string, int>> &partitionNums() const;
@@ -60,6 +61,8 @@ public:
 
   std::shared_ptr<arrow::Schema> getSchema(const std::string &tableName);
 
+  char getCSVFileDelimiter();
+
 private:
   std::shared_ptr<std::unordered_map<std::string, int>> partitionNums_;
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas_;
@@ -78,6 +81,7 @@ private:
   // FIXME: better if using std::pair<gandiva::Expression, gandiva::Expression> ?
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
     std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns_;
+  char csvFileDelimiter_;
 };
 
 std::string getFileExtensionByDirPrefix(std::string dir_prefix);

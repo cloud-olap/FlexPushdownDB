@@ -56,8 +56,10 @@ std::string SegmentKey::toString() {
 
 bool SegmentKey::operator==(const SegmentKey &other) const {
   return this->partition_->equalTo(other.partition_) &&
-	  this->columnName_ == other.columnName_ &&
-	  this->range_ == other.range_;
+	  this->columnName_ == other.columnName_;// &&
+	  // We have changed the files a few times and this has caused changes in the byte range. However we are not splitting
+	  // up objects by byte range so removing this check for now is fine.
+//	  this->range_ == other.range_;
 }
 
 bool SegmentKey::operator!=(const SegmentKey &other) const {
@@ -65,7 +67,11 @@ bool SegmentKey::operator!=(const SegmentKey &other) const {
 }
 
 size_t SegmentKey::hash() {
-  return partition_->hash() + range_.hash();
+  return partition_->hash();
+  // We have changed the files a few times and this has caused changes in the byte range. However we are not splitting
+  // up objects by byte range so removing this check for now is fine.
+//	  this->range_ == other.range_;
+//  return partition_->hash() + range_.hash();
 }
 
 const std::shared_ptr<SegmentMetadata> &SegmentKey::getMetadata() const {
