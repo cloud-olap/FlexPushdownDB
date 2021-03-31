@@ -93,19 +93,39 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
     int rangeId = 0;
     for (const auto &scanRange: scanRanges) {
       // S3Scan
-      auto scanOp = S3Get::make(
-              "s3get - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
-              s3Partition->getBucket(),
-              s3Object,
-              *allColumnNames,
-              *allNeededColumnNames,
-              scanRange.first,
-              scanRange.second,
-              miniCatalogue->getSchema(getName()),
-              DefaultS3Client,
-              true,
-              false,
-              queryId);
+      std::shared_ptr<Operator> scanOp;
+      // FIXME 1: hack Parquet Get using Select
+      // FIXME 2: not a idea way to distinguish CSV and Parquet
+      if (s3Object.find("csv") != std::string::npos) {
+        scanOp = S3Get::make(
+                "s3get - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                s3Partition->getBucket(),
+                s3Object,
+                *allColumnNames,
+                *allNeededColumnNames,
+                scanRange.first,
+                scanRange.second,
+                miniCatalogue->getSchema(getName()),
+                DefaultS3Client,
+                true,
+                false,
+                queryId);
+      } else {
+        scanOp = S3Select::make(
+                "s3get(hacked for parquet using select) - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                s3Partition->getBucket(),
+                s3Object,
+                "",
+                *allNeededColumnNames,
+                *allNeededColumnNames,
+                scanRange.first,
+                scanRange.second,
+                miniCatalogue->getSchema(getName()),
+                DefaultS3Client,
+                true,
+                false,
+                queryId);
+      }
       operators->emplace_back(scanOp);
 
       std::shared_ptr<Operator> upStreamOfProj;
@@ -237,19 +257,39 @@ S3SelectScanLogicalOperator::toOperatorsPullupCaching(int numRanges) {
       }
 
       // S3SelectScan
-      auto scanOp = S3Get::make(
-              "s3get - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
-              s3Bucket,
-              s3Object,
-              *allColumnNames,
-              *projectedColumnNames_,
-              scanRange.first,
-              scanRange.second,
-              miniCatalogue->getSchema(getName()),
-              DefaultS3Client,
-              false,
-              true,
-              queryId);
+      std::shared_ptr<Operator> scanOp;
+      // FIXME 1: hack Parquet Get using Select
+      // FIXME 2: not a idea way to distinguish CSV and Parquet
+      if (s3Object.find("csv") != std::string::npos) {
+        scanOp = S3Get::make(
+                "s3get - " + s3Bucket + "/" + s3Object + "-" + std::to_string(rangeId),
+                s3Bucket,
+                s3Object,
+                *allColumnNames,
+                *projectedColumnNames_,
+                scanRange.first,
+                scanRange.second,
+                miniCatalogue->getSchema(getName()),
+                DefaultS3Client,
+                false,
+                true,
+                queryId);
+      } else {
+        scanOp = S3Select::make(
+                "s3get(hacked for parquet using select) - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                s3Bucket,
+                s3Object,
+                "",
+                *projectedColumnNames_,
+                *projectedColumnNames_,
+                scanRange.first,
+                scanRange.second,
+                miniCatalogue->getSchema(getName()),
+                DefaultS3Client,
+                false,
+                true,
+                queryId);
+      }
       operators->emplace_back(scanOp);
 
       // CacheLoad
