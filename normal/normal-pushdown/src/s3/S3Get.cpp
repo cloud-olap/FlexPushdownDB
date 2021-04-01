@@ -223,14 +223,18 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
   }
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
+  splitReqLock_.lock();
   s3SelectScanStats_.getTransferTimeNS += transferTime;
   s3SelectScanStats_.numRequests++;
+  splitReqLock_.unlock();
 
   std::shared_ptr<TupleSet2> tupleSet;
   auto getResult = getObjectOutcome.GetResultWithOwnership();
   int64_t resultSize = getResult.GetContentLength();
+  splitReqLock_.lock();
   s3SelectScanStats_.processedBytes += resultSize;
   s3SelectScanStats_.returnedBytes += resultSize;
+  splitReqLock_.unlock();
   std::vector<std::shared_ptr<arrow::Field>> fields;
   for (auto column : neededColumnNames_) {
     fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
@@ -277,8 +281,9 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
   GetConvertLock.unlock();
   std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
   auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+  splitReqLock_.lock();
   s3SelectScanStats_.getConvertTimeNS += conversionTime;
-
+  splitReqLock_.unlock();
   return tupleSet;
 }
 
@@ -324,61 +329,7 @@ GetObjectResult S3Get::s3GetRequestOnly(int64_t startOffset, int64_t endOffset) 
   return getResult;
 }
 
-std::shared_ptr<arrow::Table> S3Get::convertFileStreamToTable(std::basic_iostream<char, std::char_traits<char>>& fileStream,
-                                                              std::vector<char> tailingInput) {
-  std::shared_ptr<TupleSet2> tupleSet;
-  std::vector<std::shared_ptr<arrow::Field>> fields;
-  for (auto column : neededColumnNames_) {
-    fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
-  }
-  auto outputSchema = std::make_shared<::arrow::Schema>(fields);
-  while (true) {
-    if (GetConvertLock.try_lock()) {
-      if (activeGetConversions < maxConcurrentGetConversions) {
-        activeGetConversions++;
-        GetConvertLock.unlock();
-        break;
-      } else {
-        GetConvertLock.unlock();
-      }
-    }
-    std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableGetSleepRetryTimeMS + minimumGetSleepRetryTimeMS));
-  }
-  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-  if (s3Object_.find("csv") != std::string::npos) {
-    std::shared_ptr<arrow::io::InputStream> inputStream;
-    if (s3Object_.find("gz") != std::string::npos) {
 #ifdef __AVX2__
-      auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, fileStream, true, schema_, outputSchema, true, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
-      tupleSet = parser.constructTupleSet();
-#else
-      inputStream = std::make_shared<ArrowAWSGZIPInputStream2>(retrievedFile, resultSize);
-      tupleSet = readCSVFile(inputStream);
-#endif
-    } else {
-#ifdef __AVX2__
-      auto parser = CSVToArrowSIMDStreamParser(name(), DefaultS3ConversionBufferSize, fileStream, true, schema_, outputSchema, false, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
-      tupleSet = parser.constructTupleSet();
-#else
-      inputStream = std::make_shared<ArrowAWSInputStream>(retrievedFile);
-      tupleSet = readCSVFile(inputStream);
-#endif
-    }
-  } else { // (s3Object_.find("parquet") != std::string::npos)
-    tupleSet = readParquetFile(fileStream);
-  }
-  GetConvertLock.lock();
-  activeGetConversions--;
-  GetConvertLock.unlock();
-  std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
-  s3SelectScanStats_.getConvertTimeNS += conversionTime;
-
-  return tupleSet->getArrowTable().value();
-}
-
-
-
 void S3Get::s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset) {
   GetObjectResult getObjectResult = s3GetRequestOnly(startOffset, endOffset);
   if (parallelTuplesetCreationSupported()) {
@@ -412,6 +363,7 @@ void S3Get::s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffse
       }
       std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableGetSleepRetryTimeMS + minimumGetSleepRetryTimeMS));
     }
+    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     std::vector<std::shared_ptr<arrow::Field>> fields;
     for (auto column : neededColumnNames_) {
       fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
@@ -419,10 +371,15 @@ void S3Get::s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffse
     auto outputSchema = std::make_shared<::arrow::Schema>(fields);
     std::shared_ptr<CSVToArrowSIMDChunkParser> parser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), DefaultS3ConversionBufferSize, schema_, outputSchema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
     parser->parseChunk(std::make_shared<ArrowAWSInputStream>(retrievedFile));
-    reqNumToParser_.insert(std::pair<int, std::shared_ptr<CSVToArrowSIMDChunkParser>>(reqNum, parser));
+    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
     GetConvertLock.lock();
     activeGetConversions--;
     GetConvertLock.unlock();
+    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+    splitReqLock_.lock();
+    reqNumToParser_.insert(std::pair<int, std::shared_ptr<CSVToArrowSIMDChunkParser>>(reqNum, parser));
+    s3SelectScanStats_.getConvertTimeNS += conversionTime;
+    splitReqLock_.unlock();
   } else {
     throw std::runtime_error(fmt::format("Splitting up requests that need a concatenated output not supported yet."));
   }
@@ -457,7 +414,8 @@ std::shared_ptr<TupleSet2> S3Get::s3GetParallelReqs() {
   }
 
   if (parallelTuplesetCreationSupported()) {
-    // Now complete finish all of the parsers and comvine together all of the arrow tables
+    // Now complete all of the parsers and combine together all of their arrow tables
+    std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     std::vector<std::shared_ptr<arrow::Table>> tables;
     for (int i = 1; i <= totalReqs; i++) {
       std::shared_ptr<CSVToArrowSIMDChunkParser> parser = reqNumToParser_[i];
@@ -476,22 +434,30 @@ std::shared_ptr<TupleSet2> S3Get::s3GetParallelReqs() {
       }
     }
 
+    std::shared_ptr<TupleSet2> readTupleSet;
     if (tables.size() == 0) {
-      return TupleSet2::make2();
+      readTupleSet = TupleSet2::make2();
     } else if (tables.size() == 1) {
       auto tupleSetV1 = normal::tuple::TupleSet::make(tables[0]);
-      return normal::tuple::TupleSet2::create(tupleSetV1);
+      readTupleSet = normal::tuple::TupleSet2::create(tupleSetV1);
     } else {
       const arrow::Result<std::shared_ptr<arrow::Table>> &res = arrow::ConcatenateTables(tables);
       if (!res.ok())
         abort();
       auto tupleSetV1 = normal::tuple::TupleSet::make(*res);
-      return normal::tuple::TupleSet2::create(tupleSetV1);
+      readTupleSet = normal::tuple::TupleSet2::create(tupleSetV1);
     }
+    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
+    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopConversionTime - startConversionTime).count();
+    splitReqLock_.lock();
+    s3SelectScanStats_.getConvertTimeNS += conversionTime;
+    splitReqLock_.unlock();
+    return readTupleSet;
   } else {
     throw std::runtime_error(fmt::format("Splitting up requests that need a concatenated output not supported yet."));
   }
 }
+#endif
 
 std::shared_ptr<TupleSet2> S3Get::readTuples() {
   std::shared_ptr<TupleSet2> readTupleSet;
@@ -503,12 +469,16 @@ std::shared_ptr<TupleSet2> S3Get::readTuples() {
     SPDLOG_DEBUG("Reading From S3: {}", name());
 
     // Read columns from s3
+#ifdef __AVX2__
     if (normal::plan::s3ClientType == normal::plan::S3 && parallelTuplesetCreationSupported()
         && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
       readTupleSet = s3GetParallelReqs();
     } else {
       readTupleSet = s3GetFullRequest();
     }
+#else
+    readTupleSet = s3GetFullRequest();
+#endif
 
     // Store the read columns in the cache, if not in full-pushdown mode
     if (toCache_) {

@@ -55,18 +55,16 @@ class S3Get : public S3SelectScan {
     std::shared_ptr<TupleSet2> s3GetFullRequest();
     Aws::S3::Model::GetObjectResult s3GetRequestOnly(int64_t startOffset, int64_t endOffset);
 
-    // Convert the file in fileStream to a table. tailingInput is made of the last partial
-    // line so that between fileStream + tailingInput finish with a complete line.
-    std::shared_ptr<arrow::Table> convertFileStreamToTable(std::basic_iostream<char, std::char_traits<char>>& fileStream,
-                                                           std::vector<char> tailingInput);
     // Whether we can process different portions of the response in parallel
     // For now we only support this for uncompressed CSV, but eventually we work
     // with parquet more we should be able to turn on a flag to have arrow do this as well,
     // the methods will just be a bit different
     bool parallelTuplesetCreationSupported();
 
+#ifdef __AVX2__
     void s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset);
     std::shared_ptr<TupleSet2> s3GetParallelReqs();
+#endif
 
     // Used for collecting all results for split requests that are run in parallel, and for having a
     // locks on shared variables when requests are split.
