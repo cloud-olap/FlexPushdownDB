@@ -68,6 +68,9 @@ using namespace normal::pushdown::cache;
 
 namespace normal::pushdown {
 
+std::mutex SelectConvertLock;
+int activeSelectConversions = 0;
+
 S3Select::S3Select(std::string name,
 						   std::string s3Bucket,
 						   std::string s3Object,
@@ -241,6 +244,18 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
         s3SelectScanStats_.returnedBytes += payload.size();
         splitReqLock_.unlock();
       }
+      while (true) {
+        if (SelectConvertLock.try_lock()) {
+          if (activeSelectConversions < maxConcurrentArrowConversions) {
+            activeSelectConversions++;
+            SelectConvertLock.unlock();
+            break;
+          } else {
+            SelectConvertLock.unlock();
+          }
+        }
+        std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableSleepRetryTimeMS + minimumSleepRetryTimeMS));
+      }
       std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
 #ifdef __AVX2__
       simdParser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
@@ -250,6 +265,9 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
       std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
       auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
               stopConversionTime - startConversionTime).count();
+      SelectConvertLock.lock();
+      activeSelectConversions--;
+      SelectConvertLock.unlock();
       splitReqLock_.lock();
       s3SelectScanStats_.selectConvertTimeNS += conversionTime;
       s3SelectScanStats_.selectTransferTimeNS -= conversionTime;

@@ -11,6 +11,12 @@
 #endif
 
 namespace normal::pushdown {
+
+// This is for controlling the maximum number of Select requests converting data at the same time
+// as per maxConcurrentArrowConversions in normal-pushdown/include/normal/pushdown/Globals.h
+extern std::mutex SelectConvertLock;
+extern int activeSelectConversions;
+
 class S3Select: public S3SelectScan {
   public:
     S3Select(std::string name,

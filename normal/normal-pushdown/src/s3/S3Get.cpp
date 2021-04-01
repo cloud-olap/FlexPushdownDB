@@ -219,7 +219,7 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
       throw std::runtime_error(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
     }
     // Something went wrong with AWS API on our end or remotely, wait and try again
-    std::this_thread::sleep_for (std::chrono::milliseconds(minimumGetSleepRetryTimeMS));
+    std::this_thread::sleep_for (std::chrono::milliseconds(minimumSleepRetryTimeMS));
   }
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
@@ -242,7 +242,7 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
   auto outputSchema = std::make_shared<::arrow::Schema>(fields);
   while (true) {
     if (GetConvertLock.try_lock()) {
-      if (activeGetConversions < maxConcurrentGetConversions) {
+      if (activeGetConversions < maxConcurrentArrowConversions) {
         activeGetConversions++;
         GetConvertLock.unlock();
         break;
@@ -250,7 +250,7 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
         GetConvertLock.unlock();
       }
     }
-    std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableGetSleepRetryTimeMS + minimumGetSleepRetryTimeMS));
+    std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableSleepRetryTimeMS + minimumSleepRetryTimeMS));
   }
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   Aws::IOStream &retrievedFile = getResult.GetBody();
@@ -312,7 +312,7 @@ GetObjectResult S3Get::s3GetRequestOnly(int64_t startOffset, int64_t endOffset) 
       throw std::runtime_error(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
     }
     // Something went wrong with AWS API on our end or remotely, wait and try again
-    std::this_thread::sleep_for (std::chrono::milliseconds(minimumGetSleepRetryTimeMS));
+    std::this_thread::sleep_for (std::chrono::milliseconds(minimumSleepRetryTimeMS));
   }
   std::chrono::steady_clock::time_point stopTransferTime = std::chrono::steady_clock::now();
   auto transferTime = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTransferTime - startTransferTime).count();
@@ -353,7 +353,7 @@ void S3Get::s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffse
     //        we will add in more robust support later
     while (true) {
       if (GetConvertLock.try_lock()) {
-        if (activeGetConversions < maxConcurrentGetConversions) {
+        if (activeGetConversions < maxConcurrentArrowConversions) {
           activeGetConversions++;
           GetConvertLock.unlock();
           break;
@@ -361,7 +361,7 @@ void S3Get::s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffse
           GetConvertLock.unlock();
         }
       }
-      std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableGetSleepRetryTimeMS + minimumGetSleepRetryTimeMS));
+      std::this_thread::sleep_for (std::chrono::milliseconds(rand() % variableSleepRetryTimeMS + minimumSleepRetryTimeMS));
     }
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     std::vector<std::shared_ptr<arrow::Field>> fields;
