@@ -4,23 +4,26 @@
 
 #ifdef __AVX2__
 #ifndef NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDCHUNKPARSER_H
-#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDCHUNKPARSER2_H
+#define NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDCHUNKPARSER_H
 
 #include <arrow/api.h>
 #include <immintrin.h>
 #include "normal/tuple/arrow/SIMDParserHelpers.h"
 #include "normal/tuple/TupleSet.h"
 #include "normal/tuple/TupleSet2.h"
+#include "normal/tuple/arrow/ArrowAWSInputStream.h"
 
 class CSVToArrowSIMDChunkParser {
 public:
   explicit CSVToArrowSIMDChunkParser(std::string callerName,
                                       uint64_t parseChunkSize,
-                                      std::shared_ptr<arrow::Schema> schema,
+                                      std::shared_ptr<arrow::Schema> inputSchema,
+                                      std::shared_ptr<arrow::Schema> outputSchema,
                                       char csvFileDelimiter);
   ~CSVToArrowSIMDChunkParser();
 
   void parseChunk(char* data, uint64_t size);
+  void parseChunk(std::shared_ptr<arrow::io::InputStream> inputStream);
   std::shared_ptr<normal::tuple::TupleSet2> outputCompletedTupleSet();
 
   bool isInitialized();
@@ -41,6 +44,12 @@ private:
   // that whatever data is in partial or data should be added to the buffer and appended with "\n" if it is not already
   // present
   void loadBuffer(char* data, uint64_t &sizeRemaining, uint64_t &dataIndex, bool lastLine);
+
+  uint64_t initializeBufferForLoad();
+  void fillBuffer(char* data, uint64_t &sizeRemaining, uint64_t &dataIndex, uint64_t copySize);
+  uint64_t fillBuffer(std::shared_ptr<arrow::io::InputStream> inputStream, uint64_t copySize);
+  void finishPreparingBufferEnd(bool lastLine);
+
   // Initialize datatypes_, arrayBuilders_, columnStartsWithQuote_, and startEndOffsets_.
   void initializeDataStructures(ParsedCSV & pcsv);
 
@@ -54,8 +63,9 @@ private:
   uint64_t bufferBytesUtilized_ = 0;
   ParsedCSV pcsv_;
   uint64_t rowsRead_ = 0;
-  uint64_t numColumns_;
-  std::shared_ptr<arrow::Schema> schema_;
+  uint64_t inputNumColumns_;
+  std::shared_ptr<arrow::Schema> inputSchema_;
+  std::shared_ptr<arrow::Schema> outputSchema_;
   std::vector<arrow::Type::type> datatypes_;
   std::vector<std::shared_ptr<arrow::ArrayBuilder>> arrayBuilders_;
   std::vector<bool> columnStartsWithQuote_;

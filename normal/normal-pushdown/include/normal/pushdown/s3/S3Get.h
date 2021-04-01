@@ -6,6 +6,11 @@
 #define NORMAL_NORMAL_CORE_SRC_S3GET_H
 
 #include "normal/pushdown/s3/S3SelectScan.h"
+#include <aws/s3/model/GetObjectResult.h>
+
+#ifdef __AVX2__
+#include "normal/tuple/arrow/CSVToArrowSIMDChunkParser.h"
+#endif
 
 namespace normal::pushdown {
 
@@ -47,7 +52,31 @@ class S3Get : public S3SelectScan {
   private:
     std::shared_ptr<TupleSet2> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
     std::shared_ptr<TupleSet2> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
-    std::shared_ptr<TupleSet2> s3Get();
+    std::shared_ptr<TupleSet2> s3GetFullRequest();
+    Aws::S3::Model::GetObjectResult s3GetRequestOnly(int64_t startOffset, int64_t endOffset);
+
+    // Convert the file in fileStream to a table. tailingInput is made of the last partial
+    // line so that between fileStream + tailingInput finish with a complete line.
+    std::shared_ptr<arrow::Table> convertFileStreamToTable(std::basic_iostream<char, std::char_traits<char>>& fileStream,
+                                                           std::vector<char> tailingInput);
+    // Whether we can process different portions of the response in parallel
+    // For now we only support this for uncompressed CSV, but eventually we work
+    // with parquet more we should be able to turn on a flag to have arrow do this as well,
+    // the methods will just be a bit different
+    bool parallelTuplesetCreationSupported();
+
+    void s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset);
+    std::shared_ptr<TupleSet2> s3GetParallelReqs();
+
+    // Used for collecting all results for split requests that are run in parallel, and for having a
+    // locks on shared variables when requests are split.
+    std::mutex splitReqLock_;
+    std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
+    std::unordered_map<int, std::vector<char>> reqNumToAdditionalOutput_;
+    #ifdef __AVX2__
+    std::unordered_map<int, std::shared_ptr<CSVToArrowSIMDChunkParser>> reqNumToParser_;
+    #endif
+
 
     void processScanMessage(const scan::ScanMessage &message) override;
 

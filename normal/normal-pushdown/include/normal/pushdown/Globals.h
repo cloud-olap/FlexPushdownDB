@@ -21,7 +21,7 @@ namespace normal::pushdown {
 inline constexpr int DefaultBufferSize = 10000;
 inline constexpr int DefaultS3ScanBufferSize = 100000;
 inline constexpr int DefaultS3ConversionBufferSize = 128 * 1024;
-inline constexpr uint64_t DefaultS3SelectRangeSize = 15 * 1024 * 1024; // 15MB/s This value was tuned on c5n.9xlarge and
+inline constexpr uint64_t DefaultS3RangeSize = 15 * 1024 * 1024; // 15MB/s This value was tuned on c5n.9xlarge and
                                                  // may need to be retuned for different instances with many more cores
 inline constexpr bool RefinedWeightFunction = true;
 inline constexpr double vNetwork = 0.24419;     // unit: GB/s

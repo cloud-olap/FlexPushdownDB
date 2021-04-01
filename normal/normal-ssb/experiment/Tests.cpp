@@ -230,7 +230,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   // Only worrying about parser performance when AVX instructions are on as that is the test setup we run in
   // so only added support for that here rather than adding non AVX converting too
 #ifdef __AVX2__
-    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
 #endif
   Aws::S3::Model::SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const Aws::S3::Model::RecordsEvent &recordsEvent) {
@@ -264,7 +264,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   while (true) {
     // create a new parser to use as the current one has results from the previous request
     if (parser->isInitialized()) {
-      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
     }
 //  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
 //  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
@@ -458,7 +458,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
 }
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults) {
-  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::off);
   // parameters
   const int warmBatchSize = 50, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";

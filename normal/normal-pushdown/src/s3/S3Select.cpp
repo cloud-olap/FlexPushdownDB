@@ -129,6 +129,7 @@ std::shared_ptr<CSVToArrowSIMDChunkParser> S3Select::generateSIMDParser() {
   // The delimiter for S3 output is always ',' so this is hardcoded
   auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), DefaultS3ConversionBufferSize,
                                                                 std::make_shared<::arrow::Schema>(fields),
+                                                                std::make_shared<::arrow::Schema>(fields),
                                                                 ',');
   return simdParser;
 }
@@ -355,13 +356,13 @@ std::shared_ptr<TupleSet2> S3Select::s3SelectParallelReqs() {
   std::vector<std::thread> threadVector = std::vector<std::thread>();
   while (currentStartOffset < finishOffset_) {
     totalReqs += 1;
-    uint64_t reqEndOffset = currentStartOffset + DefaultS3SelectRangeSize;
+    uint64_t reqEndOffset = currentStartOffset + DefaultS3RangeSize;
     if (reqEndOffset > finishOffset_) {
       reqEndOffset = finishOffset_;
     }
     // If there is only a little bit of data left to scan just combine it in this request rather than
     // starting a new request.
-    if ((double) (finishOffset_ - reqEndOffset) < (double) (DefaultS3SelectRangeSize * 0.30)) {
+    if ((double) (finishOffset_ - reqEndOffset) < (double) (DefaultS3RangeSize * 0.30)) {
       reqEndOffset = finishOffset_;
     }
     threadVector.emplace_back(std::thread([&, totalReqs, currentStartOffset, reqEndOffset]() {
@@ -411,7 +412,7 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
 
     // Read columns from s3
     if (normal::plan::s3ClientType == normal::plan::S3 && scanRangeSupported()
-        && (finishOffset_ - startOffset_ > DefaultS3SelectRangeSize)) {
+        && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
       readTupleSet = s3SelectParallelReqs();
     } else {
       readTupleSet = s3Select(startOffset_, finishOffset_);
