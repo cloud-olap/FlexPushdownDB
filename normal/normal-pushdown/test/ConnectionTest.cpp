@@ -58,4 +58,10 @@ TEST_CASE ("connection-minio" * doctest::skip(false || SKIP_SUITE)) {
   listObjects(s3Client);
 }
 
+TEST_CASE ("connection-airmettle" * doctest::skip(false)) {
+  normal::plan::s3ClientType = normal::plan::Airmettle;
+  auto s3Client = AWSClient::defaultS3Client();
+  listObjects(s3Client);
+}
+
 }

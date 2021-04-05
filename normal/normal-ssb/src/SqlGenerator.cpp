@@ -553,33 +553,6 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkew(float skewness, int 
   std::uniform_int_distribution<int> distribution2(0,skewQueryNames.size() - 1);
 
   std::vector<std::string> queries;
-//  for (int i = 0; i < batchSize; i++) {
-//    std::string skewLo_predicate;
-//    if (useZipfian) {
-//      double possibility = distribution1(*generator_), sumPossibility = 0.0;
-//      int kind = 0;
-//      for (int j = 0; j < n; j++) {
-//        if (sumPossibility <= possibility && possibility <= sumPossibility + possibilities[j]) {
-//          kind = j;
-//          break;
-//        }
-//        sumPossibility += possibilities[j];
-//      }
-//      skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101,
-//                                 (1992 + kind) * 10000 + 1231);
-//    } else {
-//      double kind = distribution1(*generator_);
-//      if (kind > hotPercentage) {
-//        skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", 19920101, 19930523);
-//      } else {
-//        skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", 19970101, 19980523);
-//      }
-//    }
-//
-//    int skewQueryIndex = distribution2(*generator_);
-//    auto skewQueryName = skewQueryNames[skewQueryIndex];
-//    queries.emplace_back(generateSqlSkew(skewQueryName, skewLo_predicate));
-//  }
 
   for (size_t kind = 0; kind < possibilities.size(); kind++) {
     auto numThisKind = round(possibilities[kind] * ((double) batchSize));
@@ -889,35 +862,34 @@ std::vector<std::string> SqlGenerator::generateSqlBatchSkewWeight(float skewness
   // random queries
   std::uniform_int_distribution<int> distribution2(1, skewWeightQueryNames.size() - 1);
 
-  // column selectivity
-  std::uniform_int_distribution<int> distribution3(1, 100);
-
   std::vector<std::string> queries;
-  for (int i = 0; i < batchSize; i++) {
-    // skewness
-    std::string skewLo_predicate;
-    double possibility = distribution1(*generator_), sumPossibility = 0.0;
-    int kind = 0;
-    for (int j = 0; j < n; j++) {
-      if (sumPossibility <= possibility && possibility <= sumPossibility + possibilities[j]) {
-        kind = j;
-        break;
-      }
-      sumPossibility += possibilities[j];
+
+  for (size_t kind = 0; kind < possibilities.size(); kind++) {
+    auto numThisKind = round(possibilities[kind] * ((double) batchSize));
+    std::string skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101,
+                                               (1992 + kind) * 10000 + 1231);
+
+    for (int i = 0; i < numThisKind; i++) {
+      int skewWeightQueryIndex = distribution2(*generator_);
+      auto skewWeightQueryName = skewWeightQueryNames[skewWeightQueryIndex];
+      queries.emplace_back(generateSqlSkewWeight(skewWeightQueryName, skewLo_predicate, i % 2 == 0));
     }
-    skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1992 + kind) * 10000 + 101,
-                                   (1992 + kind) * 10000 + 1231);
-
-    // query name
-    int skewWeightQueryIndex = distribution2(*generator_);
-    auto skewWeightQueryName = skewWeightQueryNames[skewWeightQueryIndex];
-
-    // column selectivity
-    int kind1 = distribution3(*generator_);
-    queries.emplace_back(generateSqlSkewWeight(skewWeightQueryName, skewLo_predicate, kind1 > 50));
   }
 
-  return queries;
+  if (queries.size() == batchSize) {
+    return queries;
+  } else if (queries.size() > batchSize) {
+    return std::vector<std::string>(queries.begin(), queries.begin() + batchSize);
+  } else {
+    while (queries.size() < batchSize) {
+      std::string skewLo_predicate = fmt::format("(lo_orderdate between {} and {})", (1993) * 10000 + 101,
+                                                 (1993) * 10000 + 1231);
+      int skewWeightQueryIndex = distribution2(*generator_);
+      auto skewWeightQueryName = skewWeightQueryNames[skewWeightQueryIndex];
+      queries.emplace_back(generateSqlSkewWeight(skewWeightQueryName, skewLo_predicate, true));
+    }
+    return queries;
+  }
 }
 
 std::string SqlGenerator::generateSqlSkewWeight(std::string queryName, std::string skewLo_predicate, bool high) {
@@ -930,7 +902,7 @@ std::string SqlGenerator::generateSqlSkewWeight(std::string queryName, std::stri
   }
 
   auto lo_predicate = genLo_predicate(high);
-  std::string aggColumn = high? "sum(lo_revenue), sum(lo_supplycost)" : "sum(lo_extendedprice * lo_discount), sum(lo_ordtotalprice)";
+  std::string aggColumn = high? "sum(lo_revenue), sum(lo_supplycost), sum(lo_linenumber)" : "sum(lo_extendedprice), sum(lo_ordtotalprice)";
 
   switch (queryNameEnum) {
     case SkewWeightQuery1: return genSkewWeightQuery1(skewLo_predicate, lo_predicate, aggColumn);
