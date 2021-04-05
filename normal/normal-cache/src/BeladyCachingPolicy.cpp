@@ -64,19 +64,24 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
     return std::nullopt;
   }
 
-  // if room for this key no need to evict anything
-  if (segmentSize < freeSize_) {
-    keysInCache_.insert(key);
-    freeSize_ -= segmentSize;
-    return std::optional(removableKeys);
-  }
-
   int currentQueryNum = beladyMiniCatalogue->getCurrentQueryNum();
   auto queryKey = queryNumToKeysInCache_.find(currentQueryNum);
   if (queryKey == queryNumToKeysInCache_.end()) {
     throw std::runtime_error("Error, query " + std::to_string(currentQueryNum) + " not populated in queryNumToKeysInCache_ in BeladyCachingPolicy.cpp");
   }
   auto keysThatShouldBeCached = queryKey->second;
+
+  // Shouldn't cache segments that aren't supposed to be in the cache at the end of this query
+  if (keysThatShouldBeCached->find(key) == keysThatShouldBeCached->end()) {
+    return std::nullopt;
+  }
+
+  // if room for this key no need to evict anything
+  if (segmentSize < freeSize_) {
+    keysInCache_.insert(key);
+    freeSize_ -= segmentSize;
+    return std::optional(removableKeys);
+  }
 
   // remove all keys in the cache that shouldn't be present after this query
   // amortized operation as usually nothing done and we do earlier empty return

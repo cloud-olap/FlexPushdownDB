@@ -89,7 +89,7 @@ public:
 protected:
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
   size_t maxSize_;
-  size_t freeSize_;
+  int64_t freeSize_;
 
 public:
   size_t onLoadTime = 0;

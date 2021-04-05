@@ -39,9 +39,9 @@ inline constexpr double vS3Filter = 0.32719;    // unit: GPred/s
 // We only want to convert ~max cores results at a time since otherwise we get very bad cache thrashing
 // that degrades system performance. Additionally setting a variable sleep retry interval appears to make parallel GET
 // requests perform much faster than using a fixed interval.
-inline constexpr int maxConcurrentGetConversions = 36; // Set to ~#cores
-inline constexpr int minimumGetSleepRetryTimeMS = 5;
-inline constexpr int variableGetSleepRetryTimeMS = 15;
+inline constexpr int maxConcurrentArrowConversions = 36; // Set to ~#cores
+inline constexpr int minimumSleepRetryTimeMS = 5;
+inline constexpr int variableSleepRetryTimeMS = 15;
 }
 
 #endif //NORMAL_NORMAL_PUSHDOWN_INCLUDE_NORMAL_PUSHDOWN_GLOBALS_H
