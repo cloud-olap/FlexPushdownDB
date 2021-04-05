@@ -51,10 +51,10 @@ int main(int argc, char **argv) {
     SPDLOG_INFO("Mode type: {}", modeType);
     SPDLOG_INFO("CachingPolicy type: {}", cachingPolicyType);
     if (argc < 7) {
-      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, false);
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, 0, false);
     } else {
       bool writeResults = atoi(argv[6]);
-      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, writeResults);
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, 0, writeResults);
     }
   }
 
@@ -76,11 +76,20 @@ int main(int argc, char **argv) {
     SPDLOG_INFO("Cache size: {}", cacheSize);
     SPDLOG_INFO("Mode type: {}", modeType);
     SPDLOG_INFO("CachingPolicy type: {}", cachingPolicyType);
+
     if (argc < 5) {
-      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, false);
-    } else {
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, 0, false);
+    }
+    // network
+    else if (std::string(argv[4]) == "-n") {
+      auto networkLimit = (size_t) (atof(argv[5]) * 1024 * 1024 * 1024 / 8);
+      SPDLOG_INFO("Network: {}Gbps", atof(argv[5]));
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, networkLimit, false);
+    }
+    // write result
+    else {
       bool writeResults = atoi(argv[4]);
-      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, writeResults);
+      mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, 0, writeResults);
     }
   }
 

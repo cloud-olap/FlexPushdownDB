@@ -53,6 +53,7 @@
 //#include <normal/tuple/arrow/ArrowAWSGZIPInputStream.h>
 #include <normal/tuple/arrow/ArrowAWSGZIPInputStream2.h>
 #include "normal/ssb/SSBSchema.h"
+#include <normal/pushdown/Globals.h>
 
 #ifdef __AVX2__
 #include <normal/tuple/arrow/CSVToArrowSIMDStreamParser.h>
@@ -160,7 +161,12 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
   auto tuples = execute(i);
 
-  auto tupleSet = TupleSet2::create(tuples);
+  // FIXME: if result is no tuples?
+  std::shared_ptr<TupleSet2> tupleSet;
+  if (tuples)
+    tupleSet = TupleSet2::create(tuples);
+  else
+    tupleSet = TupleSet2::make();
   // Once the query is done there should be no active get conversion in S3Get.cpp, so this value should be 0 unless
   // there are background caching operations still performing GET/Select.
   SPDLOG_INFO("Done with query, activeGetConversions = {}", normal::pushdown::activeGetConversions);
@@ -178,7 +184,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 //  SPDLOG_INFO("Output rows: {}", tupleSet->numRows());
 //  if (saveMetrics)
   SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
-  SPDLOG_INFO("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
+  SPDLOG_CRITICAL("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
 //  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
 //  SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
   if (saveMetrics) {
@@ -389,7 +395,6 @@ uint64_t simpleGetRequest(int requestNum) {
 //        getConvertLock.unlock();
 //      }
 //    }
-//    std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
 //  }
   SPDLOG_INFO("{} done", requestNum);
   auto convertStopTime = std::chrono::steady_clock::now();
@@ -477,14 +482,18 @@ void normal::ssb::concurrentGetTest(int numRequests) {
               (((double) totalBytesReturned * 8 / numTrials / 1024.0 / 1024.0 / 1024.0) / averageTrialTimeNS));
 }
 
-void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults) {
-  spdlog::set_level(spdlog::level::off);
+void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix,
+                           size_t networkLimit, bool writeResults) {
+  spdlog::set_level(spdlog::level::critical);
   // parameters
   const int warmBatchSize = 50, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
-
+  if (networkLimit > 0) {
+    normal::pushdown::NetworkLimit = networkLimit;
+    normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
+  }
 
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode;
   std::string modeAlias;
@@ -524,12 +533,12 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   configureS3ConnectorMultiPartition(i, bucket_name, dirPrefix);
   // execute
   i.boot();
-  SPDLOG_INFO("{} mode start", mode->toString());
+  SPDLOG_CRITICAL("{} mode start", mode->toString());
   if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
       mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
-    SPDLOG_INFO("Cache warm phase:");
+    SPDLOG_CRITICAL("Cache warm phase:");
     for (auto index = 1; index <= warmBatchSize; ++index) {
-      SPDLOG_INFO("sql {}", index);
+      SPDLOG_CRITICAL("sql {}", index);
       if (cachingPolicy->id() == BELADY) {
         normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
       }
@@ -538,10 +547,10 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
       executeSql(i, sql, true, writeResults, fmt::format("{}output.txt", index));
       sql_file_dir_path = sql_file_dir_path.parent_path();
     }
-    SPDLOG_INFO("Cache warm phase finished");
+    SPDLOG_CRITICAL("Cache warm phase finished");
   } else {
     // execute one query to avoid first-run latency
-    SPDLOG_INFO("First-run query:");
+    SPDLOG_CRITICAL("First-run query:");
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 1));
     auto sql = ExperimentUtil::read_file(sql_file_path.string());
     executeSql(i, sql, false, false, fmt::format("{}output.txt", index));
@@ -555,9 +564,9 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   i.getOperatorManager()->clearCacheMetrics();
 
-  SPDLOG_INFO("Execution phase:");
+  SPDLOG_CRITICAL("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
-    SPDLOG_INFO("sql {}", index - warmBatchSize);
+    SPDLOG_CRITICAL("sql {}", index - warmBatchSize);
     if (cachingPolicy->id() == BELADY) {
       normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
     }
@@ -566,7 +575,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     executeSql(i, sql, true, writeResults, fmt::format("{}output.txt", index));
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
-  SPDLOG_INFO("Execution phase finished");
+  SPDLOG_CRITICAL("Execution phase finished");
 
   SPDLOG_INFO("{} mode finished in dirPrefix: {}\nExecution metrics:\n{}", mode->toString(), dirPrefix, i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());

@@ -68,10 +68,12 @@ void generateSqlFile(int argc, char **argv, std::filesystem::path &sql_file_dir_
 
     // Weighted workload
     case 2: {
-      auto batch = sqlGenerator.generateSqlBatchSkewWeight(skewness, size);
-      std::shuffle(batch.begin(), batch.end(), g);
+      auto warmupBatch = sqlGenerator.generateSqlBatchSkewWeight(skewness, size / 2);
+      std::vector<std::string> executionBatch(warmupBatch);
+      std::shuffle(warmupBatch.begin(), warmupBatch.end(), g);
+      std::shuffle(executionBatch.begin(), executionBatch.end(), g);
       for (int index = 0; index < size; index++) {
-        auto sql = batch[index];
+        auto sql = (index < warmupBatch.size()) ? warmupBatch[index] : executionBatch[index - warmupBatch.size()];
         auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", (index + 1)));
         writeFile(sql, sql_file_path);
         sql_file_dir_path = sql_file_dir_path.parent_path();

@@ -23,11 +23,17 @@ inline constexpr int DefaultS3ScanBufferSize = 100000;
 inline constexpr int DefaultS3ConversionBufferSize = 128 * 1024;
 inline constexpr uint64_t DefaultS3RangeSize = 15 * 1024 * 1024; // 15MB/s This value was tuned on c5n.9xlarge and
                                                  // may need to be retuned for different instances with many more cores
-inline constexpr bool RefinedWeightFunction = true;
-inline constexpr double vNetwork = 0.24419;     // unit: GB/s
-inline constexpr double vS3Scan = 3.88424;      // unit: GB/s
-inline constexpr double vS3Filter = 0.084907;   // unit: GPred/s
+
 inline size_t NetworkLimit = 0;
+inline constexpr bool RefinedWeightFunction = true;
+
+/**
+ * Parameters used in WLFU, with csv_150MB/ and 200 parallel reqs
+ */
+// c5a.8x
+inline constexpr double vNetwork = 1.16320;     // unit: GB/s
+inline constexpr double vS3Scan = 18.00891;     // unit: GB/s
+inline constexpr double vS3Filter = 0.32719;    // unit: GPred/s
 
 // These parameters are for running GET in parallel as a detached operation
 // We only want to convert ~max cores results at a time since otherwise we get very bad cache thrashing
