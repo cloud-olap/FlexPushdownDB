@@ -191,7 +191,10 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   return tupleSet;
 }
 
+std::mutex selectBytesReceivedLock;
+volatile size_t selectReceivedBytes = 0;
 void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index) {
+  size_t bytesReceived = 0;
   Aws::S3::Model::SelectObjectContentRequest selectObjectContentRequest;
 //  std::string bucketName = "demo-bucket";
 //  std::string keyName = "data.csv";
@@ -199,11 +202,11 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   std::string bucketName = "pushdowndb";
   std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.{}", index);
 //  std::string sql = "select lo_orderkey from s3object where lo_orderdate > 0;";
-  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
-                    "where cast(lo_quantity as int) <= 10;";
+//  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
+//                    "where cast(lo_quantity as int) <= 10;";
     // Use this query for testing Select when it returns a very high selectivity
-//    std::string sql = "select lo_orderkey,lo_linenumber,lo_custkey,lo_partkey,lo_suppkey,lo_orderdate,lo_orderpriority,lo_shippriority,lo_quantity,lo_extendedprice,lo_ordtotalprice,lo_discount,lo_revenue,lo_supplycost,lo_tax,lo_commitdate,lo_shipmode from s3Object "
-//                    "where cast(lo_quantity as int) <= 50;";
+    std::string sql = "select lo_orderkey,lo_linenumber,lo_custkey,lo_partkey,lo_suppkey,lo_orderdate,lo_orderpriority,lo_shippriority,lo_quantity,lo_extendedprice,lo_ordtotalprice,lo_discount,lo_revenue,lo_supplycost,lo_tax,lo_commitdate,lo_shipmode from s3Object "
+                    "where cast(lo_quantity as int) <= 50;";
   selectObjectContentRequest.SetBucket(Aws::String(bucketName));
   selectObjectContentRequest.SetKey(Aws::String(keyName));
 
@@ -238,8 +241,9 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
                  recordsEvent.GetPayload().size());
     auto payload = recordsEvent.GetPayload();
     if (payload.size() > 0) {
+      bytesReceived += payload.size();
 #ifdef __AVX2__
-      parser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+//      parser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
 #endif
     }
   });
@@ -272,9 +276,12 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
     auto selectObjectContentOutcome = s3Client->SelectObjectContent(selectObjectContentRequest);
 
     if (selectObjectContentOutcome.IsSuccess()) {
-#ifdef __AVX2__
-      auto tupleSet = parser->outputCompletedTupleSet();
-#endif
+//#ifdef __AVX2__
+//      auto tupleSet = parser->outputCompletedTupleSet();
+//#endif
+      selectBytesReceivedLock.lock();
+      selectReceivedBytes += bytesReceived;
+      selectBytesReceivedLock.unlock();
       break;
     }
 //    SPDLOG_INFO("Finished select request for {}/{}", bucketName, keyName);
@@ -289,23 +296,25 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
 
 std::mutex getConvertLock;
 volatile int activeConvertGets = 0;
+std::mutex getBytesReceivedLock;
+volatile size_t receivedBytes = 0;
 uint64_t simpleGetRequest(int requestNum) {
   bool parsingComplete = false;
   uint64_t retrySleepTimeMS = 1;
   // Do this so that it is hopefully easier for requests that are done
   // to acquire the lock and decrement activeConvertGets due to not waiting in a retry loop
-  while (true) {
-    if (getConvertLock.try_lock()) {
-      if (activeConvertGets < 36) {
-        activeConvertGets++;
-        getConvertLock.unlock();
-        break;
-      } else {
-        getConvertLock.unlock();
-      }
-    }
-    std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
-  }
+//  while (true) {
+//    if (getConvertLock.try_lock()) {
+//      if (activeConvertGets < 36) {
+//        activeConvertGets++;
+//        getConvertLock.unlock();
+//        break;
+//      } else {
+//        getConvertLock.unlock();
+//      }
+//    }
+//    std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
+//  }
 //  Aws::S3::Model::GetObjectRequest getObjectRequest;
   Aws::String bucketName;
 //  bucketName = "demo-bucket";
@@ -324,17 +333,15 @@ uint64_t simpleGetRequest(int requestNum) {
 
 //  SPDLOG_INFO("Starting s3 GetObject request: {} for {}/{}", requestNum, bucketName, requestKey);
   Aws::S3::Model::GetObjectResult getResult;
+  uint64_t resultSize;
   while (true) {
     Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::plan::DefaultS3Client->GetObject(getObjectRequest);
-    uint64_t resultSize;
     if (getObjectOutcome.IsSuccess()) {
       auto requestStopTime = std::chrono::steady_clock::now();
       auto requestDurationUs = std::chrono::duration_cast<std::chrono::nanoseconds>(
               requestStopTime - requestStartTime).count();
       getResult = getObjectOutcome.GetResultWithOwnership();
       resultSize = getObjectOutcome.GetResult().GetContentLength();
-//    SPDLOG_INFO("Got result of s3 GetObject request: {}, took: {}sec, rate = {}MB/s", requestNum, (double) (requestDurationUs) / 1.0e9,
-//                ((double) resultSize / 1024.0 / 1024.0) / ((double)(requestDurationUs) / 1.0e9));
       SPDLOG_INFO("GET request finishes: {}, length: {}, took: {}sec, rate: {}MB/s", requestNum, resultSize,
                   (double) (requestDurationUs) / 1.0e9, ((double) resultSize / 1024.0 / 1024.0) / ((double)(requestDurationUs) / 1.0e9));
       break;
@@ -348,7 +355,10 @@ uint64_t simpleGetRequest(int requestNum) {
 //      return 0;
     }
   }
-//  return 0;
+  getBytesReceivedLock.lock();
+  receivedBytes += resultSize;
+  getBytesReceivedLock.unlock();
+  return 0;
   auto convertStartTime = std::chrono::steady_clock::now();
   auto &retrievedFile = getResult.GetBody();
 #ifdef __AVX2__
@@ -398,11 +408,11 @@ uint64_t simpleGetRequest(int requestNum) {
 void normal::ssb::concurrentSelectTest(int numRequests) {
   spdlog::set_level(spdlog::level::info);
   std::shared_ptr<Aws::S3::S3Client> client1 = normal::pushdown::AWSClient::defaultS3Client();
-  // change this depending on shard size in test function above
-  double shardSizeInGB = 16.3 * 1.0 / 1024.;
   size_t totalTimeNS = 0;
+  size_t totalBytesReturned = 0;
   int numTrials = 5;
   for (int i = 0; i < numTrials; i++) {
+    selectReceivedBytes = 0;
     spdlog::set_level(spdlog::level::off);
     std::vector<std::thread> threadVector = std::vector<std::thread>();
     auto startTime = std::chrono::steady_clock::now();
@@ -415,24 +425,29 @@ void normal::ssb::concurrentSelectTest(int numRequests) {
     auto stopTime = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
     totalTimeNS += duration;
+    selectBytesReceivedLock.lock();
+    size_t returnedBytes = selectReceivedBytes;
+    totalBytesReturned += returnedBytes;
+    selectBytesReceivedLock.unlock();
     spdlog::set_level(spdlog::level::info);
     SPDLOG_INFO("{} Concurrent Select requests took: {}sec\n Machine transfer rate: {}Gb/s", numRequests,
                 (double) (duration) / 1.0e9,
-                (((double) numRequests * shardSizeInGB * 8) / ((double) (duration) / 1.0e9)));
+                (((double) returnedBytes * 8 / 1024.0 / 1024.0 / 1024.0) / ((double) (duration) / 1.0e9)));
+    std::this_thread::sleep_for (std::chrono::milliseconds(1000));
   }
   double averageTrialTimeNS = ((double) (totalTimeNS) / 1.0e9) / (double) numTrials;
   SPDLOG_INFO("Average for {} took: {}sec\n Average machine transfer rate: {}Gb/s", numRequests,
               averageTrialTimeNS,
-              (((double) numRequests * shardSizeInGB * 8) / averageTrialTimeNS));
+              (((double) totalBytesReturned * 8 / numTrials / 1024.0 / 1024.0 / 1024.0) / averageTrialTimeNS));
 }
 
 void normal::ssb::concurrentGetTest(int numRequests) {
   spdlog::set_level(spdlog::level::info);
-  // change this depending on shard size in test function above
-  double shardSizeInGB = 16.3 / 1024.;
+  size_t totalBytesReturned = 0;
   size_t totalTimeNS = 0;
-  int numTrials = 8;
-  for (int i = 0; i < 8; i++) {
+  int numTrials = 5;
+  for (int i = 0; i < numTrials; i++) {
+    receivedBytes = 0;
     activeConvertGets = 0;
     spdlog::set_level(spdlog::level::off);
     std::vector<std::thread> threadVector = std::vector<std::thread>();
@@ -447,14 +462,19 @@ void normal::ssb::concurrentGetTest(int numRequests) {
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime - startTime).count();
     totalTimeNS += duration;
     spdlog::set_level(spdlog::level::info);
+    getBytesReceivedLock.lock();
+    size_t returnedBytes = receivedBytes;
+    totalBytesReturned += returnedBytes;
+    getBytesReceivedLock.unlock();
     SPDLOG_INFO("{} Concurrent Get requests took: {}sec\n Machine transfer rate: {}Gb/s", numRequests,
                 (double) (duration) / 1.0e9,
-                (((double) numRequests * shardSizeInGB * 8) / ((double) (duration) / 1.0e9)));
+                (((double) returnedBytes * 8 / 1024.0 / 1024.0 / 1024.0) / ((double) (duration) / 1.0e9)));
+    std::this_thread::sleep_for (std::chrono::milliseconds(1000));
   }
   double averageTrialTimeNS = ((double) (totalTimeNS) / 1.0e9) / (double) numTrials;
   SPDLOG_INFO("Average for {} took: {}sec\n Average machine transfer rate: {}Gb/s", numRequests,
               averageTrialTimeNS,
-              (((double) numRequests * shardSizeInGB * 8) / averageTrialTimeNS));
+              (((double) totalBytesReturned * 8 / numTrials / 1024.0 / 1024.0 / 1024.0) / averageTrialTimeNS));
 }
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix, bool writeResults) {
