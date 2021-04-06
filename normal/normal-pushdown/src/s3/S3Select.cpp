@@ -172,8 +172,7 @@ InputSerialization S3Select::getInputSerialization() {
 bool S3Select::scanRangeSupported() {
   // S3 only supports support uncompressed CSV and we don't yet support Parquet
   if (s3Object_.find("gz") != std::string::npos ||
-      s3Object_.find("bz2") != std::string::npos ||
-      s3Object_.find("csv") == std::string::npos) {
+      s3Object_.find("bz2") != std::string::npos) {
     return false;
   }
   return true;
