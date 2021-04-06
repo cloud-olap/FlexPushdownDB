@@ -421,8 +421,8 @@ void normal::ssb::concurrentSelectTest(int numRequests) {
     spdlog::set_level(spdlog::level::off);
     std::vector<std::thread> threadVector = std::vector<std::thread>();
     auto startTime = std::chrono::steady_clock::now();
-    for (int i = 0; i < numRequests; i++) {
-      threadVector.emplace_back(std::thread([client1, i]() { simpleSelectRequest(client1, i); }));
+    for (int j = 0; j < numRequests; j++) {
+      threadVector.emplace_back(std::thread([client1, j]() { simpleSelectRequest(client1, j); }));
     }
     for (auto &t: threadVector) {
       t.join();
@@ -457,8 +457,8 @@ void normal::ssb::concurrentGetTest(int numRequests) {
     spdlog::set_level(spdlog::level::off);
     std::vector<std::thread> threadVector = std::vector<std::thread>();
     auto startTime = std::chrono::steady_clock::now();
-    for (int i = 0; i < numRequests; i++) {
-      threadVector.emplace_back(std::thread([i]() { simpleGetRequest(i); }));
+    for (int j = 0; j < numRequests; j++) {
+      threadVector.emplace_back(std::thread([j]() { simpleGetRequest(j); }));
     }
     for (auto &t: threadVector) {
       t.join();
