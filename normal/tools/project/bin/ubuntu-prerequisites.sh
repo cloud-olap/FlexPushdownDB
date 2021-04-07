@@ -31,8 +31,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
       bison \
       flex \
       libtool \
-      tcl \
-      libdeflate-dev
+      tcl
 
   fi
 fi
