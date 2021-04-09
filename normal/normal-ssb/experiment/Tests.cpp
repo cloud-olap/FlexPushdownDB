@@ -239,7 +239,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
          ::arrow::field(ColumnName::canonicalize("LO_REVENUE"), ::arrow::int64()),
          ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int64()),
          ::arrow::field(ColumnName::canonicalize("LO_ORDERDATE"), ::arrow::int32()),
-         ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int64()),
+         ::arrow::field(ColumnName::canonicalize("LO_SUPPKEY"), ::arrow::int64()),
          ::arrow::field(ColumnName::canonicalize("LO_CUSTKEY"), ::arrow::int32())
   };
 

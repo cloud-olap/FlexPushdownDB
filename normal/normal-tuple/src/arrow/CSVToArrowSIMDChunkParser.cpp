@@ -81,7 +81,7 @@ void CSVToArrowSIMDChunkParser::fillBuffer(char* data, uint64_t &sizeRemaining, 
   // Don't love this, but even though aws provides 65k byte payloads Airmettle has much larger variable sized payloads
   // and parsing payloads that large all at once rather than in chunks degrades performance
   uint64_t actualCopySize = copySize > sizeRemaining ? sizeRemaining : copySize;
-  memcpy(buffer_ + bufferBytesUtilized_, data, actualCopySize);
+  memcpy(buffer_ + bufferBytesUtilized_, data + dataIndex, actualCopySize);
   bufferBytesUtilized_ += actualCopySize;
   sizeRemaining -= actualCopySize;
   dataIndex += actualCopySize;
