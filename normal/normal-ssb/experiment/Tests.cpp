@@ -206,13 +206,13 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
 //  std::string keyName = "data.csv";
 //  std::string sql = "SELECT col2, col5, col9, col13, col29, col61, col91 FROM s3object WHERE cast(col1 as int) = 0;";
   std::string bucketName = "pushdowndb";
-  std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.{}", index);
+  std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv_150MB_initial_format/lineorder_sharded/lineorder.tbl.{}", index);
 //  std::string sql = "select lo_orderkey from s3object where lo_orderdate > 0;";
-//  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
-//                    "where cast(lo_quantity as int) <= 10;";
+  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
+                    "where cast(lo_quantity as int) <= 10;";
     // Use this query for testing Select when it returns a very high selectivity
-    std::string sql = "select lo_orderkey,lo_linenumber,lo_custkey,lo_partkey,lo_suppkey,lo_orderdate,lo_orderpriority,lo_shippriority,lo_quantity,lo_extendedprice,lo_ordtotalprice,lo_discount,lo_revenue,lo_supplycost,lo_tax,lo_commitdate,lo_shipmode from s3Object "
-                    "where cast(lo_quantity as int) <= 50;";
+//    std::string sql = "select lo_orderkey,lo_linenumber,lo_custkey,lo_partkey,lo_suppkey,lo_orderdate,lo_orderpriority,lo_shippriority,lo_quantity,lo_extendedprice,lo_ordtotalprice,lo_discount,lo_revenue,lo_supplycost,lo_tax,lo_commitdate,lo_shipmode from s3Object "
+//                    "where cast(lo_quantity as int) <= 50;";
   selectObjectContentRequest.SetBucket(Aws::String(bucketName));
   selectObjectContentRequest.SetKey(Aws::String(keyName));
 
@@ -234,22 +234,43 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  auto schema = SSBSchema::lineOrder();
+//  auto schema = SSBSchema::lineOrder();
+  auto fields = {
+         ::arrow::field(ColumnName::canonicalize("LO_REVENUE"), ::arrow::int64()),
+         ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int64()),
+         ::arrow::field(ColumnName::canonicalize("LO_ORDERDATE"), ::arrow::int32()),
+         ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int64()),
+         ::arrow::field(ColumnName::canonicalize("LO_CUSTKEY"), ::arrow::int32())
+  };
+
+
+  auto inputSchema = std::make_shared<::arrow::Schema>(fields);
+  auto outputSchema = std::make_shared<::arrow::Schema>(fields);
   std::string callerName = "testCaller";
   // Only worrying about parser performance when AVX instructions are on as that is the test setup we run in
   // so only added support for that here rather than adding non AVX converting too
 #ifdef __AVX2__
-    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, inputSchema, outputSchema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
 #endif
+  std::mutex convertSelectResponseLock;
+  std::vector<char*> allocations;
+  std::vector<size_t> allocation_sizes;
+
   Aws::S3::Model::SelectObjectContentHandler handler;
   handler.SetRecordsEventCallback([&](const Aws::S3::Model::RecordsEvent &recordsEvent) {
     SPDLOG_DEBUG("S3 Select RecordsEvent  | size: {}",
                  recordsEvent.GetPayload().size());
     auto payload = recordsEvent.GetPayload();
     if (payload.size() > 0) {
-      bytesReceived += payload.size();
 #ifdef __AVX2__
 //      parser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+      convertSelectResponseLock.lock();
+      char* data = (char*) malloc(payload.size());
+      memcpy(data, payload.data(), payload.size());
+      allocations.emplace_back(data);
+      allocation_sizes.emplace_back(payload.size());
+      bytesReceived += payload.size();
+      convertSelectResponseLock.unlock();
 #endif
     }
   });
@@ -274,7 +295,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   while (true) {
     // create a new parser to use as the current one has results from the previous request
     if (parser->isInitialized()) {
-      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, schema, schema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, inputSchema, outputSchema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
     }
 //  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
 //  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
@@ -282,9 +303,15 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
     auto selectObjectContentOutcome = s3Client->SelectObjectContent(selectObjectContentRequest);
 
     if (selectObjectContentOutcome.IsSuccess()) {
-//#ifdef __AVX2__
-//      auto tupleSet = parser->outputCompletedTupleSet();
-//#endif
+#ifdef __AVX2__
+      for (int i = 0; i < allocations.size(); i++){
+        auto allocation = allocations[i];
+        parser->parseChunk(allocation, allocation_sizes[i]);
+        free(allocation);
+      }
+      auto tupleSet = parser->outputCompletedTupleSet();
+//      SPDLOG_INFO("Query: {}, Output rows: {}, bytes received: {}", index, tupleSet->numRows(), bytesReceived);
+#endif
       selectBytesReceivedLock.lock();
       selectReceivedBytes += bytesReceived;
       selectBytesReceivedLock.unlock();
@@ -330,7 +357,8 @@ uint64_t simpleGetRequest(int requestNum) {
 //  auto schema = SSBSchema::date();
 //  auto requestKey = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
 //  auto requestKey = "minidata.csv";
-  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+//  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
+  std::string requestKey = fmt::format("ssb-sf100-sortlineorder/csv_150MB_initial_format/lineorder_sharded/lineorder.tbl.{}", index);
   auto schema = SSBSchema::lineOrder();
   auto requestStartTime = std::chrono::steady_clock::now();
     Aws::S3::Model::GetObjectRequest getObjectRequest;
