@@ -3,10 +3,11 @@
 //
 
 #include "normal/pushdown/merge/MergeKernel.h"
+#include <tl/expected.hpp>
 
 using namespace normal::pushdown::merge;
 
-std::optional<std::string> MergeKernel::validateTupleSets(const std::shared_ptr<TupleSet2> &tupleSet1,
+tl::expected<void, std::string> MergeKernel::validateTupleSets(const std::shared_ptr<TupleSet2> &tupleSet1,
 														  const std::shared_ptr<TupleSet2> &tupleSet2) {
 
   // If either of the tuple sets contain columns (meaning they need to be merged) then check
@@ -16,10 +17,10 @@ std::optional<std::string> MergeKernel::validateTupleSets(const std::shared_ptr<
 
 	// Check row count is equal
 	if (tupleSet1->numRows() != tupleSet2->numRows()) {
-	  return fmt::format(
-		  "Cannot merge TupleSets, number of rows must be equal. "
-		  "tupleSet1.numRows: {} != tupleSet2.numRows: {}",
-		  tupleSet1->numRows(), tupleSet2->numRows());
+	  return tl::unexpected(fmt::format(
+            "Cannot merge TupleSets, number of rows must be equal. "
+            "tupleSet1.numRows: {} != tupleSet2.numRows: {}",
+            tupleSet1->numRows(), tupleSet2->numRows()));
 	}
 
 	// Check field names do not contain duplicates
@@ -27,17 +28,17 @@ std::optional<std::string> MergeKernel::validateTupleSets(const std::shared_ptr<
 	  for (const auto &field1: tupleSet1->getArrowTable().value()->schema()->fields()) {
 		for (const auto &field2: tupleSet2->getArrowTable().value()->schema()->fields()) {
 		  if (field1->name() == field2->name()) {
-			return fmt::format(
-				"Cannot merge TupleSets, field names must not contain duplicates. "
-				"Multiple fields with name: {}",
-				field1->name());
+		    return tl::unexpected(fmt::format(
+                "Cannot merge TupleSets, field names must not contain duplicates. "
+                "Multiple fields with name: {}",
+                field1->name()));
 		  }
 		}
 	  }
 	}
   }
 
-  return std::nullopt;
+  return {};
 }
 
 std::shared_ptr<Schema> MergeKernel::mergeSchema(const std::shared_ptr<TupleSet2> &tupleSet1,
@@ -119,9 +120,9 @@ MergeKernel::merge(const std::shared_ptr<TupleSet2> &tupleSet1,
 				   const std::shared_ptr<TupleSet2> &tupleSet2) {
 
   // Validate the tuple sets
-  const auto &expectedError = validateTupleSets(tupleSet1, tupleSet2);
-  if (expectedError.has_value())
-	return tl::unexpected(expectedError.value());
+  const auto valid = validateTupleSets(tupleSet1, tupleSet2);
+  if (!valid)
+	return tl::unexpected(valid.error());
 
   // Merge schema
   const auto &mergedSchema = mergeSchema(tupleSet1, tupleSet2);

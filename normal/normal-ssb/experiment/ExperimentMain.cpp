@@ -69,7 +69,8 @@ int main(int argc, char **argv) {
 
     // main test
   else {
-    std::string dirPrefix = "ssb-sf100-sortlineorder/csv_150MB/";
+    std::string dirPrefix = "ssb-sf100-sortlineorder/csv_150MB_initial_format/";
+//    std::string dirPrefix = "ssb-sf100-sortlineorder/parquet_150MB/";
     auto cacheSize = (size_t) (atof(argv[1]) * 1024 * 1024 * 1024);
     auto modeType = atoi(argv[2]);
     auto cachingPolicyType = atoi(argv[3]);

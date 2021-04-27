@@ -353,10 +353,10 @@ void CSVToArrowSIMDChunkParser::parseChunk(char* data, uint64_t size) {
   if (size == 0) {
     return;
   }
-  uint64_t sizeRemaining = size;
-  uint64_t dataIndex = 0;
+  uint64_t sizeRemaining = size;    // size of remaining data
+  uint64_t dataIndex = 0;           // parsed position in data
   while (sizeRemaining > 0) {
-    uint64_t sizeToCopy = initializeBufferForLoad();
+    uint64_t sizeToCopy = initializeBufferForLoad();      // free size in buffer
     fillBuffer(data, sizeRemaining, dataIndex, sizeToCopy);
     finishPreparingBufferEnd(false);
     parseAndReadInData();

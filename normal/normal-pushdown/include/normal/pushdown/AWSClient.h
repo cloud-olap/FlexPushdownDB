@@ -22,5 +22,6 @@ public:
   void shutdown();
   static std::shared_ptr<Aws::S3::S3Client> defaultS3Client();
 };
+inline bool initialized_ = false;
 }
 #endif //NORMAL_NORMAL_PUSHDOWN_SRC_AWSCLIENT_H

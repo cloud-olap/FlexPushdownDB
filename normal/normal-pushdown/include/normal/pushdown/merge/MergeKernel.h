@@ -21,7 +21,7 @@ class MergeKernel {
 
 public:
 
-  static std::optional<std::string>
+  static tl::expected<void, std::string>
   validateTupleSets(const std::shared_ptr<TupleSet2> &tupleSet1, const std::shared_ptr<TupleSet2> &tupleSet2);
 
   static std::shared_ptr<Schema>

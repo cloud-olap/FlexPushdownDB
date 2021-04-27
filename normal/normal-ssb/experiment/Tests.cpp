@@ -23,10 +23,9 @@
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
+
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 #include <aws/s3/S3Client.h>
-#include <thread>
-
 #include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
 #include <aws/core/Aws.h>
@@ -61,6 +60,10 @@
 #endif
 
 #include "normal/pushdown/s3/S3Get.h"
+#include <thread>
+#include <iostream>
+#include <fstream>
+#include <fmt/format.h>
 
 #define SKIP_SUITE false
 
@@ -181,7 +184,7 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
   }
 //  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
 //  SPDLOG_INFO("Output size: {}", tupleSet->size());
-//  SPDLOG_INFO("Output rows: {}", tupleSet->numRows());
+  SPDLOG_CRITICAL("Output rows: {}", tupleSet->numRows());
 //  if (saveMetrics)
   SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
   SPDLOG_CRITICAL("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
@@ -199,20 +202,22 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
 
 std::mutex selectBytesReceivedLock;
 volatile size_t selectReceivedBytes = 0;
-void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index) {
+void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int index) {
   size_t bytesReceived = 0;
   Aws::S3::Model::SelectObjectContentRequest selectObjectContentRequest;
 //  std::string bucketName = "demo-bucket";
 //  std::string keyName = "data.csv";
 //  std::string sql = "SELECT col2, col5, col9, col13, col29, col61, col91 FROM s3object WHERE cast(col1 as int) = 0;";
   std::string bucketName = "pushdowndb";
-  std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv_150MB_initial_format/lineorder_sharded/lineorder.tbl.{}", index);
-//  std::string sql = "select lo_orderkey from s3object where lo_orderdate > 0;";
-  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
-                    "where cast(lo_quantity as int) <= 10;";
-    // Use this query for testing Select when it returns a very high selectivity
-//    std::string sql = "select lo_orderkey,lo_linenumber,lo_custkey,lo_partkey,lo_suppkey,lo_orderdate,lo_orderpriority,lo_shippriority,lo_quantity,lo_extendedprice,lo_ordtotalprice,lo_discount,lo_revenue,lo_supplycost,lo_tax,lo_commitdate,lo_shipmode from s3Object "
-//                    "where cast(lo_quantity as int) <= 50;";
+  std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv_150MB_initial_format/lineorder_sharded/lineorder.tbl.{}", 121 + index);
+//  std::string keyName = fmt::format("ssb-sf100-sortlineorder/parquet_150MB/lineorder_sharded/lineorder.parquet.{}", index);
+//  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object";
+//  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
+//                    "where cast(lo_quantity as int) <= 10";
+//  std::string sql = "select lo_discount from s3Object";
+//  std::string sql = "select lo_custkey, lo_orderdate, lo_partkey, lo_quantity, lo_revenue, lo_suppkey, lo_supplycost from s3Object";
+  std::string sql = "select lo_orderdate, lo_partkey, lo_revenue, lo_suppkey from s3Object where (cast(lo_discount as int) >= 2 and cast(lo_discount as int) <= 4)";
+
   selectObjectContentRequest.SetBucket(Aws::String(bucketName));
   selectObjectContentRequest.SetKey(Aws::String(keyName));
 
@@ -220,12 +225,18 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   selectObjectContentRequest.SetExpression(sql.c_str());
 
   Aws::S3::Model::InputSerialization inputSerialization;
+
+  // CSV input
   Aws::S3::Model::CSVInput csvInput;
   csvInput.SetFileHeaderInfo(Aws::S3::Model::FileHeaderInfo::USE);
   // This is the standard field delimiter and record delimiter for S3 Select, so it is hardcoded here
   csvInput.SetFieldDelimiter(",");
   csvInput.SetRecordDelimiter("\n");
   inputSerialization.SetCSV(csvInput);
+
+  // Parquet input
+//  Aws::S3::Model::ParquetInput parquetInput;
+//  inputSerialization.SetParquet(parquetInput);
 
   selectObjectContentRequest.SetInputSerialization(inputSerialization);
 
@@ -234,58 +245,61 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-//  auto schema = SSBSchema::lineOrder();
+  auto schema = SSBSchema::lineOrder();
   auto fields = {
-         ::arrow::field(ColumnName::canonicalize("LO_REVENUE"), ::arrow::int64()),
-         ::arrow::field(ColumnName::canonicalize("LO_SUPPLYCOST"), ::arrow::int64()),
-         ::arrow::field(ColumnName::canonicalize("LO_ORDERDATE"), ::arrow::int32()),
-         ::arrow::field(ColumnName::canonicalize("LO_SUPPKEY"), ::arrow::int64()),
-         ::arrow::field(ColumnName::canonicalize("LO_CUSTKEY"), ::arrow::int32())
+          schema->GetFieldByName("lo_orderdate"),
+          schema->GetFieldByName("lo_partkey"),
+          schema->GetFieldByName("lo_revenue"),
+          schema->GetFieldByName("lo_suppkey")
   };
-
-
   auto inputSchema = std::make_shared<::arrow::Schema>(fields);
   auto outputSchema = std::make_shared<::arrow::Schema>(fields);
+
   std::string callerName = "testCaller";
   // Only worrying about parser performance when AVX instructions are on as that is the test setup we run in
   // so only added support for that here rather than adding non AVX converting too
 #ifdef __AVX2__
-    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, inputSchema, outputSchema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+    auto parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 16 * 1024 * 1024, inputSchema, outputSchema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
 #endif
   std::mutex convertSelectResponseLock;
   std::vector<char*> allocations;
   std::vector<size_t> allocation_sizes;
 
   Aws::S3::Model::SelectObjectContentHandler handler;
+  bool hasEndEvent = false;
+
+//  std::ofstream outFile;
+//  outFile.open(fmt::format("select.{}", index));
+
   handler.SetRecordsEventCallback([&](const Aws::S3::Model::RecordsEvent &recordsEvent) {
-    SPDLOG_DEBUG("S3 Select RecordsEvent  | size: {}",
+    SPDLOG_DEBUG("S3 Select RecordsEvent of query {} | size: {}",
+                 index,
                  recordsEvent.GetPayload().size());
     auto payload = recordsEvent.GetPayload();
     if (payload.size() > 0) {
 #ifdef __AVX2__
-//      parser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
-      convertSelectResponseLock.lock();
-      char* data = (char*) malloc(payload.size());
-      memcpy(data, payload.data(), payload.size());
-      allocations.emplace_back(data);
-      allocation_sizes.emplace_back(payload.size());
+      parser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
+
+//      std::string outStr(payload.begin(), payload.end());
+//      outFile << outStr;
+
       bytesReceived += payload.size();
-      convertSelectResponseLock.unlock();
 #endif
     }
   });
   handler.SetStatsEventCallback([&](const Aws::S3::Model::StatsEvent &statsEvent) {
-	SPDLOG_INFO("S3 Select StatsEvent  | scanned: {}, processed: {}, returned: {}",
+	SPDLOG_DEBUG("S3 Select StatsEvent  | scanned: {}, processed: {}, returned: {}",
 				 statsEvent.GetDetails().GetBytesScanned(),
 				 statsEvent.GetDetails().GetBytesProcessed(),
 				 statsEvent.GetDetails().GetBytesReturned());
-	SPDLOG_DEBUG("{} Processed bytes: {}\n Returned Bytes: {}", index, statsEvent.GetDetails().GetBytesProcessed(), statsEvent.GetDetails().GetBytesReturned());
   });
   handler.SetEndEventCallback([&]() {
       SPDLOG_INFO("S3 Select done: {}", index);
+      hasEndEvent = true;
   });
   handler.SetOnErrorCallback([&](const Aws::Client::AWSError<S3Errors> &errors) {
-      SPDLOG_INFO("S3 Select Error  | message: {}",
+      SPDLOG_INFO("S3 Select Error of query {} | message: {}",
+                  index,
                   std::string(errors.GetMessage()));
 //	optionalErrorMessage = std::optional(errors.GetMessage());
   });
@@ -295,7 +309,7 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
   while (true) {
     // create a new parser to use as the current one has results from the previous request
     if (parser->isInitialized()) {
-      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 128 * 1024, inputSchema, outputSchema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
+      parser = std::make_shared<CSVToArrowSIMDChunkParser>(callerName, 16 * 1024 * 1024, inputSchema, outputSchema, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
     }
 //  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
 //  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
@@ -304,13 +318,8 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
 
     if (selectObjectContentOutcome.IsSuccess()) {
 #ifdef __AVX2__
-      for (int i = 0; i < allocations.size(); i++){
-        auto allocation = allocations[i];
-        parser->parseChunk(allocation, allocation_sizes[i]);
-        free(allocation);
-      }
       auto tupleSet = parser->outputCompletedTupleSet();
-//      SPDLOG_INFO("Query: {}, Output rows: {}, bytes received: {}", index, tupleSet->numRows(), bytesReceived);
+      SPDLOG_INFO("Query: {}, Output rows: {}, bytes received: {}", 121 + index, tupleSet->numRows(), bytesReceived);
 #endif
       selectBytesReceivedLock.lock();
       selectReceivedBytes += bytesReceived;
@@ -325,6 +334,12 @@ void simpleSelectRequest(std::shared_ptr<Aws::S3::S3Client> s3Client, int index)
 //  }
     std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
+
+  if (!hasEndEvent) {
+    SPDLOG_CRITICAL("No end event on query {}!", 121 + index);
+  }
+
+//  outFile.close();
 }
 
 std::mutex getConvertLock;
@@ -358,8 +373,9 @@ uint64_t simpleGetRequest(int requestNum) {
 //  auto requestKey = "ssb-sf10-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
 //  auto requestKey = "minidata.csv";
 //  auto requestKey = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(requestNum);
-  std::string requestKey = fmt::format("ssb-sf100-sortlineorder/csv_150MB_initial_format/lineorder_sharded/lineorder.tbl.{}", index);
+  std::string requestKey = fmt::format("ssb-sf100-sortlineorder/csv_150MB_initial_format/lineorder_sharded/lineorder.tbl.{}", requestNum);
   auto schema = SSBSchema::lineOrder();
+
   auto requestStartTime = std::chrono::steady_clock::now();
     Aws::S3::Model::GetObjectRequest getObjectRequest;
     getObjectRequest.SetBucket(Aws::String(bucketName));
@@ -371,30 +387,31 @@ uint64_t simpleGetRequest(int requestNum) {
   while (true) {
     Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::plan::DefaultS3Client->GetObject(getObjectRequest);
     if (getObjectOutcome.IsSuccess()) {
+      SPDLOG_INFO("GET request success: {}", requestNum);
       auto requestStopTime = std::chrono::steady_clock::now();
       auto requestDurationUs = std::chrono::duration_cast<std::chrono::nanoseconds>(
               requestStopTime - requestStartTime).count();
       getResult = getObjectOutcome.GetResultWithOwnership();
       resultSize = getObjectOutcome.GetResult().GetContentLength();
-      SPDLOG_INFO("GET request finishes: {}, length: {}, took: {}sec, rate: {}MB/s", requestNum, resultSize,
+      SPDLOG_DEBUG("GET request finishes: {}, length: {}, took: {}sec, rate: {}MB/s", requestNum, resultSize,
                   (double) (requestDurationUs) / 1.0e9, ((double) resultSize / 1024.0 / 1024.0) / ((double)(requestDurationUs) / 1.0e9));
       break;
 //      return requestDurationUs;
     } else {
 //      auto requestDurationUs = std::chrono::duration_cast<std::chrono::nanoseconds>(
 //            requestStopTime - requestStartTime).count();
-//      const auto &err = getObjectOutcome.GetError();
-//      SPDLOG_INFO("Failed to get result of s3 GetObject request: {}, took: {}, error={}", requestNum,
-//                  (double) (requestDurationUs) / 1.0e9, err.GetMessage());
-//      return 0;
+      const auto &err = getObjectOutcome.GetError();
+      SPDLOG_INFO("Failed to get result of s3 GetObject request: {}, error={}", requestNum, err.GetMessage());
+      return 0;
     }
   }
   getBytesReceivedLock.lock();
   receivedBytes += resultSize;
   getBytesReceivedLock.unlock();
-  return 0;
+
   auto convertStartTime = std::chrono::steady_clock::now();
   auto &retrievedFile = getResult.GetBody();
+
 #ifdef __AVX2__
   std::string callerName = "testCaller";
   auto parser = CSVToArrowSIMDStreamParser(callerName, 128 * 1024, retrievedFile, true, schema, schema, false, normal::connector::defaultMiniCatalogue->getCSVFileDelimiter());
@@ -424,7 +441,7 @@ uint64_t simpleGetRequest(int requestNum) {
 //      }
 //    }
 //  }
-  SPDLOG_INFO("{} done", requestNum);
+  SPDLOG_INFO("Query: {}, Output rows: {}, bytes received: {}", requestNum, tupleSet->numRows(), resultSize);
   auto convertStopTime = std::chrono::steady_clock::now();
   auto convertDurationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(convertStopTime - convertStartTime).count();
 //  SPDLOG_DEBUG("Num rows = {}", tupleSet->numRows());
@@ -443,10 +460,10 @@ void normal::ssb::concurrentSelectTest(int numRequests) {
   std::shared_ptr<Aws::S3::S3Client> client1 = normal::pushdown::AWSClient::defaultS3Client();
   size_t totalTimeNS = 0;
   size_t totalBytesReturned = 0;
-  int numTrials = 5;
+  int numTrials = 1;
   for (int i = 0; i < numTrials; i++) {
     selectReceivedBytes = 0;
-    spdlog::set_level(spdlog::level::off);
+//    spdlog::set_level(spdlog::level::off);
     std::vector<std::thread> threadVector = std::vector<std::thread>();
     auto startTime = std::chrono::steady_clock::now();
     for (int j = 0; j < numRequests; j++) {
@@ -478,11 +495,11 @@ void normal::ssb::concurrentGetTest(int numRequests) {
   spdlog::set_level(spdlog::level::info);
   size_t totalBytesReturned = 0;
   size_t totalTimeNS = 0;
-  int numTrials = 5;
+  int numTrials = 1;
   for (int i = 0; i < numTrials; i++) {
     receivedBytes = 0;
     activeConvertGets = 0;
-    spdlog::set_level(spdlog::level::off);
+//    spdlog::set_level(spdlog::level::off);
     std::vector<std::thread> threadVector = std::vector<std::thread>();
     auto startTime = std::chrono::steady_clock::now();
     for (int j = 0; j < numRequests; j++) {
@@ -512,7 +529,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix,
                            size_t networkLimit, bool writeResults) {
-  spdlog::set_level(spdlog::level::critical);
+  spdlog::set_level(spdlog::level::warn);
   // parameters
   const int warmBatchSize = 50, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb";
@@ -520,8 +537,8 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   if (networkLimit > 0) {
     normal::pushdown::NetworkLimit = networkLimit;
-    normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
   }
+  normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
 
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode;
   std::string modeAlias;
@@ -559,7 +576,10 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   // interpreter
   normal::sql::Interpreter i(mode, cachingPolicy);
   configureS3ConnectorMultiPartition(i, bucket_name, dirPrefix);
+
   // execute
+  // FIXME: has to make a new one other wise with Airmettle sometimes a req has no end event, unsure why
+  normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
   i.boot();
   SPDLOG_CRITICAL("{} mode start", mode->toString());
   if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
@@ -592,6 +612,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   i.getOperatorManager()->clearCacheMetrics();
 
+  system("./measure_usage_start.sh ~/.aws/my-key-pair.pem iplist.txt");
   SPDLOG_CRITICAL("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
     SPDLOG_CRITICAL("sql {}", index - warmBatchSize);
@@ -604,6 +625,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
   SPDLOG_CRITICAL("Execution phase finished");
+  system("./measure_usage_stop.sh ~/.aws/my-key-pair.pem iplist.txt");
 
   SPDLOG_INFO("{} mode finished in dirPrefix: {}\nExecution metrics:\n{}", mode->toString(), dirPrefix, i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());

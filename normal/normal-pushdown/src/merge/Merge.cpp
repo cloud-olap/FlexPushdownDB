@@ -51,7 +51,8 @@ void Merge::merge() {
     auto expectedMergedTupleSet = MergeKernel::merge(leftTupleSet, rightTupleSet);
 
     if (!expectedMergedTupleSet.has_value()) {
-      throw std::runtime_error(expectedMergedTupleSet.error());
+      throw std::runtime_error(fmt::format("{}.\n leftOp: {}\n rightOp: {}",
+                                expectedMergedTupleSet.error(), leftProducer_.lock()->name(), rightProducer_.lock()->name()));
     } else {
       // Send merged tupleset
       auto mergedTupleSet = expectedMergedTupleSet.value();

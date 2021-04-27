@@ -25,8 +25,11 @@ void AWSClient::shutdown() {
 }
 
 std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
-  auto client = std::make_shared<AWSClient>();
-  client->init();
+  if (!initialized_) {
+    auto client = std::make_shared<AWSClient>();
+    client->init();
+    initialized_ = true;
+  }
 
   static const char *ALLOCATION_TAG = "Normal";
 
@@ -84,7 +87,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
     }
     case normal::plan::Minio: {
       SPDLOG_INFO("Using Minio Client");
-      config.endpointOverride = "172.31.16.21:9000";
+      config.endpointOverride = "172.31.10.231:9000";
       Aws::String accessKeyId = "minioadmin";
       Aws::String secretKey = "minioadmin";
       Aws::Auth::AWSCredentials minioCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
@@ -98,7 +101,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
       break;
     }
     default: {
-      throw std::runtime_error("Bad S3ClientType");
+      throw std::runtime_error("Bad S3Client Type");
     }
   }
 

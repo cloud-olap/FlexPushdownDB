@@ -15,7 +15,7 @@ using namespace normal::pushdown;
 void listObjects(std::shared_ptr<Aws::S3::S3Client>& s3Client) {
   Aws::S3::Model::ListObjectsRequest listObjectsRequest;
   listObjectsRequest.WithBucket("pushdowndb");
-  listObjectsRequest.WithPrefix("ssb-sf100-sortlineorder/csv/");
+  listObjectsRequest.WithPrefix("ssb-sf100-sortlineorder/csv_150MB_initial_format/");
 
   bool done = false;
   std::vector<std::string> objectNames;

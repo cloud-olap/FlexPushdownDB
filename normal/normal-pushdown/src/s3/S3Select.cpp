@@ -209,8 +209,8 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
   selectObjectContentRequest.SetExpressionType(ExpressionType::SQL);
 
   // combine columns with filterSql
-  std::string sql = "";
-  for (auto colIndex = 0; colIndex < neededColumnNames_.size(); colIndex++) {
+  std::string sql;
+  for (size_t colIndex = 0; colIndex < neededColumnNames_.size(); colIndex++) {
     if (colIndex == 0) {
       sql += neededColumnNames_[colIndex];
     } else {
@@ -230,11 +230,9 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
   outputSerialization.SetCSV(csvOutput);
   selectObjectContentRequest.SetOutputSerialization(outputSerialization);
 
-  // This is for Airmettle
-  std::vector<char*> allocations;
-  std::vector<size_t> allocation_sizes;
-
   SelectObjectContentHandler handler;
+  bool hasEndEvent = false;
+
   handler.SetRecordsEventCallback([&](const RecordsEvent &recordsEvent) {
     SPDLOG_DEBUG("S3 Select RecordsEvent  |  name: {}, size: {}",
                  name(),
@@ -246,22 +244,6 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
         splitReqLock_.lock();
         s3SelectScanStats_.returnedBytes += payload.size();
         splitReqLock_.unlock();
-#ifdef __AVX2__
-        std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
-        size_t dataSize = payload.size();
-        char *data = (char *) malloc(dataSize);
-        memcpy(data, payload.data(), dataSize);
-        std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-        auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-              stopConversionTime - startConversionTime).count();
-        splitReqLock_.lock();
-        allocations.emplace_back(data);
-        allocation_sizes.emplace_back(dataSize);
-        s3SelectScanStats_.selectConvertTimeNS += conversionTime;
-        s3SelectScanStats_.selectTransferTimeNS -= conversionTime;
-        splitReqLock_.unlock();
-        return;
-#endif
       }
       while (true) {
         if (SelectConvertLock.try_lock()) {
@@ -273,8 +255,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
             SelectConvertLock.unlock();
           }
         }
-        std::this_thread::sleep_for(
-                std::chrono::milliseconds(rand() % variableSleepRetryTimeMS + minimumSleepRetryTimeMS));
+        std::this_thread::sleep_for(std::chrono::milliseconds(rand() % variableSleepRetryTimeMS + minimumSleepRetryTimeMS));
       }
       std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
 #ifdef __AVX2__
@@ -311,9 +292,10 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
   handler.SetEndEventCallback([&]() {
     SPDLOG_DEBUG("S3 Select EndEvent  |  name: {}",
                  name());
+    hasEndEvent = true;
   });
   handler.SetOnErrorCallback([&](const AWSError<S3Errors> &errors) {
-    SPDLOG_DEBUG("S3 Select Error  |  name: {}, message: {}",
+    SPDLOG_ERROR("S3 Select Error  |  name: {}, message: {}",
                  name(),
                  std::string(errors.GetMessage()));
     optionalErrorMessage = std::optional(errors.GetMessage());
@@ -345,6 +327,11 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
     }
     std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
+
+//  if (!hasEndEvent) {
+//    SPDLOG_CRITICAL("No end event! sql: {}, name: {}", sql, name());
+//  }
+
   // If the request doesn't complete we don't count it in our costs as these requests seem to fail before sending
   // messages to S3 (some internal AWS CPP SDK event most likely causes this).
   // This sometimes occurs when sending many S3 Select requests in parallel from our machine, though setting
@@ -354,40 +341,9 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
   splitReqLock_.unlock();
 
   //  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
-  std::chrono::steady_clock::time_point startConversionTime;
+  std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   std::shared_ptr<TupleSet2> tupleSet;
 #ifdef __AVX2__
-  if (normal::plan::s3ClientType == normal::plan::Airmettle) {
-    while (true) {
-      if (SelectConvertLock.try_lock()) {
-        if (activeSelectConversions < maxConcurrentArrowConversions) {
-          activeSelectConversions++;
-          SelectConvertLock.unlock();
-          break;
-        } else {
-          SelectConvertLock.unlock();
-        }
-      }
-      std::this_thread::sleep_for(
-              std::chrono::milliseconds(rand() % variableSleepRetryTimeMS + minimumSleepRetryTimeMS));
-    }
-    startConversionTime = std::chrono::steady_clock::now();
-    for (int i = 0; i < allocations.size(); i++) {
-      auto allocation = allocations[i];
-      simdParser->parseChunk(allocation, allocation_sizes[i]);
-      free(allocation);
-    }
-    std::chrono::steady_clock::time_point stopConversionTime = std::chrono::steady_clock::now();
-    auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
-          stopConversionTime - startConversionTime).count();
-    SelectConvertLock.lock();
-    activeSelectConversions--;
-    SelectConvertLock.unlock();
-    splitReqLock_.lock();
-    s3SelectScanStats_.selectConvertTimeNS += conversionTime;
-    splitReqLock_.unlock();
-  }
-  startConversionTime = std::chrono::steady_clock::now();
   tupleSet = simdParser->outputCompletedTupleSet();
 #else
   // If no results are returned then there is nothing to process
@@ -486,6 +442,9 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
     } else {
       readTupleSet = s3Select(startOffset_, finishOffset_);
     }
+
+//    SPDLOG_CRITICAL("Object: {}, numRows: {}", s3Object_, readTupleSet->numRows());
+
     // Airmettle doesn't trigger necessarily trigger the SetStatsEventCallback in s3Select (at least not yet)
     // so if this happens we estimate the value here
     if (s3SelectScanStats_.processedBytes == 0) {
@@ -494,7 +453,7 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
 
     // Store the read columns in the cache, if not in full-pushdown mode
     if (toCache_) {
-      // TODO: only send caching columns
+      // TODO: no need to wrap segments to a tupleset to send
       requestStoreSegmentsInCache(readTupleSet);
     } else {
       // send segment filter weight

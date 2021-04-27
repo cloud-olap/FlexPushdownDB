@@ -8,6 +8,7 @@
 #include <normal/pushdown/TupleMessage.h>
 #include <normal/pushdown/scan/ScanMessage.h>
 #include <normal/core/cache/CacheMetricsMessage.h>
+#include <normal/plan/Globals.h>
 
 #include <utility>
 
@@ -149,39 +150,53 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
     }
   }
 
-  // Create a tuple set from the hit segments
-  auto hitTupleSet = TupleSet2::make(hitColumns);
-
-  // Send the hit columns to the hit operator
-  auto hitMessage = std::make_shared<TupleMessage>(hitTupleSet->toTupleSetV1(), this->name());
-  ctx()->send(hitMessage, hitOperator_.lock()->name());
-
   if (useNewCacheLayout_) {
-    /**
-     * Caching result is not needed when:
-     *    hitColumns + missCachingColumns don't cover all predicateColumns or
-     *    hitColumns + missCachingColumns cover no projectedColumns
-     */
-    bool cachingResultNeeded = true;
-    for (auto const &predicateColumnName: predicateColumnNames_) {
-      if (std::find(hitColumnNames.begin(), hitColumnNames.end(), predicateColumnName) == hitColumnNames.end() &&
-          std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), predicateColumnName) ==
-          missedCachingColumnNames.end()) {
-        cachingResultNeeded = false;
-        break;
-      }
-    }
-    if (cachingResultNeeded) {
-      cachingResultNeeded = false;
-      for (auto const &projectedColumnName: projectedColumnNames_) {
-        if (std::find(hitColumnNames.begin(), hitColumnNames.end(), projectedColumnName) != hitColumnNames.end() ||
-            std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), projectedColumnName) !=
+    bool cachingResultNeeded;
+
+    // FIXME: Airmettle doesn't support intra-partiiton hybrid as it doesn't preserve order
+    if (normal::plan::s3ClientType != normal::plan::Airmettle) {
+      /**
+       * Caching result is not needed when:
+       *    hitColumns + missCachingColumns don't cover all predicateColumns or
+       *    hitColumns + missCachingColumns cover no projectedColumns
+       */
+      cachingResultNeeded = true;
+      for (auto const &predicateColumnName: predicateColumnNames_) {
+        if (std::find(hitColumnNames.begin(), hitColumnNames.end(), predicateColumnName) == hitColumnNames.end() &&
+            std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), predicateColumnName) ==
             missedCachingColumnNames.end()) {
-          cachingResultNeeded = true;
+          cachingResultNeeded = false;
           break;
         }
       }
+      if (cachingResultNeeded) {
+        cachingResultNeeded = false;
+        for (auto const &projectedColumnName: projectedColumnNames_) {
+          if (std::find(hitColumnNames.begin(), hitColumnNames.end(), projectedColumnName) != hitColumnNames.end() ||
+              std::find(missedCachingColumnNames.begin(), missedCachingColumnNames.end(), projectedColumnName) !=
+              missedCachingColumnNames.end()) {
+            cachingResultNeeded = true;
+            break;
+          }
+        }
+      }
+    } else {
+      /**
+       * Caching result is not needed when:
+       *    hitColumns + missCachingColumns don't cover all (no intra-partition hybrid)
+       */
+      cachingResultNeeded = (hitColumnNames.size() + missedCachingColumnNames.size() == columnNames_.size());
     }
+
+    // Send the hit columns to the hit operator if result needed, empty tupleSet otherwise
+    std::shared_ptr<TupleSet2> hitTupleSet;
+    if (cachingResultNeeded) {
+      hitTupleSet = TupleSet2::make(hitColumns);
+    } else {
+      hitTupleSet = TupleSet2::make2();
+    }
+    auto hitMessage = std::make_shared<TupleMessage>(hitTupleSet->toTupleSetV1(), this->name());
+    ctx()->send(hitMessage, hitOperator_.lock()->name());
 
     if (missOperatorToPushdown_.lock()) {
       // Send the missed caching column names to the miss caching operator
@@ -238,6 +253,7 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
             .map_error([](auto err) { throw std::runtime_error(err); });
   }
 
+  // FIXME: haven't updated for a long time as seldom used
   else {
     /**
      * Hit segments are useful when:
