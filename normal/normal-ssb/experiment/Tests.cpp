@@ -612,7 +612,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   i.getOperatorManager()->clearCacheMetrics();
 
-  system("./measure_usage_start.sh ~/.aws/my-key-pair.pem iplist.txt");
+  system("./scripts/measure_usage_start.sh ~/.aws/my-key-pair.pem scripts/iplist.txt");
   SPDLOG_CRITICAL("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
     SPDLOG_CRITICAL("sql {}", index - warmBatchSize);
@@ -625,7 +625,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
   SPDLOG_CRITICAL("Execution phase finished");
-  system("./measure_usage_stop.sh ~/.aws/my-key-pair.pem iplist.txt");
+  system("./scripts/measure_usage_stop.sh ~/.aws/my-key-pair.pem scripts/iplist.txt");
 
   SPDLOG_INFO("{} mode finished in dirPrefix: {}\nExecution metrics:\n{}", mode->toString(), dirPrefix, i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());

@@ -207,6 +207,7 @@ file(COPY metadata DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 #-----------------------------------------------------------------------------------------------------------------------
 
 configure_file(${CMAKE_CURRENT_LIST_DIR}/math_model.py ${CMAKE_CURRENT_BINARY_DIR}/math_model.py COPYONLY)
+file(COPY scripts DESTINATION ${CMAKE_CURRENT_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
