@@ -130,7 +130,10 @@ std::shared_ptr<CSVToArrowSIMDChunkParser> S3Select::generateSIMDParser() {
     fields.emplace_back(schema_->GetFieldByName(columnName));
   }
   // The delimiter for S3 output is always ',' so this is hardcoded
-  auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), DefaultS3ConversionBufferSize,
+  // FIXME: temporary fix of "parseChunkSize < payload size" issue on Airmettle Select
+  auto conversionBufferSize = (normal::plan::s3ClientType != normal::plan::Airmettle) ?
+                              DefaultS3ConversionBufferSize : DefaultS3ConversionBufferSizeAirmettleSelect;
+  auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), conversionBufferSize,
                                                                 std::make_shared<::arrow::Schema>(fields),
                                                                 std::make_shared<::arrow::Schema>(fields),
                                                                 ',');

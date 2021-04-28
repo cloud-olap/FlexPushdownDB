@@ -287,10 +287,10 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
   return tupleSet;
 }
 
-GetObjectResult S3Get::s3GetRequestOnly(int64_t startOffset, int64_t endOffset) {
+GetObjectResult S3Get::s3GetRequestOnly(const std::string &s3Object, int64_t startOffset, int64_t endOffset) {
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
-  getObjectRequest.SetKey(Aws::String(s3Object_));
+  getObjectRequest.SetKey(Aws::String(s3Object));
   if (normal::plan::s3ClientType != normal::plan::Airmettle) {
     std::stringstream ss;
     ss << "bytes=" << startOffset << '-' << endOffset;
@@ -330,8 +330,8 @@ GetObjectResult S3Get::s3GetRequestOnly(int64_t startOffset, int64_t endOffset) 
 }
 
 #ifdef __AVX2__
-void S3Get::s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset) {
-  GetObjectResult getObjectResult = s3GetRequestOnly(startOffset, endOffset);
+void S3Get::s3GetIndividualReq(int reqNum, const std::string &s3Object, int64_t startOffset, int64_t endOffset) {
+  GetObjectResult getObjectResult = s3GetRequestOnly(s3Object, startOffset, endOffset);
   if (parallelTuplesetCreationSupported()) {
     // Generate parser, and process initial input store partial in a separate vector that we will
     // pass in at the end once all threads are joined.
@@ -385,27 +385,54 @@ void S3Get::s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffse
   }
 }
 
-std::shared_ptr<TupleSet2> S3Get::s3GetParallelReqs() {
+std::shared_ptr<TupleSet2> S3Get::s3GetParallelReqs(bool tempFixForAirmettleCSV150MB) {
   int totalReqs = 0;
   uint64_t currentStartOffset = 0;
 
   // Spawn all of the requests
   std::vector<std::thread> threadVector = std::vector<std::thread>();
-  while (currentStartOffset < finishOffset_) {
-    totalReqs += 1;
-    uint64_t reqEndOffset = currentStartOffset + DefaultS3RangeSize;
-    if (reqEndOffset > finishOffset_) {
-      reqEndOffset = finishOffset_;
+
+  // FIXME: a temporary hardcoded fix for Airmettle's unsupported range scan
+  if (tempFixForAirmettleCSV150MB) {
+    auto s3ObjectSplitPos = s3Object_.find_last_of('.');
+    int s3ObjectIndex = std::stoi(s3Object_.substr(s3ObjectSplitPos + 1, s3Object_.size() - s3ObjectSplitPos - 1));
+    for (int i = 0; i < 10; ++i) {
+      totalReqs += 1;
+      int s3SubObjectIndex = s3ObjectIndex * 10 + i;
+      auto s3SubObject = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl." + std::to_string(s3SubObjectIndex);
+//      SPDLOG_CRITICAL("SubObject: {}", s3SubObject);
+      threadVector.emplace_back(std::thread([&, totalReqs, s3SubObject]() {
+          // Airmettle has no range scan, so set to 0
+          s3GetIndividualReq(totalReqs, s3SubObject, 0, 0);
+      }));
     }
-    // If there is only a little bit of data left to scan just combine it in this request rather than
-    // starting a new request.
-    if ((double) (finishOffset_ - reqEndOffset) < (double) (DefaultS3RangeSize * 0.30)) {
-      reqEndOffset = finishOffset_;
+    if (s3ObjectIndex == 399) {
+      auto s3SubObject = "ssb-sf100-sortlineorder/csv/lineorder_sharded/lineorder.tbl.4000";
+//      SPDLOG_CRITICAL("SubObject: {}", s3SubObject);
+      threadVector.emplace_back(std::thread([&, totalReqs, s3SubObject]() {
+          // Airmettle has no range scan, so set to 0
+          s3GetIndividualReq(totalReqs, s3SubObject, 0, 0);
+      }));
     }
-    threadVector.emplace_back(std::thread([&, totalReqs, currentStartOffset, reqEndOffset]() {
-      s3GetIndividualReq(totalReqs, currentStartOffset, reqEndOffset);
-    }));
-    currentStartOffset = reqEndOffset + 1;
+  }
+
+  else {
+    while (currentStartOffset < finishOffset_) {
+      totalReqs += 1;
+      uint64_t reqEndOffset = currentStartOffset + DefaultS3RangeSize;
+      if (reqEndOffset > finishOffset_) {
+        reqEndOffset = finishOffset_;
+      }
+      // If there is only a little bit of data left to scan just combine it in this request rather than
+      // starting a new request.
+      if ((double) (finishOffset_ - reqEndOffset) < (double) (DefaultS3RangeSize * 0.30)) {
+        reqEndOffset = finishOffset_;
+      }
+      threadVector.emplace_back(std::thread([&, totalReqs, currentStartOffset, reqEndOffset]() {
+        s3GetIndividualReq(totalReqs, s3Object_, currentStartOffset, reqEndOffset);
+      }));
+      currentStartOffset = reqEndOffset + 1;
+    }
   }
 
   // Wait for all requests to finish
@@ -472,8 +499,14 @@ std::shared_ptr<TupleSet2> S3Get::readTuples() {
 #ifdef __AVX2__
     if (normal::plan::s3ClientType == normal::plan::S3 && parallelTuplesetCreationSupported()
         && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
-      readTupleSet = s3GetParallelReqs();
-    } else {
+      readTupleSet = s3GetParallelReqs(false);
+    } else if (normal::plan::s3ClientType == normal::plan::Airmettle && parallelTuplesetCreationSupported() &&
+              normal::connector::defaultMiniCatalogue->getSchemaName() == "ssb-sf100-sortlineorder/csv_150MB_initial_format/" &&
+              s3Object_.find("lineorder.tbl.") != std::string::npos) {
+//      SPDLOG_CRITICAL("HACK! {}", s3Object_);
+      readTupleSet = s3GetParallelReqs(true);
+    }
+    else {
       readTupleSet = s3GetFullRequest();
     }
 #else

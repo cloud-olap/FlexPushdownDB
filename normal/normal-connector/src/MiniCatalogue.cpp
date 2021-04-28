@@ -49,6 +49,7 @@ char getCsvFileDelimiterForSchema(const std::string& schemaName) {
 }
 
 normal::connector::MiniCatalogue::MiniCatalogue(
+        std::string schemaName,
         std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
         std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas,
         std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
@@ -62,6 +63,7 @@ normal::connector::MiniCatalogue::MiniCatalogue(
         std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
                 std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns,
         char csvFileDelimiter) :
+        schemaName_(std::move(schemaName)),
         partitionNums_(std::move(partitionNums)),
         schemas_(std::move(schemas)),
         columnLengthMap_(std::move(columnLengthMap)),
@@ -228,7 +230,7 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
                           cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>();
 
   char csvFileDelimiter = getCsvFileDelimiterForSchema(schemaName);
-  return std::make_shared<MiniCatalogue>(partitionNums, schemas, columnLengthMap, segmentKeyToSize, queryNumToInvolvedSegments, segmentKeysToInvolvedQueryNums, defaultJoinOrder, sortedColumns, csvFileDelimiter);
+  return std::make_shared<MiniCatalogue>(schemaName, partitionNums, schemas, columnLengthMap, segmentKeyToSize, queryNumToInvolvedSegments, segmentKeysToInvolvedQueryNums, defaultJoinOrder, sortedColumns, csvFileDelimiter);
 }
 
 const std::shared_ptr<std::unordered_map<std::string, int>> &normal::connector::MiniCatalogue::partitionNums() const {
@@ -366,6 +368,10 @@ std::shared_ptr<arrow::Schema> normal::connector::MiniCatalogue::getSchema(const
 
 char normal::connector::MiniCatalogue::getCSVFileDelimiter() {
   return csvFileDelimiter_;
+}
+
+const std::string &normal::connector::MiniCatalogue::getSchemaName() const {
+  return schemaName_;
 }
 
 std::string normal::connector::getFileExtensionByDirPrefix(std::string dir_prefix) {

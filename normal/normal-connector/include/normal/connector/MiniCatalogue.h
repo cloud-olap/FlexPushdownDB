@@ -22,7 +22,8 @@ namespace normal::connector {
 class MiniCatalogue {
 
 public:
-  MiniCatalogue(std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
+  MiniCatalogue(std::string schemaName,
+                std::shared_ptr<std::unordered_map<std::string, int>>  partitionNums,
                 std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas,
                 std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
                 std::shared_ptr<std::unordered_map<std::shared_ptr<cache::SegmentKey>, size_t,
@@ -60,10 +61,11 @@ public:
   int getCurrentQueryNum() const;
 
   std::shared_ptr<arrow::Schema> getSchema(const std::string &tableName);
-
+  const std::string &getSchemaName() const;
   char getCSVFileDelimiter();
 
 private:
+  std::string schemaName_;
   std::shared_ptr<std::unordered_map<std::string, int>> partitionNums_;
   std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas_;
   std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap_;

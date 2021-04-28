@@ -53,7 +53,7 @@ class S3Get : public S3SelectScan {
     std::shared_ptr<TupleSet2> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
     std::shared_ptr<TupleSet2> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
     std::shared_ptr<TupleSet2> s3GetFullRequest();
-    Aws::S3::Model::GetObjectResult s3GetRequestOnly(int64_t startOffset, int64_t endOffset);
+    Aws::S3::Model::GetObjectResult s3GetRequestOnly(const std::string &s3Object, int64_t startOffset, int64_t endOffset);
 
     // Whether we can process different portions of the response in parallel
     // For now we only support this for uncompressed CSV, but eventually we work
@@ -62,8 +62,8 @@ class S3Get : public S3SelectScan {
     bool parallelTuplesetCreationSupported();
 
 #ifdef __AVX2__
-    void s3GetIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset);
-    std::shared_ptr<TupleSet2> s3GetParallelReqs();
+    void s3GetIndividualReq(int reqNum, const std::string &s3Object, int64_t startOffset, int64_t endOffset);
+    std::shared_ptr<TupleSet2> s3GetParallelReqs(bool tempFixForAirmettleCSV150MB);
 #endif
 
     // Used for collecting all results for split requests that are run in parallel, and for having a
