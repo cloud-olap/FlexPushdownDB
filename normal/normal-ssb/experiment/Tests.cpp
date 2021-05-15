@@ -209,14 +209,14 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
 //  std::string keyName = "data.csv";
 //  std::string sql = "SELECT col2, col5, col9, col13, col29, col61, col91 FROM s3object WHERE cast(col1 as int) = 0;";
   std::string bucketName = "pushdowndb";
-  std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv_150MB_initial_format/lineorder_sharded/lineorder.tbl.{}", 121 + index);
+  std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv_150MB/lineorder_sharded/lineorder.tbl.{}", index);
+//  std::string keyName = fmt::format("ssb-sf100-sortlineorder/parquet_150MB/lineorder_sharded/lineorder.parquet.{}", index);
 //  std::string keyName = fmt::format("ssb-sf100-sortlineorder/parquet_150MB/lineorder_sharded/lineorder.parquet.{}", index);
 //  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object";
 //  std::string sql = "select lo_revenue, lo_supplycost, lo_orderdate, lo_suppkey, lo_custkey from s3Object "
 //                    "where cast(lo_quantity as int) <= 10";
 //  std::string sql = "select lo_discount from s3Object";
-//  std::string sql = "select lo_custkey, lo_orderdate, lo_partkey, lo_quantity, lo_revenue, lo_suppkey, lo_supplycost from s3Object";
-  std::string sql = "select lo_orderdate, lo_partkey, lo_revenue, lo_suppkey from s3Object where (cast(lo_discount as int) >= 2 and cast(lo_discount as int) <= 4)";
+  std::string sql = "select lo_custkey, lo_orderdate, lo_partkey, lo_revenue, lo_suppkey, lo_supplycost from s3Object where (cast(lo_quantity as int) >= 20 and cast(lo_quantity as int) <= 30)";
 
   selectObjectContentRequest.SetBucket(Aws::String(bucketName));
   selectObjectContentRequest.SetKey(Aws::String(keyName));
@@ -230,11 +230,11 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
   Aws::S3::Model::CSVInput csvInput;
   csvInput.SetFileHeaderInfo(Aws::S3::Model::FileHeaderInfo::USE);
   // This is the standard field delimiter and record delimiter for S3 Select, so it is hardcoded here
-  csvInput.SetFieldDelimiter(",");
+  csvInput.SetFieldDelimiter("|");
   csvInput.SetRecordDelimiter("\n");
   inputSerialization.SetCSV(csvInput);
 
-  // Parquet input
+//  // Parquet input
 //  Aws::S3::Model::ParquetInput parquetInput;
 //  inputSerialization.SetParquet(parquetInput);
 
@@ -247,10 +247,12 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
 
   auto schema = SSBSchema::lineOrder();
   auto fields = {
+          schema->GetFieldByName("lo_custkey"),
           schema->GetFieldByName("lo_orderdate"),
           schema->GetFieldByName("lo_partkey"),
           schema->GetFieldByName("lo_revenue"),
-          schema->GetFieldByName("lo_suppkey")
+          schema->GetFieldByName("lo_suppkey"),
+          schema->GetFieldByName("lo_supplycost")
   };
   auto inputSchema = std::make_shared<::arrow::Schema>(fields);
   auto outputSchema = std::make_shared<::arrow::Schema>(fields);
@@ -319,7 +321,7 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
     if (selectObjectContentOutcome.IsSuccess()) {
 #ifdef __AVX2__
       auto tupleSet = parser->outputCompletedTupleSet();
-      SPDLOG_INFO("Query: {}, Output rows: {}, bytes received: {}", 121 + index, tupleSet->numRows(), bytesReceived);
+      SPDLOG_INFO("Query: {}, Output rows: {}, bytes received: {}", index, tupleSet->numRows(), bytesReceived);
 #endif
       selectBytesReceivedLock.lock();
       selectReceivedBytes += bytesReceived;
@@ -336,7 +338,7 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
   }
 
   if (!hasEndEvent) {
-    SPDLOG_CRITICAL("No end event on query {}!", 121 + index);
+    SPDLOG_CRITICAL("No end event on query {}!", index);
   }
 
 //  outFile.close();
@@ -460,7 +462,7 @@ void normal::ssb::concurrentSelectTest(int numRequests) {
   std::shared_ptr<Aws::S3::S3Client> client1 = normal::pushdown::AWSClient::defaultS3Client();
   size_t totalTimeNS = 0;
   size_t totalBytesReturned = 0;
-  int numTrials = 1;
+  int numTrials = 3;
   for (int i = 0; i < numTrials; i++) {
     selectReceivedBytes = 0;
 //    spdlog::set_level(spdlog::level::off);

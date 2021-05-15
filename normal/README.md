@@ -4,11 +4,13 @@ A cloud DBMS of hybrid caching and computation pushdown
 
 ### Dependencies
 
-Needed libraries: zlib, openssl, flex, bison, binutil, ltdl
+Needed libraries:
+
+	./tools/project/bin/ubuntu-prerequisites.sh
 
 ### Compiling
 
-Needed compiler: LLVM-7
+Needed compiler: LLVM-7 or later versions
 
 To build the exeutable for query execution:
 

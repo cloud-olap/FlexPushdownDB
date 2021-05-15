@@ -93,59 +93,59 @@ void S3SelectScanPut(std::shared_ptr<TupleSet2> tupleSet, std::vector<std::strin
 
 // Return the number of bytes processed as the S3Select parsing method gets this value from the AWS response
 size_t runS3Scan(const std::shared_ptr<std::stringstream> csvStream, std::vector<std::string> columnNames, std::shared_ptr<arrow::Schema> schema){
-  std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-  // Code copied from from s3Scan() in S3SelectScan.cpp
-  S3CSVParser s3CSVParser({}, {});
-  auto readSize = DefaultS3ScanBufferSize - 1;
-  char buffer[DefaultS3ScanBufferSize];
-  auto parser = S3CSVParser::make(columnNames, schema);
-
-  auto columns = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames.size());
-
-  size_t processedBytes = 0;
-  while (!csvStream->eof()) {
-    memset(buffer, 0, DefaultS3ScanBufferSize);
-
-    csvStream->read(buffer, readSize);
-    processedBytes += strlen(buffer);
-    Aws::Vector<unsigned char> charAwsVec(buffer, buffer + readSize);
-
-    std::shared_ptr<TupleSet> tupleSetV1 = parser->parsePayload(charAwsVec);
-    auto tupleSet = TupleSet2::create(tupleSetV1);
-//    SPDLOG_DEBUG("Output: {}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-//    SPDLOG_DEBUG("Output: {}", tupleSet->toString());
-    S3SelectScanPut(tupleSet, columnNames, columns);
-  }
-  std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
-  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
-  auto convertedMB = processedBytes/1024.0/1024.0;
-  auto conversionRate = convertedMB / (conversionTime / 1.0e9);
-  SPDLOG_DEBUG("S3 Scan converted MB: {}", convertedMB);
-  SPDLOG_DEBUG("S3 Scan converted MB/s for one core: {}", conversionRate);
-  return processedBytes;
+//  std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+//  // Code copied from from s3Scan() in S3SelectScan.cpp
+//  S3CSVParser s3CSVParser({}, {});
+//  auto readSize = DefaultS3ScanBufferSize - 1;
+//  char buffer[DefaultS3ScanBufferSize];
+//  auto parser = S3CSVParser::make(columnNames, schema);
+//
+//  auto columns = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames.size());
+//
+//  size_t processedBytes = 0;
+//  while (!csvStream->eof()) {
+//    memset(buffer, 0, DefaultS3ScanBufferSize);
+//
+//    csvStream->read(buffer, readSize);
+//    processedBytes += strlen(buffer);
+//    Aws::Vector<unsigned char> charAwsVec(buffer, buffer + readSize);
+//
+//    std::shared_ptr<TupleSet> tupleSetV1 = parser->parsePayload(charAwsVec);
+//    auto tupleSet = TupleSet2::create(tupleSetV1);
+////    SPDLOG_DEBUG("Output: {}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
+////    SPDLOG_DEBUG("Output: {}", tupleSet->toString());
+//    S3SelectScanPut(tupleSet, columnNames, columns);
+//  }
+//  std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+//  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+//  auto convertedMB = processedBytes/1024.0/1024.0;
+//  auto conversionRate = convertedMB / (conversionTime / 1.0e9);
+//  SPDLOG_DEBUG("S3 Scan converted MB: {}", convertedMB);
+//  SPDLOG_DEBUG("S3 Scan converted MB/s for one core: {}", conversionRate);
+//  return processedBytes;
 }
 
 void runS3SelectScan(Aws::Vector<unsigned char> inputData, std::vector<std::string> columnNames, std::shared_ptr<arrow::Schema> schema, size_t bytesProcessed) {
-  std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-  // Code copied from from generateParser() in S3SelectScan.cpp
-  // Including this in runtime as this must be done for parsing the data, even though it is done before the
-  // data is converted
-  S3CSVParser s3CSVParser({}, {});
-  auto parser = S3CSVParser::make(columnNames, schema);
-
-  auto columns = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames.size());
-
-  std::shared_ptr<TupleSet> tupleSetV1 = parser->parsePayload(inputData);
-	auto tupleSet = TupleSet2::create(tupleSetV1);
-	S3SelectScanPut(tupleSet, columnNames, columns);
-
-  std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
-  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
-
-  auto convertedMB = bytesProcessed/1024.0/1024.0;
-  auto conversionRate = convertedMB / (conversionTime / 1.0e9);
-  SPDLOG_DEBUG("S3 Select Scan converted MB: {}", convertedMB);
-  SPDLOG_DEBUG("S3 Select Scan converted MB/s for one core: {}", conversionRate);
+//  std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+//  // Code copied from from generateParser() in S3SelectScan.cpp
+//  // Including this in runtime as this must be done for parsing the data, even though it is done before the
+//  // data is converted
+//  S3CSVParser s3CSVParser({}, {});
+//  auto parser = S3CSVParser::make(columnNames, schema);
+//
+//  auto columns = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(columnNames.size());
+//
+//  std::shared_ptr<TupleSet> tupleSetV1 = parser->parsePayload(inputData);
+//	auto tupleSet = TupleSet2::create(tupleSetV1);
+//	S3SelectScanPut(tupleSet, columnNames, columns);
+//
+//  std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+//  auto conversionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
+//
+//  auto convertedMB = bytesProcessed/1024.0/1024.0;
+//  auto conversionRate = convertedMB / (conversionTime / 1.0e9);
+//  SPDLOG_DEBUG("S3 Select Scan converted MB: {}", convertedMB);
+//  SPDLOG_DEBUG("S3 Select Scan converted MB/s for one core: {}", conversionRate);
 }
 
 TEST_SUITE ("parser-benchmark" * doctest::skip(SKIP_SUITE)) {

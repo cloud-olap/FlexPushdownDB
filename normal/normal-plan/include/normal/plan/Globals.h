@@ -22,7 +22,7 @@ enum S3ClientType {
 
 inline constexpr int NumRanges = 1;
 inline constexpr int JoinParallelDegree = 48;
-inline S3ClientType s3ClientType = Airmettle;
+inline S3ClientType s3ClientType = S3;
 inline std::shared_ptr<Aws::S3::S3Client> DefaultS3Client;
 }
 

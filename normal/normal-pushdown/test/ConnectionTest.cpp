@@ -15,7 +15,7 @@ using namespace normal::pushdown;
 void listObjects(std::shared_ptr<Aws::S3::S3Client>& s3Client) {
   Aws::S3::Model::ListObjectsRequest listObjectsRequest;
   listObjectsRequest.WithBucket("pushdowndb");
-  listObjectsRequest.WithPrefix("ssb-sf100-sortlineorder/csv_150MB_initial_format/");
+  listObjectsRequest.WithPrefix("ssb-sf100-sortlineorder/parquet_150MB/");
 
   bool done = false;
   std::vector<std::string> objectNames;
@@ -58,7 +58,7 @@ TEST_CASE ("connection-minio" * doctest::skip(false || SKIP_SUITE)) {
   listObjects(s3Client);
 }
 
-TEST_CASE ("connection-airmettle" * doctest::skip(false)) {
+TEST_CASE ("connection-airmettle" * doctest::skip(false || SKIP_SUITE)) {
   normal::plan::s3ClientType = normal::plan::Airmettle;
   auto s3Client = AWSClient::defaultS3Client();
   listObjects(s3Client);

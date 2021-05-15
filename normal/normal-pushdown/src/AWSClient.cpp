@@ -72,7 +72,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
     }
     case normal::plan::Airmettle: {
       SPDLOG_INFO("Using Airmettle Client");
-      config.endpointOverride = "18.144.114.205/s3/test";
+      config.endpointOverride = "54.151.121.20/s3/test";
       Aws::String accessKeyId = "test-test";
       Aws::String secretKey = "test";
       Aws::Auth::AWSCredentials airmettleCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
