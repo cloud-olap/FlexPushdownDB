@@ -3,7 +3,7 @@
 set -e
 
 # shellcheck disable=SC1090
-source "${PROJECT_TOOLS_DIR}/etc/env.sh"
+#source "${PROJECT_TOOLS_DIR}/etc/env.sh"
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if [ -f /etc/debian_version ]; then
@@ -36,3 +36,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 
   fi
 fi
+
+# add zlib-ng
+cd ~
+git clone https://github.com/zlib-ng/zlib-ng.git
+cd zlib-ng
+cmake .
+cmake --build . --config Release -j 8
+sudo cmake --build . --target install
