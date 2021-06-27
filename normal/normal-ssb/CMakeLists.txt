@@ -1,8 +1,11 @@
 project(normal-ssb VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
-# need to link libraries on mac
+# need to add and link libraries on mac
 LINK_DIRECTORIES(/usr/local/opt/llvm@11/lib)
 LINK_DIRECTORIES(/usr/local/opt/binutils/lib)
+LINK_DIRECTORIES(/usr/local/opt/libdeflate/lib)
+LINK_DIRECTORIES(/usr/local/lib)
+INCLUDE_DIRECTORIES(/usr/local/include)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SSB common classes

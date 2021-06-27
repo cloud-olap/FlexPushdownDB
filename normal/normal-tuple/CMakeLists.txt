@@ -1,5 +1,7 @@
 project(normal-tuple VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
+# need to add libraries on mac
+INCLUDE_DIRECTORIES(/usr/local/include)
 
 #-------------------------------------------------------------------------------------------------------------
 # Target

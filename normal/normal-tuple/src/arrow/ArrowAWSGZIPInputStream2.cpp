@@ -10,6 +10,7 @@
 #include "arrow/util/future.h"
 
 #include <chrono>
+#include <fstream>
 
 ArrowAWSGZIPInputStream2::ArrowAWSGZIPInputStream2(std::basic_iostream<char, std::char_traits<char>> &file):
   underlyingFile_(file) {

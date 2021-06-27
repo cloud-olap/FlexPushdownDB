@@ -1,8 +1,9 @@
 project("normal-pushdown" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
-# need to link libraries on mac
+# need to add and link libraries on mac
 LINK_DIRECTORIES(/usr/local/opt/llvm@11/lib)
 LINK_DIRECTORIES(/usr/local/opt/binutils/lib)
+INCLUDE_DIRECTORIES(/usr/local/include)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Target
