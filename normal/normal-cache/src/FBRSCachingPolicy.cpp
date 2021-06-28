@@ -157,22 +157,6 @@ FBRSCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<Segment
         return segmentKeys;
     }
 
-//    // estimate whether to cache
-//    for (auto const &key: *segmentKeys) {
-//        std::shared_ptr<SegmentKey> realKey;
-//        auto keyEntry = keySet_.find(key);
-//        // keys have been added to keySet_ in onLoad() before
-//        if (keyEntry != keySet_.end()) {
-//            realKey = *keyEntry;
-//        } else {
-//            throw std::runtime_error("onToCache: Key should exist in keySet_");
-//        }
-//
-//        if (lessValue(keysInCache_.front(), realKey)) {
-//            keysToCache->emplace_back(realKey);
-//        }
-//    }
-
     // estimate whether to cache
     for (auto const &candKey: *segmentKeys) {
         std::shared_ptr<SegmentKey> realKey;

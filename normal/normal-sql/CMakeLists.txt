@@ -14,7 +14,7 @@ add_library(normal-sql STATIC
         gen-src/normal/sql/NormalSQLVisitor.cpp gen-src/normal/sql/NormalSQLVisitor.h
         include/normal/sql/Globals.h
         src/Interpreter.cpp include/normal/sql/Interpreter.h
-        src/visitor/Visitor.cpp src/visitor/Visitor.h)
+        src/visitor/Visitor.cpp include/normal/sql/visitor/Visitor.h)
 
 target_include_directories(normal-sql PUBLIC include)
 target_include_directories(normal-sql PUBLIC gen-src)

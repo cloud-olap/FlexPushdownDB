@@ -9,8 +9,8 @@
 
 #include "FileReader.h"
 #include "FileType.h"
-#include "CSVReader.h"
-#include "ParquetReader.h"
+#include "normal/tuple/csv/CSVReader.h"
+#include "normal/tuple/parquet/ParquetReader.h"
 
 namespace normal::tuple {
 

@@ -23,13 +23,10 @@ public:
 
   explicit ScalarHelperImpl(std::shared_ptr<ARROW_SCALAR_TYPE> Value) : value_(Value->value) {}
 
-//  explicit ScalarHelperImpl(ARROW_SCALAR_TYPE scalar) : ScalarHelper(), value_(scalar.) {}
-//  explicit ScalarHelper(C_TYPE value) : value_(value) {}
-//
   std::shared_ptr<arrow::Scalar> asScalar() override {
     return arrow::MakeScalar(value_);
   }
-//
+
   ScalarHelper &operator+=(const std::shared_ptr<ScalarHelper> &rhs) override {
     auto typedRHS = std::static_pointer_cast<ScalarHelperImpl<ARROW_TYPE, C_TYPE>>(rhs);
     this->value_ += typedRHS->value_;

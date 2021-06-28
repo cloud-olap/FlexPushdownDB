@@ -36,12 +36,12 @@ add_library(normal-tuple STATIC
         src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
         src/TupleSetIndexFinderWrapper.cpp include/normal/tuple/TupleSetIndexFinderWrapper.h
         src/Converter.cpp include/normal/tuple/Converter.h
-        src/ParquetReader.cpp include/normal/tuple/ParquetReader.h
+        src/parquet/ParquetReader.cpp include/normal/tuple/parquet/ParquetReader.h
         src/Util.cpp include/normal/tuple/Util.h
         src/FileReader.cpp include/normal/tuple/FileReader.h
         src/FileType.cpp include/normal/tuple/FileType.h
         src/FileReaderBuilder.cpp include/normal/tuple/FileReaderBuilder.h
-        src/CSVReader.cpp include/normal/tuple/CSVReader.h
+        src/csv/CSVReader.cpp include/normal/tuple/csv/CSVReader.h
         src/ArrayAppenderWrapper.cpp include/normal/tuple/ArrayAppenderWrapper.h
         src/arrow/ArrowAWSInputStream.cpp include/normal/tuple/arrow/ArrowAWSInputStream.h
         src/arrow/ArrowAWSGZIPInputStream.cpp include/normal/tuple/arrow/ArrowAWSGZIPInputStream.h

@@ -13,7 +13,6 @@
 
 namespace normal::core {
 
-std::mutex mutex_;
 std::condition_variable condVar;
 
 void LocalOperatorDirectory::insert(const LocalOperatorDirectoryEntry& entry) {
@@ -54,14 +53,6 @@ void LocalOperatorDirectory::setComplete(const std::string& name) {
   }
 }
 
-//bool LocalOperatorDirectory::allComplete() {
-//  for(const auto& entry : entries_){
-//    if(!entry.second.complete())
-//      return false;
-//  }
-//  return true;
-//}
-
 std::string LocalOperatorDirectory::showString() const {
   std::stringstream ss;
   for(const auto& entry : entries_){
@@ -79,12 +70,6 @@ void LocalOperatorDirectory::setIncomplete() {
 }
 
 bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operatorRelationshipType) {
-//  SPDLOG_DEBUG("Local operator directory:\n{}", showString());
-//  for(const auto& entry : entries_){
-//    if(entry.second.relationshipType() == operatorRelationshipType && !entry.second.complete())
-//      return false;
-//  }
-//  return true;
   switch (operatorRelationshipType) {
   case OperatorRelationshipType::Producer: return numProducersComplete >= numProducers;
   case OperatorRelationshipType::Consumer: return numConsumersComplete >= numConsumers;
@@ -120,28 +105,6 @@ std::vector<LocalOperatorDirectoryEntry> LocalOperatorDirectory::get(const Opera
     }
   }
   return matchingEntries;
-}
-
-void LocalOperatorDirectory::clearUsingEmpty() {
-  std::unordered_map <std::string, LocalOperatorDirectoryEntry> emptyMap;
-  entries_.swap(emptyMap);
-  condVar.notify_one();
-}
-
-void LocalOperatorDirectory::clearForSegmentCache() {
-  for (auto it = entries_.begin(); it != entries_.end();) {
-    if (!(it->first == "SegmentCache" || it->first == "root")) {
-      entries_.erase(it++);
-    } else {
-      it++;
-    }
-  }
-//  if (entries_.size() > 100) {
-//    std::thread t(&LocalOperatorDirectory::clearUsingEmpty, this);
-//    std::unique_lock<std::mutex> lck(mutex_);
-//    condVar.wait(lck);
-//    t.join();
-//  }
 }
 
 }

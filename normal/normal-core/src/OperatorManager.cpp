@@ -33,7 +33,6 @@ void OperatorManager::stop() {
 }
 
 OperatorManager::OperatorManager() : queryCounter_(0), running_(false){
-//  actorSystemConfig.load<caf::io::middleman>();
   actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
   rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
 }
@@ -42,7 +41,6 @@ OperatorManager::OperatorManager(std::shared_ptr<CachingPolicy>  cachingPolicy) 
   cachingPolicy_(std::move(cachingPolicy)),
   queryCounter_(0),
   running_(false){
-//  actorSystemConfig.load<caf::io::middleman>();
   actorSystem = std::make_unique<caf::actor_system>(actorSystemConfig);
   rootActor_ = std::make_shared<caf::scoped_actor>(*actorSystem);
 }

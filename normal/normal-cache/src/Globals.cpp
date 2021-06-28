@@ -5,7 +5,4 @@
 #include "normal/cache/Globals.h"
 
 namespace normal::cache {
-
-  std::mutex replacementGlobalLock;
-
 }

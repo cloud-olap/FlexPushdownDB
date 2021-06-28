@@ -33,7 +33,6 @@ public:
   void onNewQuery() override;
 
 private:
-//  std::vector<std::shared_ptr<SegmentKey>> keysInCache_;
   std::unordered_map<int, std::list<std::shared_ptr<SegmentKey>>> freqMap_;
   std::unordered_map<std::shared_ptr<SegmentKey>, std::list<std::shared_ptr<SegmentKey>>::iterator, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keyMap_;
   int minFreq_;

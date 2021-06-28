@@ -2,7 +2,6 @@
 // Created by matt on 15/4/20.
 //
 
-#include <optional>
 #include "normal/connector/partition/Partition.h"
 
 const long &Partition::getNumBytes() const {

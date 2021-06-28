@@ -10,14 +10,14 @@ add_library(normal-core STATIC
         src/message/Envelope.cpp include/normal/core/message/Envelope.h
         include/normal/core/Globals.h
         src/message/CompleteMessage.cpp include/normal/core/message/CompleteMessage.h
-        src/Normal.cpp include/normal/core/Normal.h
+        src/ATTIC/Normal.cpp include/normal/core/ATTIC/Normal.h
         src/OperatorActor.cpp include/normal/core/OperatorActor.h
         src/Operator.cpp include/normal/core/Operator.h
         src/OperatorContext.cpp include/normal/core/OperatorContext.h
         src/OperatorManager.cpp include/normal/core/OperatorManager.h
         src/message/Message.cpp include/normal/core/message/Message.h
         src/ATTIC/Cache.cpp include/normal/core/ATTIC/Cache.h
-        src/Actors.cpp include/normal/core/Actors.h
+        src/ATTIC/Actors.cpp include/normal/core/ATTIC/Actors.h
         src/OperatorDirectory.cpp include/normal/core/OperatorDirectory.h
         src/OperatorDirectoryEntry.cpp include/normal/core/OperatorDirectoryEntry.h
         src/OperatorRelationshipType.cpp include/normal/core/OperatorRelationshipType.h
@@ -38,7 +38,7 @@ add_library(normal-core STATIC
         include/normal/core/Forward.h
         src/OperatorActor2.cpp include/normal/core/OperatorActor2.h
         src/OperatorConnection.cpp include/normal/core/OperatorConnection.h
-        include/normal/core/message/ConnectMessage.cpp include/normal/core/message/ConnectMessage.h
+        src/message/ConnectMessage.cpp include/normal/core/message/ConnectMessage.h
         src/cache/CacheMetricsMessage.cpp include/normal/core/cache/CacheMetricsMessage.h)
 
 

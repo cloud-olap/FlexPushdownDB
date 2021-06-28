@@ -11,7 +11,7 @@
 #include <utility>
 #include <graphviz/gvc.h>
 
-#include <normal/core/Actors.h>
+#include <normal/core/ATTIC/Actors.h>
 #include <normal/core/OperatorDirectoryEntry.h>
 #include <normal/core/Globals.h>
 #include <normal/pushdown/file/FileScan2.h>
@@ -53,30 +53,29 @@ void graph::OperatorGraph::start() {
   // Mark all the operators as incomplete
   operatorDirectory_.setIncomplete();
 
-
-//   Connect the actors
+  // Connect the actors
   for (const auto &element: operatorDirectory_) {
-	auto entry = element.second;
+    auto entry = element.second;
 
-	std::vector<OperatorConnection> operatorConnections;
-	for (const auto &producer: element.second.getDef()->producers()) {
-	  auto producerHandle = operatorDirectory_.get(producer.first).value().getActorHandle();
-	  operatorConnections.emplace_back(producer.first, producerHandle, OperatorRelationshipType::Producer);
-	}
-	for (const auto &consumer: element.second.getDef()->consumers()) {
-	  auto consumerHandle = operatorDirectory_.get(consumer.first).value().getActorHandle();
-	  operatorConnections.emplace_back(consumer.first, consumerHandle, OperatorRelationshipType::Consumer);
-	}
+    std::vector<OperatorConnection> operatorConnections;
+    for (const auto &producer: element.second.getDef()->producers()) {
+      auto producerHandle = operatorDirectory_.get(producer.first).value().getActorHandle();
+      operatorConnections.emplace_back(producer.first, producerHandle, OperatorRelationshipType::Producer);
+    }
+    for (const auto &consumer: element.second.getDef()->consumers()) {
+      auto consumerHandle = operatorDirectory_.get(consumer.first).value().getActorHandle();
+      operatorConnections.emplace_back(consumer.first, consumerHandle, OperatorRelationshipType::Consumer);
+    }
 
-	auto cm = std::make_shared<message::ConnectMessage>(operatorConnections, GraphRootActorName);
-	(*rootActor_)->anon_send(element.second.getActorHandle(), normal::core::message::Envelope(cm));
+    auto cm = std::make_shared<message::ConnectMessage>(operatorConnections, GraphRootActorName);
+    (*rootActor_)->anon_send(element.second.getActorHandle(), normal::core::message::Envelope(cm));
   }
 
   // Start the actors
   for (const auto &element: operatorDirectory_) {
-	auto entry = element.second;
-	auto sm = std::make_shared<message::StartMessage>(GraphRootActorName);
-	(*rootActor_)->anon_send(element.second.getActorHandle(), normal::core::message::Envelope(sm));
+    auto entry = element.second;
+    auto sm = std::make_shared<message::StartMessage>(GraphRootActorName);
+    (*rootActor_)->anon_send(element.second.getActorHandle(), normal::core::message::Envelope(sm));
   }
 }
 
@@ -91,15 +90,12 @@ void graph::OperatorGraph::join() {
   bool allComplete = false;
   (*rootActor_)->receive_while([&] { return !allComplete; })(
 	  [&](const normal::core::message::Envelope &msg) {
-		SPDLOG_DEBUG("Query root actor received message  |  query: '{}', messageKind: '{}', from: '{}'",
-					 this->getId(), msg.message().type(), msg.message().sender());
+      SPDLOG_DEBUG("Query root actor received message  |  query: '{}', messageKind: '{}', from: '{}'",
+             this->getId(), msg.message().type(), msg.message().sender());
 
-		this->operatorDirectory_.setComplete(msg.message().sender());
+      this->operatorDirectory_.setComplete(msg.message().sender());
 
-		allComplete = this->operatorDirectory_.allComplete();
-
-//        SPDLOG_DEBUG(fmt::format("Operator directory:\n{}", this->operatorDirectory_.showString()));
-//        SPDLOG_DEBUG(fmt::format("All operators complete: {}", allComplete));
+      allComplete = this->operatorDirectory_.allComplete();
 	  },
 	  handle_err);
 
@@ -137,7 +133,7 @@ void graph::OperatorGraph::boot() {
 																		  fileScanOp->isScanOnStart()
 	  );
 	  if (!actorHandle)
-		throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
+		  throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
 	  element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
 	}
 //	else if(op->getType() == "Collate"){
@@ -188,56 +184,56 @@ void graph::OperatorGraph::write_graph(const std::string &file) {
 
   // Add all the nodes
   for (const auto &op: this->operatorDirectory_) {
-	std::string nodeName = op.second.getDef()->name();
-	auto node = agnode(graph, const_cast<char *>(nodeName.c_str()), true);
+    std::string nodeName = op.second.getDef()->name();
+    auto node = agnode(graph, const_cast<char *>(nodeName.c_str()), true);
 
-	agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
+    agset(node, const_cast<char *>("shape"), const_cast<char *>("plaintext"));
 
-	std::string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
-							"<tr><td align='left'><b>" + op.second.getDef()->getType() + "</b></td></tr>"
-																					  "<tr><td align='left'>"
-		+ op.second.getDef()->name() + "</td></tr>"
-									"</table>";
-	char *htmlNodeLabel = agstrdup_html(graph, const_cast<char *>(nodeLabel.c_str()));
-	agset(node, const_cast<char *>("label"), htmlNodeLabel);
-	agstrfree(graph, htmlNodeLabel);
+    std::string nodeLabel = "<table border='1' cellborder='0' cellpadding='5'>"
+                "<tr><td align='left'><b>" + op.second.getDef()->getType() + "</b></td></tr>"
+                                              "<tr><td align='left'>"
+      + op.second.getDef()->name() + "</td></tr>"
+                    "</table>";
+    char *htmlNodeLabel = agstrdup_html(graph, const_cast<char *>(nodeLabel.c_str()));
+    agset(node, const_cast<char *>("label"), htmlNodeLabel);
+    agstrfree(graph, htmlNodeLabel);
   }
 
   // Add all the edges
   for (const auto &op: this->operatorDirectory_) {
-	auto opNode = agfindnode(graph, (char *)(op.second.getDef()->name().c_str()));
-	for (const auto &c: op.second.getDef()->consumers()) {
-	  auto consumerOpNode = agfindnode(graph, (char *)(c.second.c_str()));
-	  agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
-	}
+    auto opNode = agfindnode(graph, (char *)(op.second.getDef()->name().c_str()));
+    for (const auto &c: op.second.getDef()->consumers()) {
+      auto consumerOpNode = agfindnode(graph, (char *)(c.second.c_str()));
+      agedge(graph, opNode, consumerOpNode, const_cast<char *>(std::string("Edge").c_str()), true);
+    }
   }
 
   const std::experimental::filesystem::path &path = std::experimental::filesystem::path(file);
   if (!std::experimental::filesystem::exists(path.parent_path())) {
-	throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
+	  throw std::runtime_error("Could not open file '" + file + "' for writing. Parent directory does not exist");
   } else {
-	FILE *outFile = fopen(file.c_str(), "w");
-	if (outFile == nullptr) {
-	  throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
-	}
+    FILE *outFile = fopen(file.c_str(), "w");
+    if (outFile == nullptr) {
+      throw std::runtime_error("Could not open file '" + file + "' for writing. Errno: " + std::to_string(errno));
+    }
 
-	gvLayout(gvc, graph, "dot");
-	gvRender(gvc, graph, "svg", outFile);
+    gvLayout(gvc, graph, "dot");
+    gvRender(gvc, graph, "svg", outFile);
 
-	fclose(outFile);
+    fclose(outFile);
 
-	gvFreeLayout(gvc, graph);
-	agclose(graph);
-	gvFreeContext(gvc);
+    gvFreeLayout(gvc, graph);
+    agclose(graph);
+    gvFreeContext(gvc);
   }
 }
 
 tl::expected<long, std::string> graph::OperatorGraph::getElapsedTime() {
 
   if (startTime_.time_since_epoch().count() == 0)
-	return tl::unexpected(std::string("Execution time unavailable, query has not been started"));
+	  return tl::unexpected(std::string("Execution time unavailable, query has not been started"));
   if (stopTime_.time_since_epoch().count() == 0)
-	return tl::unexpected(std::string("Execution time unavailable, query has not been stopped"));
+	  return tl::unexpected(std::string("Execution time unavailable, query has not been stopped"));
 
   return std::chrono::duration_cast<std::chrono::nanoseconds>(stopTime_ - startTime_).count();
 }
@@ -249,12 +245,10 @@ std::shared_ptr<Operator> graph::OperatorGraph::getOperator(const std::string &n
 std::string graph::OperatorGraph::showMetrics() {
 
   std::stringstream ss;
-
   ss << std::endl;
-
   long totalProcessingTime = 0;
+
   for (auto &entry : operatorDirectory_) {
-//	auto processingTime = entry.second.getOperatorContext().lock()->operatorActor()->getProcessingTime();
 	(*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
 		[&](long processingTime) {
 		  totalProcessingTime += processingTime;
@@ -262,10 +256,6 @@ std::string graph::OperatorGraph::showMetrics() {
 		[&](const caf::error&  error){
 		  throw std::runtime_error(to_string(error));
 		});
-
-//	auto timeSpan = operatorManager_.lock()->processingTimeSpans_.find(entry.second.getActorHandle().id());
-//	auto processingTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeSpan->second.second - timeSpan->second.first).count();
-//	totalProcessingTime += processingTime;
   }
 
   auto totalExecutionTime = getElapsedTime().value();
@@ -294,35 +284,35 @@ std::string graph::OperatorGraph::showMetrics() {
   std::map<std::string, size_t> opTypeToRuntime;
 
   for (auto &entry : operatorDirectory_) {
-	auto operatorName = entry.first;
-//	auto processingTime = entry.second.getOperatorContext().lock()->operatorActor()->getProcessingTime();
-//	auto timeSpan = operatorManager_.lock()->processingTimeSpans_.find(entry.second.getActorHandle().id());
-	long processingTime;
-	(*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
-		[&](long time) {
-		   processingTime = time;
-		},
-		[&](const caf::error&  error){
-		  throw std::runtime_error(to_string(error));
-		});
-	auto op = entry.second.getDef();
-	std::string type = op->getType();
-	if (opTypeToRuntime.find(type) == opTypeToRuntime.end()) {
-	  opTypeToRuntime.emplace(type, processingTime);
-	} else {
-    opTypeToRuntime[type] = opTypeToRuntime[type] + processingTime;
-	}
-//	auto processingTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeSpan->second.second - timeSpan->second.first).count();
-	auto processingFraction = (double)processingTime / (double)totalProcessingTime;
-	std::stringstream formattedProcessingTime;
-	formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double)processingTime / 1000000000.0)
-							<< " secs)";
-	std::stringstream formattedProcessingPercentage;
-	formattedProcessingPercentage << (processingFraction * 100.0);
-//	ss << std::left << std::setw(60) << operatorName;
-//	ss << std::left << std::setw(40) << formattedProcessingTime.str();
-//	ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
-//	ss << std::endl;
+    auto operatorName = entry.first;
+
+    long processingTime;
+    (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
+      [&](long time) {
+         processingTime = time;
+      },
+      [&](const caf::error&  error){
+        throw std::runtime_error(to_string(error));
+      });
+
+    auto op = entry.second.getDef();
+    std::string type = op->getType();
+    if (opTypeToRuntime.find(type) == opTypeToRuntime.end()) {
+      opTypeToRuntime.emplace(type, processingTime);
+    } else {
+      opTypeToRuntime[type] = opTypeToRuntime[type] + processingTime;
+    }
+
+    auto processingFraction = (double)processingTime / (double)totalProcessingTime;
+    std::stringstream formattedProcessingTime;
+    formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double)processingTime / 1000000000.0)
+                << " secs)";
+    std::stringstream formattedProcessingPercentage;
+    formattedProcessingPercentage << (processingFraction * 100.0);
+    ss << std::left << std::setw(60) << operatorName;
+    ss << std::left << std::setw(40) << formattedProcessingTime.str();
+    ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
+    ss << std::endl;
   }
 
   ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
@@ -435,6 +425,7 @@ std::string graph::OperatorGraph::showMetrics() {
     formattedSelectConvertRate << "NA";
     formattedSelectTransferConvertRate << "NA";
   }
+
   // FIXME: This only works if the query is entirely pushdown (it only uses S3 Select and never GET), as the bytes
   //        transferred is grouped together for select and get requests, so they are not differentiated
   //        If we decide to eventually allow GET and Select requests to be in the same query for a mode we will need

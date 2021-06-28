@@ -14,9 +14,6 @@
 #include <spdlog/spdlog.h>
 
 namespace normal::core {
-
-
-
 }
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_GLOBALS_H

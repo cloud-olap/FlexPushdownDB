@@ -47,14 +47,9 @@ public:
   static std::shared_ptr<TupleSet> concatenate(const std::shared_ptr<TupleSet>&,const std::shared_ptr<TupleSet>&);
   int64_t numRows();
   std::shared_ptr<arrow::Scalar> visit(const std::function<std::shared_ptr<arrow::Scalar>(std::shared_ptr<arrow::Scalar>, arrow::RecordBatch &)>& fn);
-//  void addColumn(const std::string &name, int position, std::vector<std::string> data);
-
   std::string toString();
-
   [[nodiscard]] std::shared_ptr<arrow::Table> table() const;
   void table(const std::shared_ptr<arrow::Table> &table);
-
-  [[deprecated ("getValue is a hack that returns everything as a string, use value()")]] std::string getValue(const std::string &columnName, int row);
   int64_t numColumns();
 
   /**
@@ -103,39 +98,6 @@ public:
   tl::expected<std::shared_ptr<std::vector<C_TYPE>>, std::string> vector(const std::string &columnName){
 	return TableHelper::vector<ARROW_TYPE, C_TYPE>(*table_->GetColumnByName(columnName));
   }
-
-  /**
-   * Templated visitor, visits record batches from the internal arrow table and applies the given
-   * function to each batch. Returns the result of the function.
-   *
-   * FIXME: On;y returning last result
-   *
-   * @tparam T
-   * @param fn
-   * @return
-   */
-//  template <typename T>
-//  T visit2(const std::function<T(arrow::RecordBatch &)> &fn) {
-//
-//    arrow::Status arrowStatus;
-//
-//    std::shared_ptr<arrow::RecordBatch> batch;
-//    arrow::TableBatchReader reader(*table_);
-//
-//    reader.set_chunksize(tuple::DefaultChunkSize);
-//    arrowStatus = reader.ReadNext(&batch);
-//
-//    T result;
-//    while (arrowStatus.ok() && batch) {
-//      result = fn(result, *batch);
-//      arrowStatus = reader.ReadNext(&batch);
-//    }
-//
-//    return result;
-//  }
-
-//  tl::expected<std::shared_ptr<TupleSet>, std::string>
-//  evaluate(const std::shared_ptr<normal::expression::Projector> &projector);
 };
 
 }

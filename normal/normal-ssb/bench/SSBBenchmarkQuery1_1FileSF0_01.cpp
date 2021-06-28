@@ -6,7 +6,7 @@
 #include <doctest/doctest.h>
 #include <nanobench.h>
 
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/ssb/query1_1/LocalFileSystemTests.h>
 #include <normal/ssb/TestUtil.h>
 

@@ -3,7 +3,7 @@
 //
 
 #include <normal/sql/Interpreter.h>
-
+#include <normal/sql/visitor/Visitor.h>
 #include <normal/sql/NormalSQLLexer.h>
 #include <normal/sql/NormalSQLParser.h>
 #include <normal/sql/Globals.h>
@@ -11,8 +11,6 @@
 #include <normal/plan/Planner.h>
 #include <normal/plan/mode/Modes.h>
 #include <normal/cache/LRUCachingPolicy.h>
-
-#include "visitor/Visitor.h"
 
 using namespace normal::sql;
 

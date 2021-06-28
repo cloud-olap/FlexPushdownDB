@@ -2,7 +2,7 @@
 // Created by matt on 12/8/20.
 //
 
-#include "normal/tuple/ParquetReader.h"
+#include "normal/tuple/parquet/ParquetReader.h"
 
 #include <experimental/filesystem>
 

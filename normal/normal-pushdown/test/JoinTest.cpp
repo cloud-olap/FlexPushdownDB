@@ -6,7 +6,7 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/pushdown/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/file/FileScan.h>

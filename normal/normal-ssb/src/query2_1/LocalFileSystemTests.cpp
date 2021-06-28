@@ -9,7 +9,7 @@
 #include <normal/ssb/Globals.h>
 #include <normal/ssb/query2_1/LocalFileSystemQueries.h>
 #include <normal/ssb/TestUtil.h>
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/ssb/query2_1/SQL.h>
 
 using namespace normal::ssb::query2_1;

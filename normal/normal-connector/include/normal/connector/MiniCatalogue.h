@@ -5,7 +5,6 @@
 #ifndef NORMAL_MINICATALOGUE_H
 #define NORMAL_MINICATALOGUE_H
 
-
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>

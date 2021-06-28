@@ -14,7 +14,7 @@
 #include <normal/pushdown/Collate.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/AWSClient.h>
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 

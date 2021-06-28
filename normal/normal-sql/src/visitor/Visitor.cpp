@@ -2,7 +2,7 @@
 // Created by matt on 26/3/20.
 //
 
-#include "Visitor.h"
+#include <normal/sql/visitor/Visitor.h>
 
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Column.h>
@@ -101,8 +101,8 @@ std::shared_ptr<std::vector<std::string>> columnsNeededForAggregate(
     return columnNames;
   } else if (typeid(*expression) == typeid(normal::expression::gandiva::Add)){
     auto biExpr = dynamic_cast<normal::expression::gandiva::Add &>(*expression);
-    auto leftExpr = biExpr.getLeft();
-    auto rightExpr = biExpr.getRight();
+    const auto& leftExpr = biExpr.getLeft();
+    const auto& rightExpr = biExpr.getRight();
     if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
         typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
       auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
@@ -115,8 +115,8 @@ std::shared_ptr<std::vector<std::string>> columnsNeededForAggregate(
     }
   } else if (typeid(*expression) == typeid(normal::expression::gandiva::Subtract)){
     auto biExpr = dynamic_cast<normal::expression::gandiva::Subtract &>(*expression);
-    auto leftExpr = biExpr.getLeft();
-    auto rightExpr = biExpr.getRight();
+    const auto& leftExpr = biExpr.getLeft();
+    const auto& rightExpr = biExpr.getRight();
     if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
         typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
       auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
@@ -129,8 +129,8 @@ std::shared_ptr<std::vector<std::string>> columnsNeededForAggregate(
     }
   } else if (typeid(*expression) == typeid(normal::expression::gandiva::Multiply)){
     auto biExpr = dynamic_cast<normal::expression::gandiva::Multiply &>(*expression);
-    auto leftExpr = biExpr.getLeft();
-    auto rightExpr = biExpr.getRight();
+    const auto& leftExpr = biExpr.getLeft();
+    const auto& rightExpr = biExpr.getRight();
     if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
         typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
       auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
@@ -143,8 +143,8 @@ std::shared_ptr<std::vector<std::string>> columnsNeededForAggregate(
     }
   } else if (typeid(*expression) == typeid(normal::expression::gandiva::Divide)){
     auto biExpr = dynamic_cast<normal::expression::gandiva::Divide &>(*expression);
-    auto leftExpr = biExpr.getLeft();
-    auto rightExpr = biExpr.getRight();
+    const auto& leftExpr = biExpr.getLeft();
+    const auto& rightExpr = biExpr.getRight();
     if (typeid(*leftExpr) == typeid(normal::expression::gandiva::Column) &&
         typeid(*rightExpr) == typeid(normal::expression::gandiva::Column)) {
       auto leftColExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpr);
@@ -264,10 +264,10 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
       // filters with "or" in ssb always refer to the same table,
       // and only involves two predicates (A or B, not A or B or C)
       auto orExpr = dynamic_cast<normal::expression::gandiva::Or &>(*expr);
-      auto leftExpression = orExpr.getLeft();
+      const auto& leftExpression = orExpr.getLeft();
       auto biExpr = dynamic_cast<normal::expression::gandiva::BinaryExpression &>(*leftExpression);
-      auto biLeftExpression = biExpr.getLeft();
-      auto biRightExpression = biExpr.getRight();
+      const auto& biLeftExpression = biExpr.getLeft();
+      const auto& biRightExpression = biExpr.getRight();
       std::string columnName;
       if (typeid(*biLeftExpression) == typeid(normal::expression::gandiva::Column)) {
         auto colExpr = dynamic_cast<normal::expression::gandiva::Column &>(*biLeftExpression);
@@ -281,8 +281,8 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     }
     else if (typeid(*expr) == typeid(normal::expression::gandiva::EqualTo)) {
       auto eqExpr = dynamic_cast<normal::expression::gandiva::EqualTo &>(*expr);
-      auto leftExpression = eqExpr.getLeft();
-      auto rightExpression = eqExpr.getRight();
+      const auto& leftExpression = eqExpr.getLeft();
+      const auto& rightExpression = eqExpr.getRight();
       if (typeid(*leftExpression) == typeid(normal::expression::gandiva::Column) &&
           typeid(*rightExpression) == typeid(normal::expression::gandiva::Column)) {
         // join predicate: current engine only supports single column-to-column join, same here
@@ -318,8 +318,8 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     }
     else {
       auto biExpr = dynamic_cast<normal::expression::gandiva::BinaryExpression &>(*expr);
-      auto leftExpression = biExpr.getLeft();
-      auto rightExpression = biExpr.getRight();
+      const auto& leftExpression = biExpr.getLeft();
+      const auto& rightExpression = biExpr.getRight();
       std::string columnName;
       if (typeid(*leftExpression) == typeid(normal::expression::gandiva::Column)) {
         auto colExpr = dynamic_cast<normal::expression::gandiva::Column &>(*leftExpression);
@@ -362,18 +362,17 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_core(normal::sql::Norma
     auto scanNode = scanNode_pair.second;
     auto andExpr_vector = filters_map->find(tableName)->second;
     scanNode->setPredicates(andExpr_vector);
-
-    if (simpleScan) {
-      for(const auto &scanNode_pair: *scanNodes_map){
-        scanNode_pair.second->setProjectedColumnNames(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"*"}));
-      }
-    } else {
-      for(const auto &scanNode_pair: *scanNodes_map){
-        auto tableName = scanNode_pair.first;
-        auto scanNode = scanNode_pair.second;
-        auto projectedColumnNames = projectedColumnNames_map->find(tableName)->second;
-        scanNode->setProjectedColumnNames(projectedColumnNames);
-      }
+  }
+  if (simpleScan) {
+    for(const auto &scanNode_pair: *scanNodes_map){
+      scanNode_pair.second->setProjectedColumnNames(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"*"}));
+    }
+  } else {
+    for(const auto &scanNode_pair: *scanNodes_map){
+      auto tableName = scanNode_pair.first;
+      auto scanNode = scanNode_pair.second;
+      auto projectedColumnNames = projectedColumnNames_map->find(tableName)->second;
+      scanNode->setProjectedColumnNames(projectedColumnNames);
     }
   }
 
@@ -676,7 +675,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_eq(normal::sql::NormalSQL
     std::shared_ptr<normal::expression::gandiva::Expression> rightExpression = visit(rightExprCtx);
     return eq(leftExpression, rightExpression);
   } else {
-    throw std::runtime_error("\"!=\" and \"<>\" are not implemented");
+    throw std::runtime_error(R"("!=" and "<>" are not implemented)");
   }
 }
 
@@ -729,7 +728,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitExpr_parens(normal::sql::Norma
 antlrcpp::Any normal::sql::visitor::Visitor::visitLiteral_value_numeric(
         normal::sql::NormalSQLParser::Literal_value_numericContext *ctx) {
   auto numeric_str = ctx->getText();
-  auto idx = numeric_str.find(".");
+  auto idx = numeric_str.find('.');
   if (idx == std::string::npos) {
     int value = std::stoi(numeric_str);
     return value;

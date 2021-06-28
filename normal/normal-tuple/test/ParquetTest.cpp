@@ -11,7 +11,7 @@
 
 #include <normal/tuple/Converter.h>
 #include <normal/tuple/Globals.h>
-#include <normal/tuple/ParquetReader.h>
+#include <normal/tuple/parquet/ParquetReader.h>
 #include <normal/tuple/Util.h>
 
 using namespace normal::tuple;

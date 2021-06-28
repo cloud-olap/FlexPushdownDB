@@ -2,7 +2,7 @@
 // Created by matt on 30/9/20.
 //
 
-#include "ConnectMessage.h"
+#include "normal/core/message/ConnectMessage.h"
 
 namespace normal::core::message {
 

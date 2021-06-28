@@ -63,7 +63,7 @@ public:
    * @param buffer
    * @return
    */
-  ::arrow::Status strangeProblem(const std::shared_ptr<ArrowBuilderType> &builder, const std::vector<CType> &buffer);
+  ::arrow::Status appendValues(const std::shared_ptr<ArrowBuilderType> &builder, const std::vector<CType> &buffer);
 
   tl::expected<std::shared_ptr<arrow::Array>, std::string> finalize() override {
 	::arrow::Status status;
@@ -71,7 +71,7 @@ public:
 
 	buffer_.shrink_to_fit();
 
-	status = strangeProblem(builder_, buffer_);
+	status = appendValues(builder_, buffer_);
 	if (!status.ok()) {
 	  return tl::make_unexpected(status.message());
 	}

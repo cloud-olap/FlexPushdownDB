@@ -12,7 +12,7 @@
 #include <normal/core/cache/CacheMetricsMessage.h>
 #include "normal/core/Globals.h"
 #include "normal/core/message/Message.h"
-#include "normal/core/Actors.h"
+#include "normal/core/ATTIC/Actors.h"
 
 namespace normal::core {
 
@@ -41,7 +41,6 @@ tl::expected<void, std::string> OperatorContext::send(const std::shared_ptr<mess
       operatorActor_->request(segmentCacheActor_, infinite, normal::core::cache::LoadAtom::value, std::static_pointer_cast<normal::core::cache::LoadRequestMessage>(msg))
       .then([=](const std::shared_ptr<normal::core::cache::LoadResponseMessage>& response){
       operatorActor_->anon_send(this->operatorActor(), Envelope(response));
-//		  send(response, this->operator_->name());
       });
     }
     else if(msg->type() == "StoreRequestMessage"){
@@ -111,8 +110,6 @@ void OperatorContext::notifyComplete() {
   operatorActor->anon_send(rootActor_, e);
 
   complete_ = true;
-
-//  operatorActor->quit();
 }
 
 bool OperatorContext::isComplete() const {

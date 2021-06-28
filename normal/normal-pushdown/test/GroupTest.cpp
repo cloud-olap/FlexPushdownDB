@@ -7,7 +7,7 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/group/Group.h>
 #include <normal/pushdown/group/GroupKernel.h>

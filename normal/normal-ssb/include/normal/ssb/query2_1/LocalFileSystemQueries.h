@@ -11,7 +11,7 @@
 
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/tuple/FileType.h>
 
 using namespace normal::core;

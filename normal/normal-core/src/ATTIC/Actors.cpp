@@ -2,7 +2,7 @@
 // Created by matt on 23/3/20.
 //
 
-#include "normal/core/Actors.h"
+#include "normal/core/ATTIC/Actors.h"
 
 #include <caf/all.hpp>
 

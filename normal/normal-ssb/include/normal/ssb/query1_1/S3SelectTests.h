@@ -6,7 +6,7 @@
 #define NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_QUERY1_1_S3SELECTTESTS_H
 
 #include <string>
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/tuple/FileType.h>
 
 using namespace normal::core;

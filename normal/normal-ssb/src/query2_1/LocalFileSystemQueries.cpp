@@ -6,7 +6,7 @@
 #include <normal/ssb/Globals.h>
 #include <normal/ssb/common/Operators.h>
 #include <normal/ssb/query2_1/Operators.h>
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/ssb/SSBSchema.h>
 
 using namespace normal::ssb::query2_1;

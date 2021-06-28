@@ -10,14 +10,14 @@ namespace normal::core::cache {
 std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMessage &msg,
 															 stateful_actor<SegmentCacheActorState> *self) {
 
+  SPDLOG_DEBUG("Handling load request. loadRequestMessage: {}", msg.toString());
+
   std::unordered_map<std::shared_ptr<SegmentKey>,
 					 std::shared_ptr<SegmentData>,
 					 SegmentKeyPointerHash,
 					 SegmentKeyPointerPredicate> segments;
-//  std::vector<std::shared_ptr<SegmentKey>> segmentKeysToCache;
-  auto missSegmentKeys = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
-//  SPDLOG_DEBUG("Handling load request. loadRequestMessage: {}", msg.toString());
+  auto missSegmentKeys = std::make_shared<std::vector<std::shared_ptr<SegmentKey>>>();
 
   for (const auto &segmentKey: msg.getSegmentKeys()) {
 
@@ -40,7 +40,7 @@ std::shared_ptr<LoadResponseMessage> SegmentCacheActor::load(const LoadRequestMe
 
 void SegmentCacheActor::store(const StoreRequestMessage &msg,
 							  stateful_actor<SegmentCacheActorState> *self) {
-//  SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
+  SPDLOG_DEBUG("Store  |  storeMessage: {}", msg.toString());
   for (const auto &segmentEntry: msg.getSegments()) {
 	auto segmentKey = segmentEntry.first;
 	auto segmentData = segmentEntry.second;

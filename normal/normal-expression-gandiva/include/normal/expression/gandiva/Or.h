@@ -31,4 +31,4 @@ std::shared_ptr<Expression> or_(std::shared_ptr<Expression> left, std::shared_pt
 }
 
 
-#endif //NORMAL_OR_H
+#endif //NORMAL_NORMAL_EXPRESSION_GANDIVA_INCLUDE_NORMAL_EXPRESSION_GANDIVA_OR_H

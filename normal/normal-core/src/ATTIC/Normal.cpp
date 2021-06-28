@@ -2,7 +2,7 @@
 // Created by matt on 16/12/19.
 //
 
-#include "normal/core/Normal.h"
+#include "normal/core/ATTIC/Normal.h"
 
 #include "normal/core/Globals.h"
 

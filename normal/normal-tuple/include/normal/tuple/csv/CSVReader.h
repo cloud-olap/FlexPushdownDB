@@ -12,8 +12,8 @@
 #include <arrow/io/api.h>
 #include <parquet/arrow/reader.h>
 
-#include "FileReader.h"
-#include "TupleSet2.h"
+#include "normal/tuple/FileReader.h"
+#include "normal/tuple/TupleSet2.h"
 
 namespace normal::tuple {
 

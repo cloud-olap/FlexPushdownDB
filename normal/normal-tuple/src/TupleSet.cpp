@@ -24,7 +24,6 @@ std::shared_ptr<TupleSet> TupleSet::make(const std::shared_ptr<arrow::csv::Table
 
   auto result = tableReader->Read();
   if (!result.ok()) {
-    // FIXME
     throw std::runtime_error(result.status().message());
   }
 
@@ -89,36 +88,6 @@ std::shared_ptr<TupleSet> TupleSet::concatenate(const std::shared_ptr<TupleSet> 
   auto resTupleSet = make(*res);
   return resTupleSet;
 }
-//void TupleSet::addColumn(const std::string &name, int position, std::vector<std::string> data) {
-//  arrow::Status arrowStatus;
-//
-//  arrow::MemoryPool *pool = arrow::default_memory_pool();
-//  arrow::StringBuilder colBuilder(pool);
-//
-//  for (int64_t r = 0; r < table_->num_rows(); ++r) {
-//    std::string s = data.at(r);
-//    arrowStatus = colBuilder.Append(s.c_str()); // FIXME: Not sure if this is safe
-//
-//    if (!arrowStatus.ok())
-//      abort();
-//  }
-//
-//  std::shared_ptr<arrow::StringArray> col;
-//  arrowStatus = colBuilder.Finish(&col);
-//
-//  if (!arrowStatus.ok())
-//    abort();
-//
-//  auto chunked_col = std::make_shared<arrow::ChunkedArray>(col);
-//
-//  std::shared_ptr<arrow::Field> field;
-//  field = arrow::field(name, arrow::utf8());
-//
-//  arrowStatus = table_->AddColumn(position, field, chunked_col, &table_);
-//
-//  if (!arrowStatus.ok())
-//    abort();
-//}
 
 int64_t TupleSet::numRows() {
   return table_->num_rows();
@@ -162,48 +131,3 @@ std::string TupleSet::toString() {
 
   return ss.str();
 }
-
-std::string TupleSet::getValue(const std::string &columnName, int row) {
-
-  assert(row >= 0);
-
-  auto chunkedArray = table_->GetColumnByName(columnName);
-
-  // FIXME: Only support strings at the moment
-  assert(chunkedArray->type()->id() == arrow::Type::type::STRING);
-
-  // TODO: Not sure if this is the best way to access a particular row
-  auto slicedArray = chunkedArray->Slice(row, row + 1);
-  auto array = std::static_pointer_cast<arrow::StringArray>(slicedArray->chunk(0));
-  auto value = array->GetString(row);
-
-  return value;
-}
-
-//tl::expected<std::shared_ptr<TupleSet>, std::string>
-//TupleSet::evaluate(const std::shared_ptr<normal::expression::Projector> &projector) {
-//
-//  // Read the table in batches
-//  std::shared_ptr<arrow::RecordBatch> batch;
-//  arrow::TableBatchReader reader(*table_);
-//  reader.set_chunksize(DEFAULT_CHUNK_SIZE);
-//  auto res = reader.ReadNext(&batch);
-//  std::shared_ptr<TupleSet> resultTuples = nullptr;
-//  while (res.ok() && batch) {
-//
-//	// Evaluate expressions against a batch
-//	std::shared_ptr<arrow::ArrayVector> outputs = projector->evaluate(*batch);
-//	auto batchResultTuples = normal::core::TupleSet::make(projector->getResultSchema(), *outputs);
-//
-//	// Concatenate the batch result to the full results
-//	if (resultTuples)
-//	  resultTuples = concatenate(batchResultTuples, resultTuples);
-//	else
-//	  resultTuples = batchResultTuples;
-//
-//	res = reader.ReadNext(&batch);
-//  }
-//
-//  return resultTuples;
-//
-//}

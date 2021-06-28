@@ -2,7 +2,7 @@
 // Created by matt on 12/8/20.
 //
 
-#include "normal/tuple/CSVReader.h"
+#include "normal/tuple/csv/CSVReader.h"
 
 #include <experimental/filesystem>
 

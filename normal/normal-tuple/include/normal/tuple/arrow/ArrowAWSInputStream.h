@@ -35,9 +35,6 @@ class ArrowAWSInputStream : public arrow::io::InputStream {
     /// \brief Return whether the stream is closed
     bool closed() const override;
 
-
-
-
   protected:
     std::basic_iostream<char, std::char_traits<char>>& underlyingFile_;
     int64_t position_ = 0;

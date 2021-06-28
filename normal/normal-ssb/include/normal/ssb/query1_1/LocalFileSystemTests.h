@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 #include <normal/tuple/FileType.h>
 
 using namespace normal::core;

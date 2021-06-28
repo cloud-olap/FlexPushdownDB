@@ -28,7 +28,7 @@ void Projector::compile(const std::shared_ptr<arrow::Schema> &schema) {
 																		field(expression->alias(),
 																			  expression->getReturnType()));
 
-//	SPDLOG_INFO(fmt::format("Gandiva expression: {}", gandivaExpression->ToString()));
+	SPDLOG_DEBUG(fmt::format("Gandiva expression: {}", gandivaExpression->ToString()));
 
 	gandivaExpressions_.emplace_back(gandivaExpression);
   }
@@ -99,8 +99,6 @@ arrow::ArrayVector Projector::evaluate(const arrow::RecordBatch &recordBatch) {
 }
 
 std::shared_ptr<TupleSet> Projector::evaluate(const TupleSet &tupleSet) {
-
-//  std::lock_guard<std::mutex> g(BigGlobalLock);
 
 #ifndef NDEBUG
   {

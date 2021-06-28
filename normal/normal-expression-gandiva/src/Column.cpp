@@ -6,9 +6,7 @@
 
 #include <gandiva/tree_expr_builder.h>
 
-#include <normal/tuple/Column.h>
 #include <normal/tuple/ColumnName.h>
-#include <normal/expression/gandiva/Cast.h>
 
 using namespace normal::expression::gandiva;
 

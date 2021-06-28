@@ -30,12 +30,9 @@ private:
 public:
   void insert(const LocalOperatorDirectoryEntry &entry);
   void setComplete(const std::string &name);
-//  bool allComplete();
   bool allComplete(const OperatorRelationshipType &operatorRelationshipType);
   [[nodiscard]] std::string showString() const;
   void setIncomplete();
-  void clearForSegmentCache();
-  void clearUsingEmpty();
 
   tl::expected<LocalOperatorDirectoryEntry, std::string>
   get(const std::string& operatorId);

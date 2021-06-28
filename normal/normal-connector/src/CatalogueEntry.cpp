@@ -4,8 +4,8 @@
 
 #include <normal/connector/CatalogueEntry.h>
 
-normal::connector::CatalogueEntry::CatalogueEntry(std::string Alias,
-                                                       std::shared_ptr<Catalogue> Catalogue) : alias_(std::move(Alias)), catalogue_(std::move(Catalogue)) {}
+normal::connector::CatalogueEntry::CatalogueEntry(std::string Alias, std::shared_ptr<Catalogue> Catalogue) :
+  alias_(std::move(Alias)), catalogue_(std::move(Catalogue)) {}
 
 const std::string &normal::connector::CatalogueEntry::getAlias() const {
   return alias_;

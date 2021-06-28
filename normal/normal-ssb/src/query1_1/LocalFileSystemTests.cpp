@@ -10,7 +10,7 @@
 #include <normal/ssb/query1_1/LocalFileSystemQueries.h>
 #include <normal/ssb/query1_1/SQL.h>
 #include <normal/ssb/TestUtil.h>
-#include <normal/core/Normal.h>
+#include <normal/core/ATTIC/Normal.h>
 
 using namespace normal::ssb;
 using namespace normal::ssb::query1_1;
