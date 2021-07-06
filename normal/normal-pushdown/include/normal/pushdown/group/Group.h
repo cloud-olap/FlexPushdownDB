@@ -49,7 +49,6 @@ public:
 
 private:
 
-//  std::unique_ptr<GroupKernel> kernel_;
   std::unique_ptr<GroupKernel2> kernel2_;
 
   void onStart();

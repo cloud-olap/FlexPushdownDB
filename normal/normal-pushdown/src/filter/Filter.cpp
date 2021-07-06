@@ -21,12 +21,12 @@ using namespace normal::core;
 using namespace normal::cache;
 
 Filter::Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred, long queryId,
-               const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys) :
+               std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) :
 	Operator(std::move(Name), "Filter", queryId),
+  pred_(std::move(Pred)),
 	received_(normal::tuple::TupleSet2::make()),
 	filtered_(normal::tuple::TupleSet2::make()),
-	pred_(Pred),
-	weightedSegmentKeys_(weightedSegmentKeys) {}
+	weightedSegmentKeys_(std::move(weightedSegmentKeys)) {}
 
 std::shared_ptr<Filter> Filter::make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred, long queryId,
                                      std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) {
@@ -54,14 +54,12 @@ void Filter::onReceive(const normal::core::message::Envelope &Envelope) {
 }
 
 void Filter::onStart() {
-//  received_->clear();
   assert(received_->validate());
-//  filtered_->clear();
   assert(filtered_->validate());
 }
 
 void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
-//  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
+  SPDLOG_DEBUG("onTuple  |  Message tupleSet - numRows: {}", Message.tuples()->numRows());
   /**
    * Check if this filter is applicable, if not, just send an empty table and complete
    */
@@ -73,7 +71,7 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
   if (*applicable_) {
     std::chrono::steady_clock::time_point startFilterTime = std::chrono::steady_clock::now();
     bufferTuples(tupleSet);
-//    SPDLOG_INFO("Filter onTuple: {}, {}, {}", tupleSet->numRows(), received_->numRows(), name());
+    SPDLOG_DEBUG("Filter onTuple: {}, {}, {}", tupleSet->numRows(), received_->numRows(), name());
     buildFilter();
     if (received_->numRows() > DefaultBufferSize) {
       filterTuples();
@@ -93,7 +91,7 @@ void Filter::onTuple(const normal::core::message::TupleMessage &Message) {
 }
 
 void Filter::onComplete(const normal::core::message::CompleteMessage&) {
-//  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
+  SPDLOG_DEBUG("onComplete  |  Received buffer tupleSet - numRows: {}", received_->numRows());
 
   if(received_->getArrowTable().has_value()) {
     std::chrono::steady_clock::time_point startFilterTime = std::chrono::steady_clock::now();
@@ -121,7 +119,7 @@ void Filter::onComplete(const normal::core::message::CompleteMessage&) {
   }
 }
 
-void Filter::bufferTuples(std::shared_ptr<normal::tuple::TupleSet2> tupleSet) {
+void Filter::bufferTuples(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
   if(!received_->schema().has_value()) {
 	received_->setSchema(*tupleSet->schema());
   }
@@ -132,7 +130,7 @@ void Filter::bufferTuples(std::shared_ptr<normal::tuple::TupleSet2> tupleSet) {
   assert(received_->validate());
 }
 
-bool Filter::isApplicable(std::shared_ptr<normal::tuple::TupleSet2> tupleSet) {
+bool Filter::isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet) {
   auto predicateColumnNames = pred_->expression()->involvedColumnNames();
   auto tupleColumnNames = std::make_shared<std::vector<std::string>>();
   for (auto const &field: tupleSet->schema()->get()->fields()) {
@@ -198,7 +196,6 @@ void Filter::sendSegmentWeight() {
      */
     double predPara = 0.5;
     double weight = selectivity * (predicateNum / (predicateNum + predPara));
-//    double weight = selectivity * predicateNum;
 
     for (auto const &segmentKey: *weightedSegmentKeys_) {
       weightMap->emplace(segmentKey, weight);
@@ -219,7 +216,6 @@ void Filter::sendSegmentWeight() {
       auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
 
       auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
-//      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan)) / numKey;
       weightMap->emplace(segmentKey, weight);
     }
   }
@@ -228,14 +224,14 @@ void Filter::sendSegmentWeight() {
           .map_error([](auto err) { throw std::runtime_error(err); });
 }
 
-size_t Filter::getFilterTimeNS() {
+size_t Filter::getFilterTimeNS() const {
   return filterTimeNS_;
 }
 
-size_t Filter::getFilterInputBytes() {
+size_t Filter::getFilterInputBytes() const {
   return inputBytesFiltered_;
 }
 
-size_t Filter::getFilterOutputBytes() {
+size_t Filter::getFilterOutputBytes() const {
   return outputBytesFiltered_;
 }

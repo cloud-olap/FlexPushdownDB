@@ -6,7 +6,6 @@
 #include "normal/tuple/ArrayHasher.h"
 #include "normal/tuple/ArrayAppender.h"
 
-#include <fmt/format.h>
 
 #include <utility>
 #include <normal/tuple/ArrayAppenderWrapper.h>

@@ -21,7 +21,7 @@ namespace normal::pushdown::filter {
 class Filter : public normal::core::Operator {
 public:
   explicit Filter(std::string Name, std::shared_ptr<FilterPredicate> Pred, long queryId,
-                  const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> &weightedSegmentKeys);
+                  std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys);
 
   static std::shared_ptr<Filter> make(const std::string &Name, const std::shared_ptr<FilterPredicate> &Pred,
                                       long queryId = 0,
@@ -29,9 +29,9 @@ public:
 
   void onReceive(const core::message::Envelope &Envelope) override;
 
-  size_t getFilterTimeNS();
-  size_t getFilterInputBytes();
-  size_t getFilterOutputBytes();
+  size_t getFilterTimeNS() const;
+  size_t getFilterInputBytes() const;
+  size_t getFilterOutputBytes() const;
 
 private:
   std::shared_ptr<FilterPredicate> pred_;
@@ -52,7 +52,7 @@ private:
   void onTuple(const normal::core::message::TupleMessage& Message);
   void onComplete(const normal::core::message::CompleteMessage& Message);
 
-  void bufferTuples(std::shared_ptr<normal::tuple::TupleSet2> tupleSet);
+  void bufferTuples(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet);
   void buildFilter();
   void filterTuples();
   void sendTuples();
@@ -62,7 +62,7 @@ private:
    * Whether all predicate columns are covered in the schema of received tuples
    */
   std::shared_ptr<bool> applicable_;
-  bool isApplicable(std::shared_ptr<normal::tuple::TupleSet2> tupleSet);
+  bool isApplicable(const std::shared_ptr<normal::tuple::TupleSet2>& tupleSet);
 
   /**
    * Used to compute filter weight

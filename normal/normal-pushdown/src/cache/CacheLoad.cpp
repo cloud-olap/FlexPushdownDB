@@ -153,7 +153,7 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
   if (useNewCacheLayout_) {
     bool cachingResultNeeded;
 
-    // FIXME: Airmettle doesn't support intra-partiiton hybrid as it doesn't preserve order
+    // FIXME: Airmettle doesn't support intra-partition hybrid as it doesn't preserve order
     if (normal::plan::s3ClientType != normal::plan::Airmettle) {
       /**
        * Caching result is not needed when:

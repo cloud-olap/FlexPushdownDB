@@ -7,7 +7,6 @@
 #include <utility>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/tuple/ColumnBuilder.h>
-#include <normal/pushdown/shuffle/ATTIC/Shuffler.h>
 #include <normal/pushdown/shuffle/ShuffleKernel2.h>
 #include <normal/pushdown/Globals.h>
 
@@ -59,12 +58,11 @@ void Shuffle::onComplete(const CompleteMessage &) {
     ctx()->notifyComplete();
 
 	  double shuffleSpeed = (((double) bytesShuffled_) / 1024.0 / 1024.0) / (((double) shuffleTime_) / 1000000000);
-//	  SPDLOG_INFO("Shuffle time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", shuffleTime_, bytesShuffled_, shuffleSpeed, numRowShuffled_, name());
+	  SPDLOG_DEBUG("Shuffle time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", shuffleTime_, bytesShuffled_, shuffleSpeed, numRowShuffled_, name());
   }
 }
 
 tl::expected<void, std::string> Shuffle::buffer(const std::shared_ptr<TupleSet2> &tupleSet, int partitionIndex) {
-
   // Add the tuple set to the buffer
   if (!buffers_[partitionIndex].has_value()) {
 	buffers_[partitionIndex] = tupleSet;
@@ -88,7 +86,6 @@ tl::expected<void, std::string> Shuffle::buffer(const std::shared_ptr<TupleSet2>
 }
 
 tl::expected<void, std::string> Shuffle::send(int partitionIndex, bool force) {
-
   // If the tupleset is big enough, send it, then clear the buffer
   if (buffers_[partitionIndex].has_value() && (force || buffers_[partitionIndex].value()->numRows() >= DefaultBufferSize)) {
 	std::shared_ptr<core::message::Message>
@@ -102,7 +99,6 @@ tl::expected<void, std::string> Shuffle::send(int partitionIndex, bool force) {
 }
 
 void Shuffle::onTuple(const TupleMessage &message) {
-
   // Get the tuple set
   const auto &tupleSet = TupleSet2::create(message.tuples());
   std::vector<std::shared_ptr<TupleSet2>> shuffledTupleSets;
@@ -133,14 +129,11 @@ void Shuffle::onTuple(const TupleMessage &message) {
   // Send the shuffled tuple sets to consumers
   size_t partitionIndex = 0;
   for (const auto &shuffledTupleSet: shuffledTupleSets) {
-	auto bufferAndSendResult = buffer(shuffledTupleSet, partitionIndex)
-		.and_then([&]() { return send(partitionIndex, false); });
-	if (!bufferAndSendResult)
-	  throw std::runtime_error(bufferAndSendResult.error());
-//	std::shared_ptr<core::message::Message>
-//		tupleMessage = std::make_shared<core::message::TupleMessage>(shuffledTupleSet->toTupleSetV1(), name());
-//	ctx()->send(tupleMessage, consumers_[partitionIndex]);
-	++partitionIndex;
+    auto bufferAndSendResult = buffer(shuffledTupleSet, partitionIndex)
+      .and_then([&]() { return send(partitionIndex, false); });
+    if (!bufferAndSendResult)
+      throw std::runtime_error(bufferAndSendResult.error());
+    ++partitionIndex;
   }
 
 }

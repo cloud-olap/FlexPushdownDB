@@ -59,7 +59,6 @@ void Merge::merge() {
       std::shared_ptr<core::message::Message>
               tupleMessage = std::make_shared<core::message::TupleMessage>(mergedTupleSet->toTupleSetV1(), name());
       ctx()->tell(tupleMessage);
-//      SPDLOG_INFO("Merge tuples: {}", name());
     }
 
     // Pop the processed tuple sets from the queues

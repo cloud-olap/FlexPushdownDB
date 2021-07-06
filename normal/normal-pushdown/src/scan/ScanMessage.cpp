@@ -4,11 +4,13 @@
 
 #include "normal/pushdown/scan/ScanMessage.h"
 
+#include <utility>
+
 using namespace normal::pushdown::scan;
 
-ScanMessage::ScanMessage(const std::vector<std::string> &ColumnNames, const std::string &Sender, bool resultNeeded) :
+ScanMessage::ScanMessage(std::vector<std::string> ColumnNames, const std::string &Sender, bool resultNeeded) :
 	Message("ScanMessage", Sender),
-	columnNames_(ColumnNames),
+	columnNames_(std::move(ColumnNames)),
 	resultNeeded_(resultNeeded) {}
 
 const std::vector<std::string> &ScanMessage::getColumnNames() const {

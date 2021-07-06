@@ -72,11 +72,6 @@ private:
   std::shared_ptr<TupleSet> tuples_;
 
   /**
-   * The expression projector, created and cached when input schema is extracted from first tuple received
-   */
-  std::optional<std::shared_ptr<normal::expression::Projector>> projector_;
-
-  /**
    * Adds the tuples in the tuple message to the internal buffer
    * @param message
    */
@@ -93,7 +88,6 @@ private:
    */
   void projectAndSendTuples();
   void cacheInputSchema(const core::message::TupleMessage &message);
-  void buildAndCacheProjector();
 
 };
 

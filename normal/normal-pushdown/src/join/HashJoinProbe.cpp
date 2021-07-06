@@ -8,7 +8,6 @@
 
 #include <normal/tuple/arrow/SchemaHelper.h>
 
-#include <normal/pushdown/join/ATTIC/HashTableMessage.h>
 #include <normal/pushdown/Globals.h>
 #include <normal/pushdown/join/ATTIC/Joiner.h>
 #include <normal/tuple/TupleSetIndexWrapper.h>
@@ -22,9 +21,6 @@ HashJoinProbe::HashJoinProbe(const std::string &name, JoinPredicate pred, std::s
 }
 
 void HashJoinProbe::onReceive(const normal::core::message::Envelope &msg) {
-
-  // FIXME: Really need to get rid of these if type == string tests... Urgh
-
   if (msg.message().type() == "StartMessage") {
 	this->onStart();
   } else if (msg.message().type() == "TupleMessage") {

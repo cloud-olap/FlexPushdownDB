@@ -60,25 +60,6 @@ std::shared_ptr<Schema> MergeKernel::mergeSchema(const std::shared_ptr<TupleSet2
   const auto &mergedSchema = Schema::make(mergedArrowSchema);
 
   return mergedSchema;
-
-//  if (tupleSet1->getArrowTable().has_value() && tupleSet2->getArrowTable().has_value()) {
-//	const auto &fields1 = tupleSet1->getArrowTable().value()->schema()->fields();
-//	const auto &fields2 = tupleSet2->getArrowTable().value()->schema()->fields();
-//	auto mergedFields = std::vector<std::shared_ptr<arrow::Field>>{};
-//	mergedFields.reserve(fields1.size() + fields2.size());
-//	mergedFields.insert(std::end(mergedFields), std::begin(fields1), std::end(fields1));
-//	mergedFields.insert(std::end(mergedFields), std::begin(fields2), std::end(fields2));
-//
-//	const auto &mergedArrowSchema = std::make_shared<::arrow::Schema>(mergedFields);
-//	const auto &mergedSchema = Schema::make(mergedArrowSchema);
-//	return mergedSchema;
-//  } else {
-//	// Handle empty tupleset
-//	const auto &mergedFields = std::vector<std::shared_ptr<arrow::Field>>{};
-//	const auto &mergedArrowSchema = std::make_shared<::arrow::Schema>(mergedFields);
-//	const auto &mergedSchema = Schema::make(mergedArrowSchema);
-//	return mergedSchema;
-//  }
 }
 
 std::vector<std::shared_ptr<::arrow::ChunkedArray>> MergeKernel::mergeArrays(const std::shared_ptr<TupleSet2> &tupleSet1,
@@ -97,22 +78,6 @@ std::vector<std::shared_ptr<::arrow::ChunkedArray>> MergeKernel::mergeArrays(con
   }
 
   return mergedArrays;
-
-//  if (tupleSet1->getArrowTable().has_value() && tupleSet2->getArrowTable().has_value()) {
-//	const auto &arrowArrays1 = tupleSet1->getArrowTable().value()->columns();
-//	const auto &arrowArrays2 = tupleSet2->getArrowTable().value()->columns();
-//	auto mergedArrays = std::vector<std::shared_ptr<::arrow::ChunkedArray>>{};
-//	mergedArrays.reserve(arrowArrays1.size() + arrowArrays2.size());
-//
-//	mergedArrays.insert(std::end(mergedArrays), std::begin(arrowArrays1), std::end(arrowArrays1));
-//	mergedArrays.insert(std::end(mergedArrays), std::begin(arrowArrays2), std::end(arrowArrays2));
-//
-//	return mergedArrays;
-//  } else {
-//	// Handle empty tupleset
-//	const auto &mergedArrays = std::vector<std::shared_ptr<::arrow::ChunkedArray>>{};
-//	return mergedArrays;
-//  }
 }
 
 tl::expected<std::shared_ptr<TupleSet2>, std::string>

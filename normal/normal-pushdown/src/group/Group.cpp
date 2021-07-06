@@ -14,8 +14,7 @@ Group::Group(const std::string &Name,
 			 const std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> &AggregateFunctions,
 			 long queryId) :
 	Operator(Name, "Group", queryId),
-//	kernel_(std::make_unique<GroupKernel>(ColumnNames, *AggregateFunctions)),
-			kernel2_(std::make_unique<GroupKernel2>(GroupColumnNames, AggregateColumnNames, *AggregateFunctions)) {
+  kernel2_(std::make_unique<GroupKernel2>(GroupColumnNames, AggregateColumnNames, *AggregateFunctions)) {
 }
 
 std::shared_ptr<Group> Group::make(const std::string &Name,
@@ -48,10 +47,8 @@ void Group::onStart() {
 
 void Group::onTuple(const normal::core::message::TupleMessage &message) {
   auto tupleSet = normal::tuple::TupleSet2::create(message.tuples());
-
   auto startTime = std::chrono::steady_clock::now();
 
-//  kernel_->onTuple(*tupleSet);
   auto expectedGroupResult = kernel2_->group(*tupleSet);
   if(!expectedGroupResult)
     throw std::runtime_error(expectedGroupResult.error());
@@ -69,7 +66,6 @@ void Group::onComplete(const normal::core::message::CompleteMessage &) {
     if (kernel2_->hasInput()) {
       auto startTime = std::chrono::steady_clock::now();
 
-//      auto groupedTupleSet = kernel_->group();
       auto expectedGroupedTupleSet = kernel2_->finalise();
       if (!expectedGroupedTupleSet)
         throw std::runtime_error(expectedGroupedTupleSet.error());
@@ -79,7 +75,7 @@ void Group::onComplete(const normal::core::message::CompleteMessage &) {
       groupTime_ += time;
 
       double speed = (((double) bytesGrouped_) / 1024.0 / 1024.0) / (((double) groupTime_) / 1000000000);
-//      SPDLOG_INFO("Group time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", groupTime_, bytesGrouped_, speed, numRows_, name());
+      SPDLOG_DEBUG("Group time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", groupTime_, bytesGrouped_, speed, numRows_, name());
 
       std::shared_ptr<normal::core::message::Message>
               tupleMessage =

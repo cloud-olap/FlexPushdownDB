@@ -11,7 +11,6 @@
 #include <normal/tuple/arrow/ScalarHelperBuilder.h>
 #include <normal/expression/gandiva/Projector.h>
 #include "normal/pushdown/aggregate/Sum.h"
-#include "normal/pushdown/Globals.h"
 
 namespace normal::pushdown::aggregate {
 
@@ -21,9 +20,6 @@ Sum::Sum(std::string columnName, std::shared_ptr<normal::expression::gandiva::Ex
 
 
 void normal::pushdown::aggregate::Sum::apply(std::shared_ptr<aggregate::AggregationResult> result, std::shared_ptr<TupleSet> tuples) {
-
-//  SPDLOG_DEBUG("Data:\n{}", tuples->toString());
-
   // Set the input schema if not yet set
   cacheInputSchema(*tuples);
 

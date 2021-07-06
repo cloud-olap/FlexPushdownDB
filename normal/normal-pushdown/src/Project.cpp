@@ -26,8 +26,6 @@ Project::Project(const std::string &Name,
 
 void Project::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
-  // FIXME: Either set tuples to size 0 or use an optional
-//  tuples_ = nullptr;
 }
 
 void Project::onReceive(const normal::core::message::Envelope &message) {
@@ -66,12 +64,8 @@ void Project::projectAndSendTuples() {
 }
 
 void Project::onTuple(const core::message::TupleMessage &message) {
-
   // Set the input schema if not yet set
   cacheInputSchema(message);
-
-  // Build and set the expression projector if not yet set
-//  buildAndCacheProjector();
 
   // Add the tuples to the internal buffer
   bufferTuples(message);
@@ -81,13 +75,6 @@ void Project::onTuple(const core::message::TupleMessage &message) {
     projectAndSendTuples();
   }
 
-}
-
-void Project::buildAndCacheProjector() {
-  if(!projector_.has_value()){
-	projector_ = std::make_shared<normal::expression::gandiva::Projector>(expressions_);
-	projector_.value()->compile(inputSchema_.value());
-  }
 }
 
 void Project::cacheInputSchema(const core::message::TupleMessage &message) {

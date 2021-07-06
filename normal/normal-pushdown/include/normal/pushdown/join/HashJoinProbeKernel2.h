@@ -11,7 +11,6 @@
 #include "JoinPredicate.h"
 #include "normal/pushdown/join/ATTIC/HashTable.h"
 #include "normal/tuple/TupleSetIndex.h"
-//#include "RecordBatchJoiner.h"
 #include <set>
 
 #include <normal/tuple/TupleSet2.h>
@@ -28,7 +27,7 @@ public:
 
   tl::expected<void, std::string> joinBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex>& tupleSetIndex);
   tl::expected<void, std::string> joinProbeTupleSet(const std::shared_ptr<TupleSet2>& tupleSet);
-  const std::optional<std::shared_ptr<normal::tuple::TupleSet2>> &getBuffer() const;
+  [[nodiscard]] const std::optional<std::shared_ptr<normal::tuple::TupleSet2>> &getBuffer() const;
   void clear();
 
   [[nodiscard]] tl::expected<void, std::string> putBuildTupleSetIndex(const std::shared_ptr<TupleSetIndex>& tupleSetIndex);

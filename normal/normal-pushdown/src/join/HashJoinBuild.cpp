@@ -44,13 +44,12 @@ void HashJoinBuild::onReceive(const normal::core::message::Envelope &msg) {
 
 void HashJoinBuild::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
-//  kernel_.clear();
 }
 
 void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
   auto tupleSet = TupleSet2::create(msg.tuples());
 
-//  SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
+  SPDLOG_DEBUG("Adding tuple set to hash table  |  operator: '{}', tupleSet:\n{}", this->name(), tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 1000)));
 
   auto startTime = std::chrono::steady_clock::now();
 
@@ -64,23 +63,14 @@ void HashJoinBuild::onTuple(const normal::core::message::TupleMessage &msg) {
   numRows_ += tupleSet->numRows();
   bytesJoinBuild_ += tupleSet->size();
   joinBuildTime_ += time;
-
-
-//  SPDLOG_DEBUG("Added tupleset to hashtable  |  Build relation hashtable:\n{}", hashtable_->toString());
 }
 
 void HashJoinBuild::onComplete(const normal::core::message::CompleteMessage &) {
 
   if(!ctx()->isComplete() && ctx()->operatorMap().allComplete(OperatorRelationshipType::Producer)) {
-//	SPDLOG_DEBUG("Completing  |  Build relation hashtable:\n{}", hashtable_->toString());
-
-//	std::shared_ptr<normal::core::message::Message>
-//		hashTableMessage = std::make_shared<HashTableMessage>(kernel_.getHashTable(), name());
-
-//	kernel_.getTupleSetIndex().value()->validate();
 
     double speed = (((double) bytesJoinBuild_) / 1024.0 / 1024.0) / (((double) joinBuildTime_) / 1000000000);
-//    SPDLOG_INFO("JoinBuild time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", joinBuildTime_, bytesJoinBuild_, speed, numRows_, name());
+    SPDLOG_DEBUG("JoinBuild time: {}, numBytes: {}, speed: {}MB/s, numRows: {}, {}", joinBuildTime_, bytesJoinBuild_, speed, numRows_, name());
 
     send(true);
 

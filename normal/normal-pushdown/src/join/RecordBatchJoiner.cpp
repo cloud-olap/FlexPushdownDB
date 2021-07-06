@@ -3,7 +3,6 @@
 //
 
 #include <normal/tuple/ArrayAppenderWrapper.h>
-#include <normal/pushdown/join/HashJoinProbe.h>
 #include "normal/pushdown/join/RecordBatchJoiner.h"
 
 using namespace normal::pushdown::join;

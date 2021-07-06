@@ -30,12 +30,10 @@ tl::expected<void, std::string> HashJoinBuildKernel2::put(const std::shared_ptr<
 	  return tl::make_unexpected(expectedTupleSetIndex.error());
 	}
 	tupleSetIndex_ = expectedTupleSetIndex.value();
-//	tupleSetIndex_.value()->validate();
 	return {};
   }
 
   auto result = tupleSetIndex_.value()->put(tupleSet->getArrowTable().value());
-//  tupleSetIndex_.value()->validate();
   return result;
 }
 

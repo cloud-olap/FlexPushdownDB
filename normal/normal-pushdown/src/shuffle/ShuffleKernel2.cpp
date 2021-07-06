@@ -3,7 +3,6 @@
 //
 
 #include "normal/pushdown/shuffle/ShuffleKernel2.h"
-#include "normal/pushdown/shuffle/ATTIC/RecordBatchShuffler.h"
 #include "normal/pushdown/shuffle/RecordBatchShuffler2.h"
 
 #include <string>

@@ -13,7 +13,6 @@
 #include "normal/pushdown/TupleMessage.h"
 #include "normal/core/message/Message.h"
 #include <normal/pushdown/aggregate/AggregationResult.h>
-#include "normal/pushdown/Globals.h"
 #include "arrow/scalar.h"
 
 namespace normal::pushdown {
@@ -50,12 +49,7 @@ void Aggregate::onReceive(const normal::core::message::Envelope &message) {
 }
 
 void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
-
-//  SPDLOG_DEBUG("Producer complete");
-
   if (!ctx()->isComplete() && this->ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
-
-//    SPDLOG_DEBUG("All producers complete, completing");
 
     // Create output schema
     std::shared_ptr<arrow::Schema> schema;
@@ -65,10 +59,6 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
       fields.emplace_back(field);
     }
     schema = arrow::schema(fields);
-
-//    SPDLOG_DEBUG("Aggregation output schema: {}\n", schema->ToString());
-
-//    arrow::MemoryPool *pool = arrow::default_memory_pool();
 
     // Create output tuples
     std::vector<std::shared_ptr<arrow::Array>> columns;
@@ -102,7 +92,7 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
 
     const std::shared_ptr<TupleSet> &aggregatedTuples = TupleSet::make(table);
 
-//    SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
+    SPDLOG_DEBUG("Completing  |  Aggregation result: \n{}", aggregatedTuples->toString());
 
     std::shared_ptr<normal::core::message::Message>
         tupleMessage = std::make_shared<normal::core::message::TupleMessage>(aggregatedTuples, this->name());
@@ -113,11 +103,8 @@ void Aggregate::onComplete(const normal::core::message::CompleteMessage &) {
 }
 
 void Aggregate::onTuple(const core::message::TupleMessage &message) {
-//  SPDLOG_DEBUG("Received tuple message");
-
   // Set the input schema if not yet set
   cacheInputSchema(message);
-
   compute(message.tuples());
 }
 
