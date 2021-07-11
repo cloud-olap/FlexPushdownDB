@@ -26,7 +26,7 @@ public:
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
-  const std::shared_ptr<LogicalOperator> &getProducer() const;
+  [[nodiscard]] const std::shared_ptr<LogicalOperator> &getProducer() const;
 
   void setNumConcurrentUnits(int numConcurrentUnits);
 
@@ -34,7 +34,7 @@ private:
   std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> expressions_;
 
   std::shared_ptr<LogicalOperator> producer_;
-  int numConcurrentUnits_;
+  int numConcurrentUnits_{};
 };
 
 }

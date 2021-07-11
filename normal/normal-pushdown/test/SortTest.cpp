@@ -6,12 +6,12 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/expression/gandiva/Column.h>
-#include <normal/pushdown/Sort.h>
+#include <normal/pushdown/ATTIC/Sort.h>
 #include <normal/core/type/Integer32Type.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/tuple/TupleSet2.h>

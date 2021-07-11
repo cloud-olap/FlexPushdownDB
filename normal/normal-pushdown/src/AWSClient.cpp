@@ -20,7 +20,7 @@ void AWSClient::init() {
   Aws::InitAPI(options_);
 }
 
-void AWSClient::shutdown() {
+  [[maybe_unused]] void AWSClient::shutdown() {
   Aws::ShutdownAPI(options_);
 }
 

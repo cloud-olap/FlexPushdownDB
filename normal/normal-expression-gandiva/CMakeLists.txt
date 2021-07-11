@@ -6,7 +6,7 @@ project(normal-expression-gandiva VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-expression-gandiva STATIC
-        include/normal/expression/gandiva/Globals.h
+        src/Globals.cpp include/normal/expression/gandiva/Globals.h
         src/Expression.cpp include/normal/expression/gandiva/Expression.h
         src/Column.cpp include/normal/expression/gandiva/Column.h
         src/Cast.cpp include/normal/expression/gandiva/Cast.h
@@ -25,8 +25,7 @@ add_library(normal-expression-gandiva STATIC
         src/And.cpp include/normal/expression/gandiva/And.h
         src/Or.cpp include/normal/expression/gandiva/Or.h
         src/StringLiteral.cpp include/normal/expression/gandiva/StringLiteral.h
-        src/BinaryExpression.cpp include/normal/expression/gandiva/BinaryExpression.h
-        src/Globals.cpp)
+        src/BinaryExpression.cpp include/normal/expression/gandiva/BinaryExpression.h)
 
 target_include_directories(normal-expression-gandiva PUBLIC include)
 

@@ -12,6 +12,8 @@
 #include <normal/plan/mode/Modes.h>
 #include <normal/cache/LRUCachingPolicy.h>
 
+#include <utility>
+
 using namespace normal::sql;
 
 Interpreter::Interpreter() :
@@ -20,11 +22,11 @@ Interpreter::Interpreter() :
   cachingPolicy_(LRUCachingPolicy::make())
 {}
 
-Interpreter::Interpreter(const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
-                         const std::shared_ptr<CachingPolicy>& cachingPolicy) :
+Interpreter::Interpreter(std::shared_ptr<normal::plan::operator_::mode::Mode> mode,
+                         std::shared_ptr<CachingPolicy>  cachingPolicy) :
   catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
-  mode_(mode),
-  cachingPolicy_(cachingPolicy)
+  mode_(std::move(mode)),
+  cachingPolicy_(std::move(cachingPolicy))
 {}
 
 void Interpreter::parse(const std::string &sql) {
@@ -193,7 +195,7 @@ std::string Interpreter::showMetrics() {
   std::stringstream formattedLocalFilterRateGBs;
   std::stringstream formattedLocalFilterGB;
   std::stringstream formattedLocalFilterSelectivity;
-  if (filterTimeNS > 0 && filterTimeNS > 0) {
+  if (filterTimeNS > 0) {
     double filterGB = ((double)filterInputBytes / 1024.0 / 1024.0 / 1024.0);
     formattedLocalFilterRateGBs << filterGB / ((double)filterTimeNS  / 1.0e9) << " GB/s/req";
     formattedLocalFilterGB << filterGB << " GB";
@@ -313,7 +315,7 @@ std::string Interpreter::showMetrics() {
   ss << std::endl;
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
-  for (int qid = 1; qid <= executionTimes_.size(); ++qid) {
+  for (size_t qid = 1; qid <= executionTimes_.size(); ++qid) {
     normal::pushdown::S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
     std::stringstream formattedProcessingTime1;
     formattedProcessingTime1 << executionTimes_[qid - 1] << " secs";
@@ -376,7 +378,7 @@ std::string Interpreter::showMetrics() {
   ss << std::endl;
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
-  for (int qid = 1; qid <= executionTimes_.size(); ++qid) {
+  for (size_t qid = 1; qid <= executionTimes_.size(); ++qid) {
     normal::pushdown::S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
     std::stringstream formattedReturnedGB;
     std::stringstream formattedReturnedPercentage;
@@ -462,8 +464,8 @@ std::string Interpreter::showHitRatios() {
   ss << std::endl;
   ss << "Hit ratios, Shard Hit Ratios:" << std::endl;
   ss << std::endl;
-  for (int i = 0; i < hitRatios_.size(); i++) {
-    int qId = i + 1;
+  for (size_t i = 0; i < hitRatios_.size(); i++) {
+    auto qId = i + 1;
     auto const hitRatio = hitRatios_.at(i);
     auto const shardHitRatio = shardHitRatios_.at(i);
     ss << std::left << std::setw(20) << qId;
@@ -491,11 +493,11 @@ const std::vector<double> &Interpreter::getHitRatios() const {
   return hitRatios_;
 }
 
-const std::vector<double> &Interpreter::getShardHitRatios() const {
+[[maybe_unused]] const std::vector<double> &Interpreter::getShardHitRatios() const {
   return shardHitRatios_;
 }
 
-const std::vector<std::tuple<size_t, size_t, size_t>> &Interpreter::getFilterTimeNsInputOutputBytes() const {
+[[maybe_unused]] const std::vector<std::tuple<size_t, size_t, size_t>> &Interpreter::getFilterTimeNsInputOutputBytes() const {
   return filterTimeNSInputOutputBytes_;
 }
 

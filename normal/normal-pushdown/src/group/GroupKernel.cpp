@@ -2,7 +2,7 @@
 // Created by matt on 20/10/20.
 //
 
-#include "GroupKernel.h"
+#include "normal/pushdown/group/GroupKernel.h"
 
 #include <utility>
 

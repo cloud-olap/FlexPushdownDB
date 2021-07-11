@@ -25,21 +25,21 @@ SegmentKey::SegmentKey(std::shared_ptr<Partition> Partition,
 	  metadata_(std::move(metadata)) {}
 
 std::shared_ptr<SegmentKey> SegmentKey::make(const std::shared_ptr<Partition> &Partition,
-                                             std::string columnName,
+                                             const std::string& columnName,
                                              SegmentRange Range) {
-  return std::make_shared<SegmentKey>(std::move(Partition),
-                                      std::move(columnName),
+  return std::make_shared<SegmentKey>(Partition,
+                                      columnName,
                                       Range);
 }
 
 std::shared_ptr<SegmentKey> SegmentKey::make(const std::shared_ptr<Partition> &Partition,
-                                             std::string columnName,
+                                             const std::string& columnName,
                                              SegmentRange Range,
-                                             std::shared_ptr<SegmentMetadata> metadata) {
-  return std::make_shared<SegmentKey>(std::move(Partition),
-                                      std::move(columnName),
+                                             const std::shared_ptr<SegmentMetadata>& metadata) {
+  return std::make_shared<SegmentKey>(Partition,
+                                      columnName,
                                       Range,
-                                      std::move(metadata));
+                                      metadata);
 }
 
 const std::shared_ptr<Partition> &SegmentKey::getPartition() const {

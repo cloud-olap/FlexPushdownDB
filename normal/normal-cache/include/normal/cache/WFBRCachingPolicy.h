@@ -36,7 +36,7 @@ private:
   /**
    * tmp data structures for onToCache()  (OTC: onToCache)
    */
-  size_t freeSizeOTC_;
+  size_t freeSizeOTC_{};
   std::vector<std::shared_ptr<SegmentKey>> keysInCacheOTC_;
 
   /**
@@ -46,7 +46,7 @@ private:
   long currentQueryId_;
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> weightUpdatedKeys_;
 
-  bool lessValue(const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
+  static bool lessValue(const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
 
   /**
    * For WFBR, erasing only erases the element in keyInCache_, but not in keySet_ to keep history hitNum

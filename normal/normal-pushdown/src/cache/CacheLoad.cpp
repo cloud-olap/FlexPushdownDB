@@ -5,7 +5,7 @@
 #include "normal/pushdown/cache/CacheLoad.h"
 
 #include <normal/pushdown/cache/CacheHelper.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/pushdown/scan/ScanMessage.h>
 #include <normal/core/cache/CacheMetricsMessage.h>
 #include <normal/plan/Globals.h>
@@ -118,6 +118,7 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
 
   // Gather missed caching segment columns
   auto segmentKeysToCache = Message.getSegmentKeysToCache();
+  missedCachingColumnNames.reserve(segmentKeysToCache.size());
   for (auto const &segmentKey: segmentKeysToCache) {
     missedCachingColumnNames.emplace_back(segmentKey->getColumnName());
   }

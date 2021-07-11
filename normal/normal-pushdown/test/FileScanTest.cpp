@@ -7,13 +7,13 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
-#include <normal/pushdown/Aggregate.h>
+#include <normal/pushdown/aggregate/Aggregate.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/aggregate/Sum.h>
-#include <normal/pushdown/Project.h>
+#include <normal/pushdown/project/Project.h>
 #include <normal/expression/gandiva/Cast.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>

@@ -34,8 +34,8 @@ protected:
 
 const inline std::string prefixInt_ = "int:";
 const inline std::string prefixFloat_ = "float:";
-std::shared_ptr<std::string> removePrefixInt(std::string);
-std::shared_ptr<std::string> removePrefixFloat(std::string);
+std::shared_ptr<std::string> removePrefixInt(const std::string&);
+std::shared_ptr<std::string> removePrefixFloat(const std::string&);
 
 // FIXME: only applicable for ssb queries
 std::shared_ptr<normal::expression::gandiva::Expression> simpleCast(std::shared_ptr<normal::expression::gandiva::Expression> expr);

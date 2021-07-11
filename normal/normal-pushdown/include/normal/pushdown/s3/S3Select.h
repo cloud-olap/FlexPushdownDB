@@ -10,7 +10,7 @@
 #include "normal/tuple/arrow/CSVToArrowSIMDChunkParser.h"
 #endif
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 // This is for controlling the maximum number of Select requests converting data at the same time
 // as per maxConcurrentArrowConversions in normal-pushdown/include/normal/pushdown/Globals.h
@@ -69,10 +69,10 @@ class S3Select: public S3SelectScan {
     // as that is more complicated due to involving parquet metadata and we haven't had a chance to implement this yet
     bool scanRangeSupported();
     Aws::S3::Model::InputSerialization getInputSerialization();
-    std::shared_ptr<TupleSet2> s3Select(int64_t startOffset, int64_t endOffset);
+    std::shared_ptr<TupleSet2> s3Select(uint64_t startOffset, uint64_t endOffset);
     std::shared_ptr<TupleSet2> s3SelectParallelReqs();
     // Wrapper function to encapsulate a thread spawned when making parallel requests
-    void s3SelectIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset);
+    void s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset);
 
     void processScanMessage(const scan::ScanMessage &message) override;
 

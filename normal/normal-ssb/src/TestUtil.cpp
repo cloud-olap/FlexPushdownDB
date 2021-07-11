@@ -6,7 +6,7 @@
 
 #include <doctest/doctest.h>
 
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/ssb/SQLite3.h>
 
 using namespace normal::ssb;

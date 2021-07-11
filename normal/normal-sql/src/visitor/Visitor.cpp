@@ -21,7 +21,6 @@
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/plan/operator_/JoinLogicalOperator.h>
 #include <normal/plan/operator_/GroupLogicalOperator.h>
-#include <normal/expression/gandiva/And.h>
 #include <normal/expression/gandiva/Divide.h>
 #include <normal/expression/gandiva/Add.h>
 #include <normal/expression/gandiva/Subtract.h>
@@ -92,7 +91,7 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitSelect_stmt(normal::sql::Norma
 }
 
 std::shared_ptr<std::vector<std::string>> columnsNeededForAggregate(
-        std::shared_ptr<normal::plan::function::AggregateLogicalFunction> function) {
+        const std::shared_ptr<normal::plan::function::AggregateLogicalFunction>& function) {
   auto columnNames = std::make_shared<std::vector<std::string>>();
   auto expression = function->expression();
   if (typeid(*expression) == typeid(normal::expression::gandiva::Column)) {

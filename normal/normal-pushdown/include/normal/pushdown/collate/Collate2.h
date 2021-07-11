@@ -12,32 +12,32 @@
 #include <normal/core/cache/SegmentCacheActor.h>
 
 #include <normal/pushdown/Forward.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 
 using namespace normal::core;
 using namespace normal::core::message;
 using namespace normal::tuple;
 
 using TupleSetPtr = std::shared_ptr<TupleSet>;
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TupleSetPtr);
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TupleSetPtr)
 
 using ExpectedTupleSetPtrString = tl::expected<std::shared_ptr<TupleSet>, std::string>;
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedTupleSetPtrString);
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(ExpectedTupleSetPtrString)
 
-namespace normal::pushdown {
+namespace normal::pushdown::collate {
 
 using TupleSetAtom = caf::atom_constant<caf::atom("tupleset")>;
 using GetTupleSetAtom = caf::atom_constant<caf::atom("g-tupleset")>;
 
 using CollateActor = OperatorActor2::extend_with<::caf::typed_actor<
-	caf::reacts_to<TupleSetAtom, TupleSetPtr>,
-	caf::replies_to<GetTupleSetAtom>::with<ExpectedTupleSetPtrString>>>;
+        caf::reacts_to<TupleSetAtom, TupleSetPtr>,
+        caf::replies_to<GetTupleSetAtom>::with<ExpectedTupleSetPtrString>>>;
 
 using CollateStatefulActor = CollateActor::stateful_pointer<CollateState>;
 
-class CollateState : public OperatorActorState<CollateStatefulActor> {
+class [[maybe_unused]] CollateState : public OperatorActorState<CollateStatefulActor> {
 public:
-  void setState(CollateStatefulActor actor,
+  [[maybe_unused]] void setState(CollateStatefulActor actor,
 				const std::string &name,
 				long queryId,
 				const caf::actor &rootActorHandle,
@@ -124,7 +124,7 @@ private:
 
 };
 
-CollateActor::behavior_type CollateFunctor(CollateStatefulActor actor,
+[[maybe_unused]] CollateActor::behavior_type CollateFunctor(CollateStatefulActor actor,
 										   const std::string &name,
 										   long queryId,
 										   const caf::actor &rootActorHandle,

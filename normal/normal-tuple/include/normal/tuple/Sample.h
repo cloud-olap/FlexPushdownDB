@@ -24,7 +24,7 @@ public:
    *
    * @return
    */
-  static std::shared_ptr<TupleSet2> sample3x3String();
+  [[maybe_unused]] static std::shared_ptr<TupleSet2> sample3x3String();
 
   static std::shared_ptr<Column> sample3String();
 
@@ -50,7 +50,7 @@ public:
   }
 
   template <typename CType, typename ArrowType>
-  static std::shared_ptr<TupleSet2> sampleCxRReal(int numCols, int numRows, std::uniform_real_distribution<double> dist = std::uniform_real_distribution(0.0, 9.0)) {
+  [[maybe_unused]] static std::shared_ptr<TupleSet2> sampleCxRReal(int numCols, int numRows, std::uniform_real_distribution<double> dist = std::uniform_real_distribution(0.0, 9.0)) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	return sampleCxR<CType, ArrowType>(numCols, numRows, [&]() -> auto { return dist(gen); });

@@ -24,7 +24,7 @@ class PhysicalPlan {
 public:
   PhysicalPlan();
 
-  void put(std::shared_ptr<core::Operator> operator_);
+  void put(const std::shared_ptr<core::Operator>& operator_);
 
   [[nodiscard]] const std::shared_ptr<std::unordered_map<std::string,
 														 std::shared_ptr<core::Operator>>>

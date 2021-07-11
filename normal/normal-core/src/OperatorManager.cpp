@@ -2,13 +2,9 @@
 // Created by matt on 5/12/19.
 //
 
-#include "normal/core/OperatorManager.h"
-
-//#include <graphviz/gvc.h>
-
+#include <normal/core/OperatorManager.h>
 #include <normal/core/cache/SegmentCacheActor.h>
 #include <normal/core/message/Envelope.h>
-
 
 using namespace normal::core::cache;
 using namespace normal::core::message;

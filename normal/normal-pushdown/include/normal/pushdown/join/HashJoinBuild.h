@@ -10,7 +10,7 @@
 #include <arrow/scalar.h>
 
 #include <normal/core/Operator.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include "normal/pushdown/join/ATTIC/HashTable.h"
 #include "normal/pushdown/join/ATTIC/HashJoinBuildKernel.h"

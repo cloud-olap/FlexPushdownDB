@@ -12,10 +12,10 @@ namespace normal::plan::operator_::type {
 class GroupOperatorType : public OperatorType{
 
 public:
-    GroupOperatorType();
+  GroupOperatorType();
 };
 
 }
 
 
-#endif //NORMAL_GROUPOPERATORTYPE_H
+#endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_GROUPOPERATORTYPE_H

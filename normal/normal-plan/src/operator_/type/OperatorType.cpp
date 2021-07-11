@@ -9,7 +9,7 @@ using namespace normal::plan::operator_::type;
 
 OperatorType::OperatorType(OperatorTypeId Id) : id_(Id) {}
 
-bool OperatorType::is(std::shared_ptr<OperatorType> type) {
+bool OperatorType::is(const std::shared_ptr<OperatorType>& type) {
   return id_ == type->id_;
 }
 

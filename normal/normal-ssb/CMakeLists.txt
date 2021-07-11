@@ -17,7 +17,7 @@ add_library(normal-ssb
         src/SQLite3.cpp include/normal/ssb/SQLite3.h
         src/SqlGenerator.cpp include/normal/ssb/SqlGenerator.h
         src/SSBSchema.cpp include/normal/ssb/SSBSchema.h src/GenerateSqlFile.cpp
-        include/normal/ssb/common/Operators.h src/common/Operators.cpp
+        src/common/Operators.cpp include/normal/ssb/common/Operators.h
         src/query1_1/Operators.cpp include/normal/ssb/query1_1/Operators.h
         src/query1_1/SQL.cpp include/normal/ssb/query1_1/SQL.h
         src/query1_1/S3SelectQueries.cpp include/normal/ssb/query1_1/S3SelectQueries.h

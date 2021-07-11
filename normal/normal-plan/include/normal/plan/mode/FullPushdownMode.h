@@ -12,9 +12,9 @@ namespace normal::plan::operator_::mode {
 class FullPushdownMode: public Mode {
 
 public:
-    FullPushdownMode();
+  FullPushdownMode();
 };
 
 }
 
-#endif //NORMAL_FULLPUSHDOWNMODE_H
+#endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_FULLPUSHDOWNMODE_H

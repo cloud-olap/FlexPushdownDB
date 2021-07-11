@@ -15,7 +15,7 @@
 #include <arrow/type_fwd.h>            // for default_memory_pool
 #include <arrow/csv/parser.h>
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/tuple/TupleSet.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/connector/local-fs/LocalFilePartition.h>
@@ -40,7 +40,7 @@ using namespace normal::pushdown::cache;
 
 namespace arrow { class MemoryPool; }
 
-namespace normal::pushdown {
+namespace normal::pushdown::file {
 
 FileScan::FileScan(std::string name, const std::string& filePath, long queryId) :
 	Operator(std::move(name), "FileScan", queryId),

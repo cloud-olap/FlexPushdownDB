@@ -3,7 +3,6 @@
 //
 
 #include "normal/tuple/TupleSet.h"
-#include "normal/tuple/Globals.h"
 
 #include <utility>
 #include <sstream>

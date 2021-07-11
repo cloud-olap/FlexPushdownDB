@@ -9,51 +9,28 @@
 #include <memory>
 #include <cstdlib>                                          // for abort
 
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
-#include <aws/core/utils/threading/Executor.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
-#include <aws/core/Aws.h>
-#include <aws/s3/model/SelectObjectContentRequest.h>
-#include <aws/core/client/ClientConfiguration.h>
 
 #include <arrow/csv/options.h>                              // for ReadOptions
 #include <arrow/csv/reader.h>                               // for TableReader
 #include <arrow/io/buffered.h>                              // for BufferedI...
 #include <arrow/io/memory.h>                                // for BufferReader
 #include <arrow/type_fwd.h>                                 // for default_m...
-#include <aws/core/Region.h>                                // for US_EAST_1
 #include <aws/core/auth/AWSAuthSigner.h>                    // for AWSAuthV4...
-#include <aws/core/http/Scheme.h>                           // for Scheme
-#include <aws/core/utils/logging/LogLevel.h>                // for LogLevel
-#include <aws/core/utils/memory/stl/AWSAllocator.h>         // for MakeShared
-#include <aws/s3/model/CSVInput.h>                          // for CSVInput
-#include <aws/s3/model/CSVOutput.h>                         // for CSVOutput
-#include <aws/s3/model/ExpressionType.h>                    // for Expressio...
-#include <aws/s3/model/FileHeaderInfo.h>                    // for FileHeade...
-#include <aws/s3/model/InputSerialization.h>                // for InputSeri...
-#include <aws/s3/model/OutputSerialization.h>               // for OutputSer...
 #include <aws/s3/model/RecordsEvent.h>                      // for RecordsEvent
-#include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
-#include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 
 
 #include "normal/core/message/Message.h"                    // for Message
 #include "normal/tuple/TupleSet.h"                          // for TupleSet
-#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
-#include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/connector/MiniCatalogue.h>
-
 #include "normal/pushdown/Globals.h"
-#include <normal/pushdown/cache/CacheHelper.h>
 #include <parquet/arrow/reader.h>
 #include <normal/tuple/arrow/ArrowAWSInputStream.h>
-//#include <normal/tuple/arrow/ArrowAWSGZIPInputStream.h>
-#include <normal/tuple/arrow/ArrowAWSGZIPInputStream2.h>
 
 #ifdef __AVX2__
 #include <normal/plan/Globals.h>
@@ -73,9 +50,8 @@ using namespace Aws::S3::Model;
 
 using namespace normal::cache;
 using namespace normal::core::cache;
-using namespace normal::pushdown::cache;
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 std::mutex GetConvertLock;
 int activeGetConversions = 0;
@@ -187,7 +163,7 @@ std::shared_ptr<TupleSet2> S3Get::readParquetFile(std::basic_iostream<char, std:
   std::shared_ptr<arrow::Table> table;
   // only read the needed columns from the file
   std::vector<int> neededColumnIndices;
-  for (auto fieldName : neededColumnNames_) {
+  for (const auto& fieldName : neededColumnNames_) {
     neededColumnIndices.emplace_back(schema_->GetFieldIndex(fieldName));
   }
   st = arrow_reader->ReadTable(neededColumnIndices, &table);
@@ -236,7 +212,7 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
   s3SelectScanStats_.returnedBytes += resultSize;
   splitReqLock_.unlock();
   std::vector<std::shared_ptr<arrow::Field>> fields;
-  for (auto column : neededColumnNames_) {
+  for (const auto& column : neededColumnNames_) {
     fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
   }
   auto outputSchema = std::make_shared<::arrow::Schema>(fields);
@@ -287,7 +263,7 @@ std::shared_ptr<TupleSet2> S3Get::s3GetFullRequest() {
   return tupleSet;
 }
 
-GetObjectResult S3Get::s3GetRequestOnly(const std::string &s3Object, int64_t startOffset, int64_t endOffset) {
+GetObjectResult S3Get::s3GetRequestOnly(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset) {
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object));
@@ -330,7 +306,7 @@ GetObjectResult S3Get::s3GetRequestOnly(const std::string &s3Object, int64_t sta
 }
 
 #ifdef __AVX2__
-void S3Get::s3GetIndividualReq(int reqNum, const std::string &s3Object, int64_t startOffset, int64_t endOffset) {
+void S3Get::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint64_t startOffset, uint64_t endOffset) {
   GetObjectResult getObjectResult = s3GetRequestOnly(s3Object, startOffset, endOffset);
   if (parallelTuplesetCreationSupported()) {
     // Generate parser, and process initial input store partial in a separate vector that we will
@@ -365,7 +341,7 @@ void S3Get::s3GetIndividualReq(int reqNum, const std::string &s3Object, int64_t 
     }
     std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    for (auto column : neededColumnNames_) {
+    for (const auto& column : neededColumnNames_) {
       fields.emplace_back(::arrow::field(column, schema_->GetFieldByName(column)->type()));
     }
     auto outputSchema = std::make_shared<::arrow::Schema>(fields);
@@ -449,7 +425,7 @@ std::shared_ptr<TupleSet2> S3Get::s3GetParallelReqs(bool tempFixForAirmettleCSV1
       // add partial line from previous request number to parser here
       if (i < totalReqs) {
         std::vector<char> remainingData = reqNumToAdditionalOutput_[i];
-        if (remainingData.size() > 0) {
+        if (!remainingData.empty()) {
           parser->parseChunk(remainingData.data(), remainingData.size());
         }
       }
@@ -462,7 +438,7 @@ std::shared_ptr<TupleSet2> S3Get::s3GetParallelReqs(bool tempFixForAirmettleCSV1
     }
 
     std::shared_ptr<TupleSet2> readTupleSet;
-    if (tables.size() == 0) {
+    if (tables.empty()) {
       readTupleSet = TupleSet2::make2();
     } else if (tables.size() == 1) {
       auto tupleSetV1 = normal::tuple::TupleSet::make(tables[0]);
@@ -533,7 +509,7 @@ void S3Get::processScanMessage(const scan::ScanMessage &message) {
   // This is for hybrid caching as we later determine which columns to pull up
   // Though currently this is only called for SELECT in our system
   neededColumnNames_ = message.getColumnNames();
-};
+}
 
 int S3Get::getPredicateNum() {
   return 0;

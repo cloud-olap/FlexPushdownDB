@@ -6,13 +6,12 @@
 #include "normal/pushdown/s3/S3CSVParser.h"
 #include <arrow/csv/api.h>                              // for ReadOptions
 #include <arrow/io/api.h>                              // for BufferedI...
-#include <arrow/api.h>                                 // for default_m...
 #include <spdlog/spdlog.h>
 #include <arrow/csv/parser.h>
 
 #include <utility>
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 S3CSVParser::S3CSVParser(std::vector<std::string> columnNames,
 							   std::shared_ptr<arrow::Schema> schema,
@@ -22,9 +21,9 @@ S3CSVParser::S3CSVParser(std::vector<std::string> columnNames,
 	csvDelimiter_(csvDelimiter){}
 
 
-std::shared_ptr<S3CSVParser> S3CSVParser::make(std::vector<std::string> columnNames,
-                 std::shared_ptr<arrow::Schema> schema, char csvDelimiter) {
-  return std::make_shared<S3CSVParser>(std::move(columnNames), std::move(schema), csvDelimiter);
+std::shared_ptr<S3CSVParser> S3CSVParser::make(const std::vector<std::string>& columnNames,
+                 const std::shared_ptr<arrow::Schema>& schema, char csvDelimiter) {
+  return std::make_shared<S3CSVParser>(columnNames, schema, csvDelimiter);
 }
 
 /**
@@ -111,7 +110,7 @@ std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
   return tupleSet;
 }
 
-std::shared_ptr<TupleSet> S3CSVParser::parsePayload(Aws::Vector<unsigned char> &payload) {
+[[maybe_unused]] std::shared_ptr<TupleSet> S3CSVParser::parsePayload(Aws::Vector<unsigned char> &payload) {
   return parse(payload)->value();
 }
 

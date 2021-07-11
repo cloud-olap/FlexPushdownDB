@@ -9,7 +9,7 @@
 #include <memory>                  // for unique_ptr
 
 #include <arrow/api.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
 #include "normal/core/Operator.h"
@@ -20,7 +20,7 @@ namespace normal::tuple {
 	class TupleSet;
 }
 
-namespace normal::pushdown {
+namespace normal::pushdown::collate {
 
 class Collate : public normal::core::Operator {
 
@@ -28,7 +28,7 @@ private:
   std::shared_ptr<TupleSet> tuples_;
 private:
   std::vector<std::shared_ptr<arrow::Table>> tables_;
-  int tablesCutoff_ = 20;
+  size_t tablesCutoff_ = 20;
   void onStart();
 
   void onComplete(const normal::core::message::CompleteMessage &message);
@@ -40,7 +40,7 @@ public:
   ~Collate() override = default;
   void show();
   std::shared_ptr<TupleSet> tuples();
-  void setTuples(const std::shared_ptr<TupleSet> &Tuples);
+  [[maybe_unused]] void setTuples(const std::shared_ptr<TupleSet> &Tuples);
 };
 
 }

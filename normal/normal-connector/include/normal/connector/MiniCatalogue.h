@@ -57,11 +57,11 @@ public:
   void addToSegmentQueryNumMappings(int queryNum, const std::shared_ptr<cache::SegmentKey>& segmentKey);
   int querySegmentNextUsedIn(const std::shared_ptr<cache::SegmentKey>& segmentKey, int currentQuery);
   void setCurrentQueryNum(int queryNum);
-  int getCurrentQueryNum() const;
+  [[nodiscard]] int getCurrentQueryNum() const;
 
   std::shared_ptr<arrow::Schema> getSchema(const std::string &tableName);
-  const std::string &getSchemaName() const;
-  char getCSVFileDelimiter();
+  [[nodiscard]] const std::string &getSchemaName() const;
+  [[nodiscard]] char getCSVFileDelimiter() const;
 
 private:
   std::string schemaName_;
@@ -85,7 +85,7 @@ private:
   char csvFileDelimiter_;
 };
 
-std::string getFileExtensionByDirPrefix(std::string dir_prefix);
+std::string getFileExtensionByDirPrefix(const std::string& dir_prefix);
 
 inline std::shared_ptr<MiniCatalogue> defaultMiniCatalogue;
 

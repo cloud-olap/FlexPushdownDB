@@ -3,7 +3,6 @@
 //
 
 #include <normal/plan/LogicalPlan.h>
-
 #include <graphviz/gvc.h>
 
 using namespace normal::plan;
@@ -15,11 +14,11 @@ const std::shared_ptr<std::vector<std::shared_ptr<operator_::LogicalOperator>>> 
   return operators_;
 }
 
-void LogicalPlan::writeGraph(const filesystem::path &path) {
+void LogicalPlan::writeGraph(const std::filesystem::path &path) {
 
   auto gvc = gvContext();
 
-  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, 0);
+  auto graph = agopen(const_cast<char *>(std::string("Execution Plan").c_str()), Agstrictdirected, nullptr);
 
   // Init attributes
   agattr(graph, AGNODE, const_cast<char *>("fixedsize"), const_cast<char *>("false"));
@@ -57,7 +56,7 @@ void LogicalPlan::writeGraph(const filesystem::path &path) {
 	}
   }
 
-  if (!std::experimental::filesystem::exists(path.parent_path())) {
+  if (!std::filesystem::exists(path.parent_path())) {
 	throw std::runtime_error(
 		"Could not open file '" + path.string() + "' for writing. Parent directory does not exist");
   } else {

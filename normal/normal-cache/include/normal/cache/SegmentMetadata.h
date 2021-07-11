@@ -19,15 +19,15 @@ public:
   static std::shared_ptr<SegmentMetadata> make(size_t estimateSize, size_t size);
 
   void setSize(size_t size);
-  size_t size() const;
-  int hitNum() const;
-  size_t estimateSize() const;
-  double perSizeFreq() const;
+  [[nodiscard]] size_t size() const;
+  [[nodiscard]] int hitNum() const;
+  [[nodiscard]] size_t estimateSize() const;
+  [[nodiscard]] double perSizeFreq() const;
 
-  double value() const;
-  double avgValue() const;
-  double value2() const;
-  bool valid() const;
+  [[nodiscard]] double value() const;
+  [[nodiscard]] double avgValue() const;
+  [[nodiscard]] double value2() const;
+  [[nodiscard]] bool valid() const;
 
   void incHitNum();
   void incHitNum(size_t size);

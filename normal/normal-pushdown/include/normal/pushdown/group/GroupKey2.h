@@ -73,57 +73,27 @@ class GroupKeyElementBuilder {
 public:
   static tl::expected<std::shared_ptr<GroupKeyElement>, std::string> make(int r,
 																		  const std::shared_ptr<arrow::Array> &array) {
-
-	switch (array->type_id()) {
-
-//	case arrow::Type::NA:break;
-//	case arrow::Type::BOOL:break;
-//	case arrow::Type::UINT8:break;
-//	case arrow::Type::INT8:break;
-//	case arrow::Type::UINT16:break;
-	case arrow::Type::INT16:
-	  return std::make_shared<GroupKeyElementWrapper<arrow::Int16Type>>(
-		  std::static_pointer_cast<arrow::Int16Array>(array)->Value(r));
-//	case arrow::Type::UINT32:break;
-	case arrow::Type::INT32:
-	  return std::make_shared<GroupKeyElementWrapper<arrow::Int32Type>>(
-		  std::static_pointer_cast<arrow::Int32Array>(array)->Value(r));
-//	case arrow::Type::UINT64:break;
-	case arrow::Type::INT64:
-	  return std::make_shared<GroupKeyElementWrapper<arrow::Int64Type>>(
-		  std::static_pointer_cast<arrow::Int64Array>(array)->Value(r));
-//	case arrow::Type::HALF_FLOAT:break;
-	case arrow::Type::FLOAT:
-	  return std::make_shared<GroupKeyElementWrapper<arrow::FloatType>>(
-		  std::static_pointer_cast<arrow::FloatArray>(array)->Value(r));
-	case arrow::Type::DOUBLE:
-	  return std::make_shared<GroupKeyElementWrapper<arrow::DoubleType>>(
-		  std::static_pointer_cast<arrow::DoubleArray>(array)->Value(r));
-	case arrow::Type::STRING:
-	  return std::make_shared<GroupKeyElementWrapper<arrow::StringType>>(
-		  std::static_pointer_cast<arrow::StringArray>(array)->GetString(r));
-//	case arrow::Type::BINARY:break;
-//	case arrow::Type::FIXED_SIZE_BINARY:break;
-//	case arrow::Type::DATE32:break;
-//	case arrow::Type::DATE64:break;
-//	case arrow::Type::TIMESTAMP:break;
-//	case arrow::Type::TIME32:break;
-//	case arrow::Type::TIME64:break;
-//	case arrow::Type::INTERVAL:break;
-//	case arrow::Type::DECIMAL:break;
-//	case arrow::Type::LIST:break;
-//	case arrow::Type::STRUCT:break;
-//	case arrow::Type::UNION:break;
-//	case arrow::Type::DICTIONARY:break;
-//	case arrow::Type::MAP:break;
-//	case arrow::Type::EXTENSION:break;
-//	case arrow::Type::FIXED_SIZE_LIST:break;
-//	case arrow::Type::DURATION:break;
-//	case arrow::Type::LARGE_STRING:break;
-//	case arrow::Type::LARGE_BINARY:break;
-//	case arrow::Type::LARGE_LIST:break;
-	default: return tl::make_unexpected(fmt::format("Unrecognized type {}", array->type()->name()));
-	}
+    switch (array->type_id()) {
+      case arrow::Type::INT16:
+        return std::make_shared<GroupKeyElementWrapper<arrow::Int16Type>>(
+          std::static_pointer_cast<arrow::Int16Array>(array)->Value(r));
+      case arrow::Type::INT32:
+        return std::make_shared<GroupKeyElementWrapper<arrow::Int32Type>>(
+          std::static_pointer_cast<arrow::Int32Array>(array)->Value(r));
+      case arrow::Type::INT64:
+        return std::make_shared<GroupKeyElementWrapper<arrow::Int64Type>>(
+          std::static_pointer_cast<arrow::Int64Array>(array)->Value(r));
+      case arrow::Type::FLOAT:
+        return std::make_shared<GroupKeyElementWrapper<arrow::FloatType>>(
+          std::static_pointer_cast<arrow::FloatArray>(array)->Value(r));
+      case arrow::Type::DOUBLE:
+        return std::make_shared<GroupKeyElementWrapper<arrow::DoubleType>>(
+          std::static_pointer_cast<arrow::DoubleArray>(array)->Value(r));
+      case arrow::Type::STRING:
+        return std::make_shared<GroupKeyElementWrapper<arrow::StringType>>(
+          std::static_pointer_cast<arrow::StringArray>(array)->GetString(r));
+      default: return tl::make_unexpected(fmt::format("Unrecognized type {}", array->type()->name()));
+    }
   }
 };
 

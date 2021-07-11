@@ -22,9 +22,9 @@ public:
   explicit AggregateLogicalOperator(std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions,
                                     std::shared_ptr<LogicalOperator> producer);
 
-  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators();
+  std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
-  const std::shared_ptr<LogicalOperator> &getProducer() const;
+  [[nodiscard]] const std::shared_ptr<LogicalOperator> &getProducer() const;
 
 
   void setNumConcurrentUnits(int numConcurrentUnits);
@@ -34,11 +34,11 @@ private:
 
   std::shared_ptr<LogicalOperator> producer_;
 
-  int numConcurrentUnits_;
+  int numConcurrentUnits_{};
 
 };
 
-std::shared_ptr<normal::expression::gandiva::Expression> castToFloat64Type(std::shared_ptr<normal::expression::gandiva::Expression> expr);
+std::shared_ptr<normal::expression::gandiva::Expression> castToFloat64Type(const std::shared_ptr<normal::expression::gandiva::Expression>& expr);
 
 }
 

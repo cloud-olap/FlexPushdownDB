@@ -8,7 +8,7 @@
 #include <memory>
 
 #include <normal/core/Operator.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/expression/Filter.h>
@@ -29,9 +29,9 @@ public:
 
   void onReceive(const core::message::Envelope &Envelope) override;
 
-  size_t getFilterTimeNS() const;
-  size_t getFilterInputBytes() const;
-  size_t getFilterOutputBytes() const;
+  [[nodiscard]] size_t getFilterTimeNS() const;
+  [[nodiscard]] size_t getFilterInputBytes() const;
+  [[nodiscard]] size_t getFilterOutputBytes() const;
 
 private:
   std::shared_ptr<FilterPredicate> pred_;

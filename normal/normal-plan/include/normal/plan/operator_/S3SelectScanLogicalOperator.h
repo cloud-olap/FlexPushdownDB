@@ -21,7 +21,7 @@ namespace normal::plan::operator_ {
 class S3SelectScanLogicalOperator : public ScanLogicalOperator {
 
 public:
-  S3SelectScanLogicalOperator(const std::shared_ptr<S3SelectPartitioningScheme> &partitioningScheme);
+  explicit S3SelectScanLogicalOperator(const std::shared_ptr<S3SelectPartitioningScheme> &partitioningScheme);
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
   std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> extractSegmentKeys() override;

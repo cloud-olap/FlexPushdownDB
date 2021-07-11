@@ -36,7 +36,7 @@ private:
 
 };
 
-std::shared_ptr<Expression> cast(std::shared_ptr<Expression> expr, std::shared_ptr<normal::core::type::Type> type);
+std::shared_ptr<Expression> cast(const std::shared_ptr<Expression>& expr, const std::shared_ptr<normal::core::type::Type>& type);
 
 }
 

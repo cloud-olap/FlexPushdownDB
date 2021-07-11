@@ -24,7 +24,7 @@ std::shared_ptr<Column> Sample::sample3String() {
   return column1;
 }
 
-std::shared_ptr<TupleSet2> Sample::sample3x3String() {
+[[maybe_unused]] std::shared_ptr<TupleSet2> Sample::sample3x3String() {
 
   auto vec1 = std::vector{"1", "2", "3"};
   auto vec2 = std::vector{"4", "5", "6"};

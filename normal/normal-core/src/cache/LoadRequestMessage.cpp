@@ -13,9 +13,9 @@ LoadRequestMessage::LoadRequestMessage(std::vector<std::shared_ptr<SegmentKey>> 
 	Message("LoadRequestMessage", sender),
 	segmentKeys_(std::move(segmentKeys)) {}
 
-std::shared_ptr<LoadRequestMessage> LoadRequestMessage::make(std::vector<std::shared_ptr<SegmentKey>> segmentKeys,
+std::shared_ptr<LoadRequestMessage> LoadRequestMessage::make(const std::vector<std::shared_ptr<SegmentKey>>& segmentKeys,
 															 const std::string &sender) {
-  return std::make_shared<LoadRequestMessage>(std::move(segmentKeys), sender);
+  return std::make_shared<LoadRequestMessage>(segmentKeys, sender);
 }
 
 const std::vector<std::shared_ptr<SegmentKey>> &LoadRequestMessage::getSegmentKeys() const {

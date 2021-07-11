@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/pushdown/Globals.h>
 #include <normal/expression/gandiva/Filter.h>
@@ -185,7 +185,7 @@ int getPredicateNum(const std::shared_ptr<normal::expression::gandiva::Expressio
 
 void Filter::sendSegmentWeight() {
   auto selectivity = ((double) filteredNumRows_) / ((double ) totalNumRows_);
-  double predicateNum = (double) getPredicateNum(pred_->expression());
+  auto predicateNum = (double) getPredicateNum(pred_->expression());
 
   auto weightMap = std::make_shared<std::unordered_map<std::shared_ptr<SegmentKey>, double>>();
 

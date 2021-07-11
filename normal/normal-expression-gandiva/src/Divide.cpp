@@ -3,12 +3,14 @@
 //
 
 #include <gandiva/tree_expr_builder.h>
+
+#include <utility>
 #include "normal/expression/gandiva/Divide.h"
 
 using namespace normal::expression::gandiva;
 
 Divide::Divide(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-	: BinaryExpression(left, right) {
+	: BinaryExpression(std::move(left), std::move(right)) {
 }
 
 void Divide::compile(std::shared_ptr<arrow::Schema> schema ) {
@@ -27,7 +29,7 @@ std::string Divide::alias() {
   return "?column?";
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::divide(std::shared_ptr<Expression> left,
-																std::shared_ptr<Expression> right) {
-  return std::make_shared<Divide>(std::move(left), std::move(right));
+std::shared_ptr<Expression> normal::expression::gandiva::divide(const std::shared_ptr<Expression>& left,
+																const std::shared_ptr<Expression>& right) {
+  return std::make_shared<Divide>(left, right);
 }

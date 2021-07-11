@@ -9,7 +9,7 @@
 #include <queue>
 #include <normal/connector/MiniCatalogue.h>
 #include <chrono>
-#include <iostream>
+#include <utility>
 
 using namespace normal::cache;
 
@@ -24,7 +24,7 @@ bool FBRSCachingPolicy::lessValue(const std::shared_ptr<SegmentKey> &key1, const
 }
 
 FBRSCachingPolicy::FBRSCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-        CachingPolicy(maxSize, mode) {}
+        CachingPolicy(maxSize, std::move(mode)) {}
 
 std::shared_ptr<FBRSCachingPolicy> FBRSCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
     return std::make_shared<FBRSCachingPolicy>(maxSize, mode);

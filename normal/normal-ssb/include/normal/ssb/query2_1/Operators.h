@@ -11,10 +11,10 @@
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/filter/Filter.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
-#include <normal/pushdown/Aggregate.h>
+#include <normal/pushdown/aggregate/Aggregate.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/shuffle/Shuffle.h>
 #include <normal/core/graph/OperatorGraph.h>

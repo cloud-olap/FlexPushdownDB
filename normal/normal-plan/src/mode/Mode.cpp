@@ -9,7 +9,7 @@ using namespace normal::plan::operator_::mode;
 
 Mode::Mode(ModeId id): id_(id) {}
 
-bool Mode::is(std::shared_ptr<Mode> mode) {
+bool Mode::is(const std::shared_ptr<Mode>& mode) {
   return id_ == mode->id_;
 }
 

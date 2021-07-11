@@ -13,13 +13,13 @@ namespace normal::plan::operator_::mode {
 class Mode {
 public:
 
-  Mode(ModeId modeId);
+  explicit Mode(ModeId modeId);
   ~Mode() = default;
 
-  bool is(std::shared_ptr<Mode> mode);
+  bool is(const std::shared_ptr<Mode>& mode);
   std::string toString();
 
-  ModeId id() const;
+  [[nodiscard]] ModeId id() const;
 
 private:
   ModeId id_;
@@ -28,4 +28,4 @@ private:
 }
 
 
-#endif //NORMAL_MODE_H
+#endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_MODE_H

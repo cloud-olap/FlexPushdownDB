@@ -33,17 +33,18 @@ public:
 
   void setComplete(const std::string& name);
   void setIncomplete();
-  bool allComplete();
+  [[nodiscard]] bool allComplete() const;
 
-  std::string showString() const;
+  [[nodiscard]] std::string showString() const;
   void clear();
 
   MapType::iterator begin();
-  MapType::const_iterator begin() const;
+  [[nodiscard]] MapType::const_iterator begin() const;
   MapType::iterator end();
-  MapType::const_iterator end() const;
-  MapType::const_iterator cbegin() const;
-  MapType::const_iterator cend() const;
+  [[nodiscard]] MapType::const_iterator end() const;
+
+  [[maybe_unused]] [[nodiscard]] MapType::const_iterator cbegin() const;
+  [[maybe_unused]] [[nodiscard]] MapType::const_iterator cend() const;
 
 };
 

@@ -34,11 +34,11 @@
 
 #include <normal/ssb/Globals.h>
 #include <normal/core/OperatorManager.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/aggregate/AggregationFunction.h>
 #include <normal/pushdown/aggregate/Sum.h>
-#include <normal/pushdown/Aggregate.h>
+#include <normal/pushdown/aggregate/Aggregate.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/core/type/Integer32Type.h>

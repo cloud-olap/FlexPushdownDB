@@ -7,8 +7,6 @@
 #include "normal/core/Globals.h"
 #include <sstream>
 
-#include <fmt/format.h>
-
 namespace normal::core {
 
 void OperatorDirectory::insert(const OperatorDirectoryEntry& entry) {
@@ -31,7 +29,7 @@ void OperatorDirectory::setComplete(const std::string& name) {
   ++numOperatorsComplete_;
 }
 
-bool OperatorDirectory::allComplete() {
+bool OperatorDirectory::allComplete() const {
   return numOperatorsComplete_ >= numOperators_;
 }
 
@@ -79,11 +77,11 @@ OperatorDirectory::MapType::const_iterator OperatorDirectory::end() const {
   return entries_.end();
 }
 
-OperatorDirectory::MapType::const_iterator OperatorDirectory::cbegin() const {
+[[maybe_unused]] OperatorDirectory::MapType::const_iterator OperatorDirectory::cbegin() const {
   return entries_.cbegin();
 }
 
-OperatorDirectory::MapType::const_iterator OperatorDirectory::cend() const {
+  [[maybe_unused]] [[maybe_unused]] OperatorDirectory::MapType::const_iterator OperatorDirectory::cend() const {
   return entries_.cend();
 }
 

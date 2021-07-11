@@ -9,10 +9,10 @@
 #include <normal/expression/Expression.h>
 #include <normal/expression/Projector.h>
 #include <normal/expression/gandiva/Expression.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
-namespace normal::pushdown {
+namespace normal::pushdown::project {
 
 class Project : public normal::core::Operator {
 

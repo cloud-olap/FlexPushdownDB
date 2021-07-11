@@ -51,7 +51,7 @@ public:
    * @param tuples
    * @return
    */
-  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Table> arrowTable);
+  static std::shared_ptr<TupleSet2> make(const std::shared_ptr<::arrow::Table>& arrowTable);
 
   static std::shared_ptr<TupleSet2> make(const std::vector<std::shared_ptr<Column>>& columns);
 

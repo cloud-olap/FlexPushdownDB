@@ -126,6 +126,6 @@ arrow::Result<int64_t> ArrowAWSGZIPInputStream2::Tell() const {
   return arrow::Result<int64_t>(processedCompressedBytes_);
 }
 
-int64_t ArrowAWSGZIPInputStream2::getDecompressionTimeNS() {
+[[maybe_unused]] int64_t ArrowAWSGZIPInputStream2::getDecompressionTimeNS() const {
   return decompressionTimeNS_;
 }

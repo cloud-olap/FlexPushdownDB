@@ -14,9 +14,9 @@
 
 namespace normal::core::type {
 
-class Types {
+class [[maybe_unused]] Types {
 public:
-  static std::unique_ptr<Type> fromArrowType(const std::shared_ptr<arrow::DataType> &arrowType) {
+  [[maybe_unused]] static std::unique_ptr<Type> fromArrowType(const std::shared_ptr<arrow::DataType> &arrowType) {
 	if (arrowType->id() == arrow::DecimalType::type_id) {
 	  auto t = std::static_pointer_cast<arrow::DecimalType>(arrowType);
 	  return decimalType(t->precision(), t->scale());
@@ -25,7 +25,7 @@ public:
 	}
   }
 
-  static std::shared_ptr<Type> fromStringType(std::string &&stringType) {
+  [[maybe_unused]] static std::shared_ptr<Type> fromStringType(std::string &&stringType) {
 
 	// Make sure its in lower case
 	std::transform(stringType.begin(), stringType.end(), stringType.begin(), ::tolower);

@@ -2,7 +2,7 @@
 // Created by matt on 11/12/19.
 //
 
-#include "normal/pushdown/Aggregate.h"
+#include "normal/pushdown/aggregate/Aggregate.h"
 
 #include <string>
 #include <utility>
@@ -10,12 +10,12 @@
 
 #include <normal/core/message/CompleteMessage.h>
 #include "normal/core/Operator.h"
-#include "normal/pushdown/TupleMessage.h"
+#include "normal/core/message/TupleMessage.h"
 #include "normal/core/message/Message.h"
 #include <normal/pushdown/aggregate/AggregationResult.h>
 #include "arrow/scalar.h"
 
-namespace normal::pushdown {
+namespace normal::pushdown::aggregate {
 
 Aggregate::Aggregate(std::string name,
                      std::shared_ptr<std::vector<std::shared_ptr<aggregate::AggregationFunction>>> functions,

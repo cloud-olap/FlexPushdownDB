@@ -6,13 +6,15 @@
 #include "normal/plan/operator_/GroupLogicalOperator.h"
 #include <normal/pushdown/group/Group.h>
 
+#include <utility>
+
 using namespace normal::plan::operator_;
 
-normal::plan::operator_::GroupLogicalOperator::GroupLogicalOperator(const std::shared_ptr<std::vector<std::string>> &groupColumnNames,
-                                                                    const std::shared_ptr<std::vector<std::string>> &aggregateColumnNames,
-                                                                    const std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> &functions,
-                                                                    const std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> &projectExpression,
-                                                                    const std::shared_ptr<LogicalOperator> &producer)
+normal::plan::operator_::GroupLogicalOperator::GroupLogicalOperator(std::shared_ptr<std::vector<std::string>> groupColumnNames,
+                                                                    std::shared_ptr<std::vector<std::string>> aggregateColumnNames,
+                                                                    std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions,
+                                                                    std::shared_ptr<std::vector<std::shared_ptr<expression::gandiva::Expression>>> projectExpression,
+                                                                    std::shared_ptr<LogicalOperator> producer)
         : LogicalOperator(type::OperatorTypes::groupOperatorType()),
         groupColumnNames_(std::move(groupColumnNames)),
         aggregateColumnNames_(std::move(aggregateColumnNames)),

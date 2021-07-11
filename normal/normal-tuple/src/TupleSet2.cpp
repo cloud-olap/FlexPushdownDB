@@ -39,8 +39,7 @@ tl::expected<std::shared_ptr<TupleSet2>,
   // Make sure the tuple sets are valid and have the same schema
   std::shared_ptr<TupleSet2> tupleSet1;
   std::vector<std::shared_ptr<TupleSet2>> tupleSets1;
-  for(int i = 0; i < tupleSets.size(); i++){
-    auto &tupleSet = tupleSets[i];
+  for(const auto & tupleSet : tupleSets){
     if(!tupleSet->getArrowTable().has_value()){
       return tl::make_unexpected("Cannot concatenate empty tuple sets");
     }
@@ -305,8 +304,8 @@ bool TupleSet2::validate() {
 	return true;
 }
 
-std::shared_ptr<TupleSet2> TupleSet2::make(std::shared_ptr<::arrow::Table> arrowTable) {
-  return std::make_shared<TupleSet2>(std::move(arrowTable));
+std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<::arrow::Table>& arrowTable) {
+  return std::make_shared<TupleSet2>(arrowTable);
 }
 
 std::shared_ptr<TupleSet2> TupleSet2::make(const std::shared_ptr<::arrow::Schema>& schema, const std::vector<std::shared_ptr<::arrow::Array>>& arrays) {

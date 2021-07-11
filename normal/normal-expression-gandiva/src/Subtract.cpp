@@ -3,12 +3,14 @@
 //
 
 #include <gandiva/tree_expr_builder.h>
+
+#include <utility>
 #include "normal/expression/gandiva/Subtract.h"
 
 using namespace normal::expression::gandiva;
 
 Subtract::Subtract(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right) :
-	BinaryExpression(left, right) {
+	BinaryExpression(std::move(left), std::move(right)) {
 }
 
 void Subtract::compile(std::shared_ptr<arrow::Schema> schema) {
@@ -26,7 +28,7 @@ std::string Subtract::alias() {
   return "?column?";
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::minus(std::shared_ptr<Expression> left,
-															   std::shared_ptr<Expression> right) {
-  return std::make_shared<Subtract>(std::move(left), std::move(right));
+std::shared_ptr<Expression> normal::expression::gandiva::minus(const std::shared_ptr<Expression>& left,
+															   const std::shared_ptr<Expression>& right) {
+  return std::make_shared<Subtract>(left, right);
 }

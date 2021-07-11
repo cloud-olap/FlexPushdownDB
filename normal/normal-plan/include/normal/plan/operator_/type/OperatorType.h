@@ -17,7 +17,7 @@ public:
   explicit OperatorType(OperatorTypeId Id);
   ~OperatorType()  = default;
 
-  bool is(std::shared_ptr<OperatorType> type);
+  bool is(const std::shared_ptr<OperatorType>& type);
 
   std::string toString();
 

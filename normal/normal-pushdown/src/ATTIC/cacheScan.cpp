@@ -2,7 +2,7 @@
 // Created by Jialing Pei on 5/6/20.
 //
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include "normal/pushdown/ATTIC/cacheScan.h"
 namespace normal::pushdown {
     cacheScan::cacheScan(std::string name,  std::string cacheID,std::shared_ptr<Cache> cache, long queryId) :

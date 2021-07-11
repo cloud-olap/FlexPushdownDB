@@ -8,13 +8,15 @@
 #include <normal/expression/gandiva/Column.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
-#include <normal/pushdown/Project.h>
+#include <normal/pushdown/project/Project.h>
 #include <normal/plan/Globals.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::plan::operator_;
 using namespace normal::pushdown;
+using namespace normal::pushdown::s3;
+using namespace normal::pushdown::project;
 using namespace normal::core::type;
 
 S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
@@ -22,7 +24,7 @@ S3SelectScanLogicalOperator::S3SelectScanLogicalOperator(
 	ScanLogicalOperator(partitioningScheme) {}
 
 
-std::string genFilterSql(std::shared_ptr<normal::expression::gandiva::Expression> predicate){
+std::string genFilterSql(const std::shared_ptr<normal::expression::gandiva::Expression>& predicate){
   if (predicate != nullptr) {
     std::string filterStr = predicate->alias();
     return " where " + filterStr;
@@ -722,7 +724,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> S3Selec
     auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
     auto numBytes = s3Partition->getNumBytes();
     auto segmentRange = SegmentRange::make(0, numBytes);
-    for (auto column : *allColumnNames) {
+    for (const auto& column : *allColumnNames) {
       auto segmentKey = SegmentKey::make(s3Partition, column, segmentRange);
       involvedSegmentKeys->emplace_back(segmentKey);
     }
@@ -731,38 +733,3 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> S3Selec
 
   return involvedSegmentKeys;
 }
-
-//    int rangeId = 0;
-//    for (const auto &scanRange: scanRanges) {
-//      // S3Scan
-//      auto scanOp = S3SelectScan::make(
-//              "s3scan - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
-//              s3Partition->getBucket(),
-//              s3Object,
-//              "",
-//              *allColumnNames,
-//              scanRange.first,
-//              scanRange.second,
-//              S3SelectCSVParseOptions(",", "\n"),
-//              DefaultS3Client,
-//              true,
-//              false);
-//      operators->emplace_back(scanOp);
-//
-//      // Filter if it has filterPredicate
-//      if (predicate_) {
-//        auto filter = filter::Filter::make(
-//                fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
-//                filterPredicate);
-//        operators->emplace_back(filter);
-//        streamOutPhysicalOperators_->emplace_back(filter);
-//
-//        scanOp->produce(filter);
-//        filter->consume(scanOp);
-//      } else {
-//        streamOutPhysicalOperators_->emplace_back(scanOp);
-//      }
-//
-//      rangeId++;
-//    }
-//  }

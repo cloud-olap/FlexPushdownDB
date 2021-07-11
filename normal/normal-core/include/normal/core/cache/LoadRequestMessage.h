@@ -25,7 +25,7 @@ public:
   LoadRequestMessage(std::vector<std::shared_ptr<SegmentKey>> segmentKeys,
 							  const std::string &sender);
 
-  static std::shared_ptr<LoadRequestMessage> make(std::vector<std::shared_ptr<SegmentKey>> segmentKeys, const std::string &sender);
+  static std::shared_ptr<LoadRequestMessage> make(const std::vector<std::shared_ptr<SegmentKey>>& segmentKeys, const std::string &sender);
 
   [[nodiscard]] const std::vector<std::shared_ptr<SegmentKey>> &getSegmentKeys() const;
 

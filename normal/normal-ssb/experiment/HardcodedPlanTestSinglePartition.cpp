@@ -4,7 +4,7 @@
 
 #include <doctest/doctest.h>
 #include <normal/ssb/TestUtil.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
@@ -14,8 +14,8 @@
 #include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/s3/S3Util.h>
 #include <normal/pushdown/Util.h>
-#include <normal/pushdown/Aggregate.h>
-#include <normal/pushdown/Project.h>
+#include <normal/pushdown/aggregate/Aggregate.h>
+#include <normal/pushdown/project/Project.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
 #include <normal/expression/gandiva/Cast.h>

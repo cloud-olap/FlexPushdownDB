@@ -17,7 +17,7 @@
 using namespace normal::tuple;
 using namespace normal::pushdown::scan;
 
-namespace normal::pushdown {
+namespace normal::pushdown::file {
 
 class FileScan : public normal::core::Operator {
 
@@ -58,9 +58,9 @@ private:
   std::vector<std::string> columnNames_;
   std::unique_ptr<FileScanKernel> kernel_;
 public:
-  const std::unique_ptr<FileScanKernel> &getKernel() const;
-  bool isScanOnStart() const;
-  const std::vector<std::string> &getColumnNames() const;
+  [[nodiscard]] const std::unique_ptr<FileScanKernel> &getKernel() const;
+  [[nodiscard]] bool isScanOnStart() const;
+  [[nodiscard]] const std::vector<std::string> &getColumnNames() const;
 private:
   void onStart();
 

@@ -19,7 +19,7 @@ private:
   Aws::SDKOptions options_;
 public:
   void init();
-  void shutdown();
+  [[maybe_unused]] void shutdown();
   static std::shared_ptr<Aws::S3::S3Client> defaultS3Client();
 };
 inline bool initialized_ = false;

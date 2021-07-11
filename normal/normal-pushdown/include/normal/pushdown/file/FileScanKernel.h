@@ -19,7 +19,7 @@
 
 using namespace normal::tuple;
 
-namespace normal::pushdown {
+namespace normal::pushdown::file {
 
 class FileScanKernel {
 

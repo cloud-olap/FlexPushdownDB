@@ -5,7 +5,7 @@
 #include <doctest/doctest.h>
 #include <normal/sql/Interpreter.h>
 #include <normal/ssb/TestUtil.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/pushdown/Util.h>
 #include <normal/plan/mode/Modes.h>

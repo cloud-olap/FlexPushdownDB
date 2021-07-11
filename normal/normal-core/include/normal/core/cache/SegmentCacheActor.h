@@ -45,7 +45,7 @@ using MetricsAtom = atom_constant<atom("Metrics")>;
 class SegmentCacheActor {
 
 public:
-  static behavior makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
+  [[maybe_unused]] static behavior makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
 								const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy);
 
   static std::shared_ptr<LoadResponseMessage> load(const LoadRequestMessage &msg,
@@ -58,10 +58,10 @@ public:
 
 }
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadResponseMessage>);
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadRequestMessage>);
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::StoreRequestMessage>);
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::WeightRequestMessage>);
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::CacheMetricsMessage>);
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadResponseMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::LoadRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::StoreRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::WeightRequestMessage>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<normal::core::cache::CacheMetricsMessage>)
 
 #endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_CACHE_SEGMENTCACHEACTOR_H

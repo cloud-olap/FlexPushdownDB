@@ -7,7 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <normal/pushdown/cache/CacheLoad.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/file/FileScan.h>

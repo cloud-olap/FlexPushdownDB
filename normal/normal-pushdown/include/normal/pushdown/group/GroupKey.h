@@ -18,7 +18,6 @@ namespace normal::pushdown::group {
 class GroupKey {
 
 public:
-  GroupKey();
   explicit GroupKey(std::shared_ptr<Schema> Schema, std::vector<std::shared_ptr<normal::tuple::Scalar>> Attributes);
 
   static std::shared_ptr<GroupKey> make();
@@ -26,10 +25,11 @@ public:
   void append(std::string name, const std::shared_ptr<normal::tuple::Scalar>& attribute);
   size_t hash();
   bool operator==(const GroupKey &other);
-  std::string toString() const;
-  const std::shared_ptr<Schema> &getSchema() const;
-  const std::vector<std::shared_ptr<normal::tuple::Scalar>> &getAttributes() const;
-  const std::shared_ptr<normal::tuple::Scalar> getAttributeValueByName(std::string name) const;
+  [[nodiscard]] std::string toString() const;
+  [[nodiscard]] const std::shared_ptr<Schema> &getSchema() const;
+
+  [[maybe_unused]] [[nodiscard]] const std::vector<std::shared_ptr<normal::tuple::Scalar>> &getAttributes() const;
+  [[nodiscard]] std::shared_ptr<normal::tuple::Scalar> getAttributeValueByName(const std::string& name) const;
 
 private:
   std::shared_ptr<Schema> schema_;

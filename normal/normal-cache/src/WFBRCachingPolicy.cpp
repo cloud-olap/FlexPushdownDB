@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <normal/cache/WFBRCachingPolicy.h>
 #include <chrono>
+#include <utility>
 #include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::cache;
@@ -21,7 +22,7 @@ bool WFBRCachingPolicy::lessValue(const std::shared_ptr<SegmentKey> &key1, const
 }
 
 WFBRCachingPolicy::WFBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode):
-      CachingPolicy(maxSize, mode),
+      CachingPolicy(maxSize, std::move(mode)),
       currentQueryId_(0) {}
 
 std::shared_ptr<WFBRCachingPolicy>

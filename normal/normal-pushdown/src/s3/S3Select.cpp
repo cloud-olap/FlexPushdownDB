@@ -4,30 +4,19 @@
 
 #include "normal/pushdown/s3/S3Select.h"
 
-#include <iostream>
 #include <utility>
 #include <memory>
 #include <cstdlib>                                          // for abort
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
-#include <aws/core/utils/threading/Executor.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
-#include <aws/core/Aws.h>
 #include <aws/s3/model/SelectObjectContentRequest.h>
-#include <aws/core/client/ClientConfiguration.h>
 
-#include <arrow/csv/options.h>                              // for ReadOptions
 #include <arrow/csv/reader.h>                               // for TableReader
 #include <arrow/io/buffered.h>                              // for BufferedI...
-#include <arrow/io/memory.h>                                // for BufferReader
 #include <arrow/type_fwd.h>                                 // for default_m...
-#include <aws/core/Region.h>                                // for US_EAST_1
-#include <aws/core/auth/AWSAuthSigner.h>                    // for AWSAuthV4...
-#include <aws/core/http/Scheme.h>                           // for Scheme
-#include <aws/core/utils/logging/LogLevel.h>                // for LogLevel
-#include <aws/core/utils/memory/stl/AWSAllocator.h>         // for MakeShared
 #include <aws/s3/model/CSVInput.h>                          // for CSVInput
 #include <aws/s3/model/CSVOutput.h>                         // for CSVOutput
 #include <aws/s3/model/ExpressionType.h>                    // for Expressio...
@@ -42,14 +31,12 @@
 
 #include "normal/core/message/Message.h"                    // for Message
 #include "normal/tuple/TupleSet.h"                          // for TupleSet
-#include <normal/pushdown/TupleMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/connector/MiniCatalogue.h>
 
 #include "normal/pushdown/Globals.h"
-#include <normal/pushdown/cache/CacheHelper.h>
 #include <normal/plan/Globals.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
@@ -64,9 +51,8 @@ using namespace Aws::S3::Model;
 
 using namespace normal::cache;
 using namespace normal::core::cache;
-using namespace normal::pushdown::cache;
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 std::mutex SelectConvertLock;
 int activeSelectConversions = 0;
@@ -181,7 +167,7 @@ bool S3Select::scanRangeSupported() {
   return true;
 }
 
-std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOffset) {
+std::shared_ptr<TupleSet2> S3Select::s3Select(uint64_t startOffset, uint64_t endOffset) {
   // Create the necessary parser
 #ifdef __AVX2__
   auto simdParser = generateSIMDParser();
@@ -241,7 +227,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
                  name(),
                  recordsEvent.GetPayload().size());
     auto payload = recordsEvent.GetPayload();
-    if (payload.size() > 0) {
+    if (!payload.empty()) {
       // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
       if (normal::plan::s3ClientType == normal::plan::Airmettle) {
         splitReqLock_.lock();
@@ -331,10 +317,6 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
     std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
 
-//  if (!hasEndEvent) {
-//    SPDLOG_CRITICAL("No end event! sql: {}, name: {}", sql, name());
-//  }
-
   // If the request doesn't complete we don't count it in our costs as these requests seem to fail before sending
   // messages to S3 (some internal AWS CPP SDK event most likely causes this).
   // This sometimes occurs when sending many S3 Select requests in parallel from our machine, though setting
@@ -343,7 +325,6 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
   s3SelectScanStats_.numRequests++;
   splitReqLock_.unlock();
 
-  //  SPDLOG_DEBUG("name: {}, returnedBytes: {}, sql: {}", name(), returnedBytes_, sql);
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   std::shared_ptr<TupleSet2> tupleSet;
 #ifdef __AVX2__
@@ -369,7 +350,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(int64_t startOffset, int64_t endOf
   return tupleSet;
 }
 
-void S3Select::s3SelectIndividualReq(int reqNum, int64_t startOffset, int64_t endOffset) {
+void S3Select::s3SelectIndividualReq(int reqNum, uint64_t startOffset, uint64_t endOffset) {
   std::shared_ptr<TupleSet2> readTupleSet = s3Select(startOffset, endOffset);
   splitReqLock_.lock();
   splitReqNumToTable_.insert(std::pair<int, std::shared_ptr<arrow::Table>>(reqNum, readTupleSet->getArrowTable().value()));
@@ -415,7 +396,7 @@ std::shared_ptr<TupleSet2> S3Select::s3SelectParallelReqs() {
   }
 
   // Create and return the TupleSet2 result
-  if (tables.size() == 0) {
+  if (tables.empty()) {
     return TupleSet2::make2();
   } else if (tables.size() == 1) {
     auto tupleSetV1 = normal::tuple::TupleSet::make(tables[0]);
@@ -475,7 +456,7 @@ void S3Select::processScanMessage(const scan::ScanMessage &message) {
   returnedS3ColumnNames_ = message.getColumnNames();
   neededColumnNames_ = message.getColumnNames();
   columnsReadFromS3_ = std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>>(returnedS3ColumnNames_.size());
-};
+}
 
 int subStrNum(const std::string& str, const std::string& sub) {
   int num = 0;

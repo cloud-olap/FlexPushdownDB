@@ -11,7 +11,6 @@
 #include <normal/plan/operator_/AggregateLogicalOperator.h>
 #include <normal/plan/operator_/ProjectLogicalOperator.h>
 #include <normal/plan/operator_/GroupLogicalOperator.h>
-#include <normal/pushdown/Collate.h>
 #include <normal/plan/mode/Modes.h>
 
 using namespace normal::plan;
@@ -42,7 +41,7 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
                      std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>>> &logicalToPhysical_map,
              std::shared_ptr<std::vector<std::shared_ptr<normal::plan::operator_::LogicalOperator>>> &wiredLogicalProducers,
              std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &allPhysicalOperators,
-             std::shared_ptr<normal::plan::operator_::mode::Mode> mode){
+             const std::shared_ptr<normal::plan::operator_::mode::Mode>& mode){
 
   // if logicalProducer is already wired, return
   if (std::find(wiredLogicalProducers->begin(), wiredLogicalProducers->end(), logicalProducer) != wiredLogicalProducers->end()) {
@@ -156,7 +155,7 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
   }
 
   else {
-    std::runtime_error("Bad logicalProducer type: '" + logicalProducer->type()->toString() + "', check logical plan");
+    throw std::runtime_error("Bad logicalProducer type: '" + logicalProducer->type()->toString() + "', check logical plan");
   }
 
 
@@ -305,15 +304,15 @@ void wireUp (std::shared_ptr<normal::plan::operator_::LogicalOperator> &logicalP
   }
 
   else {
-    std::runtime_error("Bad logicalConsumer type: '" + logicalConsumer->type()->toString() + "', check logical plan");
+    throw std::runtime_error("Bad logicalConsumer type: '" + logicalConsumer->type()->toString() + "', check logical plan");
   }
 
 }
 
 std::shared_ptr<PhysicalPlan> Planner::generate (const LogicalPlan &logicalPlan,
-                                                 std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
+                                                 const std::shared_ptr<normal::plan::operator_::mode::Mode>& mode) {
   auto physicalPlan = std::make_shared<PhysicalPlan>();
-  auto logicalOperators = logicalPlan.getOperators();
+  const auto& logicalOperators = logicalPlan.getOperators();
   auto logicalToPhysical_map = std::make_shared<std::unordered_map<
           std::shared_ptr<normal::plan::operator_::LogicalOperator>,
           std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>>>();

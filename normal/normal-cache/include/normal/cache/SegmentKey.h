@@ -27,13 +27,13 @@ public:
              std::shared_ptr<SegmentMetadata> metadata);
 
   static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition,
-                                          std::string columnName,
+                                          const std::string& columnName,
                                           SegmentRange Range);
 
   static std::shared_ptr<SegmentKey> make(const std::shared_ptr<Partition> &Partition,
-                                          std::string columnName,
+                                          const std::string& columnName,
                                           SegmentRange Range,
-                                          std::shared_ptr<SegmentMetadata> metadata);
+                                          const std::shared_ptr<SegmentMetadata>& metadata);
 
   [[nodiscard]] const std::shared_ptr<Partition> &getPartition() const;
   [[nodiscard]] const std::string &getColumnName() const;

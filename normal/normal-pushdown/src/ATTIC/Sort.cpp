@@ -2,8 +2,8 @@
 // Created by Jialing Pei on 5/6/20.
 //
 
-#include <normal/pushdown/Sort.h>
-#include "normal/pushdown/Sort.h"
+#include <normal/pushdown/ATTIC/Sort.h>
+#include "normal/pushdown/ATTIC/Sort.h"
 namespace normal::pushdown{
     void Sort::onStart() {
         // FIXME: Either set tuples to size 0 or use an optional

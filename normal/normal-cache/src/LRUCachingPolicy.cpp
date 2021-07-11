@@ -3,13 +3,14 @@
 //
 
 #include <sstream>
+#include <utility>
 #include "normal/cache/LRUCachingPolicy.h"
 #include <normal/plan/mode/Modes.h>
 
 using namespace normal::cache;
 
 LRUCachingPolicy::LRUCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-  CachingPolicy(maxSize, mode) {}
+  CachingPolicy(maxSize, std::move(mode)) {}
 
 std::shared_ptr<LRUCachingPolicy> LRUCachingPolicy::make() {
   return std::make_shared<LRUCachingPolicy>(std::numeric_limits<size_t>::max(),

@@ -37,8 +37,10 @@ public:
 
   void generateCacheDecisions(int numQueries);
   std::string approximateExecutionHitRate(int warmBatchSize, int executeBatchSize);
-  void compareExpectedCachedKeysToActual(int queryNumberJustFinished);
-  std::string printHitsAndMissesPerQuery();
+
+  [[maybe_unused]] void compareExpectedCachedKeysToActual(int queryNumberJustFinished);
+
+  [[maybe_unused]] std::string printHitsAndMissesPerQuery();
   std::string printLayoutAfterEveryQuery();
 
   CachingPolicyId id() override;
@@ -49,7 +51,7 @@ private:
   std::unordered_map<int, std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>>> queryNumToKeysInCache_;
 
   // Number of queries, this is passed in via generateCacheDecisions
-  int numQueries_;
+  int numQueries_{};
 
   void erase(const std::shared_ptr<SegmentKey> &key);
 };

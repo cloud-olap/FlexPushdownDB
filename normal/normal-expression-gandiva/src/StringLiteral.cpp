@@ -4,9 +4,11 @@
 
 #include "normal/expression/gandiva/StringLiteral.h"
 
+#include <utility>
+
 using namespace normal::expression::gandiva;
 
-StringLiteral::StringLiteral(std::string value) : value_(value) {}
+StringLiteral::StringLiteral(std::string value) : value_(std::move(value)) {}
 
 void StringLiteral::compile(std::shared_ptr<arrow::Schema>){
   auto literal = ::gandiva::TreeExprBuilder::MakeStringLiteral(value_);

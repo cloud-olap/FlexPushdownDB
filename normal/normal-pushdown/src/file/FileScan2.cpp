@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace normal::pushdown {
+namespace normal::pushdown::file {
 
 FileScanActor::behavior_type FileScanFunctor(FileScanStatefulActor self,
 											 std::string name,

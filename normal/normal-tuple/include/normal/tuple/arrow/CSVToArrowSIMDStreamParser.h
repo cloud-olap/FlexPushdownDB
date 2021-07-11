@@ -45,13 +45,13 @@ private:
   // Initialize datatypes_, arrayBuilders_, columnStartsWithQuote_, and startEndOffsets_.
   void initializeDataStructures(ParsedCSV & pcsv);
 
-  void prettyPrintPCSV(ParsedCSV & pcsv);
+  [[maybe_unused]] void prettyPrintPCSV(ParsedCSV & pcsv);
 
-  std::string callerName_;
+  [[maybe_unused]] std::string callerName_;
   uint64_t parseChunkSize_;
   // Use inputstream as it provides a nice wrapper for both uncompressed and compressed data
   std::shared_ptr<arrow::io::InputStream> inputStream_;
-  char* buffer_ = NULL;
+  char* buffer_ = nullptr;
   uint64_t bufferCapacity_ = 0;
   uint64_t bufferBytesUtilized_ = 0;
   uint64_t inputNumColumns_;

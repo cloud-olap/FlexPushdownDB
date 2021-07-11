@@ -64,7 +64,7 @@ public:
   antlrcpp::Any visitGroupBy_clause(NormalSQLParser::GroupBy_clauseContext *ctx) override;
   antlrcpp::Any visitFunction_name(NormalSQLParser::Function_nameContext *ctx) override;
 
-  std::shared_ptr<Type> typed_visitType_name(NormalSQLParser::Type_nameContext *Context);
+  static std::shared_ptr<Type> typed_visitType_name(NormalSQLParser::Type_nameContext *Context);
 };
 
 }

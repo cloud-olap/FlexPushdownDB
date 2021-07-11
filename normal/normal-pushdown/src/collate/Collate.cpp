@@ -2,21 +2,21 @@
 // Created by matt on 5/12/19.
 //
 
-#include "normal/pushdown/Collate.h"
+#include "normal/pushdown/collate/Collate.h"
 
 #include <vector>                      // for vector
 
 #include <arrow/table.h>               // for ConcatenateTables, Table (ptr ...
 #include <arrow/pretty_print.h>
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 
 #include "normal/pushdown/Globals.h"
 
 using namespace normal::core;
 
-namespace normal::pushdown {
+namespace normal::pushdown::collate {
 
 void Collate::onStart() {
   SPDLOG_DEBUG("Starting operator  |  name: '{}'", this->name());
@@ -88,7 +88,7 @@ void Collate::onTuple(const normal::core::message::TupleMessage &message) {
   }
 }
 
-void Collate::setTuples(const std::shared_ptr<TupleSet> &Tuples) {
+  [[maybe_unused]] void Collate::setTuples(const std::shared_ptr<TupleSet> &Tuples) {
   tuples_ = Tuples;
 }
 

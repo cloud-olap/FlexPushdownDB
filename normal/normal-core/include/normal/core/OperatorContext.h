@@ -42,7 +42,7 @@ public:
   tl::expected<void, std::string> send(const std::shared_ptr<message::Message> &msg, const std::string &recipientId);
 
   void destroyActorHandles();
-  bool isComplete() const;
+  [[nodiscard]] bool isComplete() const;
 };
 
 }

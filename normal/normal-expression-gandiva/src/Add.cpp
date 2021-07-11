@@ -7,7 +7,7 @@
 
 using namespace normal::expression::gandiva;
 
-Add::Add(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
+Add::Add(const std::shared_ptr<Expression>& left, const std::shared_ptr<Expression>& right)
 	: BinaryExpression(left, right) {
 }
 
@@ -27,7 +27,7 @@ std::string Add::alias() {
   return "?column?";
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::plus(std::shared_ptr<Expression> left,
-															  std::shared_ptr<Expression> right) {
-  return std::make_shared<Add>(std::move(left), std::move(right));
+std::shared_ptr<Expression> normal::expression::gandiva::plus(const std::shared_ptr<Expression>& left,
+															  const std::shared_ptr<Expression>& right) {
+  return std::make_shared<Add>(left, right);
 }

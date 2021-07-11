@@ -16,7 +16,7 @@
 #include <normal/core/message/Envelope.h>
 #include <normal/tuple/FileType.h>
 #include <normal/core/message/CompleteMessage.h>
-#include <normal/pushdown/ScanOperator.h>
+#include <normal/pushdown/scan/ScanOperator.h>
 #include <normal/pushdown/scan/ScanMessage.h>
 #include <normal/pushdown/s3/S3SelectCSVParseOptions.h>
 #include <normal/pushdown/Forward.h>
@@ -26,10 +26,9 @@ using namespace Aws::S3;
 using namespace normal::core;
 using namespace normal::core::message;
 using namespace normal::pushdown::scan;
-
 using namespace normal::tuple;
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 class S3SelectScan2 : public Operator {
 

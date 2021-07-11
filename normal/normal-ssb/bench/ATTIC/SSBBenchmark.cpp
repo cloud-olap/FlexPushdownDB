@@ -16,7 +16,7 @@
 #include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 
 
 #define SKIP_SUITE false

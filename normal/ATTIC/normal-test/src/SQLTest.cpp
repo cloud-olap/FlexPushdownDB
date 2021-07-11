@@ -11,7 +11,7 @@
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
 #include <normal/connector/local-fs/LocalFileSystemConnector.h>
 #include <normal/connector/local-fs/LocalFileSystemCatalogueEntry.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/connector/local-fs/LocalFileExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include "TestUtil.h"

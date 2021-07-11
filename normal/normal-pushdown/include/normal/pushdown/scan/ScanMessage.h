@@ -21,8 +21,8 @@ class ScanMessage : public Message {
 
 public:
   ScanMessage(std::vector<std::string> columnNames_, const std::string &sender, bool resultNeeded);
-  const std::vector<std::string> &getColumnNames() const;
-  bool isResultNeeded() const;
+  [[nodiscard]] const std::vector<std::string> &getColumnNames() const;
+  [[nodiscard]] bool isResultNeeded() const;
 
 private:
   std::vector<std::string> columnNames_;

@@ -26,7 +26,7 @@ public:
 
 };
 
-std::shared_ptr<Expression> minus(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
+std::shared_ptr<Expression> minus(const std::shared_ptr<Expression>& left, const std::shared_ptr<Expression>& right);
 
 }
 

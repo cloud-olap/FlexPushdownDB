@@ -2,14 +2,13 @@
 // Created by matt on 20/10/20.
 //
 
-#include "GroupKernel2.h"
-#include "GroupKey2.h"
-#include "AggregateBuilderWrapper.h"
+#include "normal/pushdown/group/GroupKernel2.h"
+#include "normal/pushdown/group/GroupKey2.h"
+#include "normal/pushdown/aggregate/AggregateBuilderWrapper.h"
 
 #include <utility>
 
 #include <normal/tuple/ArrayAppenderWrapper.h>
-#include <normal/tuple/ArrayHasher.h>
 #include <iostream>
 
 namespace normal::pushdown::group {
@@ -239,10 +238,10 @@ tl::expected<std::shared_ptr<arrow::Schema>, std::string> GroupKernel2::makeOutp
 }
 
 tl::expected<std::vector<std::shared_ptr<ArrayAppender>>, std::string>
-makeAppenders(const ::arrow::Schema &schema, const std::vector<int> columnIndices) {
+makeAppenders(const ::arrow::Schema &schema, const std::vector<int>& columnIndices) {
   std::vector<std::shared_ptr<ArrayAppender>> appenders;
   for (auto const &columnIndex: columnIndices) {
-    auto field = schema.field(columnIndex);
+    const auto& field = schema.field(columnIndex);
     auto expectedAppender = ArrayAppenderBuilder::make(field->type(), 0);
     if (!expectedAppender)
       return tl::make_unexpected(expectedAppender.error());

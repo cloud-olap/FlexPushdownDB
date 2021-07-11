@@ -3,7 +3,6 @@
 //
 
 #include <fmt/format.h>
-#include <iostream>
 #include "normal/tuple/Column.h"
 
 using namespace normal::tuple;

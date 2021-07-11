@@ -17,16 +17,16 @@ class CSVToArrowSIMDChunkParser {
 public:
   explicit CSVToArrowSIMDChunkParser(std::string callerName,
                                       uint64_t parseChunkSize,
-                                      std::shared_ptr<arrow::Schema> inputSchema,
+                                      const std::shared_ptr<arrow::Schema>& inputSchema,
                                       std::shared_ptr<arrow::Schema> outputSchema,
                                       char csvFileDelimiter);
   ~CSVToArrowSIMDChunkParser();
 
   void parseChunk(char* data, uint64_t size);
-  void parseChunk(std::shared_ptr<arrow::io::InputStream> inputStream);
+  void parseChunk(const std::shared_ptr<arrow::io::InputStream>& inputStream);
   std::shared_ptr<normal::tuple::TupleSet2> outputCompletedTupleSet();
 
-  bool isInitialized();
+  [[nodiscard]] bool isInitialized() const;
 
 private:
   // Parse data in buffer with delimiters as filled out in pcsv. Initialize data structures if necessary and output
@@ -47,18 +47,18 @@ private:
 
   uint64_t initializeBufferForLoad();
   void fillBuffer(char* data, uint64_t &sizeRemaining, uint64_t &dataIndex, uint64_t copySize);
-  uint64_t fillBuffer(std::shared_ptr<arrow::io::InputStream> inputStream, uint64_t copySize);
+  uint64_t fillBuffer(const std::shared_ptr<arrow::io::InputStream>& inputStream, uint64_t copySize);
   void finishPreparingBufferEnd(bool lastLine);
 
   // Initialize datatypes_, arrayBuilders_, columnStartsWithQuote_, and startEndOffsets_.
   void initializeDataStructures(ParsedCSV & pcsv);
 
-  void prettyPrintPCSV(ParsedCSV & pcsv);
+  [[maybe_unused]] void prettyPrintPCSV(ParsedCSV & pcsv);
 
-  std::string callerName_;
+  [[maybe_unused]] std::string callerName_;
   uint64_t parseChunkSize_;
   // Use inputstream as it provides a nice wrapper for both uncompressed and compressed data
-  char* buffer_ = NULL;
+  char* buffer_ = nullptr;
   uint64_t bufferCapacity_ = 0;
   uint64_t bufferBytesUtilized_ = 0;
   ParsedCSV pcsv_;
@@ -75,7 +75,7 @@ private:
   char csvFileDelimiter_;
 };
 
-#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDPARSER2_H
+#endif //NORMAL_NORMAL_CORE_INCLUDE_NORMAL_CORE_ARROW_CSVTOARROWSIMDCHUNKPARSER_H
 
 #endif
 

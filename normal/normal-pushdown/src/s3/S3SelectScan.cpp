@@ -5,50 +5,27 @@
 
 #include "normal/pushdown/s3/S3SelectScan.h"
 
-#include <iostream>
 #include <utility>
 #include <memory>
 #include <cstdlib>                                          // for abort
 
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
-#include <aws/core/utils/threading/Executor.h>
-#include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
-#include <aws/core/Aws.h>
-#include <aws/s3/model/SelectObjectContentRequest.h>
-#include <aws/core/client/ClientConfiguration.h>
 
 #include <arrow/csv/options.h>                              // for ReadOptions
 #include <arrow/csv/reader.h>                               // for TableReader
 #include <arrow/io/buffered.h>                              // for BufferedI...
-#include <arrow/io/memory.h>                                // for BufferReader
 #include <arrow/type_fwd.h>                                 // for default_m...
-#include <aws/core/Region.h>                                // for US_EAST_1
-#include <aws/core/auth/AWSAuthSigner.h>                    // for AWSAuthV4...
-#include <aws/core/http/Scheme.h>                           // for Scheme
-#include <aws/core/utils/logging/LogLevel.h>                // for LogLevel
-#include <aws/core/utils/memory/stl/AWSAllocator.h>         // for MakeShared
-#include <aws/s3/model/CSVInput.h>                          // for CSVInput
-#include <aws/s3/model/CSVOutput.h>                         // for CSVOutput
-#include <aws/s3/model/ExpressionType.h>                    // for Expressio...
-#include <aws/s3/model/FileHeaderInfo.h>                    // for FileHeade...
-#include <aws/s3/model/InputSerialization.h>                // for InputSeri...
-#include <aws/s3/model/OutputSerialization.h>               // for OutputSer...
 #include <aws/s3/model/RecordsEvent.h>                      // for RecordsEvent
-#include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
-#include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
-
 
 #include "normal/core/message/Message.h"                    // for Message
 #include "normal/tuple/TupleSet.h"                          // for TupleSet
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/cache/LoadResponseMessage.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/connector/MiniCatalogue.h>
-
 #include "normal/pushdown/Globals.h"
 #include <normal/pushdown/cache/CacheHelper.h>
 
@@ -66,7 +43,7 @@ using namespace normal::cache;
 using namespace normal::core::cache;
 using namespace normal::pushdown::cache;
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 S3SelectScan::S3SelectScan(std::string name,
 			   std::string type,
@@ -82,7 +59,7 @@ S3SelectScan::S3SelectScan(std::string name,
 			   bool toCache,
 			   long queryId,
          std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>> weightedSegmentKeys) :
-	Operator(std::move(name), type, queryId),
+	Operator(std::move(name), std::move(type), queryId),
 	s3Bucket_(std::move(s3Bucket)),
 	s3Object_(std::move(s3Object)),
 	returnedS3ColumnNames_(std::move(returnedS3ColumnNames)),
@@ -212,7 +189,6 @@ void S3SelectScan::sendSegmentWeight() {
      */
     double predPara = 0.5;
     double weight = selectivity * (predicateNum / (predicateNum + predPara));
-//    double weight = selectivity * predicateNum;
 
     for (auto const &segmentKey: *weightedSegmentKeys_) {
       weightMap->emplace(segmentKey, weight);
@@ -232,7 +208,6 @@ void S3SelectScan::sendSegmentWeight() {
       auto lenRow = (double) miniCatalogue->lengthOfRow(tableName);
 
       auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan) + predicateNum / (lenCol * vS3Filter)) / numKey;
-//      auto weight = selectivity / vNetwork + (lenRow / (lenCol * vS3Scan)) / numKey;
       weightMap->emplace(segmentKey, weight);
     }
   }

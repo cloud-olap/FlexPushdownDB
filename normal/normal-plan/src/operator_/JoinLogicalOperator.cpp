@@ -8,14 +8,16 @@
 #include <normal/pushdown/join/HashJoinProbe.h>
 #include <normal/plan/Globals.h>
 
+#include <utility>
+
 using namespace normal::plan::operator_;
 
-JoinLogicalOperator::JoinLogicalOperator(const std::string &leftColumnName, const std::string &rightColumnName,
-                                         const std::shared_ptr<LogicalOperator> &leftProducer,
-                                         const std::shared_ptr<LogicalOperator> &rightProducer)
+JoinLogicalOperator::JoinLogicalOperator(std::string leftColumnName, std::string rightColumnName,
+                                         std::shared_ptr<LogicalOperator> leftProducer,
+                                         std::shared_ptr<LogicalOperator> rightProducer)
         : LogicalOperator(type::OperatorTypes::joinOperatorType()),
-          leftColumnName_(leftColumnName), rightColumnName_(rightColumnName),
-          leftProducer_(leftProducer), rightProducer_(rightProducer){}
+          leftColumnName_(std::move(leftColumnName)), rightColumnName_(std::move(rightColumnName)),
+          leftProducer_(std::move(leftProducer)), rightProducer_(std::move(rightProducer)){}
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogicalOperator::toOperators() {
   const int numConcurrentUnits = JoinParallelDegree;
@@ -41,7 +43,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> JoinLogica
   }
 
   // wire up internally
-  int size = operators->size();
+  size_t size = operators->size();
   for (auto index = 0; index < size / 2; index++) {
     operators->at(index)->produce(operators->at(index + size / 2));
     operators->at(index + size / 2)->consume(operators->at(index));
@@ -54,7 +56,7 @@ const std::shared_ptr<LogicalOperator> &JoinLogicalOperator::getLeftProducer() c
   return leftProducer_;
 }
 
-const std::shared_ptr<LogicalOperator> &JoinLogicalOperator::getRightProducer() const {
+[[maybe_unused]] const std::shared_ptr<LogicalOperator> &JoinLogicalOperator::getRightProducer() const {
   return rightProducer_;
 }
 

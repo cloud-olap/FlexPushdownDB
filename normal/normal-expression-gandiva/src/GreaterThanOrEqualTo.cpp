@@ -12,7 +12,7 @@
 using namespace normal::expression::gandiva;
 
 GreaterThanOrEqualTo::GreaterThanOrEqualTo(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right)
-	: BinaryExpression(Left, Right) {}
+	: BinaryExpression(std::move(Left), std::move(Right)) {}
 
 void GreaterThanOrEqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
 
@@ -35,6 +35,6 @@ std::string GreaterThanOrEqualTo::alias() {
   return genAliasForComparison(">=");
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::gte(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right) {
-  return std::make_shared<GreaterThanOrEqualTo>(std::move(Left), std::move(Right));
+std::shared_ptr<Expression> normal::expression::gandiva::gte(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {
+  return std::make_shared<GreaterThanOrEqualTo>(Left, Right);
 }

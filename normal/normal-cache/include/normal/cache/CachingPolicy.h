@@ -84,7 +84,7 @@ public:
    */
   virtual void onNewQuery() = 0;
 
-  size_t getFreeSize() const;
+  [[maybe_unused]] [[nodiscard]] size_t getFreeSize() const;
 
 protected:
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;

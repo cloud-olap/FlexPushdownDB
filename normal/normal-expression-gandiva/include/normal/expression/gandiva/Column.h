@@ -25,7 +25,7 @@ public:
 
   std::shared_ptr<std::vector<std::string> > involvedColumnNames() override;
 
-  const std::string &getColumnName() const;
+  [[nodiscard]] const std::string &getColumnName() const;
 
 private:
   std::string columnName_;

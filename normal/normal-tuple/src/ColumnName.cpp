@@ -17,8 +17,9 @@ std::string ColumnName::canonicalize(const std::string &columnName) {
 
 std::vector<std::string> ColumnName::canonicalize(const std::vector<std::string> &columnNames) {
   std::vector<std::string> canonicalColumnNames;
+  canonicalColumnNames.reserve(columnNames.size());
   for (const auto &columnName: columnNames) {
-	canonicalColumnNames.emplace_back(canonicalize(columnName));
+    canonicalColumnNames.emplace_back(canonicalize(columnName));
   }
   return canonicalColumnNames;
 }

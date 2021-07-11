@@ -15,16 +15,16 @@
 #include <normal/connector/local-fs/LocalFilePartition.h>
 
 #include <normal/pushdown/Forward.h>
-#include <normal/pushdown/ScanOperator.h>
+#include <normal/pushdown/scan/ScanOperator.h>
 #include <normal/pushdown/file/FileScan.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 
 using namespace normal::core;
 using namespace normal::core::message;
 using namespace normal::core::cache;
 using namespace normal::tuple;
 
-namespace normal::pushdown {
+namespace normal::pushdown::file {
 
 using FileScanActor = OperatorActor2::extend_with<::caf::typed_actor<
 	caf::reacts_to<ScanAtom, std::vector<std::string>, bool>>>;

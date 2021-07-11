@@ -2,11 +2,11 @@
 // Created by matt on 14/4/20.
 //
 
-#include "normal/pushdown/Project.h"
+#include "normal/pushdown/project/Project.h"
 
 #include <utility>
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/expression/gandiva/Projector.h>
 #include <normal/expression/gandiva/Expression.h>
@@ -16,7 +16,7 @@
 
 using namespace normal::core;
 
-namespace normal::pushdown {
+namespace normal::pushdown::project {
 
 Project::Project(const std::string &Name,
                  std::vector<std::shared_ptr<normal::expression::gandiva::Expression>> Expressions,

@@ -5,10 +5,11 @@
 #include <normal/plan/operator_/ProjectLogicalOperator.h>
 
 
-#include <normal/pushdown/Project.h>
+#include <normal/pushdown/project/Project.h>
 #include <normal/plan/operator_/type/OperatorTypes.h>
 
 using namespace normal::plan::operator_;
+using namespace normal::pushdown::project;
 
 ProjectLogicalOperator::ProjectLogicalOperator(
 	std::shared_ptr<std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>> expressions,
@@ -27,7 +28,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> ProjectLog
 
   for (auto index = 0; index < numConcurrentUnits_; index++) {
     // FIXME: Defaulting to name -> proj
-    auto project = std::make_shared<normal::pushdown::Project>(fmt::format("proj-{}", index),
+    auto project = std::make_shared<Project>(fmt::format("proj-{}", index),
                                                                *expressions_,
                                                                getQueryId());
     operators->emplace_back(project);

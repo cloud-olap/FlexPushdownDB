@@ -7,7 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <normal/core/ATTIC/Normal.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/core/OperatorManager.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/join/HashJoinBuild.h>

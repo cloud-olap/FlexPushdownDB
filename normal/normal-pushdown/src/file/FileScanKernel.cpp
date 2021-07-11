@@ -4,7 +4,7 @@
 
 #include "normal/pushdown/file/FileScanKernel.h"
 
-using namespace normal::pushdown;
+using namespace normal::pushdown::file;
 
 FileScanKernel::FileScanKernel(std::string path,
 							   FileType fileType,

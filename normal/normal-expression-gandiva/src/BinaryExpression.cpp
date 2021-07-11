@@ -4,9 +4,11 @@
 
 #include "normal/expression/gandiva/BinaryExpression.h"
 
+#include <utility>
+
 using namespace normal::expression::gandiva;
 
-BinaryExpression::BinaryExpression(const std::shared_ptr<Expression> &left, const std::shared_ptr<Expression> &right)
+BinaryExpression::BinaryExpression(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
         : left_(std::move(left)), right_(std::move(right)) {}
 
 const std::shared_ptr<Expression> &BinaryExpression::getLeft() const {
@@ -25,7 +27,7 @@ std::string BinaryExpression::alias() {
   return std::string();
 }
 
-std::string BinaryExpression::genAliasForComparison(std::string compOp) {
+std::string BinaryExpression::genAliasForComparison(const std::string& compOp) {
   auto leftAlias = left_->alias();
   auto rightAlias = right_->alias();
   auto leftAlias_removePrefixInt = removePrefixInt(leftAlias);
@@ -54,10 +56,10 @@ std::shared_ptr<std::vector<std::string> > BinaryExpression::involvedColumnNames
   return leftInvolvedColumnNames;
 }
 
-void BinaryExpression::setLeft(const std::shared_ptr<Expression> &left) {
+[[maybe_unused]] void BinaryExpression::setLeft(const std::shared_ptr<Expression> &left) {
   left_ = left;
 }
 
-void BinaryExpression::setRight(const std::shared_ptr<Expression> &right) {
+[[maybe_unused]] void BinaryExpression::setRight(const std::shared_ptr<Expression> &right) {
   right_ = right;
 }

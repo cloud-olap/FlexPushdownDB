@@ -7,17 +7,17 @@
 
 #include <string>
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 class S3SelectCSVParseOptions {
 public:
-  S3SelectCSVParseOptions(const std::string &FieldDelimiter, const std::string &RecordDelimiter);
+  S3SelectCSVParseOptions(std::string FieldDelimiter, std::string RecordDelimiter);
 private:
   std::string fieldDelimiter_;
 	std::string recordDelimiter_;
 public:
-  const std::string &getFieldDelimiter() const;
-  const std::string &getRecordDelimiter() const;
+  [[nodiscard]] const std::string &getFieldDelimiter() const;
+  [[nodiscard]] const std::string &getRecordDelimiter() const;
 };
 
 }

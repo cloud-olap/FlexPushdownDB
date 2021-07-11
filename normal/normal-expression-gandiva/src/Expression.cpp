@@ -13,7 +13,6 @@
 #include <normal/expression/gandiva/LessThanOrEqualTo.h>
 #include <normal/expression/gandiva/NumericLiteral.h>
 #include <normal/core/type/Integer32Type.h>
-#include <normal/core/type/Integer64Type.h>
 #include <normal/core/type/Float64Type.h>
 
 using namespace normal::expression::gandiva;
@@ -26,7 +25,7 @@ std::string Expression::showString() {
   return gandivaExpression_->ToString();
 }
 
-std::shared_ptr<std::string> normal::expression::gandiva::removePrefixInt(std::string str) {
+std::shared_ptr<std::string> normal::expression::gandiva::removePrefixInt(const std::string& str) {
   if (str.substr(0, prefixInt_.size()) == prefixInt_) {
     return std::make_shared<std::string>(str.substr(prefixInt_.size(), str.size() - prefixInt_.size()));
   } else {
@@ -34,7 +33,7 @@ std::shared_ptr<std::string> normal::expression::gandiva::removePrefixInt(std::s
   }
 }
 
-std::shared_ptr<std::string> normal::expression::gandiva::removePrefixFloat(std::string str) {
+std::shared_ptr<std::string> normal::expression::gandiva::removePrefixFloat(const std::string& str) {
   if (str.substr(0, prefixFloat_.size()) == prefixFloat_) {
     return std::make_shared<std::string>(str.substr(prefixFloat_.size(), str.size() - prefixFloat_.size()));
   } else {
@@ -42,7 +41,7 @@ std::shared_ptr<std::string> normal::expression::gandiva::removePrefixFloat(std:
   }
 }
 
-std::shared_ptr<normal::core::type::Type> getType(std::shared_ptr<normal::expression::gandiva::Expression> expr) {
+std::shared_ptr<normal::core::type::Type> getType(const std::shared_ptr<normal::expression::gandiva::Expression>& expr) {
   if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::Int32Type>)) {
     return normal::core::type::integer32Type();
   } else if (typeid(*expr) == typeid(normal::expression::gandiva::NumericLiteral<::arrow::Int64Type>)) {
@@ -144,4 +143,6 @@ std::shared_ptr<normal::expression::gandiva::Expression> normal::expression::gan
     }
     return expr;
   }
+
+  return expr;
 }

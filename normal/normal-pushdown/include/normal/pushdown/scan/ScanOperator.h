@@ -7,7 +7,7 @@
 
 #include <caf/all.hpp>
 
-namespace normal::pushdown {
+namespace normal::pushdown::scan {
 
 using ScanAtom = caf::atom_constant<caf::atom("scan")>;
 

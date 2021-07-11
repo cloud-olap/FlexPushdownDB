@@ -45,8 +45,9 @@ private:
   std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> keysToReplace_;
   std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate> estimateCachingDecisions_;
 
-  bool lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
-  void addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in, const std::shared_ptr<SegmentKey> &out);
+  static bool lessValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_ptr<SegmentKey> &key2);
+
+  [[maybe_unused]] void addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in, const std::shared_ptr<SegmentKey> &out);
   void removeEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in);
 
   /**

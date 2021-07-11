@@ -15,9 +15,9 @@ StoreRequestMessage::StoreRequestMessage(
 	segments_(std::move(segments)) {}
 
 std::shared_ptr<StoreRequestMessage>
-StoreRequestMessage::make(std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> segments,
+StoreRequestMessage::make(const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>>& segments,
 						  const std::string &sender) {
-  return std::make_shared<StoreRequestMessage>(std::move(segments), sender);
+  return std::make_shared<StoreRequestMessage>(segments, sender);
 }
 
 const std::unordered_map<std::shared_ptr<SegmentKey>, std::shared_ptr<SegmentData>> &

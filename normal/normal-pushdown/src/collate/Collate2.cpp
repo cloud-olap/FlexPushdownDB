@@ -4,9 +4,9 @@
 
 #include "normal/pushdown/collate/Collate2.h"
 
-namespace normal::pushdown {
+namespace normal::pushdown::collate {
 
-CollateActor::behavior_type CollateFunctor(CollateStatefulActor self,
+  [[maybe_unused]] CollateActor::behavior_type CollateFunctor(CollateStatefulActor self,
 										   const std::string &name,
 										   long queryId,
 										   const caf::actor &rootActorHandle,

@@ -12,7 +12,7 @@
 using namespace normal::expression::gandiva;
 
 LessThanOrEqualTo::LessThanOrEqualTo(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right)
-	: BinaryExpression(Left, Right) {}
+	: BinaryExpression(std::move(Left), std::move(Right)) {}
 
 void LessThanOrEqualTo::compile(std::shared_ptr<arrow::Schema> Schema) {
 
@@ -35,6 +35,6 @@ std::string LessThanOrEqualTo::alias() {
   return genAliasForComparison("<=");
 }
 
-std::shared_ptr<Expression> normal::expression::gandiva::lte(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right) {
-  return std::make_shared<LessThanOrEqualTo>(std::move(Left), std::move(Right));
+std::shared_ptr<Expression> normal::expression::gandiva::lte(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right) {
+  return std::make_shared<LessThanOrEqualTo>(Left, Right);
 }

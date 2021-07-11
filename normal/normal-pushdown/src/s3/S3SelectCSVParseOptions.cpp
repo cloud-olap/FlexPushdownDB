@@ -4,11 +4,13 @@
 
 #include "normal/pushdown/s3/S3SelectCSVParseOptions.h"
 
-using namespace normal::pushdown;
+#include <utility>
 
-S3SelectCSVParseOptions::S3SelectCSVParseOptions(const std::string &FieldDelimiter,
-												 const std::string &RecordDelimiter)
-	: fieldDelimiter_(FieldDelimiter), recordDelimiter_(RecordDelimiter) {}
+using namespace normal::pushdown::s3;
+
+S3SelectCSVParseOptions::S3SelectCSVParseOptions(std::string FieldDelimiter,
+												 std::string RecordDelimiter)
+	: fieldDelimiter_(std::move(FieldDelimiter)), recordDelimiter_(std::move(RecordDelimiter)) {}
 
 const std::string &S3SelectCSVParseOptions::getFieldDelimiter() const {
   return fieldDelimiter_;

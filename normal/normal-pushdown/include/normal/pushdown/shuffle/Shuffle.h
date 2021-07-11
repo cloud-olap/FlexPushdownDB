@@ -7,7 +7,7 @@
 
 #include <normal/core/Operator.h>
 #include <normal/core/message/CompleteMessage.h>
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/tuple/TupleSet2.h>
 
 using namespace normal::core;

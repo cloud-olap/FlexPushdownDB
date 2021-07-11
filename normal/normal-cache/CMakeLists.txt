@@ -6,7 +6,7 @@ project(normal-cache VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-cache STATIC
-        include/normal/cache/Globals.h
+        src/Globals.cpp include/normal/cache/Globals.h
         src/SegmentCache.cpp include/normal/cache/SegmentCache.h
         src/SegmentKey.cpp include/normal/cache/SegmentKey.h
         src/SegmentData.cpp include/normal/cache/SegmentData.h
@@ -15,7 +15,6 @@ add_library(normal-cache STATIC
         src/CachingPolicy.cpp include/normal/cache/CachingPolicy.h
         src/SegmentMetadata.cpp include/normal/cache/SegmentMetadata.h
         src/FBRCachingPolicy.cpp include/normal/cache/FBRCachingPolicy.h
-        src/Globals.cpp 
         src/WFBRCachingPolicy.cpp include/normal/cache/WFBRCachingPolicy.h
         src/BeladyCachingPolicy.cpp include/normal/cache/BeladyCachingPolicy.h
         src/FBRSCachingPolicy.cpp include/normal/cache/FBRSCachingPolicy.h)

@@ -19,7 +19,7 @@ namespace normal::pushdown {
  * Default number of tuples operators should buffer before sending to consumers
  */
 inline constexpr int DefaultBufferSize = 10000;
-inline constexpr int DefaultS3ScanBufferSize = 100000;
+[[maybe_unused]] inline constexpr int DefaultS3ScanBufferSize = 100000;
 inline constexpr int DefaultS3ConversionBufferSize = 128 * 1024;
 // FIXME: temporary fix of "parseChunkSize < payload size" issue on Airmettle Select
 inline constexpr int DefaultS3ConversionBufferSizeAirmettleSelect = 16 * 1024 * 1024;

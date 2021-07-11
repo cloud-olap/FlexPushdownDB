@@ -8,6 +8,7 @@
 #include <normal/plan/operator_/type/OperatorTypes.h>
 
 using namespace normal::plan::operator_;
+using namespace normal::pushdown::file;
 
 FileScanLogicalOperator::FileScanLogicalOperator(
 	const std::shared_ptr<LocalFilePartitioningScheme> &partitioningScheme) :
@@ -18,8 +19,8 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> FileScanLo
   for (const auto &partition: *getPartitioningScheme()->partitions()) {
 	auto localFilePartition = std::static_pointer_cast<LocalFilePartition>(partition);
 
-	const std::shared_ptr<pushdown::FileScan> &fileScanOperator =
-		std::make_shared<normal::pushdown::FileScan>(localFilePartition->getPath(),
+	const std::shared_ptr<FileScan> &fileScanOperator =
+		std::make_shared<FileScan>(localFilePartition->getPath(),
 													 localFilePartition->getPath(),
 													 getQueryId());
 

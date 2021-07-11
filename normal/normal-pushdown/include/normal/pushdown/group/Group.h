@@ -12,7 +12,7 @@
 #include <normal/core/Operator.h>
 #include <normal/core/message/CompleteMessage.h>
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/pushdown/aggregate/AggregationFunction.h>
 #include <normal/pushdown/group/GroupKernel.h>
 #include <normal/pushdown/group/GroupKernel2.h>

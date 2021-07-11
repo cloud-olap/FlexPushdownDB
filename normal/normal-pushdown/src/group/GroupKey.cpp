@@ -9,7 +9,7 @@
 using namespace normal::pushdown::group;
 
 GroupKey::GroupKey(std::shared_ptr<Schema> Schema, std::vector<std::shared_ptr<normal::tuple::Scalar>> Attributes)
-	: schema_(Schema), attributes_(std::move(Attributes)) {}
+	: schema_(std::move(Schema)), attributes_(std::move(Attributes)) {}
 
 std::string GroupKey::toString() const {
 
@@ -35,7 +35,7 @@ size_t GroupKey::hash() {
 }
 
 bool GroupKey::operator==(const GroupKey &other) {
-  for (int attr_id = 0; attr_id < attributes_.size(); attr_id++) {
+  for (size_t attr_id = 0; attr_id < attributes_.size(); attr_id++) {
     if (*attributes_.at(attr_id) != *other.attributes_.at(attr_id)) {
       return false;
     }
@@ -64,11 +64,11 @@ void GroupKey::append(std::string name, const std::shared_ptr<normal::tuple::Sca
   attributes_.emplace_back(attribute);
 }
 
-const std::vector<std::shared_ptr<normal::tuple::Scalar>> &GroupKey::getAttributes() const {
+[[maybe_unused]] [[maybe_unused]] const std::vector<std::shared_ptr<normal::tuple::Scalar>> &GroupKey::getAttributes() const {
   return attributes_;
 }
 
-const std::shared_ptr<normal::tuple::Scalar> GroupKey::getAttributeValueByName(std::string name) const {
+std::shared_ptr<normal::tuple::Scalar> GroupKey::getAttributeValueByName(const std::string& name) const {
   int attributeIndex = schema_->getFieldIndexByName(name);
   return attributes_.at(attributeIndex);
 }

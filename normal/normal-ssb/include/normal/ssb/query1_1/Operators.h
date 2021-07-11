@@ -11,10 +11,10 @@
 #include <normal/pushdown/AWSClient.h>
 #include <normal/pushdown/file/FileScan.h>
 #include <normal/pushdown/filter/Filter.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/pushdown/join/HashJoinBuild.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
-#include <normal/pushdown/Aggregate.h>
+#include <normal/pushdown/aggregate/Aggregate.h>
 #include <normal/pushdown/s3/S3Select.h>
 #include <normal/pushdown/s3/S3Get.h>
 #include <normal/pushdown/shuffle/Shuffle.h>
@@ -26,6 +26,7 @@
 
 using namespace normal::core::graph;
 using namespace normal::pushdown;
+using namespace normal::pushdown::aggregate;
 using namespace normal::pushdown::filter;
 using namespace normal::pushdown::join;
 using namespace normal::pushdown::shuffle;

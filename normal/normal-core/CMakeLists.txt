@@ -39,7 +39,8 @@ add_library(normal-core STATIC
         src/OperatorActor2.cpp include/normal/core/OperatorActor2.h
         src/OperatorConnection.cpp include/normal/core/OperatorConnection.h
         src/message/ConnectMessage.cpp include/normal/core/message/ConnectMessage.h
-        src/cache/CacheMetricsMessage.cpp include/normal/core/cache/CacheMetricsMessage.h)
+        src/cache/CacheMetricsMessage.cpp include/normal/core/cache/CacheMetricsMessage.h
+        src/message/TupleMessage.cpp include/normal/core/message/TupleMessage.h)
 
 
 target_include_directories(normal-core PUBLIC include)

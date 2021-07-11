@@ -12,7 +12,7 @@
 #include <chrono>
 #include <fstream>
 
-ArrowAWSGZIPInputStream::ArrowAWSGZIPInputStream(std::basic_iostream<char, std::char_traits<char>> &file):
+[[maybe_unused]] [[maybe_unused]] ArrowAWSGZIPInputStream::ArrowAWSGZIPInputStream(std::basic_iostream<char, std::char_traits<char>> &file):
   underlyingFile_(file) {
   currentZStream_.avail_in = 0;
   currentZStream_.zalloc = Z_NULL;
@@ -126,6 +126,6 @@ arrow::Result<int64_t> ArrowAWSGZIPInputStream::Tell() const {
   return arrow::Result<int64_t>(processedCompressedBytes);
 }
 
-int64_t ArrowAWSGZIPInputStream::getDecompressionTimeNS() {
+[[maybe_unused]] int64_t ArrowAWSGZIPInputStream::getDecompressionTimeNS() const {
   return decompressionTimeNS_;
 }

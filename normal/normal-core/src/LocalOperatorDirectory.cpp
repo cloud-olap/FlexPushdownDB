@@ -13,7 +13,7 @@
 
 namespace normal::core {
 
-std::condition_variable condVar;
+[[maybe_unused]] std::condition_variable condVar;
 
 void LocalOperatorDirectory::insert(const LocalOperatorDirectoryEntry& entry) {
   // map insert cannot cover the value for the same key, need to delete first
@@ -61,7 +61,7 @@ std::string LocalOperatorDirectory::showString() const {
   return ss.str();
 }
 
-void LocalOperatorDirectory::setIncomplete() {
+[[maybe_unused]] void LocalOperatorDirectory::setIncomplete() {
   for(auto& entry : entries_){
     entry.second.complete(false);
   }
@@ -69,7 +69,7 @@ void LocalOperatorDirectory::setIncomplete() {
   numConsumersComplete = 0;
 }
 
-bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operatorRelationshipType) {
+bool LocalOperatorDirectory::allComplete(const OperatorRelationshipType &operatorRelationshipType) const {
   switch (operatorRelationshipType) {
   case OperatorRelationshipType::Producer: return numProducersComplete >= numProducers;
   case OperatorRelationshipType::Consumer: return numConsumersComplete >= numConsumers;

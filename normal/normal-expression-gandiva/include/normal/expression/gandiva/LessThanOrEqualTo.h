@@ -24,7 +24,7 @@ public:
 
 };
 
-std::shared_ptr<Expression> lte(std::shared_ptr<Expression> Left, std::shared_ptr<Expression> Right);
+std::shared_ptr<Expression> lte(const std::shared_ptr<Expression>& Left, const std::shared_ptr<Expression>& Right);
 
 }
 

@@ -70,7 +70,7 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg,
   self->state.cache->addCrtQueryShardMissNum(msg.getShardMissNum());
 }
 
-behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
+[[maybe_unused]] behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
 										  const std::optional<std::shared_ptr<CachingPolicy>> &cachingPolicy) {
 
   if (cachingPolicy.has_value())

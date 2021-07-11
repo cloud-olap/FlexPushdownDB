@@ -12,7 +12,7 @@
 #include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/tuple/TupleSet2.h>
 
 #include "normal/ssb/query1_1/SQL.h"

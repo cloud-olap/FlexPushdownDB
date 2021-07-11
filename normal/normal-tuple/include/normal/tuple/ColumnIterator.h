@@ -22,11 +22,11 @@ public:
   /**
    * 5 aliases required for forward iterators
    */
-  using iterator_category = std::forward_iterator_tag;
+  using iterator_category [[maybe_unused]] = std::forward_iterator_tag;
   using value_type = std::shared_ptr<Scalar>;
   using difference_type = ColumnIterator;
   using pointer = std::shared_ptr<value_type>;
-  using reference = value_type &;
+  using reference [[maybe_unused]] = value_type &;
   using this_type = ColumnIterator;
 
   /**

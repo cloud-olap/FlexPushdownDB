@@ -18,7 +18,7 @@
 using namespace Aws::S3;
 using namespace normal::tuple;
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 class S3SelectScanKernel {
 
@@ -31,7 +31,7 @@ public:
 					 std::optional<int64_t> startPos,
 					 std::optional<int64_t> finishPos,
 					 FileType fileType,
-					 std::optional< S3SelectCSVParseOptions> csvParseOptions,
+					 std::optional<S3SelectCSVParseOptions> csvParseOptions,
 					 std::shared_ptr<S3Client> s3Client,
 					 std::shared_ptr<arrow::Schema> schema);
 
@@ -41,7 +41,7 @@ public:
 												  std::optional<int64_t> startPos,
 												  std::optional<int64_t> finishPos,
 												  FileType fileType,
-												  const std::optional< S3SelectCSVParseOptions> &csvParseOptions,
+												  const std::optional<S3SelectCSVParseOptions> &csvParseOptions,
 												  const std::shared_ptr<S3Client> &s3Client,
 												  const std::shared_ptr<arrow::Schema>& schema);
 

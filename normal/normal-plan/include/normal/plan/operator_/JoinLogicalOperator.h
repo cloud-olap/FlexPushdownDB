@@ -14,20 +14,21 @@ namespace normal::plan::operator_ {
 class JoinLogicalOperator : public LogicalOperator{
 
 public:
-  explicit JoinLogicalOperator(const std::string &leftColumnName, const std::string &rightColumnName,
-          const std::shared_ptr<LogicalOperator> &leftProducer,
-          const std::shared_ptr<LogicalOperator> &rightProducer);
+  explicit JoinLogicalOperator(std::string leftColumnName, std::string rightColumnName,
+          std::shared_ptr<LogicalOperator> leftProducer,
+          std::shared_ptr<LogicalOperator> rightProducer);
 
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperators() override;
 
-  const std::string &getLeftColumnName() const;
-  const std::string &getRightColumnName() const;
+  [[nodiscard]] const std::string &getLeftColumnName() const;
+  [[nodiscard]] const std::string &getRightColumnName() const;
 
-  const std::shared_ptr<LogicalOperator> &getLeftProducer() const;
-  const std::shared_ptr<LogicalOperator> &getRightProducer() const;
+  [[nodiscard]] const std::shared_ptr<LogicalOperator> &getLeftProducer() const;
+
+  [[maybe_unused]] [[maybe_unused]] [[nodiscard]] const std::shared_ptr<LogicalOperator> &getRightProducer() const;
 
   void setNeededColumnNames(const std::set<std::string> &neededColumnNames);
-  const std::set<std::string> &getNeededColumnNames() const;
+  [[nodiscard]] const std::set<std::string> &getNeededColumnNames() const;
 
 private:
   std::string leftColumnName_;
@@ -43,4 +44,4 @@ private:
 }
 
 
-#endif //NORMAL_JOINLOGICALOPERATOR_H
+#endif //NORMAL_NORMAL_SQL_INCLUDE_NORMAL_SQL_LOGICAL_JOINLOGICALOPERATOR_H

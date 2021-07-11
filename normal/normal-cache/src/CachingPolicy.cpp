@@ -4,11 +4,13 @@
 
 #include "normal/cache/CachingPolicy.h"
 
+#include <utility>
+
 using namespace normal::cache;
 
 CachingPolicy::CachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-  maxSize_(maxSize), freeSize_(maxSize), mode_(mode) {}
+  mode_(std::move(mode)), maxSize_(maxSize), freeSize_(maxSize) {}
 
-size_t CachingPolicy::getFreeSize() const {
+[[maybe_unused]] size_t CachingPolicy::getFreeSize() const {
   return freeSize_;
 }

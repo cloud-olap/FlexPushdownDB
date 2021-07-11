@@ -11,7 +11,7 @@
 #include <normal/pushdown/s3/S3SelectScan.h>
 #include <normal/pushdown/s3/S3SelectScan2.h>
 #include <normal/pushdown/merge/Merge.h>
-#include <normal/pushdown/Collate.h>
+#include <normal/pushdown/collate/Collate.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/pushdown/AWSClient.h>
 #include <normal/core/ATTIC/Normal.h>

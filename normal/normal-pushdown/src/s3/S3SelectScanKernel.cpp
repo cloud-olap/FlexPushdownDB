@@ -10,7 +10,7 @@
 using namespace Aws::Client;
 using namespace Aws::S3;
 using namespace Aws::S3::Model;
-using namespace normal::pushdown;
+using namespace normal::pushdown::s3;
 
 S3SelectScanKernel::S3SelectScanKernel(std::string s3Bucket,
 									   std::string s3Object,

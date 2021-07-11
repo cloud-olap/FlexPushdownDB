@@ -4,7 +4,7 @@
 
 #include "normal/pushdown/s3/S3SelectScan2.h"
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/pushdown/cache/CacheHelper.h>
 
@@ -14,7 +14,7 @@ using namespace normal::cache;
 using namespace normal::core::cache;
 using namespace normal::pushdown::cache;
 
-using namespace normal::pushdown;
+using namespace normal::pushdown::s3;
 
 S3SelectScan2::S3SelectScan2(std::string name,
 							 const std::string &s3Bucket,

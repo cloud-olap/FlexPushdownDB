@@ -8,8 +8,6 @@
 #ifdef __AVX2__
 #include "normal/tuple/arrow/SIMDParserHelpers.h"
 
-#include <spdlog/common.h>
-#include <sstream>
 #include <bitset>
 
 inline simd_input fill_input(const uint8_t * ptr) {
@@ -152,7 +150,6 @@ bool find_indexes(const uint8_t * buf, size_t len, struct ParsedCSV & pcsv, char
   size_t idx = 0;
   uint32_t *base_ptr = pcsv.indexes;
   uint32_t base = 0;
-  uint32_t iteration = 1;
   // we do the index decoding in bulk for better pipelining.
 #define SIMDCSV_BUFFERSIZE 4 // it seems to be about the sweetspot.
   if(lenminus64 > 64 * SIMDCSV_BUFFERSIZE) {

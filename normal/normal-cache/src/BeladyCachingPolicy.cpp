@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fmt/format.h>
 #include <cstdlib>
+#include <utility>
 #include "normal/cache/BeladyCachingPolicy.h"
 #include "normal/connector/MiniCatalogue.h"
 
@@ -34,7 +35,7 @@ bool lessKeyValue (const std::shared_ptr<SegmentKey> &key1, const std::shared_pt
 }
 
 BeladyCachingPolicy::BeladyCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-        CachingPolicy(maxSize, mode) {}
+        CachingPolicy(maxSize, std::move(mode)) {}
 
 std::shared_ptr<BeladyCachingPolicy> BeladyCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
   return std::make_shared<BeladyCachingPolicy>(maxSize, mode);
@@ -85,15 +86,15 @@ BeladyCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
 
   // remove all keys in the cache that shouldn't be present after this query
   // amortized operation as usually nothing done and we do earlier empty return
-  for (auto potentialKeyToRemove: keysInCache_) {
+  for (const auto& potentialKeyToRemove: keysInCache_) {
     if (keysThatShouldBeCached->find(potentialKeyToRemove) == keysThatShouldBeCached->end()) {
       removableKeys->emplace_back(potentialKeyToRemove);
       freeSize_ += potentialKeyToRemove->getMetadata()->size();
     }
   }
   // remove these keys from the cache
-  for (auto key: *removableKeys) {
-    keysInCache_.erase(key);
+  for (const auto& removableKey: *removableKeys) {
+    keysInCache_.erase(removableKey);
   }
 
   // bring in
@@ -131,7 +132,7 @@ BeladyCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<Segme
 
   auto keysThatShouldBeCached = queryKey->second;
   // decide whether to cache
-  for (auto key: *segmentKeys) {
+  for (const auto& key: *segmentKeys) {
     // see if we decided to cache this segment for this query number
     if (keysThatShouldBeCached->find(key) != keysThatShouldBeCached->end()) {
       keysToCache->emplace_back(key);
@@ -165,7 +166,7 @@ std::string BeladyCachingPolicy::showCurrentLayout() {
   return ss.str();
 }
 
-std::string BeladyCachingPolicy::printHitsAndMissesPerQuery() {
+[[maybe_unused]] std::string BeladyCachingPolicy::printHitsAndMissesPerQuery() {
   std::stringstream ss;
   ss << "Total Queries: " << numQueries_ << std::endl;
   int originalQueryNum = beladyMiniCatalogue->getCurrentQueryNum();
@@ -248,7 +249,7 @@ std::string BeladyCachingPolicy::printLayoutAfterEveryQuery() {
   return ss.str();
 }
 
-void assertDecreasingOrderingOfSegmentKeys(std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>> segmentKeys) {
+[[maybe_unused]] void assertDecreasingOrderingOfSegmentKeys(const std::shared_ptr<std::vector<std::shared_ptr<SegmentKey>>>& segmentKeys) {
   for (int i = 0; i < segmentKeys->size() - 1; i++) {
     auto key1 = segmentKeys->at(i);
     auto key2 = segmentKeys->at(i + 1);
@@ -287,7 +288,7 @@ void BeladyCachingPolicy::generateCacheDecisions(int numQueries) {
     // Multiply by 0.99 as pre computed segment sizes are sometimes slightly off (< 1%), so this buffer
     // ensures we never store more in our cache than the max cache size
     size_t remainingCacheSize = maxSize_ * 0.99;
-    for (auto segmentKey : *potentialKeysToCache) {
+    for (const auto& segmentKey : *potentialKeysToCache) {
       size_t segmentSize = beladyMiniCatalogue->getSegmentSize(segmentKey);
       int keyNextUse = beladyMiniCatalogue->querySegmentNextUsedIn(segmentKey, queryNum);
       // Decide to cache key if there is room and the key is used again ie: keyNextUse != -1
@@ -326,7 +327,7 @@ std::string BeladyCachingPolicy::approximateExecutionHitRate(int warmBatchSize, 
 
     int currentHitNum = 0;
     int currentMissNum = 0;
-    for (auto segmentKey : *keysInCurrentQuery) {
+    for (const auto& segmentKey : *keysInCurrentQuery) {
       if (keysCached->find(segmentKey) != keysCached->end()) {
         currentHitNum += 1;
       } else {
@@ -343,26 +344,21 @@ std::string BeladyCachingPolicy::approximateExecutionHitRate(int warmBatchSize, 
   return ss.str();
 }
 
-void BeladyCachingPolicy::compareExpectedCachedKeysToActual(int queryNumberJustFinished) {
+[[maybe_unused]] void BeladyCachingPolicy::compareExpectedCachedKeysToActual(int queryNumberJustFinished) {
   auto queryKey = queryNumToKeysInCache_.find(queryNumberJustFinished);
   if (queryKey == queryNumToKeysInCache_.end()) {
     throw std::runtime_error("Error, " + std::to_string(queryNumberJustFinished) + " not populated in queryNumToKeysInCache_ in BeladyCachingPolicy.cpp");
   }
   auto keysThatShouldBeCached = queryKey->second;
 
-  int keysThatShouldBeCachedSize = keysThatShouldBeCached->size();
-  int keysInCacheSize = keysInCache_.size();
-
   bool actualKeysDontMatch = false;
-  for (auto segmentKey : *keysThatShouldBeCached) {
+  for (const auto& segmentKey : *keysThatShouldBeCached) {
     if (keysInCache_.find(segmentKey) == keysInCache_.end()) {
       printf("Query %d Expected key: %s\n", queryNumberJustFinished, segmentKey->toString().c_str());
       actualKeysDontMatch = true;
     }
   }
   if (actualKeysDontMatch) {
-//    printf("Actual keys are:\n");
-//    printf("%s", showCurrentLayout().c_str());
     throw std::runtime_error("Actual keys in cache missing expected keys in cache");
   }
 

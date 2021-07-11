@@ -30,4 +30,4 @@ public:
 }
 
 
-#endif //NORMAL_MODES_H
+#endif //NORMAL_NORMAL_PLAN_INCLUDE_NORMAL_PLAN_MODES_H

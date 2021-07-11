@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include "normal/cache/FBRCachingPolicy.h"
 #include <algorithm>
+#include <utility>
 
 using namespace normal::cache;
 
@@ -15,7 +16,7 @@ bool FBRCachingPolicy::lessValue (const std::shared_ptr<SegmentKey> &key1, const
 }
 
 FBRCachingPolicy::FBRCachingPolicy(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) :
-        CachingPolicy(maxSize, mode), minFreq_(0) {}
+        CachingPolicy(maxSize, std::move(mode)), minFreq_(0) {}
 
 std::shared_ptr<FBRCachingPolicy> FBRCachingPolicy::make(size_t maxSize, std::shared_ptr<normal::plan::operator_::mode::Mode> mode) {
   return std::make_shared<FBRCachingPolicy>(maxSize, mode);
@@ -23,7 +24,7 @@ std::shared_ptr<FBRCachingPolicy> FBRCachingPolicy::make(size_t maxSize, std::sh
 
 void FBRCachingPolicy::eraseFreqMap(int freq, std::list<std::shared_ptr<SegmentKey>>::iterator it) {
   freqMap_[freq].erase(it);
-  if (freqMap_[freq].size() == 0) {
+  if (freqMap_[freq].empty()) {
     freqMap_.erase(freq);
     freqSet_.erase(freq);
     if (minFreq_ == freq) {
@@ -117,7 +118,7 @@ FBRCachingPolicy::onStore(const std::shared_ptr<SegmentKey> &key) {
   if (freeSize_ >= segmentSize) {
     res = SUFFICIENT;
   } else {
-    while (tmpFreqSet.size() > 0) {
+    while (!tmpFreqSet.empty()) {
       for (auto const &candidateKey: freqMap_[tmpMinFreq]) {
         if (lessValue(candidateKey, realKey)) {
           removableKeys->emplace_back(candidateKey);
@@ -196,7 +197,7 @@ FBRCachingPolicy::onToCache(std::shared_ptr<std::vector<std::shared_ptr<SegmentK
   return keysToCache;
 }
 
-void FBRCachingPolicy::addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in,
+[[maybe_unused]] void FBRCachingPolicy::addEstimateCachingDecision(const std::shared_ptr<SegmentKey> &in,
                                                   const std::shared_ptr<SegmentKey> &out) {
   keysToReplace_.emplace(out);
   estimateCachingDecisions_.emplace(in, out);

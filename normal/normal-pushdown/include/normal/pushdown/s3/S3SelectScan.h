@@ -10,7 +10,7 @@
 
 #include <aws/s3/S3Client.h>
 
-#include <normal/pushdown/TupleMessage.h>
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/tuple/TupleSet2.h>
 #include <normal/core/cache/LoadResponseMessage.h>
@@ -26,7 +26,7 @@ using namespace normal::core;
 using namespace normal::core::message;
 using namespace normal::core::cache;
 
-namespace normal::pushdown {
+namespace normal::pushdown::s3 {
 
 // Struct for passing around S3 GET/Select statistics
 typedef struct S3SelectScanStats {
@@ -66,8 +66,8 @@ protected:
   std::string s3Object_;
   std::vector<std::string> returnedS3ColumnNames_;
 	std::vector<std::string> neededColumnNames_;
-  int64_t startOffset_;
-  int64_t finishOffset_;
+  uint64_t startOffset_;
+  uint64_t finishOffset_;
   std::shared_ptr<arrow::Schema> schema_;
   std::shared_ptr<Aws::S3::S3Client> s3Client_;
   std::vector<std::shared_ptr<std::pair<std::string, ::arrow::ArrayVector>>> columnsReadFromS3_;

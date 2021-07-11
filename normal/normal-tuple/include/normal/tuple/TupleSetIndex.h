@@ -54,7 +54,7 @@ public:
   [[nodiscard]] virtual tl::expected<void, std::string> merge(const std::shared_ptr<TupleSetIndex> &other) = 0;
   virtual std::string toString() = 0;
 
-  [[nodiscard]] virtual tl::expected<void, std::string> validate() = 0;
+  [[maybe_unused]] [[nodiscard]] virtual tl::expected<void, std::string> validate() = 0;
 
 protected:
   std::string columnName_;

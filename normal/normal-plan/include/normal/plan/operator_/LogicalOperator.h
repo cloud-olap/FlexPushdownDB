@@ -39,7 +39,7 @@ public:
 private:
   std::shared_ptr<type::OperatorType> type_;
   std::string name_;
-  long queryId_;
+  long queryId_{};
   std::shared_ptr<LogicalOperator> consumer_;
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode_;
 

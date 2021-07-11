@@ -7,12 +7,12 @@
 #ifdef __AVX2__
 #ifndef NORMAL_SIMDPARSERHELPERS_H
 #define NORMAL_SIMDPARSERHELPERS_H
-#include <stdint.h>
+#include <cstdint>
 #include <immintrin.h>
 
 typedef struct ParsedCSV {
   uint32_t n_indexes{0};
-  uint32_t *indexes;
+  uint32_t *indexes{};
 } ParsedCSV;
 typedef struct simd_input {
   __m256i lo;

@@ -25,7 +25,7 @@ public:
 
   void setProjectedColumnNames(const std::shared_ptr<std::vector<std::string>> &projectedColumnNames);
 
-  const std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &streamOutPhysicalOperators() const;
+  [[nodiscard]] const std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> &streamOutPhysicalOperators() const;
 
 protected:
   std::pair<bool, std::shared_ptr<expression::gandiva::Expression>> checkPartitionValid(const std::shared_ptr<Partition>& partition);

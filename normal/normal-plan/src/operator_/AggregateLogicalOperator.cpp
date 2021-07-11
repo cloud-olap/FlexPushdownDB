@@ -4,7 +4,7 @@
 
 #include <normal/plan/operator_/AggregateLogicalOperator.h>
 
-#include <normal/pushdown/Aggregate.h>
+#include <normal/pushdown/aggregate/Aggregate.h>
 #include <normal/plan/operator_/type/OperatorTypes.h>
 #include <normal/expression/gandiva/Column.h>
 #include <normal/core/type/Float64Type.h>
@@ -18,6 +18,7 @@ using namespace normal::plan::operator_;
 
 using namespace normal::core::type;
 using namespace normal::expression;
+using namespace normal::pushdown::aggregate;
 
 AggregateLogicalOperator::AggregateLogicalOperator(
 	std::shared_ptr<std::vector<std::shared_ptr<function::AggregateLogicalFunction>>> functions,
@@ -37,7 +38,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> AggregateL
     }
 
     // FIXME: Defaulting to name -> aggregation
-    auto aggregate = std::make_shared<normal::pushdown::Aggregate>(fmt::format("aggregate-{}", index),
+    auto aggregate = std::make_shared<Aggregate>(fmt::format("aggregate-{}", index),
                                                                    expressions,
                                                                    getQueryId());
     operators->emplace_back(aggregate);
@@ -49,7 +50,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> AggregateL
     for (const auto &function: *functions_) {
       reduceExpressions->emplace_back(function->toExecutorReduceFunction());
     }
-    auto aggregateReduce = std::make_shared<normal::pushdown::Aggregate>("aggregateReduce", reduceExpressions, getQueryId());
+    auto aggregateReduce = std::make_shared<Aggregate>("aggregateReduce", reduceExpressions, getQueryId());
 
     // wire up internally
     for (const auto &aggregate: *operators) {
@@ -71,7 +72,7 @@ void AggregateLogicalOperator::setNumConcurrentUnits(int numConcurrentUnits) {
 }
 
 std::shared_ptr<normal::expression::gandiva::Expression> normal::plan::operator_::castToFloat64Type(
-        std::shared_ptr<normal::expression::gandiva::Expression> expr) {
+        const std::shared_ptr<normal::expression::gandiva::Expression>& expr) {
   if (typeid(*expr) == typeid(normal::expression::gandiva::Column)) {
     return cast(expr, normal::core::type::float64Type());
   } else if (typeid(*expr) == typeid(normal::expression::gandiva::Multiply)) {
@@ -95,7 +96,7 @@ std::shared_ptr<normal::expression::gandiva::Expression> normal::plan::operator_
     auto rightExpr = biExpr->getRight();
     return minus(castToFloat64Type(leftExpr), castToFloat64Type(rightExpr));
   } else {
-    std::runtime_error("Unsupported expressions in aggregation functions");
+    throw std::runtime_error("Unsupported expressions in aggregation functions");
     return nullptr;
   }
 }
