@@ -4,7 +4,6 @@
 
 #include <doctest/doctest.h>
 #include <normal/sql/Interpreter.h>
-#include <normal/ssb/TestUtil.h>
 #include <normal/pushdown/collate/Collate.h>
 #include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
@@ -23,14 +22,12 @@
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
+#include <normal/pushdown/s3/S3Get.h>
 
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 #include <aws/s3/S3Client.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
-#include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
-#include <aws/core/Aws.h>
 #include <aws/s3/model/SelectObjectContentRequest.h>
-#include <aws/core/client/ClientConfiguration.h>
 #include <aws/s3/model/CSVInput.h>                          // for CSVInput
 #include <aws/s3/model/CSVOutput.h>                         // for CSVOutput
 #include <aws/s3/model/ExpressionType.h>                    // for Expressio...
@@ -40,17 +37,11 @@
 #include <aws/s3/model/RecordsEvent.h>                      // for RecordsEvent
 #include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
 #include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
-#include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 #include <aws/s3/model/ListObjectsRequest.h>
 
 #include <arrow/csv/options.h>                              // for ReadOptions
 #include <arrow/csv/reader.h>                               // for TableReader
-#include <arrow/io/buffered.h>                              // for BufferedI...
-#include <arrow/io/memory.h>                                // for BufferReader
 #include <arrow/type_fwd.h>                                 // for default_m...
-#include <normal/tuple/arrow/ArrowAWSInputStream.h>
-//#include <normal/tuple/arrow/ArrowAWSGZIPInputStream.h>
-#include <normal/tuple/arrow/ArrowAWSGZIPInputStream2.h>
 #include "normal/ssb/SSBSchema.h"
 #include <normal/pushdown/Globals.h>
 
@@ -59,20 +50,21 @@
 #include <normal/tuple/arrow/CSVToArrowSIMDChunkParser.h>
 #endif
 
-#include "normal/pushdown/s3/S3Get.h"
 #include <thread>
 #include <iostream>
-#include <fstream>
-#include <fmt/format.h>
+#include <filesystem>
 
 #define SKIP_SUITE false
 
 using namespace normal::ssb;
+using namespace normal::pushdown;
+using namespace normal::pushdown::collate;
+using namespace normal::pushdown::s3;
 
 void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy,
-                                           std::string bucket_name, std::string dir_prefix, int numQueries, filesystem::path sql_file_dir_path);
+                                           std::string bucket_name, std::string dir_prefix, int numQueries, std::filesystem::path sql_file_dir_path);
 
-void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
+void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, const std::string& bucket_name, const std::string& dir_prefix) {
   auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
   auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
 
@@ -86,7 +78,7 @@ void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::strin
   auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
 
   // configure s3Connector
-  for (int tbl_id = 0; tbl_id < tableNames->size(); tbl_id++) {
+  for (size_t tbl_id = 0; tbl_id < tableNames->size(); tbl_id++) {
     auto &tableName = tableNames->at(tbl_id);
     auto &s3Object = s3Objects->at(tbl_id);
     auto numBytes = objectNumBytes_Map.find(s3Object)->second;
@@ -97,7 +89,7 @@ void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, std::strin
   i.put(cat);
 }
 
-void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix) {
+void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, const std::string& bucket_name, const std::string& dir_prefix) {
   auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
   auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
 
@@ -148,19 +140,14 @@ auto execute(normal::sql::Interpreter &i) {
   i.getOperatorGraph()->start();
   i.getOperatorGraph()->join();
 
-  auto tuples = std::static_pointer_cast<normal::pushdown::Collate>(i.getOperatorGraph()->getOperator("collate"))->tuples();
+  auto tuples = std::static_pointer_cast<Collate>(i.getOperatorGraph()->getOperator("collate"))->tuples();
 
   return tuples;
 }
 
-auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, std::string outputFileName = "") {
-//  i.getOperatorManager()->getSegmentCacheActor()->ctx()->operatorMap().clearForSegmentCache();
+auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, const std::string& outputFileName = "") {
   i.clearOperatorGraph();
   i.parse(sql);
-
-  // graph is too large
-//  TestUtil::writeExecutionPlan(*i.getLogicalPlan());
-//  TestUtil::writeExecutionPlan2(*i.getOperatorGraph());
 
   auto tuples = execute(i);
 
@@ -170,12 +157,13 @@ auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMe
     tupleSet = TupleSet2::create(tuples);
   else
     tupleSet = TupleSet2::make();
+
   // Once the query is done there should be no active get conversion in S3Get.cpp, so this value should be 0 unless
   // there are background caching operations still performing GET/Select.
-  SPDLOG_INFO("Done with query, activeGetConversions = {}", normal::pushdown::activeGetConversions);
+  SPDLOG_INFO("Done with query, activeGetConversions = {}", activeGetConversions);
   if (writeResults) {
-    auto outputdir = filesystem::current_path().append("outputs");
-    filesystem::create_directory(outputdir);
+    auto outputdir = std::filesystem::current_path().append("outputs");
+    std::filesystem::create_directory(outputdir);
     auto outputFile = outputdir.append(outputFileName);
     std::ofstream fout(outputFile.string());
     fout << "Output  |\n" << tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, tupleSet->numRows()));
@@ -268,23 +256,15 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
   std::vector<size_t> allocation_sizes;
 
   Aws::S3::Model::SelectObjectContentHandler handler;
-  bool hasEndEvent = false;
-
-//  std::ofstream outFile;
-//  outFile.open(fmt::format("select.{}", index));
 
   handler.SetRecordsEventCallback([&](const Aws::S3::Model::RecordsEvent &recordsEvent) {
     SPDLOG_DEBUG("S3 Select RecordsEvent of query {} | size: {}",
                  index,
                  recordsEvent.GetPayload().size());
     auto payload = recordsEvent.GetPayload();
-    if (payload.size() > 0) {
+    if (!payload.empty()) {
 #ifdef __AVX2__
       parser->parseChunk(reinterpret_cast<char *>(payload.data()), payload.size());
-
-//      std::string outStr(payload.begin(), payload.end());
-//      outFile << outStr;
-
       bytesReceived += payload.size();
 #endif
     }
@@ -297,13 +277,11 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
   });
   handler.SetEndEventCallback([&]() {
       SPDLOG_INFO("S3 Select done: {}", index);
-      hasEndEvent = true;
   });
   handler.SetOnErrorCallback([&](const Aws::Client::AWSError<S3Errors> &errors) {
       SPDLOG_INFO("S3 Select Error of query {} | message: {}",
                   index,
                   std::string(errors.GetMessage()));
-//	optionalErrorMessage = std::optional(errors.GetMessage());
   });
 
   selectObjectContentRequest.SetEventStreamHandler(handler);
@@ -336,12 +314,6 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
 //  }
     std::this_thread::sleep_for (std::chrono::milliseconds(retrySleepTimeMS));
   }
-
-  if (!hasEndEvent) {
-    SPDLOG_CRITICAL("No end event on query {}!", index);
-  }
-
-//  outFile.close();
 }
 
 std::mutex getConvertLock;
@@ -459,7 +431,7 @@ uint64_t simpleGetRequest(int requestNum) {
 
 void normal::ssb::concurrentSelectTest(int numRequests) {
   spdlog::set_level(spdlog::level::info);
-  std::shared_ptr<Aws::S3::S3Client> client1 = normal::pushdown::AWSClient::defaultS3Client();
+  std::shared_ptr<Aws::S3::S3Client> client1 = AWSClient::defaultS3Client();
   size_t totalTimeNS = 0;
   size_t totalBytesReturned = 0;
   int numTrials = 3;
@@ -529,7 +501,7 @@ void normal::ssb::concurrentGetTest(int numRequests) {
               (((double) totalBytesReturned * 8 / numTrials / 1024.0 / 1024.0 / 1024.0) / averageTrialTimeNS));
 }
 
-void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix,
+void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, const std::string& dirPrefix,
                            size_t networkLimit, bool writeResults) {
   spdlog::set_level(spdlog::level::warn);
   // parameters
@@ -538,9 +510,9 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   if (networkLimit > 0) {
-    normal::pushdown::NetworkLimit = networkLimit;
+    NetworkLimit = networkLimit;
   }
-  normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
+  normal::plan::DefaultS3Client = AWSClient::defaultS3Client();
 
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode;
   std::string modeAlias;
@@ -562,7 +534,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     default: throw std::runtime_error("CachingPolicy not found, type: " + std::to_string(cachingPolicyType));
   }
 
-  auto currentPath = filesystem::current_path();
+  auto currentPath = std::filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   if (cachingPolicy->id() == BELADY) {
@@ -581,7 +553,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   // execute
   // FIXME: has to make a new one other wise with Airmettle sometimes a req has no end event, unsure why
-  normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
+  normal::plan::DefaultS3Client = AWSClient::defaultS3Client();
   i.boot();
   SPDLOG_CRITICAL("{} mode start", mode->toString());
   if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
@@ -636,7 +608,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     SPDLOG_INFO("OnStore time: {}", i.getCachingPolicy()->onStoreTime);
     SPDLOG_INFO("OnToCache time: {}", i.getCachingPolicy()->onToCacheTime);
 
-  auto metricsFilePath = filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
+  auto metricsFilePath = std::filesystem::current_path().append("metrics-" + modeAlias + "-" + cachingPolicyAlias);
   std::ofstream fout(metricsFilePath.string());
   fout << mode->toString() << " mode finished in dirPrefix:" << dirPrefix << "\n";
   fout << "Warmup metrics:\n" << warmupMetrics << "\n";
@@ -653,7 +625,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   SPDLOG_INFO("Memory allocated finally: {}", arrow::default_memory_pool()->bytes_allocated());
 }
 
-void normal::ssb::perfBatchRun(int modeType, std::string dirPrefix, int cacheLoadQueries,
+void normal::ssb::perfBatchRun(int modeType, const std::string& dirPrefix, int cacheLoadQueries,
                                int warmupQueriesPerColSize, int columnSizesToTest, int rowSelectivityValuesToTest) {
   spdlog::set_level(spdlog::level::info);
   size_t cacheSize = 64L * 1024 * 1024 * 1024;   // make the cache large so we can hold all segments for any h
@@ -673,7 +645,7 @@ void normal::ssb::perfBatchRun(int modeType, std::string dirPrefix, int cacheLoa
   }
   auto cachingPolicy = FBRSCachingPolicy::make(cacheSize, mode);
 
-  auto currentPath = filesystem::current_path();
+  auto currentPath = std::filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
@@ -732,7 +704,7 @@ void normal::ssb::perfBatchRun(int modeType, std::string dirPrefix, int cacheLoa
     SPDLOG_INFO("OnStore time: {}", i.getCachingPolicy()->onStoreTime);
     SPDLOG_INFO("OnToCache time: {}", i.getCachingPolicy()->onToCacheTime);
 
-  auto metricsFilePath = filesystem::current_path().append("metrics-perf-test");
+  auto metricsFilePath = std::filesystem::current_path().append("metrics-perf-test");
   std::ofstream fout(metricsFilePath.string());
   fout << mode->toString() << " mode finished in dirPrefix:" << dirPrefix << "\n";
   fout << "Execution metrics:\n" << i.showMetrics() << "\n";
@@ -766,7 +738,6 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
           "query2.1.sql", "query2.2.sql", "query2.3.sql",
           "query3.1.sql", "query3.2.sql", "query3.3.sql", "query3.4.sql",
           "query4.1.sql", "query4.2.sql", "query4.3.sql"
-//          "query3.1.sql"
   };
   std::vector<int> order1 = {
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
@@ -774,16 +745,12 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
   std::vector<int> order2 = {
           0, 7, 12, 4, 11, 1, 3, 10, 8, 2, 9, 5, 6
   };
-//  order1.insert(order1.end(), order1.begin(), order1.end());
-//  order1.insert(order1.end(), order1.begin(), order1.end());
-//  order1.insert(order1.end(), order1.begin(), order1.end());
-  auto currentPath = filesystem::current_path();
+  auto currentPath = std::filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/filterlineorder");
   std::string bucket_name = "s3filter";
   std::string dir_prefix = "ssb-sf1/";
 
-  auto chosenMode = mode3;
-
+  const auto& chosenMode = mode3;
   // choose caching policy
   auto lru = LRUCachingPolicy::make(1024*1024*300, chosenMode);
   auto fbr = FBRCachingPolicy::make(1024*1024*300, chosenMode);
@@ -848,12 +815,5 @@ TEST_CASE ("GenerateSqlBatchRun" * doctest::skip(true || SKIP_SUITE)) {
   i.stop();
 
   SPDLOG_INFO("Batch finished");
-}
-
-TEST_CASE ("WarmCacheExperiment-Single" * doctest::skip(false || SKIP_SUITE)) {
-//  size_t cacheSize = 1024L*1024*1024;
-//  int modeType = 4;
-//  int cachingPolicyType = 2;
-//  mainTest(cacheSize, modeType, cachingPolicyType);
 }
 }

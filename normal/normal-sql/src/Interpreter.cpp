@@ -15,6 +15,7 @@
 #include <utility>
 
 using namespace normal::sql;
+using namespace normal::pushdown::s3;
 
 Interpreter::Interpreter() :
   catalogues_(std::make_shared<std::unordered_map<std::string, std::shared_ptr<connector::Catalogue>>>()),
@@ -121,7 +122,7 @@ std::string Interpreter::showMetrics() {
   size_t totalSelectTransferTimeNS = 0, totalSelectConvertTimeNS = 0;
   size_t totalNumRequests = 0;
   size_t arrowOutputBytes = 0;
-  for (normal::pushdown::S3SelectScanStats stats: s3SelectScanStats_) {
+  for (S3SelectScanStats stats: s3SelectScanStats_) {
     totalProcessedBytes += stats.processedBytes;
     totalReturnedBytes += stats.returnedBytes;
     totalGetTransferTimeNS += stats.getTransferTimeNS;
@@ -316,7 +317,7 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
   for (size_t qid = 1; qid <= executionTimes_.size(); ++qid) {
-    normal::pushdown::S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
+    S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
     std::stringstream formattedProcessingTime1;
     formattedProcessingTime1 << executionTimes_[qid - 1] << " secs";
     std::stringstream formattedProcessedBytes1;
@@ -379,7 +380,7 @@ std::string Interpreter::showMetrics() {
   ss << std::left << std::setw(155) << std::setfill('-') << "" << std::endl;
   ss << std::setfill(' ');
   for (size_t qid = 1; qid <= executionTimes_.size(); ++qid) {
-    normal::pushdown::S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
+    S3SelectScanStats stats = s3SelectScanStats_[qid - 1];
     std::stringstream formattedReturnedGB;
     std::stringstream formattedReturnedPercentage;
 
@@ -485,7 +486,7 @@ const std::vector<double> &Interpreter::getExecutionTimes() const {
   return executionTimes_;
 }
 
-const std::vector<normal::pushdown::S3SelectScanStats> &Interpreter::getS3SelectScanStats() const {
+const std::vector<S3SelectScanStats> &Interpreter::getS3SelectScanStats() const {
   return s3SelectScanStats_;
 }
 

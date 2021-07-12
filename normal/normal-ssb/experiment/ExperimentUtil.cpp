@@ -7,7 +7,7 @@
 
 using namespace normal::ssb;
 
-std::string ExperimentUtil::read_file(std::string filename) {
+std::string ExperimentUtil::read_file(const std::string& filename) {
   std::ifstream ifile(filename);
   std::ostringstream buf;
   char ch;
@@ -17,9 +17,9 @@ std::string ExperimentUtil::read_file(std::string filename) {
   return buf.str();
 }
 
-std::vector<std::string> ExperimentUtil::list_objects(normal::pushdown::AWSClient client, std::string bucket_name, std::string dir_prefix) {
+[[maybe_unused]] std::vector<std::string> ExperimentUtil::list_objects(normal::pushdown::AWSClient client, const std::string& bucket_name, const std::string& dir_prefix) {
   client.init();
-  Aws::S3::S3Client s3Client = *client.defaultS3Client();
+  Aws::S3::S3Client s3Client = *normal::pushdown::AWSClient::defaultS3Client();
   Aws::String aws_bucket_name(bucket_name);
   Aws::String aws_dir_prefix(dir_prefix);
 
@@ -37,7 +37,7 @@ std::vector<std::string> ExperimentUtil::list_objects(normal::pushdown::AWSClien
 
     for (auto const &s3_object : object_list)
     {
-      object_keys.push_back(s3_object.GetKey().c_str());
+      object_keys.emplace_back(s3_object.GetKey().c_str());
     }
 
   }

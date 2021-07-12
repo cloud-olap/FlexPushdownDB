@@ -16,9 +16,9 @@ class ExperimentUtil {
 
 public:
 
-  static std::string read_file(std::string filename);
+  static std::string read_file(const std::string& filename);
 
-  static std::vector<std::string> list_objects(normal::pushdown::AWSClient, std::string bucket_name, std::string dir_prefix);
+  [[maybe_unused]] static std::vector<std::string> list_objects(normal::pushdown::AWSClient, const std::string& bucket_name, const std::string& dir_prefix);
 
 };
 }

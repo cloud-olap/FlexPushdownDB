@@ -41,7 +41,7 @@ public:
   void setLineorderRowSelectivity(double lineorderRowSelectivity);
 
   std::vector<std::string> generateSqlBatch(int batchSize);
-  std::string generateSql(std::string queryName);
+  std::string generateSql(const std::string& queryName);
 
   /**
    * The following is used to generate skew benchmark

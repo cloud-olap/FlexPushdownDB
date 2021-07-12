@@ -8,9 +8,9 @@
 #include <cstddef>
 
 namespace normal::ssb {
-  void mainTest(size_t cacheSize, int modeType, int cachingPolicyType, std::string dirPrefix,
+  void mainTest(size_t cacheSize, int modeType, int cachingPolicyType, const std::string& dirPrefix,
                 size_t networkLimit, bool writeResults);
-  void perfBatchRun(int modeType, std::string dirPrefix, int cacheLoadQueries,
+  void perfBatchRun(int modeType, const std::string& dirPrefix, int cacheLoadQueries,
                     int warmupQueriesPerColSize, int columnSizesToTest, int rowSelectivityValuesToTest);
   void concurrentSelectTest(int numRequests);
   void concurrentGetTest(int numRequests);

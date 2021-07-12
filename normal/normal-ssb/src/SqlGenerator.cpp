@@ -65,7 +65,7 @@ std::vector<std::string> SqlGenerator::generateSqlBatch(int batchSize) {
   return queries;
 }
 
-std::string SqlGenerator::generateSql(std::string queryName) {
+std::string SqlGenerator::generateSql(const std::string& queryName) {
   enum QueryName queryNameEnum;
   auto queryNameIt = queryNameMap_.find(queryName);
   if (queryNameIt == queryNameMap_.end()) {

@@ -13,7 +13,7 @@ namespace normal::ssb {
 
 std::string transformSqlForPrestoCSV(std::vector<std::string>& sqlLines);
 
-inline const std::vector<std::pair<std::string, std::string>> typeTransformations {
+[[maybe_unused]] inline const std::vector<std::pair<std::string, std::string>> typeTransformations {
   {"d_datekey", "int"},
   {"d_yearmonthnum", "int"},
   {"d_year", "int"},

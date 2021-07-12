@@ -171,8 +171,6 @@ add_executable(normal-ssb-experiment
         experiment/ExperimentMain.cpp
         experiment/Tests.cpp
         experiment/ExperimentUtil.cpp   experiment/ExperimentUtil.h
-        experiment/HardcodedPlanTestSinglePartition.cpp
-        experiment/HardcodedPlanTestMultiPartition.cpp
         experiment/SqliteTest.cpp experiment/BeladyTest.cpp
         experiment/Tests.h
         experiment/MathModelTest.cpp experiment/MathModelTest.h)

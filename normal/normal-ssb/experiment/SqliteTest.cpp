@@ -34,7 +34,7 @@ TEST_CASE ("JoinTest" * doctest::skip(false || SKIP_SUITE)) {
                 std::experimental::filesystem::absolute(dataDir + "/supplier.tbl"),
                 std::experimental::filesystem::absolute(dataDir + "/customer.tbl")};
   auto expected = TestUtil::executeSQLite(sql, dataFiles);
-  std::string strRes = "";
+  std::string strRes;
   for (const auto &strVec: *expected) {
     for (const auto &strPair: strVec) {
       strRes += strPair.first + " " + strPair.second + "\t";

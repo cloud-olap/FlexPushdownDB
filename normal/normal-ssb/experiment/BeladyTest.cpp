@@ -14,23 +14,24 @@
 #include <normal/cache/FBRCachingPolicy.h>
 #include <normal/cache/BeladyCachingPolicy.h>
 #include "ExperimentUtil.h"
-#include <normal/ssb/SqlGenerator.h>
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/pushdown/s3/S3Select.h>
 #include <iostream>
 #include <fstream>
+#include <utility>
 
 #define SKIP_SUITE true
 
 using namespace normal::ssb;
+using namespace normal::pushdown::collate;
 
 // not the best solution, should make a header file down the road most likely but this will work for now
 void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix);
 std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, std::string outputFileName = "");
 
-size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::string tableName, std::string queryColumn, long numBytes) {
+[[maybe_unused]] size_t getColumnSizeInBytes(const std::string& s3Bucket, const std::string& s3Object, const std::string& tableName, const std::string& queryColumn, long numBytes) {
   // operators
   std::vector<std::string> s3Objects = {s3Object};
   auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, 1);
@@ -51,7 +52,7 @@ size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::str
           true,
           0);
 
-  auto collate = std::make_shared<normal::pushdown::Collate>("collate", 0);
+  auto collate = std::make_shared<Collate>("collate", 0);
 
   // wire up
   auto mgr = std::make_shared<OperatorManager>();
@@ -65,7 +66,7 @@ size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::str
   opGraph->boot();
   opGraph->start();
   opGraph->join();
-  auto tuples = std::static_pointer_cast<normal::pushdown::Collate>(opGraph->getOperator("collate"))->tuples();
+  auto tuples = std::static_pointer_cast<Collate>(opGraph->getOperator("collate"))->tuples();
 //  mgr->stop();
   opGraph->close();
 
@@ -83,18 +84,18 @@ size_t getColumnSizeInBytes(std::string s3Bucket, std::string s3Object, std::str
 }
 
 struct segment_info_t {
-    std::string objectName;
-    std::string column;
-    unsigned long startOffset;
-    unsigned long endOffset;
-    size_t sizeInBytes;
+  std::string objectName;
+  std::string column;
+  unsigned long startOffset{};
+  unsigned long endOffset{};
+  [[maybe_unused]] size_t sizeInBytes{};
 };
 
 // currently generates Belady segment info metadata and outputs it to the console.
 // This info has already been added in the corresponding metadata files so it is not written to one.
 // This requires the other corresponding metadata files to be set up
 // so that at least the partition numbers and columns for each schema are known
-void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix, std::string output_file) {
+void generateBeladyMetadata(const std::string& s3Bucket, const std::string& dir_prefix, const std::string& output_file) {
   // store this mapping so we can get the corresponding s3Object path without the schema later
   auto s3ObjectToS3ObjectMinusSchemaMap = std::make_shared<std::unordered_map<std::string, std::string>>();
 
@@ -143,7 +144,7 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix, std::s
       auto numBytes = objectNumBytes_Map.find(s3Object)->second;
 
       auto columns = normal::cache::beladyMiniCatalogue->getColumnsOfTable(tableName);
-      for (std::string column: *columns) {
+      for (const std::string& column: *columns) {
         auto segmentInfo = std::make_shared<segment_info_t>();
         auto s3ObjectToNameMinusSchema = s3ObjectToS3ObjectMinusSchemaMap->find(s3Object);
         if (s3ObjectToNameMinusSchema == s3ObjectToS3ObjectMinusSchemaMap->end()) {
@@ -161,30 +162,19 @@ void generateBeladyMetadata(std::string s3Bucket, std::string dir_prefix, std::s
   SPDLOG_INFO("Writing segment info for {} to {}", dir_prefix, output_file);
   std::ofstream outputFile;
   outputFile.open (output_file);
-  for (auto segmentInfo : *segmentInfoMetadata) {
-//    std::cout << segmentInfo->objectName << ","
-//              << segmentInfo->column << ","
-//              << segmentInfo->startOffset << ","
-//              << segmentInfo->endOffset << ","
-//              << segmentInfo->sizeInBytes << "\n";
-//      outputFile << segmentInfo->objectName << ","
-//              << segmentInfo->column << ","
-//              << segmentInfo->startOffset << ","
-//              << segmentInfo->endOffset << ","
-//              << segmentInfo->sizeInBytes << "\n";
+  for (const auto& segmentInfo : *segmentInfoMetadata) {
       outputFile << segmentInfo->objectName << ","
               << segmentInfo->column << ","
               << segmentInfo->startOffset << ","
               << segmentInfo->endOffset << "\n";
   }
   outputFile.close();
-//  std::cout.flush();
 }
 
-void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy,
+void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, const std::shared_ptr<normal::cache::BeladyCachingPolicy>& beladyCachingPolicy,
                                            std::string bucket_name, std::string dir_prefix, int numQueries, filesystem::path sql_file_dir_path) {
-  normal::sql::Interpreter i(mode, beladyCachingPolicy);
-  configureS3ConnectorMultiPartition(i, bucket_name, dir_prefix);
+  normal::sql::Interpreter i(std::move(mode), beladyCachingPolicy);
+  configureS3ConnectorMultiPartition(i, std::move(bucket_name), std::move(dir_prefix));
   i.boot();
   // populate mapping of SegmentKey->[Query #s Segment is used in] and
   // QueryNumber->[Involved Segment Keys] and set these in the beladyMiniCatalogue
@@ -198,9 +188,9 @@ void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operato
 
     auto logicalPlan = i.getLogicalPlan();
     auto logicalOperators = logicalPlan->getOperators();
-    for (auto logicalOp: *logicalOperators) {
+    for (const auto& logicalOp: *logicalOperators) {
       auto involvedSegmentKeys = logicalOp->extractSegmentKeys();
-      for (auto segmentKey: *involvedSegmentKeys) {
+      for (const auto& segmentKey: *involvedSegmentKeys) {
         normal::cache::beladyMiniCatalogue->addToSegmentQueryNumMappings(queryNum, segmentKey);
       }
     }
@@ -219,7 +209,6 @@ TEST_CASE ("BeladyGenerateMetadata" * doctest::skip(true || SKIP_SUITE)) {
   filesystem::create_directory(outputdir);
 
   std::string bucket_name = "pushdowndb";
-  std::string path_prefix = "ssb-sf100-sortlineorder/";
   std::vector<std::string> paths_to_generate_metadata_for = {
           "gzip_compression1_csv",
           "gzip_compression9_csv",
@@ -231,7 +220,7 @@ TEST_CASE ("BeladyGenerateMetadata" * doctest::skip(true || SKIP_SUITE)) {
           "parquet_150MB",
           "gzip_parquet_150MB"
   };
-  for (std::string path : paths_to_generate_metadata_for) {
+  for (const std::string& path : paths_to_generate_metadata_for) {
     std::string dir_prefix = "ssb-sf100-sortlineorder/" + path + "/";
     normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dir_prefix);
     generateBeladyMetadata(bucket_name, dir_prefix, outputDirName + "/" + path + "_segment_info");

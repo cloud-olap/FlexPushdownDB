@@ -12,10 +12,11 @@
 #include <normal/pushdown/Globals.h>
 #include <numeric>
 #include <normal/connector/MiniCatalogue.h>
+#include <filesystem>
 
 using namespace normal::ssb;
 using namespace normal::sql;
-using namespace normal::pushdown;
+using namespace normal::pushdown::s3;
 
 MathModelTest::MathModelTest(size_t networkLimit, size_t chunkSize, int numRuns) :
   networkLimit_(networkLimit),
@@ -90,7 +91,7 @@ std::string showMeasurementMetrics(const double executionTime,
   return ss.str();
 }
 
-double measureLocalSpeed(normal::sql::Interpreter& i, filesystem::path& sql_file_dir_path) {
+double measureLocalSpeed(normal::sql::Interpreter& i, std::filesystem::path& sql_file_dir_path) {
   SPDLOG_INFO("Measurement for local bandwidth:");
   filter::recordSpeeds = true;
 
@@ -218,7 +219,7 @@ void normal::ssb::MathModelTest::runTest() {  // unit: B/s
   SPDLOG_INFO("Metrics summary:\n{}", ss.str());
 
   // Output to file
-  auto metricsFilePath = filesystem::current_path().append("math_model_metrics");
+  auto metricsFilePath = std::filesystem::current_path().append("math_model_metrics");
   std::ofstream fout;
   fout.open(metricsFilePath.string(), std::ofstream::out | std::ofstream::app);
   fout << ss.str();
@@ -230,7 +231,7 @@ void normal::ssb::MathModelTest::runTestSingleMode(
         const std::shared_ptr<normal::plan::operator_::mode::Mode> &mode,
         bool saveMetrics) {
   auto cachingPolicy = FBRSCachingPolicy::make(cacheSize_, mode);  // caching policy doesn't matter here
-  auto sql_file_dir_path = filesystem::current_path().append("sql/generated");
+  auto sql_file_dir_path = std::filesystem::current_path().append("sql/generated");
   normal::sql::Interpreter i(mode, cachingPolicy);
   configureS3ConnectorMultiPartition(i, bucketName_, dirPrefix_);
   SPDLOG_INFO("{} mode:", mode->toString());
@@ -261,7 +262,7 @@ void normal::ssb::MathModelTest::runTestSingleMode(
 
   // save metrics
   if (saveMetrics) {
-    normal::pushdown::S3SelectScanStats s3SelectScanStats = i.getS3SelectScanStats()[0];
+    S3SelectScanStats s3SelectScanStats = i.getS3SelectScanStats()[0];
     auto metricsPair = metricsMap_.find(mode->toString());
     if (metricsPair != metricsMap_.end()) {
       auto& metricsVec = metricsPair->second;
