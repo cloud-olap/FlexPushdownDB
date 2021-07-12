@@ -5,7 +5,7 @@
 #ifndef NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_TESTUTIL_H
 #define NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_TESTUTIL_H
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <normal/core/OperatorManager.h>
 #include <normal/core/graph/OperatorGraph.h>
 #include <normal/plan/LogicalPlan.h>
@@ -17,7 +17,6 @@
 const char *getCurrentTestName();
 const char *getCurrentTestSuiteName();
 
-using namespace std::experimental;
 using namespace normal::tuple;
 using namespace normal::core;
 using namespace normal::core::graph;
@@ -31,7 +30,7 @@ class TestUtil {
 
 public:
 
-  static filesystem::path getTestScratchDirectory();
+  static std::filesystem::path getTestScratchDirectory();
 
   static void writeExecutionPlan(normal::core::OperatorManager &mgr);
 

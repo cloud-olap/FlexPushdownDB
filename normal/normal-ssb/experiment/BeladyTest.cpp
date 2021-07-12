@@ -19,8 +19,8 @@
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/pushdown/s3/S3Select.h>
 #include <iostream>
-#include <fstream>
 #include <utility>
+#include <filesystem>
 
 #define SKIP_SUITE true
 
@@ -172,7 +172,7 @@ void generateBeladyMetadata(const std::string& s3Bucket, const std::string& dir_
 }
 
 void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, const std::shared_ptr<normal::cache::BeladyCachingPolicy>& beladyCachingPolicy,
-                                           std::string bucket_name, std::string dir_prefix, int numQueries, filesystem::path sql_file_dir_path) {
+                                           std::string bucket_name, std::string dir_prefix, int numQueries, std::filesystem::path sql_file_dir_path) {
   normal::sql::Interpreter i(std::move(mode), beladyCachingPolicy);
   configureS3ConnectorMultiPartition(i, std::move(bucket_name), std::move(dir_prefix));
   i.boot();
@@ -205,8 +205,8 @@ TEST_CASE ("BeladyGenerateMetadata" * doctest::skip(true || SKIP_SUITE)) {
   spdlog::set_level(spdlog::level::info);
 
   std::string outputDirName = "partial_segment_infos";
-  auto outputdir = filesystem::current_path().append(outputDirName);
-  filesystem::create_directory(outputdir);
+  auto outputdir = std::filesystem::current_path().append(outputDirName);
+  std::filesystem::create_directory(outputdir);
 
   std::string bucket_name = "pushdowndb";
   std::vector<std::string> paths_to_generate_metadata_for = {
@@ -250,7 +250,7 @@ TEST_CASE ("BeladyExperiment" * doctest::skip(true || SKIP_SUITE)) {
   auto fbr = FBRCachingPolicy::make(cacheSize, mode);
   auto belady = BeladyCachingPolicy::make(cacheSize, mode);
 
-  auto currentPath = filesystem::current_path();
+  auto currentPath = std::filesystem::current_path();
   auto sql_file_dir_path = currentPath.append("sql/generated");
 
   // interpreter
@@ -289,7 +289,7 @@ TEST_CASE ("BeladyExperiment" * doctest::skip(true || SKIP_SUITE)) {
   SPDLOG_INFO("{} mode finished\nOverall metrics:\n{}", mode->toString(), i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
 
-  auto metricsFilePath = filesystem::current_path().append("metrics");
+  auto metricsFilePath = std::filesystem::current_path().append("metrics");
   std::ofstream fout(metricsFilePath.string());
   fout << mode->toString() << " mode finished\nOverall metrics:\n" << i.showMetrics() << "\n";
   fout << "Cache metrics:\n" << i.getOperatorManager()->showCacheMetrics() << "\n";

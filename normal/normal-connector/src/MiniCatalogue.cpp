@@ -11,6 +11,7 @@
 #include <normal/cache/SegmentKey.h>
 #include <arrow/api.h>
 #include <fmt/format.h>
+#include <filesystem>
 
 using namespace normal::cache;
 

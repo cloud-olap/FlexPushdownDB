@@ -12,36 +12,36 @@
 using namespace normal::ssb;
 using namespace normal::pushdown;
 
-filesystem::path TestUtil::getTestScratchDirectory() {
+std::filesystem::path TestUtil::getTestScratchDirectory() {
   auto testName = getCurrentTestName();
   auto testSuite = getCurrentTestSuiteName();
-  auto currentPath = filesystem::current_path();
+  auto currentPath = std::filesystem::current_path();
   auto baseTestScratchDir = currentPath.append(std::string("tests"));
-  filesystem::create_directories(baseTestScratchDir);
+  std::filesystem::create_directories(baseTestScratchDir);
   auto testSuiteScratchDir = baseTestScratchDir.append(testSuite);
   auto testScratchDir = testSuiteScratchDir.append(testName);
-  filesystem::create_directories(testScratchDir);
+  std::filesystem::create_directories(testScratchDir);
   return testScratchDir;
 }
 
 void TestUtil::writeExecutionPlan(normal::core::OperatorManager &/*mgr*/) {
   auto testScratchDir = getTestScratchDirectory();
 
-  auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
+  auto physicalPlanFile = std::filesystem::path(testScratchDir).append("physical-execution-plan.svg");
   // TODO: OperatorManager::write_graph() has been removed
 }
 
 void TestUtil::writeExecutionPlan2(OperatorGraph &g)  {
   auto testScratchDir = getTestScratchDirectory();
 
-  auto physicalPlanFile = filesystem::path(testScratchDir).append("physical-execution-plan.svg");
+  auto physicalPlanFile = std::filesystem::path(testScratchDir).append("physical-execution-plan.svg");
   g.write_graph(physicalPlanFile);
 }
 
 void TestUtil::writeExecutionPlan(normal::plan::LogicalPlan &plan) {
   auto testScratchDir = getTestScratchDirectory();
 
-  auto logicalPlanFile = filesystem::path(testScratchDir).append("logical-execution-plan.svg");
+  auto logicalPlanFile = std::filesystem::path(testScratchDir).append("logical-execution-plan.svg");
   plan.writeGraph(logicalPlanFile);
 }
 
