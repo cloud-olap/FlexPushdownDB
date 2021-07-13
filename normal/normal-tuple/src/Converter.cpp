@@ -19,7 +19,7 @@ tl::expected<void, std::string> Converter::csvToParquet(const std::string &inFil
 														const ::arrow::Schema &schema,
 														int rowGroupSize,
 														::parquet::Compression::type compressionType) {
-
+  ::arrow::io::IOContext ioContext;
   auto absoluteInFile = std::filesystem::absolute(inFile);
   auto absoluteOutFile = std::filesystem::absolute(outFile);
 
@@ -42,7 +42,7 @@ tl::expected<void, std::string> Converter::csvToParquet(const std::string &inFil
   read_options.column_names = columnNames;
   convert_options.column_types = columnTypes;
 
-  auto expectedReader = ::arrow::csv::TableReader::Make(::arrow::default_memory_pool(),
+  auto expectedReader = ::arrow::csv::TableReader::Make(ioContext,
 														inputStream,
 														read_options,
 														parse_options,

@@ -5,7 +5,6 @@
 #include "normal/connector/s3/S3Util.h"
 
 #include <aws/s3/model/ListObjectsRequest.h>
-#include <fmt/format.h>
 #include <normal/pushdown/AWSClient.h>
 
 using namespace normal::connector::s3;

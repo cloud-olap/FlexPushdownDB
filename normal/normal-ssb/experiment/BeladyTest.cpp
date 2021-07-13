@@ -18,18 +18,10 @@
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
 #include <normal/pushdown/s3/S3Select.h>
-#include <iostream>
-#include <utility>
-#include <filesystem>
-
 #define SKIP_SUITE true
 
 using namespace normal::ssb;
 using namespace normal::pushdown::collate;
-
-// not the best solution, should make a header file down the road most likely but this will work for now
-void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix);
-std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, std::string outputFileName = "");
 
 [[maybe_unused]] size_t getColumnSizeInBytes(const std::string& s3Bucket, const std::string& s3Object, const std::string& tableName, const std::string& queryColumn, long numBytes) {
   // operators
@@ -171,33 +163,7 @@ void generateBeladyMetadata(const std::string& s3Bucket, const std::string& dir_
   outputFile.close();
 }
 
-void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, const std::shared_ptr<normal::cache::BeladyCachingPolicy>& beladyCachingPolicy,
-                                           std::string bucket_name, std::string dir_prefix, int numQueries, std::filesystem::path sql_file_dir_path) {
-  normal::sql::Interpreter i(std::move(mode), beladyCachingPolicy);
-  configureS3ConnectorMultiPartition(i, std::move(bucket_name), std::move(dir_prefix));
-  i.boot();
-  // populate mapping of SegmentKey->[Query #s Segment is used in] and
-  // QueryNumber->[Involved Segment Keys] and set these in the beladyMiniCatalogue
-  for (auto queryNum = 1; queryNum <= numQueries; ++queryNum) {
-    SPDLOG_INFO("processing segments in query {}", queryNum);
-    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", queryNum));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
-    // get the related segments from the query:
-    i.clearOperatorGraph();
-    i.parse(sql);
 
-    auto logicalPlan = i.getLogicalPlan();
-    auto logicalOperators = logicalPlan->getOperators();
-    for (const auto& logicalOp: *logicalOperators) {
-      auto involvedSegmentKeys = logicalOp->extractSegmentKeys();
-      for (const auto& segmentKey: *involvedSegmentKeys) {
-        normal::cache::beladyMiniCatalogue->addToSegmentQueryNumMappings(queryNum, segmentKey);
-      }
-    }
-    i.getOperatorGraph().reset();
-    sql_file_dir_path = sql_file_dir_path.parent_path();
-  }
-}
 
 TEST_SUITE ("BeladyTests" * doctest::skip(SKIP_SUITE)) {
 
@@ -267,7 +233,7 @@ TEST_CASE ("BeladyExperiment" * doctest::skip(true || SKIP_SUITE)) {
     normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
     SPDLOG_INFO("sql {}", index);
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    auto sql = read_file(sql_file_path.string());
     executeSql(i, sql, false);
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
@@ -280,7 +246,7 @@ TEST_CASE ("BeladyExperiment" * doctest::skip(true || SKIP_SUITE)) {
     normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
     SPDLOG_INFO("sql {}", index - warmBatchSize);
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    auto sql = read_file(sql_file_path.string());
     executeSql(i, sql, true);
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }

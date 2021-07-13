@@ -40,6 +40,7 @@ target_link_libraries(normal-ssb PRIVATE sqlite3_static)
 target_link_libraries(normal-ssb PRIVATE sqlite3_csv_static)
 target_link_libraries(normal-ssb PUBLIC normal-pushdown)
 target_link_libraries(normal-ssb PUBLIC spdlog::spdlog)
+target_link_libraries(normal-ssb PRIVATE ssl crypto)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -167,6 +168,9 @@ target_link_libraries(normal-ssb-query-generate-file PRIVATE normal-ssb-query-ge
 # Experiment
 #-----------------------------------------------------------------------------------------------------------------------
 
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
+
 add_executable(normal-ssb-experiment
         experiment/ExperimentMain.cpp
         experiment/Tests.cpp
@@ -180,6 +184,7 @@ target_link_libraries(normal-ssb-experiment Backward::Backward)
 target_link_libraries(normal-ssb-experiment normal-ssb)
 target_link_libraries(normal-ssb-experiment normal-sql)
 target_link_libraries(normal-ssb-experiment normal-ssb-query-generate)
+#target_link_libraries(normal-ssb-experiment PRIVATE ssl crypto)
 
 # Copy ssb query files to runtime directory
 

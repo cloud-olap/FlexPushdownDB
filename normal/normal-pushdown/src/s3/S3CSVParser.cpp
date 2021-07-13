@@ -82,6 +82,7 @@ std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
 //  convert_options.column_types = column_types;
 
   // Create a reader
+  ::arrow::io::IOContext ioContext;
   auto reader = std::make_shared<arrow::io::BufferReader>(from.base(), std::distance(from, to));
   auto createResult = arrow::io::BufferedInputStream::Create(CSV_READER_BUFFER_SIZE,
 															 arrow::default_memory_pool(),
@@ -93,7 +94,7 @@ std::shared_ptr<TupleSet> S3CSVParser::parseCompletePayload(
   auto input = *createResult;
 
   // Instantiate TableReader from input stream and options
-  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
+  auto makeReaderResult = arrow::csv::TableReader::Make(ioContext,
 														input,
 														read_options,
 														parse_options,

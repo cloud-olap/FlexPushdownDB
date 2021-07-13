@@ -6,11 +6,7 @@
 #include <normal/sql/Interpreter.h>
 #include <normal/pushdown/collate/Collate.h>
 #include <normal/connector/s3/S3SelectConnector.h>
-#include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
-#include <normal/connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/pushdown/Util.h>
 #include <normal/plan/mode/Modes.h>
-#include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
 #include <normal/cache/FBRSCachingPolicy.h>
@@ -22,7 +18,8 @@
 #include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
 #include <normal/connector/MiniCatalogue.h>
-#include <normal/pushdown/s3/S3Get.h>
+#include <normal/ssb/SSBSchema.h>
+#include <normal/pushdown/Globals.h>
 
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 #include <aws/s3/S3Client.h>
@@ -39,20 +36,13 @@
 #include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
 #include <aws/s3/model/ListObjectsRequest.h>
 
-#include <arrow/csv/options.h>                              // for ReadOptions
 #include <arrow/csv/reader.h>                               // for TableReader
 #include <arrow/type_fwd.h>                                 // for default_m...
-#include "normal/ssb/SSBSchema.h"
-#include <normal/pushdown/Globals.h>
 
 #ifdef __AVX2__
 #include <normal/tuple/arrow/CSVToArrowSIMDStreamParser.h>
 #include <normal/tuple/arrow/CSVToArrowSIMDChunkParser.h>
 #endif
-
-#include <thread>
-#include <iostream>
-#include <filesystem>
 
 #define SKIP_SUITE false
 
@@ -60,133 +50,6 @@ using namespace normal::ssb;
 using namespace normal::pushdown;
 using namespace normal::pushdown::collate;
 using namespace normal::pushdown::s3;
-
-void generateSegmentKeyAndSqlQueryMappings(std::shared_ptr<normal::plan::operator_::mode::Mode> mode, std::shared_ptr<normal::cache::BeladyCachingPolicy> beladyCachingPolicy,
-                                           std::string bucket_name, std::string dir_prefix, int numQueries, std::filesystem::path sql_file_dir_path);
-
-void configureS3ConnectorSinglePartition(normal::sql::Interpreter &i, const std::string& bucket_name, const std::string& dir_prefix) {
-  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
-  auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
-
-  // look up tables
-  auto tableNames = normal::connector::defaultMiniCatalogue->tables();
-  auto s3Objects = std::make_shared<std::vector<std::string>>();
-  for (const auto &tableName: *tableNames) {
-    auto s3Object = dir_prefix + tableName + ".tbl";
-    s3Objects->emplace_back(s3Object);
-  }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
-
-  // configure s3Connector
-  for (size_t tbl_id = 0; tbl_id < tableNames->size(); tbl_id++) {
-    auto &tableName = tableNames->at(tbl_id);
-    auto &s3Object = s3Objects->at(tbl_id);
-    auto numBytes = objectNumBytes_Map.find(s3Object)->second;
-    auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
-    partitioningScheme->add(std::make_shared<S3SelectPartition>(bucket_name, s3Object, numBytes));
-    cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
-  }
-  i.put(cat);
-}
-
-void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, const std::string& bucket_name, const std::string& dir_prefix) {
-  auto conn = std::make_shared<normal::connector::s3::S3SelectConnector>("s3_select");
-  auto cat = std::make_shared<normal::connector::Catalogue>("s3_select", conn);
-
-  // get partitionNums
-  auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
-  auto partitionNums = normal::connector::defaultMiniCatalogue->partitionNums();
-  std::string fileExtension = normal::connector::getFileExtensionByDirPrefix(dir_prefix);
-  for (auto const &partitionNumEntry: *partitionNums) {
-    auto tableName = partitionNumEntry.first;
-    auto partitionNum = partitionNumEntry.second;
-    auto objects = std::make_shared<std::vector<std::string>>();
-    if (partitionNum == 1) {
-      objects->emplace_back(dir_prefix + tableName + fileExtension);
-      s3ObjectsMap->emplace(tableName, objects);
-    } else {
-      for (int j = 0; j < partitionNum; j++) {
-        objects->emplace_back(fmt::format("{0}{1}_sharded/{1}{2}.{3}", dir_prefix, tableName, fileExtension, j));
-      }
-      s3ObjectsMap->emplace(tableName, objects);
-    }
-  }
-
-  // look up tables
-  auto s3Objects = std::make_shared<std::vector<std::string>>();
-  for (auto const &s3ObjectPair: *s3ObjectsMap) {
-    auto objects = s3ObjectPair.second;
-    s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
-  }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
-
-  // configure s3Connector
-  for (auto const &s3ObjectPair: *s3ObjectsMap) {
-    auto tableName = s3ObjectPair.first;
-    auto objects = s3ObjectPair.second;
-    auto partitioningScheme = std::make_shared<S3SelectExplicitPartitioningScheme>();
-    for (auto const &s3Object: *objects) {
-      auto numBytes = objectNumBytes_Map.find(s3Object)->second;
-      partitioningScheme->add(std::make_shared<S3SelectPartition>(bucket_name, s3Object, numBytes));
-    }
-    cat->put(std::make_shared<normal::connector::s3::S3SelectCatalogueEntry>(tableName, partitioningScheme, cat));
-  }
-  i.put(cat);
-}
-
-auto execute(normal::sql::Interpreter &i) {
-  i.getCachingPolicy()->onNewQuery();
-  i.getOperatorGraph()->boot();
-  i.getOperatorGraph()->start();
-  i.getOperatorGraph()->join();
-
-  auto tuples = std::static_pointer_cast<Collate>(i.getOperatorGraph()->getOperator("collate"))->tuples();
-
-  return tuples;
-}
-
-auto executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, const std::string& outputFileName = "") {
-  i.clearOperatorGraph();
-  i.parse(sql);
-
-  auto tuples = execute(i);
-
-  // FIXME: if result is no tuples?
-  std::shared_ptr<TupleSet2> tupleSet;
-  if (tuples)
-    tupleSet = TupleSet2::create(tuples);
-  else
-    tupleSet = TupleSet2::make();
-
-  // Once the query is done there should be no active get conversion in S3Get.cpp, so this value should be 0 unless
-  // there are background caching operations still performing GET/Select.
-  SPDLOG_INFO("Done with query, activeGetConversions = {}", activeGetConversions);
-  if (writeResults) {
-    auto outputdir = std::filesystem::current_path().append("outputs");
-    std::filesystem::create_directory(outputdir);
-    auto outputFile = outputdir.append(outputFileName);
-    std::ofstream fout(outputFile.string());
-    fout << "Output  |\n" << tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented, tupleSet->numRows()));
-    fout.flush();
-    fout.close();
-  }
-//  SPDLOG_INFO("Output  |\n{}", tupleSet->showString(TupleSetShowOptions(TupleSetShowOrientation::RowOriented)));
-//  SPDLOG_INFO("Output size: {}", tupleSet->size());
-  SPDLOG_CRITICAL("Output rows: {}", tupleSet->numRows());
-//  if (saveMetrics)
-  SPDLOG_INFO("Metrics:\n{}", i.getOperatorGraph()->showMetrics());
-  SPDLOG_CRITICAL("Finished, time: {} secs", (double) (i.getOperatorGraph()->getElapsedTime().value()) / 1000000000.0);
-//  SPDLOG_INFO("Current cache layout:\n{}", i.getCachingPolicy()->showCurrentLayout());
-//  SPDLOG_INFO("Memory allocated: {}", arrow::default_memory_pool()->bytes_allocated());
-  if (saveMetrics) {
-    i.saveMetrics();
-    i.saveHitRatios();
-  }
-
-  i.getOperatorGraph().reset();
-//  std::this_thread::sleep_for (std::chrono::milliseconds (2000));
-  return tupleSet;
-}
 
 std::mutex selectBytesReceivedLock;
 volatile size_t selectReceivedBytes = 0;
@@ -278,7 +141,7 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
   handler.SetEndEventCallback([&]() {
       SPDLOG_INFO("S3 Select done: {}", index);
   });
-  handler.SetOnErrorCallback([&](const Aws::Client::AWSError<S3Errors> &errors) {
+  handler.SetOnErrorCallback([&](const Aws::Client::AWSError<Aws::S3::S3Errors> &errors) {
       SPDLOG_INFO("S3 Select Error of query {} | message: {}",
                   index,
                   std::string(errors.GetMessage()));
@@ -539,7 +402,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   if (cachingPolicy->id() == BELADY) {
     auto beladyCachingPolicy = std::static_pointer_cast<normal::cache::BeladyCachingPolicy>(cachingPolicy);
-    generateSegmentKeyAndSqlQueryMappings(mode, beladyCachingPolicy, bucket_name, dirPrefix, warmBatchSize + executeBatchSize, sql_file_dir_path);
+    generateBeladySegmentKeyAndSqlQueryMappings(mode, beladyCachingPolicy, bucket_name, dirPrefix, warmBatchSize + executeBatchSize, sql_file_dir_path);
     // Generate caching decisions for belady
     SPDLOG_INFO("Generating belady caching decisions. . .");
     beladyCachingPolicy->generateCacheDecisions(warmBatchSize + executeBatchSize);
@@ -565,7 +428,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
         normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
       }
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
-      auto sql = ExperimentUtil::read_file(sql_file_path.string());
+      auto sql = read_file(sql_file_path.string());
       executeSql(i, sql, true, writeResults, fmt::format("{}output.txt", index));
       sql_file_dir_path = sql_file_dir_path.parent_path();
     }
@@ -574,7 +437,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
     // execute one query to avoid first-run latency
     SPDLOG_CRITICAL("First-run query:");
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 1));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    auto sql = read_file(sql_file_path.string());
     executeSql(i, sql, false, false, fmt::format("{}output.txt", index));
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
@@ -586,7 +449,8 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   i.getOperatorManager()->clearCacheMetrics();
 
-  system("./scripts/measure_usage_start.sh ~/.aws/my-key-pair.pem scripts/iplist.txt");
+  // script to collect resource usage
+//  system("./scripts/measure_usage_start.sh ~/.aws/my-key-pair.pem scripts/iplist.txt");
   SPDLOG_CRITICAL("Execution phase:");
   for (auto index = warmBatchSize + 1; index <= warmBatchSize + executeBatchSize; ++index) {
     SPDLOG_CRITICAL("sql {}", index - warmBatchSize);
@@ -594,12 +458,12 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
       normal::cache::beladyMiniCatalogue->setCurrentQueryNum(index);
     }
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    auto sql = read_file(sql_file_path.string());
     executeSql(i, sql, true, writeResults, fmt::format("{}output.txt", index));
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
   SPDLOG_CRITICAL("Execution phase finished");
-  system("./scripts/measure_usage_stop.sh ~/.aws/my-key-pair.pem scripts/iplist.txt");
+//  system("./scripts/measure_usage_stop.sh ~/.aws/my-key-pair.pem scripts/iplist.txt");
 
   SPDLOG_INFO("{} mode finished in dirPrefix: {}\nExecution metrics:\n{}", mode->toString(), dirPrefix, i.showMetrics());
   SPDLOG_INFO("Cache Metrics:\n{}", i.getOperatorManager()->showCacheMetrics());
@@ -659,7 +523,7 @@ void normal::ssb::perfBatchRun(int modeType, const std::string& dirPrefix, int c
   for (auto index = 1; index <= cacheLoadQueries; ++index) {
     SPDLOG_INFO("sql {}", index);
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", index));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    auto sql = read_file(sql_file_path.string());
     executeSql(i, sql, false, false, fmt::format("{}output.txt", index));
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
@@ -679,7 +543,7 @@ void normal::ssb::perfBatchRun(int modeType, const std::string& dirPrefix, int c
       int sqlIndex = queryNumOffset + (c - 1) * (rowSelectivityValuesToTest + warmupQueriesPerColSize) + r;
       SPDLOG_INFO("sql {}", sqlIndex);
       auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", sqlIndex));
-      auto sql = ExperimentUtil::read_file(sql_file_path.string());
+      auto sql = read_file(sql_file_path.string());
       bool saveMetrics = true;
       if (r <= warmupQueriesPerColSize) {
         SPDLOG_INFO("Not saving results for {}", sqlIndex);
@@ -771,7 +635,7 @@ TEST_CASE ("SequentialRun" * doctest::skip(true || SKIP_SUITE)) {
     auto sql_file_name = sql_file_names[index];
     auto sql_file_path = sql_file_dir_path.append(sql_file_name);
     SPDLOG_DEBUG(sql_file_dir_path.string());
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    auto sql = read_file(sql_file_path.string());
     SPDLOG_INFO("{}-{}: \n{}", cnt++, sql_file_name, sql);
 
     // execute sql

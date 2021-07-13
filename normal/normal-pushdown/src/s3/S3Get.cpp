@@ -117,6 +117,7 @@ bool S3Get::parallelTuplesetCreationSupported() {
 }
 
 std::shared_ptr<TupleSet2> S3Get::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream) {
+  auto ioContext = arrow::io::IOContext();
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto read_options = arrow::csv::ReadOptions::Defaults();
   read_options.use_threads = false;
@@ -131,7 +132,7 @@ std::shared_ptr<TupleSet2> S3Get::readCSVFile(std::shared_ptr<arrow::io::InputSt
   convert_options.include_columns = neededColumnNames_;
 
   // Instantiate TableReader from input stream and options
-  auto makeReaderResult = arrow::csv::TableReader::Make(arrow::default_memory_pool(),
+  auto makeReaderResult = arrow::csv::TableReader::Make(ioContext,
 														arrowInputStream,
 														read_options,
 														parse_options,

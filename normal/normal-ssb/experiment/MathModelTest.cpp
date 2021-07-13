@@ -10,9 +10,7 @@
 #include "ExperimentUtil.h"
 #include <normal/pushdown/filter/Filter.h>
 #include <normal/pushdown/Globals.h>
-#include <numeric>
 #include <normal/connector/MiniCatalogue.h>
-#include <filesystem>
 
 using namespace normal::ssb;
 using namespace normal::sql;
@@ -22,10 +20,6 @@ MathModelTest::MathModelTest(size_t networkLimit, size_t chunkSize, int numRuns)
   networkLimit_(networkLimit),
   chunkSize_(chunkSize),
   numRuns_(numRuns) {}
-
-// not the best solution, should make a header file down the road most likely but this will work for now
-void configureS3ConnectorMultiPartition(normal::sql::Interpreter &i, std::string bucket_name, std::string dir_prefix);
-std::shared_ptr<TupleSet2> executeSql(normal::sql::Interpreter &i, const std::string &sql, bool saveMetrics, bool writeResults = false, std::string outputFileName = "");
 
 std::string showMeasurementMetrics(const double executionTime,
                                    const size_t processedBytes,
@@ -98,7 +92,7 @@ double measureLocalSpeed(normal::sql::Interpreter& i, std::filesystem::path& sql
   i.clearMetrics();
   i.clearHitRatios();
   auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 2));
-  auto sql = ExperimentUtil::read_file(sql_file_path.string());
+  auto sql = read_file(sql_file_path.string());
   executeSql(i, sql, true, false, "");
   sql_file_dir_path = sql_file_dir_path.parent_path();
   SPDLOG_INFO("Query 1 for local bandwidth finished, hit ratio: {}", i.getHitRatios()[0]);
@@ -109,7 +103,7 @@ double measureLocalSpeed(normal::sql::Interpreter& i, std::filesystem::path& sql
 //  i.clearMetrics();
 //  i.clearHitRatios();
 //  sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 3));
-//  sql = ExperimentUtil::read_file(sql_file_path.string());
+//  sql = read_file(sql_file_path.string());
 //  executeSql(i, sql, true, false, "");
 //  sql_file_dir_path = sql_file_dir_path.parent_path();
 //  SPDLOG_INFO("Query 2 for local bandwidth finished, hit ratio: {}", i.getHitRatios()[0]);
@@ -242,7 +236,7 @@ void normal::ssb::MathModelTest::runTestSingleMode(
       mode->id() != normal::plan::operator_::mode::ModeId::FullPushdown) {
     SPDLOG_INFO("Query for caching:");
     auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 1));
-    auto sql = ExperimentUtil::read_file(sql_file_path.string());
+    auto sql = read_file(sql_file_path.string());
     executeSql(i, sql, true, false, "");
     sql_file_dir_path = sql_file_dir_path.parent_path();
   }
@@ -254,7 +248,7 @@ void normal::ssb::MathModelTest::runTestSingleMode(
   // query for measurement
   SPDLOG_INFO("Query for measurement:");
   auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 2));
-  auto sql = ExperimentUtil::read_file(sql_file_path.string());
+  auto sql = read_file(sql_file_path.string());
   executeSql(i, sql, true, false, "");
   sql_file_dir_path = sql_file_dir_path.parent_path();
   SPDLOG_INFO("{} mode finished\nExecution metrics:\n{}", mode->toString(), i.showMetrics());
