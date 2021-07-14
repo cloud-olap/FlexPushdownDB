@@ -1,68 +1,102 @@
 # FlexPushdownDB
 
-A cloud DBMS of hybrid caching and computation pushdown
+-----------------
 
-### Dependencies
+A research cloud OLAP engine using hybrid caching and computation pushdown.
 
-Needed libraries:
+[1] Yifei Yang, Matt Youill, Matthew Woicik, Yizhou Liu, Xiangyao Yu, Marco Serafini, Ashraf Aboulnaga, Michael Stonebraker, FlexPushdownDB: Hybrid Pushdown and Caching in a Cloud DBMS, VLDB 2021.
 
-	./tools/project/bin/ubuntu-prerequisites.sh
+## Dependencies
 
-### Compiling
+To install required dependencies:
 
-Needed compiler: LLVM-7 or later versions
+```
+git clone https://github.com/yxymit/pushdownDB.git
+cd pushdownDB/normal
+sudo ./tools/project/bin/ubuntu-prerequisites.sh
+```
 
-To build the exeutable for query execution:
+## Build
 
-	cmake --build . --target normal-ssb-experiment
+Compiler needed: LLVM-10 or later versions.
+
+#### To load CMake project:
+
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=/usr/bin/clang-10 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-10 -G "CodeBlocks - Unix Makefiles" ..
+```
+
+#### To build the core of engine:
+
+```
+cmake --build . --target normal-pushdown
+```
+
+#### To build the executable of query execution using SSB benchmark:
+
+```
+cmake --build . --target normal-ssb-experiment
+```
+
+#### To build the executable for query generator of SSB queries:
+
+```
+cmake --build . --target normal-ssb-query-generate-file
+```
+
+## Run
+
+### To run a batch of queries:
+
+Put a batch of queries into <build_directory>/normal-ssb/sql/generated/, or run the query generator shown below, then:
+
+```
+./normal-ssb-experiment <cache_size> <mode> <caching_policy>
+```
+
+### Configurations:
+
+cache_size: allocated space of the segment cache.
+
+```
+Float number with GB unit
+```
+
+mode: whether to enable caching and pushdown capabilities.
+
+```
+1 - Pullup
+2 - Pushdown-only
+3 - Caching-only
+4 - Hybrid
+```
+
+caching_policy: cache replacement policy used in the segment cache.
+
+```
+1 - LRU
+2 - LFU
+3 - Weighted-LFU
+4 - Belady
+```
+
+### To generate a batch of queries:
+
+```
+./normal-ssb-query-generate-file <type> <size> <skewness>
+```
+
+### Configurations:
+
+type: the workload type.
+
+```
+1 - SSB workload
+2 - SSB workload with difference of pushdown cost
+```
+
+size: number of queries in the batch generated.
   
-To build the exeutable for the query generator:
-
-	cmake --build . --target normal-ssb-query-generate-file
-
-### Execution
-
-Put a batch of queries into <build_directory>/normal-ssb/sql/generated/
-
-#### Run a batch of queries:
-
-	./normal-ssb-experiment <cache_size> <mode> <caching_policy>
-  
-Specification of parameters:
-
-cache size: 
-
-	Float number with GB unit
-
-mode: 
-
-	1 - Pullup
-	2 - Pushdown-only
-	3 - Caching-only
-	4 - Hybrid
-
-caching policy:
-
-	1 - LRU
-	2 - LFU
-	3 - Weighted-LFU
-	4 - Belady
-
-#### Generate a batch of queries:
-
-	./normal-ssb-query-generate-file <type> <size> <skewness>
-
-Specification of parameters:
-
-type:
-
-	1 - SSB workload
-	2 - SSB workload with difference of pushdown cost
-
-size:
-
-	Number of queries in the batch
-  
-skewness:
-
-	Theta of Zipfian distribution
+skewness: parameter of Zipfian distribution, which we adopt in the workload.
