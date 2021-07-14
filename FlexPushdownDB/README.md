@@ -12,7 +12,7 @@ To install required dependencies:
 
 ```
 git clone https://github.com/yxymit/pushdownDB.git
-cd pushdownDB/normal
+cd pushdownDB/FlexPushdownDB
 sudo ./tools/project/bin/ubuntu-prerequisites.sh
 ```
 
