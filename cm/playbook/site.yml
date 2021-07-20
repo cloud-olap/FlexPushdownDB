@@ -1,6 +1,0 @@
----
-
-- import_playbook: prerequisites.yml
-- import_playbook: security.yml
-- import_playbook: package-source.yml
-- import_playbook: package-requirements.yml

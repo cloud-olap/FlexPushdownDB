@@ -1,6 +1,0 @@
----
-
-ansible_user: ec2-user
-ansible_ssh_host: ec2-34-205-2-185.compute-1.amazonaws.com
-ansible_ssh_private_key_file: /home/matt/Work/s3filter/private/matt_youill_aws.pem
-#ansible_ssh_private_key_file: /Users/mattyouill/Documents/Work/s3filter/private/matt_youill_aws.pem
