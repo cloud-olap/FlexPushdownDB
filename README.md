@@ -13,6 +13,14 @@ To install required dependencies:
 ```
 git clone https://github.com/yxymit/pushdownDB.git
 cd pushdownDB/FlexPushdownDB
+```
+
+```
+sudo ./setup.sh
+```
+
+Or specifically for Ubuntu systems, run
+```
 sudo ./tools/project/bin/ubuntu-prerequisites.sh
 ```
 
@@ -94,7 +102,7 @@ type: the workload type.
 
 ```
 1 - SSB workload
-2 - SSB workload with difference of pushdown cost
+2 - The workload involving different pushdown cost, used for benchmarking Weighted-LFU caching policy
 ```
 
 size: number of queries in the batch generated.
