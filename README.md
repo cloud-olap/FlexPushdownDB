@@ -11,8 +11,8 @@ A research cloud OLAP engine using hybrid caching and computation pushdown.
 To install required dependencies:
 
 ```
-git clone https://github.com/yxymit/pushdownDB.git
-cd pushdownDB/FlexPushdownDB
+git clone https://github.com/cloud-olap/FlexPushdownDB
+cd FlexPushdownDB
 ```
 
 ```
