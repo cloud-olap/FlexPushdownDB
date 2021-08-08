@@ -21,7 +21,7 @@ namespace normal::pushdown::deltamerge {
 
         void onStart();
 
-        void onComplete(const COmpleteMessage &);
+        void onComplete(const CompleteMessage &);
 
         void onTuple(const TupleMessage &message);
 
