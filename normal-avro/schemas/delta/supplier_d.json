@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "supplier",
+  "fields" : [
+    {"name": "s_suppkey", "type": "int"},
+    {"name": "s_name", "type" : "string"},
+    {"name": "s_address", "type" : "string"},
+    {"name": "s_city", "type" : "string"},
+    {"name": "s_nation", "type" : "sting"},
+    {"name": "s_region", "type" : "string"},
+    {"name": "s_phone", "type" : "string"},
+    {"name": "type", "type": "string"},
+    {"name": "timestamp", "type": "int"}
+  ]
+}

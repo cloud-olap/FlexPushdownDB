@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "date",
+  "fields" : [
+    {"name": "lo_orderkey", "type": "int"},
+    {"name": "lo_linenumber", "type" : "int"},
+    {"name": "lo_custkey", "type" : "int"},
+    {"name": "lo_partkey", "type" : "int"},
+    {"name": "lo_suppkey", "type" : "int"},
+    {"name": "lo_orderdate", "type" : "int"},
+    {"name": "lo_orderpriority", "type" : "string"},
+    {"name": "lo_shippriority", "type" : "string"},
+    {"name": "lo_quantity", "type" : "int"},
+    {"name": "lo_extendedprice", "type" : "int"},
+    {"name": "lo_ordtotalprice", "type" : "int"},
+    {"name": "lo_discount", "type" : "int"},
+    {"name": "lo_revenue", "type" : "long"},
+    {"name": "lo_supplycost", "type" : "long"},
+    {"name": "lo_tax", "type" : "int"},
+    {"name": "lo_commitdate", "type" : "int"},
+    {"name": "lo_shipmode", "type" : "string"},
+    {"name": "type", "type": "string"},
+    {"name": "timestamp", "type": "int"}
+  ]
+}

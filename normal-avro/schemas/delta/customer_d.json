@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "customer",
+  "fields" : [
+    {"name": "c_custkey", "type": "int"},
+    {"name": "c_name", "type" : "string"},
+    {"name": "c_address", "type" : "string"},
+    {"name": "c_city", "type" : "string"},
+    {"name": "c_nation", "type" : "sting"},
+    {"name": "c_region", "type" : "string"},
+    {"name": "c_phone", "type" : "string"},
+    {"name": "c_mktsegment", "type" : "string"},
+    {"name": "type", "type": "string"},
+    {"name": "timestamp", "type": "int"}
+  ]
+}

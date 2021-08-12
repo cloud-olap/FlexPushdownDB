@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "date",
+  "fields" : [
+    {"name": "d_datekey", "type": "int"},
+    {"name": "d_date", "type" : "string"},
+    {"name": "d_dayofweek", "type" : "string"},
+    {"name": "d_month", "type" : "string"},
+    {"name": "d_year", "type" : "int"},
+    {"name": "d_yearmonthnum", "type" : "int"},
+    {"name": "d_yearmonth", "type" : "string"},
+    {"name": "d_daynuminweek", "type" : "int"},
+    {"name": "d_daynuminmonth", "type" : "int"},
+    {"name": "d_daynuminyear", "type" : "int"},
+    {"name": "d_monthnuminyear", "type" : "int"},
+    {"name": "d_weeknuminyear", "type" : "int"},
+    {"name": "d_sellingseason", "type" : "string"},
+    {"name": "d_lastdayinweekfl", "type" : "boolean"},
+    {"name": "d_lastdayinmonthfl", "type" : "boolean"},
+    {"name": "d_holidayfl", "type" : "boolean"},
+    {"name": "d_weekdayfl", "type" : "boolean"},
+    {"name": "type", "type": "string"},
+    {"name": "timestamp", "type": "int"}
+  ]
+}
