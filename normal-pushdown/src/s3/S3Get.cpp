@@ -8,6 +8,7 @@
 #include <utility>
 #include <memory>
 #include <cstdlib>                                          // for abort
+#include <fstream>
 
 #include <aws/s3/S3Client.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
@@ -31,10 +32,18 @@
 #include "normal/pushdown/Globals.h"
 #include <parquet/arrow/reader.h>
 #include <normal/tuple/arrow/ArrowAWSInputStream.h>
+#include "avro/Encoder.hh"
+#include "avro/Decoder.hh"
+#include "avro/Compiler.hh"
+#include "avro/Stream.hh"
+#include "avro/Generic.hh"
+#include "avro/DataFile.hh"
 
 #ifdef __AVX2__
 #include <normal/plan/Globals.h>
 #include "normal/tuple/arrow/CSVToArrowSIMDStreamParser.h"
+#include "../../../normal-avro/include/normal/avro/avroTuple.h"
+
 
 #endif
 
@@ -84,25 +93,26 @@ std::shared_ptr<S3Get> S3Get::make(const std::string& name,
 												 const std::vector<std::string>& neededColumnNames,
 												 int64_t startOffset,
 												 int64_t finishOffset,
-                         const std::shared_ptr<arrow::Schema>& schema,
+												 const std::shared_ptr<arrow::Schema>& schema,
 												 const std::shared_ptr<Aws::S3::S3Client>& s3Client,
 												 bool scanOnStart,
 												 bool toCache,
 												 long queryId,
-                         const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys) {
-  return std::make_shared<S3Get>(name,
-										s3Bucket,
-										s3Object,
-										returnedS3ColumnNames,
-										neededColumnNames,
-										startOffset,
-										finishOffset,
-										schema,
-										s3Client,
-										scanOnStart,
-										toCache,
-										queryId,
-										weightedSegmentKeys);
+                                                 const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys) {
+  return std::make_shared<S3Get>(
+                                name,
+                                s3Bucket,
+                                s3Object,
+                                returnedS3ColumnNames,
+                                neededColumnNames,
+                                startOffset,
+                                finishOffset,
+                                schema,
+                                s3Client,
+                                scanOnStart,
+                                toCache,
+                                queryId,
+                                weightedSegmentKeys);
 
 }
 
@@ -150,6 +160,35 @@ std::shared_ptr<TupleSet2> S3Get::readCSVFile(std::shared_ptr<arrow::io::InputSt
   auto tupleSetV1 = TupleSet::make(tableReader);
   auto tupleSet = TupleSet2::create(tupleSetV1);
   return tupleSet;
+}
+
+std::shared_ptr<avro_tuple::avroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName) {
+  // create an avro data input stream
+  std::string avroFileString(std::istream_iterator<char>(retrievedFile), {});
+  const uint8_t* avroBytes = std::reinterpret_cast<const uint8_t*>(&avroFileString[0]); // TODO: figure out why this is unqualified-id
+  std::unique_ptr<avro::InputStream> avroInputStream = avro::memoryInputStream(avroBytes, avroFileString.size());
+
+  // get the schema file
+  std::ifstream schemaInput(schemaName);
+  avro::ValidSchema validSchema;
+  avro::compileJsonSchema(schemaInput, validSchema);
+
+  // read the data input stream with the given valid schema
+  avro::DataFileReader<avro::GenericDatum> fileReader(move(avroInputStream), validSchema);
+  avro::GenericDatum datum(fileReader.dataSchema());
+  while (fileReader.read(datum)) {
+    if (datum.type() == avro::AVRO_RECORD) {
+      std::vector<avro::GenericDatum> recordArray;
+      const avro::GenericRecord& record = datum.value<avro::GenericRecord>();
+      size_t fieldCount = record.fieldCount();
+      for (size_t i = 0; i < fieldCount; i ++) {
+        // TODO: pull out each field and add to some kind of data structure defined in avroTuple.h
+        recordArray.push_back(record.fieldAt(i));
+      }
+    }
+  }
+
+  return nullptr; // TODO: return an avroTuple type
 }
 
 std::shared_ptr<TupleSet2> S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
