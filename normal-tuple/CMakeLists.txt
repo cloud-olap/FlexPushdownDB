@@ -59,9 +59,11 @@ target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)
 target_link_libraries(normal-tuple PUBLIC deflate)
+target_link_libraries(normal-tuple PUBLIC normal-avro)
 # Ideally use cloudflare instead of z-ng, however don't have CMake working yet
 # Follow download instructions here: https://github.com/zlib-ng/zlib-ng to get linking working
 target_link_libraries(normal-tuple PUBLIC z-ng)
+target_link_libraries(avro-example PUBLIC /usr/local/lib/libavrocpp.so)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Test

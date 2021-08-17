@@ -6,11 +6,13 @@ project(normal-avro VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-avro STATIC
-        include/avroTuple.h src/avroTuple.cpp
-        include/customer.hh include/customer_d.hh
-        include/date.hh include/date_d.hh
-        include/lineorder.hh include/lineorder_d.hh
-        include/part.hh include/part_d.hh
-        include/supplier.hh include/supplier_d.hh)
+        include/normal/avro/avroTuple.h src/avroTuple.cpp
+        include/normal/avro/customer.hh include/normal/avro/customer_d.hh
+        include/normal/avro/date.hh include/normal/avro/date_d.hh
+        include/normal/avro/lineorder.hh include/normal/avro/lineorder_d.hh
+        include/normal/avro/part.hh include/normal/avro/part_d.hh
+        include/normal/avro/supplier.hh include/normal/avro/supplier_d.hh)
 
 target_include_directories(normal-avro PUBLIC include)
+
+target_link_libraries(avro-example PUBLIC /usr/local/lib/libavrocpp.so)

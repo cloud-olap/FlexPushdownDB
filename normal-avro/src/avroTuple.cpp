@@ -2,4 +2,6 @@
 // Created by Han Cao on 8/15/21.
 //
 
-#include "../include/avroTuple.h"
+#include "../include/normal/avro/avroTuple.h"
+
+normal::avro::avroTuple::avroTuple(bool isDelta) : isDelta_(isDelta) {}
