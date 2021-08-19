@@ -176,19 +176,24 @@ std::shared_ptr<avro_tuple::avroTuple> S3Get::readAvroFile(std::basic_iostream<c
   // read the data input stream with the given valid schema
   avro::DataFileReader<avro::GenericDatum> fileReader(move(avroInputStream), validSchema);
   avro::GenericDatum datum(fileReader.dataSchema());
+
+  std::vector<avro::GenericRecord> recordArray;
+
   while (fileReader.read(datum)) {
     if (datum.type() == avro::AVRO_RECORD) {
-      std::vector<avro::GenericDatum> recordArray;
+
       const avro::GenericRecord& record = datum.value<avro::GenericRecord>();
-      size_t fieldCount = record.fieldCount();
-      for (size_t i = 0; i < fieldCount; i ++) {
-        // TODO: pull out each field and add to some kind of data structure defined in avroTuple.h
-        recordArray.push_back(record.fieldAt(i));
-      }
+      recordArray.push_back(record);
+//      size_t fieldCount = record.fieldCount();
+//      for (size_t i = 0; i < fieldCount; i ++) {
+//        // TODO: pull out each field and add to some kind of data structure defined in avroTuple.h
+//        recordArray.push_back(record.fieldAt(i));
+//      }
     }
   }
 
-  return nullptr; // TODO: return an avroTuple type
+  return normal::avro_tuple::avroTuple::make(recordArray, schemaName, false);
+//  return nullptr; // TODO: return an avroTuple type
 }
 
 std::shared_ptr<TupleSet2> S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
