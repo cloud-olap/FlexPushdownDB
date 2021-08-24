@@ -164,8 +164,8 @@ std::shared_ptr<TupleSet2> S3Get::readCSVFile(std::shared_ptr<arrow::io::InputSt
 
 std::shared_ptr<avro_tuple::avroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName) {
   // create an avro data input stream
-  std::string avroFileString(std::istream_iterator<char>(retrievedFile), {});
-  const uint8_t* avroBytes = std::reinterpret_cast<const uint8_t*>(&avroFileString[0]); // TODO: figure out why this is unqualified-id
+  std::vector<uint8_t> avroFileString(std::istream_iterator<uint8_t>(retrievedFile), {});
+  auto avroBytes = reinterpret_cast<const uint8_t*>(&avroFileString[0]);
   std::unique_ptr<avro::InputStream> avroInputStream = avro::memoryInputStream(avroBytes, avroFileString.size());
 
   // get the schema file

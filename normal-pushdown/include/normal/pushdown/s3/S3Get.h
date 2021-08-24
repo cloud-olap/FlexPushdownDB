@@ -7,6 +7,7 @@
 
 #include "normal/pushdown/s3/S3SelectScan.h"
 #include <aws/s3/model/GetObjectResult.h>
+#include <normal/avro/avroTuple.h>
 
 #ifdef __AVX2__
 #include "normal/tuple/arrow/CSVToArrowSIMDChunkParser.h"
@@ -49,9 +50,11 @@ class S3Get : public S3SelectScan {
                                           long queryId = 0,
                                           const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys = nullptr);
 
+    static std::shared_ptr<normal::avro_tuple::avroTuple> readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName);
+
   private:
     std::shared_ptr<TupleSet2> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
-    std::shared_ptr<avro::avroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName);
+    // std::shared_ptr<avro_tuple::avroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName);
     std::shared_ptr<TupleSet2> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
     std::shared_ptr<TupleSet2> s3GetFullRequest();
     Aws::S3::Model::GetObjectResult s3GetRequestOnly(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);

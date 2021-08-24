@@ -4,4 +4,4 @@
 
 #include "../include/normal/avro/avroTuple.h"
 
-normal::avro::avroTuple::avroTuple(bool isDelta) : isDelta_(isDelta) {}
+normal::avro_tuple::avroTuple::avroTuple(bool isDelta) : isDelta_(isDelta) {}

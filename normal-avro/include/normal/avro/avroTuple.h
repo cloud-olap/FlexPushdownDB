@@ -5,6 +5,10 @@
 #ifndef NORMAL_AVROTUPLE_H
 #define NORMAL_AVROTUPLE_H
 
+
+#include <string>
+#include <vector>
+
 namespace normal::avro_tuple {
 
 class avroTuple {
@@ -14,7 +18,7 @@ public:
 private:
     std::vector<std::string> avroVector;
     std::string tableName_;
-    std::bool isDelta_;
+    bool isDelta_;
 };
 
 }

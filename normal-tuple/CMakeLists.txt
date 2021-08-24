@@ -52,9 +52,9 @@ add_library(normal-tuple STATIC
 
 target_include_directories(normal-tuple PUBLIC include)
 
-target_link_libraries(normal-tuple PRIVATE spdlog::spdlog)
-target_link_libraries(normal-tuple PRIVATE fmt::fmt)
-target_link_libraries(normal-tuple PRIVATE LLVM-filesystem)
+target_link_libraries(normal-tuple PUBLIC spdlog::spdlog)
+target_link_libraries(normal-tuple PUBLIC fmt::fmt)
+target_link_libraries(normal-tuple PUBLIC LLVM-filesystem)
 target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)
@@ -63,7 +63,7 @@ target_link_libraries(normal-tuple PUBLIC normal-avro)
 # Ideally use cloudflare instead of z-ng, however don't have CMake working yet
 # Follow download instructions here: https://github.com/zlib-ng/zlib-ng to get linking working
 target_link_libraries(normal-tuple PUBLIC z-ng)
-target_link_libraries(avro-example PUBLIC /usr/local/lib/libavrocpp.so)
+target_link_libraries(normal-tuple PUBLIC /usr/local/lib/libavrocpp.so)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Test
@@ -79,7 +79,7 @@ add_executable(normal-tuple-test
         test/TupleSetIndexTest.cpp)
 
 
-target_include_directories(normal-tuple-test PRIVATE include)
+target_include_directories(normal-tuple-test PUBLIC include)
 
 target_link_libraries(normal-tuple-test spdlog::spdlog)
 target_link_libraries(normal-tuple-test doctest::doctest)
