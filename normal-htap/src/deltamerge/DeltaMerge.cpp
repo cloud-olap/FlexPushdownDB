@@ -76,7 +76,11 @@ void DeltaMerge::addDeltaProducer(const std::shared_ptr <Operator> &deltaProduce
 
 void DeltaMerge::DeltaMerge() {
     // right now assume all the tuples that we have are in arrow format
+    std::vector<std::vector<>> deltaTracker;
 
+    std::for_each(deltas_.begin(), deltas_.end()) {
+
+    }
     return;
 }
 

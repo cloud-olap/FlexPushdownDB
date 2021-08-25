@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" serverName="aws-db-htap-small-stage-2" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
       <paths name="aws-db-htap-small-stage-2">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/tmp.A8MDs9Z9DT" local="$PROJECT_DIR$" />
+            <mapping deploy="/home/ubuntu/FlexPushdownDB-stage-2" local="$PROJECT_DIR$" />
           </mappings>
           <excludedPaths>
-            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-llvm-7-ninja" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-remote-debug" />
+            <excludedPath local="true" path="$PROJECT_DIR$/private" />
             <excludedPath local="true" path="$PROJECT_DIR$/normal-ssb/data/ssb-sf1" />
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
-            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-remote-debug" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-llvm-7-ninja" />
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-llvm-10-ninja" />
-            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-llvm-10-ninja" />
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-llvm-7" />
-            <excludedPath local="true" path="$PROJECT_DIR$/private" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-llvm-10-ninja" />
           </excludedPaths>
         </serverdata>
       </paths>
