@@ -42,7 +42,7 @@
 #ifdef __AVX2__
 #include <normal/plan/Globals.h>
 #include "normal/tuple/arrow/CSVToArrowSIMDStreamParser.h"
-#include "normal/avro_tuple/avroTuple.h"
+#include "normal/avro_tuple/AvroTuple.h"
 
 
 #endif
@@ -162,7 +162,7 @@ std::shared_ptr<TupleSet2> S3Get::readCSVFile(std::shared_ptr<arrow::io::InputSt
   return tupleSet;
 }
 
-std::shared_ptr<avro_tuple::avroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName) {
+std::shared_ptr<avro_tuple::AvroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName) {
   // create an avro_tuple data input stream
   std::vector<uint8_t> avroFileString(std::istream_iterator<uint8_t>(retrievedFile), {});
   auto avroBytes = reinterpret_cast<const uint8_t*>(&avroFileString[0]);
@@ -186,14 +186,14 @@ std::shared_ptr<avro_tuple::avroTuple> S3Get::readAvroFile(std::basic_iostream<c
       recordArray.push_back(record);
 //      size_t fieldCount = record.fieldCount();
 //      for (size_t i = 0; i < fieldCount; i ++) {
-//        // TODO: pull out each field and add to some kind of data structure defined in avroTuple.h
+//        // TODO: pull out each field and add to some kind of data structure defined in AvroTuple.h
 //        recordArray.push_back(record.fieldAt(i));
 //      }
     }
   }
 
-  return normal::avro_tuple::avroTuple::make(recordArray, schemaName, false);
-//  return nullptr; // TODO: return an avroTuple type
+  return normal::avro_tuple::AvroTuple::make(recordArray, schemaName, false);
+//  return nullptr; // TODO: return an AvroTuple type
 }
 
 std::shared_ptr<TupleSet2> S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
