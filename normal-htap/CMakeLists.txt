@@ -12,6 +12,10 @@ LINK_DIRECTORIES(/usr/local/opt/binutils/lib)
 
 add_library(normal-htap STATIC
         test/S3AvroTest.cpp
+        include/deltamerge/DeltaMerge.h src/deltamerge/DeltaMerge.cpp
+        include/antijoin/HashAntiJoinProbe.h src/antijoin/HashAntiJoinProbeKernel.cpp
+        include/antijoin/HashAntiJoinProbeKernel.h src/antijoin/HashAntiJoinProbeKernel.cpp
+        include/antijoin/RecordBatchAntiJoiner.h src/antijoin/RecordBatchAntiJoiner.cpp
         )
 
 target_include_directories(normal-pushdown PUBLIC include)
