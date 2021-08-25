@@ -7,7 +7,7 @@ INCLUDE_DIRECTORIES(/usr/local/include)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-avro STATIC
-        src/avroTuple.cpp include/normal/avro_tuple/avroTuple.h)
+        src/AvroTuple.cpp include/normal/avro_tuple/AvroTuple.h)
 
 target_include_directories(normal-avro PUBLIC include)
 
