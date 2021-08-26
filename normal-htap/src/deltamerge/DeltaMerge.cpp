@@ -3,8 +3,14 @@
 //
 
 #include <deltamerge/DeltaMerge.h>
+#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::pushdown::deltamerge;
+
+DeltaMerge::DeltaMerge(const std::string tableName, const std::string &Name, long queryId) :
+        Operator(Name, "deltamerge", queryId) {
+    tableName_ = tableName;
+}
 
 DeltaMerge::DeltaMerge(const std::string &Name, long queryId) :
         Operator(Name, "deltamerge", queryId) {
@@ -76,17 +82,19 @@ void DeltaMerge::addDeltaProducer(const std::shared_ptr <Operator> &deltaProduce
 
 void DeltaMerge::deltaMerge() {
     // right now assume all the tuples that we have are in arrow format
+    auto miniCatalougue = normal::connector::defaultMiniCatalogue;
+
     std::vector<std::vector<std::shared_ptr<Column>>> deltaTracker;
     std::vector<std::vector<std::shared_ptr<Column>>> stabletracker;
 
     std::vector<int> deltaIndexTracker;
     std::vector<int> stableIndexTracker;
 
-    // TODO: set up a process to obtain the needed columns (Primary Keys, Timestamp, Type)
+    // set up a process to obtain the needed columns (Primary Keys, Timestamp, Type)
+    // FIXME: SUPPORT Composited PrimaryKey
     std::vector<std::string> primaryKeys;
-    primaryKeys.emplace_back("lo_orderkey");
-    primaryKeys.emplace_back("lo_custkey");
-
+    std::string pk = miniCatalougue->getPrimaryKeyColumnName(tableName_);
+    primaryKeys.emplace_back(pk);
 
     // For deltas, we obtain three things: primary key, timestamp, type
     for (auto delta = std::begin(deltas_); delta != std::end(deltas_); ++delta) {

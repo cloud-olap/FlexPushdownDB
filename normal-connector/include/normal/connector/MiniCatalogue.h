@@ -73,6 +73,7 @@ namespace normal::connector {
 
         int lengthOfColumn(const std::string &columnName);
 
+        std::string getPrimaryKeyColumnName(const std::string &tableName);
         /*
          * Used in Belady
          */

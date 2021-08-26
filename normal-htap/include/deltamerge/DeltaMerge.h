@@ -10,11 +10,15 @@
 #include <normal/core/message/CompleteMessage.h>
 #include <normal/core/message/TupleMessage.h>
 #include <normal/tuple/TupleSet2.h>
+#include <string>
 
 namespace normal::pushdown::deltamerge {
     class DeltaMerge : public core::Operator {
     public:
         explicit DeltaMerge(const std::string &Name, long queryId);
+
+        DeltaMerge(const std::__cxx11::basic_string<char> tableName, const std::__cxx11::basic_string<char> &Name,
+                   long queryId);
 
         static std::shared_ptr <DeltaMerge> make(const std::string &Name, long queryId);
 
@@ -28,6 +32,7 @@ namespace normal::pushdown::deltamerge {
 
 
     private:
+        std::string tableName_;
         std::unordered_map<std::string, std::weak_ptr<Operator>> deltaProducers_;
         std::unordered_map<std::string, std::weak_ptr<Operator>> stableProducers_;
 
