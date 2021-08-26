@@ -12,6 +12,7 @@
 #include <normal/connector/partition/Partition.h>
 #include <normal/cache/SegmentKey.h>
 #include <arrow/api.h>
+#include <string>
 
 namespace normal::connector {
 
@@ -117,6 +118,8 @@ namespace normal::connector {
         std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
                 std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns_;
         char csvFileDelimiter_;
+
+        std::__cxx11::basic_string<char> getPrimaryKeyColumnName(const std::__cxx11::basic_string<char> &tableName);
     };
 
     std::string getFileExtensionByDirPrefix(const std::string &dir_prefix);

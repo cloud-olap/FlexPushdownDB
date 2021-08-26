@@ -450,6 +450,10 @@ const std::string &normal::connector::MiniCatalogue::getSchemaName() const {
     return schemaName_;
 }
 
+std::string normal::connector::MiniCatalogue::getPrimaryKeyColumnName(const std::string &tableName) {
+    return primaryKeys_->find(tableName)->second;
+}
+
 std::string normal::connector::getFileExtensionByDirPrefix(const std::string &dir_prefix) {
     if (dir_prefix.find("csv") != std::string::npos) {
         if (dir_prefix.find("gzip") != std::string::npos) {

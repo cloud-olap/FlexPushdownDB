@@ -79,6 +79,9 @@ void DeltaMerge::deltaMerge() {
     std::vector<std::vector<std::shared_ptr<Column>>> deltaTracker;
     std::vector<std::vector<std::shared_ptr<Column>>> stabletracker;
 
+    std::vector<int> deltaIndexTracker;
+    std::vector<int> stableIndexTracker;
+
     // TODO: set up a process to obtain the needed columns (Primary Keys, Timestamp, Type)
     std::vector<std::string> primaryKeys;
     primaryKeys.emplace_back("lo_orderkey");
