@@ -76,6 +76,36 @@ void DeltaMerge::addDeltaProducer(const std::shared_ptr <Operator> &deltaProduce
 
 void DeltaMerge::deltaMerge() {
     // right now assume all the tuples that we have are in arrow format
+    std::vector<std::vector<std::shared_ptr<Column>>> deltaTracker;
+    std::vector<std::vector<std::shared_ptr<Column>>> stabletracker;
+
+    // TODO: set up a process to obtain the needed columns (Primary Keys, Timestamp, Type)
+    std::vector<std::string> primaryKeys;
+    primaryKeys.emplace_back("lo_orderkey");
+    primaryKeys.emplace_back("lo_custkey");
+
+
+    // For deltas, we obtain three things: primary key, timestamp, type
+    for (auto delta = std::begin(deltas_); delta != std::end(deltas_); ++delta) {
+        std::vector<std::shared_ptr<Column>> columnTracker;
+        for (auto key : primaryKeys) {
+            auto keyColumn = delta->get()->getColumnByName(key);
+            columnTracker.emplace_back(keyColumn.value());
+        }
+        auto timestampColumn = delta->get()->getColumnByName("timestamp");
+        auto typeColumn = delta->get()->getColumnByName("type");
+        columnTracker.emplace_back(timestampColumn.value());
+        columnTracker.emplace_back(typeColumn.value());
+    }
+
+    // For stables, we only obtaining the primary key
+    for (auto stable = std::begin(stables_); stable != std::end(stables_); ++stable) {
+        std::vector<std::shared_ptr<Column>> columnTracker;
+        for (auto key : primaryKeys) {
+            auto keyColumn = stable->get()->getColumnByName(key);
+            columnTracker.emplace_back(keyColumn.value());
+        }
+    }
 
     return;
 }
