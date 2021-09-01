@@ -4,6 +4,7 @@
 
 #include <deltamerge/DeltaMerge.h>
 #include <normal/connector/MiniCatalogue.h>
+#include <string>
 
 using namespace normal::pushdown::deltamerge;
 
@@ -80,15 +81,10 @@ void DeltaMerge::addDeltaProducer(const std::shared_ptr <Operator> &deltaProduce
     consume(deltaProducer);
 }
 
-void DeltaMerge::deltaMerge() {
+void DeltaMerge::populateArrowTrackers() {
+
     // right now assume all the tuples that we have are in arrow format
     auto miniCatalougue = normal::connector::defaultMiniCatalogue;
-
-    std::vector<std::vector<std::shared_ptr<Column>>> deltaTracker;
-    std::vector<std::vector<std::shared_ptr<Column>>> stabletracker;
-
-    std::vector<int> deltaIndexTracker;
-    std::vector<int> stableIndexTracker;
 
     // set up a process to obtain the needed columns (Primary Keys, Timestamp, Type)
     // FIXME: SUPPORT Composited PrimaryKey
@@ -107,6 +103,8 @@ void DeltaMerge::deltaMerge() {
         auto typeColumn = delta->get()->getColumnByName("type");
         columnTracker.emplace_back(timestampColumn.value());
         columnTracker.emplace_back(typeColumn.value());
+
+        deltaTracker_.emplace_back(columnTracker);
     }
 
     // For stables, we only obtaining the primary key
@@ -116,10 +114,72 @@ void DeltaMerge::deltaMerge() {
             auto keyColumn = stable->get()->getColumnByName(key);
             columnTracker.emplace_back(keyColumn.value());
         }
+
+        stableTracker_.emplace_back(columnTracker);
     }
+}
+
+/**
+ * Determine which records to copy.
+ */
+void DeltaMerge::generateDeleteMaps() {
+
+    // FIXME: we do not consider composited primaryKey situation for now
+    std::vector<int> stablePKStates;
+    std::vector<int> deltaPKStates;
+
+    while (checkIfAllRecordsWereVisited()) {
+        // loop through the stable and find the primary key
+        std::string currPK;
+        for (int i = 0; i < stableTracker_.size(); i++) {
+            currPK = std::min(currPK, stableTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString());
+        }
+        for (int i = 0; i < deltaTracker_.size(); i++) {
+            currPK = std::min(currPK, deltaTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString());
+        }
+        // now you get the smallest primary key
+        // 1. Select all the deltas with the current primary key
+        // 1.5 compare the timestamp and get one tuple only
+        std::string minTS;
+        int position[2] = {0, 0}; // [deltaNum, idx]
+        // FIXME: Where does the stable fit in?
+        for (int i = 0; i < deltaTracker_.size(); i++) {
+            if (currPK != deltaTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString()) continue;
+            int tsIndex = deltaTracker_[0].size() - 2;
+            auto currTS = deltaTracker_[i][tsIndex]->element(deltaIndexTracker_[i]).value()->toString();
+
+            deltaIndexTracker_[i] = deltaIndexTracker_[i] + 1;
+
+            if (currTS < minTS) {
+                // update position
+                minTS = currTS;
+                position[0] = i;
+                position[1] = deltaIndexTracker_[i];
+            }
+        }
+        // 2. filter out all the stables with the current primary key
+    }
+}
+
+/**
+ *
+ * @return true if not visited, false if visited all
+ */
+bool DeltaMerge::checkIfAllRecordsWereVisited() {
+    for (int i = 0; i < deltaTracker_.size();i++) {
+        if (deltaIndexTracker_[i] < deltaTracker_[i][0]->numRows() - 1) {
+            return true;
+        }
+
+        if (stableIndexTracker_[i] < stableTracker_[i][0]->numRows() - 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void DeltaMerge::deltaMerge() {
 
     return;
 }
-
-
-

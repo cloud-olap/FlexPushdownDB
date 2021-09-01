@@ -33,8 +33,15 @@ namespace normal::pushdown::deltamerge {
 
     private:
         std::string tableName_;
+        int primaryKeyColumnNums_;
         std::unordered_map<std::string, std::weak_ptr<Operator>> deltaProducers_;
         std::unordered_map<std::string, std::weak_ptr<Operator>> stableProducers_;
+
+        std::vector<std::vector<std::shared_ptr<Column>>> deltaTracker_;
+        std::vector<std::vector<std::shared_ptr<Column>>> stableTracker_;
+
+        std::vector<int> deltaIndexTracker_;
+        std::vector<int> stableIndexTracker_;
 
         std::list <std::shared_ptr<TupleSet2>> deltas_;
         std::list <std::shared_ptr<TupleSet2>> stables_;
@@ -46,6 +53,12 @@ namespace normal::pushdown::deltamerge {
         void addDeltaProducer(const std::shared_ptr<Operator> &deltaProducer);
 
         bool allProducersComplete();
+
+        void populateArrowTrackers();
+
+        bool checkIfAllRecordsWereVisited();
+
+        void generateDeleteMaps();
     }
 
 }
