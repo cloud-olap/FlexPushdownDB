@@ -46,6 +46,8 @@ namespace normal::pushdown::deltamerge {
         std::list <std::shared_ptr<TupleSet2>> deltas_;
         std::list <std::shared_ptr<TupleSet2>> stables_;
 
+        std::vector<std::array<int,2>> deleteMap_;
+
         void deltaMerge();
 
         void addStableProducer(const std::shared_ptr<Operator> &stableProducer);
@@ -59,6 +61,8 @@ namespace normal::pushdown::deltamerge {
         bool checkIfAllRecordsWereVisited();
 
         void generateDeleteMaps();
+
+        void generateFinalResult();
     }
 
 }

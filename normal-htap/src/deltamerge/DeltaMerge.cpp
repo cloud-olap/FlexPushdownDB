@@ -140,8 +140,20 @@ void DeltaMerge::generateDeleteMaps() {
         // now you get the smallest primary key
         // 1. Select all the deltas with the current primary key
         // 1.5 compare the timestamp and get one tuple only
-        std::string minTS;
-        int position[2] = {0, 0}; // [deltaNum, idx]
+        std::string minTS = "0";
+
+        std::array<int, 2> position = {0, 0}; // [deltaNum, idx]
+
+        for (int i = 0; i < stableTracker_.size(); i++) {
+            if (currPK == stableTracker_[i][0]->element(stableIndexTracker_[i]).value()->toString()) {
+                position[0] = i;
+                position[1] = stableIndexTracker_[i];
+
+                stableIndexTracker_[i] = stableIndexTracker_[i] + 1;
+            }
+        }
+
+
         // FIXME: Where does the stable fit in?
         for (int i = 0; i < deltaTracker_.size(); i++) {
             if (currPK != deltaTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString()) continue;
@@ -153,12 +165,22 @@ void DeltaMerge::generateDeleteMaps() {
             if (currTS < minTS) {
                 // update position
                 minTS = currTS;
-                position[0] = i;
+                position[0] = stableTracker_.size() + i - 1;
                 position[1] = deltaIndexTracker_[i];
             }
         }
+
+        deleteMap_.push_back(position);
+
         // 2. filter out all the stables with the current primary key
     }
+}
+
+/**
+ * Based on the deleteMap, copy the needed values to a new TupleSet
+ */
+void DeltaMerge::generateFinalResult() {
+
 }
 
 /**
