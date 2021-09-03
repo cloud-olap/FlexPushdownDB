@@ -17,6 +17,12 @@ namespace normal::pushdown::deltamerge {
     public:
         explicit DeltaMerge(const std::string &Name, long queryId);
 
+        DeltaMerge(const std::__cxx11::basic_string<char> tableName,
+                   const std::__cxx11::basic_string<char> &Name,
+                   long queryId,
+                   std::shared_ptr<::arrow::Schema> outputSchema,
+                   ))
+
         DeltaMerge(const std::__cxx11::basic_string<char> tableName, const std::__cxx11::basic_string<char> &Name,
                    long queryId);
 
@@ -33,6 +39,9 @@ namespace normal::pushdown::deltamerge {
 
     private:
         std::string tableName_;
+
+        std::shared_ptr<::arrow::Schema> outputSchema_;
+
         int primaryKeyColumnNums_;
         std::unordered_map<std::string, std::weak_ptr<Operator>> deltaProducers_;
         std::unordered_map<std::string, std::weak_ptr<Operator>> stableProducers_;

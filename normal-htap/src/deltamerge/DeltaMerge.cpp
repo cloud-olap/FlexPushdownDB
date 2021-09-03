@@ -5,12 +5,21 @@
 #include <deltamerge/DeltaMerge.h>
 #include <normal/connector/MiniCatalogue.h>
 #include <string>
+#include <normal/tuple/ArrayAppender.h>
+#include <normal/tuple/ArrayAppenderWrapper.h>
 
 using namespace normal::pushdown::deltamerge;
 
 DeltaMerge::DeltaMerge(const std::string tableName, const std::string &Name, long queryId) :
         Operator(Name, "deltamerge", queryId) {
     tableName_ = tableName;
+}
+
+DeltaMerge::DeltaMerge(const std::string tableName, const std::string &Name, long queryId, std::shared_ptr<::arrow::Schema> outputSchema) :
+Operator(Name, "deltamerge", queryId),
+outputSchema_(std::move(outputSchema)){
+    tableName_ = tableName;
+
 }
 
 DeltaMerge::DeltaMerge(const std::string &Name, long queryId) :
@@ -153,7 +162,6 @@ void DeltaMerge::generateDeleteMaps() {
             }
         }
 
-
         // FIXME: Where does the stable fit in?
         for (int i = 0; i < deltaTracker_.size(); i++) {
             if (currPK != deltaTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString()) continue;
@@ -169,10 +177,7 @@ void DeltaMerge::generateDeleteMaps() {
                 position[1] = deltaIndexTracker_[i];
             }
         }
-
         deleteMap_.push_back(position);
-
-        // 2. filter out all the stables with the current primary key
     }
 }
 
@@ -180,6 +185,28 @@ void DeltaMerge::generateDeleteMaps() {
  * Based on the deleteMap, copy the needed values to a new TupleSet
  */
 void DeltaMerge::generateFinalResult() {
+
+    // Initialize the array appender for the final output
+    std::vector<std::shared_ptr<ArrayAppender>> appenders{static_cast<size_t>(outputSchema_->num_fields())};
+
+    for (int col = 0; col < outputSchema_->num_fields(); col++) {  // loop through each columns
+        auto expectedAppender = ArrayAppenderBuilder::make(outputSchema_->field(col)->type(), 0);
+        if (!expectedAppender.has_value())
+//            return tl::make_unexpected(expectedAppender.error());
+
+        appenders[col] = expectedAppender.value();
+    }
+
+    // now we actually need to build the new table
+    for (int i = 0; i < deleteMap_.size(); i++) {
+        // determine if it's delta or it's stable
+        auto deletePosition = deleteMap_[i];
+        if (deletePosition[0] < stableTracker_.size()) {  // it's stable
+
+        } else {  //it's delta
+
+        }
+    }
 
 }
 
