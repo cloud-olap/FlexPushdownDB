@@ -77,9 +77,9 @@ add_library(normal-pushdown STATIC
 target_include_directories(normal-pushdown PUBLIC include)
 
 target_link_libraries(normal-pushdown PUBLIC pthread)
-target_link_libraries(normal-pushdown PRIVATE spdlog::spdlog)
-target_link_libraries(normal-pushdown PRIVATE primesieve::libprimesieve-static)
-target_link_libraries(normal-pushdown PRIVATE fmt::fmt)
+target_link_libraries(normal-pushdown PUBLIC spdlog::spdlog)
+target_link_libraries(normal-pushdown PUBLIC primesieve::libprimesieve-static)
+target_link_libraries(normal-pushdown PUBLIC fmt::fmt)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-core)
 target_link_libraries(normal-pushdown PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-pushdown PUBLIC arrow_static)
@@ -88,6 +88,7 @@ target_link_libraries(normal-pushdown PUBLIC normal-core)
 target_link_libraries(normal-pushdown PUBLIC normal-tuple)
 target_link_libraries(normal-pushdown PUBLIC normal-expression)
 target_link_libraries(normal-pushdown PUBLIC normal-expression-gandiva)
+target_link_libraries(normal-pushdown PUBLIC normal-avro-tuple)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -118,6 +119,7 @@ target_link_libraries(normal-pushdown-test spdlog::spdlog)
 target_link_libraries(normal-pushdown-test doctest::doctest)
 target_link_libraries(normal-pushdown-test Backward::Backward)
 target_link_libraries(normal-pushdown-test normal-pushdown)
+target_link_libraries(normal-pushdown-test normal-avro-tuple)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

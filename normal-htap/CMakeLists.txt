@@ -11,10 +11,24 @@ LINK_DIRECTORIES(/usr/local/opt/binutils/lib)
 #-----------------------------------------------------------------------------------------------------------------------
 
 add_library(normal-htap STATIC
-        ../normal-htap/src/antijoin/HashAntiJoinProbe.cpp ../normal-htap/include/antijoin/HashAntiJoinProbe.h
-        ../normal-htap/src/antijoin/HashAntiJoinProbeKernel.cpp ../normal-htap/include/antijoin/HashAntiJoinProbeKernel.h
-        ../normal-htap/src/antijoin/RecordBatchAntiJoiner.cpp ../normal-htap/include/antijoin/RecordBatchAntiJoiner.h
-        ../normal-htap/src/antijoin/AntiJoinPredicate.cpp ../normal-htap/include/antijoin/AntiJoinPredicate.h
-        ../normal-htap/src/deltamerge/DeltaMerge.cpp ../normal-htap/include/deltamerge/DeltaMerge.h)
+        test/S3AvroTest.cpp
+        )
 
 target_include_directories(normal-htap PUBLIC include)
+
+target_link_libraries(normal-htap PUBLIC normal-avro-tuple)
+target_link_libraries(normal-htap PUBLIC aws-cpp-sdk-core)
+target_link_libraries(normal-htap PUBLIC aws-cpp-sdk-s3)
+target_link_libraries(normal-htap PUBLIC normal-pushdown)
+target_link_libraries(normal-htap PUBLIC /usr/local/lib/libavrocpp.so)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Test
+#-----------------------------------------------------------------------------------------------------------------------
+
+add_executable(normal-htap-test
+        test/S3AvroTest.cpp
+        )
+target_include_directories(normal-htap-test PUBLIC include)
+
+target_link_libraries(normal-htap-test PUBLIC normal-htap)

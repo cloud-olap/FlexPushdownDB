@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "date",
+  "name": "lineorder",
   "fields" : [
     {"name": "lo_orderkey", "type": "int"},
     {"name": "lo_linenumber", "type" : "int"},
@@ -12,7 +12,6 @@
     {"name": "lo_shippriority", "type" : "string"},
     {"name": "lo_quantity", "type" : "int"},
     {"name": "lo_extendedprice", "type" : "int"},
-    {"name": "lo_ordtotalprice", "type" : "int"},
     {"name": "lo_discount", "type" : "int"},
     {"name": "lo_revenue", "type" : "long"},
     {"name": "lo_supplycost", "type" : "long"},

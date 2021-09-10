@@ -42,8 +42,16 @@
 #ifdef __AVX2__
 #include <normal/plan/Globals.h>
 #include "normal/tuple/arrow/CSVToArrowSIMDStreamParser.h"
-#include "../../../normal-avro/include/normal/avro/avroTuple.h"
 
+// Avro include
+#include "avro/Encoder.hh"
+#include "avro/Decoder.hh"
+#include "avro/Compiler.hh"
+#include "avro/Stream.hh"
+#include "avro/Generic.hh"
+#include "avro/DataFile.hh"
+#include "../../../normal-avro-tuple/include/normal/avro_tuple/makeTuple.h"
+#include "../../../normal-avro-tuple/include/normal/avro_tuple/lineorder_d.hh"
 
 #endif
 
@@ -162,38 +170,25 @@ std::shared_ptr<TupleSet2> S3Get::readCSVFile(std::shared_ptr<arrow::io::InputSt
   return tupleSet;
 }
 
-std::shared_ptr<avro_tuple::avroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName) {
-  // create an avro data input stream
-  std::string avroFileString(std::istream_iterator<char>(retrievedFile), {});
-  const uint8_t* avroBytes = std::reinterpret_cast<const uint8_t*>(&avroFileString[0]); // TODO: figure out why this is unqualified-id
-  std::unique_ptr<avro::InputStream> avroInputStream = avro::memoryInputStream(avroBytes, avroFileString.size());
+std::vector<normal::avro_tuple::make::LineorderDelta_t> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const std::string schemaName) {
+    // create an avro_tuple data input stream
+    std::unique_ptr<avro::InputStream> avroInputStream  = avro::istreamInputStream(retrievedFile);
 
-  // get the schema file
-  std::ifstream schemaInput(schemaName);
-  avro::ValidSchema validSchema;
-  avro::compileJsonSchema(schemaInput, validSchema);
+    // get the schema file
+    std::stringstream schemaInput(schemaName);
+    avro::ValidSchema validSchema;
+    avro::compileJsonSchema(schemaInput, validSchema);
+    // read the data input stream with the given valid schema
+    avro::DataFileReader<i::lineorder> fileReader(move(avroInputStream), validSchema);
+    std::vector<normal::avro_tuple::make::LineorderDelta_t> deltaTable;
 
-  // read the data input stream with the given valid schema
-  avro::DataFileReader<avro::GenericDatum> fileReader(move(avroInputStream), validSchema);
-  avro::GenericDatum datum(fileReader.dataSchema());
-
-  std::vector<avro::GenericRecord> recordArray;
-
-  while (fileReader.read(datum)) {
-    if (datum.type() == avro::AVRO_RECORD) {
-
-      const avro::GenericRecord& record = datum.value<avro::GenericRecord>();
-      recordArray.push_back(record);
-//      size_t fieldCount = record.fieldCount();
-//      for (size_t i = 0; i < fieldCount; i ++) {
-//        // TODO: pull out each field and add to some kind of data structure defined in avroTuple.h
-//        recordArray.push_back(record.fieldAt(i));
-//      }
+    i::lineorder delta; // TODO: currently only supporting lineorder delta
+    while (fileReader.read(delta)) {
+        std::cout << "reading: " << delta.lo_orderkey << std::endl;
+        auto res = normal::avro_tuple::make::MakeTuple::makeLineorderDeltaTuple(delta);
+        deltaTable.push_back(res);
     }
-  }
-
-  return normal::avro_tuple::avroTuple::make(recordArray, schemaName, false);
-//  return nullptr; // TODO: return an avroTuple type
+    return deltaTable;
 }
 
 std::shared_ptr<TupleSet2> S3Get::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {

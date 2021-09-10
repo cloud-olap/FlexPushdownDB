@@ -17,8 +17,8 @@
  */
 
 
-#ifndef __INCLUDE_LINEORDER_D_HH_3481302679__H_
-#define __INCLUDE_LINEORDER_D_HH_3481302679__H_
+#ifndef __INCLUDE_LINEORDER_D_HH_30271903__H_
+#define __INCLUDE_LINEORDER_D_HH_30271903__H_
 
 
 #include <sstream>
@@ -28,7 +28,7 @@
 #include "avro/Decoder.hh"
 
 namespace i {
-struct date {
+struct lineorder {
     int32_t lo_orderkey;
     int32_t lo_linenumber;
     int32_t lo_custkey;
@@ -39,7 +39,6 @@ struct date {
     std::string lo_shippriority;
     int32_t lo_quantity;
     int32_t lo_extendedprice;
-    int32_t lo_ordtotalprice;
     int32_t lo_discount;
     int64_t lo_revenue;
     int64_t lo_supplycost;
@@ -48,7 +47,7 @@ struct date {
     std::string lo_shipmode;
     std::string type;
     int32_t timestamp;
-    date() :
+    lineorder() :
         lo_orderkey(int32_t()),
         lo_linenumber(int32_t()),
         lo_custkey(int32_t()),
@@ -59,7 +58,6 @@ struct date {
         lo_shippriority(std::string()),
         lo_quantity(int32_t()),
         lo_extendedprice(int32_t()),
-        lo_ordtotalprice(int32_t()),
         lo_discount(int32_t()),
         lo_revenue(int64_t()),
         lo_supplycost(int64_t()),
@@ -73,8 +71,8 @@ struct date {
 
 }
 namespace avro {
-template<> struct codec_traits<i::date> {
-    static void encode(Encoder& e, const i::date& v) {
+template<> struct codec_traits<i::lineorder> {
+    static void encode(Encoder& e, const i::lineorder& v) {
         avro::encode(e, v.lo_orderkey);
         avro::encode(e, v.lo_linenumber);
         avro::encode(e, v.lo_custkey);
@@ -85,7 +83,6 @@ template<> struct codec_traits<i::date> {
         avro::encode(e, v.lo_shippriority);
         avro::encode(e, v.lo_quantity);
         avro::encode(e, v.lo_extendedprice);
-        avro::encode(e, v.lo_ordtotalprice);
         avro::encode(e, v.lo_discount);
         avro::encode(e, v.lo_revenue);
         avro::encode(e, v.lo_supplycost);
@@ -95,7 +92,7 @@ template<> struct codec_traits<i::date> {
         avro::encode(e, v.type);
         avro::encode(e, v.timestamp);
     }
-    static void decode(Decoder& d, i::date& v) {
+    static void decode(Decoder& d, i::lineorder& v) {
         if (avro::ResolvingDecoder *rd =
             dynamic_cast<avro::ResolvingDecoder *>(&d)) {
             const std::vector<size_t> fo = rd->fieldOrder();
@@ -133,30 +130,27 @@ template<> struct codec_traits<i::date> {
                     avro::decode(d, v.lo_extendedprice);
                     break;
                 case 10:
-                    avro::decode(d, v.lo_ordtotalprice);
-                    break;
-                case 11:
                     avro::decode(d, v.lo_discount);
                     break;
-                case 12:
+                case 11:
                     avro::decode(d, v.lo_revenue);
                     break;
-                case 13:
+                case 12:
                     avro::decode(d, v.lo_supplycost);
                     break;
-                case 14:
+                case 13:
                     avro::decode(d, v.lo_tax);
                     break;
-                case 15:
+                case 14:
                     avro::decode(d, v.lo_commitdate);
                     break;
-                case 16:
+                case 15:
                     avro::decode(d, v.lo_shipmode);
                     break;
-                case 17:
+                case 16:
                     avro::decode(d, v.type);
                     break;
-                case 18:
+                case 17:
                     avro::decode(d, v.timestamp);
                     break;
                 default:
@@ -174,7 +168,6 @@ template<> struct codec_traits<i::date> {
             avro::decode(d, v.lo_shippriority);
             avro::decode(d, v.lo_quantity);
             avro::decode(d, v.lo_extendedprice);
-            avro::decode(d, v.lo_ordtotalprice);
             avro::decode(d, v.lo_discount);
             avro::decode(d, v.lo_revenue);
             avro::decode(d, v.lo_supplycost);

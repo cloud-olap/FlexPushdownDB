@@ -10,6 +10,8 @@
 
 #ifdef __AVX2__
 #include "normal/tuple/arrow/CSVToArrowSIMDChunkParser.h"
+#include "../../../../../normal-avro-tuple/include/normal/avro_tuple/makeTuple.h"
+
 #endif
 
 namespace normal::pushdown::s3 {
@@ -49,9 +51,10 @@ class S3Get : public S3SelectScan {
                                           long queryId = 0,
                                           const std::shared_ptr<std::vector<std::shared_ptr<normal::cache::SegmentKey>>>& weightedSegmentKeys = nullptr);
 
+    static std::vector<normal::avro_tuple::make::LineorderDelta_t> readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const std::string schemaName);
+
   private:
     std::shared_ptr<TupleSet2> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
-    std::shared_ptr<avro::avroTuple> S3Get::readAvroFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile, const char* schemaName);
     std::shared_ptr<TupleSet2> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
     std::shared_ptr<TupleSet2> s3GetFullRequest();
     Aws::S3::Model::GetObjectResult s3GetRequestOnly(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);
