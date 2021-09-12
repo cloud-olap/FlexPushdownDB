@@ -52,10 +52,12 @@ namespace normal::pushdown::deltamerge {
         std::vector<int> deltaIndexTracker_;
         std::vector<int> stableIndexTracker_;
 
-        std::list <std::shared_ptr<TupleSet2>> deltas_;
-        std::list <std::shared_ptr<TupleSet2>> stables_;
+        std::vector <std::shared_ptr<TupleSet2>> deltas_;
+        std::vector <std::shared_ptr<TupleSet2>> stables_;
 
-        std::vector<std::array<int,2>> deleteMap_;
+//        std::vector<std::array<int,2>> deleteMap_;
+
+        std::unordered_map<int, std::unordered_set<int>> deleteMap_;
 
         void deltaMerge();
 

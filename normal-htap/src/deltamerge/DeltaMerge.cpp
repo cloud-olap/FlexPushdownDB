@@ -7,6 +7,7 @@
 #include <string>
 #include <normal/tuple/ArrayAppender.h>
 #include <normal/tuple/ArrayAppenderWrapper.h>
+#include <normal/tuple/ColumnBuilder.h>
 
 using namespace normal::pushdown::deltamerge;
 
@@ -177,7 +178,14 @@ void DeltaMerge::generateDeleteMaps() {
                 position[1] = deltaIndexTracker_[i];
             }
         }
-        deleteMap_.push_back(position);
+        // TODO: insert the result into the delete map
+
+        if (deleteMap_.find(position[0]) == deleteMap_.end()) {  // did not find the key
+            std::unordered_set<int> temp = {position[1]};
+            deleteMap_[position[0]] = temp;
+        } else
+            deleteMap_[position[0]].insert(position[1]);
+        }
     }
 }
 
@@ -186,27 +194,51 @@ void DeltaMerge::generateDeleteMaps() {
  */
 void DeltaMerge::generateFinalResult() {
 
-    // Initialize the array appender for the final output
-    std::vector<std::shared_ptr<ArrayAppender>> appenders{static_cast<size_t>(outputSchema_->num_fields())};
-
-    for (int col = 0; col < outputSchema_->num_fields(); col++) {  // loop through each columns
-        auto expectedAppender = ArrayAppenderBuilder::make(outputSchema_->field(col)->type(), 0);
-        if (!expectedAppender.has_value())
-//            return tl::make_unexpected(expectedAppender.error());
-
-        appenders[col] = expectedAppender.value();
+    // initialize an array of column appender
+    std::vector<std::shared_ptr<ColumnBuilder>> columnBuilderArray;
+    for (int i = 0; i < outputSchema_->num_fields(); i++) {
+        std::string newColumnBuilderName = outputSchema_->field_names()[i] + "columnBuilder";
+        auto newColumnBuilder = ColumnBuilder::make(newColumnBuilderName, outputSchema_->field(i)->type());
     }
 
-    // now we actually need to build the new table
-    for (int i = 0; i < deleteMap_.size(); i++) {
-        // determine if it's delta or it's stable
-        auto deletePosition = deleteMap_[i];
-        if (deletePosition[0] < stableTracker_.size()) {  // it's stable
+    // We first try to append the stable data to the new table
+    for (int i = 0; i < stableTracker_.size(); i++) {
+        auto deleteSet = deleteMap_.at(i); // get the deleteMap for this file
+        auto originalTable  = stables_[i]; // Get the original stable file
 
-        } else {  //it's delta
-
+        // now we try to loop through the entire file
+        for (size_t r = 0; r < originalTable->numRows(); r++) {
+            if (deleteSet.find(r) == deleteSet.end()) continue;
+            // if the row is found, then copy it one column by one column
+            for (size_t c = 0; c < outputSchema_->num_fields(); c++) {
+                columnBuilderArray[c]->append(originalTable->getColumnByIndex(c).value()->element(r).value());
+            }
         }
     }
+
+    // Do the same thing again to the deltas
+    for (int i = 0; i < deltaTracker_.size(); i++) {
+        int offsetted_i = i + stableTracker_.size();
+        auto deleteSet = deleteMap_.at(offsetted_i); // get the deleteMap for this file
+        auto originalTable  = deltas_[i]; // Get the original stable file
+
+        // now we try to loop through the entire file
+        for (size_t r = 0; r < originalTable->numRows(); r++) {
+            if (deleteSet.find(r) == deleteSet.end()) continue;
+            // if the row is found, then copy it one column by one column
+            for (size_t c = 0; c < outputSchema_->num_fields(); c++) {
+                columnBuilderArray[c]->append(originalTable->getColumnByIndex(c).value()->element(r).value());
+            }
+        }
+    }
+
+    std::vector<std::shared_ptr<Column>> builtColumns;
+    // now we try to generate the final output
+    for (auto & i : columnBuilderArray){
+        builtColumns.emplace_back(i->finalize());
+    }
+
+    auto finalOutput = TupleSet2::make(normal::tuple::Schema::make(outputSchema_), builtColumns);
 
 }
 
