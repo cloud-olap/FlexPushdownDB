@@ -221,7 +221,6 @@ void DeltaMerge::generateDeleteMaps() {
             deleteMap_[position[0]].insert(position[1]);
         }
     }
-}
 
 /**
  * Based on the deleteMap, copy the needed values to a new TupleSet
@@ -305,4 +304,10 @@ void DeltaMerge::deltaMerge() {
     std::shared_ptr<core::message::Message>
     tupleMessage = std::make_shared<core::message::TupleMessage>(output->toTupleSetV1(), name());
     ctx()->tell(tupleMessage);
+}
+
+DeltaMerge::DeltaMerge(std::string name, std::string type, long queryId1,
+                       const std::__cxx11::basic_string<char> tableName, const std::basic_string<char> &Name,
+                       long queryId) : Operator(name, type, queryId1) {
+
 }

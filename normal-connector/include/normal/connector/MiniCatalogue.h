@@ -120,7 +120,7 @@ namespace normal::connector {
                 std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns_;
         char csvFileDelimiter_;
 
-        std::__cxx11::basic_string<char> getPrimaryKeyColumnName(const std::__cxx11::basic_string<char> &tableName);
+//        std::__cxx11::basic_string<char> getPrimaryKeyColumnName(const std::__cxx11::basic_string<char> &tableName);
     };
 
     std::string getFileExtensionByDirPrefix(const std::string &dir_prefix);

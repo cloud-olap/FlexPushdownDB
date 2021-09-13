@@ -2,17 +2,15 @@
 // Created by Han Cao on 5/19/21.
 //
 
-#include "normal/pushdown/antijoin/HashAntiJoinProbeKernel.h"
-
 #include "normal/pushdown/join/HashJoinProbeKernel2.h"
 
 #include <utility>
 
 #include <arrow/api.h>
+#include <antijoin/HashAntiJoinProbeKernel.h>
+#include <antijoin/RecordBatchAntiJoiner.h>
 
 #include "normal/pushdown/join/RecordBatchJoiner.h"
-
-#include "normal/pushdown/antijoin/RecordBatchAntiJoiner.h"
 
 
 using namespace normal::pushdown::antijoin;

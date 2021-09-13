@@ -2,10 +2,10 @@
 // Created by Han Cao on 5/20/21.
 //
 
-#include "normal/pushdown/antijoin/RecordBatchAntiJoiner.h"
 
 #include <normal/tuple/ArrayAppenderWrapper.h>
 #include <normal/pushdown/join/HashJoinProbe.h>
+#include <antijoin/RecordBatchAntiJoiner.h>
 
 using namespace normal::pushdown::antijoin;
 

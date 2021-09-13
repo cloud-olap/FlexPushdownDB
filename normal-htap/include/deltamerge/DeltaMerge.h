@@ -20,10 +20,11 @@ namespace normal::pushdown::deltamerge {
         DeltaMerge(const std::__cxx11::basic_string<char>& tableName,
                    const std::__cxx11::basic_string<char> &Name,
                    long queryId,
-                   std::shared_ptr<::arrow::Schema> outputSchema,
-                   ))
+                   std::shared_ptr<::arrow::Schema> outputSchema
+                   );
 
-        DeltaMerge(const std::__cxx11::basic_string<char> tableName, const std::__cxx11::basic_string<char> &Name,
+        DeltaMerge(std::string name, std::string type, long queryId1,
+                   const std::__cxx11::basic_string<char> tableName, const std::basic_string<char> &Name,
                    long queryId);
 
         DeltaMerge(const std::string& tableName, const std::string &Name, long queryId);
@@ -76,7 +77,7 @@ namespace normal::pushdown::deltamerge {
         void generateDeleteMaps();
 
         std::shared_ptr<TupleSet2> generateFinalResult();
-    }
+    };
 
 }
 
