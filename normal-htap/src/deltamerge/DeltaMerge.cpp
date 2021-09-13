@@ -11,26 +11,53 @@
 
 using namespace normal::pushdown::deltamerge;
 
-DeltaMerge::DeltaMerge(const std::string tableName, const std::string &Name, long queryId) :
+/**
+ * Constructor
+ * @param tableName: Name of the table
+ * @param Name: Name of the operator
+ * @param queryId
+ */
+DeltaMerge::DeltaMerge(const std::string& tableName, const std::string &Name, long queryId) :
         Operator(Name, "deltamerge", queryId) {
     tableName_ = tableName;
 }
-
-DeltaMerge::DeltaMerge(const std::string tableName, const std::string &Name, long queryId, std::shared_ptr<::arrow::Schema> outputSchema) :
+/**
+ * Constructor
+ * @param tableName
+ * @param Name
+ * @param queryId
+ * @param outputSchema
+ */
+DeltaMerge::DeltaMerge(const std::string& tableName, const std::string &Name, long queryId, std::shared_ptr<::arrow::Schema> outputSchema) :
 Operator(Name, "deltamerge", queryId),
 outputSchema_(std::move(outputSchema)){
     tableName_ = tableName;
 
 }
 
+/**
+ * Constructor
+ * @param Name
+ * @param queryId
+ */
 DeltaMerge::DeltaMerge(const std::string &Name, long queryId) :
         Operator(Name, "deltamerge", queryId) {
 }
 
+/**
+ *
+ * @param Name
+ * @param queryId
+ * @return
+ */
 std::shared_ptr <DeltaMerge> DeltaMerge::make(const std::string &Name, long queryId) {
     return std::make_shared<DeltaMerge>(Name, queryId);
 }
 
+/**
+ * Called when recieve a message
+ * @param msg
+ */
 void DeltaMerge::onReceive(const core::message::Envelope &msg) {
     if (msg.message().type() == "StartMessage") {
         this->onStart();
@@ -41,19 +68,29 @@ void DeltaMerge::onReceive(const core::message::Envelope &msg) {
         auto completeMessage = dynamic_cast<const core::message::CompleteMessage &>(msg.message());
         this->onComplete(completeMessage);
     } else {
-        // FIXME: Propagate error properly
         throw std::runtime_error("Unrecognized message type " + msg.message().type());
     }
 }
 
+/**
+ * Called when the operator is start
+ */
 void DeltaMerge::onStart() {
-    SPDLOG_DEBUG("Starting operator | name: '{}'", name())
+    SPDLOG_DEBUG("Starting operator | name: '{}'", name());
 }
 
+/**
+ * Check if all the producer operators finished transferring data
+ * @return: true if all producers were finished, vice versa
+ */
 bool DeltaMerge::allProducersComplete() {
     return ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer);
 }
 
+/**
+ * When receive a tuple as message
+ * @param message
+ */
 void DeltaMerge::onTuple(const core::message::TupleMessage &message) {
     const auto &tupleSet = TupleSet2::create(message.tuples());
 
@@ -63,19 +100,18 @@ void DeltaMerge::onTuple(const core::message::TupleMessage &message) {
     } else if (stableProducers_.find(message.sender()) != stableProducers_.end()) {
         stables_.emplace_back(tupleSet);
     } else {
-//        throw std::runtime_error(fmt::format("Unrecognized producer {}, left: {}, right: {}",
-//                                             message.sender(), leftProducer_.lock()->name(),
-//                                             rightProducer_.lock()->name()));
+        throw std::runtime_error(fmt::format("Unrecognized producer {}", message.sender()));
     }
 
-    // check if all producers complete
-    if (allProducersComplete()) {
+    if (allProducersComplete()) {  // check if all producers complete
         deltaMerge();
     }
 }
 
+/**
+ * Notify that this actor is finished
+ */
 void DeltaMerge::onComplete(const core::message::CompleteMessage &) {
-    // TODO: check with Yifei
     if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(core::OperatorRelationshipType::Producer)) {
         ctx()->notifyComplete();
     }
@@ -94,34 +130,34 @@ void DeltaMerge::addDeltaProducer(const std::shared_ptr <Operator> &deltaProduce
 void DeltaMerge::populateArrowTrackers() {
 
     // right now assume all the tuples that we have are in arrow format
-    auto miniCatalougue = normal::connector::defaultMiniCatalogue;
+    auto miniCatalogue = normal::connector::defaultMiniCatalogue;
 
     // set up a process to obtain the needed columns (Primary Keys, Timestamp, Type)
     // FIXME: SUPPORT Composited PrimaryKey
     std::vector<std::string> primaryKeys;
-    std::string pk = miniCatalougue->getPrimaryKeyColumnName(tableName_);
+    std::string pk = miniCatalogue->getPrimaryKeyColumnName(tableName_);
     primaryKeys.emplace_back(pk);
 
     // For deltas, we obtain three things: primary key, timestamp, type
-    for (auto delta = std::begin(deltas_); delta != std::end(deltas_); ++delta) {
+    for (const auto& delta : deltas_) {
         std::vector<std::shared_ptr<Column>> columnTracker;
-        for (auto key : primaryKeys) {
-            auto keyColumn = delta->get()->getColumnByName(key);
+        for (const auto& key : primaryKeys) {
+            auto keyColumn = delta->getColumnByName(key);
             columnTracker.emplace_back(keyColumn.value());
         }
-        auto timestampColumn = delta->get()->getColumnByName("timestamp");
-        auto typeColumn = delta->get()->getColumnByName("type");
+        auto timestampColumn = delta->getColumnByName("timestamp");
+        auto typeColumn = delta->getColumnByName("type");
         columnTracker.emplace_back(timestampColumn.value());
         columnTracker.emplace_back(typeColumn.value());
 
         deltaTracker_.emplace_back(columnTracker);
     }
 
-    // For stables, we only obtaining the primary key
-    for (auto stable = std::begin(stables_); stable != std::end(stables_); ++stable) {
+    // For stables, we're only obtaining the primary key
+    for (const auto &stable :stables_) {
         std::vector<std::shared_ptr<Column>> columnTracker;
-        for (auto key : primaryKeys) {
-            auto keyColumn = stable->get()->getColumnByName(key);
+        for (const auto& key : primaryKeys) {
+            auto keyColumn = stable->getColumnByName(key);
             columnTracker.emplace_back(keyColumn.value());
         }
 
@@ -138,11 +174,11 @@ void DeltaMerge::generateDeleteMaps() {
     std::vector<int> stablePKStates;
     std::vector<int> deltaPKStates;
 
-    while (checkIfAllRecordsWereVisited()) {
+    while (!checkIfAllRecordsWereVisited()) {
         // loop through the stable and find the primary key
         std::string currPK;
         for (int i = 0; i < stableTracker_.size(); i++) {
-            currPK = std::min(currPK, stableTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString());
+            currPK = std::min(currPK, stableTracker_[i][0]->element(stableIndexTracker_[i]).value()->toString());
         }
         for (int i = 0; i < deltaTracker_.size(); i++) {
             currPK = std::min(currPK, deltaTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString());
@@ -159,26 +195,24 @@ void DeltaMerge::generateDeleteMaps() {
                 position[0] = i;
                 position[1] = stableIndexTracker_[i];
 
-                stableIndexTracker_[i] = stableIndexTracker_[i] + 1;
+                stableIndexTracker_[i] += 1;
             }
         }
 
-        // FIXME: Where does the stable fit in?
         for (int i = 0; i < deltaTracker_.size(); i++) {
             if (currPK != deltaTracker_[i][0]->element(deltaIndexTracker_[i]).value()->toString()) continue;
             int tsIndex = deltaTracker_[0].size() - 2;
             auto currTS = deltaTracker_[i][tsIndex]->element(deltaIndexTracker_[i]).value()->toString();
 
-            deltaIndexTracker_[i] = deltaIndexTracker_[i] + 1;
+            deltaIndexTracker_[i] += 1;
 
             if (currTS < minTS) {
                 // update position
                 minTS = currTS;
-                position[0] = stableTracker_.size() + i - 1;
+                position[0] = stableTracker_.size() + i;
                 position[1] = deltaIndexTracker_[i];
             }
         }
-        // TODO: insert the result into the delete map
 
         if (deleteMap_.find(position[0]) == deleteMap_.end()) {  // did not find the key
             std::unordered_set<int> temp = {position[1]};
@@ -192,7 +226,7 @@ void DeltaMerge::generateDeleteMaps() {
 /**
  * Based on the deleteMap, copy the needed values to a new TupleSet
  */
-void DeltaMerge::generateFinalResult() {
+std::shared_ptr<TupleSet2> DeltaMerge::generateFinalResult() {
 
     // initialize an array of column appender
     std::vector<std::shared_ptr<ColumnBuilder>> columnBuilderArray;
@@ -240,6 +274,7 @@ void DeltaMerge::generateFinalResult() {
 
     auto finalOutput = TupleSet2::make(normal::tuple::Schema::make(outputSchema_), builtColumns);
 
+    return finalOutput;
 }
 
 /**
@@ -249,18 +284,25 @@ void DeltaMerge::generateFinalResult() {
 bool DeltaMerge::checkIfAllRecordsWereVisited() {
     for (int i = 0; i < deltaTracker_.size();i++) {
         if (deltaIndexTracker_[i] < deltaTracker_[i][0]->numRows() - 1) {
-            return true;
+            return false;
         }
 
         if (stableIndexTracker_[i] < stableTracker_[i][0]->numRows() - 1) {
-            return true;
+            return false;
         }
     }
 
-    return false;
+    return true;
 }
 
 void DeltaMerge::deltaMerge() {
+    populateArrowTrackers();
 
-    return;
+    generateDeleteMaps();
+
+    auto output = generateFinalResult();
+
+    std::shared_ptr<core::message::Message>
+    tupleMessage = std::make_shared<core::message::TupleMessage>(output->toTupleSetV1(), name());
+    ctx()->tell(tupleMessage);
 }
