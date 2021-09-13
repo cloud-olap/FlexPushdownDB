@@ -163,6 +163,7 @@ void DeltaMerge::populateArrowTrackers() {
 
         stableTracker_.emplace_back(columnTracker);
     }
+
 }
 
 /**
