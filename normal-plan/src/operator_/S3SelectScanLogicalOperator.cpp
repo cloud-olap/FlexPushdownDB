@@ -40,6 +40,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
   // construct physical operators
   auto mode = getMode();
   switch (mode->id()) {
+    case plan::operator_::mode::HTAP: return toOperatorsHTAP();
     case plan::operator_::mode::FullPullup: return toOperatorsFullPullup(NumRanges);
     case plan::operator_::mode::FullPushdown: return toOperatorsFullPushdown(NumRanges);
     case plan::operator_::mode::PullupCaching: return toOperatorsPullupCaching(NumRanges);
@@ -121,6 +122,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 
             operators->emplace_back(stableScanOp);
             deltaMergeOp->addStableProducer(stableScanOp);
+            stableScanOp->produce(deltaMergeOp);
 
             for (const auto &deltaObject : deltaObjects) {
                 auto deltaScanOp = S3Get::make(
@@ -138,19 +140,15 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
                         queryId);
                 deltaScanOps->emplace_back(deltaScanOp);
                 operators->emplace_back(deltaScanOp);
-
                 deltaMergeOp->addDeltaProducer(deltaScanOp);
+                deltaScanOp->produce(deltaMergeOp);
             }
 
-
-
-
+            streamOutPhysicalOperators_->emplace_back(deltaMergeOp);
         }
-
-
-
-
     }
+
+    return operators;
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
