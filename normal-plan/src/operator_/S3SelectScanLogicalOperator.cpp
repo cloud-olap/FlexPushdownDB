@@ -50,6 +50,49 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
 }
 
 std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
+        S3SelectScanLogicalOperator::toOperatorsHTAP() {
+    const int numRanges = 1;  // how many threads to scan the partition
+
+    auto miniCatalogue = normal::connector::defaultMiniCatalogue;
+    auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());
+
+    auto operators = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+
+    streamOutPhysicalOperators_ = std::make_shared<std::vector<std::shared_ptr<normal::core::Operator>>>();
+    auto queryId = getQueryId();
+
+    // loop through all partitions
+    for (const auto &partition: *getPartitioningScheme()->partitions()) {
+        auto validPair = checkPartitionValid(partition);
+        if (!validPair.first) continue;  // TODO: what does this mean?
+        auto finalPredicate = validPair.second;
+
+        auto predicateColumnNames = std::make_shared<std::vector<std::string>>();
+        std::shared_ptr<pushdown::filter::FilterPredicate> filterPredicate;
+
+        if (finalPredicate) {
+            // predicate column names
+            predicateColumnNames = finalPredicate->involvedColumnNames();
+            auto predicateColumnNameSet = std::make_shared<std::set<std::string>>(predicateColumnNames->begin(), predicateColumnNames->end());
+            predicateColumnNames->assign(predicateColumnNameSet->begin(), predicateColumnNameSet->end());
+            // filter predicate
+            filterPredicate = filter::FilterPredicate::make(finalPredicate);
+        }
+
+        auto allNeededColumnNameSet = std::make_shared<std::set<std::string>>(projectedColumnNames_->begin(), projectedColumnNames_->end());
+        allNeededColumnNameSet->insert(predicateColumnNames->begin(), predicateColumnNames->end());
+        auto allNeededColumnNames = std::make_shared<std::vector<std::string>>(allNeededColumnNameSet->begin(), allNeededColumnNameSet->end());
+
+        auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
+        auto s3Bucket = s3Partition->getBucket();
+        auto s3Object = s3Partition->getObject();
+        auto numBytes = s3Partition->getNumBytes();
+        auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, numRanges);
+
+    }
+}
+
+std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
   auto miniCatalogue = normal::connector::defaultMiniCatalogue;
   auto allColumnNames = miniCatalogue->getColumnsOfTable(getName());

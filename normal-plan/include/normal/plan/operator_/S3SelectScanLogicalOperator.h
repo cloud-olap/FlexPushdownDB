@@ -32,6 +32,7 @@ public:
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsHybridCaching(int numRanges);
   std::shared_ptr<std::vector<std::shared_ptr<core::Operator>>> toOperatorsHybridCachingLast(int numRanges);
 
+    std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> toOperatorsHTAP();
 };
 
 }

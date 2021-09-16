@@ -234,6 +234,7 @@ std::shared_ptr<TupleSet2> DeltaMerge::generateFinalResult() {
         auto newColumnBuilder = ColumnBuilder::make(newColumnBuilderName, outputSchema_->field(i)->type());
     }
 
+    // TODO: Change to column first
     // We first try to append the stable data to the new table
     for (int i = 0; i < stableTracker_.size(); i++) {
         auto deleteSet = deleteMap_.at(i); // get the deleteMap for this file

@@ -20,7 +20,7 @@ enum S3ClientType {
   Minio
 };
 
-inline constexpr int NumRanges = 1;
+inline constexpr int NumRanges = 1;  // how many threads to scan the partition
 inline constexpr int JoinParallelDegree = 48;
 inline S3ClientType s3ClientType = S3;
 inline std::shared_ptr<Aws::S3::S3Client> DefaultS3Client;
