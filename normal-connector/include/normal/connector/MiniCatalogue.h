@@ -22,7 +22,8 @@ namespace normal::connector {
     class MiniCatalogue {
 
     public:
-        MiniCatalogue(std::string schemaName,
+        MiniCatalogue(
+                      std::string schemaName,
                       std::shared_ptr<std::unordered_map<std::string, int>> partitionNums,
                       std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas,
                       std::shared_ptr<std::unordered_map<std::string, int>> columnLengthMap,
@@ -37,7 +38,9 @@ namespace normal::connector {
                               std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns,
                       char csvFileDelimiter);
 
-        MiniCatalogue(std::shared_ptr<std::unordered_map<std::string, std::string>> primaryKeys,
+        MiniCatalogue(
+                      std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> deltaSchemas,
+                      std::shared_ptr<std::unordered_map<std::string, std::string>> primaryKeys,
                       std::string schemaName,
                       std::shared_ptr<std::unordered_map<std::string, int>> partitionNums,
                       std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> schemas,
@@ -73,6 +76,8 @@ namespace normal::connector {
 
         int lengthOfColumn(const std::string &columnName);
 
+        int getNumberOfDeltas(const std::string &tableName, const std::string &objectName);
+
         std::string getPrimaryKeyColumnName(const std::string &tableName);
         /*
          * Used in Belady
@@ -93,6 +98,8 @@ namespace normal::connector {
         [[nodiscard]] int getCurrentQueryNum() const;
 
         std::shared_ptr<arrow::Schema> getSchema(const std::string &tableName);
+
+        std::shared_ptr<arrow::Schema> getDeltaSchema(const std::string &tableName);
 
         [[nodiscard]] const std::string &getSchemaName() const;
 
@@ -119,6 +126,10 @@ namespace normal::connector {
         std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<std::unordered_map<
                 std::shared_ptr<Partition>, std::pair<std::string, std::string>, PartitionPointerHash, PartitionPointerPredicate>>>> sortedColumns_;
         char csvFileDelimiter_;
+
+        std::shared_ptr<std::unordered_map<std::string, std::unordered_map<std::string, int>>> deltaMap_;
+
+        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> deltaSchemas_;
 
 //        std::__cxx11::basic_string<char> getPrimaryKeyColumnName(const std::__cxx11::basic_string<char> &tableName);
     };

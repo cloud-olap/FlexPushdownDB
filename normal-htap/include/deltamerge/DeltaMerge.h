@@ -12,7 +12,7 @@
 #include <normal/tuple/TupleSet2.h>
 #include <string>
 
-namespace normal::pushdown::deltamerge {
+namespace normal::htap::deltamerge {
     class DeltaMerge : public core::Operator {
     public:
         explicit DeltaMerge(const std::string &Name, long queryId);

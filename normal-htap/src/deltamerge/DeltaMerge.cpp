@@ -9,7 +9,7 @@
 #include <normal/tuple/ArrayAppenderWrapper.h>
 #include <normal/tuple/ColumnBuilder.h>
 
-using namespace normal::pushdown::deltamerge;
+using namespace normal::htap::deltamerge;
 
 /**
  * Constructor

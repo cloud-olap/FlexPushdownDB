@@ -89,6 +89,59 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
         auto numBytes = s3Partition->getNumBytes();
         auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, numRanges);
 
+        int numDeltas = miniCatalogue->getNumberOfDeltas(getName(), s3Object);
+
+        std::vector<std::string> deltaObjects;
+        for (int i = 1; i <= numDeltas; i++) {
+            std::string objectName = "lineorder.tbl.1.del." + std::to_string(i);
+            deltaObjects.push_back(objectName);
+        }
+
+        std::shared_ptr<Operator> stableScanOp;
+        std::shared_ptr<std::vector<std::shared_ptr<Operator>>> deltaScanOps;
+
+        int rangeId = 0;
+        for (const auto &scanRange: scanRanges) {
+            stableScanOp = S3Get::make(
+                    "s3get - Stable" + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                    s3Partition->getBucket(),
+                    s3Object,
+                    *allColumnNames,
+                    *allNeededColumnNames,
+                    scanRange.first,
+                    scanRange.second,
+                    miniCatalogue->getSchema(getName()),
+                    DefaultS3Client,
+                    true,
+                    false,
+                    queryId);
+
+            operators->emplace_back(stableScanOp);
+
+            for (const auto &deltaObject : deltaObjects) {
+                auto deltaScanOp = S3Get::make(
+                        "s3get - Delta" + s3Partition->getBucket() + "/" + deltaObject + "-" + std::to_string(rangeId),
+                        s3Partition->getBucket(),
+                        deltaObject,
+                        *allColumnNames,
+                        *allNeededColumnNames,
+                        scanRange.first,
+                        scanRange.second,
+                        miniCatalogue->getDeltaSchema(getName()),
+                        DefaultS3Client,
+                        true,
+                        false,
+                        queryId);
+                deltaScanOps->emplace_back(deltaScanOp);
+                operators->emplace_back(deltaScanOp);
+            }
+
+            std::shared_ptr<Operator> deltaMergeOp = normal::htap::deltamerge::DeltaMerge::make(getName(), queryId);
+        }
+
+
+
+
     }
 }
 

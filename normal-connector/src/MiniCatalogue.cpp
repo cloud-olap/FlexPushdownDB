@@ -49,6 +49,7 @@ namespace {
 
 }
 normal::connector::MiniCatalogue::MiniCatalogue(
+        std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>> deltaSchemas,
         std::shared_ptr<std::unordered_map<std::string, std::string>> primaryKeys,
         std::string schemaName,
         std::shared_ptr<std::unordered_map<std::string, int>> partitionNums,
@@ -74,7 +75,8 @@ normal::connector::MiniCatalogue::MiniCatalogue(
         segmentKeysToInvolvedQueryNums_(std::move(segmentKeysToInvolvedQueryNums)),
         defaultJoinOrder_(std::move(defaultJoinOrder)),
         sortedColumns_(std::move(sortedColumns)),
-        csvFileDelimiter_(csvFileDelimiter) {
+        csvFileDelimiter_(csvFileDelimiter),
+        deltaSchemas_(std::move(deltaSchemas)) {
 
     // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
     currentQueryNum_ = 1;
@@ -196,6 +198,25 @@ readMetadataSchemas(const std::string &schemaName) {
     return res;
 }
 
+std::shared_ptr<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>>
+readMetadataDeltaSchemas(const std::string &schemaName) {
+    auto res = std::make_shared<std::unordered_map<std::string, std::shared_ptr<::arrow::Schema>>>();
+    auto filePath = std::filesystem::current_path().append("metadata").append(schemaName).append("schemas");
+    for (auto const &str: readFileByLines(filePath)) {
+        auto splitRes = split(str, ":");
+        std::vector<std::shared_ptr<::arrow::Field>> fields;
+        for (auto const &fieldEntry: split(splitRes[1], ",")) {
+            auto splitFieldEntry = split(fieldEntry, "/");
+            fields.push_back(::arrow::field(splitFieldEntry[0], parseDataType(splitFieldEntry[1])));
+        }
+        fields.push_back(::arrow::field("timestamp", parseDataType("utf8")));
+        fields.push_back(::arrow::field("type", parseDataType("utf8")));
+
+        res->emplace(splitRes[0], ::arrow::schema(fields));
+    }
+    return res;
+}
+
 /**
  * Created by Han Cao Jun/4/2021.
  * Get the information of primary key column of each table from the metadata schema file.
@@ -212,6 +233,21 @@ std::shared_ptr<std::unordered_map<std::string, std::string>> readPrimaryKeyName
     }
 
     return res;
+}
+
+/**
+ * Given table name and partition number, return how many delta files do we have for that partition
+ * @param tableName name of the table
+ * @param partitionNum
+ * @return how many delta attached
+ */
+int getNumberOfDeltas(const std::string &tableName,  const std::string &objectName) {
+    // FIXME: Hardcode this for now
+    if (tableName == "lineorder" && objectName == "lineorder.tbl.1") {
+        return 1;
+    }
+
+    return 0;
 }
 
 std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(const std::string &schemaName) {
@@ -260,6 +296,9 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
     // schemas
     auto schemas = readMetadataSchemas(schemaName);
 
+    // delta Schemas
+    auto deltaSchemas = readMetadataDeltaSchemas(schemaName);
+
     // read the primarykey
     auto primarykey = readPrimaryKeyName(schemaName);
 
@@ -298,7 +337,7 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
             cache::SegmentKeyPointerHash, cache::SegmentKeyPointerPredicate>>();
 
     char csvFileDelimiter = getCsvFileDelimiterForSchema(schemaName);
-    return std::make_shared<MiniCatalogue>(primarykey, schemaName, partitionNums, schemas, columnLengthMap, segmentKeyToSize,
+    return std::make_shared<MiniCatalogue>(deltaSchemas, primarykey, schemaName, partitionNums, schemas, columnLengthMap, segmentKeyToSize,
                                            queryNumToInvolvedSegments, segmentKeysToInvolvedQueryNums, defaultJoinOrder,
                                            sortedColumns, csvFileDelimiter);
 }
@@ -452,6 +491,10 @@ const std::string &normal::connector::MiniCatalogue::getSchemaName() const {
 
 std::string normal::connector::MiniCatalogue::getPrimaryKeyColumnName(const std::string &tableName) {
     return primaryKeys_->find(tableName)->second;
+}
+
+std::shared_ptr<arrow::Schema> normal::connector::MiniCatalogue::getDeltaSchema(const std::string &tableName) {
+    return deltaSchemas_->at(tableName);
 }
 
 std::string normal::connector::getFileExtensionByDirPrefix(const std::string &dir_prefix) {
