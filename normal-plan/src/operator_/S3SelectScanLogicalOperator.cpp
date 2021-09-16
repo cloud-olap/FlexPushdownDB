@@ -12,6 +12,7 @@
 #include <normal/plan/Globals.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/connector/MiniCatalogue.h>
+#include <deltamerge/DeltaMerge.h>
 
 using namespace normal::plan::operator_;
 using namespace normal::pushdown;
@@ -102,6 +103,8 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
 
         int rangeId = 0;
         for (const auto &scanRange: scanRanges) {
+            std::shared_ptr<htap::deltamerge::DeltaMerge> deltaMergeOp = normal::htap::deltamerge::DeltaMerge::make(getName(), queryId);
+
             stableScanOp = S3Get::make(
                     "s3get - Stable" + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
                     s3Partition->getBucket(),
@@ -117,6 +120,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
                     queryId);
 
             operators->emplace_back(stableScanOp);
+            deltaMergeOp->addStableProducer(stableScanOp);
 
             for (const auto &deltaObject : deltaObjects) {
                 auto deltaScanOp = S3Get::make(
@@ -134,9 +138,13 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>>
                         queryId);
                 deltaScanOps->emplace_back(deltaScanOp);
                 operators->emplace_back(deltaScanOp);
+
+                deltaMergeOp->addDeltaProducer(deltaScanOp);
             }
 
-            std::shared_ptr<Operator> deltaMergeOp = normal::htap::deltamerge::DeltaMerge::make(getName(), queryId);
+
+
+
         }
 
 
