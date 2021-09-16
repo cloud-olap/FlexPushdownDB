@@ -8,6 +8,7 @@
 namespace normal::plan::operator_::mode {
 
 enum ModeId {
+  HTAP,
   FullPullup,
   FullPushdown,
   PullupCaching,
