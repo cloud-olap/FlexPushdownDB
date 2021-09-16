@@ -40,6 +40,10 @@ namespace normal::htap::deltamerge {
         void onTuple(const core::message::TupleMessage &message);
 
 
+        void addDeltaProducer(const std::shared_ptr<Operator> &deltaProducer);
+
+        void addStableProducer(const std::shared_ptr<Operator> &stableProducer);
+
     private:
         std::string tableName_;
 
@@ -63,10 +67,6 @@ namespace normal::htap::deltamerge {
         std::unordered_map<int, std::unordered_set<int>> deleteMap_;
 
         void deltaMerge();
-
-        void addStableProducer(const std::shared_ptr<Operator> &stableProducer);
-
-        void addDeltaProducer(const std::shared_ptr<Operator> &deltaProducer);
 
         bool allProducersComplete();
 

@@ -61,13 +61,18 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
 
   switch (normal::plan::s3ClientType) {
     case normal::plan::S3: {
+      // modified to use Han's credential
       SPDLOG_INFO("Using S3 Client");
+      Aws::String accessKeyId = "AKIAZSIUGEHL4XX77YOI";
+      Aws::String secretKey = "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";
+      Aws::Auth::AWSCredentials hanCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
+
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
               ALLOCATION_TAG,
-              Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
+              hanCredentials,
               config,
               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
-              true);
+              false);
       break;
     }
     case normal::plan::Airmettle: {

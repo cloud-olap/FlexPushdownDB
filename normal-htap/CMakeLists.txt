@@ -25,7 +25,9 @@ target_link_libraries(normal-htap PUBLIC aws-cpp-sdk-core)
 target_link_libraries(normal-htap PUBLIC aws-cpp-sdk-s3)
 target_link_libraries(normal-htap PUBLIC normal-pushdown)
 target_link_libraries(normal-htap PUBLIC /usr/local/lib/libavrocpp.so)
-
+target_link_libraries(normal-htap PUBLIC normal-plan)
+target_link_libraries(normal-htap PUBLIC normal-ssb)
+target_link_libraries(normal-htap PUBLIC normal-core)
 #-----------------------------------------------------------------------------------------------------------------------
 # Test
 #-----------------------------------------------------------------------------------------------------------------------

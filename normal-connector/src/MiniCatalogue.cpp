@@ -235,21 +235,6 @@ std::shared_ptr<std::unordered_map<std::string, std::string>> readPrimaryKeyName
     return res;
 }
 
-/**
- * Given table name and partition number, return how many delta files do we have for that partition
- * @param tableName name of the table
- * @param partitionNum
- * @return how many delta attached
- */
-int getNumberOfDeltas(const std::string &tableName,  const std::string &objectName) {
-    // FIXME: Hardcode this for now
-    if (tableName == "lineorder" && objectName == "lineorder.tbl.1") {
-        return 1;
-    }
-
-    return 0;
-}
-
 std::shared_ptr<std::unordered_map<std::string, int>> readMetadataPartitionNums(const std::string &schemaName) {
     auto res = std::make_shared<std::unordered_map<std::string, int>>();
     auto filePath = std::filesystem::current_path().append("metadata").append(schemaName).append("partitionNums");
@@ -495,6 +480,21 @@ std::string normal::connector::MiniCatalogue::getPrimaryKeyColumnName(const std:
 
 std::shared_ptr<arrow::Schema> normal::connector::MiniCatalogue::getDeltaSchema(const std::string &tableName) {
     return deltaSchemas_->at(tableName);
+}
+
+/**
+ * Given table name and partition number, return how many delta files do we have for that partition
+ * @param tableName name of the table
+ * @param partitionNum
+ * @return how many delta attached
+ */
+int normal::connector::MiniCatalogue::getNumberOfDeltas(const std::string &tableName,  const std::string &objectName) {
+    // FIXME: Hardcode this for now
+    if (tableName == "lineorder" && objectName == "lineorder.tbl.1") {
+        return 1;
+    }
+
+    return 0;
 }
 
 std::string normal::connector::getFileExtensionByDirPrefix(const std::string &dir_prefix) {
