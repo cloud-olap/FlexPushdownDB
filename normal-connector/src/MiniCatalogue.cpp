@@ -189,7 +189,7 @@ readMetadataSchemas(const std::string &schemaName) {
     for (auto const &str: readFileByLines(filePath)) {
         auto splitRes = split(str, ":");
         std::vector<std::shared_ptr<::arrow::Field>> fields;
-        for (auto const &fieldEntry: split(splitRes[1], ",")) {
+        for (auto const &fieldEntry: split(splitRes[2], ",")) {
             auto splitFieldEntry = split(fieldEntry, "/");
             fields.push_back(::arrow::field(splitFieldEntry[0], parseDataType(splitFieldEntry[1])));
         }
@@ -205,7 +205,7 @@ readMetadataDeltaSchemas(const std::string &schemaName) {
     for (auto const &str: readFileByLines(filePath)) {
         auto splitRes = split(str, ":");
         std::vector<std::shared_ptr<::arrow::Field>> fields;
-        for (auto const &fieldEntry: split(splitRes[1], ",")) {
+        for (auto const &fieldEntry: split(splitRes[2], ",")) {
             auto splitFieldEntry = split(fieldEntry, "/");
             fields.push_back(::arrow::field(splitFieldEntry[0], parseDataType(splitFieldEntry[1])));
         }

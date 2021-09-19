@@ -21,7 +21,7 @@ const char* getCurrentTestSuiteName() { return doctest::detail::g_cs->currentTes
 
 int main(int argc, char **argv) {
 
-  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf100-sortlineorder/csv/");
+  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf10-sortlineorder/csv/");
   // math model test
   if (std::string(argv[1]) == "-m") {
     auto networkLimit = (size_t) (atof(argv[2]) * 1024 * 1024 * 1024 / 8);
