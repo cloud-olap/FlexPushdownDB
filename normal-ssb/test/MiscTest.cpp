@@ -31,6 +31,8 @@ using namespace normal::expression::gandiva;
 using namespace std::experimental;
 using namespace normal::ssb;
 using namespace normal::connector;
+using namespace normal::pushdown::file;
+using namespace normal::pushdown::project;
 
 TEST_SUITE ("aggregate" * doctest::skip(false)) {
 

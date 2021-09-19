@@ -369,7 +369,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   spdlog::set_level(spdlog::level::warn);
   // parameters
   const int warmBatchSize = 50, executeBatchSize = 50;
-  std::string bucket_name = "pushdowndb";
+  std::string bucket_name = "pushdowndb-htap";
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   if (networkLimit > 0) {
