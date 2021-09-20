@@ -100,6 +100,7 @@ void configureS3ConnectorMultiPartition(Interpreter &i, const std::string& bucke
   // get partitionNums
   auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
   auto partitionNums = defaultMiniCatalogue->partitionNums();
+
   std::string fileExtension = getFileExtensionByDirPrefix(dir_prefix);
   for (auto const &partitionNumEntry: *partitionNums) {
     auto tableName = partitionNumEntry.first;

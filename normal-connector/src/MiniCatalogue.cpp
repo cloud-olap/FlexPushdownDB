@@ -77,10 +77,8 @@ normal::connector::MiniCatalogue::MiniCatalogue(
         sortedColumns_(std::move(sortedColumns)),
         csvFileDelimiter_(csvFileDelimiter),
         deltaSchemas_(std::move(deltaSchemas)) {
-
     // initialize as 1, only needs to be updated for certain tasks (ie Belady Caching Policy)
     currentQueryNum_ = 1;
-
     // generate rowLengthMap from columnLengthMap
     rowLengthMap_ = std::make_shared<std::unordered_map<std::string, int>>();
     for (auto const &schemaEntry: *schemas_) {
@@ -284,7 +282,7 @@ std::shared_ptr<normal::connector::MiniCatalogue> normal::connector::MiniCatalog
     // delta Schemas
     auto deltaSchemas = readMetadataDeltaSchemas(schemaName);
 
-    // read the primarykey
+    // read the primary key
     auto primarykey = readPrimaryKeyName(schemaName);
 
     // partitionNums
