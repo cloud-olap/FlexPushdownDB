@@ -364,6 +364,42 @@ void normal::ssb::concurrentGetTest(int numRequests) {
               (((double) totalBytesReturned * 8 / numTrials / 1024.0 / 1024.0 / 1024.0) / averageTrialTimeNS));
 }
 
+void normal::ssb::htapTest() {
+    spdlog::set_level(spdlog::level::warn);
+
+    // parameters
+    const int warmBatchSize = 50, executeBatchSize = 50;
+    std::string bucket_name = "pushdowndb-htap";
+    NetworkLimit = 0;
+    auto cacheSize = (size_t) (8.0 * 1024 * 1024 * 1024);
+    auto dirPrefix = "ssb-sf10-sortlineorder/csv/";
+
+    normal::plan::DefaultS3Client = AWSClient::defaultS3Client();
+
+    auto currentPath = std::filesystem::current_path();
+    auto sql_file_dir_path = currentPath.append("sql/original"); // running original SSB queries
+
+    auto mode = normal::plan::operator_::mode::Modes::fullPullupMode();
+    auto cachingPolicy = LRUCachingPolicy::make(cacheSize, mode);;
+
+    // interpreter
+    normal::sql::Interpreter i(mode, cachingPolicy);
+    configureS3ConnectorMultiPartition(i, bucket_name, dirPrefix);
+
+    normal::plan::DefaultS3Client = AWSClient::defaultS3Client();
+
+    i.boot();
+
+    SPDLOG_CRITICAL("First-run query:");
+    auto sql_file_path = sql_file_dir_path.append(fmt::format("{}.sql", 1));
+    auto sql = read_file(sql_file_path.string());
+    executeSql(i, sql, false, false, fmt::format("{}output.txt", index));
+    sql_file_dir_path = sql_file_dir_path.parent_path();
+
+    i.getOperatorGraph().reset();
+    i.stop();
+}
+
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, const std::string& dirPrefix,
                            size_t networkLimit, bool writeResults) {
   spdlog::set_level(spdlog::level::warn);

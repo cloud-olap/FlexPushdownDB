@@ -10,6 +10,8 @@
 #define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
 #include <spdlog/spdlog.h>
 
-namespace normal::ssb {}
+namespace normal::ssb {
+    void htapTest();
+}
 
 #endif //NORMAL_NORMAL_SSB_INCLUDE_NORMAL_SSB_GLOBALS_H

@@ -78,6 +78,9 @@ int main(int argc, char **argv) {
     SPDLOG_INFO("Cache size: {}", cacheSize);
     SPDLOG_INFO("Mode type: {}", modeType);
     SPDLOG_INFO("CachingPolicy type: {}", cachingPolicyType);
+//
+//    htapTest();
+//    return 0;
 
     if (argc < 5) {
       mainTest(cacheSize, modeType, cachingPolicyType, dirPrefix, 0, false);

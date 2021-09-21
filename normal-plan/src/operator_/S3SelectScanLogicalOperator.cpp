@@ -85,6 +85,7 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
         allNeededColumnNameSet->insert(predicateColumnNames->begin(), predicateColumnNames->end());
         auto allNeededColumnNames = std::make_shared<std::vector<std::string>>(allNeededColumnNameSet->begin(), allNeededColumnNameSet->end());
 
+        // Construct
         auto s3Partition = std::static_pointer_cast<S3SelectPartition>(partition);
         auto s3Bucket = s3Partition->getBucket();
         auto s3Object = s3Partition->getObject();
@@ -92,6 +93,7 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
         auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, numRanges);
 
         int numDeltas = miniCatalogue->getNumberOfDeltas(getName(), s3Object);
+        SPDLOG_CRITICAL("==> numDeltas:" + std::to_string(numDeltas));
 
         std::vector<std::string> deltaObjects;
         for (int i = 1; i <= numDeltas; i++) {
@@ -105,6 +107,7 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
         int rangeId = 0;
         for (const auto &scanRange: scanRanges) {
             std::shared_ptr<htap::deltamerge::DeltaMerge> deltaMergeOp = normal::htap::deltamerge::DeltaMerge::make(getName(), queryId);
+            operators->emplace_back(deltaMergeOp);
 
             stableScanOp = S3Get::make(
                     "s3get - Stable" + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
@@ -144,7 +147,19 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
                 deltaScanOp->produce(deltaMergeOp);
             }
 
-            streamOutPhysicalOperators_->emplace_back(deltaMergeOp);
+            if (finalPredicate) {
+                auto filter = filter::Filter::make(
+                        fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
+                        filterPredicate,
+                        queryId);
+                operators->emplace_back(filter);
+
+                deltaMergeOp->produce(filter);
+                filter->consume(deltaMergeOp);
+                streamOutPhysicalOperators_->emplace_back(filter);
+            } else {
+                streamOutPhysicalOperators_->emplace_back(deltaMergeOp);
+            }
         }
     }
 
