@@ -31,6 +31,8 @@ namespace normal::htap::deltamerge {
 
         static std::shared_ptr <DeltaMerge> make(const std::string &Name, long queryId);
 
+        static std::shared_ptr <DeltaMerge> make(const std::string &tableName, const std::string &Name, long queryId,std::shared_ptr<::arrow::Schema> outputSchema );
+
         void onReceive(const core::message::Envelope &msg) override;
 
         void onStart();
@@ -50,8 +52,9 @@ namespace normal::htap::deltamerge {
         std::shared_ptr<::arrow::Schema> outputSchema_;
 
         int primaryKeyColumnNums_;
-        std::unordered_map<std::string, std::weak_ptr<Operator>> deltaProducers_;
-        std::unordered_map<std::string, std::weak_ptr<Operator>> stableProducers_;
+
+        std::unordered_set<std::string> deltaProducerNames_;
+        std::unordered_set<std::string> stableProducerNames_;
 
         std::vector<std::vector<std::shared_ptr<Column>>> deltaTracker_;
         std::vector<std::vector<std::shared_ptr<Column>>> stableTracker_;

@@ -93,24 +93,25 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
         auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, numRanges);
 
         int numDeltas = miniCatalogue->getNumberOfDeltas(getName(), s3Object);
-        SPDLOG_CRITICAL("==> numDeltas:" + std::to_string(numDeltas));
-
-        std::vector<std::string> deltaObjects;
-        for (int i = 1; i <= numDeltas; i++) {
-            std::string objectName = "lineorder.tbl.1.del." + std::to_string(i);
-            deltaObjects.push_back(objectName);
-        }
-
-        std::shared_ptr<Operator> stableScanOp;
-        std::shared_ptr<std::vector<std::shared_ptr<Operator>>> deltaScanOps;
 
         int rangeId = 0;
-        for (const auto &scanRange: scanRanges) {
-            std::shared_ptr<htap::deltamerge::DeltaMerge> deltaMergeOp = normal::htap::deltamerge::DeltaMerge::make(getName(), queryId);
+        auto scanRange = scanRanges[0];
+
+        if (numDeltas != 0) {
+            std::vector<std::string> deltaObjects;
+            for (int i = 1; i <= numDeltas; i++) {
+                std::string objectName = "lineorder.tbl.1.del." + std::to_string(i);
+                deltaObjects.push_back(objectName);
+            }
+
+            std::shared_ptr<Operator> stableScanOp;
+            std::shared_ptr<std::vector<std::shared_ptr<Operator>>> deltaScanOps;
+
+            std::shared_ptr<htap::deltamerge::DeltaMerge> deltaMergeOp = normal::htap::deltamerge::DeltaMerge::make(getName(),"deltamerge-"+s3Object, queryId,miniCatalogue->getSchema(getName()));
             operators->emplace_back(deltaMergeOp);
 
             stableScanOp = S3Get::make(
-                    "s3get - Stable" + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                    "s3get-Stable-" + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
                     s3Partition->getBucket(),
                     s3Object,
                     *allColumnNames,
@@ -129,7 +130,7 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
 
             for (const auto &deltaObject : deltaObjects) {
                 auto deltaScanOp = S3Get::make(
-                        "s3get - Delta" + s3Partition->getBucket() + "/" + deltaObject + "-" + std::to_string(rangeId),
+                        "s3get-Delta-" + s3Partition->getBucket() + "/" + deltaObject + "-" + std::to_string(rangeId),
                         s3Partition->getBucket(),
                         deltaObject,
                         *allColumnNames,
@@ -159,6 +160,57 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
                 streamOutPhysicalOperators_->emplace_back(filter);
             } else {
                 streamOutPhysicalOperators_->emplace_back(deltaMergeOp);
+            }
+        } else {
+            std::shared_ptr<Operator> scanOp;
+            // FIXME 1: hack Parquet Get using Select
+            // FIXME 2: not a idea way to distinguish CSV and Parquet
+            if (s3Object.find("csv") != std::string::npos) {
+                scanOp = S3Get::make(
+                        "s3get - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                        s3Partition->getBucket(),
+                        s3Object,
+                        *allColumnNames,
+                        *allNeededColumnNames,
+                        scanRange.first,
+                        scanRange.second,
+                        miniCatalogue->getSchema(getName()),
+                        DefaultS3Client,
+                        true,
+                        false,
+                        queryId);
+            } else {
+                scanOp = S3Select::make(
+                        "s3get(hacked for parquet using select) - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                        s3Partition->getBucket(),
+                        s3Object,
+                        "",
+                        *allNeededColumnNames,
+                        *allNeededColumnNames,
+                        scanRange.first,
+                        scanRange.second,
+                        miniCatalogue->getSchema(getName()),
+                        DefaultS3Client,
+                        true,
+                        false,
+                        queryId);
+            }
+            operators->emplace_back(scanOp);
+
+            std::shared_ptr<Operator> upStreamOfProj;
+            // Filter if it has filterPredicate
+            if (finalPredicate) {
+                auto filter = filter::Filter::make(
+                        fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
+                        filterPredicate,
+                        queryId);
+                operators->emplace_back(filter);
+
+                scanOp->produce(filter);
+                filter->consume(scanOp);
+                streamOutPhysicalOperators_->emplace_back(filter);
+            } else {
+                streamOutPhysicalOperators_->emplace_back(scanOp);
             }
         }
     }
@@ -210,62 +262,60 @@ S3SelectScanLogicalOperator::toOperatorsFullPullup(int numRanges) {
         auto scanRanges = normal::pushdown::Util::ranges<long>(0, numBytes, numRanges);
 
         int rangeId = 0;
-        for (const auto &scanRange: scanRanges) {
-            // S3Scan
-            std::shared_ptr<Operator> scanOp;
-            // FIXME 1: hack Parquet Get using Select
-            // FIXME 2: not a idea way to distinguish CSV and Parquet
-            if (s3Object.find("csv") != std::string::npos) {
-                scanOp = S3Get::make(
-                        "s3get - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
-                        s3Partition->getBucket(),
-                        s3Object,
-                        *allColumnNames,
-                        *allNeededColumnNames,
-                        scanRange.first,
-                        scanRange.second,
-                        miniCatalogue->getSchema(getName()),
-                        DefaultS3Client,
-                        true,
-                        false,
-                        queryId);
-            } else {
-                scanOp = S3Select::make(
-                        "s3get(hacked for parquet using select) - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
-                        s3Partition->getBucket(),
-                        s3Object,
-                        "",
-                        *allNeededColumnNames,
-                        *allNeededColumnNames,
-                        scanRange.first,
-                        scanRange.second,
-                        miniCatalogue->getSchema(getName()),
-                        DefaultS3Client,
-                        true,
-                        false,
-                        queryId);
-            }
-            operators->emplace_back(scanOp);
-
-            std::shared_ptr<Operator> upStreamOfProj;
-            // Filter if it has filterPredicate
-            if (finalPredicate) {
-                auto filter = filter::Filter::make(
-                        fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
-                        filterPredicate,
-                        queryId);
-                operators->emplace_back(filter);
-
-                scanOp->produce(filter);
-                filter->consume(scanOp);
-                streamOutPhysicalOperators_->emplace_back(filter);
-            } else {
-                streamOutPhysicalOperators_->emplace_back(scanOp);
-            }
-            // No project needed as S3Get does a project based on the neededColumns input
-
-            rangeId++;
+        auto scanRange = scanRanges[0];
+        // S3Scan
+        std::shared_ptr<Operator> scanOp;
+        // FIXME 1: hack Parquet Get using Select
+        // FIXME 2: not a idea way to distinguish CSV and Parquet
+        if (s3Object.find("csv") != std::string::npos) {
+            scanOp = S3Get::make(
+                    "s3get - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                    s3Partition->getBucket(),
+                    s3Object,
+                    *allColumnNames,
+                    *allNeededColumnNames,
+                    scanRange.first,
+                    scanRange.second,
+                    miniCatalogue->getSchema(getName()),
+                    DefaultS3Client,
+                    true,
+                    false,
+                    queryId);
+        } else {
+            scanOp = S3Select::make(
+                    "s3get(hacked for parquet using select) - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
+                    s3Partition->getBucket(),
+                    s3Object,
+                    "",
+                    *allNeededColumnNames,
+                    *allNeededColumnNames,
+                    scanRange.first,
+                    scanRange.second,
+                    miniCatalogue->getSchema(getName()),
+                    DefaultS3Client,
+                    true,
+                    false,
+                    queryId);
         }
+        operators->emplace_back(scanOp);
+
+        std::shared_ptr<Operator> upStreamOfProj;
+        // Filter if it has filterPredicate
+        if (finalPredicate) {
+            auto filter = filter::Filter::make(
+                    fmt::format("filter-{}/{}-{}", s3Bucket, s3Object, rangeId),
+                    filterPredicate,
+                    queryId);
+            operators->emplace_back(filter);
+
+            scanOp->produce(filter);
+            filter->consume(scanOp);
+            streamOutPhysicalOperators_->emplace_back(filter);
+        } else {
+            streamOutPhysicalOperators_->emplace_back(scanOp);
+        }
+        // No project needed as S3Get does a project based on the neededColumns input
+
     }
 
     return operators;

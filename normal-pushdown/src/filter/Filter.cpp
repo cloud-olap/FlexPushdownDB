@@ -43,7 +43,7 @@ void Filter::onReceive(const normal::core::message::Envelope &Envelope) {
 	auto tupleMessage = dynamic_cast<const normal::core::message::TupleMessage &>(message);
 	this->onTuple(tupleMessage);
   } else if (message.type() == "CompleteMessage") {
-    if (*applicable_) {
+    if (applicable_ != nullptr && *applicable_) {
       auto completeMessage = dynamic_cast<const normal::core::message::CompleteMessage &>(message);
       this->onComplete(completeMessage);
     }
