@@ -163,8 +163,6 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
             }
         } else {
             std::shared_ptr<Operator> scanOp;
-            // FIXME 1: hack Parquet Get using Select
-            // FIXME 2: not a idea way to distinguish CSV and Parquet
             if (s3Object.find("csv") != std::string::npos) {
                 scanOp = S3Get::make(
                         "s3get - " + s3Partition->getBucket() + "/" + s3Object + "-" + std::to_string(rangeId),
