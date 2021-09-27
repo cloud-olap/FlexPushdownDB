@@ -65,6 +65,8 @@ bool checkPartitionValid(const std::shared_ptr<Partition>& partition,
                          const std::shared_ptr<normal::expression::gandiva::Expression>& predicate) {
   auto sortedColumns = normal::connector::defaultMiniCatalogue->sortedColumns();
 
+  return false;
+
   if (typeid(*predicate) == typeid(And)) {
     auto andExpr = std::static_pointer_cast<And>(predicate);
     return checkPartitionValid(partition, andExpr->getLeft()) && checkPartitionValid(partition, andExpr->getRight());
