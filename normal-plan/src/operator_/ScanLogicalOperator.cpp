@@ -308,5 +308,7 @@ ScanLogicalOperator::checkPartitionValid(const std::shared_ptr<Partition>& parti
       }
     }
   }
+
+//  bool valid = false;
   return std::pair<bool, std::shared_ptr<normal::expression::gandiva::Expression>>(valid, finalPredicate);
 }

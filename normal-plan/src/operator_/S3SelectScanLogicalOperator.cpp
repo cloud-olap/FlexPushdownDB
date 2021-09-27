@@ -38,7 +38,7 @@ std::shared_ptr<std::vector<std::shared_ptr<normal::core::Operator>>> S3SelectSc
     //  validPartitions_ = (!predicate_) ? getPartitioningScheme()->partitions() : getValidPartitions(predicate_);
 
     // construct physical operators
-    return toOperatorsHTAP();
+//    return toOperatorsHTAP();
 
     auto mode = getMode();
     switch (mode->id()) {
@@ -99,7 +99,7 @@ S3SelectScanLogicalOperator::toOperatorsHTAP() {
 
         if (numDeltas != 0) {
             std::vector<std::string> deltaObjects;
-            for (int i = 1; i <= numDeltas; i++) {
+            for (int i = 0; i < numDeltas; i++) {
                 std::string objectName = "lineorder.tbl.1.del." + std::to_string(i);
                 deltaObjects.push_back(objectName);
             }
