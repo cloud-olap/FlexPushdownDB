@@ -402,7 +402,7 @@ void normal::ssb::htapTest() {
 
 void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType, const std::string& dirPrefix,
                            size_t networkLimit, bool writeResults) {
-  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::warn);
   // parameters
   const int warmBatchSize = 50, executeBatchSize = 50;
   std::string bucket_name = "pushdowndb-htap";
