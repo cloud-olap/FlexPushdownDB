@@ -3,7 +3,7 @@
 //
 
 #include "normal/expression/gandiva/StringLiteral.h"
-
+#include <gandiva/tree_expr_builder.h>
 #include <utility>
 
 using namespace normal::expression::gandiva;

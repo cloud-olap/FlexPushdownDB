@@ -1,6 +1,6 @@
 # Arrow
 set(ARROW_VERSION "release-4.0.0")
-set(ARROW_GIT_URL "https://github.com/Yifei-yang7/arrow.git")
+set(ARROW_GIT_URL "https://github.com/apache/arrow.git")
 
 
 include(ExternalProject)
