@@ -10,6 +10,7 @@
 
 #include <arrow/api.h>
 #include <gandiva/node.h>
+#include <gandiva/tree_expr_builder.h>
 
 #include "Expression.h"
 

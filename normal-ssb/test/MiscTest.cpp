@@ -48,14 +48,14 @@ TEST_CASE ("large" * doctest::skip(false)) {
 
   auto g = OperatorGraph::make(mgr);
 
-  auto fileScan = FileScan::make("fileScan",
+  auto fileScan = file::FileScan::make("fileScan",
 								 aFile,
 								 std::vector<std::string>{"LO_EXTENDEDPRICE"},
 								 0,
 								 numBytesAFile,
 								 g->getId(),
 								 true);
-  auto project = std::make_shared<Project>("project",
+  auto project = std::make_shared<project::Project>("project",
 										   std::vector<std::shared_ptr<normal::expression::gandiva::Expression>>{
 											   col("LO_EXTENDEDPRICE")});
   auto aggregateFunctions = std::make_shared<std::vector<std::shared_ptr<AggregationFunction>>>();

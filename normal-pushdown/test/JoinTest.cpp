@@ -35,7 +35,7 @@ TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false || SKIP_SUITE
 	auto bFile = filesystem::absolute("data/join/b.csv");
 	auto numBytesBFile = filesystem::file_size(bFile);
 
-	auto aScan = FileScan::make("fileScanA",
+	auto aScan = file::FileScan::make("fileScanA",
 								"data/join/a.csv",
 								std::vector<std::string>{"AA", "AB", "AC"},
 								0,
@@ -43,7 +43,7 @@ TEST_CASE ("join-test-filescan-join-collate" * doctest::skip(false || SKIP_SUITE
 								g->getId(),
 								true);
 	g->put(aScan);
-	auto bScan = FileScan::make("fileScanB",
+	auto bScan = file::FileScan::make("fileScanB",
 								"data/join/b.csv",
 								std::vector<std::string>{"BA", "BB", "BC"},
 								0,

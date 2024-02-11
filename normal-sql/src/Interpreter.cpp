@@ -64,7 +64,7 @@ void Interpreter::parse(const std::string &sql) {
   std::shared_ptr<plan::PhysicalPlan> physicalPlan;
   physicalPlan = plan::Planner::generate(*logicalPlan_, mode_);
 
-  SPDLOG_INFO("Total {} physical operators", physicalPlan->getOperators()->size());
+  SPDLOG_DEBUG("Total {} physical operators", physicalPlan->getOperators()->size());
   // Add the plan to the operatorGraph
   for(const auto& physicalOperator: *physicalPlan->getOperators()){
     operatorGraph_->put(physicalOperator.second);

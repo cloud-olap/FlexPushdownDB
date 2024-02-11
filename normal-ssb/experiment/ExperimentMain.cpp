@@ -21,7 +21,8 @@ const char* getCurrentTestSuiteName() { return doctest::detail::g_cs->currentTes
 
 int main(int argc, char **argv) {
 
-  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue("pushdowndb", "ssb-sf100-sortlineorder/csv/");
+  normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(
+          "flexpushdowndb", "ssb-sf100-sortlineorder/csv/");
   // math model test
   if (std::string(argv[1]) == "-m") {
     auto networkLimit = (size_t) (atof(argv[2]) * 1024 * 1024 * 1024 / 8);
@@ -69,8 +70,7 @@ int main(int argc, char **argv) {
 
     // main test
   else {
-    std::string dirPrefix = "ssb-sf100-sortlineorder/csv_150MB/";
-//    std::string dirPrefix = "ssb-sf100-sortlineorder/parquet_150MB/";
+    std::string dirPrefix = "ssb-sf1-sortlineorder/csv/";
     auto cacheSize = (size_t) (atof(argv[1]) * 1024 * 1024 * 1024);
     auto modeType = atoi(argv[2]);
     auto cachingPolicyType = atoi(argv[3]);

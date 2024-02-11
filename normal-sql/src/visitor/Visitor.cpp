@@ -556,8 +556,8 @@ antlrcpp::Any normal::sql::visitor::Visitor::visitTable_or_subquery(normal::sql:
   }
   else{
     // No catalogue specified, use default catalogue
-    // Let's currently use "s3_select" as default
-    std::string catalogueName = "s3_select";
+    // Let's currently use "s3" as default
+    std::string catalogueName = "s3";
     auto catalogueIterator = this->catalogues_->find(catalogueName);
     if (catalogueIterator == this->catalogues_->end())
       throw std::runtime_error("Catalogue '" + catalogueName + "' does not exist.");

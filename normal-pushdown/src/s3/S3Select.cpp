@@ -2,7 +2,14 @@
 // Created by Matt Woicik on 1/19/21.
 //
 
-#include "normal/pushdown/s3/S3Select.h"
+#include <normal/pushdown/s3/S3Select.h>
+#include <normal/pushdown/Globals.h>
+#include <normal/tuple/TupleSet.h>                          // for TupleSet
+#include <normal/core/message/Message.h>                    // for Message
+#include <normal/core/cache/LoadResponseMessage.h>
+#include <normal/connector/s3/S3SelectPartition.h>
+#include <normal/connector/MiniCatalogue.h>
+#include <normal/cache/SegmentKey.h>
 
 #include <utility>
 #include <memory>
@@ -27,17 +34,6 @@
 #include <aws/s3/model/SelectObjectContentHandler.h>        // for SelectObj...
 #include <aws/s3/model/StatsEvent.h>                        // for StatsEvent
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
-
-
-#include "normal/core/message/Message.h"                    // for Message
-#include "normal/tuple/TupleSet.h"                          // for TupleSet
-#include <normal/core/cache/LoadResponseMessage.h>
-#include <normal/connector/s3/S3SelectPartition.h>
-#include <normal/cache/SegmentKey.h>
-#include <normal/connector/MiniCatalogue.h>
-
-#include "normal/pushdown/Globals.h"
-#include <normal/plan/Globals.h>
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
 namespace arrow { class MemoryPool; }
@@ -117,7 +113,7 @@ std::shared_ptr<CSVToArrowSIMDChunkParser> S3Select::generateSIMDParser() {
   }
   // The delimiter for S3 output is always ',' so this is hardcoded
   // FIXME: temporary fix of "parseChunkSize < payload size" issue on Airmettle Select
-  auto conversionBufferSize = (normal::plan::s3ClientType != normal::plan::Airmettle) ?
+  auto conversionBufferSize = (S3ClientType != Airmettle) ?
                               DefaultS3ConversionBufferSize : DefaultS3ConversionBufferSizeAirmettleSelect;
   auto simdParser = std::make_shared<CSVToArrowSIMDChunkParser>(name(), conversionBufferSize,
                                                                 std::make_shared<::arrow::Schema>(fields),
@@ -186,7 +182,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(uint64_t startOffset, uint64_t end
 
   // Airmettle says they do not fully support byte range scans so
   // leave it out when running with Airmettle.
-  if (normal::plan::s3ClientType != normal::plan::Airmettle) {
+  if (S3ClientType != Airmettle) {
     if (scanRangeSupported()) {
       ScanRange scanRange;
       scanRange.SetStart(startOffset);
@@ -229,7 +225,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(uint64_t startOffset, uint64_t end
     auto payload = recordsEvent.GetPayload();
     if (!payload.empty()) {
       // Airmettle doesn't trigger StatsEvent callback, so add up returned bytes here.
-      if (normal::plan::s3ClientType == normal::plan::Airmettle) {
+      if (S3ClientType == Airmettle) {
         splitReqLock_.lock();
         s3SelectScanStats_.returnedBytes += payload.size();
         splitReqLock_.unlock();
@@ -272,7 +268,7 @@ std::shared_ptr<TupleSet2> S3Select::s3Select(uint64_t startOffset, uint64_t end
                  statsEvent.GetDetails().GetBytesReturned());
     splitReqLock_.lock();
     s3SelectScanStats_.processedBytes += statsEvent.GetDetails().GetBytesProcessed();
-    if (normal::plan::s3ClientType != normal::plan::Airmettle) {
+    if (S3ClientType != Airmettle) {
       s3SelectScanStats_.returnedBytes += statsEvent.GetDetails().GetBytesReturned();
     }
     splitReqLock_.unlock();
@@ -420,7 +416,7 @@ std::shared_ptr<TupleSet2> S3Select::readTuples() {
     SPDLOG_DEBUG("Reading From S3: {}", name());
 
     // Read columns from s3
-    if (normal::plan::s3ClientType == normal::plan::S3 && scanRangeSupported()
+    if (S3ClientType == S3 && scanRangeSupported()
         && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
       readTupleSet = s3SelectParallelReqs();
     } else {

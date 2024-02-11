@@ -157,6 +157,9 @@ void graph::OperatorGraph::boot() {
         throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
       element.second.setActorHandle(caf::actor_cast<caf::actor>(actorHandle));
 	  } else {
+      if(op->getType() == "Collate"){
+        legacyCollateOperator_ = std::static_pointer_cast<Collate>(op);
+      }
 	    auto actorHandle = operatorManager_.lock()->getActorSystem()->spawn<normal::core::OperatorActor>(op);
 	    if (!actorHandle)
         throw std::runtime_error(fmt::format("Failed to spawn operator actor '{}'", op->name()));
@@ -239,12 +242,15 @@ std::shared_ptr<Operator> graph::OperatorGraph::getOperator(const std::string &n
   return operatorDirectory_.get(name).value().getDef();
 }
 
-std::string graph::OperatorGraph::showMetrics() {
-
+std::string graph::OperatorGraph::showMetrics(bool showOpTimes, bool showScanMetrics) {
   std::stringstream ss;
-  ss << std::endl;
-  long totalProcessingTime = 0;
+  if (!showOpTimes && !showScanMetrics) {
+    return ss.str();
+  }
 
+  ss << std::endl;
+  ss << "Metrics |" << std::endl << std::endl;
+  long totalProcessingTime = 0;
   for (auto &entry : operatorDirectory_) {
 	(*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
 		[&](long processingTime) {
@@ -255,231 +261,237 @@ std::string graph::OperatorGraph::showMetrics() {
 		});
   }
 
-  auto totalExecutionTime = getElapsedTime().value();
-  std::stringstream formattedExecutionTime;
-  formattedExecutionTime << totalExecutionTime << " \u33B1" << " (" << ((double)totalExecutionTime / 1000000000.0)
-						 << " secs)";
-  ss << std::left << std::setw(60) << "Total Execution Time ";
-  ss << std::left << std::setw(60) << formattedExecutionTime.str();
-  ss << std::endl;
-  ss << std::endl;
+  if (showOpTimes) {
+    auto totalExecutionTime = getElapsedTime().value();
+    std::stringstream formattedExecutionTime;
+    formattedExecutionTime << totalExecutionTime << " \u33B1" << " (" << ((double) totalExecutionTime / 1000000000.0)
+                           << " secs)";
+    ss << std::left << std::setw(60) << "Total Execution Time ";
+    ss << std::left << std::setw(60) << formattedExecutionTime.str();
+    ss << std::endl;
+    ss << std::endl;
 
-  ss << std::left << std::setw(120) << "Operator Execution Times" << std::endl;
-  ss << std::setfill(' ');
+    ss << std::left << std::setw(120) << "Operator Execution Times" << std::endl;
+    ss << std::setfill(' ');
 
-  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
-  ss << std::setfill(' ');
+    ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+    ss << std::setfill(' ');
 
-  ss << std::left << std::setw(60) << "Operator";
-  ss << std::left << std::setw(40) << "Execution Time";
-  ss << std::left << std::setw(20) << "% Total Time";
-  ss << std::endl;
+    ss << std::left << std::setw(60) << "Operator";
+    ss << std::left << std::setw(40) << "Execution Time";
+    ss << std::left << std::setw(20) << "% Total Time";
+    ss << std::endl;
 
-  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
-  ss << std::setfill(' ');
+    ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+    ss << std::setfill(' ');
 
-  std::map<std::string, size_t> opTypeToRuntime;
+    std::map<std::string, size_t> opTypeToRuntime;
 
-  for (auto &entry : operatorDirectory_) {
-    auto operatorName = entry.first;
+    for (auto &entry : operatorDirectory_) {
+      auto operatorName = entry.first;
 
-    long processingTime;
-    (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
-      [&](long time) {
-         processingTime = time;
-      },
-      [&](const caf::error&  error){
-        throw std::runtime_error(to_string(error));
-      });
+      long processingTime;
+      (*rootActor_)->request(entry.second.getActorHandle(), caf::infinite, GetProcessingTimeAtom::value).receive(
+              [&](long time) {
+                processingTime = time;
+              },
+              [&](const caf::error &error) {
+                throw std::runtime_error(to_string(error));
+              });
 
-    auto op = entry.second.getDef();
-    std::string type = op->getType();
-    if (opTypeToRuntime.find(type) == opTypeToRuntime.end()) {
-      opTypeToRuntime.emplace(type, processingTime);
-    } else {
-      opTypeToRuntime[type] = opTypeToRuntime[type] + processingTime;
+      auto op = entry.second.getDef();
+      std::string type = op->getType();
+      if (opTypeToRuntime.find(type) == opTypeToRuntime.end()) {
+        opTypeToRuntime.emplace(type, processingTime);
+      } else {
+        opTypeToRuntime[type] = opTypeToRuntime[type] + processingTime;
+      }
+
+      auto processingFraction = (double) processingTime / (double) totalProcessingTime;
+      std::stringstream formattedProcessingTime;
+      formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double) processingTime / 1000000000.0)
+                              << " secs)";
+      std::stringstream formattedProcessingPercentage;
+      formattedProcessingPercentage << (processingFraction * 100.0);
+      ss << std::left << std::setw(60) << operatorName;
+      ss << std::left << std::setw(40) << formattedProcessingTime.str();
+      ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
+      ss << std::endl;
     }
 
-    auto processingFraction = (double)processingTime / (double)totalProcessingTime;
+    ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+    ss << std::setfill(' ');
+    ss << std::endl;
+
+    for (auto const &opTime : opTypeToRuntime) {
+      std::stringstream formattedOpTime;
+      formattedOpTime << ((double) opTime.second / 1000000000.0) << " secs";
+      ss << std::left << std::setw(60) << opTime.first;
+      ss << std::left << std::setw(40) << formattedOpTime.str();
+      ss << std::left << std::setw(20) << ((double) opTime.second / (double) totalProcessingTime) * 100.0;
+      ss << std::endl;
+    }
+
+    ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
+    ss << std::setfill(' ');
+
     std::stringstream formattedProcessingTime;
-    formattedProcessingTime << processingTime << " \u33B1" << " (" << ((double)processingTime / 1000000000.0)
-                << " secs)";
-    std::stringstream formattedProcessingPercentage;
-    formattedProcessingPercentage << (processingFraction * 100.0);
-    ss << std::left << std::setw(60) << operatorName;
+    formattedProcessingTime << totalProcessingTime << " \u33B1" << " (" << ((double) totalProcessingTime / 1000000000.0)
+                            << " secs)";
+    ss << std::left << std::setw(60) << "Total ";
     ss << std::left << std::setw(40) << formattedProcessingTime.str();
-    ss << std::left << std::setw(20) << formattedProcessingPercentage.str();
+    ss << std::left << std::setw(20) << "100.0";
+    ss << std::endl;
     ss << std::endl;
   }
 
-  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
-  ss << std::setfill(' ');
-  ss << std::endl;
+  if (showScanMetrics) {
+    S3SelectScanStats s3SelectScanStats = getAggregateS3SelectScanStats();
 
-  for (auto const& opTime : opTypeToRuntime) {
-    std::stringstream formattedOpTime;
-    formattedOpTime << ((double) opTime.second / 1000000000.0) << " secs";
-    ss << std::left << std::setw(60) << opTime.first;
-    ss << std::left << std::setw(40) << formattedOpTime.str();
-    ss << std::left << std::setw(20) << ((double) opTime.second / (double) totalProcessingTime) * 100.0;
+    std::stringstream formattedProcessedBytes;
+    formattedProcessedBytes << s3SelectScanStats.processedBytes << " B" << " ("
+                            << ((double) s3SelectScanStats.processedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    std::stringstream formattedReturnedBytes;
+    formattedReturnedBytes << s3SelectScanStats.returnedBytes << " B" << " ("
+                           << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+    std::stringstream formattedArrowConvertedBytes;
+    formattedArrowConvertedBytes << s3SelectScanStats.outputBytes << " B" << " ("
+                                 << ((double) s3SelectScanStats.outputBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
+
+    std::stringstream formattedConversionOutputRate;
+    if (s3SelectScanStats.getConvertTimeNS + s3SelectScanStats.selectConvertTimeNS > 0) {
+      formattedConversionOutputRate << ((double) s3SelectScanStats.outputBytes / 1024.0 / 1024.0) /
+                                       ((double) (s3SelectScanStats.getConvertTimeNS +
+                                                  s3SelectScanStats.selectConvertTimeNS) / 1.0e9) << " MB/s/req";
+    } else {
+      formattedConversionOutputRate << "NA";
+    }
+
+    std::stringstream formattedStorageFormatToArrowSizeX;
+    if (s3SelectScanStats.outputBytes > 0) {
+      formattedStorageFormatToArrowSizeX
+              << (double) s3SelectScanStats.returnedBytes / (double) s3SelectScanStats.outputBytes << "x";
+    } else {
+      formattedStorageFormatToArrowSizeX << "NA";
+    }
+    ss << std::left << std::setw(60) << "Processed Bytes";
+    ss << std::left << std::setw(60) << formattedProcessedBytes.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "Returned Bytes";
+    ss << std::left << std::setw(60) << formattedReturnedBytes.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "Arrow Converted Bytes";
+    ss << std::left << std::setw(60) << formattedArrowConvertedBytes.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "Conversion Output Rate";
+    ss << std::left << std::setw(60) << formattedConversionOutputRate.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "Storage/Compute Data Ratio";
+    ss << std::left << std::setw(60) << formattedStorageFormatToArrowSizeX.str();
+    ss << std::endl;
+
+    std::stringstream formattedGetTransferRate;
+    std::stringstream formattedGetConvertRate;
+    std::stringstream formattedGetTransferConvertRate;
+    if (s3SelectScanStats.getTransferTimeNS > 0 && s3SelectScanStats.getConvertTimeNS > 0) {
+      formattedGetTransferRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                                  ((double) s3SelectScanStats.getTransferTimeNS / 1.0e9) << " MB/s/req";
+      formattedGetConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                                 ((double) s3SelectScanStats.getConvertTimeNS / 1.0e9) << " MB/s/req";
+      formattedGetTransferConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                                         (((double) s3SelectScanStats.getTransferTimeNS +
+                                           s3SelectScanStats.getConvertTimeNS) / 1.0e9) << " MB/s/req";
+    } else {
+      formattedGetTransferRate << "NA";
+      formattedGetConvertRate << "NA";
+      formattedGetTransferConvertRate << "NA";
+    }
+    // Caf actor framework seems to converge #workers -> # cores for non detached workers, and each worker runs to
+    // completion. This should approximate to per core rates rather than just per request, as one request maps to a core
+    ss << std::left << std::setw(60) << "S3 GET Data Transfer Rate";
+    ss << std::left << std::setw(60) << formattedGetTransferRate.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "S3 GET Data Convert rate";
+    ss << std::left << std::setw(60) << formattedGetConvertRate.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "S3 GET Data Transfer + Convert rate";
+    ss << std::left << std::setw(60) << formattedGetTransferConvertRate.str();
+    ss << std::endl;
+
+    std::stringstream formattedSelectTransferRate;
+    std::stringstream formattedSelectConvertRate;
+    std::stringstream formattedSelectTransferConvertRate;
+    if (s3SelectScanStats.selectTransferTimeNS > 0 && s3SelectScanStats.selectConvertTimeNS > 0) {
+      formattedSelectTransferRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                                     ((double) (s3SelectScanStats.selectTransferTimeNS) / 1.0e9) << " MB/s/req";
+      formattedSelectConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                                    ((double) s3SelectScanStats.selectConvertTimeNS / 1.0e9) << " MB/s/req";
+      formattedSelectTransferConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
+                                            ((double) (s3SelectScanStats.selectTransferTimeNS +
+                                                       s3SelectScanStats.selectConvertTimeNS) / 1.0e9) << " MB/s/req";
+    } else {
+      formattedSelectTransferRate << "NA";
+      formattedSelectConvertRate << "NA";
+      formattedSelectTransferConvertRate << "NA";
+    }
+
+    // FIXME: This only works if the query is entirely pushdown (it only uses S3 Select and never GET), as the bytes
+    //        transferred is grouped together for select and get requests, so they are not differentiated
+    //        If we decide to eventually allow GET and Select requests to be in the same query for a mode we will need
+    //        to have a way to differentiate this (this isn't the case for now though so it is fine)
+    //        Also note that some storage backends such as Airmettle don't tell use processedBytes, in which case
+    //        we estimate this value with the select range.
+    std::stringstream formattedS3SelectSelectivityPercent;
+    if (s3SelectScanStats.returnedBytes > 0 && s3SelectScanStats.processedBytes &&
+        s3SelectScanStats.selectTransferTimeNS > 0 && s3SelectScanStats.getConvertTimeNS == 0) {
+      formattedS3SelectSelectivityPercent << (double) s3SelectScanStats.returnedBytes /
+                                             (double) s3SelectScanStats.processedBytes * 100 << "%";
+    } else {
+      formattedS3SelectSelectivityPercent << "NA";
+    }
+    ss << std::left << std::setw(60) << "Appx S3 Select Data Transfer Rate";
+    ss << std::left << std::setw(60) << formattedSelectTransferRate.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "S3 Select Data Convert rate";
+    ss << std::left << std::setw(60) << formattedSelectConvertRate.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "S3 Select Data Transfer + Convert rate";
+    ss << std::left << std::setw(60) << formattedSelectTransferConvertRate.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "S3 Selectivity";
+    ss << std::left << std::setw(60) << formattedS3SelectSelectivityPercent.str();
+    ss << std::endl;
+
+    auto filterTimeNSInputOutputBytes = getFilterTimeNSInputOutputBytes();
+    size_t filterTimeNS = std::get<0>(filterTimeNSInputOutputBytes);
+    size_t filterInputBytes = std::get<1>(filterTimeNSInputOutputBytes);
+    size_t filterOutputBytes = std::get<2>(filterTimeNSInputOutputBytes);
+    std::stringstream formattedLocalFilterRateGBs;
+    std::stringstream formattedLocalFilterGB;
+    std::stringstream formattedLocalFilterSelectivity;
+    if (filterTimeNS > 0) {
+      double filterGB = ((double) filterInputBytes / 1024.0 / 1024.0 / 1024.0);
+      formattedLocalFilterRateGBs << filterGB / ((double) filterTimeNS / 1.0e9) << " GB/s/req";
+      formattedLocalFilterGB << filterGB << " GB";
+      formattedLocalFilterSelectivity << ((double) filterOutputBytes / (double) filterInputBytes) * 100 << "%";
+    } else {
+      formattedLocalFilterRateGBs << "NA";
+      formattedLocalFilterGB << "NA";
+      formattedLocalFilterSelectivity << "NA";
+    }
+    // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
+    // so this should approximate to per core rates rather than just per request, as one request maps to a core
+    ss << std::left << std::setw(60) << "Local filter rate";
+    ss << std::left << std::setw(60) << formattedLocalFilterRateGBs.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "Local filter bytes";
+    ss << std::left << std::setw(60) << formattedLocalFilterGB.str();
+    ss << std::endl;
+    ss << std::left << std::setw(60) << "Local filter selectivity (bytes)";
+    ss << std::left << std::setw(60) << formattedLocalFilterSelectivity.str();
+    ss << std::endl;
     ss << std::endl;
   }
-
-  ss << std::left << std::setw(120) << std::setfill('-') << "" << std::endl;
-  ss << std::setfill(' ');
-
-  std::stringstream formattedProcessingTime;
-  formattedProcessingTime << totalProcessingTime << " \u33B1" << " (" << ((double)totalProcessingTime / 1000000000.0)
-						  << " secs)";
-  ss << std::left << std::setw(60) << "Total ";
-  ss << std::left << std::setw(40) << formattedProcessingTime.str();
-  ss << std::left << std::setw(20) << "100.0";
-  ss << std::endl;
-  ss << std::endl;
-
-  S3SelectScanStats s3SelectScanStats = getAggregateS3SelectScanStats();
-
-  std::stringstream formattedProcessedBytes;
-  formattedProcessedBytes << s3SelectScanStats.processedBytes << " B" << " ("
-                          << ((double)s3SelectScanStats.processedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
-  std::stringstream formattedReturnedBytes;
-  formattedReturnedBytes << s3SelectScanStats.returnedBytes << " B" << " ("
-                         << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
-  std::stringstream formattedArrowConvertedBytes;
-  formattedArrowConvertedBytes << s3SelectScanStats.outputBytes << " B" << " ("
-                         << ((double)s3SelectScanStats.outputBytes / 1024.0 / 1024.0 / 1024.0) << " GB)";
-
-  std::stringstream formattedConversionOutputRate;
-  if (s3SelectScanStats.getConvertTimeNS + s3SelectScanStats.selectConvertTimeNS > 0) {
-    formattedConversionOutputRate << ((double) s3SelectScanStats.outputBytes / 1024.0 / 1024.0) /
-                                     ((double) (s3SelectScanStats.getConvertTimeNS +
-                                                s3SelectScanStats.selectConvertTimeNS) / 1.0e9) << " MB/s/req";
-  } else {
-    formattedConversionOutputRate << "NA";
-  }
-
-  std::stringstream formattedStorageFormatToArrowSizeX;
-  if (s3SelectScanStats.outputBytes > 0) {
-    formattedStorageFormatToArrowSizeX << (double) s3SelectScanStats.returnedBytes / (double) s3SelectScanStats.outputBytes << "x";
-  } else {
-    formattedStorageFormatToArrowSizeX << "NA";
-  }
-  ss << std::left << std::setw(60) << "Processed Bytes";
-  ss << std::left << std::setw(60) << formattedProcessedBytes.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "Returned Bytes";
-  ss << std::left << std::setw(60) << formattedReturnedBytes.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "Arrow Converted Bytes";
-  ss << std::left << std::setw(60) << formattedArrowConvertedBytes.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "Conversion Output Rate";
-  ss << std::left << std::setw(60) << formattedConversionOutputRate.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "Storage/Compute Data Ratio";
-  ss << std::left << std::setw(60) << formattedStorageFormatToArrowSizeX.str();
-  ss << std::endl;
-
-  std::stringstream formattedGetTransferRate;
-  std::stringstream formattedGetConvertRate;
-  std::stringstream formattedGetTransferConvertRate;
-  if (s3SelectScanStats.getTransferTimeNS > 0 && s3SelectScanStats.getConvertTimeNS > 0) {
-    formattedGetTransferRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
-                             ((double) s3SelectScanStats.getTransferTimeNS / 1.0e9) << " MB/s/req";
-    formattedGetConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
-                            ((double) s3SelectScanStats.getConvertTimeNS / 1.0e9) << " MB/s/req";
-    formattedGetTransferConvertRate << ((double) s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
-                            (((double) s3SelectScanStats.getTransferTimeNS + s3SelectScanStats.getConvertTimeNS) / 1.0e9) << " MB/s/req";
-  } else {
-    formattedGetTransferRate << "NA";
-    formattedGetConvertRate << "NA";
-    formattedGetTransferConvertRate << "NA";
-  }
-  // Caf actor framework seems to converge #workers -> # cores for non detached workers, and each worker runs to
-  // completion. This should approximate to per core rates rather than just per request, as one request maps to a core
-  ss << std::left << std::setw(60) << "S3 GET Data Transfer Rate";
-  ss << std::left << std::setw(60) << formattedGetTransferRate.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "S3 GET Data Convert rate";
-  ss << std::left << std::setw(60) << formattedGetConvertRate.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "S3 GET Data Transfer + Convert rate";
-  ss << std::left << std::setw(60) << formattedGetTransferConvertRate.str();
-  ss << std::endl;
-
-  std::stringstream formattedSelectTransferRate;
-  std::stringstream formattedSelectConvertRate;
-  std::stringstream formattedSelectTransferConvertRate;
-  if (s3SelectScanStats.selectTransferTimeNS > 0 && s3SelectScanStats.selectConvertTimeNS > 0) {
-    formattedSelectTransferRate << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
-          ((double)(s3SelectScanStats.selectTransferTimeNS)  / 1.0e9) << " MB/s/req";
-    formattedSelectConvertRate << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
-          ((double)s3SelectScanStats.selectConvertTimeNS / 1.0e9) << " MB/s/req";
-    formattedSelectTransferConvertRate << ((double)s3SelectScanStats.returnedBytes / 1024.0 / 1024.0) /
-          ((double)(s3SelectScanStats.selectTransferTimeNS + s3SelectScanStats.selectConvertTimeNS)  / 1.0e9) << " MB/s/req";
-  } else {
-    formattedSelectTransferRate << "NA";
-    formattedSelectConvertRate << "NA";
-    formattedSelectTransferConvertRate << "NA";
-  }
-
-  // FIXME: This only works if the query is entirely pushdown (it only uses S3 Select and never GET), as the bytes
-  //        transferred is grouped together for select and get requests, so they are not differentiated
-  //        If we decide to eventually allow GET and Select requests to be in the same query for a mode we will need
-  //        to have a way to differentiate this (this isn't the case for now though so it is fine)
-  //        Also note that some storage backends such as Airmettle don't tell use processedBytes, in which case
-  //        we estimate this value with the select range.
-  std::stringstream formattedS3SelectSelectivityPercent;
-  if (s3SelectScanStats.returnedBytes > 0 && s3SelectScanStats.processedBytes &&
-      s3SelectScanStats.selectTransferTimeNS > 0 && s3SelectScanStats.getConvertTimeNS == 0) {
-    formattedS3SelectSelectivityPercent << (double) s3SelectScanStats.returnedBytes /
-                                           (double) s3SelectScanStats.processedBytes * 100 << "%";
-  } else {
-    formattedS3SelectSelectivityPercent << "NA";
-  }
-  ss << std::left << std::setw(60) << "Appx S3 Select Data Transfer Rate";
-  ss << std::left << std::setw(60) << formattedSelectTransferRate.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "S3 Select Data Convert rate";
-  ss << std::left << std::setw(60) << formattedSelectConvertRate.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "S3 Select Data Transfer + Convert rate";
-  ss << std::left << std::setw(60) << formattedSelectTransferConvertRate.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "S3 Selectivity";
-  ss << std::left << std::setw(60) << formattedS3SelectSelectivityPercent.str();
-  ss << std::endl;
-
-  auto filterTimeNSInputOutputBytes = getFilterTimeNSInputOutputBytes();
-  size_t filterTimeNS = std::get<0>(filterTimeNSInputOutputBytes);
-  size_t filterInputBytes = std::get<1>(filterTimeNSInputOutputBytes);
-  size_t filterOutputBytes = std::get<2>(filterTimeNSInputOutputBytes);
-  std::stringstream formattedLocalFilterRateGBs;
-  std::stringstream formattedLocalFilterGB;
-  std::stringstream formattedLocalFilterSelectivity;
-  if (filterTimeNS > 0) {
-    double filterGB = ((double)filterInputBytes / 1024.0 / 1024.0 / 1024.0);
-    formattedLocalFilterRateGBs << filterGB / ((double)filterTimeNS  / 1.0e9) << " GB/s/req";
-    formattedLocalFilterGB << filterGB << " GB";
-    formattedLocalFilterSelectivity << ((double) filterOutputBytes / (double) filterInputBytes) * 100 << "%";
-  } else {
-    formattedLocalFilterRateGBs << "NA";
-    formattedLocalFilterGB << "NA";
-    formattedLocalFilterSelectivity << "NA";
-  }
-  // Caf actor framework seems to converge #workers -> # cores, and each worker runs to completion
-  // so this should approximate to per core rates rather than just per request, as one request maps to a core
-  ss << std::left << std::setw(60) << "Local filter rate";
-  ss << std::left << std::setw(60) << formattedLocalFilterRateGBs.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "Local filter bytes";
-  ss << std::left << std::setw(60) << formattedLocalFilterGB.str();
-  ss << std::endl;
-  ss << std::left << std::setw(60) << "Local filter selectivity (bytes)";
-  ss << std::left << std::setw(60) << formattedLocalFilterSelectivity.str();
-  ss << std::endl;
-  ss << std::endl;
-
 
   return ss.str();
 }
@@ -567,4 +579,8 @@ tl::expected<std::shared_ptr<TupleSet2>, std::string> graph::OperatorGraph::exec
 
   auto tuples = legacyCollateOperator_->tuples();
   return TupleSet2::create(tuples);
+}
+
+std::shared_ptr<TupleSet> graph::OperatorGraph::getQueryResult() const {
+  return legacyCollateOperator_->tuples();
 }

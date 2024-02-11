@@ -51,8 +51,9 @@ public:
   tl::expected<long, std::string> getElapsedTime();
   S3SelectScanStats getAggregateS3SelectScanStats();
   std::tuple<size_t, size_t, size_t> getFilterTimeNSInputOutputBytes();
-  std::string showMetrics();
+  std::string showMetrics(bool showOpTimes = true, bool showScanMetrics = true);
   [[nodiscard]] const long &getId() const;
+  std::shared_ptr<TupleSet> getQueryResult() const;
 
 private:
   long id_;
@@ -64,7 +65,6 @@ private:
 
   std::chrono::steady_clock::time_point startTime_;
   std::chrono::steady_clock::time_point stopTime_;
-
 };
 
 }

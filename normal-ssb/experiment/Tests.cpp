@@ -2,24 +2,23 @@
 // Created by Yifei Yang on 7/7/20.
 //
 
+#include "ExperimentUtil.h"
+#include "Tests.h"
 #include <doctest/doctest.h>
 #include <normal/sql/Interpreter.h>
+#include <normal/ssb/SSBSchema.h>
+#include <normal/ssb/SqlGenerator.h>
+#include <normal/pushdown/Globals.h>
 #include <normal/pushdown/collate/Collate.h>
-#include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/plan/mode/Modes.h>
+#include <normal/cache/Globals.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
 #include <normal/cache/FBRSCachingPolicy.h>
 #include <normal/cache/WFBRCachingPolicy.h>
 #include <normal/cache/BeladyCachingPolicy.h>
-#include "ExperimentUtil.h"
-#include "Tests.h"
-#include <normal/ssb/SqlGenerator.h>
-#include <normal/plan/Globals.h>
-#include <normal/cache/Globals.h>
+#include <normal/connector/s3/S3SelectConnector.h>
 #include <normal/connector/MiniCatalogue.h>
-#include <normal/ssb/SSBSchema.h>
-#include <normal/pushdown/Globals.h>
 
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
 #include <aws/s3/S3Client.h>
@@ -59,7 +58,7 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
 //  std::string bucketName = "demo-bucket";
 //  std::string keyName = "data.csv";
 //  std::string sql = "SELECT col2, col5, col9, col13, col29, col61, col91 FROM s3object WHERE cast(col1 as int) = 0;";
-  std::string bucketName = "pushdowndb";
+  std::string bucketName = "flexpushdowndb";
   std::string keyName = fmt::format("ssb-sf100-sortlineorder/csv_150MB/lineorder_sharded/lineorder.tbl.{}", index);
 //  std::string keyName = fmt::format("ssb-sf100-sortlineorder/parquet_150MB/lineorder_sharded/lineorder.parquet.{}", index);
 //  std::string keyName = fmt::format("ssb-sf100-sortlineorder/parquet_150MB/lineorder_sharded/lineorder.parquet.{}", index);
@@ -156,7 +155,7 @@ void simpleSelectRequest(const std::shared_ptr<Aws::S3::S3Client>& s3Client, int
     }
 //  std::chrono::steady_clock::time_point startTransferConvertTime = std::chrono::steady_clock::now();
 //  SPDLOG_INFO("Starting select request for {}/{}", bucketName, keyName);
-//  auto selectObjectContentOutcome = normal::plan::DefaultS3Client->SelectObjectContent(selectObjectContentRequest);
+//  auto selectObjectContentOutcome = DefaultS3Client->SelectObjectContent(selectObjectContentRequest);
     auto selectObjectContentOutcome = s3Client->SelectObjectContent(selectObjectContentRequest);
 
     if (selectObjectContentOutcome.IsSuccess()) {
@@ -203,7 +202,7 @@ uint64_t simpleGetRequest(int requestNum) {
 //  Aws::S3::Model::GetObjectRequest getObjectRequest;
   Aws::String bucketName;
 //  bucketName = "demo-bucket";
-  bucketName = "pushdowndb";
+  bucketName = "flexpushdowndb";
 //  auto requestKey = "ssb-sf100-sortlineorder/gzip_compression1_csv/lineorder_sharded/lineorder.gz.tbl." + std::to_string(requestNum);
 //  auto requestKey = "ssb-sf0.01/csv/date.tbl";
 //  auto schema = SSBSchema::date();
@@ -222,7 +221,7 @@ uint64_t simpleGetRequest(int requestNum) {
   Aws::S3::Model::GetObjectResult getResult;
   uint64_t resultSize;
   while (true) {
-    Aws::S3::Model::GetObjectOutcome getObjectOutcome = normal::plan::DefaultS3Client->GetObject(getObjectRequest);
+    Aws::S3::Model::GetObjectOutcome getObjectOutcome = DefaultS3Client->GetObject(getObjectRequest);
     if (getObjectOutcome.IsSuccess()) {
       SPDLOG_INFO("GET request success: {}", requestNum);
       auto requestStopTime = std::chrono::steady_clock::now();
@@ -369,13 +368,13 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
   spdlog::set_level(spdlog::level::warn);
   // parameters
   const int warmBatchSize = 50, executeBatchSize = 50;
-  std::string bucket_name = "pushdowndb";
+  std::string bucket_name = "flexpushdowndb";
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   normal::cache::beladyMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
   if (networkLimit > 0) {
     NetworkLimit = networkLimit;
   }
-  normal::plan::DefaultS3Client = AWSClient::defaultS3Client();
+  DefaultS3Client = AWSClient::defaultS3Client();
 
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode;
   std::string modeAlias;
@@ -416,7 +415,7 @@ void normal::ssb::mainTest(size_t cacheSize, int modeType, int cachingPolicyType
 
   // execute
   // FIXME: has to make a new one other wise with Airmettle sometimes a req has no end event, unsure why
-  normal::plan::DefaultS3Client = AWSClient::defaultS3Client();
+  DefaultS3Client = AWSClient::defaultS3Client();
   i.boot();
   SPDLOG_CRITICAL("{} mode start", mode->toString());
   if (mode->id() != normal::plan::operator_::mode::ModeId::FullPullup &&
@@ -493,7 +492,7 @@ void normal::ssb::perfBatchRun(int modeType, const std::string& dirPrefix, int c
                                int warmupQueriesPerColSize, int columnSizesToTest, int rowSelectivityValuesToTest) {
   spdlog::set_level(spdlog::level::info);
   size_t cacheSize = 64L * 1024 * 1024 * 1024;   // make the cache large so we can hold all segments for any h
-  std::string bucket_name = "pushdowndb";
+  std::string bucket_name = "flexpushdowndb";
   normal::connector::defaultMiniCatalogue = normal::connector::MiniCatalogue::defaultMiniCatalogue(bucket_name, dirPrefix);
 
   std::shared_ptr<normal::plan::operator_::mode::Mode> mode;

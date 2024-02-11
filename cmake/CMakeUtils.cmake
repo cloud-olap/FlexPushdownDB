@@ -53,7 +53,9 @@ function(setDefaults)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
         # Fix for strange issue with clang not producing debug info
-        add_compile_options(-fstandalone-debug)
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+            add_compile_options(-fstandalone-debug)
+        endif()
     endif()
 
 endfunction()

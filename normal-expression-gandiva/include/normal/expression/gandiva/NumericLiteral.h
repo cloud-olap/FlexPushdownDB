@@ -10,6 +10,7 @@
 
 #include <arrow/api.h>
 #include <gandiva/node.h>
+#include <gandiva/tree_expr_builder.h>
 
 #include "Expression.h"
 
@@ -21,7 +22,12 @@ class NumericLiteral : public Expression {
 public:
   explicit NumericLiteral(C_TYPE value) : value_(value) {}
 
-  void compile(std::shared_ptr<arrow::Schema>) override;
+  void compile(std::shared_ptr<arrow::Schema>) override {
+    auto literal = ::gandiva::TreeExprBuilder::MakeLiteral(value_);
+
+    gandivaExpression_ = literal;
+    returnType_ = ::arrow::TypeTraits<ARROW_TYPE>::type_singleton();
+  }
 
   std::string alias() override {
     if (typeid(ARROW_TYPE) == typeid(arrow::Int32Type) || typeid(ARROW_TYPE) == typeid(arrow::Int64Type)) {

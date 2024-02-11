@@ -7,6 +7,7 @@
 #include <normal/pushdown/AWSClient.h>
 #include <normal/plan/Globals.h>
 #include <spdlog/spdlog.h>
+#include <normal/pushdown/Globals.h>
 
 using namespace normal::pushdown;
 
@@ -47,19 +48,19 @@ void listObjects(std::shared_ptr<Aws::S3::S3Client>& s3Client) {
 TEST_SUITE ("connection" * doctest::skip(SKIP_SUITE)) {
 
 TEST_CASE ("connection-s3" * doctest::skip(false || SKIP_SUITE)) {
-  normal::plan::s3ClientType = normal::plan::S3;
+  normal::pushdown::S3ClientType = normal::pushdown::S3;
   auto s3Client = AWSClient::defaultS3Client();
   listObjects(s3Client);
 }
 
 TEST_CASE ("connection-minio" * doctest::skip(false || SKIP_SUITE)) {
-  normal::plan::s3ClientType = normal::plan::Minio;
+  normal::pushdown::S3ClientType = normal::pushdown::Minio;
   auto s3Client = AWSClient::defaultS3Client();
   listObjects(s3Client);
 }
 
 TEST_CASE ("connection-airmettle" * doctest::skip(false || SKIP_SUITE)) {
-  normal::plan::s3ClientType = normal::plan::Airmettle;
+  normal::pushdown::S3ClientType = normal::pushdown::Airmettle;
   auto s3Client = AWSClient::defaultS3Client();
   listObjects(s3Client);
 }

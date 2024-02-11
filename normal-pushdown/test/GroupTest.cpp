@@ -100,7 +100,7 @@ TEST_CASE ("group-filescan-group-collate" * doctest::skip(false || SKIP_SUITE)) 
 	auto aFile = filesystem::absolute("data/group/a.csv");
 	auto numBytesAFile = filesystem::file_size(aFile);
 
-	auto scan = FileScan::make("fileScan",
+	auto scan = file::FileScan::make("fileScan",
 							   "data/group/a.csv",
 							   std::vector<std::string>{"AA", "AB"},
 							   0,

@@ -3,17 +3,17 @@
 //
 
 #include "MathModelTest.h"
+#include "ExperimentUtil.h"
 #include <normal/sql/Interpreter.h>
 #include <normal/plan/mode/Modes.h>
-#include <normal/plan/Globals.h>
 #include <normal/cache/FBRSCachingPolicy.h>
-#include "ExperimentUtil.h"
+#include <normal/connector/MiniCatalogue.h>
 #include <normal/pushdown/filter/Filter.h>
 #include <normal/pushdown/Globals.h>
-#include <normal/connector/MiniCatalogue.h>
 
 using namespace normal::ssb;
 using namespace normal::sql;
+using namespace normal::pushdown;
 using namespace normal::pushdown::s3;
 
 MathModelTest::MathModelTest(size_t networkLimit, size_t chunkSize, int numRuns) :
@@ -134,7 +134,7 @@ void normal::ssb::MathModelTest::runTest() {  // unit: B/s
   // set parameters
   if (networkLimit_ > 0) {
     normal::pushdown::NetworkLimit = networkLimit_;
-    normal::plan::DefaultS3Client = normal::pushdown::AWSClient::defaultS3Client();
+    DefaultS3Client = AWSClient::defaultS3Client();
   }
   if (chunkSize_ > 0) {
     normal::tuple::DefaultChunkSize = chunkSize_;

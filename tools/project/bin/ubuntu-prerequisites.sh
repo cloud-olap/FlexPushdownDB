@@ -37,10 +37,3 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
   fi
 fi
 
-# add zlib-ng
-cd ~
-git clone https://github.com/zlib-ng/zlib-ng.git
-cd zlib-ng
-cmake .
-cmake --build . --config Release -j 8
-sudo cmake --build . --target install

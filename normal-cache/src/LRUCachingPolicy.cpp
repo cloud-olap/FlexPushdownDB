@@ -94,6 +94,10 @@ CachingPolicyId LRUCachingPolicy::id() {
   return LRU;
 }
 
+std::string LRUCachingPolicy::toString() {
+  return "LRU";
+}
+
 void LRUCachingPolicy::onNewQuery() {
 
 }

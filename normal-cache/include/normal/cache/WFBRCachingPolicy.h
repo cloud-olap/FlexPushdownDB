@@ -26,6 +26,7 @@ public:
   std::shared_ptr<std::unordered_set<std::shared_ptr<SegmentKey>, SegmentKeyPointerHash, SegmentKeyPointerPredicate>> getKeysetInCachePolicy() override;
   std::string showCurrentLayout() override;
   CachingPolicyId id() override;
+  std::string toString() override;
   void onNewQuery() override;
 
 private:

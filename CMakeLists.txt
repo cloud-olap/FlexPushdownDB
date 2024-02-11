@@ -38,7 +38,7 @@ include(External_primesieve)
 include(Dependency_SQLite3)
 include(External_Backward)
 include(External_CallableTraits)
-
+include(External_zlib_ng)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
@@ -58,3 +58,10 @@ add_subdirectory(normal-sql)
 add_subdirectory(ATTIC/normal-test)
 add_subdirectory(normal-ssb)
 add_subdirectory(normal-cache)
+add_subdirectory(normal-frontend)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Resource files
+#-----------------------------------------------------------------------------------------------------------------------
+
+file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

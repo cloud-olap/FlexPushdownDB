@@ -80,6 +80,13 @@ public:
   virtual CachingPolicyId id() = 0;
 
   /**
+   * Get caching policy name
+   *
+   * @return caching policy name
+   */
+  virtual std::string toString() = 0;
+
+  /**
    * Some updates (FBRS, WFBR) when a new query comes
    */
   virtual void onNewQuery() = 0;

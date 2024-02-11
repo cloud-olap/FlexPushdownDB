@@ -1,11 +1,14 @@
 # Arrow
 set(ARROW_VERSION "release-4.0.0")
-set(ARROW_GIT_URL "https://github.com/apache/arrow.git")
+set(ARROW_GIT_URL "https://github.com/Yifei-yang7/arrow.git")
 
 
 include(ExternalProject)
 find_package(Git REQUIRED)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 set(ARROW_BASE arrow_ep)
 set(ARROW_PREFIX ${DEPS_PREFIX}/${ARROW_BASE})
@@ -38,6 +41,12 @@ set(ARROW_PARQUET_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}parq
 set(ARROW_DEPENDENCIES_SHARED_LIBS ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}arrow_bundled_dependencies${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(ARROW_DEPENDENCIES_STATIC_LIBS ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}arrow_bundled_dependencies${CMAKE_STATIC_LIBRARY_SUFFIX})
 
+# need to set llvm dir on mac, making it a duplicated arg as default
+# TODO: probably can do more elegantly? but didn't find a way to set to empty string...
+set(arg_llvm_dir -DARROW_USE_CCACHE:BOOL=ON)
+if (${APPLE})
+  set(arg_llvm_dir -DLLVM_DIR=/usr/local/opt/llvm@11)
+endif()
 ExternalProject_Add(${ARROW_BASE}
         PREFIX ${ARROW_PREFIX}
         GIT_REPOSITORY ${ARROW_GIT_URL}
@@ -61,6 +70,7 @@ ExternalProject_Add(${ARROW_BASE}
         ${ARROW_DEPENDENCIES_SHARED_LIBS}
         ${ARROW_DEPENDENCIES_STATIC_LIBS}
         CMAKE_ARGS
+        ${arg_llvm_dir}
         -DARROW_USE_CCACHE:BOOL=ON
         -DARROW_CSV:BOOL=ON
         -DARROW_DATASET:BOOL=OFF
@@ -140,7 +150,11 @@ target_link_libraries(arrow_static INTERFACE arrow_bundled_dependencies_static)
 #target_link_libraries(arrow_static INTERFACE jemalloc_static)
 #target_link_libraries(arrow_static INTERFACE re2_static)
 #target_link_libraries(arrow_static INTERFACE snappy_static)
-target_link_libraries(arrow_static INTERFACE pthread)
+target_link_libraries(arrow_static INTERFACE OpenSSL::SSL)
+target_link_libraries(arrow_static INTERFACE OpenSSL::Crypto)
+target_link_libraries(arrow_static INTERFACE Threads::Threads)
+target_link_libraries(arrow_static INTERFACE dl)
+target_link_libraries(arrow_static INTERFACE rt)
 target_link_libraries(arrow_static INTERFACE z)
 add_dependencies(arrow_static ${ARROW_BASE})
 

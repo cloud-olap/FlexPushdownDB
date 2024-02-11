@@ -15,6 +15,15 @@
 
 namespace normal::pushdown {
 
+// S3 client
+inline std::shared_ptr<Aws::S3::S3Client> DefaultS3Client;
+enum S3ClientType {
+  S3,
+  Airmettle,
+  Minio
+};
+inline S3ClientType S3ClientType = S3;
+
 /**
  * Default number of tuples operators should buffer before sending to consumers
  */

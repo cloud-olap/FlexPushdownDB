@@ -369,6 +369,10 @@ CachingPolicyId BeladyCachingPolicy::id() {
   return BELADY;
 }
 
+std::string BeladyCachingPolicy::toString() {
+  return "Belady";
+}
+
 void BeladyCachingPolicy::onNewQuery() {
 
 }

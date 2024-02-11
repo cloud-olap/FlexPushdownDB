@@ -2,16 +2,14 @@
 // Created by matt on 5/3/20.
 //
 
-#include "normal/pushdown/AWSClient.h"
-
+#include <normal/pushdown/AWSClient.h>
+#include <normal/pushdown/Globals.h>
 #include <aws/core/Aws.h>
 #include <aws/core/utils/ratelimiter/DefaultRateLimiter.h>
 #include <aws/core/utils/threading/Executor.h>
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
 #include <aws/core/client/DefaultRetryStrategy.h>
-#include <normal/plan/Globals.h>
-#include <normal/pushdown/Globals.h>
 
 namespace normal::pushdown {
 
@@ -36,7 +34,7 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
   std::shared_ptr<Aws::S3::S3Client> s3Client;
 
   Aws::Client::ClientConfiguration config;
-  config.region = Aws::Region::US_WEST_1;
+  config.region = Aws::Region::US_EAST_2;
   config.scheme = Aws::Http::Scheme::HTTP;
   // This value has been tuned for c5a.4xlarge, c5a.8xlarge, and c5n.9xlarge, any more connections than this and aggregate
   // network performance degrades rather than remaining constant
@@ -59,9 +57,9 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
     config.writeRateLimiter = limiter;
   }
 
-  switch (normal::plan::s3ClientType) {
-    case normal::plan::S3: {
-      SPDLOG_INFO("Using S3 Client");
+  switch (S3ClientType) {
+    case S3: {
+      SPDLOG_DEBUG("Using S3 Client");
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
               ALLOCATION_TAG,
               Aws::MakeShared<Aws::Auth::DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG),
@@ -70,8 +68,8 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
               true);
       break;
     }
-    case normal::plan::Airmettle: {
-      SPDLOG_INFO("Using Airmettle Client");
+    case Airmettle: {
+      SPDLOG_DEBUG("Using Airmettle Client");
       config.endpointOverride = "54.151.121.20/s3/test";
       Aws::String accessKeyId = "test-test";
       Aws::String secretKey = "test";
@@ -85,8 +83,8 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::defaultS3Client() {
               false);
       break;
     }
-    case normal::plan::Minio: {
-      SPDLOG_INFO("Using Minio Client");
+    case Minio: {
+      SPDLOG_DEBUG("Using Minio Client");
       config.endpointOverride = "172.31.10.231:9000";
       Aws::String accessKeyId = "minioadmin";
       Aws::String secretKey = "minioadmin";

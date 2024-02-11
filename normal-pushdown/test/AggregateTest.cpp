@@ -42,7 +42,7 @@ TEST_CASE ("sum" * doctest::skip(false || SKIP_SUITE)) {
 
   auto g = OperatorGraph::make(mgr);
 
-  auto fileScan = FileScan::make("fileScan",
+  auto fileScan = file::FileScan::make("fileScan",
 								 "data/aggregate/a.csv",
 								 std::vector<std::string>{"AA"},
 								 0,

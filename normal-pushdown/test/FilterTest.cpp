@@ -38,7 +38,7 @@ TEST_CASE ("filescan-filter-collate" * doctest::skip(false || SKIP_SUITE)) {
 
   auto g = OperatorGraph::make(mgr);
 
-  auto scan = FileScan::make("fileScan", "data/filter/a.csv", std::vector<std::string>{"AA"}, 0, numBytesAFile, g->getId());
+  auto scan = file::FileScan::make("fileScan", "data/filter/a.csv", std::vector<std::string>{"AA"}, 0, numBytesAFile, g->getId());
   auto filter = Filter::make("filter", FilterPredicate::make(lt(col("AA"), num_lit<::arrow::Int64Type>(11))));
   auto collate = std::make_shared<Collate>("collate", g->getId());
 

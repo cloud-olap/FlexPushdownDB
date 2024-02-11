@@ -2,8 +2,6 @@
 
 -----------------
 
-### This repo is stale, check the [new repo](https://github.com/cloud-olap/FlexPushdownDB.git) for latest versions.
-
 A research cloud OLAP engine using hybrid caching and computation pushdown.
 
 [1] Yifei Yang, Matt Youill, Matthew Woicik, Yizhou Liu, Xiangyao Yu, Marco Serafini, Ashraf Aboulnaga, Michael Stonebraker, FlexPushdownDB: Hybrid Pushdown and Caching in a Cloud DBMS, VLDB 2021.

@@ -3,13 +3,14 @@
 //
 
 #include <normal/plan/operator_/S3SelectScanLogicalOperator.h>
+#include <normal/plan/Globals.h>
+#include <normal/pushdown/Globals.h>
 #include <normal/pushdown/s3/S3Select.h>
 #include <normal/pushdown/s3/S3Get.h>
-#include <normal/expression/gandiva/Column.h>
 #include <normal/pushdown/Util.h>
 #include <normal/pushdown/merge/Merge.h>
 #include <normal/pushdown/project/Project.h>
-#include <normal/plan/Globals.h>
+#include <normal/expression/gandiva/Column.h>
 #include <normal/cache/SegmentKey.h>
 #include <normal/connector/MiniCatalogue.h>
 

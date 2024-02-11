@@ -9,10 +9,9 @@
 #include <normal/connector/s3/S3SelectPartition.h>
 #include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/connector/s3/S3SelectCatalogueEntry.h>
-#include <normal/plan/Globals.h>
+#include <normal/pushdown/Globals.h>
 #include <normal/pushdown/s3/S3Get.h>
 
-using namespace normal::plan;
 using namespace normal::plan::operator_::mode;
 using namespace normal::cache;
 using namespace normal::pushdown;
@@ -69,8 +68,8 @@ std::string read_file(const std::string& filename) {
 }
 
 void configureS3ConnectorSinglePartition(Interpreter &i, const std::string& bucket_name, const std::string& dir_prefix) {
-  auto conn = std::make_shared<S3SelectConnector>("s3_select");
-  auto cat = std::make_shared<Catalogue>("s3_select", conn);
+  auto conn = std::make_shared<S3SelectConnector>("s3");
+  auto cat = std::make_shared<Catalogue>("s3", conn);
 
   // look up tables
   auto tableNames = defaultMiniCatalogue->tables();
@@ -94,8 +93,8 @@ void configureS3ConnectorSinglePartition(Interpreter &i, const std::string& buck
 }
 
 void configureS3ConnectorMultiPartition(Interpreter &i, const std::string& bucket_name, const std::string& dir_prefix) {
-  auto conn = std::make_shared<S3SelectConnector>("s3_select");
-  auto cat = std::make_shared<Catalogue>("s3_select", conn);
+  auto conn = std::make_shared<S3SelectConnector>("s3");
+  auto cat = std::make_shared<Catalogue>("s3", conn);
 
   // get partitionNums
   auto s3ObjectsMap = std::make_shared<std::unordered_map<std::string, std::shared_ptr<std::vector<std::string>>>>();
@@ -122,7 +121,7 @@ void configureS3ConnectorMultiPartition(Interpreter &i, const std::string& bucke
     auto objects = s3ObjectPair.second;
     s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
   }
-  auto objectNumBytes_Map = S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
+  auto objectNumBytes_Map = S3Util::listObjects(bucket_name, dir_prefix, *s3Objects, DefaultS3Client);
 
   // configure s3Connector
   for (auto const &s3ObjectPair: *s3ObjectsMap) {

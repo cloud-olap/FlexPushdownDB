@@ -2,13 +2,13 @@
 // Created by matt on 8/7/20.
 //
 
-#include "normal/pushdown/cache/CacheLoad.h"
-
+#include <normal/pushdown/Globals.h>
+#include <normal/pushdown/cache/CacheLoad.h>
 #include <normal/pushdown/cache/CacheHelper.h>
-#include <normal/core/message/TupleMessage.h>
 #include <normal/pushdown/scan/ScanMessage.h>
+
+#include <normal/core/message/TupleMessage.h>
 #include <normal/core/cache/CacheMetricsMessage.h>
-#include <normal/plan/Globals.h>
 
 #include <utility>
 
@@ -155,7 +155,7 @@ void CacheLoad::onCacheLoadResponse(const LoadResponseMessage &Message) {
     bool cachingResultNeeded;
 
     // FIXME: Airmettle doesn't support intra-partition hybrid as it doesn't preserve order
-    if (normal::plan::s3ClientType != normal::plan::Airmettle) {
+    if (S3ClientType != Airmettle) {
       /**
        * Caching result is not needed when:
        *    hitColumns + missCachingColumns don't cover all predicateColumns or

@@ -2,22 +2,22 @@
 // Created by Matt Woicik on 9/16/20.
 //
 
+#include "ExperimentUtil.h"
 #include <doctest/doctest.h>
 #include <normal/sql/Interpreter.h>
 #include <normal/ssb/TestUtil.h>
+#include <normal/pushdown/Globals.h>
 #include <normal/pushdown/collate/Collate.h>
-#include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #include <normal/pushdown/Util.h>
+#include <normal/pushdown/s3/S3Select.h>
 #include <normal/plan/mode/Modes.h>
-#include <normal/connector/s3/S3Util.h>
 #include <normal/cache/LRUCachingPolicy.h>
 #include <normal/cache/FBRCachingPolicy.h>
 #include <normal/cache/BeladyCachingPolicy.h>
-#include "ExperimentUtil.h"
-#include <normal/plan/Globals.h>
 #include <normal/cache/Globals.h>
+#include <normal/connector/s3/S3Util.h>
 #include <normal/connector/MiniCatalogue.h>
-#include <normal/pushdown/s3/S3Select.h>
+#include <normal/connector/s3/S3SelectExplicitPartitioningScheme.h>
 #define SKIP_SUITE true
 
 using namespace normal::ssb;
@@ -39,7 +39,7 @@ using namespace normal::pushdown::collate;
           scanRanges[0].first,
           scanRanges[0].second,
           normal::connector::defaultMiniCatalogue->getSchema(tableName),
-          normal::plan::DefaultS3Client,
+          DefaultS3Client,
           true,
           true,
           0);
@@ -123,7 +123,7 @@ void generateBeladyMetadata(const std::string& s3Bucket, const std::string& dir_
     auto objects = s3ObjectPair.second;
     s3Objects->insert(s3Objects->end(), objects->begin(), objects->end());
   }
-  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(s3Bucket, dir_prefix, *s3Objects, normal::plan::DefaultS3Client);
+  auto objectNumBytes_Map = normal::connector::s3::S3Util::listObjects(s3Bucket, dir_prefix, *s3Objects, DefaultS3Client);
 
   // Populate all segment data
   auto segmentInfoMetadata = std::make_shared<std::vector<std::shared_ptr<segment_info_t>>>();

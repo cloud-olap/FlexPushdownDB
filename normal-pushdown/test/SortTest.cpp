@@ -36,7 +36,7 @@ TEST_CASE ("SortTest" * doctest::skip(false || SKIP_SUITE)) {
 
   auto g = OperatorGraph::make(mgr);
 
-  auto scan = FileScan::make("fileScan", "data/filter/a.csv", std::vector<std::string>{"aa"}, 0, numBytesAFile, g->getId(), true);
+  auto scan = file::FileScan::make("fileScan", "data/filter/a.csv", std::vector<std::string>{"aa"}, 0, numBytesAFile, g->getId(), true);
   auto collate = std::make_shared<Collate>("collate", g->getId());
   std::shared_ptr<std::vector<int>> priorities = std::make_shared<std::vector<int>>(std::vector<int>{0});
   auto sort = std::make_shared<Sort>("sort", cast(col("aa"), normal::core::type::integer32Type()), priorities);

@@ -2,7 +2,14 @@
 // Created by Matt Woicik on 1/19/21.
 //
 
-#include "normal/pushdown/s3/S3Get.h"
+#include <normal/pushdown/Globals.h>
+#include <normal/pushdown/s3/S3Get.h>
+#include <normal/core/message/Message.h>                    // for Message
+#include <normal/core/cache/LoadResponseMessage.h>
+#include <normal/cache/SegmentKey.h>
+#include <normal/connector/MiniCatalogue.h>
+#include <normal/tuple/TupleSet.h>                          // for TupleSet
+#include <normal/tuple/arrow/ArrowAWSInputStream.h>
 
 #include <iostream>
 #include <utility>
@@ -21,21 +28,10 @@
 #include <aws/core/auth/AWSAuthSigner.h>                    // for AWSAuthV4...
 #include <aws/s3/model/RecordsEvent.h>                      // for RecordsEvent
 #include <aws/s3/model/GetObjectRequest.h>                  // for GetObj...
-
-
-#include "normal/core/message/Message.h"                    // for Message
-#include "normal/tuple/TupleSet.h"                          // for TupleSet
-#include <normal/core/cache/LoadResponseMessage.h>
-#include <normal/cache/SegmentKey.h>
-#include <normal/connector/MiniCatalogue.h>
-#include "normal/pushdown/Globals.h"
 #include <parquet/arrow/reader.h>
-#include <normal/tuple/arrow/ArrowAWSInputStream.h>
 
 #ifdef __AVX2__
-#include <normal/plan/Globals.h>
-#include "normal/tuple/arrow/CSVToArrowSIMDStreamParser.h"
-
+#include <normal/tuple/arrow/CSVToArrowSIMDStreamParser.h>
 #endif
 
 namespace Aws::Utils::RateLimits { class RateLimiterInterface; }
@@ -268,7 +264,7 @@ GetObjectResult S3Get::s3GetRequestOnly(const std::string &s3Object, uint64_t st
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object));
-  if (normal::plan::s3ClientType != normal::plan::Airmettle) {
+  if (S3ClientType != Airmettle) {
     std::stringstream ss;
     ss << "bytes=" << startOffset << '-' << endOffset;
     getObjectRequest.SetRange(ss.str().c_str());
@@ -474,10 +470,10 @@ std::shared_ptr<TupleSet2> S3Get::readTuples() {
 
     // Read columns from s3
 #ifdef __AVX2__
-    if (normal::plan::s3ClientType == normal::plan::S3 && parallelTuplesetCreationSupported()
+    if (S3ClientType == S3 && parallelTuplesetCreationSupported()
         && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
       readTupleSet = s3GetParallelReqs(false);
-    } else if (normal::plan::s3ClientType == normal::plan::Airmettle && parallelTuplesetCreationSupported() &&
+    } else if (S3ClientType == Airmettle && parallelTuplesetCreationSupported() &&
               normal::connector::defaultMiniCatalogue->getSchemaName() == "ssb-sf100-sortlineorder/csv_150MB_initial_format/" &&
               s3Object_.find("lineorder.tbl.") != std::string::npos) {
 //      SPDLOG_CRITICAL("HACK! {}", s3Object_);

@@ -252,6 +252,10 @@ CachingPolicyId WFBRCachingPolicy::id() {
   return WFBR;
 }
 
+std::string WFBRCachingPolicy::toString() {
+  return "W-LFU";
+}
+
 void WFBRCachingPolicy::onNewQuery() {
     freeSizeOTC_ = freeSize_;
     keysInCacheOTC_.assign(keysInCache_.begin(), keysInCache_.end());

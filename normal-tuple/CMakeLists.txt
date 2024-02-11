@@ -1,7 +1,5 @@
 project(normal-tuple VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
-# need to add libraries on mac
-INCLUDE_DIRECTORIES(/usr/local/include)
 
 #-------------------------------------------------------------------------------------------------------------
 # Target
@@ -52,6 +50,7 @@ add_library(normal-tuple STATIC
 
 target_include_directories(normal-tuple PUBLIC include)
 
+
 target_link_libraries(normal-tuple PRIVATE spdlog::spdlog)
 target_link_libraries(normal-tuple PRIVATE fmt::fmt)
 target_link_libraries(normal-tuple PRIVATE LLVM-filesystem)
@@ -59,9 +58,17 @@ target_link_libraries(normal-tuple PUBLIC expected)
 target_link_libraries(normal-tuple PUBLIC arrow_static)
 target_link_libraries(normal-tuple PUBLIC parquet_static)
 target_link_libraries(normal-tuple PUBLIC deflate)
-# Ideally use cloudflare instead of z-ng, however don't have CMake working yet
-# Follow download instructions here: https://github.com/zlib-ng/zlib-ng to get linking working
-target_link_libraries(normal-tuple PUBLIC z-ng)
+
+
+## Ideally use cloudflare instead of z-ng, however don't have CMake working yet
+## Follow download instructions here: https://github.com/zlib-ng/zlib-ng to get linking working
+#target_link_libraries(normal-tuple PUBLIC z-ng)
+## need to include zlib-ng library on mac
+#if (${APPLE})
+#  target_include_directories(normal-tuple PUBLIC /usr/local/include)
+#endif()
+target_link_libraries(normal-tuple PUBLIC zlibstatic)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Test
