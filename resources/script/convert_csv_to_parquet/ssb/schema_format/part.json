@@ -1,0 +1,44 @@
+{
+  "name": "part",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "p_partkey",
+      "type": "int64"
+    },
+    {
+      "name": "p_name",
+      "type": "string"
+    },
+    {
+      "name": "p_mfgr",
+      "type": "string"
+    },
+    {
+      "name": "p_category",
+      "type": "string"
+    },
+    {
+      "name": "p_brand1",
+      "type": "string"
+    },
+    {
+      "name": "p_color",
+      "type": "string"
+    },
+    {
+      "name": "p_type",
+      "type": "string"
+    },
+    {
+      "name": "p_size",
+      "type": "int64"
+    },
+    {
+      "name": "p_container",
+      "type": "string"
+    }
+  ]
+}

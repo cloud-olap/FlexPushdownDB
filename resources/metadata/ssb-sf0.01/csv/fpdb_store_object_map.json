@@ -1,0 +1,30 @@
+{
+  "schemaName": "ssb-sf0.01/csv/",
+  "numNodes": 1,
+  "objectMap": [
+    {
+      "object": "date.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "supplier.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "part.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "customer.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "lineorder_sharded/lineorder.tbl.0",
+      "nodeId": 0
+    },
+    {
+      "object": "lineorder_sharded/lineorder.tbl.1",
+      "nodeId": 0
+    }
+  ]
+}

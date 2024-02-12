@@ -1,0 +1,37 @@
+{
+  "schemaName": "tpch-sf0.01-1-node-hash-part/parquet/",
+  "hashKeys": [
+    {
+      "table": "nation",
+      "key": "n_regionkey"
+    },
+    {
+      "table": "region",
+      "key": "r_regionkey"
+    },
+    {
+      "table": "part",
+      "key": "p_partkey"
+    },
+    {
+      "table": "supplier",
+      "key": "s_nationkey"
+    },
+    {
+      "table": "partsupp",
+      "key": "ps_partkey"
+    },
+    {
+      "table": "customer",
+      "key": "c_nationkey"
+    },
+    {
+      "table": "orders",
+      "key": "o_orderkey"
+    },
+    {
+      "table": "lineitem",
+      "key": "l_orderkey"
+    }
+  ]
+}

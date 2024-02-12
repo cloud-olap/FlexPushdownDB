@@ -1,5 +1,0 @@
-===============
-Normal Pushdown
-===============
-
-DBMS operators

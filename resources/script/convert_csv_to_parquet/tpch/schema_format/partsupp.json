@@ -1,0 +1,28 @@
+{
+  "name": "partsupp",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "ps_partkey",
+      "type": "int64"
+    },
+    {
+      "name": "ps_suppkey",
+      "type": "int64"
+    },
+    {
+      "name": "ps_availqty",
+      "type": "int64"
+    },
+    {
+      "name": "ps_supplycost",
+      "type": "double"
+    },
+    {
+      "name": "ps_comment",
+      "type": "string"
+    }
+  ]
+}

@@ -50,11 +50,11 @@ target_include_directories(primesieve_shared INTERFACE "${PRIMESIEVE_INCLUDE_DIR
 target_link_libraries(primesieve_shared INTERFACE pthread)
 add_dependencies(primesieve_shared ${PRIMESIEVE_BASE})
 
-add_library(primesieve::libprimesieve-static STATIC IMPORTED)
-set_target_properties(primesieve::libprimesieve-static PROPERTIES IMPORTED_LOCATION "${PRIMESIEVE_STATIC_LIB}")
-target_include_directories(primesieve::libprimesieve-static INTERFACE "${PRIMESIEVE_INCLUDE_DIR}")
-target_link_libraries(primesieve::libprimesieve-static INTERFACE pthread)
-add_dependencies(primesieve::libprimesieve-static ${PRIMESIEVE_BASE})
+add_library(primesieve_static STATIC IMPORTED)
+set_target_properties(primesieve_static PROPERTIES IMPORTED_LOCATION "${PRIMESIEVE_STATIC_LIB}")
+target_include_directories(primesieve_static INTERFACE "${PRIMESIEVE_INCLUDE_DIR}")
+target_link_libraries(primesieve_static INTERFACE pthread)
+add_dependencies(primesieve_static ${PRIMESIEVE_BASE})
 
 
-#showTargetProps(primesieve::libprimesieve-static)
+#showTargetProps(primesieve_static)

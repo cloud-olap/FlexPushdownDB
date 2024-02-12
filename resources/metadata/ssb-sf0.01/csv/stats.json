@@ -1,0 +1,103 @@
+{
+  "schemaName": "ssb-sf0.01/csv/",
+  "tables": [
+    {
+      "name": "date",
+      "stats": {
+        "rowCount": 25,
+        "apxColumnLength": {
+          "d_datekey": 4,
+          "d_date": 18,
+          "d_dayofweek": 8,
+          "d_month": 9,
+          "d_year": 4,
+          "d_yearmonthnum": 4,
+          "d_yearmonth": 7,
+          "d_daynuminweek": 4,
+          "d_daynuminmonth": 4,
+          "d_daynuminyear": 4,
+          "d_monthnuminyear": 4,
+          "d_weeknuminyear": 4,
+          "d_sellingseason": 12,
+          "d_lastdayinweekfl": 1,
+          "d_lastdayinmonthfl": 1,
+          "d_holidayfl": 1,
+          "d_weekdayfl": 1
+        }
+      }
+    },
+    {
+      "name": "supplier",
+      "stats": {
+        "rowCount": 20,
+        "apxColumnLength": {
+          "s_suppkey": 4,
+          "s_name": 25,
+          "s_address": 25,
+          "s_city": 10,
+          "s_nation": 15,
+          "s_region": 12,
+          "s_phone": 15
+        }
+      }
+    },
+    {
+      "name": "customer",
+      "stats": {
+        "rowCount": 300,
+        "apxColumnLength": {
+          "c_custkey": 4,
+          "c_name": 25,
+          "c_address": 25,
+          "c_city": 10,
+          "c_nation": 15,
+          "c_region": 12,
+          "c_phone": 15,
+          "c_mktsegment": 10
+        }
+      }
+    },
+    {
+      "name": "part",
+      "stats": {
+        "rowCount": 2000,
+        "apxColumnLength": {
+          "p_partkey": 4,
+          "p_name": 22,
+          "p_mfgr": 6,
+          "p_category": 7,
+          "p_brand1": 9,
+          "p_color": 11,
+          "p_type": 25,
+          "p_size": 4,
+          "p_container": 10
+        }
+      }
+    },
+    {
+      "name": "lineorder",
+      "stats": {
+        "rowCount": 60176,
+        "apxColumnLength": {
+          "lo_orderkey": 4,
+          "lo_linenumber": 4,
+          "lo_custkey": 4,
+          "lo_partkey": 4,
+          "lo_suppkey": 4,
+          "lo_orderdate": 4,
+          "lo_orderpriority": 15,
+          "lo_shippriority": 1,
+          "lo_quantity": 4,
+          "lo_extendedprice": 4,
+          "lo_ordtotalprice": 4,
+          "lo_discount": 4,
+          "lo_revenue": 8,
+          "lo_supplycost": 8,
+          "lo_tax": 4,
+          "lo_commitdate": 4,
+          "lo_shipmode": 10
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schemaName": "tpch-sf0.01-1-node-hash-part/parquet/",
+  "numNodes": 1,
+  "objectMap": [
+    {
+      "object": "nation.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "region.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "part.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "supplier.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "customer.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "orders.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.1",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.2",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.parquet.3",
+      "nodeId": 0
+    }
+  ]
+}

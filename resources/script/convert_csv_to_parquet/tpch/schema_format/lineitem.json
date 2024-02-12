@@ -1,0 +1,72 @@
+{
+  "name": "lineitem",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "l_orderkey",
+      "type": "int64"
+    },
+    {
+      "name": "l_partkey",
+      "type": "int64"
+    },
+    {
+      "name": "l_suppkey",
+      "type": "int64"
+    },
+    {
+      "name": "l_linenumber",
+      "type": "int64"
+    },
+    {
+      "name": "l_quantity",
+      "type": "double"
+    },
+    {
+      "name": "l_extendedprice",
+      "type": "double"
+    },
+    {
+      "name": "l_discount",
+      "type": "double"
+    },
+    {
+      "name": "l_tax",
+      "type": "double"
+    },
+    {
+      "name": "l_returnflag",
+      "type": "string"
+    },
+    {
+      "name": "l_linestatus",
+      "type": "string"
+    },
+    {
+      "name": "l_shipdate",
+      "type": "date"
+    },
+    {
+      "name": "l_commitdate",
+      "type": "date"
+    },
+    {
+      "name": "l_receiptdate",
+      "type": "date"
+    },
+    {
+      "name": "l_shipinstruct",
+      "type": "string"
+    },
+    {
+      "name": "l_shipmode",
+      "type": "string"
+    },
+    {
+      "name": "l_comment",
+      "type": "string"
+    }
+  ]
+}

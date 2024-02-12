@@ -1,0 +1,25 @@
+{
+  "schemaName": "ssb-sf100-4-node-hash-part/parquet/",
+  "hashKeys": [
+    {
+      "table": "date",
+      "key": "d_datekey"
+    },
+    {
+      "table": "supplier",
+      "key": "s_suppkey"
+    },
+    {
+      "table": "customer",
+      "key": "c_custkey"
+    },
+    {
+      "table": "part",
+      "key": "p_partkey"
+    },
+    {
+      "table": "lineorder",
+      "key": "lo_suppkey"
+    }
+  ]
+}

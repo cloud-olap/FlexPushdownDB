@@ -1,0 +1,17 @@
+//
+// Created by Yifei Yang on 1/17/22.
+//
+
+#ifndef FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_SORTORDER_H
+#define FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_SORTORDER_H
+
+namespace fpdb::plan::prephysical {
+
+enum SortOrder {
+  ASCENDING,
+  DESCENDING
+};
+
+}
+
+#endif //FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_SORTORDER_H

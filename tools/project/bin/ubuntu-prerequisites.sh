@@ -17,9 +17,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     apt-get update
 
     # Install development requirements
-    apt-get install \
+    apt-get install -y \
       build-essential \
-      clang-10 \
+      clang-12 \
       cmake \
       ninja-build \
       libcurl4-openssl-dev \
@@ -32,8 +32,12 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
       flex \
       libtool \
       tcl \
-      libdeflate-dev
+      libdeflate-dev \
+      openjdk-11-jre-headless \
+      maven
 
   fi
 fi
 
+sudo ln -s /usr/bin/clang-12 /usr/bin/clang
+sudo ln -s /usr/bin/clang++-12 /usr/bin/clang++

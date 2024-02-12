@@ -1,0 +1,21 @@
+//
+// Created by Yifei Yang on 1/15/22.
+//
+
+#ifndef FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_AGGREGATEFUNCTIONTYPE_H
+#define FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_AGGREGATEFUNCTIONTYPE_H
+
+namespace fpdb::executor::physical::aggregate {
+
+enum AggregateFunctionType {
+  SUM,
+  COUNT,
+  MIN_MAX,
+  AVG,
+  AVG_REDUCE
+};
+
+}
+
+
+#endif //FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_AGGREGATEFUNCTIONTYPE_H

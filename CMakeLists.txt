@@ -1,20 +1,30 @@
 cmake_minimum_required(VERSION 3.15)
-project("normal" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
+project("fpdb" VERSION "${PROJECT_VERSION}" LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_LIST_DIR}/cmake")
+
+include(ProcessorCount)
+processorcount(NPROC)
 
 include(CMakeUtils)
 
 setDefaults()
 
-# Gandiva requires LLVM 7 and anything linking to it must use the same version
-#if ((NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR (NOT CMAKE_CXX_COMPILER_VERSION MATCHES "7.*"))
-#    message(FATAL_ERROR "Illegal compiler - '${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}'.
-#     Gandiva requires Clang version 7")
-#endif()
-
-
+set(FPDB_LLVM_VERSIONS "13.0" "12.0" "11.1" "11.0" "10" CACHE STRING "")
 include(Configure_LLVM)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Set openssl path for mac os
+#-----------------------------------------------------------------------------------------------------------------------
+
+if (${APPLE})
+  set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+  # This is a bug in CMake that causes it to prefer the system version over
+  # the one in the specified ROOT folder.
+  set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/lib/libcrypto.dylib CACHE FILEPATH "" FORCE)
+  set(OPENSSL_SSL_LIBRARY ${OPENSSL_ROOT_DIR}/lib/libssl.dylib CACHE FILEPATH "" FORCE)
+endif()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -39,29 +49,47 @@ include(Dependency_SQLite3)
 include(External_Backward)
 include(External_CallableTraits)
 include(External_zlib_ng)
+include(External_boost)
+include(External_thrift)
+include(External_nlohmannjson)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Modules
 #-----------------------------------------------------------------------------------------------------------------------
 
-add_subdirectory(normal-util)
-add_subdirectory(normal-core)
-add_subdirectory(normal-tuple)
-add_subdirectory(normal-connector)
-add_subdirectory(normal-expression)
-add_subdirectory(normal-expression-gandiva)
-add_subdirectory(ATTIC/normal-expression-simple)
-add_subdirectory(ATTIC/normal-expression-benchmark)
-add_subdirectory(normal-plan)
-add_subdirectory(normal-pushdown)
-add_subdirectory(normal-sql)
-add_subdirectory(ATTIC/normal-test)
-add_subdirectory(normal-ssb)
-add_subdirectory(normal-cache)
-add_subdirectory(normal-frontend)
+add_subdirectory(fpdb-util)
+add_subdirectory(fpdb-caf)
+add_subdirectory(fpdb-tuple)
+add_subdirectory(fpdb-aws)
+add_subdirectory(fpdb-catalogue)
+add_subdirectory(fpdb-expression)
+add_subdirectory(fpdb-expression-gandiva)
+add_subdirectory(fpdb-calcite/cpp)
+add_subdirectory(fpdb-plan)
+add_subdirectory(fpdb-cache)
+add_subdirectory(fpdb-executor)
+add_subdirectory(fpdb-main)
+add_subdirectory(fpdb-store-client)
+add_subdirectory(fpdb-store-server)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Resource files
+# Resources
 #-----------------------------------------------------------------------------------------------------------------------
 
-file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_custom_target(resources-config
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/config
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/config)
+
+add_custom_target(resources-metadata
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/metadata
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/metadata)
+
+add_custom_target(resources-query
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/query
+        ${CMAKE_CURRENT_BINARY_DIR}/resources/query)
+
+add_custom_target(resources DEPENDS resources-config resources-metadata resources-query)

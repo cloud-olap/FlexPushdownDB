@@ -1,0 +1,42 @@
+{
+  "schemaName": "tpch-sf0.01/csv/",
+  "numNodes": 1,
+  "objectMap": [
+    {
+      "object": "nation.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "region.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "part.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "supplier.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "customer.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "orders.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.0",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.1",
+      "nodeId": 0
+    }
+  ]
+}

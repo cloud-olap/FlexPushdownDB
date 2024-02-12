@@ -1,0 +1,30 @@
+{
+  "schemaName": "ssb-sf0.01/parquet/",
+  "numNodes": 1,
+  "objectMap": [
+    {
+      "object": "date.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "supplier.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "part.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "customer.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "lineorder_sharded/lineorder.parquet.0",
+      "nodeId": 0
+    },
+    {
+      "object": "lineorder_sharded/lineorder.parquet.1",
+      "nodeId": 0
+    }
+  ]
+}

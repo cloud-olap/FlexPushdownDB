@@ -1,0 +1,31 @@
+# nlohmann json
+
+set(NLOHMANNJSON_VERSION "v3.10.2")
+set(NLOHMANNJSON_GIT_URL "https://github.com/nlohmann/json.git")
+
+include(ExternalProject)
+find_package(Git REQUIRED)
+
+set(NLOHMANNJSON_BASE nlohmannjson_ep)
+set(NLOHMANNJSON_PREFIX ${DEPS_PREFIX}/${NLOHMANNJSON_BASE})
+set(NLOHMANNJSON_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${NLOHMANNJSON_PREFIX})
+set(NLOHMANNJSON_INSTALL_DIR ${NLOHMANNJSON_BASE_DIR}/install)
+set(NLOHMANNJSON_INCLUDE_DIR ${NLOHMANNJSON_INSTALL_DIR}/include)
+
+ExternalProject_Add(${NLOHMANNJSON_BASE}
+        PREFIX ${NLOHMANNJSON_BASE_DIR}
+        GIT_REPOSITORY ${NLOHMANNJSON_GIT_URL}
+        GIT_TAG ${NLOHMANNJSON_VERSION}
+        GIT_PROGRESS ON
+        GIT_SHALLOW ON
+        UPDATE_DISCONNECTED TRUE
+        INSTALL_DIR ${NLOHMANNJSON_INSTALL_DIR}
+        CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${NLOHMANNJSON_INSTALL_DIR}
+        )
+
+file(MAKE_DIRECTORY ${NLOHMANNJSON_INCLUDE_DIR}) # Include directory needs to exist to run configure step
+
+add_library(nlohmann_json INTERFACE IMPORTED)
+target_include_directories(nlohmann_json INTERFACE ${NLOHMANNJSON_INCLUDE_DIR})
+add_dependencies(nlohmann_json ${NLOHMANNJSON_BASE})

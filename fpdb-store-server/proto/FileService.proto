@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package fpdb.store.server.file;
+
+// Message for read position and length
+message ReadOption {
+  enum ReadType {
+    UNKNOWN = 0;
+    FULL = 1;
+    RANGE = 2;
+  }
+  ReadType type = 1;
+  int64 position = 2;
+  int64 length = 3;
+}
+
+// Message for file read request
+message ReadFileRequest {
+  string bucket = 1;
+  string object = 2;
+  ReadOption option = 3;
+}
+
+// Message for file read response
+message ReadFileResponse {
+  bytes data = 1;
+  int64 bytes_read = 2;
+}
+
+// Message for get file size request
+message GetFileSizeRequest {
+  string bucket = 1;
+  string object = 2;
+}
+
+// Message for get file size response
+message GetFileSizeResponse {
+  int64 size = 1;
+}
+
+// Interface exported by the server.
+service FileService {
+  // Read file
+  rpc ReadFile(ReadFileRequest) returns (stream ReadFileResponse);
+
+  // Get file size
+  rpc GetFileSize(GetFileSizeRequest) returns (GetFileSizeResponse);
+}

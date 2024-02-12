@@ -1,0 +1,76 @@
+{
+  "name": "date",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "d_datekey",
+      "type": "int64"
+    },
+    {
+      "name": "d_date",
+      "type": "string"
+    },
+    {
+      "name": "d_dayofweek",
+      "type": "string"
+    },
+    {
+      "name": "d_month",
+      "type": "string"
+    },
+    {
+      "name": "d_year",
+      "type": "int64"
+    },
+    {
+      "name": "d_yearmonthnum",
+      "type": "int64"
+    },
+    {
+      "name": "d_yearmonth",
+      "type": "string"
+    },
+    {
+      "name": "d_daynuminweek",
+      "type": "int64"
+    },
+    {
+      "name": "d_daynuminmonth",
+      "type": "int64"
+    },
+    {
+      "name": "d_daynuminyear",
+      "type": "int64"
+    },
+    {
+      "name": "d_monthnuminyear",
+      "type": "int64"
+    },
+    {
+      "name": "d_weeknuminyear",
+      "type": "int64"
+    },
+    {
+      "name": "d_sellingseason",
+      "type": "string"
+    },
+    {
+      "name": "d_lastdayinweekfl",
+      "type": "boolean"
+    },
+    {
+      "name": "d_lastdayinmonthfl",
+      "type": "boolean"
+    },
+    {
+      "name": "d_holidayfl",
+      "type": "boolean"
+    },
+    {
+      "name": "d_weekdayfl",
+      "type": "boolean"
+    }
+  ]
+}

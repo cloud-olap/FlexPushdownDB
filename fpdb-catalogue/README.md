@@ -1,0 +1,3 @@
+## FPDB Catalogue
+
+Interfaces for accessing catalogue information like data source, data format, schema, partition, zonemap...

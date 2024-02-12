@@ -1,5 +1,0 @@
-=============
-Normal Cache
-=============
-
-Caching routines

@@ -1,0 +1,414 @@
+{
+  "schemaName": "tpch-sf10/csv/",
+  "numNodes": 2,
+  "objectMap": [
+    {
+      "object": "nation.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "region.tbl",
+      "nodeId": 1
+    },
+    {
+      "object": "part_sharded/part.tbl.0",
+      "nodeId": 0
+    },
+    {
+      "object": "part_sharded/part.tbl.1",
+      "nodeId": 1
+    },
+    {
+      "object": "supplier.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.0",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.1",
+      "nodeId": 1
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.2",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.3",
+      "nodeId": 1
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.4",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.5",
+      "nodeId": 1
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.6",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.7",
+      "nodeId": 1
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.8",
+      "nodeId": 0
+    },
+    {
+      "object": "partsupp_sharded/partsupp.tbl.9",
+      "nodeId": 1
+    },
+    {
+      "object": "customer_sharded/customer.tbl.0",
+      "nodeId": 0
+    },
+    {
+      "object": "customer_sharded/customer.tbl.1",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.0",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.tbl.1",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.2",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.tbl.3",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.4",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.tbl.5",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.6",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.tbl.7",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.8",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.tbl.9",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.10",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.tbl.11",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.12",
+      "nodeId": 0
+    },
+    {
+      "object": "orders_sharded/orders.tbl.13",
+      "nodeId": 1
+    },
+    {
+      "object": "orders_sharded/orders.tbl.14",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.0",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.1",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.2",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.3",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.4",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.5",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.6",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.7",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.8",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.9",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.10",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.11",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.12",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.13",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.14",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.15",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.16",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.17",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.18",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.19",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.20",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.21",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.22",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.23",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.24",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.25",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.26",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.27",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.28",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.29",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.30",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.31",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.32",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.33",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.34",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.35",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.36",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.37",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.38",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.39",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.40",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.41",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.42",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.43",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.44",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.45",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.46",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.47",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.48",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.49",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.50",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.51",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.52",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.53",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.54",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.55",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.56",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.57",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.58",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.59",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.60",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.61",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.62",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.63",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.64",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.65",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.66",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.67",
+      "nodeId": 1
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.68",
+      "nodeId": 0
+    },
+    {
+      "object": "lineitem_sharded/lineitem.tbl.69",
+      "nodeId": 1
+    }
+  ]
+}

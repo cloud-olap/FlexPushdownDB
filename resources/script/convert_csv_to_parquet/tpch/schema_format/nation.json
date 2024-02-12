@@ -1,0 +1,24 @@
+{
+  "name": "nation",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "n_nationkey",
+      "type": "int64"
+    },
+    {
+      "name": "n_name",
+      "type": "string"
+    },
+    {
+      "name": "n_regionkey",
+      "type": "int64"
+    },
+    {
+      "name": "n_comment",
+      "type": "string"
+    }
+  ]
+}

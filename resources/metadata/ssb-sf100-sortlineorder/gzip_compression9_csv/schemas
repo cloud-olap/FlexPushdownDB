@@ -1,5 +1,0 @@
-supplier:s_suppkey/int32,s_name/utf8,s_address/utf8,s_city/utf8,s_nation/utf8,s_region/utf8,s_phone/utf8
-date:d_datekey/int32,d_date/utf8,d_dayofweek/utf8,d_month/utf8,d_year/int32,d_yearmonthnum/int32,d_yearmonth/utf8,d_daynuminweek/int32,d_daynuminmonth/int32,d_daynuminyear/int32,d_monthnuminyear/int32,d_weeknuminyear/int32,d_sellingseason/utf8,d_lastdayinweekfl/boolean,d_lastdayinmonthfl/boolean,d_holidayfl/boolean,d_weekdayfl/boolean
-customer:c_custkey/int32,c_name/utf8,c_address/utf8,c_city/utf8,c_nation/utf8,c_region/utf8,c_phone/utf8,c_mktsegment/utf8
-part:p_partkey/int32,p_name/utf8,p_mfgr/utf8,p_category/utf8,p_brand1/utf8,p_color/utf8,p_type/utf8,p_size/int32,p_container/utf8
-lineorder:lo_orderkey/int32,lo_linenumber/int32,lo_custkey/int32,lo_partkey/int32,lo_suppkey/int32,lo_orderdate/int32,lo_orderpriority/utf8,lo_shippriority/int32,lo_quantity/int32,lo_extendedprice/int32,lo_ordtotalprice/int32,lo_discount/int32,lo_revenue/int64,lo_supplycost/int64,lo_tax/int32,lo_commitdate/int32,lo_shipmode/utf8

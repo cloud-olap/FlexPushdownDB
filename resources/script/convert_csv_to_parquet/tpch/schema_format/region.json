@@ -1,0 +1,20 @@
+{
+  "name": "region",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "r_regionkey",
+      "type": "int64"
+    },
+    {
+      "name": "r_name",
+      "type": "string"
+    },
+    {
+      "name": "r_comment",
+      "type": "string"
+    }
+  ]
+}

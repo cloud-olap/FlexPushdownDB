@@ -1,5 +1,0 @@
-===========
-Normal Plan
-===========
-
-Query planner

@@ -1,0 +1,16 @@
+//
+// Created by matt on 29/4/20.
+//
+
+#ifndef FPDB_FPDB_PUSHDOWN_BENCHMARK_GLOBALS_H
+#define FPDB_FPDB_PUSHDOWN_BENCHMARK_GLOBALS_H
+
+#define LOG_LEVEL SPDLOG_LEVEL_DEBUG
+
+#define SPDLOG_ACTIVE_LEVEL LOG_LEVEL
+#include "spdlog/spdlog.h"
+
+namespace fpdb::executor::bench {
+}
+
+#endif //FPDB_FPDB_PUSHDOWN_BENCHMARK_GLOBALS_H

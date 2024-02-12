@@ -34,6 +34,4 @@ file(MAKE_DIRECTORY ${BACKWARD_INCLUDE_DIR}) # Include directory needs to exist 
 
 add_library(Backward::Backward INTERFACE IMPORTED)
 target_include_directories(Backward::Backward INTERFACE ${BACKWARD_INCLUDE_DIR})
-target_link_libraries(Backward::Backward INTERFACE bfd)
-target_link_libraries(Backward::Backward INTERFACE dl)
 add_dependencies(Backward::Backward ${BACKWARD_BASE})
