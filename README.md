@@ -4,7 +4,7 @@
 
 A research cloud OLAP engine using hybrid caching and computation pushdown.
 
-[1] Yifei Yang, Matt Youill, Matthew Woicik, Yizhou Liu, Xiangyao Yu, Marco Serafini, Ashraf Aboulnaga, Michael Stonebraker, FlexPushdownDB: Hybrid Pushdown and Caching in a Cloud DBMS, VLDB 2021.
+[1] Yifei Yang, Matt Youill, Matthew Woicik, Yizhou Liu, Xiangyao Yu, Marco Serafini, Ashraf Aboulnaga, Michael Stonebraker, [FlexPushdownDB: Hybrid Pushdown and Caching in a Cloud DBMS](https://dl.acm.org/doi/abs/10.14778/3476249.3476265), VLDB 2021.
 
 ## Dependencies
 
