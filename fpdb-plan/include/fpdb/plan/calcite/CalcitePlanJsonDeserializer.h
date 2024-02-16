@@ -5,6 +5,7 @@
 #ifndef FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_CALCITEPLANJSONDESERIALIZER_H
 #define FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_CALCITEPLANJSONDESERIALIZER_H
 
+#include <optional>
 #include <fpdb/plan/prephysical/PrePhysicalPlan.h>
 #include <fpdb/plan/prephysical/PrePhysicalOp.h>
 #include <fpdb/plan/prephysical/SortPrePOp.h>

@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 2/26/22.
 //
 
+#include <optional>
 #include <fpdb/plan/Globals.h>
 #include <fpdb/plan/prephysical/separable/SeparablePrePOpTransformer.h>
 #include <fpdb/plan/prephysical/HashJoinPrePOp.h>

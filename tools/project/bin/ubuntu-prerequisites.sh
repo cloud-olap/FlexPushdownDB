@@ -19,7 +19,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # Install development requirements
     apt-get install -y \
       build-essential \
-      llvm-14 \
+      llvm-13 \
       clang-14 \
       cmake \
       ninja-build \

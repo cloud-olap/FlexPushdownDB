@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 9/28/22.
 //
 
+#include <mutex>
 #include <fpdb/executor/cache/TableCache.h>
 #include <fmt/format.h>
 

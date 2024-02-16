@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 9/14/22.
 //
 
+#include <mutex>
 #include <fpdb/store/server/flight/BloomFilterCache.hpp>
 #include <fmt/format.h>
 
