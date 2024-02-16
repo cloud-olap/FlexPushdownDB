@@ -1,7 +1,7 @@
 //
 // Created by Yifei Yang on 11/1/21.
 //
-
+#include <optional>
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/plan/prephysical/JoinType.h>
 #include <fpdb/plan/Util.h>

@@ -2,6 +2,7 @@
 // Created by matt on 6/5/20.
 //
 
+#include <optional>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/executor/physical/Globals.h>

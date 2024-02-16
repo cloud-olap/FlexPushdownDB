@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 2/22/22.
 //
 
+#include <string>
 #include <fpdb/expression/gandiva/DateIntervalType.h>
 #include <fmt/format.h>
 

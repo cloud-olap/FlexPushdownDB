@@ -5,6 +5,7 @@
 #ifndef FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_FLIGHTHANDLER_HPP
 #define FPDB_FPDB_STORE_SERVER_INCLUDE_FPDB_STORE_SERVER_FLIGHT_FLIGHTHANDLER_HPP
 
+#include <optional>
 #include <arrow/api.h>
 #include <arrow/flight/api.h>
 #include <tl/expected.hpp>
