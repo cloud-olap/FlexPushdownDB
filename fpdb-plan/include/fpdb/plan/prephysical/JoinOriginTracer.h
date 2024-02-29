@@ -5,6 +5,7 @@
 #ifndef FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_JOINORIGINTRACER_H
 #define FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_PREPHYSICAL_JOINORIGINTRACER_H
 
+#include <optional>
 #include <fpdb/plan/prephysical/PrePhysicalPlan.h>
 #include <fpdb/plan/prephysical/FilterableScanPrePOp.h>
 #include <fpdb/plan/prephysical/AggregatePrePOp.h>

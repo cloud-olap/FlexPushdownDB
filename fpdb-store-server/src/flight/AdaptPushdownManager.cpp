@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 10/31/22.
 //
 
+#include <optional>
 #include "fpdb/store/server/flight/AdaptPushdownManager.hpp"
 #include "fpdb/store/server/flight/Util.hpp"
 #include "fpdb/executor/physical/Globals.h"

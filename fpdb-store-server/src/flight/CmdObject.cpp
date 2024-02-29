@@ -2,6 +2,7 @@
 // Created by matt on 4/2/22.
 //
 
+#include <optional>
 #include "fpdb/store/server/flight/CmdObject.hpp"
 #include "fpdb/store/server/flight/SelectObjectContentCmd.hpp"
 #include "fpdb/store/server/flight/PutBitmapCmd.hpp"

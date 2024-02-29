@@ -2,6 +2,7 @@
 // Created by Yifei Yang on 3/16/22.
 //
 
+#include <optional>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateArrowKernel.h>
