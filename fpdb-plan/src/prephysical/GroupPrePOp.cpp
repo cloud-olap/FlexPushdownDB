@@ -41,4 +41,19 @@ const vector<shared_ptr<AggregatePrePFunction>> &GroupPrePOp::getFunctions() con
   return functions_;
 }
 
+bool GroupPrePOp::equalTo(const std::shared_ptr<PrePhysicalOp> &other) const {
+  // self
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<GroupPrePOp>(other);
+  if (!(groupColumnNames_ == typedOther->groupColumnNames_ &&
+       aggOutputColumnNames_ == typedOther->aggOutputColumnNames_ &&
+       AggregatePrePFunction::equals(functions_, typedOther->functions_))) {
+    return false;
+  }
+  // producers
+  return equals(producers_, typedOther->producers_);
+}
+
 }

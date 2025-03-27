@@ -1,0 +1,20 @@
+{
+  "name": "movie_keyword",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "keyword_id",
+      "type": "int64"
+    }
+  ]
+}

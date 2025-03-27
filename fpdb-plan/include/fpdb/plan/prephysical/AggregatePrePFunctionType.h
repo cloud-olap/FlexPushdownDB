@@ -12,7 +12,10 @@ enum AggregatePrePFunctionType {
   COUNT,
   MAX,
   MIN,
-  AVG
+  AVG,
+  ONE,
+  STDDEV_SAMP,
+  STDDEV_POP
 };
 
 }

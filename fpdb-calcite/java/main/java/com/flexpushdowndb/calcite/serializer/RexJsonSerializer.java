@@ -51,7 +51,8 @@ public class RexJsonSerializer {
           case DIVIDE:
           case LIKE:
           case EXTRACT:
-          case IS_NULL: {
+          case IS_NULL:
+          case IS_NOT_NULL: {
             JSONObject jo = new JSONObject();
             // op
             jo.put("op", call.getKind());
@@ -103,12 +104,17 @@ public class RexJsonSerializer {
             RexNode orNode = rexBuilder.makeCall(SqlStdOperatorTable.OR, isNull, nodeIfNotNull);
             return serialize(orNode, fieldNames, rexBuilder);
           }
-          case OTHER_FUNCTION: {
+          case OTHER_FUNCTION:
+          case OTHER: {
             return visitOtherFunction(call, fieldNames);
           }
           case CAST: {
             RexNode operand = call.getOperands().get(0);
             RelDataType type = call.getType();
+            // sometimes it produces bad cast to the same type, e.g. not nullable -> nullable
+            if (type.getSqlTypeName().equals(operand.getType().getSqlTypeName())) {
+              return serialize(operand, fieldNames, rexBuilder);
+            }
             JSONObject jo = new JSONObject();
             jo.put("op", call.op.getName());
             jo.put("operand", serialize(operand, fieldNames, rexBuilder));
@@ -252,7 +258,8 @@ public class RexJsonSerializer {
 
       private JSONObject visitOtherFunction(RexCall call, List<String> fieldNames) {
         switch (call.op.getName()) {
-          case "SUBSTRING": {
+          case "SUBSTRING":
+          case "||": {
             JSONObject jo = new JSONObject();
             // op
             jo.put("op", call.op.getName());

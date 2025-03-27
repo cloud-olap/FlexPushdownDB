@@ -1,0 +1,6 @@
+------------------------------------------------------------------------------------------------------------------------
+| c_customer_id| c_salutation| c_first_name| c_last_name| c_preferred_cust_flag| c_birth_day| c_birth_month| c_birth_year| c_birth_country| c_login| c_email_address| c_last_review_date_sk| ctr_total_return
+| string | string | string | string | string | int64  | int64  | int64  | string | string | string | int64  | double 
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+13 cols x 0 rows

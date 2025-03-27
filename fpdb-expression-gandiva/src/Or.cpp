@@ -91,6 +91,14 @@ shared_ptr<Expression> fpdb::expression::gandiva::or_(const shared_ptr<Expressio
   return make_shared<Or>(exprs);
 }
 
+bool Or::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<Or>(other);
+  return equals(exprs_, typedOther->exprs_);
+}
+
 shared_ptr<Expression>
 fpdb::expression::gandiva::or_(const vector<shared_ptr<Expression>> &exprs) {
   return make_shared<Or>(exprs);

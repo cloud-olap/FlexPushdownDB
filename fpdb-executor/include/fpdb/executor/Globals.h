@@ -5,12 +5,18 @@
 #ifndef FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_GLOBALS_H
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_GLOBALS_H
 
+#include <mutex>
+
 namespace fpdb::executor {
 
-/**
- * Clear global states
- */
+inline std::mutex ConcurrentOutputMutex;    // used for output of concurrent runs
+inline constexpr bool PrepareExecutionInParallel = true;    // whether to spawn actors ("boot()", "start()") in parallel
+
+// Clear global states
 void clearGlobal();
+
+// If using adaptive exec
+bool enableAdaptExec();
 
 }
 

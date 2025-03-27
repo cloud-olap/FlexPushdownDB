@@ -1,0 +1,24 @@
+{
+  "name": "dbgen_version",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "dv_version",
+      "type": "string"
+    },
+    {
+      "name": "dv_create_date",
+      "type": "date"
+    },
+    {
+      "name": "dv_create_time",
+      "type": "string"
+    },
+    {
+      "name": "dv_cmdline_args",
+      "type": "string"
+    }
+  ]
+}

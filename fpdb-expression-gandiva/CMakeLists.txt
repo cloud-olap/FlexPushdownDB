@@ -33,7 +33,9 @@ add_library(fpdb-expression-gandiva STATIC
         src/Like.cpp include/fpdb/expression/gandiva/Like.h
         src/DateExtract.cpp include/fpdb/expression/gandiva/DateExtract.h
         src/IsNull.cpp include/fpdb/expression/gandiva/IsNull.h
+        src/IsNotNull.cpp include/fpdb/expression/gandiva/IsNotNull.h
         src/Substr.cpp include/fpdb/expression/gandiva/Substr.h
+        src/Concat.cpp include/fpdb/expression/gandiva/Concat.h
         src/BinaryExpression.cpp include/fpdb/expression/gandiva/BinaryExpression.h
         src/Canonicalizer.cpp include/fpdb/expression/gandiva/Canonicalizer.h
         src/Util.cpp include/fpdb/expression/gandiva/Util.h

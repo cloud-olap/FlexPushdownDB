@@ -74,9 +74,7 @@ TupleSet::make(const std::shared_ptr<arrow::csv::TableReader> &tableReader) {
     return tl::make_unexpected(result.status().message());
   }
 
-  auto tupleSet = std::make_shared<TupleSet>();
-  auto table = result.ValueOrDie();
-  tupleSet->table_ = table;
+  auto tupleSet = std::make_shared<TupleSet>(*result);
 
   assert(tupleSet);
   assert(tupleSet->table_);
@@ -104,10 +102,6 @@ bool TupleSet::validate() const {
     return table_->ValidateFull().ok();
   else
     return true;
-}
-
-void TupleSet::clear() {
-  table_ = nullptr;
 }
 
 int64_t TupleSet::numRows() const {
@@ -140,10 +134,6 @@ std::shared_ptr<arrow::Schema> TupleSet::schema() const {
 
 std::shared_ptr<arrow::Table> TupleSet::table() const {
   return table_;
-}
-
-void TupleSet::table(const std::shared_ptr<arrow::Table> &table) {
-  table_ = table;
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
@@ -185,23 +175,6 @@ TupleSet::concatenate(const std::vector<std::shared_ptr<TupleSet>> &tupleSets) {
   } else {
     return tl::make_unexpected(expConcatenatedTable.status().message());
   }
-}
-
-tl::expected<void, std::string> TupleSet::append(const std::vector<std::shared_ptr<TupleSet>> &tupleSets) {
-  auto tupleSetVector = std::vector{shared_from_this()};
-  tupleSetVector.insert(tupleSetVector.end(), tupleSets.begin(), tupleSets.end());
-  auto expected = concatenate(tupleSetVector);
-  if (!expected.has_value())
-    return tl::make_unexpected(expected.error());
-  else {
-    this->table_ = expected.value()->table_;
-    return {}; // TODO: This seems to be how to return a void expected AFAICT, verify?
-  }
-}
-
-tl::expected<void, std::string> TupleSet::append(const std::shared_ptr<TupleSet> &tupleSet) {
-  auto tupleSetVector = std::vector{tupleSet};
-  return append(tupleSetVector);
 }
 
 tl::expected<std::shared_ptr<Column>, std::string> TupleSet::getColumnByName(const std::string &name) const {
@@ -269,19 +242,8 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> TupleSet::project(const std
   return make(expTable.ValueOrDie());
 }
 
-tl::expected<void, std::string> TupleSet::renameColumns(const std::vector<std::string>& columnNames){
-  if(valid()){
-    auto expectedTable = table_->RenameColumns(columnNames);
-    if(expectedTable.ok())
-      table_ = *expectedTable;
-    else
-      return tl::make_unexpected(expectedTable.status().message());
-  }
-  return {};
-}
-
 tl::expected<std::shared_ptr<TupleSet>, std::string>
-TupleSet::renameColumnsWithNewTupleSet(const std::vector<std::string>& columnNames) {
+TupleSet::renameColumns(const std::vector<std::string>& columnNames) const {
   auto expTable = table_->RenameColumns(columnNames);
   if (!expTable.ok()) {
     return tl::make_unexpected(expTable.status().message());
@@ -289,46 +251,43 @@ TupleSet::renameColumnsWithNewTupleSet(const std::vector<std::string>& columnNam
   return make(*expTable);
 }
 
-tl::expected<void, std::string>
-TupleSet::renameColumns(const std::unordered_map<std::string, std::string> &columnRenames) {
-  if (valid() && !columnRenames.empty()) {
-    auto columnNames = table_->ColumnNames();
+tl::expected<std::shared_ptr<TupleSet>, std::string>
+TupleSet::renameColumns(const std::unordered_map<std::string, std::string> &columnRenames) const {
+  auto columnNames = table_->ColumnNames();
 
-    // collect ids
-    std::unordered_map<std::string, uint> columnNameIds;
-    for (uint i = 0; i < columnNames.size(); ++i) {
-      columnNameIds.emplace(columnNames[i], i);
-    }
-
-    // rename
-    for (const auto &renameIt: columnRenames) {
-      const auto &oldName = renameIt.first;
-      const auto &newName = renameIt.second;
-      const auto &columnIdIt = columnNameIds.find(oldName);
-      if (columnIdIt == columnNameIds.end()) {
-        return tl::make_unexpected("Column '" + oldName + "' does not exist");
-      }
-      columnNames[columnIdIt->second] = newName;
-    }
-    auto expectedTable = table_->RenameColumns(columnNames);
-    if(expectedTable.ok())
-      table_ = *expectedTable;
-    else
-      return tl::make_unexpected(expectedTable.status().message());
+  // collect ids
+  std::unordered_map<std::string, uint> columnNameIds;
+  for (uint i = 0; i < columnNames.size(); ++i) {
+    columnNameIds.emplace(columnNames[i], i);
   }
-  return {};
+
+  // rename
+  for (const auto &renameIt: columnRenames) {
+    const auto &oldName = renameIt.first;
+    const auto &newName = renameIt.second;
+    const auto &columnIdIt = columnNameIds.find(oldName);
+    if (columnIdIt == columnNameIds.end()) {
+      return tl::make_unexpected("Column '" + oldName + "' does not exist");
+    }
+    columnNames[columnIdIt->second] = newName;
+  }
+  auto expTable = table_->RenameColumns(columnNames);
+  if (!expTable.ok()) {
+    return tl::make_unexpected(expTable.status().message());
+  }
+  return make(*expTable);
 }
 
-tl::expected<void, std::string> TupleSet::combine() {
+tl::expected<std::shared_ptr<TupleSet>, std::string> TupleSet::combine() const {
   auto expectedTable = table_->CombineChunks();
   if(expectedTable.ok())
-    table_ = *expectedTable;
+    return make(*expectedTable);
   else
     return tl::make_unexpected(expectedTable.status().message());
   return {};
 }
 
-std::string TupleSet::showString() {
+std::string TupleSet::showString() const {
   return showString(TupleSetShowOptions(TupleSetShowOrientation::ColumnOriented));
 }
 
@@ -337,7 +296,7 @@ std::string TupleSet::showString() {
  * @param options
  * @return
  */
-std::string TupleSet::showString(TupleSetShowOptions options) {
+std::string TupleSet::showString(TupleSetShowOptions options) const {
 
   if (!valid()) {
     return "<empty>";
@@ -397,7 +356,11 @@ std::string TupleSet::showString(TupleSetShowOptions options) {
           auto column = this->getColumnByIndex(columnIndex).value();
           auto value = column->element(rowIndex).value();
           ss << std::left << std::setw(columnWidth) << std::setfill(' ');
-          ss << "| " + value->toString();
+          if (value->getArrowScalar()->is_valid) {
+            ss << "| " + value->toString();
+          } else {
+            ss << "| null";
+          }
         }
         ss << std::endl;
 
@@ -426,7 +389,7 @@ std::string TupleSet::toString() const {
 }
 
 std::shared_ptr<arrow::Scalar> TupleSet::visit(const std::function<std::shared_ptr<arrow::Scalar>(
-        std::shared_ptr<arrow::Scalar>, arrow::RecordBatch &)> &fn) {
+        std::shared_ptr<arrow::Scalar>, arrow::RecordBatch &)> &fn) const {
 
   arrow::Status arrowStatus;
 

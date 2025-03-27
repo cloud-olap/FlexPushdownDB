@@ -11,11 +11,12 @@
 #include <fpdb/expression/gandiva/Cast.h>
 #include <fpdb/expression/gandiva/Multiply.h>
 #include <fpdb/tuple/TupleSet.h>
-#include <fpdb/tuple/Sample.h>
+#include <fpdb/tuple/util/Sample.h>
 
 #include "Globals.h"
 
 using namespace fpdb::tuple;
+using namespace fpdb::tuple::util;
 using namespace fpdb::expression::gandiva;
 using namespace fpdb::expression::gandiva::test;
 

@@ -19,7 +19,9 @@ namespace fpdb::executor::message {
 class ConnectMessage : public Message {
 
 public:
-  explicit ConnectMessage(std::vector<POpConnection> operatorConnections, std::string from);
+  explicit ConnectMessage(std::vector<POpConnection> operatorConnections,
+                          bool clear, /*whether to clear old connections*/
+                          std::string from);
   ConnectMessage() = default;
   ConnectMessage(const ConnectMessage&) = default;
   ConnectMessage& operator=(const ConnectMessage&) = default;
@@ -27,9 +29,11 @@ public:
   std::string getTypeString() const override;
 
   const std::vector<POpConnection> &connections() const;
+  bool clear() const;
 
 private:
   std::vector<POpConnection> connections_;
+  bool clear_;
 
 // caf inspect
 public:
@@ -37,7 +41,8 @@ public:
   friend bool inspect(Inspector& f, ConnectMessage& msg) {
     return f.object(msg).fields(f.field("type", msg.type_),
                                 f.field("sender", msg.sender_),
-                                f.field("connections", msg.connections_));
+                                f.field("connections", msg.connections_),
+                                f.field("clear", msg.clear_));
   }
 };
 

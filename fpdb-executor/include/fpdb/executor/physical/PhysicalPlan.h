@@ -38,6 +38,9 @@ public:
   // to fall back to pullup (adaptive pushdown), by changing FPDBFileScanPOp to RemoteFileScanPOp
   tl::expected<void, string> fallBackToPullup(const std::string &host, int port);
 
+  // used for debugging
+  std::string printOps();
+
 private:
   unordered_map<string, shared_ptr<PhysicalOp>> physicalOps_;
   string rootPOpName_;

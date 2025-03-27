@@ -43,64 +43,11 @@ long Column::numRows() {
 }
 
 tl::expected<std::shared_ptr<Scalar>, std::string> Column::element(long index) {
-
-  if (index > array_->length()) {
-	  return tl::make_unexpected("Row '" + std::to_string(index) + "' does not exist");
+  auto expArrowScalar = array_->GetScalar(index);
+  if (!expArrowScalar.ok()) {
+    return tl::make_unexpected(expArrowScalar.status().message());
   }
-
-  if (array_->type()->id() == arrow::Int32Type::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::Int32Array>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->Value(0);
-    auto valueScalar = arrow::MakeScalar(value);
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else if (array_->type()->id() == arrow::Int64Type::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::Int64Array>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->Value(0);
-    auto valueScalar = arrow::MakeScalar(value);
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else if (array_->type()->id() == arrow::FloatType::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::FloatArray>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->Value(0);
-    auto valueScalar = arrow::MakeScalar(value);
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else if (array_->type()->id() == arrow::DoubleType::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::DoubleArray>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->Value(0);
-    auto valueScalar = arrow::MakeScalar(value);
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else if (array_->type()->id() == arrow::BooleanType::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::BooleanArray>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->Value(0);
-    auto valueScalar = arrow::MakeScalar(value);
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else if (array_->type()->id() == arrow::StringType::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::StringArray>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->GetString(0);
-    auto valueScalar = arrow::MakeScalar(value);
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else if (array_->type()->id() == arrow::Date64Type::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::Date64Array>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->Value(0);
-    auto valueScalar = arrow::MakeScalar(arrow::date64(), value).ValueOrDie();
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else if (array_->type()->id() == arrow::Decimal128Type::type_id) {
-    auto typedArray = std::static_pointer_cast<arrow::Decimal128Array>(array_->Slice(index)->chunk(0));
-    auto value = typedArray->Value(0);
-    auto decimalValue = static_cast<::arrow::Decimal128>(value);
-    auto valueScalar = std::make_shared<::arrow::Decimal128Scalar>(decimalValue, typedArray->type());
-    return std::make_shared<Scalar>(valueScalar);
-  }
-  else {
-    return tl::make_unexpected(
-      "Column value accessor for type '" + array_->type()->ToString() + "' not implemented yet");
-  }
+  return std::make_shared<Scalar>(*expArrowScalar);
 }
 
 const std::shared_ptr<::arrow::ChunkedArray> &Column::getArrowArray() const {

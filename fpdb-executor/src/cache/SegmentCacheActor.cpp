@@ -73,8 +73,17 @@ void SegmentCacheActor::metrics(const CacheMetricsMessage &msg, stateful_actor<S
 }
 
 void SegmentCacheActor::stop(stateful_actor<SegmentCacheActorState> *self) {
-  self->state.cache->clear();
+  if (self->state.ownership) {
+    // only clear cache content when it's owned
+    self->state.cache->clear();
+  }
   self->state.cache.reset();
+}
+
+void SegmentCacheActor::assignCache(const std::shared_ptr<SegmentCache> &cache,
+                                    stateful_actor<SegmentCacheActorState> *self) {
+  self->state.cache = cache;
+  self->state.ownership = false;
 }
 
 behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState> *self,
@@ -146,7 +155,10 @@ behavior SegmentCacheActor::makeBehaviour(stateful_actor<SegmentCacheActorState>
 	  },
 	  [=](MetricsAtom, const std::shared_ptr<CacheMetricsMessage> &m) {
     metrics(*m, self);
-	  }
+	  },
+    [=](AssignCacheAtom, const std::shared_ptr<SegmentCache> &cache) {
+    assignCache(cache, self);
+    }
   };
 }
 

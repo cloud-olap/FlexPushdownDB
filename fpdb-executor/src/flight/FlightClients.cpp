@@ -2,7 +2,6 @@
 // Created by Yifei Yang on 11/17/22.
 //
 
-#include <mutex>
 #include <fpdb/executor/flight/FlightClients.h>
 
 namespace fpdb::executor::flight {
@@ -18,21 +17,19 @@ arrow::flight::FlightClient* FlightClients::getFlightClient(const std::string &h
   }
 
   // if not made yet, make one and save
-  arrow::flight::Location clientLocation;
-  auto status = arrow::flight::Location::ForGrpcTcp(host, port, &clientLocation);
-  if (!status.ok()) {
-    throw std::runtime_error(status.message());
+  auto expClientLocation = arrow::flight::Location::ForGrpcTcp(host, port);
+  if (!expClientLocation.ok()) {
+    throw std::runtime_error(expClientLocation.status().message());
   }
 
   arrow::flight::FlightClientOptions clientOptions = arrow::flight::FlightClientOptions::Defaults();
-  std::unique_ptr<arrow::flight::FlightClient> client;
-  status = arrow::flight::FlightClient::Connect(clientLocation, clientOptions, &client);
-  if (!status.ok()) {
-    throw std::runtime_error(status.message());
+  auto expClient = arrow::flight::FlightClient::Connect(*expClientLocation, clientOptions);
+  if (!expClient.ok()) {
+    throw std::runtime_error(expClient.status().message());
   }
 
-  auto clientRawPtr = client.get();
-  clients_[key] = std::move(client);
+  auto clientRawPtr = (*expClient).get();
+  clients_[key] = std::move(*expClient);
   return clientRawPtr;
 }
 

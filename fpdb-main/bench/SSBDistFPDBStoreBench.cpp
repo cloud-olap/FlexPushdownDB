@@ -17,20 +17,27 @@ namespace fpdb::main::test {
 #define SKIP_SUITE false
 
 void run_ssb_sf100_4_node_hash_part_fpdb_store_distributed_parquet_pullup(const std::string &queryFileName) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("ssb-sf100-4-node-hash-part/parquet/",
-                                                                   {queryFileName},
-                                                                   PARALLEL_DIST_SF100,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("ssb-sf100-4-node-hash-part/parquet/",
+                                            {queryFileName},
+                                            PARALLEL_DIST_SF100,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pullupMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 void run_ssb_sf100_4_node_hash_part_fpdb_store_distributed_parquet_pushdown_only(const std::string &queryFileName) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("ssb-sf100-4-node-hash-part/parquet/",
-                                                                   {queryFileName},
-                                                                   PARALLEL_DIST_SF100,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE,
-                                                                   Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("ssb-sf100-4-node-hash-part/parquet/",
+                                            {queryFileName},
+                                            PARALLEL_DIST_SF100,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 TEST_SUITE ("ssb-sf100-4-node-hash-part-fpdb-store-distributed-parquet-pullup" * doctest::skip(SKIP_SUITE)) {

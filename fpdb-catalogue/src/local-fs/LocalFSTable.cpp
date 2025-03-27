@@ -11,11 +11,12 @@ namespace fpdb::catalogue::local_fs {
 LocalFSTable::LocalFSTable(const string &name,
                            const shared_ptr<arrow::Schema> &schema,
                            const shared_ptr<fpdb::tuple::FileFormat> &format,
+                           const vector<ColRef> &colRefs,
                            const unordered_map<string, int> &apxColumnLengthMap,
                            int apxRowLength,
                            const unordered_set<string> &zonemapColumnNames,
                            const vector<shared_ptr<LocalFSPartition>> &localFsPartitions) :
-  Table(name, schema, format, apxColumnLengthMap, apxRowLength, zonemapColumnNames),
+  Table(name, schema, format, colRefs, apxColumnLengthMap, apxRowLength, zonemapColumnNames),
   localFSPartitions_(localFsPartitions) {}
 
 CatalogueEntryType LocalFSTable::getCatalogueEntryType() {

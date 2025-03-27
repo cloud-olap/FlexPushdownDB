@@ -93,13 +93,9 @@ Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
       return TupleSet::makeWithEmptyTable();
     }
 
-    auto filteredTupleSet = fpdb::tuple::TupleSet::make(outputSchema_);
     auto arrowTable = tupleSet.table();
-
     assert(arrowTable->ValidateFull().ok());
-
     arrow::Status arrowStatus;
-
     std::shared_ptr<arrow::RecordBatch> batch;
     arrow::TableBatchReader reader(*arrowTable);
     // Maximum chunk size Gandiva filter evaluates at a time
@@ -109,6 +105,7 @@ Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
       return tl::make_unexpected(arrowStatus.message());
     }
 
+    arrow::RecordBatchVector filteredBatches;
     while (batch != nullptr) {
 
       assert(batch->ValidateFull().ok());
@@ -130,8 +127,6 @@ Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
       auto projectBatch = TupleSet::projectExist(batch, outputSchema_->field_names());
 
       // Evaluate the expressions
-      std::shared_ptr<::arrow::Table> batchArrowTable;
-
       /**
        * NOTE: Gandiva fails if the projector is evaluated using an empty selection vector, so need to test for it
        */
@@ -143,22 +138,8 @@ Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
           return tl::make_unexpected(status.message());
         }
 
-        batchArrowTable = ::arrow::Table::Make(projectBatch->schema(), outputs);
-      }
-      else{
-        auto columns = Schema::make(projectBatch->schema())->makeColumns();
-        auto arrowArrays = Column::columnVectorToArrowChunkedArrayVector(columns);
-        batchArrowTable = ::arrow::Table::Make(projectBatch->schema(), arrowArrays);
-      }
-
-      auto batchTupleSet = std::make_shared<fpdb::tuple::TupleSet>(batchArrowTable);
-
-      SPDLOG_DEBUG("Filtered batch:\n{}",
-             batchTupleSet->showString(fpdb::tuple::TupleSetShowOptions(fpdb::tuple::TupleSetShowOrientation::RowOriented)));
-
-      auto result = filteredTupleSet->append(batchTupleSet);
-      if(!result.has_value()){
-        return tl::make_unexpected(result.error());
+        filteredBatches.emplace_back(
+                arrow::RecordBatch::Make(projectBatch->schema(), selection_vector->GetNumSlots(), outputs));
       }
 
       arrowStatus = reader.ReadNext(&batch);
@@ -167,7 +148,15 @@ Filter::evaluate(const fpdb::tuple::TupleSet &tupleSet) {
       }
     }
 
-    return filteredTupleSet;
+    if (filteredBatches.empty()) {
+      return TupleSet::make(outputSchema_);
+    } else {
+      auto expFilteredTable = arrow::Table::FromRecordBatches(filteredBatches);
+      if (!expFilteredTable.ok()) {
+        return tl::make_unexpected(expFilteredTable.status().message());
+      }
+      return TupleSet::make(*expFilteredTable);
+    }
   }
 
   else {

@@ -49,18 +49,9 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, MergePOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("leftProducerName", op.leftProducerName_),
-                               f.field("rightProducerName", op.rightProducerName_));
+    return inspect_base(f, op,
+                        f.field("leftProducerName", op.leftProducerName_),
+                        f.field("rightProducerName", op.rightProducerName_));
   }
 };
 

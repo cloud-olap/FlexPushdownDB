@@ -18,9 +18,11 @@ namespace fpdb::executor::physical::aggregate {
 AggregatePOp::AggregatePOp(string name,
                            vector<string> projectColumnNames,
                            int nodeId,
-                           vector<shared_ptr<aggregate::AggregateFunction>> functions):
+                           vector<shared_ptr<aggregate::AggregateFunction>> functions,
+                           bool isReduce):
   PhysicalOp(move(name), AGGREGATE, move(projectColumnNames), nodeId),
-  functions_(move(functions)) {
+  functions_(move(functions)),
+  isReduce_(isReduce) {
 
   // initialize aggregate results
   for (uint i = 0; i < functions_.size(); ++i) {
@@ -34,6 +36,10 @@ std::string AggregatePOp::getTypeString() const {
 
 const vector<shared_ptr<AggregateFunction>> &AggregatePOp::getFunctions() const {
   return functions_;
+}
+
+bool AggregatePOp::isReduce() const {
+  return isReduce_;
 }
 
 void AggregatePOp::onStart() {
@@ -72,9 +78,11 @@ void AggregatePOp::onComplete(const CompleteMessage &) {
 
     // Finalize
     shared_ptr<TupleSet> tupleSet;
-    if (hasResult()) {
+    if (hasResult() || isReduce_) {
+      // This will produce a table with 1 row, used for reduce (finalized) aggregates
       tupleSet = finalize();
     } else {
+      // This will produce an empty table, used for partial aggregates
       tupleSet = finalizeEmpty();
     }
 
@@ -91,7 +99,11 @@ void AggregatePOp::compute(const shared_ptr<TupleSet> &tupleSet) {
     if (!expAggregateResult.has_value()) {
       ctx()->notifyError(expAggregateResult.error());
     }
-    aggregateResults_[i].emplace_back(expAggregateResult.value());
+    // only save results when input `tupleSet` is not empty, but we still need to do the compute
+    // to obtain the return type of the function
+    if (tupleSet->numRows() > 0) {
+      aggregateResults_[i].emplace_back(expAggregateResult.value());
+    }
   }
 }
 
@@ -109,7 +121,9 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
   for (uint i = 0; i < functions_.size(); ++i) {
     const auto &function = functions_[i];
     // Finalize
-    const auto &expFinalResult = function->finalize(aggregateResults_[i]);
+    const auto &expFinalResult = hasResult() ?
+            function->finalize(aggregateResults_[i]) :
+            function->finalizeEmpty();
     if (!expFinalResult.has_value()) {
       ctx()->notifyError(expFinalResult.error());
     }
@@ -124,6 +138,9 @@ shared_ptr<TupleSet> AggregatePOp::finalize() {
       columns.emplace_back(colArgh.value());
     } else if (function->returnType() == arrow::float64()) {
       auto colArgh = makeArgh<arrow::DoubleType>(static_pointer_cast<arrow::DoubleScalar>(finalResult));
+      columns.emplace_back(colArgh.value());
+    } else if (function->returnType() == arrow::utf8()) {
+      auto colArgh = makeArgh<arrow::StringType>(static_pointer_cast<arrow::StringScalar>(finalResult));
       columns.emplace_back(colArgh.value());
     } else {
       ctx()->notifyError("Unsupported aggregate output field type " + function->returnType()->name());

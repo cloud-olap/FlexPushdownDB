@@ -37,7 +37,7 @@ public:
 private:
   tl::expected<std::shared_ptr<TupleSet>, std::string> evaluateExpr(const std::shared_ptr<TupleSet> &tupleSet);
   tl::expected<void, std::string> doGroup(const std::shared_ptr<TupleSet> &tupleSet);
-  tl::expected<std::shared_ptr<TupleSet>, std::string> finalizeAvg(const std::shared_ptr<TupleSet> &tupleSet);
+  tl::expected<std::shared_ptr<TupleSet>, std::string> finalizeIntermediate(const std::shared_ptr<TupleSet> &tupleSet);
   tl::expected<void, std::string> makeOutputSchema(const std::shared_ptr<arrow::Schema> &schema);
   tl::expected<void, std::string> makeArrowExecPlan(const std::shared_ptr<arrow::Schema> &schema);
   tl::expected<std::pair<arrow::FieldVector, arrow::ChunkedArrayVector>, std::string>

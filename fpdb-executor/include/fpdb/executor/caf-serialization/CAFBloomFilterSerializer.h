@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilter.h>
 #include <fpdb/executor/physical/bloomfilter/ArrowBloomFilter.h>
+#include <fpdb/executor/physical/bloomfilter/GlobalArrowBloomFilter.h>
 #include <fpdb/caf/CAFUtil.h>
 
 using namespace fpdb::executor::physical::bloomfilter;
@@ -16,6 +17,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(BloomFilter, fpdb::caf::CAFUtil::BloomFilter_first_custo
 CAF_ADD_TYPE_ID(BloomFilter, (BloomFilterBasePtr))
 CAF_ADD_TYPE_ID(BloomFilter, (BloomFilter))
 CAF_ADD_TYPE_ID(BloomFilter, (ArrowBloomFilter))
+CAF_ADD_TYPE_ID(BloomFilter, (GlobalArrowBloomFilter))
 CAF_END_TYPE_ID_BLOCK(BloomFilter)
 
 // Variant-based approach on BloomFilterBasePtr
@@ -29,17 +31,22 @@ struct variant_inspector_traits<BloomFilterBasePtr> {
   static constexpr type_id_t allowed_types[] = {
           type_id_v<none_t>,
           type_id_v<BloomFilter>,
-          type_id_v<ArrowBloomFilter>
+          type_id_v<ArrowBloomFilter>,
+          type_id_v<GlobalArrowBloomFilter>
   };
 
   // Returns which type in allowed_types corresponds to x.
   static auto type_index(const value_type &x) {
     if (!x)
       return 0;
-    else if (x->getType() == BloomFilterType::BLOOM_FILTER)
+    else if (x->getType() == BloomFilterType::VANILLA_BF)
       return 1;
-    else
+    else if (x->getType() == BloomFilterType::ARROW_BF)
       return 2;
+    else if (x->getType() == BloomFilterType::GLOBAL_ARROW_BF)
+      return 3;
+    else
+      return 4;
   }
 
   // Applies f to the value of x.
@@ -50,6 +57,8 @@ struct variant_inspector_traits<BloomFilterBasePtr> {
         return f(dynamic_cast<BloomFilter &>(*x));
       case 2:
         return f(dynamic_cast<ArrowBloomFilter &>(*x));
+      case 3:
+        return f(dynamic_cast<GlobalArrowBloomFilter &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -85,6 +94,11 @@ struct variant_inspector_traits<BloomFilterBasePtr> {
       }
       case type_id_v<ArrowBloomFilter>: {
         auto tmp = ArrowBloomFilter{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<GlobalArrowBloomFilter>: {
+        auto tmp = GlobalArrowBloomFilter{};
         continuation(tmp);
         return true;
       }

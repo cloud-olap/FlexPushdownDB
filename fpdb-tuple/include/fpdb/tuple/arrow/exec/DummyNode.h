@@ -27,8 +27,8 @@ public:
   void InputFinished(ExecNode*, int total_batches) override;
 
   Status StartProducing() override;
-  void PauseProducing(ExecNode*) override;
-  void ResumeProducing(ExecNode*) override;
+  void PauseProducing(ExecNode*, int32_t) override;
+  void ResumeProducing(ExecNode*, int32_t) override;
   void StopProducing(ExecNode*) override;
   void StopProducing() override;
 

@@ -62,21 +62,9 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, FPDBStoreFileScanPOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("kernel", op.kernel_),
-                               f.field("scanOnStart", op.scanOnStart_),
-                               f.field("toCache", op.toCache_),
-                               f.field("bucket", op.bucket_),
-                               f.field("object", op.object_));
+    return inspect_base_file_scan(f, op,
+                                  f.field("bucket", op.bucket_),
+                                  f.field("object", op.object_));
   }
 
 };

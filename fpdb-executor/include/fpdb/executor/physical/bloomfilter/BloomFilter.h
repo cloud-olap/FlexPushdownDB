@@ -107,7 +107,9 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, BloomFilter& bf) {
-    return f.object(bf).fields(f.field("capacity", bf.capacity_),
+    return f.object(bf).fields(f.field("type", bf.type_),
+                               f.field("capacity", bf.capacity_),
+                               f.field("valid", bf.valid_),
                                f.field("falsePositiveRate", bf.falsePositiveRate_));
   }
 };

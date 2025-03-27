@@ -56,6 +56,14 @@ tl::expected<std::shared_ptr<Column>, std::string> Column::fromJson(const nlohma
   return std::make_shared<Column>(columnName);
 }
 
+bool Column::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<Column>(other);
+  return columnName_ == typedOther->columnName_;
+}
+
 std::shared_ptr<Expression> fpdb::expression::gandiva::col(const std::string& columnName) {
   auto canonicalColumnName = fpdb::tuple::ColumnName::canonicalize(columnName);
   return std::make_shared<Column>(canonicalColumnName);

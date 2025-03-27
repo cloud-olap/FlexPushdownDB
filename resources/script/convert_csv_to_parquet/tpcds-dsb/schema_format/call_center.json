@@ -1,0 +1,132 @@
+{
+  "name": "call_center",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "cc_call_center_sk",
+      "type": "int64"
+    },
+    {
+      "name": "cc_call_center_id",
+      "type": "string"
+    },
+    {
+      "name": "cc_rec_start_date",
+      "type": "date"
+    },
+    {
+      "name": "cc_rec_end_date",
+      "type": "date"
+    },
+    {
+      "name": "cc_closed_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "cc_open_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "cc_name",
+      "type": "string"
+    },
+    {
+      "name": "cc_class",
+      "type": "string"
+    },
+    {
+      "name": "cc_employees",
+      "type": "int64"
+    },
+    {
+      "name": "cc_sq_ft",
+      "type": "int64"
+    },
+    {
+      "name": "cc_hours",
+      "type": "string"
+    },
+    {
+      "name": "cc_manager",
+      "type": "string"
+    },
+    {
+      "name": "cc_mkt_id",
+      "type": "int64"
+    },
+    {
+      "name": "cc_mkt_class",
+      "type": "string"
+    },
+    {
+      "name": "cc_mkt_desc",
+      "type": "string"
+    },
+    {
+      "name": "cc_market_manager",
+      "type": "string"
+    },
+    {
+      "name": "cc_division",
+      "type": "int64"
+    },
+    {
+      "name": "cc_division_name",
+      "type": "string"
+    },
+    {
+      "name": "cc_company",
+      "type": "int64"
+    },
+    {
+      "name": "cc_company_name",
+      "type": "string"
+    },
+    {
+      "name": "cc_street_number",
+      "type": "string"
+    },
+    {
+      "name": "cc_street_name",
+      "type": "string"
+    },
+    {
+      "name": "cc_street_type",
+      "type": "string"
+    },
+    {
+      "name": "cc_suite_number",
+      "type": "string"
+    },
+    {
+      "name": "cc_city",
+      "type": "string"
+    },
+    {
+      "name": "cc_county",
+      "type": "string"
+    },
+    {
+      "name": "cc_state",
+      "type": "string"
+    },
+    {
+      "name": "cc_zip",
+      "type": "string"
+    },
+    {
+      "name": "cc_country",
+      "type": "string"
+    },
+    {
+      "name": "cc_gmt_offset",
+      "type": "double"
+    },
+    {
+      "name": "cc_tax_percentage",
+      "type": "double"
+    }
+  ]
+}

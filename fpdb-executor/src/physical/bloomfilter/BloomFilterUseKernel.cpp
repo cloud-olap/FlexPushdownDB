@@ -3,6 +3,8 @@
 //
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h>
+#include <fpdb/executor/physical/bloomfilter/ArrowBloomFilter.h>
+#include <fpdb/executor/physical/bloomfilter/GlobalArrowBloomFilter.h>
 #include <fpdb/tuple/ArrayHasher.h>
 #include <arrow/compute/api_vector.h>
 #include <fmt/format.h>
@@ -11,41 +13,8 @@ namespace fpdb::executor::physical::bloomfilter {
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
-                             const std::shared_ptr<BloomFilterBase> &bloomFilter,
-                             const std::vector<std::string> &columnNames) {
-  // Check
-  if (tupleSet->numRows() == 0 || !bloomFilter->valid()) {
-    return tupleSet;
-  }
-
-  switch (bloomFilter->getType()) {
-    case BloomFilterType::BLOOM_FILTER: {
-      return filter(tupleSet, std::static_pointer_cast<BloomFilter>(bloomFilter), columnNames);
-    }
-    case BloomFilterType::ARROW_BLOOM_FILTER: {
-      return filter(tupleSet, std::static_pointer_cast<ArrowBloomFilter>(bloomFilter), columnNames);
-    }
-    default: {
-      return tl::make_unexpected(fmt::format("Unknown bloom filter type: {}", bloomFilter->getType()));
-    }
-  }
-}
-
-tl::expected<std::shared_ptr<TupleSet>, std::string>
-BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
                              const std::shared_ptr<BloomFilter> &bloomFilter,
-                             const std::vector<std::string> &columnNames) {
-  // Make column indices
-  std::vector<int> columnIndices;
-  auto schema = tupleSet->schema();
-  for (const auto &columnName: columnNames) {
-    auto columnIndex = schema->GetFieldIndex(ColumnName::canonicalize(columnName));
-    if (columnIndex == -1) {
-      return tl::make_unexpected(fmt::format("Column '{}' does not exist", columnName));
-    }
-    columnIndices.emplace_back(columnIndex);
-  }
-
+                             const std::vector<int> &columnIndices) {
   std::vector<::arrow::ArrayVector> filteredArrayVectors;
   for (int c = 0; c < tupleSet->numColumns(); ++c) {
     filteredArrayVectors.emplace_back(::arrow::ArrayVector{});
@@ -97,17 +66,9 @@ BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
 BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
-                             const std::shared_ptr<ArrowBloomFilter> &bloomFilter,
-                             const std::vector<std::string> &columnNames) {
-  // hasher
-  auto expHasher = RecordBatchHasher::make(tupleSet->schema(), columnNames);
-  if (!expHasher.has_value()) {
-    return tl::make_unexpected(expHasher.error());
-  }
-  auto hasher = *expHasher;
-
+                             const std::shared_ptr<arrow::compute::BlockedBloomFilter> &bloomFilter,
+                             const std::shared_ptr<RecordBatchHasher> &hasher) {
   // filter batches
-  int64_t hardwareFlags = arrow::internal::CpuInfo::GetInstance()->hardware_flags();
   arrow::RecordBatchVector filteredBatches;
   arrow::TableBatchReader reader{*tupleSet->table()};
   auto expRecordBatch = reader.Next();
@@ -116,7 +77,7 @@ BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
   }
   auto recordBatch = *expRecordBatch;
   while (recordBatch) {
-    auto expFilteredBatch = filterRecordBatch(recordBatch, bloomFilter, hasher, hardwareFlags);
+    auto expFilteredBatch = filterRecordBatch(recordBatch, bloomFilter, hasher);
     if (!expFilteredBatch.has_value()) {
       return tl::make_unexpected(expFilteredBatch.error());
     }
@@ -135,6 +96,20 @@ BloomFilterUseKernel::filter(const std::shared_ptr<TupleSet> &tupleSet,
     return tl::make_unexpected(expTable.status().message());
   }
   return TupleSet::make(*expTable);
+}
+
+tl::expected<std::shared_ptr<std::vector<int>>, std::string>
+BloomFilterUseKernel::makeColumnIndices(const std::shared_ptr<arrow::Schema> &schema,
+                                        const std::vector<std::string> &columnNames) {
+  auto columnIndices = std::make_shared<std::vector<int>>();
+  for (const auto &columnName: columnNames) {
+    auto columnIndex = schema->GetFieldIndex(ColumnName::canonicalize(columnName));
+    if (columnIndex == -1) {
+      return tl::make_unexpected(fmt::format("Column '{}' does not exist", columnName));
+    }
+    columnIndices->emplace_back(columnIndex);
+  }
+  return columnIndices;
 }
 
 tl::expected<::arrow::ArrayVector, std::string>
@@ -179,30 +154,37 @@ BloomFilterUseKernel::filterRecordBatch(const ::arrow::RecordBatch &recordBatch,
 
 tl::expected<std::shared_ptr<arrow::RecordBatch>, std::string>
 BloomFilterUseKernel::filterRecordBatch(const std::shared_ptr<arrow::RecordBatch> &recordBatch,
-                                        const std::shared_ptr<ArrowBloomFilter> &bloomFilter,
-                                        const std::shared_ptr<RecordBatchHasher> &hasher,
-                                        int64_t hardwareFlags) {
-  // hash
+                                        const std::shared_ptr<arrow::compute::BlockedBloomFilter> &bloomFilter,
+                                        const std::shared_ptr<RecordBatchHasher> &hasher) {
   int64_t batchSize = recordBatch->num_rows();
-  uint32_t* hashes = (uint32_t*) malloc(sizeof(uint32_t) * batchSize);
-  hasher->hash(recordBatch, hashes);
+  int64_t bitvecLen = arrow::bit_util::BytesForBits(batchSize);
+  uint8_t* bitVector = (uint8_t*) malloc(bitvecLen);
 
-  // filter
-  uint8_t* bitVector = (uint8_t*) malloc(batchSize);
-  bloomFilter->getBlockedBloomFilter()->Find(hardwareFlags, batchSize, hashes, bitVector);
-  auto selectBuffer = std::make_unique<arrow::Buffer>(bitVector, arrow::BitUtil::BytesForBits(batchSize));
-  arrow::ArrayData selectArrayData(arrow::boolean(), batchSize, {nullptr, std::move(selectBuffer)});
-  auto expDatum = arrow::compute::Filter(arrow::Datum(recordBatch), arrow::Datum(selectArrayData));
-  if (!expDatum.ok()) {
-    // clear
+  // use 32/64-bit hashes according to the bloom filter
+  if (bloomFilter->use_64bit_hashes()) {
+    // hash
+    uint64_t* hashes = (uint64_t*) malloc(sizeof(uint64_t) * batchSize);
+    hasher->hash(recordBatch, hashes);
+    // filter to get bitvec
+    bloomFilter->Find(hasher->getHardwareFlags(), batchSize, hashes, bitVector);
     free(hashes);
-    free(bitVector);
-    return tl::make_unexpected(expDatum.status().message());
+  } else {
+    // hash
+    uint32_t* hashes = (uint32_t*) malloc(sizeof(uint32_t) * batchSize);
+    hasher->hash(recordBatch, hashes);
+    // filter to get bitvec
+    bloomFilter->Find(hasher->getHardwareFlags(), batchSize, hashes, bitVector);
+    free(hashes);
   }
 
-  // clear
-  free(hashes);
+  // apply the bitvector to get filtered output
+  auto selectBuffer = std::make_unique<arrow::Buffer>(bitVector, bitvecLen);
+  arrow::ArrayData selectArrayData(arrow::boolean(), batchSize, {nullptr, std::move(selectBuffer)});
+  auto expDatum = arrow::compute::Filter(arrow::Datum(recordBatch), arrow::Datum(selectArrayData));
   free(bitVector);
+  if (!expDatum.ok()) {
+    return tl::make_unexpected(expDatum.status().message());
+  }
   return (*expDatum).record_batch();
 }
 

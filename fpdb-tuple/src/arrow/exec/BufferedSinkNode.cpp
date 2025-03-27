@@ -49,11 +49,11 @@ void BufferedSinkNode::InputFinished(ExecNode*, int) {
   }
 }
 
-void BufferedSinkNode::PauseProducing(ExecNode*) {
+void BufferedSinkNode::PauseProducing(ExecNode*, int32_t) {
   // noop
 }
 
-void BufferedSinkNode::ResumeProducing(ExecNode*) {
+void BufferedSinkNode::ResumeProducing(ExecNode*, int32_t) {
   // noop
 }
 

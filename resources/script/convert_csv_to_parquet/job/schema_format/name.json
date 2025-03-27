@@ -1,0 +1,44 @@
+{
+  "name": "name",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "imdb_index",
+      "type": "string"
+    },
+    {
+      "name": "imdb_id",
+      "type": "int64"
+    },
+    {
+      "name": "gender",
+      "type": "string"
+    },
+    {
+      "name": "name_pcode_cf",
+      "type": "string"
+    },
+    {
+      "name": "name_pcode_nf",
+      "type": "string"
+    },
+    {
+      "name": "surname_pcode",
+      "type": "string"
+    },
+    {
+      "name": "md5sum",
+      "type": "string"
+    }
+  ]
+}

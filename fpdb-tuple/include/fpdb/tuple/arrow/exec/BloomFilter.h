@@ -6,8 +6,8 @@
 #define FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_ARROW_EXEC_BLOOMFILTER_H
 
 /**
- * Source mainly copied from arrow's bloom filter after version 8.0.0, will remove this and use it directly
- * after upgrading arrow.
+ * Source mainly copied from arrow's bloom filter after version 8.0.0,
+ * add some customized functionalities.
  */
 
 #if defined(ARROW_HAVE_AVX2)
@@ -17,7 +17,6 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include "PartitionUtil.h"
 #include "Util.h"
 #include "arrow/compute/exec/util.h"
@@ -26,6 +25,7 @@
 #include "arrow/status.h"
 #include "nlohmann/json.hpp"
 #include "tl/expected.hpp"
+#include <fpdb/caf/CAFUtil.h>
 
 namespace arrow {
 namespace compute {
@@ -89,6 +89,13 @@ struct ARROW_EXPORT BloomFilterMasks {
   //
   static constexpr int kTotalBytes = (kNumMasks + 64) / 8;
   uint8_t masks_[kTotalBytes];
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, BloomFilterMasks& masks) {
+    return f.object(masks).fields(f.field("masks", masks.masks_));
+  }
 };
 
 // A variant of a blocked Bloom filter implementation.
@@ -109,8 +116,10 @@ class ARROW_EXPORT BlockedBloomFilter {
   friend class BloomFilterBuilder_Parallel;
 
 public:
-  BlockedBloomFilter() : private_masks_(std::nullopt), log_num_blocks_(0), num_blocks_(0), blocks_(NULLPTR) {}
-  BlockedBloomFilter(int log_num_blocks) : log_num_blocks_(log_num_blocks), num_blocks_(1ULL << log_num_blocks_) {}
+  BlockedBloomFilter() : log_num_blocks_(0), num_blocks_(0), blocks_(NULLPTR) {}
+  BlockedBloomFilter(int log_num_blocks, bool use_64bit_hashes) :
+    log_num_blocks_(log_num_blocks), num_blocks_(1ULL << log_num_blocks_),
+    use_64bit_hashes_(use_64bit_hashes) {}
 
   inline bool Find(uint64_t hash) const {
     uint64_t m = mask(hash);
@@ -130,15 +139,15 @@ public:
 
   int64_t num_blocks() const { return num_blocks_; }
 
-  const std::shared_ptr<Buffer> &buf() const { return buf_; }
-
-  static const BloomFilterMasks &GetGlobalMasks() { return masks_; }
+  bool use_64bit_hashes() const { return use_64bit_hashes_; }
 
   int NumHashBitsUsed() const;
 
   bool IsSameAs(const BlockedBloomFilter* other) const;
 
   int64_t NumBitsSet() const;
+
+  void setMasks(const std::shared_ptr<BloomFilterMasks> &masks);
 
   // Folding of a block Bloom filter after the initial version
   // has been built.
@@ -165,21 +174,43 @@ public:
   //
   void Fold();
 
-  void SetPrivateMasks(const std::shared_ptr<BloomFilterMasks> &masks) {
-    private_masks_ = masks;
-  }
+  // merge another BF into this
+  tl::expected<void, std::string> merge(const std::shared_ptr<BlockedBloomFilter> &other);
+  tl::expected<void, std::string> mergePart(const std::shared_ptr<BlockedBloomFilter> &other,
+                                            int64_t block_offset, int64_t num_blocks);
 
-  void SetBuf(const std::shared_ptr<Buffer> &buf) {
-    buf_ = buf;
-    blocks_ = reinterpret_cast<uint64_t*>(const_cast<uint8_t*>(buf_->data()));
-  }
+  // split BF into multiple parts
+  tl::expected<std::vector<std::shared_ptr<BlockedBloomFilter>>, std::string> split(uint n) const;
+
+  // concat BF parts into a complete BF
+  static tl::expected<std::shared_ptr<BlockedBloomFilter>, std::string>
+  concat(const std::vector<std::shared_ptr<BlockedBloomFilter>> &parts);
+
+  // transfer the bitmap into record batch such that Flight can take it
+  tl::expected<void, std::string> saveBitmapRecordBatches(const arrow::RecordBatchVector &batches);
+  tl::expected<arrow::RecordBatchVector, std::string> makeBitmapRecordBatches();
 
   // Serialization
   ::nlohmann::json toJson() const;
   static tl::expected<std::shared_ptr<BlockedBloomFilter>, std::string> fromJson(const nlohmann::json &jObj);
 
+  // Num bits used per hash value
+  static constexpr int64_t kMinNumBitsPerKey = 8;
+
+  // Maximum number of actually used blocks for 32-bit hashes, given num bits used to get mask.
+  // When we want to use more blocks, 64-bit hashes are required.
+  // It can still work if we try to use more blocks than this bound for 32-bit hashes, but will result in a much
+  // worse false positive rate.
+  static constexpr int64_t kNumBitsBlocksUsedBy32Bit = 32 - (BloomFilterMasks::kLogNumMasks + 6);
+  static constexpr int64_t kNumBlocksUsedBy32Bit = 1 << kNumBitsBlocksUsedBy32Bit;
+  static constexpr int64_t kMaxNumRowsFor32Bit = kNumBlocksUsedBy32Bit * 64 / kMinNumBitsPerKey;
+
+  static BloomFilterMasks global_masks_;
+
 private:
-  Status CreateEmpty(int64_t num_rows_to_insert, MemoryPool* pool);
+  Status CreateEmpty(int64_t num_rows_to_insert, MemoryPool* pool,
+                     int num_dist_sub_bf /* num sub-bfs created in dist exec, basically each node creates a sub-bf,
+                                          * and one row passes as long as it passes on one sub-bf*/);
 
   inline void Insert(uint64_t hash) {
     uint64_t m = mask(hash);
@@ -191,13 +222,10 @@ private:
   void Insert(int64_t hardware_flags, int64_t num_rows, const uint64_t* hashes);
 
   inline uint64_t mask(uint64_t hash) const {
-    // Pick the proper masks
-    auto &masks = private_masks_.has_value() ? (**private_masks_) : masks_;
-
     // The lowest bits of hash are used to pick mask index.
     //
     int mask_id = static_cast<int>(hash & (BloomFilterMasks::kNumMasks - 1));
-    uint64_t result = masks.mask(mask_id);
+    uint64_t result = masks_->mask(mask_id);
 
     // The next set of hash bits is used to pick the amount of bit
     // rotation of the mask.
@@ -227,31 +255,37 @@ private:
 
 #if defined(ARROW_HAVE_AVX2)
   inline __m256i mask_avx2(__m256i hash) const;
-inline __m256i block_id_avx2(__m256i hash) const;
-int64_t Insert_avx2(int64_t num_rows, const uint32_t* hashes);
-int64_t Insert_avx2(int64_t num_rows, const uint64_t* hashes);
-template <typename T>
-int64_t InsertImp_avx2(int64_t num_rows, const T* hashes);
-int64_t Find_avx2(int64_t num_rows, const uint32_t* hashes,
-                uint8_t* result_bit_vector) const;
-int64_t Find_avx2(int64_t num_rows, const uint64_t* hashes,
-                uint8_t* result_bit_vector) const;
-template <typename T>
-int64_t FindImp_avx2(int64_t num_rows, const T* hashes,
-                   uint8_t* result_bit_vector) const;
+  inline __m256i block_id_avx2(__m256i hash) const;
+  int64_t Insert_avx2(int64_t num_rows, const uint32_t* hashes);
+  int64_t Insert_avx2(int64_t num_rows, const uint64_t* hashes);
+  template <typename T>
+  int64_t InsertImp_avx2(int64_t num_rows, const T* hashes);
+  int64_t Find_avx2(int64_t num_rows, const uint32_t* hashes,
+                    uint8_t* result_bit_vector) const;
+  int64_t Find_avx2(int64_t num_rows, const uint64_t* hashes,
+                    uint8_t* result_bit_vector) const;
+  template <typename T>
+  int64_t FindImp_avx2(int64_t num_rows, const T* hashes,
+                       uint8_t* result_bit_vector) const;
 #endif
 
   bool UsePrefetch() const {
     return num_blocks_ * sizeof(uint64_t) > kPrefetchLimitBytes;
   }
 
+  void SetBuf(const std::shared_ptr<Buffer> &buf) {
+    buf_ = buf;
+    blocks_ = reinterpret_cast<uint64_t*>(const_cast<uint8_t*>(buf_->data()));
+  }
+
   static constexpr int64_t kPrefetchLimitBytes = 256 * 1024;
 
-  static BloomFilterMasks masks_;
+  // When not using the global mask (i.e., use a mask from another node)
+  std::shared_ptr<BloomFilterMasks> private_masks_;
 
-  // Used when receiving bloom filters from other nodes, where
-  // the same masks should be used instead of the static one.
-  std::optional<std::shared_ptr<BloomFilterMasks>> private_masks_;
+  // The actual masks used, we may need to other's masks when this BF is from another node.
+  // By default use the global one.
+  BloomFilterMasks* masks_ = &global_masks_;
 
   // Total number of bits used by block Bloom filter must be a power
   // of 2.
@@ -259,12 +293,24 @@ int64_t FindImp_avx2(int64_t num_rows, const T* hashes,
   int log_num_blocks_;
   int64_t num_blocks_;
 
+  // Whether to use 64-bit hashes as input values.
+  bool use_64bit_hashes_;
+
   // Buffer allocated to store an array of power of 2 64-bit blocks.
   //
   std::shared_ptr<Buffer> buf_;
   // Pointer to mutable data owned by Buffer
   //
   uint64_t* blocks_;
+
+// caf inspect
+public:
+  template <class Inspector>
+  friend bool inspect(Inspector& f, BlockedBloomFilter& bf) {
+    return f.object(bf).fields(f.field("log_num_blocks", bf.log_num_blocks_),
+                               f.field("num_blocks", bf.num_blocks_),
+                               f.field("use_64bit_hashes", bf.use_64bit_hashes_));
+  }
 };
 
 // We have two separate implementations of building a Bloom filter, multi-threaded and
@@ -285,7 +331,7 @@ class ARROW_EXPORT BloomFilterBuilder {
 public:
   virtual ~BloomFilterBuilder() = default;
   virtual Status Begin(size_t num_threads, int64_t hardware_flags, MemoryPool* pool,
-                       int64_t num_rows, int64_t num_batches,
+                       int64_t num_rows, int64_t num_batches, int num_dist_sub_bfs,
                        BlockedBloomFilter* build_target) = 0;
   virtual int64_t num_tasks() const { return 0; }
   virtual Status PushNextBatch(size_t thread_index, int64_t num_rows,
@@ -299,7 +345,7 @@ public:
 class ARROW_EXPORT BloomFilterBuilder_SingleThreaded : public BloomFilterBuilder {
 public:
   Status Begin(size_t num_threads, int64_t hardware_flags, MemoryPool* pool,
-               int64_t num_rows, int64_t num_batches,
+               int64_t num_rows, int64_t num_batches, int num_dist_sub_bfs,
                BlockedBloomFilter* build_target) override;
 
   Status PushNextBatch(size_t /*thread_index*/, int64_t num_rows,
@@ -319,7 +365,7 @@ private:
 class ARROW_EXPORT BloomFilterBuilder_Parallel : public BloomFilterBuilder {
 public:
   Status Begin(size_t num_threads, int64_t hardware_flags, MemoryPool* pool,
-               int64_t num_rows, int64_t num_batches,
+               int64_t num_rows, int64_t num_batches, int num_dist_sub_bfs,
                BlockedBloomFilter* build_target) override;
 
   Status PushNextBatch(size_t thread_id, int64_t num_rows,
@@ -350,5 +396,24 @@ private:
 }  // namespace compute
 }  // namespace arrow
 
+using BlockedBloomFilterPtr = std::shared_ptr<arrow::compute::BlockedBloomFilter>;
+using BloomFilterMasksPtr = std::shared_ptr<arrow::compute::BloomFilterMasks>;
+
+CAF_BEGIN_TYPE_ID_BLOCK(BlockedBloomFilter, fpdb::caf::CAFUtil::BlockedBloomFilter_first_custom_type_id)
+CAF_ADD_TYPE_ID(BlockedBloomFilter, (arrow::compute::BlockedBloomFilter))
+CAF_ADD_TYPE_ID(BlockedBloomFilter, (arrow::compute::BloomFilterMasks))
+CAF_END_TYPE_ID_BLOCK(BlockedBloomFilter)
+
+namespace caf {
+template <>
+struct inspector_access<BlockedBloomFilterPtr> : variant_inspector_access<BlockedBloomFilterPtr> {
+  // noop
+};
+
+template <>
+struct inspector_access<BloomFilterMasksPtr> : variant_inspector_access<BloomFilterMasksPtr> {
+  // noop
+};
+} // namespace caf
 
 #endif //FPDB_FPDB_TUPLE_INCLUDE_FPDB_TUPLE_ARROW_EXEC_BLOOMFILTER_H

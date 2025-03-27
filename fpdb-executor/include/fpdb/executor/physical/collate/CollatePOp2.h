@@ -102,15 +102,19 @@ private:
   [[nodiscard]] tl::expected<void, std::string> onTupleSet(CollateStatefulActor actor,
 														   const ::caf::strong_actor_ptr &messageSender,
 														   const TupleSetPtr &tupleSet) {
-	SPDLOG_DEBUG("[Actor {} ('{}')]  Received tupleSet  |  sender: {}", actor->id(),
-				 actor->name(), to_string(messageSender));
+    SPDLOG_DEBUG("[Actor {} ('{}')]  Received tupleSet  |  sender: {}", actor->id(),
+           actor->name(), to_string(messageSender));
 
-	if (!tupleSet_) {
-	  tupleSet_ = tupleSet;
+    if (!tupleSet_) {
+      tupleSet_ = tupleSet;
+    } else {
+      auto expConcatenatedTupleSet = TupleSet::concatenate({tupleSet_, tupleSet});
+      if (!expConcatenatedTupleSet.has_value()) {
+        return tl::make_unexpected(expConcatenatedTupleSet.error());
+      }
+      tupleSet_ = *expConcatenatedTupleSet;
+    }
 	  return {};
-	} else {
-	  return tupleSet_->append(tupleSet);
-	}
   }
 
   [[nodiscard]] ExpectedTupleSetPtrString onGetTupleSet(CollateStatefulActor actor,

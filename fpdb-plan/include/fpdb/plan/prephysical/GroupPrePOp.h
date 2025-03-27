@@ -27,6 +27,8 @@ public:
   const vector<shared_ptr<AggregatePrePFunction>> &getFunctions() const;
 
 private:
+  bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const override;
+
   vector<string> groupColumnNames_;
   vector<string> aggOutputColumnNames_;
   vector<shared_ptr<AggregatePrePFunction>> functions_;

@@ -78,21 +78,7 @@ vector<string> fpdb::util::readRemoteIps(bool isCompute) {
           .append("resources/config")
           .append(clusterIpFileName)
           .string();
-  auto clusterIps = readFileByLine(clusterIpFilePath);
-
-  // need to remove local ip if it is for the compute cluster
-  if (isCompute == false) {
-    return clusterIps;
-  }
-  auto expLocalIp = getLocalIp();
-  if (!expLocalIp) {
-    throw runtime_error(expLocalIp.error());
-  }
-  auto localIpIt = std::find(clusterIps.begin(), clusterIps.end(), *expLocalIp);
-  if (localIpIt != clusterIps.end()) {
-    clusterIps.erase(localIpIt);
-  }
-  return clusterIps;
+  return readFileByLine(clusterIpFilePath);
 }
 
 bool fpdb::util::parseBool(const string& stringToParse) {
@@ -122,6 +108,18 @@ void fpdb::util::unsetBit(vector<int64_t> &bitmap, int64_t n) {
 
 bool fpdb::util::getBit(const vector<int64_t> &bitmap, int64_t n) {
   return (bitmap[n / 64] >> (n % 64)) & 1UL;
+}
+
+void fpdb::util::bitmapAnd(uint8_t *left, uint8_t *right, int64_t len, uint8_t *out) {
+  for (int64_t i = 0; i < len; ++i) {
+    out[i] = left[i] & right[i];
+  }
+}
+
+void fpdb::util::bitmapOr(uint8_t *left, uint8_t *right, int64_t len, uint8_t *out) {
+  for (int64_t i = 0; i < len; ++i) {
+    out[i] = left[i] | right[i];
+  }
 }
 
 std::vector<std::string> fpdb::util::split(const std::string &str, const std::string &delimiter) {
@@ -156,4 +154,17 @@ tl::expected<string, string> fpdb::util::execCmd(const char *cmd) {
 
 tl::expected<string, string> fpdb::util::getLocalIp() {
   return execCmd("curl -s ifconfig.me");
+}
+
+tl::expected<string, string> fpdb::util::getLocalPrivateIp() {
+  auto expIp = execCmd("hostname -I");
+  if (!expIp.has_value()) {
+    return expIp;
+  }
+  auto ip = *expIp;
+  return ip.substr(0, ip.size() - 2);
+}
+
+int fpdb::util::getIntIngestParam(int paramId) {
+  return stoi(readFile(std::string(fpdb::util::ParamPrefix) + to_string(paramId)));
 }

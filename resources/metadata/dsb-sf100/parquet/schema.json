@@ -1,0 +1,2346 @@
+{
+  "schemaName": "dsb-sf100/parquet/",
+  "tables": [
+    {
+      "name": "call_center",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "cc_call_center_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "cc_call_center_id",
+          "type": "string"
+        },
+        {
+          "name": "cc_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "cc_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "cc_closed_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cc_open_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cc_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_class",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_employees",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cc_sq_ft",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cc_hours",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_manager",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_mkt_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cc_mkt_class",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_mkt_desc",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_market_manager",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_division",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cc_division_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_company",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cc_company_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_street_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_street_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_street_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_suite_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_city",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_county",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_state",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_zip",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_country",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cc_gmt_offset",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cc_tax_percentage",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "catalog_page",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "cp_catalog_page_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "cp_catalog_page_id",
+          "type": "string"
+        },
+        {
+          "name": "cp_start_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cp_end_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cp_department",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cp_catalog_number",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cp_catalog_page_number",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cp_description",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cp_type",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "catalog_returns",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 100,
+      "fields": [
+        {
+          "name": "cr_returned_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_returned_time_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_item_sk",
+          "type": "int64"
+        },
+        {
+          "name": "cr_refunded_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_returning_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_call_center_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_catalog_page_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_ship_mode_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_warehouse_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_reason_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_order_number",
+          "type": "int64"
+        },
+        {
+          "name": "cr_return_quantity",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_amount",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_amt_inc_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_fee",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_return_ship_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_refunded_cash",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_reversed_charge",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_store_credit",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cr_net_loss",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "catalog_sales",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 100,
+      "fields": [
+        {
+          "name": "cs_sold_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_sold_time_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_bill_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_call_center_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_catalog_page_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_ship_mode_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_warehouse_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_item_sk",
+          "type": "int64"
+        },
+        {
+          "name": "cs_promo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_order_number",
+          "type": "int64"
+        },
+        {
+          "name": "cs_quantity",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cs_wholesale_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_list_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_sales_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_discount_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_sales_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_wholesale_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_list_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_coupon_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_ext_ship_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid_inc_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid_inc_ship",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_paid_inc_ship_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "cs_net_profit",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "customer",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "c_customer_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "c_customer_id",
+          "type": "string"
+        },
+        {
+          "name": "c_current_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_current_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_current_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_first_shipto_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_first_sales_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_salutation",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "c_first_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "c_last_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "c_preferred_cust_flag",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_day",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_month",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_year",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "c_birth_country",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "c_login",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "c_email_address",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "c_last_review_date_sk",
+          "type": "int64",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "customer_address",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "ca_address_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "ca_address_id",
+          "type": "string"
+        },
+        {
+          "name": "ca_street_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_street_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_street_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_suite_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_city",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_county",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_state",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_zip",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_country",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "ca_gmt_offset",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ca_location_type",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "customer_demographics",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "cd_demo_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "cd_gender",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cd_marital_status",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cd_education_status",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cd_purchase_estimate",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cd_credit_rating",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "cd_dep_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cd_dep_employed_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "cd_dep_college_count",
+          "type": "int64",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "date_dim",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "d_date_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "d_date_id",
+          "type": "string"
+        },
+        {
+          "name": "d_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "d_month_seq",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_week_seq",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_quarter_seq",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_year",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_dow",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_moy",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_dom",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_qoy",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_fy_year",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_fy_quarter_seq",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_fy_week_seq",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_day_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_quarter_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_holiday",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_weekend",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_following_holiday",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_first_dom",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_last_dom",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_same_day_ly",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_same_day_lq",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "d_current_day",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_current_week",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_current_month",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_current_quarter",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "d_current_year",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "dbgen_version",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "dv_version",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "dv_create_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "dv_create_time",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "dv_cmdline_args",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "household_demographics",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "hd_demo_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "hd_income_band_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "hd_buy_potential",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "hd_dep_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "hd_vehicle_count",
+          "type": "int64",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "income_band",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "ib_income_band_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "ib_lower_bound",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ib_upper_bound",
+          "type": "int64",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "inventory",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 100,
+      "fields": [
+        {
+          "name": "inv_date_sk",
+          "type": "int64"
+        },
+        {
+          "name": "inv_item_sk",
+          "type": "int64"
+        },
+        {
+          "name": "inv_warehouse_sk",
+          "type": "int64"
+        },
+        {
+          "name": "inv_quantity_on_hand",
+          "type": "int64",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "item",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "i_item_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "i_item_id",
+          "type": "string"
+        },
+        {
+          "name": "i_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "i_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "i_item_desc",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_current_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "i_wholesale_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "i_brand_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "i_brand",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_class_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "i_class",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_category_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "i_category",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_manufact_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "i_manufact",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_size",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_formulation",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_color",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_units",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_container",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "i_manager_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "i_product_name",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "promotion",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "p_promo_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "p_promo_id",
+          "type": "string"
+        },
+        {
+          "name": "p_start_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "p_end_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "p_item_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "p_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "p_response_target",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "p_promo_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_dmail",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_email",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_catalog",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_tv",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_radio",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_press",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_event",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_demo",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_channel_details",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_purpose",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "p_discount_active",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "reason",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "r_reason_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "r_reason_id",
+          "type": "string"
+        },
+        {
+          "name": "r_reason_desc",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "ship_mode",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "sm_ship_mode_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "sm_ship_mode_id",
+          "type": "string"
+        },
+        {
+          "name": "sm_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sm_code",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sm_carrier",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "sm_contract",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "store",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "s_store_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "s_store_id",
+          "type": "string"
+        },
+        {
+          "name": "s_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "s_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "s_closed_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "s_store_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_number_employees",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "s_floor_space",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "s_hours",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_manager",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_market_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "s_geography_class",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_market_desc",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_market_manager",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_division_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "s_division_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_company_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "s_company_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_street_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_street_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_street_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_suite_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_city",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_county",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_state",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_zip",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_country",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "s_gmt_offset",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "s_tax_precentage",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "store_returns",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 100,
+      "fields": [
+        {
+          "name": "sr_returned_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_time_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_item_sk",
+          "type": "int64"
+        },
+        {
+          "name": "sr_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_store_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_reason_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_ticket_number",
+          "type": "int64"
+        },
+        {
+          "name": "sr_return_quantity",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_amt_inc_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_fee",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_return_ship_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_refunded_cash",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_reversed_charge",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_store_credit",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "sr_net_loss",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "store_sales",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 100,
+      "fields": [
+        {
+          "name": "ss_sold_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_sold_time_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_item_sk",
+          "type": "int64"
+        },
+        {
+          "name": "ss_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_store_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_promo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_ticket_number",
+          "type": "int64"
+        },
+        {
+          "name": "ss_quantity",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ss_wholesale_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_list_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_sales_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_discount_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_sales_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_wholesale_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_list_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_ext_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_coupon_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_net_paid",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_net_paid_inc_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ss_net_profit",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "time_dim",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "t_time_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "t_time_id",
+          "type": "string"
+        },
+        {
+          "name": "t_time",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "t_hour",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "t_minute",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "t_second",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "t_am_pm",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "t_shift",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "t_sub_shift",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "t_meal_time",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "warehouse",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "w_warehouse_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "w_warehouse_id",
+          "type": "string"
+        },
+        {
+          "name": "w_warehouse_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_warehouse_sq_ft",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "w_street_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_street_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_street_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_suite_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_city",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_county",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_state",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_zip",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_country",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "w_gmt_offset",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "web_page",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 16,
+      "fields": [
+        {
+          "name": "wp_web_page_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "wp_web_page_id",
+          "type": "string"
+        },
+        {
+          "name": "wp_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "wp_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "wp_creation_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wp_access_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wp_autogen_flag",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "wp_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wp_url",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "wp_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "wp_char_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wp_link_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wp_image_count",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wp_max_ad_count",
+          "type": "int64",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "web_returns",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 100,
+      "fields": [
+        {
+          "name": "wr_returned_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_returned_time_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_item_sk",
+          "type": "int64"
+        },
+        {
+          "name": "wr_refunded_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_returning_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_web_page_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_reason_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_order_number",
+          "type": "int64"
+        },
+        {
+          "name": "wr_return_quantity",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_amt_inc_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_fee",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_return_ship_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_refunded_cash",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_reversed_charge",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_account_credit",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "wr_net_loss",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "web_sales",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 100,
+      "fields": [
+        {
+          "name": "ws_sold_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_sold_time_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_item_sk",
+          "type": "int64"
+        },
+        {
+          "name": "ws_bill_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_bill_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_bill_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_bill_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_customer_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_cdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_hdemo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_addr_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_web_page_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_web_site_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_ship_mode_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_warehouse_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_promo_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_order_number",
+          "type": "int64"
+        },
+        {
+          "name": "ws_quantity",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "ws_wholesale_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_list_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_sales_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_discount_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_sales_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_wholesale_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_list_price",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_coupon_amt",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_ext_ship_cost",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid_inc_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid_inc_ship",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_paid_inc_ship_tax",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "ws_net_profit",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "web_site",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "web_site_sk",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "web_site_id",
+          "type": "string"
+        },
+        {
+          "name": "web_rec_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "web_rec_end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "web_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_open_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "web_close_date_sk",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "web_class",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_manager",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_mkt_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "web_mkt_class",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_mkt_desc",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_market_manager",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_company_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "web_company_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_street_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_street_name",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_street_type",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_suite_number",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_city",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_county",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_state",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_zip",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_country",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "web_gmt_offset",
+          "type": "double",
+          "nullable": true
+        },
+        {
+          "name": "web_tax_percentage",
+          "type": "double",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

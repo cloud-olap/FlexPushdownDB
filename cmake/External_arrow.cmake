@@ -1,8 +1,9 @@
 include(GNUInstallDirs)
 
-# This repo is forked from Arrow repo, with a fix for exec engine that sticks it into a fixed thread index
-# in serial execution
-set(ARROW_VERSION "release-6.0.0-for-fpdb")
+# This repo is forked from Arrow repo, with several customized changes for FPDB
+#  - stick it into a fixed thread index in serial execution
+#  - add metrics tracing bytes read from Parquet
+set(ARROW_VERSION "release-8.0.0-for-fpdb")
 set(ARROW_GIT_URL "https://github.com/Yifei-yang7/arrow.git")
 
 
@@ -47,6 +48,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 else()
     set(ARROW_THRIFT_STATIC_LIB ${ARROW_THRIFT_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}thrift${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
+set(ARROW_AWSSDK_BASE_DIR ${ARROW_BASE_DIR}/src/${ARROW_BASE}-build/awssdk_ep-install)
+set(ARROW_AWSSDK_CORE_STATIC_LIB ${ARROW_AWSSDK_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}aws-cpp-sdk-core${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_AWSSDK_S3_STATIC_LIB ${ARROW_AWSSDK_BASE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}aws-cpp-sdk-s3${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(ARROW_AWSSDK_INCLUDE_DIR ${ARROW_AWSSDK_BASE_DIR}/include)
 set(ARROW_PARQUET_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}parquet${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(ARROW_PARQUET_STATIC_LIB ${ARROW_LIB_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}parquet${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(ARROW_FLIGHT_SHARED_LIB ${ARROW_LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}arrow_flight${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -95,6 +100,8 @@ ExternalProject_Add(${ARROW_BASE}
         -DARROW_WITH_ZLIB=ON
         -DARROW_JEMALLOC=ON
         -DARROW_GANDIVA=ON
+        -DARROW_FILESYSTEM=ON
+        -DARROW_S3=ON
         -DARROW_GRPC_USE_SHARED=OFF
         -DARROW_DEPENDENCY_SOURCE=BUNDLED
         -DCMAKE_INSTALL_MESSAGE=NEVER
@@ -106,6 +113,7 @@ ExternalProject_Add(${ARROW_BASE}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${ARROW_INSTALL_DIR}
         -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
+        -DLLVM_ROOT=${_LLVM_DIR}
         )
 
 # Include directory needs to exist to run configure step
@@ -113,6 +121,7 @@ file(MAKE_DIRECTORY ${ARROW_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${ARROW_PROTOBUF_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${ARROW_GRPC_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${ARROW_THRIFT_INCLUDE_DIR})
+file(MAKE_DIRECTORY ${ARROW_AWSSDK_INCLUDE_DIR})
 #file(MAKE_DIRECTORY ${ARROW_JEMALLOC_INCLUDE_DIR})
 #file(MAKE_DIRECTORY ${ARROW_RE2_INCLUDE_DIR})
 #file(MAKE_DIRECTORY ${ARROW_SNAPPY_INCLUDE_DIR})
@@ -166,6 +175,7 @@ target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::str_form
 target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::time)
 target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::optional)
 target_link_libraries(arrow_bundled_dependencies_static INTERFACE absl::synchronization)
+target_link_libraries(arrow_bundled_dependencies_static INTERFACE "-lcurl")
 # additional libs needed on mac
 if (${APPLE})
   find_library(FoundationLib CoreFoundation)
@@ -292,6 +302,16 @@ add_library(thrift_static STATIC IMPORTED)
 set_target_properties(thrift_static PROPERTIES IMPORTED_LOCATION ${ARROW_THRIFT_STATIC_LIB})
 target_include_directories(thrift_static INTERFACE ${ARROW_THRIFT_INCLUDE_DIR})
 add_dependencies(thrift_static ${ARROW_BASE})
+
+add_library(aws-sdk-core-static STATIC IMPORTED)
+set_target_properties(aws-sdk-core-static PROPERTIES IMPORTED_LOCATION ${ARROW_AWSSDK_CORE_STATIC_LIB})
+target_include_directories(aws-sdk-core-static INTERFACE ${ARROW_AWSSDK_INCLUDE_DIR})
+add_dependencies(aws-sdk-core-static ${ARROW_BASE})
+
+add_library(aws-sdk-s3-static STATIC IMPORTED)
+set_target_properties(aws-sdk-s3-static PROPERTIES IMPORTED_LOCATION ${ARROW_AWSSDK_S3_STATIC_LIB})
+target_include_directories(aws-sdk-s3-static INTERFACE ${ARROW_AWSSDK_INCLUDE_DIR})
+add_dependencies(aws-sdk-s3-static ${ARROW_BASE})
 
 #showTargetProps(arrow_static)
 #showTargetProps(arrow_dataset_static)

@@ -20,10 +20,11 @@ public:
   const std::shared_ptr<PrePhysicalOp> &getRootOp() const;
 
   string getTypeString() override;
-
   set<string> getUsedColumnNames() override;
 
 private:
+  bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const override;
+
   std::shared_ptr<PrePhysicalOp> rootOp_;
 
 };

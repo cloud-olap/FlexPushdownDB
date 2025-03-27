@@ -24,7 +24,8 @@ public:
   AggregatePOp(string name,
                vector<string> projectColumnNames,
                int nodeId,
-               vector<shared_ptr<AggregateFunction>> functions);
+               vector<shared_ptr<AggregateFunction>> functions,
+               bool isReduce);
   AggregatePOp() = default;
   AggregatePOp(const AggregatePOp&) = default;
   AggregatePOp& operator=(const AggregatePOp&) = default;
@@ -35,6 +36,7 @@ public:
   std::string getTypeString() const override;
 
   const vector<shared_ptr<AggregateFunction>> &getFunctions() const;
+  bool isReduce() const;
 
 private:
   void onStart();
@@ -56,6 +58,9 @@ private:
   vector<shared_ptr<AggregateFunction>> functions_;
   vector<vector<shared_ptr<AggregateResult>>> aggregateResults_;
 
+  // Whether this aggregate is to produce the finalized result
+  bool isReduce_;
+
   /**
    * Whether discardInapplicableFunctions() has been invoked
    */
@@ -65,18 +70,10 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, AggregatePOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("functions", op.functions_),
-                               f.field("aggregateResults", op.aggregateResults_));
+    return inspect_base(f, op,
+                        f.field("functions", op.functions_),
+                        f.field("aggregateResults", op.aggregateResults_),
+                        f.field("isReduce", op.isReduce_));
   }
 };
 

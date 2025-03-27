@@ -1,5 +1,6 @@
 package com.flexpushdowndb.calcite.optimizer;
 
+import com.flexpushdowndb.calcite.rule.util.MoreRelOptUtil;
 import com.flexpushdowndb.calcite.schema.TableImpl;
 import org.apache.calcite.adapter.enumerable.EnumerableHashJoin;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -7,9 +8,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexNode;
 
 import java.util.*;
 
@@ -36,7 +34,7 @@ public final class PushableHashJoinFinder {
 
   public static boolean isJoinColocated(Join join, Map<String, String> hashKeys) {
     RelMetadataQuery mq = join.getCluster().getMetadataQuery();
-    List<Map.Entry<Integer, Integer>> joinKeys = extractJoinKeys(join.getCondition());
+    List<Map.Entry<Integer, Integer>> joinKeys = MoreRelOptUtil.extractJoinKeys(join.getCondition());
     for (Map.Entry<Integer, Integer> joinKey: joinKeys) {
       RelColumnOrigin leftColumnOrigin = mq.getColumnOrigin(join, joinKey.getKey());
       RelColumnOrigin rightColumnOrigin = mq.getColumnOrigin(join, joinKey.getValue());
@@ -90,34 +88,5 @@ public final class PushableHashJoinFinder {
       }
     }
     return pushableHashJoins;
-  }
-
-  private static List<Map.Entry<Integer, Integer>> extractJoinKeys(RexNode joinCondition) {
-    List<Map.Entry<Integer, Integer>> joinKeys = new ArrayList<>();
-    if (!(joinCondition instanceof RexCall)) {
-      return joinKeys;
-    }
-    RexCall call = (RexCall) joinCondition;
-    switch (call.getKind()) {
-      case AND: {
-        for (RexNode operand: call.getOperands()) {
-          joinKeys.addAll(extractJoinKeys(operand));
-        }
-      }
-      case EQUALS: {
-        RexNode leftOperand = call.getOperands().get(0);
-        RexNode rightOperand = call.getOperands().get(1);
-        if (leftOperand instanceof RexInputRef && rightOperand instanceof RexInputRef) {
-          return new ArrayList<>(Collections.singletonList(new AbstractMap.SimpleImmutableEntry<>(
-                  ((RexInputRef) leftOperand).getIndex(),
-                  ((RexInputRef) rightOperand).getIndex())));
-        } else {
-          return new ArrayList<>();
-        }
-      }
-      default: {
-        return new ArrayList<>();
-      }
-    }
   }
 }

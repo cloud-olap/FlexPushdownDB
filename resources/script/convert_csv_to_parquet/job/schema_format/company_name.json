@@ -1,0 +1,36 @@
+{
+  "name": "company_name",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "country_code",
+      "type": "string"
+    },
+    {
+      "name": "imdb_id",
+      "type": "int64"
+    },
+    {
+      "name": "name_pcode_nf",
+      "type": "string"
+    },
+    {
+      "name": "name_pcode_sf",
+      "type": "string"
+    },
+    {
+      "name": "md5sum",
+      "type": "string"
+    }
+  ]
+}

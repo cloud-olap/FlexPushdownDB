@@ -44,6 +44,7 @@ public:
 
   const HashJoinPredicate &getPred() const;
   JoinType getJoinType() const;
+  void setNeededColumnNames(const std::set<std::string> &neededColumnNames);
 
   tl::expected<void, std::string> joinBuildTupleSet(const std::shared_ptr<TupleSet> &tupleSet);
   tl::expected<void, std::string> joinProbeTupleSet(const std::shared_ptr<TupleSet> &tupleSet);

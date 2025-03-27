@@ -6,6 +6,7 @@
 #define FPDB_FPDB_AWS_INCLUDE_FPDB_AWS_AWSCLIENT_H
 
 #include <fpdb/aws/AWSConfig.h>
+#include <fpdb/aws/ProfileAWSCredentialsProviderChain.h>
 #include <aws/core/Aws.h>
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/core/client/DefaultRetryStrategy.h>
@@ -28,19 +29,25 @@ public:
   // because we want all S3 operators to share the same copy of AWSClient.
   inline static shared_ptr<AWSClient> daemonClient_ = nullptr;
 
+  static shared_ptr<ProfileAWSCredentialsProviderChain> defaultAwsCredentialProvider();
+
   AWSClient(const shared_ptr<AWSConfig> &awsConfig);
 
   void init();
-  [[maybe_unused]] void shutdown();
+  void shutdown();
 
   const shared_ptr<AWSConfig> &getAwsConfig() const;
+  const shared_ptr<Aws::Client::ClientConfiguration> &getAwsInternalConfig() const;
   const shared_ptr<S3Client> &getS3Client() const;
-  [[nodiscard]] const std::optional<std::unique_ptr<::arrow::flight::FlightClient>>& getFlightClient() const;
+  const std::optional<std::unique_ptr<::arrow::flight::FlightClient>>& getFlightClient() const;
 
 private:
+  static constexpr std::string_view ALLOCATION_TAG = "FPDB";
+
   std::shared_ptr<S3Client> makeS3Client();
 
   shared_ptr<AWSConfig> awsConfig_;
+  shared_ptr<Aws::Client::ClientConfiguration> awsInternalConfig_;
   Aws::SDKOptions options_;
   shared_ptr<S3Client> s3Client_;
   std::optional<std::unique_ptr<::arrow::flight::FlightClient>> flight_client_;

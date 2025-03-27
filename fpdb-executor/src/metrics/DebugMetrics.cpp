@@ -6,8 +6,8 @@
 
 namespace fpdb::executor::metrics {
 
-const TransferMetrics &DebugMetrics::getTransferMetrics() const {
-  return transferMetrics_;
+const NetworkMetrics &DebugMetrics::getNetworkMetrics() const {
+  return NetworkMetrics_;
 }
 
 const DiskMetrics &DebugMetrics::getDiskMetrics() const {
@@ -18,12 +18,20 @@ const PredTransMetrics &DebugMetrics::getPredTransMetrics() const {
   return ptMetrics_;
 }
 
+const PredTransCSMetrics &DebugMetrics::getPredTransCSMetrics() const {
+  return ptCSMetrics_;
+}
+
+const HashJoinMetrics &DebugMetrics::getHashJoinMetrics() const {
+  return hjMetrics_;
+}
+
 int DebugMetrics::getNumPushdownFallBack() const {
   return numPushdownFallBack_;
 }
 
-void DebugMetrics::add(const TransferMetrics &transferMetrics) {
-  transferMetrics_.add(transferMetrics);
+void DebugMetrics::add(const NetworkMetrics &NetworkMetrics) {
+  NetworkMetrics_.add(NetworkMetrics);
 }
 
 void DebugMetrics::add(const DiskMetrics &diskMetrics) {
@@ -32,6 +40,14 @@ void DebugMetrics::add(const DiskMetrics &diskMetrics) {
 
 void DebugMetrics::add(const PredTransMetrics::PTMetricsUnit &ptMetricsUnit) {
   ptMetrics_.add(ptMetricsUnit);
+}
+
+void DebugMetrics::add(const PredTransCSMetrics::PTCSMetricsUnit &ptCSMetricsUnit) {
+  ptCSMetrics_.add(ptCSMetricsUnit);
+}
+
+void DebugMetrics::add(const HashJoinMetrics &hjMetrics) {
+  hjMetrics_.add(hjMetrics);
 }
 
 void DebugMetrics::incPushdownFallBack() {

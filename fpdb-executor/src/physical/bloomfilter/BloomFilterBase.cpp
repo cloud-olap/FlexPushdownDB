@@ -29,10 +29,10 @@ tl::expected<std::shared_ptr<BloomFilterBase>, std::string> BloomFilterBase::fro
   auto type = jObj["type"].get<BloomFilterType>();
 
   switch (type) {
-    case BLOOM_FILTER: {
+    case VANILLA_BF: {
       return BloomFilter::fromJson(jObj);
     }
-    case ARROW_BLOOM_FILTER: {
+    case ARROW_BF: {
       return ArrowBloomFilter::fromJson(jObj);
     }
     default: {

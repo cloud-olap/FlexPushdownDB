@@ -3,19 +3,34 @@
 //
 
 #include <fpdb/executor/physical/POpDirectory.h>
+#include <fpdb/executor/physical/Globals.h>
 #include <fmt/format.h>
 #include <sstream>
 
 namespace fpdb::executor::physical {
+
+int POpDirectory::numOperatorsLeftOver() const {
+  return numOperatorsLeftOver_;
+}
 
 tl::expected<void, std::string> POpDirectory::insert(const POpDirectoryEntry& entry) {
   auto inserted = entries_.emplace(entry.getDef()->name(), entry);
   if (!inserted.second) {
     return tl::make_unexpected(fmt::format("Operator '{}' already added to directory", entry.getDef()->name()));
   }
-  ++numOperators_;
+  ++numOperatorsToComplete_;
   return {};
 }
+
+void POpDirectory::addNumOperatorsToComplete(int diff) {
+  numOperatorsToComplete_ += diff;
+}
+
+void POpDirectory::resetNumOps() {
+  numOperatorsToComplete_ = 0;
+  numOperatorsComplete_ = 0;
+  numOperatorsLeftOver_ = entries_.size();
+};
 
 tl::expected<void, std::string> POpDirectory::setComplete(const std::string& name) {
   auto entry = entries_.find(name);
@@ -27,12 +42,16 @@ tl::expected<void, std::string> POpDirectory::setComplete(const std::string& nam
     }
     entry->second.setComplete(true);
   }
+  if (TEMP_FIX_TPCH_Q21) {
+    printf(" ");    // unsure why if without this, BCAST dist join hangs at TPC-H Q21 SF100
+  }
+  SPDLOG_DEBUG("%s\n", fmt::format("Completing operator  |  '{}'", name).c_str());
   ++numOperatorsComplete_;
   return {};
 }
 
 bool POpDirectory::allComplete() const {
-  return numOperatorsComplete_ >= numOperators_;
+  return numOperatorsComplete_ >= numOperatorsToComplete_;
 }
 
 std::string POpDirectory::showString() const {
@@ -79,12 +98,16 @@ POpDirectory::MapType::const_iterator POpDirectory::end() const {
   return entries_.end();
 }
 
-[[maybe_unused]] POpDirectory::MapType::const_iterator POpDirectory::cbegin() const {
+POpDirectory::MapType::const_iterator POpDirectory::cbegin() const {
   return entries_.cbegin();
 }
 
-  [[maybe_unused]] [[maybe_unused]] POpDirectory::MapType::const_iterator POpDirectory::cend() const {
+POpDirectory::MapType::const_iterator POpDirectory::cend() const {
   return entries_.cend();
+}
+
+POpDirectory::MapType::iterator POpDirectory::erase(MapType::const_iterator pos) {
+  return entries_.erase(pos);
 }
 
 }

@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/executor/physical/split/SplitPOp.h>
+#include <fpdb/executor/physical/split/SplitKernel.h>
 #include <fpdb/executor/physical/Globals.h>
 
 namespace fpdb::executor::physical::split {
@@ -26,7 +27,7 @@ void SplitPOp::onReceive(const Envelope &msg) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
   } else {
-    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}" + msg.message().getTypeString(), name()));
+    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}", msg.message().getTypeString(), name()));
   }
 }
 
@@ -37,11 +38,7 @@ void SplitPOp::onStart() {
 void SplitPOp::onTupleSet(const TupleSetMessage &message) {
   // get tupleSet
   const auto &tupleSet = message.tuples();
-  if (tupleSet->numRows() == 0) {
-    return;
-  }
-
-  // buffer
+  numRows_ += tupleSet->numRows();
   const auto &result = bufferInput(tupleSet);
   if (!result.has_value()) {
     ctx()->notifyError(result.error());
@@ -49,15 +46,26 @@ void SplitPOp::onTupleSet(const TupleSetMessage &message) {
 
   // send if buffer is large enough
   if (inputTupleSet_.has_value() && inputTupleSet_.value()->numRows() >= DefaultBufferSize * (int) consumerVec_.size()) {
-    splitAndSend();
+    auto res = splitAndSend();
+    if (!res.has_value()) {
+      ctx()->notifyError(res.error());
+      return;
+    }
   }
 }
 
 void SplitPOp::onComplete(const CompleteMessage &) {
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
-    if (inputTupleSet_.has_value() && inputTupleSet_.value()->numRows() > 0) {
-      splitAndSend();
+    if (inputTupleSet_.has_value() && (!sentResult_ || inputTupleSet_.value()->numRows() > 0)) {
+      auto res = splitAndSend();
+      if (!res.has_value()) {
+        ctx()->notifyError(res.error());
+        return;
+      }
     }
+
+    // record cardinality if needed
+    sendPTCardMessage(ptCardInfo_, numRows_, std::nullopt);
 
     ctx()->notifyComplete();
   }
@@ -68,72 +76,41 @@ void SplitPOp::produce(const shared_ptr<PhysicalOp> &op) {
   consumerVec_.emplace_back(op->name());
 }
 
+void SplitPOp::recordPredTransCard(const executor::cache::PredTransCardCache::PredTransCardKey &key) {
+  ptCardInfo_.collect_ = true;
+  ptCardInfo_.key_ = key;
+}
+
 tl::expected<void, string> SplitPOp::bufferInput(const shared_ptr<TupleSet>& tupleSet) {
   if (!inputTupleSet_.has_value()) {
     inputTupleSet_ = tupleSet;
-    return {};
-  }
-  const auto &result = inputTupleSet_.value()->append(tupleSet);
-  if (!result.has_value()) {
-    return result;
+  } else {
+    auto expConcatenatedTupleSet = TupleSet::concatenate({*inputTupleSet_, tupleSet});
+    if (!expConcatenatedTupleSet.has_value()) {
+      return tl::make_unexpected(expConcatenatedTupleSet.error());
+    }
+    inputTupleSet_ = *expConcatenatedTupleSet;
   }
   return {};
-}
-
-arrow::ArrayVector splitArray(const shared_ptr<arrow::Array> &array, uint n) {
-  int64_t splitSize = array->length() / n;
-  arrow::ArrayVector splitArrays{n};
-  for (uint i = 0; i < n; ++i) {
-    int64_t offset = i * splitSize;
-    if (i < n - 1) {
-      splitArrays[i] = array->Slice(offset, splitSize);
-    } else {
-      splitArrays[i] = array->Slice(offset);
-    }
-  }
-  return splitArrays;
 }
 
 tl::expected<void, string> SplitPOp::splitAndSend() {
-  const auto &expTupleSets = split();
-  if (!expTupleSets.has_value()) {
-    return tl::make_unexpected(expTupleSets.error());
-  }
-  send(expTupleSets.value());
-  clear();
-  return {};
-}
-
-tl::expected<vector<shared_ptr<TupleSet>>, string> SplitPOp::split() {
+  // check input
   if (!inputTupleSet_.has_value()) {
     return tl::make_unexpected("No input tupleSet to split");
   }
 
-  // combine chunks
-  const auto &inputTable = inputTupleSet_.value()->table();
-  const auto &expCombinedTable = inputTable->CombineChunks();
-  if (!expCombinedTable.ok()) {
-    return tl::make_unexpected(expCombinedTable.status().message());
-  }
-  const auto &combinedTable = expCombinedTable.ValueOrDie();
-
   // split
-  vector<arrow::ArrayVector> outputArrayVectors{consumerVec_.size()};
-  for (const auto &column: combinedTable->columns()) {
-    const auto &inputArray = column->chunk(0);
-    const auto &splitArrays = splitArray(inputArray, consumerVec_.size());
-    for (uint i = 0; i < consumerVec_.size(); ++i) {
-      outputArrayVectors[i].emplace_back(splitArrays[i]);
-    }
+  const auto &expTupleSets = SplitKernel::split2(*inputTupleSet_, consumerVec_.size());
+  if (!expTupleSets.has_value()) {
+    return tl::make_unexpected(expTupleSets.error());
   }
 
-  // make tables
-  vector<shared_ptr<TupleSet>> outputTupleSets{consumerVec_.size()};
-  const auto &schema = inputTupleSet_.value()->schema();
-  for (uint i = 0; i < consumerVec_.size(); ++i) {
-    outputTupleSets[i] = TupleSet::make(schema, outputArrayVectors[i]);
-  }
-  return outputTupleSets;
+  // send
+  send(expTupleSets.value());
+  sentResult_ = true;
+  inputTupleSet_ = nullopt;
+  return {};
 }
 
 void SplitPOp::send(const vector<shared_ptr<TupleSet>> &tupleSets) {

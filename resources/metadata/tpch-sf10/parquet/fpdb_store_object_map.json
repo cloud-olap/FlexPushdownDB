@@ -1,6 +1,6 @@
 {
   "schemaName": "tpch-sf10/parquet/",
-  "numNodes": 2,
+  "numNodes": 1,
   "objectMap": [
     {
       "object": "nation.parquet",
@@ -8,7 +8,7 @@
     },
     {
       "object": "region.parquet",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "part_sharded/part.parquet.0",
@@ -16,7 +16,7 @@
     },
     {
       "object": "part_sharded/part.parquet.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "supplier.parquet",
@@ -28,7 +28,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.2",
@@ -36,7 +36,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.3",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.4",
@@ -44,7 +44,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.5",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.6",
@@ -52,7 +52,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.7",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.8",
@@ -60,7 +60,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.parquet.9",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "customer_sharded/customer.parquet.0",
@@ -68,7 +68,7 @@
     },
     {
       "object": "customer_sharded/customer.parquet.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.0",
@@ -76,7 +76,7 @@
     },
     {
       "object": "orders_sharded/orders.parquet.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.2",
@@ -84,7 +84,7 @@
     },
     {
       "object": "orders_sharded/orders.parquet.3",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.4",
@@ -92,7 +92,7 @@
     },
     {
       "object": "orders_sharded/orders.parquet.5",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.6",
@@ -100,7 +100,7 @@
     },
     {
       "object": "orders_sharded/orders.parquet.7",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.8",
@@ -108,7 +108,7 @@
     },
     {
       "object": "orders_sharded/orders.parquet.9",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.10",
@@ -116,7 +116,7 @@
     },
     {
       "object": "orders_sharded/orders.parquet.11",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.12",
@@ -124,7 +124,7 @@
     },
     {
       "object": "orders_sharded/orders.parquet.13",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.parquet.14",
@@ -136,7 +136,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.2",
@@ -144,7 +144,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.3",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.4",
@@ -152,7 +152,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.5",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.6",
@@ -160,7 +160,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.7",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.8",
@@ -168,7 +168,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.9",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.10",
@@ -176,7 +176,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.11",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.12",
@@ -184,7 +184,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.13",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.14",
@@ -192,7 +192,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.15",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.16",
@@ -200,7 +200,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.17",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.18",
@@ -208,7 +208,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.19",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.20",
@@ -216,7 +216,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.21",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.22",
@@ -224,7 +224,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.23",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.24",
@@ -232,7 +232,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.25",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.26",
@@ -240,7 +240,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.27",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.28",
@@ -248,7 +248,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.29",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.30",
@@ -256,7 +256,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.31",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.32",
@@ -264,7 +264,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.33",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.34",
@@ -272,7 +272,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.35",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.36",
@@ -280,7 +280,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.37",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.38",
@@ -288,7 +288,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.39",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.40",
@@ -296,7 +296,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.41",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.42",
@@ -304,7 +304,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.43",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.44",
@@ -312,7 +312,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.45",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.46",
@@ -320,7 +320,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.47",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.48",
@@ -328,7 +328,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.49",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.50",
@@ -336,7 +336,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.51",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.52",
@@ -344,7 +344,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.53",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.54",
@@ -352,7 +352,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.55",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.56",
@@ -360,7 +360,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.57",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.58",
@@ -368,7 +368,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.59",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.60",
@@ -376,7 +376,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.61",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.62",
@@ -384,7 +384,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.63",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.64",
@@ -392,7 +392,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.65",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.66",
@@ -400,7 +400,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.67",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.68",
@@ -408,7 +408,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.parquet.69",
-      "nodeId": 1
+      "nodeId": 0
     }
   ]
 }

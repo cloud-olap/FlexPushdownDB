@@ -31,6 +31,7 @@ public:
   std::vector<LocalPOpDirectoryEntry> get(const POpRelationshipType &relationshipType);
 
   std::string showString() const;
+  void clear();
   void destroyActorHandles();
 
 private:

@@ -131,7 +131,7 @@ tl::expected<void, string> TupleSetIndex::put(const shared_ptr<::arrow::Table> &
   auto appendResult = ::arrow::ConcatenateTables({tupleSet_->table(), alignedTable});
   if (!appendResult.ok())
     return tl::make_unexpected(appendResult.status().message());
-  tupleSet_->table(*appendResult);
+  tupleSet_ = TupleSet::make(*appendResult);
 
   assert(valueRowMap_.size() == static_cast<size_t>(tupleSet_->numRows()));
   return {};
@@ -172,7 +172,7 @@ tl::expected<void, string> TupleSetIndex::merge(const shared_ptr<TupleSetIndex> 
   if (!appendResult.ok()) {
     return tl::make_unexpected(appendResult.status().message());
   }
-  tupleSet_->table(*appendResult);
+  tupleSet_ = TupleSet::make(*appendResult);
 
   assert(valueRowMap_.size() == static_cast<size_t>(tupleSet_->numRows()));
   return {};
@@ -253,7 +253,12 @@ int64_t TupleSetIndex::size() const {
 }
 
 tl::expected<void, string> TupleSetIndex::combine() {
-  return tupleSet_->combine();
+  auto expCombinedTupleSet = tupleSet_->combine();
+  if (!expCombinedTupleSet.has_value()) {
+    return tl::make_unexpected(expCombinedTupleSet.error());
+  }
+  tupleSet_ = *expCombinedTupleSet;
+  return {};
 }
 
 string TupleSetIndex::toString() const {

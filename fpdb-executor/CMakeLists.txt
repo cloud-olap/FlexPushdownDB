@@ -17,14 +17,21 @@ add_library(fpdb-executor STATIC
         src/message/TupleSetReadyRemoteMessage.cpp include/fpdb/executor/message/TupleSetReadyRemoteMessage.h
         src/message/TupleSetWaitRemoteMessage.cpp include/fpdb/executor/message/TupleSetWaitRemoteMessage.h
         src/message/TupleSetSizeMessage.cpp include/fpdb/executor/message/TupleSetSizeMessage.h
-        src/message/TransferMetricsMessage.cpp include/fpdb/executor/message/TransferMetricsMessage.h
+        src/message/NetworkMetricsMessage.cpp include/fpdb/executor/message/NetworkMetricsMessage.h
         src/message/DiskMetricsMessage.cpp include/fpdb/executor/message/DiskMetricsMessage.h
         src/message/PredTransMetricsMessage.cpp include/fpdb/executor/message/PredTransMetricsMessage.h
+        src/message/PredTransCSMetricsMessage.cpp include/fpdb/executor/message/PredTransCSMetricsMessage.h
+        src/message/HashJoinMetricsMessage.cpp include/fpdb/executor/message/HashJoinMetricsMessage.h
         src/message/ErrorMessage.cpp include/fpdb/executor/message/ErrorMessage.h
         src/message/BloomFilterMessage.cpp include/fpdb/executor/message/BloomFilterMessage.h
+        src/message/GlobalArrowBloomFilterInitMessage.cpp include/fpdb/executor/message/GlobalArrowBloomFilterInitMessage.h
+        src/message/DistGlobalArrowBFInitMessage.cpp include/fpdb/executor/message/DistGlobalArrowBFInitMessage.h
         src/message/BitmapMessage.cpp include/fpdb/executor/message/BitmapMessage.h
         src/message/AdaptPushdownMetricsMessage.cpp include/fpdb/executor/message/AdaptPushdownMetricsMessage.h
         src/message/PushdownFallBackMessage.cpp include/fpdb/executor/message/PushdownFallBackMessage.h
+        src/message/AdaptResumeMessage.cpp include/fpdb/executor/message/AdaptResumeMessage.h
+        src/message/PredTransCardMessage.cpp include/fpdb/executor/message/PredTransCardMessage.h
+        src/message/OutputCardMessage.cpp include/fpdb/executor/message/OutputCardMessage.h
         src/message/cache/CacheMetricsMessage.cpp include/fpdb/executor/message/cache/CacheMetricsMessage.h
         src/message/cache/LoadRequestMessage.cpp include/fpdb/executor/message/cache/LoadRequestMessage.h
         src/message/cache/LoadResponseMessage.cpp include/fpdb/executor/message/cache/LoadResponseMessage.h
@@ -33,6 +40,8 @@ add_library(fpdb-executor STATIC
 #        cache related
         src/cache/SegmentCacheActor.cpp include/fpdb/executor/cache/SegmentCacheActor.h
         src/cache/TableCache.cpp include/fpdb/executor/cache/TableCache.h
+        src/cache/BloomFilterCache.cpp include/fpdb/executor/cache/BloomFilterCache.h
+        src/cache/CardCache.cpp include/fpdb/executor/cache/CardCache.h
 #        base physical operators, operator actors, and required sources
         include/fpdb/executor/physical/Forward.h
         include/fpdb/executor/physical/POpRelationshipType.h
@@ -53,6 +62,7 @@ add_library(fpdb-executor STATIC
         include/fpdb/executor/physical/Globals.h
         src/physical/sort/SortPOp.cpp include/fpdb/executor/physical/sort/SortPOp.h
         src/physical/limitsort/LimitSortPOp.cpp include/fpdb/executor/physical/limitsort/LimitSortPOp.h
+        src/physical/adaptive/AdaptSinkPOp.cpp include/fpdb/executor/physical/adaptive/AdaptSinkPOp.h
         src/physical/aggregate/AggregatePOp.cpp include/fpdb/executor/physical/aggregate/AggregatePOp.h
         src/physical/aggregate/AggregateResult.cpp include/fpdb/executor/physical/aggregate/AggregateResult.h
         include/fpdb/executor/physical/aggregate/function/AggregateFunctionType.h
@@ -63,6 +73,10 @@ add_library(fpdb-executor STATIC
         src/physical/aggregate/function/AvgBase.cpp include/fpdb/executor/physical/aggregate/function/AvgBase.h
         src/physical/aggregate/function/Avg.cpp include/fpdb/executor/physical/aggregate/function/Avg.h
         src/physical/aggregate/function/AvgReduce.cpp include/fpdb/executor/physical/aggregate/function/AvgReduce.h
+        src/physical/aggregate/function/StddevBase.cpp include/fpdb/executor/physical/aggregate/function/StddevBase.h
+        src/physical/aggregate/function/Stddev.cpp include/fpdb/executor/physical/aggregate/function/Stddev.h
+        src/physical/aggregate/function/StddevReduce.cpp include/fpdb/executor/physical/aggregate/function/StddevReduce.h
+        src/physical/aggregate/function/One.cpp include/fpdb/executor/physical/aggregate/function/One.h
         src/physical/bloomfilter/BloomFilterCreatePOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h
         src/physical/bloomfilter/BloomFilterCreateAbstractKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateAbstractKernel.h
         src/physical/bloomfilter/BloomFilterCreateKernel.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h
@@ -72,12 +86,22 @@ add_library(fpdb-executor STATIC
         src/physical/bloomfilter/BloomFilter.cpp include/fpdb/executor/physical/bloomfilter/BloomFilter.h
         src/physical/bloomfilter/BloomFilterBase.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterBase.h
         src/physical/bloomfilter/ArrowBloomFilter.cpp include/fpdb/executor/physical/bloomfilter/ArrowBloomFilter.h
+        src/physical/bloomfilter/GlobalArrowBloomFilter.cpp include/fpdb/executor/physical/bloomfilter/GlobalArrowBloomFilter.h
+        src/physical/bloomfilter/GlobalBloomFilterCreateArrowKernel.cpp include/fpdb/executor/physical/bloomfilter/GlobalBloomFilterCreateArrowKernel.h
+        src/physical/bloomfilter/GlobalBloomFilterInitPOp.cpp include/fpdb/executor/physical/bloomfilter/GlobalBloomFilterInitPOp.h
+        src/physical/bloomfilter/GlobalBloomFilterFinalizePOp.cpp include/fpdb/executor/physical/bloomfilter/GlobalBloomFilterFinalizePOp.h
+        src/physical/bloomfilter/DistGlobalBloomFilterMergePOp.cpp include/fpdb/executor/physical/bloomfilter/DistGlobalBloomFilterMergePOp.h
+        src/physical/bloomfilter/DistGlobalBloomFilterInitPOp.cpp include/fpdb/executor/physical/bloomfilter/DistGlobalBloomFilterInitPOp.h
         src/physical/bloomfilter/UniversalHashFunction.cpp include/fpdb/executor/physical/bloomfilter/UniversalHashFunction.h
+        src/physical/bloomfilter/BloomFilterSplitPOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterSplitPOp.h
+        src/physical/bloomfilter/BloomFilterConcatPOp.cpp include/fpdb/executor/physical/bloomfilter/BloomFilterConcatPOp.h
+        src/physical/broadcast/BroadcastPOp.cpp include/fpdb/executor/physical/broadcast/BroadcastPOp.h
         src/physical/cache/CacheLoadPOp.cpp include/fpdb/executor/physical/cache/CacheLoadPOp.h
         src/physical/cache/CacheHelper.cpp include/fpdb/executor/physical/cache/CacheHelper.h
         src/physical/collate/CollatePOp.cpp include/fpdb/executor/physical/collate/CollatePOp.h
         src/physical/collate/CollatePOp2.cpp include/fpdb/executor/physical/collate/CollatePOp2.h
-        src/physical/collect/CollectPOp.cpp include/fpdb/executor/physical/collect/CollectPOp.h
+        src/physical/exchange/BatchExchangePOp.cpp include/fpdb/executor/physical/exchange/BatchExchangePOp.h
+        src/physical/exchange/BatchExchangeRRForwardPOp.cpp include/fpdb/executor/physical/exchange/BatchExchangeRRForwardPOp.h
         src/physical/file/FileScanAbstractPOp.cpp include/fpdb/executor/physical/file/FileScanAbstractPOp.h
         src/physical/file/LocalFileScanPOp.cpp include/fpdb/executor/physical/file/LocalFileScanPOp.h
         src/physical/file/RemoteFileScanPOp.cpp include/fpdb/executor/physical/file/RemoteFileScanPOp.h
@@ -106,15 +130,18 @@ add_library(fpdb-executor STATIC
         src/physical/join/nestedloopjoin/NestedLoopJoinKernel.cpp include/fpdb/executor/physical/join/nestedloopjoin/NestedLoopJoinKernel.h
         src/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.cpp include/fpdb/executor/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.h
         src/physical/join/OuterJoinHelper.cpp include/fpdb/executor/physical/join/OuterJoinHelper.h
+        src/physical/join/DistJoinType.cpp include/fpdb/executor/physical/join/DistJoinType.h
         src/physical/merge/MergePOp.cpp include/fpdb/executor/physical/merge/MergePOp.h
         src/physical/merge/MergeKernel.cpp include/fpdb/executor/physical/merge/MergeKernel.h
         src/physical/project/ProjectPOp.cpp include/fpdb/executor/physical/project/ProjectPOp.h
+        src/physical/project/TupleSetSizeProjectPOp.cpp include/fpdb/executor/physical/project/TupleSetSizeProjectPOp.h
         src/physical/shuffle/ShufflePOp.cpp include/fpdb/executor/physical/shuffle/ShufflePOp.h
         src/physical/shuffle/ShuffleKernel.cpp include/fpdb/executor/physical/shuffle/ShuffleKernel.h
         src/physical/shuffle/ShuffleKernel2.cpp include/fpdb/executor/physical/shuffle/ShuffleKernel2.h
         src/physical/shuffle/RecordBatchShuffler.cpp include/fpdb/executor/physical/shuffle/RecordBatchShuffler.h
-        src/physical/shuffle/ShuffleBatchLoadPOp.cpp include/fpdb/executor/physical/shuffle/ShuffleBatchLoadPOp.h
         src/physical/split/SplitPOp.cpp include/fpdb/executor/physical/split/SplitPOp.h
+        src/physical/split/SplitKernel.cpp include/fpdb/executor/physical/split/SplitKernel.h
+        src/physical/split/NodewiseSplitPOp.cpp include/fpdb/executor/physical/split/NodewiseSplitPOp.h
         src/physical/s3/S3GetPOp.cpp include/fpdb/executor/physical/s3/S3GetPOp.h
         src/physical/s3/S3SelectPOp.cpp include/fpdb/executor/physical/s3/S3SelectPOp.h
         src/physical/s3/S3SelectScanAbstractPOp.cpp include/fpdb/executor/physical/s3/S3SelectScanAbstractPOp.h
@@ -124,12 +151,14 @@ add_library(fpdb-executor STATIC
         src/physical/s3/SelectPOp.cpp include/fpdb/executor/physical/s3/SelectPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h
         src/physical/fpdb-store/FPDBStoreFileScanPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h
+        src/physical/fpdb-store/FPDBStoreShuffleBatchLoadPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreShuffleBatchLoadPOp.h
         src/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreTableCacheLoadPOp.h
         src/physical/fpdb-store/FPDBStoreSuperPOpUtil.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOpUtil.h
         src/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreFilterBitmapWrapper.h
         src/physical/fpdb-store/FPDBStoreBloomFilterInfo.cpp include/fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h
 #        physical plan
         src/physical/PhysicalPlan.cpp include/fpdb/executor/physical/PhysicalPlan.h
+        src/physical/adaptive/AdaptPhysicalPlan.cpp include/fpdb/executor/physical/adaptive/AdaptPhysicalPlan.h
         src/physical/prune/PartitionPruner.cpp include/fpdb/executor/physical/prune/PartitionPruner.h
         src/physical/transform/PrePToPTransformer.cpp include/fpdb/executor/physical/transform/PrePToPTransformer.h
         src/physical/transform/PrePToS3PTransformer.cpp include/fpdb/executor/physical/transform/PrePToS3PTransformer.h
@@ -139,7 +168,11 @@ add_library(fpdb-executor STATIC
         src/physical/transform/pred-trans/PrePToPTransformerForPredTrans.cpp include/fpdb/executor/physical/transform/pred-trans/PrePToPTransformerForPredTrans.h
         src/physical/transform/pred-trans/PredTransOrder.cpp include/fpdb/executor/physical/transform/pred-trans/PredTransOrder.h
         src/physical/transform/pred-trans/SmallToLargePredTransOrder.cpp include/fpdb/executor/physical/transform/pred-trans/SmallToLargePredTransOrder.h
+        src/physical/transform/pred-trans/SmallToLargeDistPredTrans.cpp
         src/physical/transform/pred-trans/BFSPredTransOrder.cpp include/fpdb/executor/physical/transform/pred-trans/BFSPredTransOrder.h
+        src/physical/transform/pred-trans/LIPPredTransOrder.cpp include/fpdb/executor/physical/transform/pred-trans/LIPPredTransOrder.h        
+        src/physical/transform/pred-trans/DistPredTransType.cpp include/fpdb/executor/physical/transform/pred-trans/DistPredTransType.h
+        src/physical/transform/pred-trans/FilterSrc.cpp include/fpdb/executor/physical/transform/pred-trans/FilterSrc.h
 #        CAF serialization
         include/fpdb/executor/caf-serialization/CAFMessageSerializer.h
         include/fpdb/executor/caf-serialization/CAFPOpSerializer.h
@@ -158,15 +191,18 @@ add_library(fpdb-executor STATIC
 #        metrics
         include/fpdb/executor/metrics/Globals.h
         src/metrics/DebugMetrics.cpp include/fpdb/executor/metrics/DebugMetrics.h
-        src/metrics/TransferMetrics.cpp include/fpdb/executor/metrics/TransferMetrics.h
+        src/metrics/NetworkMetrics.cpp include/fpdb/executor/metrics/NetworkMetrics.h
         src/metrics/DiskMetrics.cpp include/fpdb/executor/metrics/DiskMetrics.h
         src/metrics/PredTransMetrics.cpp include/fpdb/executor/metrics/PredTransMetrics.h
+        src/metrics/HashJoinMetrics.cpp include/fpdb/executor/metrics/HashJoinMetrics.h
 #        executor
+        include/fpdb/executor/Util.h
         src/Globals.cpp include/fpdb/executor/Globals.h
         src/Executor.cpp include/fpdb/executor/Executor.h
         src/Execution.cpp include/fpdb/executor/Execution.h
         src/FPDBStoreExecution.cpp include/fpdb/executor/FPDBStoreExecution.h
-        src/CollAdaptPushdownMetricsExecution.cpp include/fpdb/executor/CollAdaptPushdownMetricsExecution.h)
+        src/CollAdaptPushdownMetricsExecution.cpp include/fpdb/executor/CollAdaptPushdownMetricsExecution.h
+        src/Progress.cpp include/fpdb/executor/Progress.h)
 
 target_include_directories(fpdb-executor PUBLIC include)
 
@@ -191,7 +227,8 @@ add_executable(fpdb-executor-bench
         bench/GroupBenchmark.cpp
         bench/HashJoinBenchmark.cpp
         bench/ShuffleBenchmark.cpp
-        bench/BloomFilterBenchmark.cpp)
+        bench/BloomFilterBenchmark.cpp
+        bench/SplitBenchmark.cpp)
 
 target_include_directories(fpdb-executor-bench PRIVATE include)
 

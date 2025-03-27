@@ -50,10 +50,12 @@ add_executable(fpdb-main-test
         test/TPCHTest.cpp
         test/TPCHDistTest.cpp
         test/TPCHFPDBStoreSameNodeTest.cpp
+        test/DSBFPDBStoreSameNodeTest.cpp
         test/CachingOnlyTest.cpp
         test/HybridTest.cpp
         test/BitmapPushdownTest.cpp
-        test/PredTransTest.cpp)
+        test/PredTransTest.cpp
+        test/PredTransDistTest.cpp)
 
 target_include_directories(fpdb-main-test PRIVATE test-base)
 
@@ -88,7 +90,8 @@ add_executable(fpdb-main-bench
         bench/TPCHDistFPDBStoreBench.cpp
         bench/BytesReadBench.cpp
         bench/BitmapPushdownBench.cpp
-        bench/PredTransBench.cpp)
+        bench/PredTransBench.cpp
+        bench/PredTransDistBench.cpp)
 
 target_include_directories(fpdb-main-bench PRIVATE test-base)
 

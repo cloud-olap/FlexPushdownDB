@@ -301,10 +301,16 @@ PhysicalPlanDeserializer::deserializeAggregatePOp(const ::nlohmann::json &jObj) 
     functions.emplace_back(*expFunction);
   }
 
+  if (!jObj.contains("isReduce")) {
+    return tl::make_unexpected(fmt::format("`isReduce` not specified in AggregatePOp JSON '{}'", to_string(jObj)));
+  }
+  bool isReduce = jObj["isReduce"].get<bool>();
+
   std::shared_ptr<PhysicalOp> aggregatePOp = std::make_shared<aggregate::AggregatePOp>(name,
                                                                                        projectColumnNames,
                                                                                        0,
-                                                                                       functions);
+                                                                                       functions,
+                                                                                       isReduce);
   aggregatePOp->setSeparated(isSeparated);
   aggregatePOp->setProducers(producers);
   aggregatePOp->setConsumers(consumers);
@@ -414,10 +420,10 @@ PhysicalPlanDeserializer::deserializeBloomFilterCreatePOp(const ::nlohmann::json
   }
   auto desiredFalsePositiveRate = jObj["desiredFalsePositiveRate"].get<double>();
 
-  if (!jObj.contains("bloomFilterUsePOps")) {
-    return tl::make_unexpected(fmt::format("BloomFilterUsePOps not specified in BloomFilterCreatePOp JSON '{}'", to_string(jObj)));
+  if (!jObj.contains("bloomFilterUsePOp")) {
+    return tl::make_unexpected(fmt::format("BloomFilterUsePOp not specified in BloomFilterCreatePOp JSON '{}'", to_string(jObj)));
   }
-  auto bloomFilterUsePOps = jObj["bloomFilterUsePOps"].get<std::set<std::string>>();
+  auto bloomFilterUsePOp = jObj["bloomFilterUsePOp"].get<std::string>();
 
   if (!jObj.contains("passTupleSetConsumers")) {
     return tl::make_unexpected(fmt::format("PassTupleSetConsumers not specified in BloomFilterCreatePOp JSON '{}'", to_string(jObj)));
@@ -433,7 +439,7 @@ PhysicalPlanDeserializer::deserializeBloomFilterCreatePOp(const ::nlohmann::json
   bloomFilterCreatePOp->setProducers(producers);
   bloomFilterCreatePOp->setConsumers(consumers);
   bloomFilterCreatePOp->setConsumerToBloomFilterInfo(consumerToBloomFilterInfo);
-  bloomFilterCreatePOp->setBloomFilterUsePOps(bloomFilterUsePOps);
+  bloomFilterCreatePOp->setBloomFilterUsePOp(bloomFilterUsePOp);
   bloomFilterCreatePOp->setPassTupleSetConsumers(passTupleSetConsumers);
 
   return bloomFilterCreatePOp;

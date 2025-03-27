@@ -42,14 +42,14 @@ RecordBatchHasher::make(const std::shared_ptr<arrow::Schema> &schema,
     if (type->id() == arrow::Type::DICTIONARY) {
       auto bit_width = arrow::internal::checked_cast<const arrow::FixedWidthType&>(*type).bit_width();
               ARROW_DCHECK(bit_width % 8 == 0);
-      hasher->colMetadata_[i] = arrow::compute::KeyEncoder::KeyColumnMetadata(true, bit_width / 8);
+      hasher->colMetadata_[i] = arrow::compute::KeyColumnMetadata(true, bit_width / 8);
     } else if (type->id() == arrow::Type::BOOL) {
-      hasher->colMetadata_[i] = arrow::compute::KeyEncoder::KeyColumnMetadata(true, 0);
+      hasher->colMetadata_[i] = arrow::compute::KeyColumnMetadata(true, 0);
     } else if (is_fixed_width(type->id())) {
-      hasher->colMetadata_[i] = arrow::compute::KeyEncoder::KeyColumnMetadata(
+      hasher->colMetadata_[i] = arrow::compute::KeyColumnMetadata(
               true, arrow::internal::checked_cast<const arrow::FixedWidthType&>(*type).bit_width() / 8);
     } else if (is_binary_like(type->id())) {
-      hasher->colMetadata_[i] = arrow::compute::KeyEncoder::KeyColumnMetadata(false, sizeof(uint32_t));
+      hasher->colMetadata_[i] = arrow::compute::KeyColumnMetadata(false, sizeof(uint32_t));
     } else {
       return tl::make_unexpected(fmt::format("Type '{}' not implemented for RecordBatchHasher", type->name()));
     }
@@ -67,6 +67,38 @@ RecordBatchHasher::make(const std::shared_ptr<arrow::Schema> &schema,
 }
 
 void RecordBatchHasher::hash(const std::shared_ptr<arrow::RecordBatch> &recordBatch, uint32_t *hashes) {
+  // make key cols
+  makeKeyColumns(recordBatch);
+
+  // split into smaller mini-batches
+  int64_t numRows = recordBatch->num_rows();
+  for (int64_t startRow = 0; startRow < numRows;) {
+    int64_t nextMiniBatchSize = std::min(static_cast<int64_t>(MiniBatchSize_), numRows - startRow);
+    // encode
+    encoder_.PrepareEncodeSelected(startRow, nextMiniBatchSize, cols_);
+    // compute hash
+    arrow::compute::Hashing32::HashMultiColumn(encoder_.GetBatchColumns(), &encodeCtx_, hashes + startRow);
+    startRow += MiniBatchSize_;
+  }
+}
+
+void RecordBatchHasher::hash(const std::shared_ptr<arrow::RecordBatch> &recordBatch, uint64_t *hashes) {
+  // make key cols
+  makeKeyColumns(recordBatch);
+
+  // split into smaller mini-batches
+  int64_t numRows = recordBatch->num_rows();
+  for (int64_t startRow = 0; startRow < numRows;) {
+    int64_t nextMiniBatchSize = std::min(static_cast<int64_t>(MiniBatchSize_), numRows - startRow);
+    // encode
+    encoder_.PrepareEncodeSelected(startRow, nextMiniBatchSize, cols_);
+    // compute hash
+    arrow::compute::Hashing64::HashMultiColumn(encoder_.GetBatchColumns(), &encodeCtx_, hashes + startRow);
+    startRow += MiniBatchSize_;
+  }
+}
+
+void RecordBatchHasher::makeKeyColumns(const std::shared_ptr<arrow::RecordBatch> &recordBatch) {
   int64_t numRows = recordBatch->num_rows();
   arrow::compute::ExecBatch execBatch(*recordBatch);
 
@@ -84,23 +116,14 @@ void RecordBatchHasher::hash(const std::shared_ptr<arrow::RecordBatch> &recordBa
     }
 
     int64_t offset = execBatch[icol].array()->offset;
-    auto colBase = arrow::compute::KeyEncoder::KeyColumnArray(
+    auto colBase = arrow::compute::KeyColumnArray(
             colMetadata_[i], offset + numRows, nonNulls, fixedLen, varLen);
-    cols_[i] = arrow::compute::KeyEncoder::KeyColumnArray(colBase, offset, numRows);
+    cols_[i] = colBase.Slice(offset, numRows);
   }
+}
 
-  // split into smaller mini-batches
-  for (int64_t startRow = 0; startRow < numRows;) {
-    int64_t nextMiniBatchSize = std::min(static_cast<int64_t>(MiniBatchSize_), numRows - startRow);
-
-    // encode
-    encoder_.PrepareEncodeSelected(startRow, nextMiniBatchSize, cols_);
-
-    // compute hash
-    arrow::compute::Hashing::HashMultiColumn(encoder_.GetBatchColumns(), &encodeCtx_, hashes + startRow);
-
-    startRow += MiniBatchSize_;
-  }
+int64_t RecordBatchHasher::getHardwareFlags() const {
+  return encodeCtx_.hardware_flags;
 }
 
 }

@@ -208,7 +208,7 @@ private:
       if (!res.has_value()) {
         throw std::runtime_error(res.error());
       }
-      outputTupleSets.emplace_back(outputTupleSet);
+      outputTupleSets.emplace_back(*res);
     }
     return outputTupleSets;
   }
@@ -282,7 +282,7 @@ private:
         if (!res.has_value()) {
           throw std::runtime_error(res.error());
         }
-        outputTupleSetsOneNode.emplace_back(outputTupleSet);
+        outputTupleSetsOneNode.emplace_back(*res);
       }
       outputTupleSets_.emplace_back(outputTupleSetsOneNode);
     }

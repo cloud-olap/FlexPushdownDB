@@ -31,7 +31,9 @@ enum ExpressionType {
   LIKE,
   DATE_EXTRACT,
   IS_NULL,
-  SUBSTR
+  IS_NOT_NULL,
+  SUBSTR,
+  CONCAT
 };
 
 }

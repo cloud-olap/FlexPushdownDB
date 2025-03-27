@@ -1,6 +1,6 @@
 {
   "schemaName": "tpch-sf10/csv/",
-  "numNodes": 2,
+  "numNodes": 1,
   "objectMap": [
     {
       "object": "nation.tbl",
@@ -8,7 +8,7 @@
     },
     {
       "object": "region.tbl",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "part_sharded/part.tbl.0",
@@ -16,7 +16,7 @@
     },
     {
       "object": "part_sharded/part.tbl.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "supplier.tbl",
@@ -28,7 +28,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.2",
@@ -36,7 +36,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.3",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.4",
@@ -44,7 +44,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.5",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.6",
@@ -52,7 +52,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.7",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.8",
@@ -60,7 +60,7 @@
     },
     {
       "object": "partsupp_sharded/partsupp.tbl.9",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "customer_sharded/customer.tbl.0",
@@ -68,7 +68,7 @@
     },
     {
       "object": "customer_sharded/customer.tbl.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.0",
@@ -76,7 +76,7 @@
     },
     {
       "object": "orders_sharded/orders.tbl.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.2",
@@ -84,7 +84,7 @@
     },
     {
       "object": "orders_sharded/orders.tbl.3",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.4",
@@ -92,7 +92,7 @@
     },
     {
       "object": "orders_sharded/orders.tbl.5",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.6",
@@ -100,7 +100,7 @@
     },
     {
       "object": "orders_sharded/orders.tbl.7",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.8",
@@ -108,7 +108,7 @@
     },
     {
       "object": "orders_sharded/orders.tbl.9",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.10",
@@ -116,7 +116,7 @@
     },
     {
       "object": "orders_sharded/orders.tbl.11",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.12",
@@ -124,7 +124,7 @@
     },
     {
       "object": "orders_sharded/orders.tbl.13",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "orders_sharded/orders.tbl.14",
@@ -136,7 +136,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.1",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.2",
@@ -144,7 +144,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.3",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.4",
@@ -152,7 +152,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.5",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.6",
@@ -160,7 +160,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.7",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.8",
@@ -168,7 +168,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.9",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.10",
@@ -176,7 +176,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.11",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.12",
@@ -184,7 +184,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.13",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.14",
@@ -192,7 +192,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.15",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.16",
@@ -200,7 +200,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.17",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.18",
@@ -208,7 +208,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.19",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.20",
@@ -216,7 +216,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.21",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.22",
@@ -224,7 +224,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.23",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.24",
@@ -232,7 +232,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.25",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.26",
@@ -240,7 +240,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.27",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.28",
@@ -248,7 +248,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.29",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.30",
@@ -256,7 +256,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.31",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.32",
@@ -264,7 +264,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.33",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.34",
@@ -272,7 +272,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.35",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.36",
@@ -280,7 +280,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.37",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.38",
@@ -288,7 +288,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.39",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.40",
@@ -296,7 +296,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.41",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.42",
@@ -304,7 +304,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.43",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.44",
@@ -312,7 +312,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.45",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.46",
@@ -320,7 +320,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.47",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.48",
@@ -328,7 +328,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.49",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.50",
@@ -336,7 +336,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.51",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.52",
@@ -344,7 +344,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.53",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.54",
@@ -352,7 +352,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.55",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.56",
@@ -360,7 +360,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.57",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.58",
@@ -368,7 +368,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.59",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.60",
@@ -376,7 +376,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.61",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.62",
@@ -384,7 +384,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.63",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.64",
@@ -392,7 +392,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.65",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.66",
@@ -400,7 +400,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.67",
-      "nodeId": 1
+      "nodeId": 0
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.68",
@@ -408,7 +408,7 @@
     },
     {
       "object": "lineitem_sharded/lineitem.tbl.69",
-      "nodeId": 1
+      "nodeId": 0
     }
   ]
 }

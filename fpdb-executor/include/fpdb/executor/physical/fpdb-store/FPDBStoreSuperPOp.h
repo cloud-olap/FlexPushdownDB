@@ -40,7 +40,7 @@ public:
   FPDBStoreSuperPOp() = default;
   FPDBStoreSuperPOp(const FPDBStoreSuperPOp&) = default;
   FPDBStoreSuperPOp& operator=(const FPDBStoreSuperPOp&) = default;
-  ~FPDBStoreSuperPOp() = default;
+  ~FPDBStoreSuperPOp() override;
 
   void onReceive(const Envelope &envelope) override;
   void clear() override;
@@ -60,6 +60,9 @@ public:
   void resetForwardConsumers();
   void setGetAdaptPushdownMetrics(bool getAdaptPushdownMetrics);
 
+  // create a pushback exec, for pushback double-exec
+  void pushback_double_exec();
+
   // used in filter bitmap pushdown
   static void unBlockNonRestrictFilters(const std::string &filterPOpName, const std::string &fpdbStoreSuperPOpName);
 
@@ -74,9 +77,9 @@ private:
   void onComplete(const CompleteMessage &);
 
   bool readyToProcess();
-  void processAtStore();
+  void processAtStore(bool isDoubleExec = false);
   void processEmpty();
-  void processAsPullup();   // for adaptive pushdown
+  void processAsPullup(bool* isResultNeeded);   // for adaptive pushdown
   void onErrorDuringProcess(const std::string &error);    // handle errors from processAtStore()
   tl::expected<std::string, std::string> serialize(bool pretty);
 
@@ -85,6 +88,9 @@ private:
   std::string host_;
   int fileServicePort_;     // for adaptive pushdown
   int flightPort_;
+
+  // serialized original subPlan_, in case to be reused
+  std::optional<std::string> subPlanStr_ = std::nullopt;
 
   // if waiting for scan message before sending request to store
   bool waitForScanMessage_ = false;
@@ -105,34 +111,42 @@ private:
   // for metrics of adaptive pushdown
   bool getAdaptPushdownMetrics_ = false;
 
+public:
+  // for pushback double-exec
+  std::shared_ptr<std::mutex> doubleExecMutex_;
+  std::shared_ptr<std::condition_variable_any> doubleExecCv_;   // let the cleanup wait until double-exec finishes
+                                                                // we use this to check if this has double-exec
+  bool isOneExecFinished_ = false;
+  bool isDoubleExecFinished_ = false;
+
 // caf inspect
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, FPDBStoreSuperPOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("subPlan", op.subPlan_),
-                               f.field("parallelDegree", op.parallelDegree_),
-                               f.field("host", op.host_),
-                               f.field("fileServicePort", op.fileServicePort_),
-                               f.field("flightPort", op.flightPort_),
-                               f.field("waitForScanMessage", op.waitForScanMessage_),
-                               f.field("receiveByOthers", op.receiveByOthers_),
-                               f.field("shufflePOpName", op.shufflePOpName_),
-                               f.field("numBloomFiltersExpected", op.numBloomFiltersExpected_),
-                               f.field("numBloomFiltersReceived", op.numBloomFiltersReceived_),
-                               f.field("getAdaptPushdownMetrics", op.getAdaptPushdownMetrics_));
+    return inspect_base(f, op,
+                        f.field("subPlan", op.subPlan_),
+                        f.field("parallelDegree", op.parallelDegree_),
+                        f.field("host", op.host_),
+                        f.field("fileServicePort", op.fileServicePort_),
+                        f.field("flightPort", op.flightPort_),
+                        f.field("waitForScanMessage", op.waitForScanMessage_),
+                        f.field("receiveByOthers", op.receiveByOthers_),
+                        f.field("shufflePOpName", op.shufflePOpName_),
+                        f.field("numBloomFiltersExpected", op.numBloomFiltersExpected_),
+                        f.field("numBloomFiltersReceived", op.numBloomFiltersReceived_),
+                        f.field("getAdaptPushdownMetrics", op.getAdaptPushdownMetrics_));
   }
 
 };
+
+/**
+ * For keeping track of pushback execs, used when enabling double-exec for tail pushback execs
+ */
+inline std::string makePushbackDoubleExecKey(long queryId, const std::string &op) {
+  return fmt::format("{}-{}", queryId, op);
+}
+inline std::mutex PushbackExecMutex;
+inline std::unordered_map<std::string, FPDBStoreSuperPOp*> OpsWithPushbackExec;
 
 }
 

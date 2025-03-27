@@ -44,6 +44,9 @@ protected:
   shared_ptr<Expression> right_;
 
   string genAliasForComparison(const string& compOp);
+
+private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override;
 };
 
 }

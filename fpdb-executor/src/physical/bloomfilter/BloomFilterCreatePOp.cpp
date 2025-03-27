@@ -2,12 +2,13 @@
 // Created by Yifei Yang on 3/16/22.
 //
 
-#include <optional>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreatePOp.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateArrowKernel.h>
+#include <fpdb/executor/physical/bloomfilter/GlobalBloomFilterCreateArrowKernel.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/flight/FlightClients.h>
+#include <fpdb/executor/flight/FlightHandler.h>
 #include <fpdb/store/server/flight/PutBitmapCmd.hpp>
 #include <fpdb/tuple/util/Util.h>
 
@@ -19,12 +20,23 @@ BloomFilterCreatePOp::BloomFilterCreatePOp(const std::string &name,
                                            const std::vector<std::string> &projectColumnNames,
                                            int nodeId,
                                            const std::vector<std::string> &bloomFilterColumnNames,
+                                           bool isGlobal,
                                            double desiredFalsePositiveRate):
-  PhysicalOp(name, BLOOM_FILTER_CREATE, projectColumnNames, nodeId) {
-  if (USE_ARROW_BLOOM_FILTER_IMPL) {
-    kernel_ = BloomFilterCreateArrowKernel::make(bloomFilterColumnNames);
-  } else {
-    kernel_ = BloomFilterCreateKernel::make(bloomFilterColumnNames, desiredFalsePositiveRate);
+  PhysicalOp(name, BLOOM_FILTER_CREATE, projectColumnNames, nodeId),
+  isGlobal_(isGlobal) {
+  if (isGlobal) {
+    if (USE_ARROW_BLOOM_FILTER_IMPL) {
+      kernel_ = GlobalBloomFilterCreateArrowKernel::make(bloomFilterColumnNames);
+    } else {
+      throw std::runtime_error("Global Vanilla Bloom filter is currently not supported");
+    }
+  }
+  else {
+    if (USE_ARROW_BLOOM_FILTER_IMPL) {
+      kernel_ = BloomFilterCreateArrowKernel::make(bloomFilterColumnNames);
+    } else {
+      kernel_ = BloomFilterCreateKernel::make(bloomFilterColumnNames, desiredFalsePositiveRate);
+    }
   }
 }
 
@@ -40,6 +52,9 @@ void BloomFilterCreatePOp::onReceive(const Envelope &envelope) {
   } else if (msg.type() == MessageType::TUPLESET) {
     auto tupleSetMessage = dynamic_cast<const TupleSetMessage &>(msg);
     this->onTupleSet(tupleSetMessage);
+  } else if (msg.type() == MessageType::GLOBAL_BLOOM_FILTER_INIT) {
+    auto globalArrowBloomFilterInitMessage = dynamic_cast<const GlobalArrowBloomFilterInitMessage &>(msg);
+    this->onGlobalArrowBloomFilterInit(globalArrowBloomFilterInitMessage);
   } else if (msg.type() == MessageType::COMPLETE) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg);
     this->onComplete(completeMessage);
@@ -57,16 +72,16 @@ const std::shared_ptr<BloomFilterCreateAbstractKernel> &BloomFilterCreatePOp::ge
   return kernel_;
 }
 
-const std::set<std::string> &BloomFilterCreatePOp::getBloomFilterUsePOps() const {
-  return bloomFilterUsePOps_;
+const std::string &BloomFilterCreatePOp::getBloomFilterUsePOp() const {
+  return bloomFilterUsePOp_;
 }
 
 const std::set<std::string> &BloomFilterCreatePOp::getPassTupleSetConsumers() const {
   return passTupleSetConsumers_;
 }
 
-void BloomFilterCreatePOp::setBloomFilterUsePOps(const std::set<std::string> &bloomFilterUsePOps) {
-  bloomFilterUsePOps_ = bloomFilterUsePOps;
+void BloomFilterCreatePOp::setBloomFilterUsePOp(const std::string &bloomFilterUsePOp) {
+  bloomFilterUsePOp_ = bloomFilterUsePOp;
 }
 
 void BloomFilterCreatePOp::setPassTupleSetConsumers(const std::set<std::string> &passTupleSetConsumers) {
@@ -74,7 +89,10 @@ void BloomFilterCreatePOp::setPassTupleSetConsumers(const std::set<std::string> 
 }
 
 void BloomFilterCreatePOp::addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp) {
-  bloomFilterUsePOps_.emplace(bloomFilterUsePOp->name());
+  if (!bloomFilterUsePOp_.empty()) {
+    throw std::runtime_error("Duplicated BloomFilterUsePOp set");
+  }
+  bloomFilterUsePOp_ = bloomFilterUsePOp->name();
   PhysicalOp::produce(bloomFilterUsePOp);
 }
 
@@ -110,7 +128,34 @@ void BloomFilterCreatePOp::onTupleSet(const TupleSetMessage &msg) {
   ctx()->tell(tupleSetMessage, passTupleSetConsumers_);
 }
 
+void BloomFilterCreatePOp::onGlobalArrowBloomFilterInit(const GlobalArrowBloomFilterInitMessage &msg) {
+  // build this part of the global Arrow bf
+  auto typedKernel = std::static_pointer_cast<GlobalBloomFilterCreateArrowKernel>(kernel_);
+  typedKernel->setInitedGlobalArrowBloomFilter(msg.getThreadId(), msg.getBloomFilter());
+  auto res = kernel_->buildBloomFilter();
+  if (!res.has_value()) {
+    ctx()->notifyError(res.error());
+    return;
+  }
+
+#if SHOW_DEBUG_METRICS == true
+  // send hash join metrics
+  if (executor::metrics::SHOW_BLOOM_FILTER_METRICS) {
+    std::shared_ptr<Message> hjMetricsMsg = std::make_shared<HashJoinMetricsMessage>(
+            executor::metrics::HashJoinMetrics(0, 0, numRowsInput_, 0), name_);
+    ctx()->notifyRoot(hjMetricsMsg);
+  }
+#endif
+
+  ctx()->notifyComplete();
+}
+
 void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
+  // noop if building the global bf, since it will complete when receiving the inited global bf
+  if (isGlobal_) {
+    return;
+  }
+
   if (!ctx()->isComplete() && ctx()->operatorMap().allComplete(POpRelationshipType::Producer)) {
     // build and get bloom filter
     auto res = kernel_->buildBloomFilter();
@@ -122,15 +167,24 @@ void BloomFilterCreatePOp::onComplete(const CompleteMessage &) {
       ctx()->notifyError("Bloom filter not created on complete");
     }
 
-    // send bloom filter to bloomFilterUsePOps_
+    // send bloom filter to bloomFilterUsePOp_
     std::shared_ptr<Message> bloomFilterMessage = std::make_shared<BloomFilterMessage>(*bloomFilter, name_);
-    ctx()->tell(bloomFilterMessage, bloomFilterUsePOps_);
+    ctx()->send(bloomFilterMessage, bloomFilterUsePOp_);
 
     // send bloom filter to fpdb-store if needed
     if (bloomFilterInfo_.has_value()) {
       putBloomFilterToStore(*bloomFilter);
       notifyFPDBStoreBloomFilterUsers();
     }
+
+#if SHOW_DEBUG_METRICS == true
+    // send hash join metrics
+    if (executor::metrics::SHOW_BLOOM_FILTER_METRICS) {
+      std::shared_ptr<Message> hjMetricsMsg = std::make_shared<HashJoinMetricsMessage>(
+              executor::metrics::HashJoinMetrics(0, 0, numRowsInput_, 0), name_);
+      ctx()->notifyRoot(hjMetricsMsg);
+    }
+#endif
 
     ctx()->notifyComplete();
   }
@@ -159,24 +213,22 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
     auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
 
     // send to host
-    std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
-    std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-    auto status = client->DoPut(descriptor, recordBatches[0]->schema(), &writer, &metadataReader);
-    if (!status.ok()) {
-      ctx()->notifyError(status.message());
+    auto doPutRes = client->DoPut(descriptor, recordBatches[0]->schema());
+    if (!doPutRes.ok()) {
+      ctx()->notifyError(doPutRes.status().message());
     }
 
     for (const auto &batch: recordBatches) {
-      status = writer->WriteRecordBatch(*batch);
+      auto status = (*doPutRes).writer->WriteRecordBatch(*batch);
       if (!status.ok()) {
         ctx()->notifyError(status.message());
       }
     }
-    status = writer->DoneWriting();
+    auto status = (*doPutRes).writer->DoneWriting();
     if (!status.ok()) {
       ctx()->notifyError(status.message());
     }
-    status = writer->Close();
+    status = (*doPutRes).writer->Close();
     if (!status.ok()) {
       ctx()->notifyError(status.message());
     }
@@ -188,8 +240,8 @@ void BloomFilterCreatePOp::putBloomFilterToStore(const std::shared_ptr<BloomFilt
   for (const auto &batch: recordBatches) {
     recordBatchesSize += fpdb::tuple::util::Util::getSize(batch);
   }
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
-          metrics::TransferMetrics(0, recordBatchesSize * bloomFilterInfo_->hosts_.size(), 0), name_);
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+          metrics::NetworkMetrics(0, recordBatchesSize * bloomFilterInfo_->hosts_.size(), 0), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 }

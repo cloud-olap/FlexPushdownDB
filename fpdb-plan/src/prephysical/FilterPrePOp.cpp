@@ -27,4 +27,17 @@ const shared_ptr<fpdb::expression::gandiva::Expression> &FilterPrePOp::getPredic
   return predicate_;
 }
 
+bool FilterPrePOp::equalTo(const std::shared_ptr<PrePhysicalOp> &other) const {
+  // self
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<FilterPrePOp>(other);
+  if (!expression::gandiva::Expression::equals(predicate_, typedOther->predicate_)) {
+    return false;
+  }
+  // producers
+  return equals(producers_, typedOther->producers_);
+}
+
 }

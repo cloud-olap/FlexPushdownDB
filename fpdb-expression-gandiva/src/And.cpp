@@ -87,9 +87,17 @@ const vector<shared_ptr<Expression>> &And::getExprs() const {
 }
 
 shared_ptr<Expression> fpdb::expression::gandiva::and_(const shared_ptr<Expression>& left,
-															  const shared_ptr<Expression>& right) {
+                                                       const shared_ptr<Expression>& right) {
   const vector<shared_ptr<Expression>> exprs{left, right};
   return make_shared<And>(exprs);
+}
+
+bool And::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<And>(other);
+  return equals(exprs_, typedOther->exprs_);
 }
 
 shared_ptr<Expression>

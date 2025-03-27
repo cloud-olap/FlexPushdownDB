@@ -74,13 +74,14 @@ tl::expected<arrow::ArrayVector, string> OuterJoinHelper::computeKeepSide(const 
   if (!expProjectTupleSet.has_value()) {
     return tl::make_unexpected(expProjectTupleSet.error());
   }
-  const auto &projectTupleSet = expProjectTupleSet.value();
+  auto projectTupleSet = expProjectTupleSet.value();
 
   // combine and make the record batch
   auto result = projectTupleSet->combine();
   if (!result.has_value()) {
     return tl::make_unexpected(result.error());
   }
+  projectTupleSet = *result;
   arrow::ArrayVector inputArrayVector;
   for (const auto &column: projectTupleSet->table()->columns()) {
     inputArrayVector.emplace_back(column->chunk(0));

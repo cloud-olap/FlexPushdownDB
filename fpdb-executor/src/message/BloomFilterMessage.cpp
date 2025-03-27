@@ -19,4 +19,20 @@ const std::shared_ptr<BloomFilterBase> &BloomFilterMessage::getBloomFilter() con
   return bloomFilter_;
 }
 
+const std::optional<RemoteInfo> &BloomFilterMessage::getRemoteInfo() const {
+  return remoteInfo_;
+}
+
+bool BloomFilterMessage::isRemoteConsumerSpecific() const {
+  return remoteConsumerSpecific_;
+}
+
+void BloomFilterMessage::setRemoteInfo(const RemoteInfo &remoteInfo) {
+  remoteInfo_ = remoteInfo;
+}
+
+void BloomFilterMessage::setRemoteConsumerSpecific(bool remoteConsumerSpecific) {
+  remoteConsumerSpecific_ = remoteConsumerSpecific;
+}
+
 }

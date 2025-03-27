@@ -6,65 +6,78 @@
 #include <spdlog/spdlog.h>
 #include <filesystem>
 
-#include "fpdb/aws/ProfileAWSCredentialsProviderChain.h"
 #include "fpdb/aws/AirMettleClientAuthHandler.hpp"
 #include <fpdb/util/Util.h>
 #include <arrow/flight/types.h>
 #include <arrow/flight/client.h>
+#include <arrow/filesystem/s3fs.h>
 
 namespace fpdb::aws {
+
+shared_ptr<ProfileAWSCredentialsProviderChain> AWSClient::defaultAwsCredentialProvider() {
+  return Aws::MakeShared<fpdb::aws::ProfileAWSCredentialsProviderChain>(ALLOCATION_TAG.data(), "FlexPushdownDB");
+}
 
 AWSClient::AWSClient(const shared_ptr<AWSConfig> &awsConfig) :
   awsConfig_(awsConfig) {
 }
 
 void AWSClient::init() {
-  options_.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Off;
-  Aws::InitAPI(options_);
+  // init through Arrow's utility func (have to call if we want to use Arrow's s3fs),
+  // which basically calls "Aws::InitAPI()"
+  arrow::fs::S3GlobalOptions s3GlobalOptions{arrow::fs::S3LogLevel::Off};
+  auto status = arrow::fs::InitializeS3(s3GlobalOptions);
+  if (!status.ok()) {
+    throw runtime_error(status.message());
+  }
+
+  // create S3 client
   s3Client_ = makeS3Client();
 }
 
-[[maybe_unused]] void AWSClient::shutdown() {
-  Aws::ShutdownAPI(options_);
+void AWSClient::shutdown() {
+  // shutdown through Arrow's utility func, which basically calls "Aws::ShutdownAPI()"
+  auto status = arrow::fs::FinalizeS3();
+  if (!status.ok()) {
+    throw runtime_error(status.message());
+  }
 }
 
 std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
-  static const char *ALLOCATION_TAG = "Normal";
-
   std::shared_ptr<Aws::S3::S3Client> s3Client;
 
-  Aws::Client::ClientConfiguration config;
-  config.scheme = Aws::Http::Scheme::HTTP;
-  config.region = Aws::Region::US_EAST_2;
+  awsInternalConfig_ = make_shared<Aws::Client::ClientConfiguration>();
+  awsInternalConfig_->scheme = Aws::Http::Scheme::HTTP;
+  awsInternalConfig_->region = Aws::Region::US_EAST_2;
 
   // This value has been tuned for c5a.4xlarge, c5a.8xlarge, and c5n.9xlarge, any more connections than this and aggregate
   // network performance degrades rather than remaining constant
   // This value makes low selectivity S3 Select requests much faster as it utilizes more network bandwidth for them.
   // S3 Select requests with high selectivity are unaffected, as are GET requests (so for GET we don't run it in parallel)
-  config.maxConnections = 200; // Default = 25
-  config.retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>(ALLOCATION_TAG, 0, 0); // Disable retries
-  config.connectTimeoutMs = 500000;
-  config.requestTimeoutMs = 900000;
+  awsInternalConfig_->maxConnections = 200; // Default = 25
+  awsInternalConfig_->retryStrategy = Aws::MakeShared<Aws::Client::DefaultRetryStrategy>(ALLOCATION_TAG.data(), 0, 0); // Disable retries
+  awsInternalConfig_->connectTimeoutMs = 500000;
+  awsInternalConfig_->requestTimeoutMs = 900000;
   // Default is to create and dispatch to thread with async methods, we don't use async so default is ideal
-  config.executor = Aws::MakeShared<Aws::Utils::Threading::DefaultExecutor>(ALLOCATION_TAG);
-  config.verifySSL = false;
+  awsInternalConfig_->executor = Aws::MakeShared<Aws::Utils::Threading::DefaultExecutor>(ALLOCATION_TAG.data());
+  awsInternalConfig_->verifySSL = false;
 
   // Commented this out as turning it off increase transfer rate. It appears that having this set
   // reduces transfer rate even if the chosen value is very high.
   if (awsConfig_->getNetworkLimit() > 0) {
     std::shared_ptr<Aws::Utils::RateLimits::RateLimiterInterface> limiter;
-    limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG, awsConfig_->getNetworkLimit());
-    config.readRateLimiter = limiter;
-    config.writeRateLimiter = limiter;
+    limiter = Aws::MakeShared<Aws::Utils::RateLimits::DefaultRateLimiter<>>(ALLOCATION_TAG.data(), awsConfig_->getNetworkLimit());
+    awsInternalConfig_->readRateLimiter = limiter;
+    awsInternalConfig_->writeRateLimiter = limiter;
   }
 
   switch (awsConfig_->getS3ClientType()) {
     case S3: {
       SPDLOG_DEBUG("Using S3 Client");
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
-              ALLOCATION_TAG,
-              Aws::MakeShared<fpdb::aws::ProfileAWSCredentialsProviderChain>(ALLOCATION_TAG, "FlexPushdownDB"),
-              config,
+              ALLOCATION_TAG.data(),
+              defaultAwsCredentialProvider(),
+              *awsInternalConfig_,
               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
               true);
       break;
@@ -93,15 +106,15 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
       }
       auto s3_secret_key = s3_secret_key_it->second;
 
-      config.endpointOverride = s3_endpoint_override; //"54.151.121.20/s3/test";
+      awsInternalConfig_->endpointOverride = s3_endpoint_override; //"54.151.121.20/s3/test";
       Aws::String accessKeyId = Aws::String(s3_access_key); //"test-test";
       Aws::String secretKey = Aws::String(s3_secret_key); //"test";
       Aws::Auth::AWSCredentials airmettleCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
 
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
-              ALLOCATION_TAG,
+              ALLOCATION_TAG.data(),
               airmettleCredentials,
-              config,
+              *awsInternalConfig_,
               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
               false);
 
@@ -148,23 +161,23 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
           auto flight_application = flight_application_it->second;
 
           // Connect
-          arrow::flight::Location client_location;
-          ::arrow::Status sts = arrow::flight::Location::ForGrpcTcp(flight_host, flight_port, &client_location);
-          if(!sts.ok()){
-            throw std::runtime_error(sts.message());
+          auto exp_client_location = arrow::flight::Location::ForGrpcTcp(flight_host, flight_port);
+          if (!exp_client_location.ok()) {
+            throw std::runtime_error(exp_client_location.status().message());
           }
+          auto client_location = *exp_client_location;
           arrow::flight::FlightClientOptions client_options = arrow::flight::FlightClientOptions::Defaults();
-          std::unique_ptr<::arrow::flight::FlightClient> flight_client;
-          sts = arrow::flight::FlightClient::Connect(client_location, client_options, &flight_client);
-          if(!sts.ok()){
-            throw std::runtime_error(sts.message());
+          auto exp_flight_client = arrow::flight::FlightClient::Connect(client_location, client_options);
+          if (!exp_flight_client.ok()) {
+            throw std::runtime_error(exp_flight_client.status().message());
           }
+          auto flight_client = std::move(*exp_flight_client);
 
           // Authenticate
           arrow::flight::FlightCallOptions call_options;
           std::unique_ptr<::arrow::flight::ClientAuthHandler> client_auth_handler =
             std::make_unique<AirMettleClientAuthHandler>(flight_username, flight_password, flight_application);
-          sts = flight_client->Authenticate(call_options, std::move(client_auth_handler));
+          auto sts = flight_client->Authenticate(call_options, std::move(client_auth_handler));
           if(!sts.ok()){
             throw std::runtime_error(sts.message());
           }
@@ -176,15 +189,15 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
     }
     case MINIO: {
       SPDLOG_DEBUG("Using Minio Client");
-      config.endpointOverride = "172.31.10.231:9000";
+      awsInternalConfig_->endpointOverride = "172.31.10.231:9000";
       Aws::String accessKeyId = "minioadmin";
       Aws::String secretKey = "minioadmin";
       Aws::Auth::AWSCredentials minioCredentials = Aws::Auth::AWSCredentials(accessKeyId, secretKey);
 
       s3Client = Aws::MakeShared<Aws::S3::S3Client>(
-              ALLOCATION_TAG,
+              ALLOCATION_TAG.data(),
               minioCredentials,
-              config,
+              *awsInternalConfig_,
               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
               false);
       break;
@@ -199,6 +212,10 @@ std::shared_ptr<Aws::S3::S3Client> AWSClient::makeS3Client() {
 
 const shared_ptr<AWSConfig> &AWSClient::getAwsConfig() const {
   return awsConfig_;
+}
+
+const shared_ptr<Aws::Client::ClientConfiguration> &AWSClient::getAwsInternalConfig() const {
+  return awsInternalConfig_;
 }
 
 const shared_ptr<S3Client> &AWSClient::getS3Client() const {

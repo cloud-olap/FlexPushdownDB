@@ -21,7 +21,8 @@ public:
   In(const shared_ptr<Expression> &expr, const unordered_set<C_TYPE> &values):
     Expression(IN),
     expr_(expr),
-    values_(values) {}
+    values_(values),
+    valueTypeId_(::arrow::TypeTraits<ARROW_TYPE>::type_singleton()->id()) {}
   In() = default;
   In(const In&) = default;
   In& operator=(const In&) = default;
@@ -70,8 +71,20 @@ public:
   }
 
 private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override {
+    if (type_ != other->getType()) {
+      return false;
+    }
+    auto typedOther = std::static_pointer_cast<In>(other);
+    if (valueTypeId_ != typedOther->valueTypeId_) {
+      return false;
+    }
+    return equals(expr_, typedOther->expr_) && values_ == typedOther->values_;
+  }
+
   shared_ptr<Expression> expr_;
   unordered_set<C_TYPE> values_;
+  arrow::Type::type valueTypeId_;    // used by "equalTo()" which is at planning time
 
 // caf inspect
 public:

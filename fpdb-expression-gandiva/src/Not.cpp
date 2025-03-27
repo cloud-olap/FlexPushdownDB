@@ -51,6 +51,14 @@ tl::expected<std::shared_ptr<Not>, std::string> Not::fromJson(const nlohmann::js
   return std::make_shared<Not>(*expExpr);
 }
 
+bool Not::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<Not>(other);
+  return equals(expr_, typedOther->expr_);
+}
+
 shared_ptr<Expression> not_(const shared_ptr<Expression> &expr) {
   return make_shared<Not>(expr);
 }

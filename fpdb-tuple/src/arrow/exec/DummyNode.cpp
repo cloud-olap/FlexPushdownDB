@@ -34,11 +34,11 @@ Status DummyNode::StartProducing() {
   return Status::OK();
 }
 
-void DummyNode::PauseProducing(ExecNode*) {
+void DummyNode::PauseProducing(ExecNode*, int32_t) {
   // noop
 }
 
-void DummyNode::ResumeProducing(ExecNode*) {
+void DummyNode::ResumeProducing(ExecNode*, int32_t) {
   // noop
 }
 

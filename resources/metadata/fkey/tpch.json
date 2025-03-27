@@ -1,0 +1,117 @@
+{
+  "schemaGroup": "tpch",
+  "fKeys": [
+    {
+      "pTable": "region",
+      "fTable": "nation",
+      "pKey": ["r_regionkey"],
+      "fKey": ["n_regionkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "nation",
+      "fTable": "supplier",
+      "pKey": ["n_nationkey"],
+      "fKey": ["s_nationkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "nation",
+      "fTable": "customer",
+      "pKey": ["n_nationkey"],
+      "fKey": ["c_nationkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "supplier",
+      "fTable": "partsupp",
+      "pKey": ["s_suppkey"],
+      "fKey": ["ps_suppkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "part",
+      "fTable": "partsupp",
+      "pKey": ["p_partkey"],
+      "fKey": ["ps_partkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "orders",
+      "pKey": ["c_custkey"],
+      "fKey": ["o_custkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "orders",
+      "fTable": "lineitem",
+      "pKey": ["o_orderkey"],
+      "fKey": ["l_orderkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "partsupp",
+      "fTable": "lineitem",
+      "pKey": ["ps_partkey", "ps_suppkey"],
+      "fKey": ["l_partkey", "l_suppkey"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "nation",
+      "fTable": "region",
+      "pKey": ["n_regionkey"],
+      "fKey": ["r_regionkey"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "supplier",
+      "fTable": "nation",
+      "pKey": ["s_nationkey"],
+      "fKey": ["n_nationkey"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "customer",
+      "fTable": "nation",
+      "pKey": ["c_nationkey"],
+      "fKey": ["n_nationkey"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "partsupp",
+      "fTable": "supplier",
+      "pKey": ["ps_suppkey"],
+      "fKey": ["s_suppkey"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "partsupp",
+      "fTable": "part",
+      "pKey": ["ps_partkey"],
+      "fKey": ["p_partkey"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "lineitem",
+      "fTable": "orders",
+      "pKey": ["l_orderkey"],
+      "fKey": ["o_orderkey"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "lineitem",
+      "fTable": "partsupp",
+      "pKey": ["l_partkey"],
+      "fKey": ["ps_partkey"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "lineitem",
+      "fTable": "partsupp",
+      "pKey": ["l_suppkey"],
+      "fKey": ["ps_suppkey"],
+      "allRefReversed": true
+    }
+  ]
+}

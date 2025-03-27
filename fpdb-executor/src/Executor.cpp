@@ -7,29 +7,24 @@
 #include <caf/io/all.hpp>
 
 #include <fpdb/executor/Executor.h>
-#include <fpdb/executor/Execution.h>
+#include <fpdb/executor/Globals.h>
 #include <fpdb/executor/CollAdaptPushdownMetricsExecution.h>
-#include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/cache/caf-serialization/CAFCachingPolicySerializer.h>
 
 using namespace fpdb::executor::cache;
+using namespace fpdb::cache;
 
 namespace fpdb::executor {
 
 Executor::Executor(const shared_ptr<::caf::actor_system> &actorSystem,
                    const vector<::caf::node_id> &nodes,
                    const shared_ptr<Mode> &mode,
-                   const shared_ptr<CachingPolicy> &cachingPolicy,
-                   bool showOpTimes,
-                   bool showScanMetrics) :
+                   const shared_ptr<CachingPolicy> &cachingPolicy) :
   actorSystem_(actorSystem),
   nodes_(nodes),
   cachingPolicy_(cachingPolicy),
   mode_(mode),
-  queryCounter_(0),
-  running_(false),
-  showOpTimes_(showOpTimes),
-  showScanMetrics_(showScanMetrics) {}
+  running_(false) {}
 
 Executor::~Executor() {
   if (running_) {
@@ -66,12 +61,19 @@ void Executor::start() {
 
 void Executor::stop() {
   // Stop the cache actor if cache is used
+  // Need to separate "stop" and "exit" messages otherwise remote cache cannot receive (unsure why?)
   if (isCacheUsed()) {
     (*rootActor_)->anon_send(localSegmentCacheActor_, StopCacheAtom_v);
+    for (const auto &remoteSegmentCacheActor: remoteSegmentCacheActors_) {
+      (*rootActor_)->anon_send(remoteSegmentCacheActor, StopCacheAtom_v);
+    }
+    // wait a bit if we have remote cache actors
+    if (!remoteSegmentCacheActors_.empty()) {
+      std::this_thread::sleep_for(100ms);
+    }
     (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(localSegmentCacheActor_),
                              ::caf::exit_reason::user_shutdown);
     for (const auto &remoteSegmentCacheActor: remoteSegmentCacheActors_) {
-      (*rootActor_)->anon_send(remoteSegmentCacheActor, StopCacheAtom_v);
       (*rootActor_)->send_exit(::caf::actor_cast<::caf::actor>(remoteSegmentCacheActor),
                                ::caf::exit_reason::user_shutdown);
     }
@@ -80,17 +82,31 @@ void Executor::stop() {
   // Stop the root actor (seems, being defined by "scope", it needs to actually be destroyed to stop it)
   rootActor_.reset();
 
+  // Wait a bit in distributed exec
+  if (!nodes_.empty()) {
+    std::this_thread::sleep_for(100ms);
+  }
+
+  // Finalize
   this->actorSystem_->await_all_actors_done();
   running_ = false;
 }
 
+void Executor::ingestCache(const std::shared_ptr<SegmentCache> &cache) {
+  if (localSegmentCacheActor_ == nullptr) {
+    throw std::runtime_error("Cannot ingest cache content, \'localSegmentCacheActor_\' is not created");
+  }
+  (*rootActor_)->anon_send(localSegmentCacheActor_, AssignCacheAtom_v, cache);
+}
+
 pair<shared_ptr<TupleSet>, long> Executor::execute(
+        long queryId,
         const shared_ptr<PhysicalPlan> &physicalPlan,
         bool isDistributed,
         bool collAdaptPushdownMetrics,
         const std::shared_ptr<fpdb::catalogue::obj_store::FPDBStoreConnector> &fpdbStoreConnector) {
   const auto &execution = collAdaptPushdownMetrics ?
-                          make_shared<CollAdaptPushdownMetricsExecution>(nextQueryId(),
+                          make_shared<CollAdaptPushdownMetricsExecution>(queryId,
                                                                          actorSystem_,
                                                                          nodes_,
                                                                          localSegmentCacheActor_,
@@ -98,27 +114,68 @@ pair<shared_ptr<TupleSet>, long> Executor::execute(
                                                                          physicalPlan,
                                                                          isDistributed,
                                                                          fpdbStoreConnector) :
-                          make_shared<Execution>(nextQueryId(),
+                          make_shared<Execution>(queryId,
                                                  actorSystem_,
                                                  nodes_,
                                                  localSegmentCacheActor_,
                                                  remoteSegmentCacheActors_,
                                                  physicalPlan,
-                                                 isDistributed);
-  const auto &result = execution->execute();
-  long elapsedTime = execution->getElapsedTime();
+                                                 isDistributed,
+                                                 this);
+  execution->execute();
 
-  // metrics, FIXME: better organize all metrics
-  if (showOpTimes_ || showScanMetrics_) {
-    cout << execution->showMetrics(showOpTimes_, showScanMetrics_) << endl;
+  std::unique_lock lock(ConcurrentOutputMutex);
+  // metrics
+  if (metrics::hasRegularMetricsToShow()) {
+    cout << execution->showRegularMetrics() << endl;
   }
 #if SHOW_DEBUG_METRICS == true
-  if (metrics::hasMetricsToShow()) {
+  if (metrics::hasDebugMetricsToShow()) {
     cout << execution->showDebugMetrics() << endl;
   }
 #endif
 
-  return make_pair(result, elapsedTime);
+  return make_pair(execution->getQueryResult(), execution->getElapsedTime());
+}
+
+void Executor::initAdaptExec(long queryId, bool isDistributed) {
+  adaptExecs_[queryId] = make_shared<Execution>(queryId,
+                                                actorSystem_,
+                                                nodes_,
+                                                localSegmentCacheActor_,
+                                                remoteSegmentCacheActors_,
+                                                nullptr,  /*will exec "adaptPhysicalPlan" in each stage*/
+                                                isDistributed,
+                                                this);
+}
+
+void Executor::execNextAdaptStage(long queryId,
+                                  const shared_ptr<AdaptPhysicalPlan> &adaptPhysicalPlan) {
+  // find the exec
+  auto adaptExecIt = adaptExecs_.find(queryId);
+  if (adaptExecIt == adaptExecs_.end()) {
+    throw runtime_error(fmt::format("Adaptive exec with query id '{}' not found.", queryId));
+  }
+
+  // exec this stage
+  auto adaptExec = adaptExecIt->second;
+  adaptExec->enableAdaptExec(adaptPhysicalPlan);
+  adaptExec->execute();
+}
+
+pair<shared_ptr<TupleSet>, long> Executor::finishAdaptExec(long queryId) {
+  // find the exec
+  auto adaptExecIt = adaptExecs_.find(queryId);
+  if (adaptExecIt == adaptExecs_.end()) {
+    throw runtime_error(fmt::format("Adaptive exec with query id '{}' not found.", queryId));
+  }
+  auto adaptExec = adaptExecIt->second;
+
+  // clear
+  adaptExecs_.erase(adaptExecIt);
+
+  // fetch result
+  return make_pair(adaptExec->getQueryResult(), adaptExec->getElapsedTime());
 }
 
 const ::caf::actor &Executor::getLocalSegmentCacheActor() const {
@@ -143,10 +200,6 @@ const shared_ptr<::caf::actor_system> &Executor::getActorSystem() const {
 
 bool Executor::isCacheUsed() {
   return cachingPolicy_ != nullptr;
-}
-
-long Executor::nextQueryId() {
-  return queryCounter_.fetch_add(1);
 }
 
 std::string Executor::showCacheMetrics() {

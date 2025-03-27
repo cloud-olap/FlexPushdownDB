@@ -17,12 +17,10 @@ package com.flexpushdowndb.calcite.rule.util;
 
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 
-import java.util.List;
+import java.util.*;
 
 public final class MoreRelOptUtil {
 
@@ -80,6 +78,40 @@ public final class MoreRelOptUtil {
         return RexUtil.composeDisjunction(rexBuilder, nodes, nullOnEmpty);
       default:
         throw new UnsupportedOperationException();
+    }
+  }
+
+  /**
+   * Extract join keys from the join condition
+   * @param joinCondition the join condition
+   * @return A list of paris of left key amd right key
+   */
+  public static List<Map.Entry<Integer, Integer>> extractJoinKeys(RexNode joinCondition) {
+    List<Map.Entry<Integer, Integer>> joinKeys = new ArrayList<>();
+    if (!(joinCondition instanceof RexCall)) {
+      return joinKeys;
+    }
+    RexCall call = (RexCall) joinCondition;
+    switch (call.getKind()) {
+      case AND: {
+        for (RexNode operand: call.getOperands()) {
+          joinKeys.addAll(extractJoinKeys(operand));
+        }
+      }
+      case EQUALS: {
+        RexNode leftOperand = call.getOperands().get(0);
+        RexNode rightOperand = call.getOperands().get(1);
+        if (leftOperand instanceof RexInputRef && rightOperand instanceof RexInputRef) {
+          return new ArrayList<>(Collections.singletonList(new AbstractMap.SimpleImmutableEntry<>(
+                  ((RexInputRef) leftOperand).getIndex(),
+                  ((RexInputRef) rightOperand).getIndex())));
+        } else {
+          return new ArrayList<>();
+        }
+      }
+      default: {
+        return new ArrayList<>();
+      }
     }
   }
 }

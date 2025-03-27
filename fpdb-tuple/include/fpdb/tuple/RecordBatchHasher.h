@@ -25,15 +25,20 @@ public:
        const std::vector<std::string> &columnNames);
 
   void hash(const std::shared_ptr<arrow::RecordBatch> &recordBatch, uint32_t *hashes);
+  void hash(const std::shared_ptr<arrow::RecordBatch> &recordBatch, uint64_t *hashes);
+
+  int64_t getHardwareFlags() const;
 
 private:
+  void makeKeyColumns(const std::shared_ptr<arrow::RecordBatch> &recordBatch);
+
   static constexpr int MiniBatchSize_ = 1 << 10;
 
   arrow::util::TempVectorStack tempStack_;
   arrow::compute::KeyEncoder::KeyEncoderContext encodeCtx_;
   arrow::compute::KeyEncoder encoder_;
-  std::vector<arrow::compute::KeyEncoder::KeyColumnMetadata> colMetadata_;
-  std::vector<arrow::compute::KeyEncoder::KeyColumnArray> cols_;
+  std::vector<arrow::compute::KeyColumnMetadata> colMetadata_;
+  std::vector<arrow::compute::KeyColumnArray> cols_;
   arrow::compute::KeyEncoder::KeyRowArray rows_;
   std::vector<int> keyIndices_;
 };

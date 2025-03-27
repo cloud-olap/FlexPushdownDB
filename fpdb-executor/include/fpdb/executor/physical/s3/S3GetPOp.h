@@ -42,22 +42,28 @@ public:
 private:
   void processScanMessage(const ScanMessage &message) override;
 
+  // main entry of reading data from S3 and construct Arrow table
   std::shared_ptr<TupleSet> readTuples() override;
-  std::shared_ptr<TupleSet> readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
-  std::shared_ptr<TupleSet> readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile);
-  std::shared_ptr<TupleSet> s3GetFullRequest();
-  Aws::S3::Model::GetObjectResult s3GetRequestOnly(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);
+
+  // CSV APIs
+#ifdef __AVX2__
+  void s3GetIndividualReqCSV(int reqNum, const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);
+  std::shared_ptr<TupleSet> s3GetParallelReqsCSV(bool tempFixForAirmettleCSV150MB);
+#endif
+  std::shared_ptr<TupleSet> s3GetFullRequestCSV();
+  Aws::S3::Model::GetObjectResult s3GetRequestOnlyCSV(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);
+  std::shared_ptr<TupleSet> parseCSVFileArrowImpl(std::shared_ptr<arrow::io::InputStream> &arrowInputStream);
+
+  // Parquet APIs
+  std::shared_ptr<TupleSet> readParquetFile();
+  std::shared_ptr<TupleSet> readParquetFileFull();
+  std::shared_ptr<TupleSet> readParquetFilePartialColumns();
 
   // Whether we can process different portions of the response in parallel
   // For now we only support this for uncompressed CSV, but eventually we work
   // with parquet more we should be able to turn on a flag to have arrow do this as well,
   // the methods will just be a bit different
   bool parallelTuplesetCreationSupported();
-
-#ifdef __AVX2__
-  void s3GetIndividualReq(int reqNum, const std::string &s3Object, uint64_t startOffset, uint64_t endOffset);
-  std::shared_ptr<TupleSet> s3GetParallelReqs(bool tempFixForAirmettleCSV150MB);
-#endif
 
   std::unordered_map<int, std::vector<char>> reqNumToAdditionalOutput_;
 #ifdef __AVX2__
@@ -68,23 +74,7 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, S3GetPOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("s3Bucket", op.s3Bucket_),
-                               f.field("s3Object", op.s3Object_),
-                               f.field("startOffset", op.startOffset_),
-                               f.field("finishOffset", op.finishOffset_),
-                               f.field("table", op.table_),
-                               f.field("scanOnStart", op.scanOnStart_),
-                               f.field("toCache", op.toCache_));
+    return inspect_base_s3_select_scan(f, op);
   }
 };
 

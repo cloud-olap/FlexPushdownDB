@@ -65,6 +65,11 @@ public:
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) = 0;
 
   /**
+   * Finalize results when there is not input.
+   */
+  virtual tl::expected<shared_ptr<arrow::Scalar>, string> finalizeEmpty() const;
+
+  /**
    * Get aggregate signatures used by arrow execution engine, in the format of <aggregate, target, name, output field>,
    * for the first three, see details in arrow::compute::AggregateNodeOptions
    * @return

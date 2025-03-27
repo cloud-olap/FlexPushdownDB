@@ -11,6 +11,30 @@ AggregatePrePFunction::AggregatePrePFunction(AggregatePrePFunctionType type,
   type_(type),
   expression_(expression) {}
 
+bool AggregatePrePFunction::equals(const std::shared_ptr<AggregatePrePFunction> &f1,
+                                   const std::shared_ptr<AggregatePrePFunction> &f2) {
+  if (f1 == nullptr && f2 == nullptr) {
+    return true;
+  } else if (f1 != nullptr && f2 != nullptr) {
+    return f1->type_ == f2->type_ && expression::gandiva::Expression::equals(f1->expression_, f2->expression_);
+  } else {
+    return false;
+  }
+}
+
+bool AggregatePrePFunction::equals(const std::vector<std::shared_ptr<AggregatePrePFunction>> &f1,
+                                   const std::vector<std::shared_ptr<AggregatePrePFunction>> &f2) {
+  if (f1.size() != f2.size()) {
+    return false;
+  }
+  for (uint i = 0; i < f1.size(); ++i) {
+    if (!equals(f1[i], f2[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 AggregatePrePFunctionType AggregatePrePFunction::getType() const {
   return type_;
 }

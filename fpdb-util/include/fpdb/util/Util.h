@@ -112,6 +112,9 @@ namespace fpdb::util {
   void setBit(vector<int64_t> &bitmap, int64_t n);
   void unsetBit(vector<int64_t> &bitmap, int64_t n);
   bool getBit(const vector<int64_t> &bitmap, int64_t n);
+  // nullptr should be handled by caller
+  void bitmapAnd(uint8_t *left, uint8_t *right, int64_t len, uint8_t *out);
+  void bitmapOr(uint8_t *left, uint8_t *right, int64_t len, uint8_t *out);
 
   /**
    * Split a string on a given delimiter
@@ -151,6 +154,14 @@ namespace fpdb::util {
   bool isInteger(const string& str);
   tl::expected<string, string> execCmd(const char *cmd);
   tl::expected<string, string> getLocalIp();
+  tl::expected<string, string> getLocalPrivateIp();
+
+  /**
+   * Help when we need to ingest customized parameters frequently but don't want to recompile,
+   * when doing this, put the parameter under files named "param_0", "param_1", ..., under the executable directory.
+   */
+  static constexpr std::string_view ParamPrefix = "Param_";
+  int getIntIngestParam(int paramId);
 }
 
 

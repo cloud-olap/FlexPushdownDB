@@ -7,7 +7,6 @@ import org.json.JSONObject;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,7 +19,7 @@ public class SchemaReader {
 
     // Read schema
     Path schemaPath = schemaDirPath.resolve("schema.json");
-    Map<String, Map<String, SqlTypeName>> fieldTypesMap = readFieldTypes(schemaPath);
+    Map<String, Map<String, FieldInfo>> fieldsMap = readFields(schemaPath);
 
     // Read stats
     Path statsPath = schemaDirPath.resolve("stats.json");
@@ -32,31 +31,45 @@ public class SchemaReader {
 
     // Construct tables
     Map<String, Table> tableMap = new HashMap<>();
-    for (String tableName: fieldTypesMap.keySet()) {
-      Map<String, SqlTypeName> fieldTypes = fieldTypesMap.get(tableName);
+    for (String tableName: fieldsMap.keySet()) {
+      Map<String, FieldInfo> fields = fieldsMap.get(tableName);
       double rowCount = rowCounts.get(tableName);
-      tableMap.put(tableName, new TableImpl(tableName, fieldTypes, rowCount));
+      tableMap.put(tableName, new TableImpl(tableName, fields, rowCount));
     }
 
     return new SchemaImpl(schemaName, tableMap, hashKeys);
   }
 
-  private static Map<String, Map<String, SqlTypeName>> readFieldTypes(Path schemaPath) throws Exception {
-    Map<String, Map<String, SqlTypeName>> fieldTypesMap = new HashMap<>();
+  private static Map<String, Map<String, FieldInfo>> readFields(Path schemaPath) throws Exception {
+    Map<String, Map<String, FieldInfo>> fieldsMap = new HashMap<>();
     JSONObject jObj = new JSONObject(FileUtils.readFile(schemaPath));
     for (Object o: jObj.getJSONArray("tables")) {
       JSONObject schemaJObj = (JSONObject) o;
       String tableName = schemaJObj.getString("name");
-      Map<String, SqlTypeName> fieldTypes = new HashMap<>();
+      Map<String, FieldInfo> fields = new HashMap<>();
       for (Object o1: schemaJObj.getJSONArray("fields")) {
         JSONObject fieldJObj = (JSONObject) o1;
+        // field name
         String fieldName = fieldJObj.getString("name");
+        // SqlTypeName
         SqlTypeName fieldType = stringToSqlTypeName(fieldJObj.getString("type"));
-        fieldTypes.put(fieldName, fieldType);
+        // nullable
+        boolean nullable = false;
+        String nullableKey = "nullable";
+        if (fieldJObj.has(nullableKey)) {
+          nullable = fieldJObj.getBoolean(nullableKey);
+        }
+        // unique
+        boolean unique = false;
+        String uniqueKey = "unique";
+        if (fieldJObj.has(uniqueKey)) {
+          unique = fieldJObj.getBoolean(uniqueKey);
+        }
+        fields.put(fieldName, new FieldInfo(fieldType, nullable, unique));
       }
-      fieldTypesMap.put(tableName, fieldTypes);
+      fieldsMap.put(tableName, fields);
     }
-    return fieldTypesMap;
+    return fieldsMap;
   }
 
   private static Map<String, Double> readRowCounts(Path statsPath) throws Exception {

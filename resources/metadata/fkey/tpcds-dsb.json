@@ -1,0 +1,909 @@
+{
+  "schemaGroup": "tpcds-dsb",
+  "_comment": "Reversed fKeys are generated based on DSB data with SF = 1, for other scales we need to double check whether the result is the same, and generate separate ones if not.",
+  "fKeys": [
+    {
+      "pTable": "date_dim",
+      "fTable": "store_sales",
+      "pKey": ["d_date_sk"],
+      "fKey": ["ss_sold_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "time_dim",
+      "fTable": "store_sales",
+      "pKey": ["t_time_sk"],
+      "fKey": ["ss_sold_time_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "store_sales",
+      "pKey": ["i_item_sk"],
+      "fKey": ["ss_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "store_sales",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["ss_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "store_sales",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["ss_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "store_sales",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["ss_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "store_sales",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["ss_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "store",
+      "fTable": "store_sales",
+      "pKey": ["s_store_sk"],
+      "fKey": ["ss_store_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "promotion",
+      "fTable": "store_sales",
+      "pKey": ["p_promo_sk"],
+      "fKey": ["ss_promo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "store_returns",
+      "pKey": ["d_date_sk"],
+      "fKey": ["sr_returned_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "time_dim",
+      "fTable": "store_returns",
+      "pKey": ["t_time_sk"],
+      "fKey": ["sr_return_time_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "store_returns",
+      "pKey": ["i_item_sk"],
+      "fKey": ["sr_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "store_sales",
+      "fTable": "store_returns",
+      "pKey": ["ss_item_sk"],
+      "fKey": ["sr_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "store_returns",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["sr_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "store_returns",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["sr_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "store_returns",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["sr_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "store_returns",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["sr_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "store",
+      "fTable": "store_returns",
+      "pKey": ["s_store_sk"],
+      "fKey": ["sr_store_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "reason",
+      "fTable": "store_returns",
+      "pKey": ["r_reason_sk"],
+      "fKey": ["sr_reason_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "store_sales",
+      "fTable": "store_returns",
+      "pKey": ["ss_ticket_number"],
+      "fKey": ["sr_ticket_number"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "catalog_sales",
+      "pKey": ["d_date_sk"],
+      "fKey": ["cs_sold_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "time_dim",
+      "fTable": "catalog_sales",
+      "pKey": ["t_time_sk"],
+      "fKey": ["cs_sold_time_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "catalog_sales",
+      "pKey": ["d_date_sk"],
+      "fKey": ["cs_ship_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "catalog_sales",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["cs_bill_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "catalog_sales",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["cs_bill_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "catalog_sales",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["cs_bill_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "catalog_sales",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["cs_bill_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "catalog_sales",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["cs_ship_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "catalog_sales",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["cs_ship_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "catalog_sales",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["cs_ship_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "catalog_sales",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["cs_ship_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "call_center",
+      "fTable": "catalog_sales",
+      "pKey": ["cc_call_center_sk"],
+      "fKey": ["cs_call_center_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "catalog_page",
+      "fTable": "catalog_sales",
+      "pKey": ["cp_catalog_page_sk"],
+      "fKey": ["cs_catalog_page_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "ship_mode",
+      "fTable": "catalog_sales",
+      "pKey": ["sm_ship_mode_sk"],
+      "fKey": ["cs_ship_mode_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "warehouse",
+      "fTable": "catalog_sales",
+      "pKey": ["w_warehouse_sk"],
+      "fKey": ["cs_warehouse_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "catalog_sales",
+      "pKey": ["i_item_sk"],
+      "fKey": ["cs_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "promotion",
+      "fTable": "catalog_sales",
+      "pKey": ["p_promo_sk"],
+      "fKey": ["cs_promo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "catalog_returns",
+      "pKey": ["d_date_sk"],
+      "fKey": ["cr_returned_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "time_dim",
+      "fTable": "catalog_returns",
+      "pKey": ["t_time_sk"],
+      "fKey": ["cr_returned_time_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "catalog_returns",
+      "pKey": ["i_item_sk"],
+      "fKey": ["cr_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "catalog_sales",
+      "fTable": "catalog_returns",
+      "pKey": ["cs_item_sk"],
+      "fKey": ["cr_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "catalog_returns",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["cr_refunded_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "catalog_returns",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["cr_refunded_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "catalog_returns",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["cr_refunded_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "catalog_returns",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["cr_refunded_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "catalog_returns",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["cr_returning_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "catalog_returns",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["cr_returning_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "catalog_returns",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["cr_returning_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "catalog_returns",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["cr_returning_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "call_center",
+      "fTable": "catalog_returns",
+      "pKey": ["cc_call_center_sk"],
+      "fKey": ["cr_call_center_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "catalog_page",
+      "fTable": "catalog_returns",
+      "pKey": ["cp_catalog_page_sk"],
+      "fKey": ["cr_catalog_page_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "ship_mode",
+      "fTable": "catalog_returns",
+      "pKey": ["sm_ship_mode_sk"],
+      "fKey": ["cr_ship_mode_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "warehouse",
+      "fTable": "catalog_returns",
+      "pKey": ["w_warehouse_sk"],
+      "fKey": ["cr_warehouse_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "reason",
+      "fTable": "catalog_returns",
+      "pKey": ["r_reason_sk"],
+      "fKey": ["cr_reason_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "catalog_sales",
+      "fTable": "catalog_returns",
+      "pKey": ["cs_order_number"],
+      "fKey": ["cr_order_number"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "web_sales",
+      "pKey": ["d_date_sk"],
+      "fKey": ["ws_sold_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "time_dim",
+      "fTable": "web_sales",
+      "pKey": ["t_time_sk"],
+      "fKey": ["ws_sold_time_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "web_sales",
+      "pKey": ["d_date_sk"],
+      "fKey": ["ws_ship_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "web_sales",
+      "pKey": ["i_item_sk"],
+      "fKey": ["ws_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "web_sales",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["ws_bill_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "web_sales",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["ws_bill_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "web_sales",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["ws_bill_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "web_sales",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["ws_bill_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "web_sales",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["ws_ship_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "web_sales",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["ws_ship_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "web_sales",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["ws_ship_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "web_sales",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["ws_ship_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "web_page",
+      "fTable": "web_sales",
+      "pKey": ["wp_web_page_sk"],
+      "fKey": ["ws_web_page_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "web_site",
+      "fTable": "web_sales",
+      "pKey": ["web_site_sk"],
+      "fKey": ["ws_web_site_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "ship_mode",
+      "fTable": "web_sales",
+      "pKey": ["sm_ship_mode_sk"],
+      "fKey": ["ws_ship_mode_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "warehouse",
+      "fTable": "web_sales",
+      "pKey": ["w_warehouse_sk"],
+      "fKey": ["ws_warehouse_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "promotion",
+      "fTable": "web_sales",
+      "pKey": ["p_promo_sk"],
+      "fKey": ["ws_promo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "web_returns",
+      "pKey": ["d_date_sk"],
+      "fKey": ["wr_returned_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "time_dim",
+      "fTable": "web_returns",
+      "pKey": ["t_time_sk"],
+      "fKey": ["wr_returned_time_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "web_returns",
+      "pKey": ["i_item_sk"],
+      "fKey": ["wr_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "web_sales",
+      "fTable": "web_returns",
+      "pKey": ["ws_item_sk"],
+      "fKey": ["wr_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "web_returns",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["wr_refunded_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "web_returns",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["wr_refunded_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "web_returns",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["wr_refunded_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "web_returns",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["wr_refunded_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "web_returns",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["wr_returning_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "web_returns",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["wr_returning_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "web_returns",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["wr_returning_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "web_returns",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["wr_returning_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "web_page",
+      "fTable": "web_returns",
+      "pKey": ["wp_web_page_sk"],
+      "fKey": ["wr_web_page_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "reason",
+      "fTable": "web_returns",
+      "pKey": ["r_reason_sk"],
+      "fKey": ["wr_reason_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "web_sales",
+      "fTable": "web_returns",
+      "pKey": ["ws_order_number"],
+      "fKey": ["wr_order_number"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "inventory",
+      "pKey": ["d_date_sk"],
+      "fKey": ["inv_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "inventory",
+      "pKey": ["i_item_sk"],
+      "fKey": ["inv_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "warehouse",
+      "fTable": "inventory",
+      "pKey": ["w_warehouse_sk"],
+      "fKey": ["inv_warehouse_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "store",
+      "pKey": ["d_date_sk"],
+      "fKey": ["s_closed_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "call_center",
+      "pKey": ["d_date_sk"],
+      "fKey": ["cc_closed_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "call_center",
+      "pKey": ["d_date_sk"],
+      "fKey": ["cc_open_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "catalog_page",
+      "pKey": ["d_date_sk"],
+      "fKey": ["cp_start_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "catalog_page",
+      "pKey": ["d_date_sk"],
+      "fKey": ["cp_end_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "web_site",
+      "pKey": ["d_date_sk"],
+      "fKey": ["web_open_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "web_site",
+      "pKey": ["d_date_sk"],
+      "fKey": ["web_close_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "web_page",
+      "pKey": ["d_date_sk"],
+      "fKey": ["wp_creation_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "web_page",
+      "pKey": ["d_date_sk"],
+      "fKey": ["wp_access_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer",
+      "fTable": "web_page",
+      "pKey": ["c_customer_sk"],
+      "fKey": ["wp_customer_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_demographics",
+      "fTable": "customer",
+      "pKey": ["cd_demo_sk"],
+      "fKey": ["c_current_cdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "customer",
+      "pKey": ["hd_demo_sk"],
+      "fKey": ["c_current_hdemo_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "customer_address",
+      "fTable": "customer",
+      "pKey": ["ca_address_sk"],
+      "fKey": ["c_current_addr_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "customer",
+      "pKey": ["d_date_sk"],
+      "fKey": ["c_first_shipto_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "customer",
+      "pKey": ["d_date_sk"],
+      "fKey": ["c_first_sales_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "customer",
+      "pKey": ["d_date_sk"],
+      "fKey": ["c_last_review_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "income_band",
+      "fTable": "household_demographics",
+      "pKey": ["ib_income_band_sk"],
+      "fKey": ["hd_income_band_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "promotion",
+      "pKey": ["d_date_sk"],
+      "fKey": ["p_start_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "date_dim",
+      "fTable": "promotion",
+      "pKey": ["d_date_sk"],
+      "fKey": ["p_end_date_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "item",
+      "fTable": "promotion",
+      "pKey": ["i_item_sk"],
+      "fKey": ["p_item_sk"],
+      "allRefReversed": false
+    },
+    {
+      "pTable": "store_sales",
+      "fTable": "item",
+      "pKey": ["ss_item_sk"],
+      "fKey": ["i_item_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "store_sales",
+      "fTable": "promotion",
+      "pKey": ["ss_promo_sk"],
+      "fKey": ["p_promo_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "store_returns",
+      "fTable": "reason",
+      "pKey": ["sr_reason_sk"],
+      "fKey": ["r_reason_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_sales",
+      "fTable": "call_center",
+      "pKey": ["cs_call_center_sk"],
+      "fKey": ["cc_call_center_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_sales",
+      "fTable": "ship_mode",
+      "pKey": ["cs_ship_mode_sk"],
+      "fKey": ["sm_ship_mode_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_sales",
+      "fTable": "warehouse",
+      "pKey": ["cs_warehouse_sk"],
+      "fKey": ["w_warehouse_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_sales",
+      "fTable": "item",
+      "pKey": ["cs_item_sk"],
+      "fKey": ["i_item_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_sales",
+      "fTable": "promotion",
+      "pKey": ["cs_promo_sk"],
+      "fKey": ["p_promo_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_returns",
+      "fTable": "call_center",
+      "pKey": ["cr_call_center_sk"],
+      "fKey": ["cc_call_center_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_returns",
+      "fTable": "ship_mode",
+      "pKey": ["cr_ship_mode_sk"],
+      "fKey": ["sm_ship_mode_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_returns",
+      "fTable": "warehouse",
+      "pKey": ["cr_warehouse_sk"],
+      "fKey": ["w_warehouse_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "catalog_returns",
+      "fTable": "reason",
+      "pKey": ["cr_reason_sk"],
+      "fKey": ["r_reason_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "web_sales",
+      "fTable": "ship_mode",
+      "pKey": ["ws_ship_mode_sk"],
+      "fKey": ["sm_ship_mode_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "web_sales",
+      "fTable": "warehouse",
+      "pKey": ["ws_warehouse_sk"],
+      "fKey": ["w_warehouse_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "web_sales",
+      "fTable": "promotion",
+      "pKey": ["ws_promo_sk"],
+      "fKey": ["p_promo_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "web_returns",
+      "fTable": "reason",
+      "pKey": ["wr_reason_sk"],
+      "fKey": ["r_reason_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "inventory",
+      "fTable": "item",
+      "pKey": ["inv_item_sk"],
+      "fKey": ["i_item_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "inventory",
+      "fTable": "warehouse",
+      "pKey": ["inv_warehouse_sk"],
+      "fKey": ["w_warehouse_sk"],
+      "allRefReversed": true
+    },
+    {
+      "pTable": "household_demographics",
+      "fTable": "income_band",
+      "pKey": ["hd_income_band_sk"],
+      "fKey": ["ib_income_band_sk"],
+      "allRefReversed": true
+    }
+  ]
+}

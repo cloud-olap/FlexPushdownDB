@@ -73,25 +73,9 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, SelectPOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("s3Bucket", op.s3Bucket_),
-                               f.field("s3Object", op.s3Object_),
-                               f.field("filterSql", op.filterSql_),
-                               f.field("startOffset", op.startOffset_),
-                               f.field("finishOffset", op.finishOffset_),
-                               f.field("table", op.table_),
-                               f.field("scanOnStart", op.scanOnStart_),
-                               f.field("toCache", op.toCache_),
-                               f.field("weightedSegmentKeys", op.weightedSegmentKeys_));
+    return inspect_base_s3_select_scan(f, op,
+                                       f.field("filterSql", op.filterSql_),
+                                       f.field("weightedSegmentKeys", op.weightedSegmentKeys_));
   }
 };
 

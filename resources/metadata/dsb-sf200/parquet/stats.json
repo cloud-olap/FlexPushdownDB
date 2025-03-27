@@ -1,0 +1,180 @@
+{
+  "schemaName": "dsb-sf200/parquet/",
+  "tables": [
+    {
+      "name": "call_center",
+      "stats": {
+        "rowCount": 8,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "catalog_page",
+      "stats": {
+        "rowCount": 11718,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "catalog_returns",
+      "stats": {
+        "rowCount": 43204169,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "catalog_sales",
+      "stats": {
+        "rowCount": 287988980,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "customer",
+      "stats": {
+        "rowCount": 1600000,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "customer_address",
+      "stats": {
+        "rowCount": 800000,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "customer_demographics",
+      "stats": {
+        "rowCount": 1920800,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "date_dim",
+      "stats": {
+        "rowCount": 73049,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "dbgen_version",
+      "stats": {
+        "rowCount": 1,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "household_demographics",
+      "stats": {
+        "rowCount": 7200,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "income_band",
+      "stats": {
+        "rowCount": 20,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "inventory",
+      "stats": {
+        "rowCount": 37584000,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "item",
+      "stats": {
+        "rowCount": 48000,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "promotion",
+      "stats": {
+        "rowCount": 450,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "reason",
+      "stats": {
+        "rowCount": 37,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "ship_mode",
+      "stats": {
+        "rowCount": 20,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "store",
+      "stats": {
+        "rowCount": 212,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "store_returns",
+      "stats": {
+        "rowCount": 143989526,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "store_sales",
+      "stats": {
+        "rowCount": 575995635,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "time_dim",
+      "stats": {
+        "rowCount": 86400,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "warehouse",
+      "stats": {
+        "rowCount": 6,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "web_page",
+      "stats": {
+        "rowCount": 342,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "web_returns",
+      "stats": {
+        "rowCount": 28803343,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "web_sales",
+      "stats": {
+        "rowCount": 144002668,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "web_site",
+      "stats": {
+        "rowCount": 38,
+        "apxColumnLength": {}
+      }
+    }
+  ]
+}

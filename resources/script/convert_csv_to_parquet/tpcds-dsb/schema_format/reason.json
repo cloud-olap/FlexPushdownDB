@@ -1,0 +1,20 @@
+{
+  "name": "reason",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "r_reason_sk",
+      "type": "int64"
+    },
+    {
+      "name": "r_reason_id",
+      "type": "string"
+    },
+    {
+      "name": "r_reason_desc",
+      "type": "string"
+    }
+  ]
+}

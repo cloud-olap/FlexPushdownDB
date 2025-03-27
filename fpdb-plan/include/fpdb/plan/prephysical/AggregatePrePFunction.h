@@ -24,16 +24,24 @@ public:
   // column names for sum and count intermediate results of avg
   constexpr static const char *const AVG_INTERMEDIATE_SUM_COLUMN_PREFIX = "AVG_INTERMEDIATE_SUM_";
   constexpr static const char *const AVG_INTERMEDIATE_COUNT_COLUMN_PREFIX = "AVG_INTERMEDIATE_COUNT_";
+  // column names for sum, count, and sum of squares intermediate results of stddeve
+  constexpr static const char *const STDDEV_INTERMEDIATE_SUM_COLUMN_PREFIX = "STDDEV_INTERMEDIATE_SUM_";
+  constexpr static const char *const STDDEV_INTERMEDIATE_COUNT_COLUMN_PREFIX = "STDDEV_INTERMEDIATE_COUNT_";
+  constexpr static const char *const STDDEV_INTERMEDIATE_SUM_OF_SQUARES_COLUMN_PREFIX = "STDDEV_INTERMEDIATE_SUM_OF_SQUARES_";
 
   AggregatePrePFunction(AggregatePrePFunctionType type,
                         const shared_ptr<expression::gandiva::Expression> &expression);
   virtual ~AggregatePrePFunction() = default;
 
+  static bool equals(const std::shared_ptr<AggregatePrePFunction> &f1,
+                     const std::shared_ptr<AggregatePrePFunction> &f2);
+  static bool equals(const std::vector<std::shared_ptr<AggregatePrePFunction>> &f1,
+                     const std::vector<std::shared_ptr<AggregatePrePFunction>> &f2);
+
   AggregatePrePFunctionType getType() const;
   const shared_ptr<expression::gandiva::Expression> &getExpression() const;
   string getTypeString() const;
   set<string> involvedColumnNames() const;
-
 
 private:
   AggregatePrePFunctionType type_;

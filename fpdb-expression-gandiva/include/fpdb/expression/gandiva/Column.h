@@ -33,6 +33,8 @@ public:
   [[nodiscard]] const std::string &getColumnName() const;
 
 private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override;
+
   std::string columnName_;
 
 // caf inspect

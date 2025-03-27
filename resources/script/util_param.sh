@@ -4,18 +4,19 @@
 # configurable parameters
 export install_dependency=false
 export clean=false
-export build_parallel=8
+export build_parallel=16
 export build_dir_name="build"
 export deploy_dir_name="FPDB-build"
 export temp_dir_name="temp"
-export pem_path="$HOME""/.aws/yifei-cloudbank-aws.pem"
-export use_fpdb_store=true
+export pem_path="$HOME""/.aws/yifei-wisc-aws.pem"
+export credentials_path="$HOME""/.aws/credentials"
+export use_fpdb_store=false
 
 # fixed parameters
-export compute_targets=("fpdb-main-server" "fpdb-main-test" "fpdb-main-bench")
+export compute_targets=("fpdb-main-server" "fpdb-main-bench")
 export compute_exe_dir_name="fpdb-main"
 export compute_server_pid_name="FPDB-server.pid"
-export fpdb_store_targets=("fpdb-store-server-executable")
+export fpdb_store_targets=()
 export fpdb_store_exe_dir_name="fpdb-store-server"
 export fpdb_store_server_pid_name="FPDB-store-server.pid"
 export calcite_jar_name="flexpushdowndb.thrift.calcite-1.0-SNAPSHOT.jar"

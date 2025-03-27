@@ -8,7 +8,7 @@
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/executor/flight/FlightClients.h>
-#include <fpdb/store/server/flight/PutAdaptPushdownMetricsCmd.hpp>
+#include <fpdb/store/server/flight/adaptive/PutAdaptPushdownMetricsCmd.hpp>
 
 namespace fpdb::executor {
 
@@ -23,10 +23,10 @@ CollAdaptPushdownMetricsExecution::CollAdaptPushdownMetricsExecution(
         const std::shared_ptr<fpdb::catalogue::obj_store::FPDBStoreConnector> &fpdbStoreConnector):
   Execution(queryId, actorSystem, nodes,
             localSegmentCacheActor, remoteSegmentCacheActors,
-            physicalPlan, isDistributed),
+            physicalPlan, isDistributed, nullptr),
   fpdbStoreConnector_(fpdbStoreConnector) {}
 
-shared_ptr<TupleSet> CollAdaptPushdownMetricsExecution::execute() {
+void CollAdaptPushdownMetricsExecution::execute() {
   // execute
   preExecute();
   boot();
@@ -35,7 +35,6 @@ shared_ptr<TupleSet> CollAdaptPushdownMetricsExecution::execute() {
 
   // compute and send metrics of adaptive pushdown to store
   sendAdaptPushdownMetricsToStore();
-  return legacyCollateOperator_->tuples();
 }
 
 void CollAdaptPushdownMetricsExecution::preExecute() {
@@ -91,9 +90,21 @@ void CollAdaptPushdownMetricsExecution::join() {
               }
 
 #if SHOW_DEBUG_METRICS == true
-              case MessageType::TRANSFER_METRICS: {
-                auto transferMetricsMsg = ((TransferMetricsMessage &) msg);
-                debugMetrics_.add(transferMetricsMsg.getTransferMetrics());
+              case MessageType::NETWORK_METRICS: {
+                auto networkMetricsMsg = ((NetworkMetricsMessage &) msg);
+                debugMetrics_.add(networkMetricsMsg.getNetworkMetrics());
+                break;
+              }
+
+              case MessageType::DISK_METRICS: {
+                auto diskMetricsMsg = ((DiskMetricsMessage &) msg);
+                debugMetrics_.add(diskMetricsMsg.getDiskMetrics());
+                break;
+              }
+
+              case MessageType::PRED_TRANS_METRICS: {
+                auto ptMetricsMsg = ((PredTransMetricsMessage &) msg);
+                debugMetrics_.add(ptMetricsMsg.getPTMetrics());
                 break;
               }
 #endif
@@ -133,13 +144,11 @@ void CollAdaptPushdownMetricsExecution::sendAdaptPushdownMetricsToStore() {
 
     // send to host
     auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
-    std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
-    std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-    auto status = client->DoPut(descriptor, nullptr, &writer, &metadataReader);
-    if (!status.ok()) {
-      throw std::runtime_error(status.message());
+    auto doPutRes = client->DoPut(descriptor, nullptr);
+    if (!doPutRes.ok()) {
+      throw std::runtime_error(doPutRes.status().message());
     }
-    status = writer->Close();
+    auto status = (*doPutRes).writer->Close();
     if (!status.ok()) {
       throw std::runtime_error(status.message());
     }

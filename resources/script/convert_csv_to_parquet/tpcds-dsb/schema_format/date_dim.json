@@ -1,0 +1,120 @@
+{
+  "name": "date_dim",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "d_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "d_date_id",
+      "type": "string"
+    },
+    {
+      "name": "d_date",
+      "type": "date"
+    },
+    {
+      "name": "d_month_seq",
+      "type": "int64"
+    },
+    {
+      "name": "d_week_seq",
+      "type": "int64"
+    },
+    {
+      "name": "d_quarter_seq",
+      "type": "int64"
+    },
+    {
+      "name": "d_year",
+      "type": "int64"
+    },
+    {
+      "name": "d_dow",
+      "type": "int64"
+    },
+    {
+      "name": "d_moy",
+      "type": "int64"
+    },
+    {
+      "name": "d_dom",
+      "type": "int64"
+    },
+    {
+      "name": "d_qoy",
+      "type": "int64"
+    },
+    {
+      "name": "d_fy_year",
+      "type": "int64"
+    },
+    {
+      "name": "d_fy_quarter_seq",
+      "type": "int64"
+    },
+    {
+      "name": "d_fy_week_seq",
+      "type": "int64"
+    },
+    {
+      "name": "d_day_name",
+      "type": "string"
+    },
+    {
+      "name": "d_quarter_name",
+      "type": "string"
+    },
+    {
+      "name": "d_holiday",
+      "type": "string"
+    },
+    {
+      "name": "d_weekend",
+      "type": "string"
+    },
+    {
+      "name": "d_following_holiday",
+      "type": "string"
+    },
+    {
+      "name": "d_first_dom",
+      "type": "int64"
+    },
+    {
+      "name": "d_last_dom",
+      "type": "int64"
+    },
+    {
+      "name": "d_same_day_ly",
+      "type": "int64"
+    },
+    {
+      "name": "d_same_day_lq",
+      "type": "int64"
+    },
+    {
+      "name": "d_current_day",
+      "type": "string"
+    },
+    {
+      "name": "d_current_week",
+      "type": "string"
+    },
+    {
+      "name": "d_current_month",
+      "type": "string"
+    },
+    {
+      "name": "d_current_quarter",
+      "type": "string"
+    },
+    {
+      "name": "d_current_year",
+      "type": "string"
+    }
+  ]
+}

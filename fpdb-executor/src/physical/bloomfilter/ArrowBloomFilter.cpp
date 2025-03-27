@@ -5,11 +5,12 @@
 #include <fpdb/executor/physical/bloomfilter/ArrowBloomFilter.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/tuple/serialization/ArrowSerializer.h>
+#include <fpdb/tuple/RecordBatchHasher.h>
 
 namespace fpdb::executor::physical::bloomfilter {
 
 ArrowBloomFilter::ArrowBloomFilter(int64_t capacity, const std::vector<std::string> &columnNames):
-  BloomFilterBase(BloomFilterType::ARROW_BLOOM_FILTER, capacity, capacity <= BLOOM_FILTER_MAX_INPUT_SIZE),
+  BloomFilterBase(BloomFilterType::ARROW_BF, capacity, true),
   columnNames_(columnNames) {}
 
 std::shared_ptr<ArrowBloomFilter> ArrowBloomFilter::make(int64_t capacity, 
@@ -32,7 +33,6 @@ tl::expected<void, std::string> ArrowBloomFilter::build(const std::shared_ptr<Tu
   if (!expHasher.has_value()) {
     return tl::make_unexpected(expHasher.error());
   }
-  hasher_ = *expHasher;
   
   // init bloom filter
   using namespace arrow::compute;
@@ -40,7 +40,7 @@ tl::expected<void, std::string> ArrowBloomFilter::build(const std::shared_ptr<Tu
   auto hardwareFlags = arrow::internal::CpuInfo::GetInstance()->hardware_flags();
   auto builder = BloomFilterBuilder::Make(BloomFilterBuildStrategy::SINGLE_THREADED);
   auto res = builder->Begin(1, hardwareFlags, arrow::default_memory_pool(), tupleSet->numRows(), 0, 
-                            blockedBloomFilter_.get());
+                            1, blockedBloomFilter_.get());
   if (!res.ok()) {
     return tl::make_unexpected(res.message());
   }
@@ -53,17 +53,26 @@ tl::expected<void, std::string> ArrowBloomFilter::build(const std::shared_ptr<Tu
   }
   auto recordBatch = *expRecordBatch;
   while (recordBatch) {
-    uint32_t* hashes = (uint32_t*) malloc(sizeof(uint32_t) * recordBatch->num_rows());
-    hasher_->hash(recordBatch, hashes);
-    res = builder->PushNextBatch(0, recordBatch->num_rows(), hashes);
-    if (!res.ok()) {
-      // clear
+    // use 32/64-bit hashes according to the initialized bloom filter
+    if (blockedBloomFilter_->use_64bit_hashes()) {
+      uint64_t *hashes = (uint64_t*) malloc(sizeof(uint64_t) * recordBatch->num_rows());
+      (*expHasher)->hash(recordBatch, hashes);
+      res = builder->PushNextBatch(0, recordBatch->num_rows(), hashes);
       free(hashes);
-      return tl::make_unexpected(res.message());
+      if (!res.ok()) {
+        return tl::make_unexpected(res.message());
+      }
+    } else {
+      uint32_t *hashes = (uint32_t*) malloc(sizeof(uint32_t) * recordBatch->num_rows());
+      (*expHasher)->hash(recordBatch, hashes);
+      res = builder->PushNextBatch(0, recordBatch->num_rows(), hashes);
+      free(hashes);
+      if (!res.ok()) {
+        return tl::make_unexpected(res.message());
+      }
     }
 
-    // clear
-    free(hashes);
+    // next batch
     expRecordBatch = reader.Next();
     if (!expRecordBatch.ok()) {
       return tl::make_unexpected(expRecordBatch.status().message());
@@ -76,43 +85,11 @@ tl::expected<void, std::string> ArrowBloomFilter::build(const std::shared_ptr<Tu
 
 tl::expected<void, std::string>
 ArrowBloomFilter::saveBitmapRecordBatches(const arrow::RecordBatchVector &batches) {
-  // should contain exactly two batches
-  if (batches.size() != 2) {
-    return tl::make_unexpected("RecordBatch stream for ArrowBloomFilter's bitmap should contain two recordBatches");
-  }
-  const auto &masksBatch = batches[0];
-  const auto &bitmapBatch = batches[1];
-
-  // masks
-  const auto &masksBuffer = masksBatch->column(0)->data()->buffers[1];
-  blockedBloomFilter_->SetPrivateMasks(
-          std::make_shared<arrow::compute::BloomFilterMasks>(masksBuffer->data(), masksBuffer->size()));
-
-  // bitmap
-  blockedBloomFilter_->SetBuf(bitmapBatch->column(0)->data()->buffers[1]);
-
-  return {};
+  return blockedBloomFilter_->saveBitmapRecordBatches(batches);
 }
 
 tl::expected<arrow::RecordBatchVector, std::string> ArrowBloomFilter::makeBitmapRecordBatches() const {
-  // schema: one uint_8 column
-  auto schema = arrow::schema({{field(ArrowSerializer::BITMAP_FIELD_NAME.data(), arrow::uint8())}});
-
-  // masks batch
-  const auto &masks = arrow::compute::BlockedBloomFilter::GetGlobalMasks();
-  int numBytes = arrow::compute::BloomFilterMasks::kTotalBytes;
-  auto buffer = std::make_shared<arrow::Buffer>(masks.masks_, numBytes);
-  auto masksArray = std::make_shared<arrow::NumericArray<arrow::UInt8Type>>(
-          arrow::ArrayData::Make(arrow::uint8(), numBytes, {nullptr, buffer}));
-  auto masksBatch = arrow::RecordBatch::Make(schema, numBytes, {masksArray});
-
-  // bitmap array
-  numBytes = sizeof(uint64_t) * blockedBloomFilter_->num_blocks();
-  auto bitmapArray = std::make_shared<arrow::NumericArray<arrow::UInt8Type>>(arrow::ArrayData::Make(
-          arrow::uint8(), numBytes, {nullptr, blockedBloomFilter_->buf()}));
-  auto bitmapBatch = arrow::RecordBatch::Make(schema, numBytes, {bitmapArray});
-
-  return arrow::RecordBatchVector{masksBatch, bitmapBatch};
+  return blockedBloomFilter_->makeBitmapRecordBatches();
 }
 
 ::nlohmann::json ArrowBloomFilter::toJson() const {

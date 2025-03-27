@@ -1,0 +1,56 @@
+{
+  "name": "aka_title",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "title",
+      "type": "string"
+    },
+    {
+      "name": "imdb_index",
+      "type": "string"
+    },
+    {
+      "name": "kind_id",
+      "type": "int64"
+    },
+    {
+      "name": "production_year",
+      "type": "int64"
+    },
+    {
+      "name": "phonetic_code",
+      "type": "string"
+    },
+    {
+      "name": "episode_of_id",
+      "type": "int64"
+    },
+    {
+      "name": "season_nr",
+      "type": "int64"
+    },
+    {
+      "name": "episode_nr",
+      "type": "int64"
+    },
+    {
+      "name": "note",
+      "type": "string"
+    },
+    {
+      "name": "md5sum",
+      "type": "string"
+    }
+  ]
+}

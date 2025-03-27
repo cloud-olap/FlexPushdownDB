@@ -1,7 +1,7 @@
 //
 // Created by matt on 27/4/20.
 //
-#include <optional>
+
 #include <fpdb/expression/gandiva/Expression.h>
 #include <fpdb/expression/gandiva/Add.h>
 #include <fpdb/expression/gandiva/And.h>
@@ -36,6 +36,30 @@ using namespace fpdb::util;
 
 Expression::Expression(ExpressionType type) :
   type_(type) {}
+
+bool Expression::equals(const std::shared_ptr<Expression> &e1,
+                        const std::shared_ptr<Expression> &e2) {
+  if (e1 == nullptr && e2 == nullptr) {
+    return true;
+  } else if (e1 != nullptr && e2 != nullptr) {
+    return e1->equalTo(e2);
+  } else {
+    return false;
+  }
+}
+
+bool Expression::equals(const std::vector<std::shared_ptr<Expression>> &e1,
+                        const std::vector<std::shared_ptr<Expression>> &e2) {
+  if (e1.size() != e2.size()) {
+    return false;
+  }
+  for (uint i = 0; i < e1.size(); ++i) {
+    if (!equals(e1[i], e2[i])) {
+      return false;
+    }
+  }
+  return true;
+}
 
 ExpressionType Expression::getType() const {
   return type_;

@@ -28,6 +28,7 @@ add_library(fpdb-tuple STATIC
         include/fpdb/tuple/FileFormatType.h
         src/util/Util.cpp include/fpdb/tuple/util/Util.h
         src/util/Sample.cpp include/fpdb/tuple/util/Sample.h
+        src/util/BloomFilterMathUtil.cpp include/fpdb/tuple/util/BloomFilterMathUtil.h
         src/csv/CSVParser.cpp include/fpdb/tuple/csv/CSVParser.h
         src/csv/CSVFormat.cpp include/fpdb/tuple/csv/CSVFormat.h
         src/csv/CSVReader.cpp include/fpdb/tuple/csv/CSVReader.h
@@ -92,7 +93,9 @@ add_executable(fpdb-tuple-test
         test/CSVTest.cpp
         test/ParquetTest.cpp
         test/ArrayAppenderTest.cpp
-        test/TupleSetIndexTest.cpp)
+        test/TupleSetIndexTest.cpp
+        test/ArrowBloomFilterFPRTest.cpp
+        test/UtilTest.cpp)
 
 target_include_directories(fpdb-tuple-test PRIVATE include)
 

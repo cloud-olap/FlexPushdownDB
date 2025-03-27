@@ -63,6 +63,14 @@ tl::expected<std::shared_ptr<DateExtract>, std::string> DateExtract::fromJson(co
   return std::make_shared<DateExtract>(*expDateExpr, *expIntervalType);
 }
 
+bool DateExtract::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<DateExtract>(other);
+  return equals(dateExpr_, typedOther->dateExpr_) && intervalType_ == typedOther->intervalType_;
+}
+
 shared_ptr<Expression> dateExtract(const shared_ptr<Expression> &dateExpr, DateIntervalType intervalType) {
   return make_shared<DateExtract>(dateExpr, intervalType);
 }

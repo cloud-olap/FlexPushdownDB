@@ -68,18 +68,17 @@ void FPDBStoreTableCacheLoadPOp::onTupleSetWaitRemote(const TupleSetWaitRemoteMe
 
   // load table until receive the "end table"
   while (true) {
-    std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-    auto status = client->DoGet(ticket, &reader);
-    if (!status.ok()) {
-      ctx()->notifyError(status.message());
+    auto expReader = client->DoGet(*expTicket);
+    if (!expReader.ok()) {
+      ctx()->notifyError(expReader.status().message());
       return;
     }
-    std::shared_ptr<::arrow::Table> table;
-    status = reader->ReadAll(&table);
-    if (!status.ok()) {
-      ctx()->notifyError(status.message());
+    auto expTable = (*expReader)->ToTable();
+    if (!expTable.ok()) {
+      ctx()->notifyError(expTable.status().message());
       return;
     }
+    auto table = *expTable;
 
     // check table
     if (table == nullptr) {
@@ -94,8 +93,8 @@ void FPDBStoreTableCacheLoadPOp::onTupleSetWaitRemote(const TupleSetWaitRemoteMe
 
       // metrics
 #if SHOW_DEBUG_METRICS == true
-      std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
-              metrics::TransferMetrics(tupleSet->size(), 0, 0), name_);
+      std::shared_ptr<Message> execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+              metrics::NetworkMetrics(tupleSet->size(), 0, 0), name_);
       ctx()->notifyRoot(execMetricsMsg);
 #endif
 

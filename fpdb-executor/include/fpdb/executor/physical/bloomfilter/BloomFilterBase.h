@@ -12,8 +12,9 @@
 namespace fpdb::executor::physical::bloomfilter {
 
 enum BloomFilterType {
-  BLOOM_FILTER,
-  ARROW_BLOOM_FILTER
+  VANILLA_BF,
+  ARROW_BF,
+  GLOBAL_ARROW_BF
 };
 
 class BloomFilterBase {

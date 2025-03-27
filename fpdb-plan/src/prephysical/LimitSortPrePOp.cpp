@@ -35,4 +35,17 @@ const vector<SortKey> &LimitSortPrePOp::getSortKeys() const {
   return sortKeys_;
 }
 
+bool LimitSortPrePOp::equalTo(const std::shared_ptr<PrePhysicalOp> &other) const {
+  // self
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<LimitSortPrePOp>(other);
+  if (!(k_ == typedOther->k_ && SortKey::equals(sortKeys_, typedOther->sortKeys_))) {
+    return false;
+  }
+  // producers
+  return equals(producers_, typedOther->producers_);
+}
+
 }

@@ -1,0 +1,36 @@
+{
+  "name": "cast_info",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "person_id",
+      "type": "int64"
+    },
+    {
+      "name": "movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "person_role_id",
+      "type": "int64"
+    },
+    {
+      "name": "note",
+      "type": "string"
+    },
+    {
+      "name": "nr_order",
+      "type": "int64"
+    },
+    {
+      "name": "role_id",
+      "type": "int64"
+    }
+  ]
+}

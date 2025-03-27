@@ -39,4 +39,23 @@ void PredTransMetrics::add(const PTMetricsUnit &unit) {
   }
 }
 
+const std::unordered_set<PredTransCSMetrics::PTCSMetricsUnit,
+                         PredTransCSMetrics::PTCSMetricsUnitHash,
+                         PredTransCSMetrics::PTCSMetricsUnitPred> &PredTransCSMetrics::getMetrics() const {
+  return metrics_;
+}
+
+void PredTransCSMetrics::add(const PTCSMetricsUnit &unit) {
+  auto it = metrics_.find(unit);
+  if (it == metrics_.end()) {
+    metrics_.emplace(unit);
+  } else {
+    it->numRowsIn_ += unit.numRowsIn_;
+    it->numRowsOut_ += unit.numRowsOut_;
+    it->bfSize_ += unit.bfSize_;
+    it->bfBuildTime_ += unit.bfBuildTime_;
+    it->bfProbeTime_ += unit.bfProbeTime_;
+  }
+}
+
 }

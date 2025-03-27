@@ -1,0 +1,28 @@
+{
+  "name": "household_demographics",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "hd_demo_sk",
+      "type": "int64"
+    },
+    {
+      "name": "hd_income_band_sk",
+      "type": "int64"
+    },
+    {
+      "name": "hd_buy_potential",
+      "type": "string"
+    },
+    {
+      "name": "hd_dep_count",
+      "type": "int64"
+    },
+    {
+      "name": "hd_vehicle_count",
+      "type": "int64"
+    }
+  ]
+}

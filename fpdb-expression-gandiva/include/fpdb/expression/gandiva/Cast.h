@@ -22,6 +22,10 @@ public:
   static tl::expected<std::shared_ptr<fpdb::tuple::TupleSet>, std::string>
   castDate32ToDate64(const std::shared_ptr<fpdb::tuple::TupleSet> &tupleSet);
 
+  // Return true if we need to cast from `type1` to `type2`, and false otherwise
+  static bool getCastDirection(const std::shared_ptr<arrow::DataType>& type1,
+                               const std::shared_ptr<arrow::DataType>& type2);
+
   Cast(std::shared_ptr<Expression> expr, std::shared_ptr<arrow::DataType> dataType);
   Cast() = default;
   Cast(const Cast&) = default;
@@ -38,6 +42,7 @@ public:
 
 private:
   ::gandiva::NodePtr buildGandivaExpression();
+  bool equalTo(const std::shared_ptr<Expression> &other) const override;
 
   std::shared_ptr<Expression> expr_;
   std::shared_ptr<arrow::DataType> dataType_;

@@ -89,11 +89,11 @@ ParquetReader::readRangeImpl(const std::vector<std::string> &columnNames,
     return tl::make_unexpected(status.message());
   }
 
-  std::shared_ptr<::arrow::Table> table;
-  status = recordBatchReader->ReadAll(&table);
-  if (!status.ok()) {
-    return tl::make_unexpected(status.message());
+  auto expTable = recordBatchReader->ToTable();
+  if (!expTable.ok()) {
+    return tl::make_unexpected(expTable.status().message());
   }
+  auto table = *expTable;
 
   auto tableColumnNames = table->schema()->field_names();
   std::vector<std::string> canonicalColumnNames;

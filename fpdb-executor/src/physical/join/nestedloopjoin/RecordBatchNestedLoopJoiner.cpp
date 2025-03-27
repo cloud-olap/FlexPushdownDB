@@ -5,6 +5,7 @@
 #include <fpdb/executor/physical/join/nestedloopjoin/RecordBatchNestedLoopJoiner.h>
 #include <fpdb/expression/gandiva/Filter.h>
 #include <fpdb/tuple/ArrayAppenderWrapper.h>
+#include <fpdb/tuple/util/Util.h>
 
 namespace fpdb::executor::physical::join {
 
@@ -52,6 +53,11 @@ tl::expected<void, string> RecordBatchNestedLoopJoiner::join(const shared_ptr<::
   }
   const auto &cartesianBatch = expCartesianBatch.value();
 
+  // skip for empty batches, filter empty batches using gandiva will throw errors
+  if (cartesianBatch->num_rows() == 0) {
+    return {};
+  }
+
   // filter using predicate
   arrow::ArrayVector outputArrayVector;
   if (predicate_.has_value()) {
@@ -78,99 +84,44 @@ tl::expected<void, string> RecordBatchNestedLoopJoiner::join(const shared_ptr<::
 tl::expected<shared_ptr<arrow::RecordBatch>, string>
 RecordBatchNestedLoopJoiner::cartesian(const shared_ptr<::arrow::RecordBatch> &leftRecordBatch,
                                        const shared_ptr<::arrow::RecordBatch> &rightRecordBatch) {
-  arrow::Status status;
-  vector<shared_ptr<arrow::Array>> outputArrays;
-  optional<int64_t> outputNumRows = nullopt;
+  // check empty first
+  if (leftRecordBatch->num_rows() == 0 || rightRecordBatch->num_rows() == 0) {
+    return fpdb::tuple::util::Util::makeEmptyRecordBatch(outputSchema_);
+  }
 
-  // create column references
+  // in a high level, copy entire right batch [# left rows] times,
+  // then, for left batch, copy each row [# right rows] times
+  // e.g., left = [1,2,3,4], right = [a,b,c], after cartesian:
+  // right = [a,b,c,a,b,c,a,b,c,a,b,c], left = [1,1,1,2,2,2,3,3,3,4,4,4]
+  // left/right above may be reversed, based on which side has more rows, where we copy as a whole
   const auto &leftColumns = leftRecordBatch->columns();
   const auto &rightColumns = rightRecordBatch->columns();
+  bool copyLeftWhole = leftRecordBatch->num_rows() > rightRecordBatch->num_rows();
+  arrow::ArrayVector outArrays;
 
-  /*
-   * left part: add whole left array [#rows of right array] times
-   */
-  vector<arrow::ArrayVector> leftOutputArrayVectors{neededLeftColumnIndexes_.size()};
-  for (uint c = 0; c < neededLeftColumnIndexes_.size(); ++c) {
-    const auto &leftColumn = leftColumns[neededLeftColumnIndexes_[c]];
-    for (int64_t rr = 0; rr < rightRecordBatch->num_rows(); ++rr) {
-      leftOutputArrayVectors[c].emplace_back(leftColumn);
+  // left
+  for (int c: neededLeftColumnIndexes_) {
+    auto expCopiedArray = copyLeftWhole ?
+            fpdb::tuple::util::Util::copyArrayWhole(leftColumns[c], rightRecordBatch->num_rows()) :
+            fpdb::tuple::util::Util::copyArrayRow(leftColumns[c], rightRecordBatch->num_rows());
+    if (!expCopiedArray.has_value()) {
+      return tl::make_unexpected(expCopiedArray.error());
     }
+    outArrays.emplace_back(*expCopiedArray);
   }
 
-  // combine array vectors to single arrays
-  vector<shared_ptr<arrow::ChunkedArray>> leftOutputChunkedArrays;
-  for (uint c = 0; c < neededLeftColumnIndexes_.size(); ++c) {
-    leftOutputChunkedArrays.emplace_back(make_shared<arrow::ChunkedArray>(leftOutputArrayVectors[c]));
-  }
-  const auto &leftOutputTable = arrow::Table::Make(leftOutputSchema_, leftOutputChunkedArrays);
-  const auto &result = leftOutputTable->CombineChunks();
-  if (!result.ok()) {
-    return tl::make_unexpected(result.status().message());
-  }
-  for (const auto &column: result.ValueOrDie()->columns()) {
-    const auto &array = column->chunk(0);
-    // check whether num_rows is consistent
-    if (!outputNumRows.has_value()) {
-      outputNumRows = array->length();
-    } else {
-      if (outputNumRows.value() != array->length()) {
-        return tl::make_unexpected(fmt::format("Inconsistent num_rows of output columns during cartesian product, "
-                                               "should be {}, but get {}", outputNumRows.value(), array->length()));
-      }
+  // right
+  for (int c: neededRightColumnIndexes_) {
+    auto expCopiedArray = copyLeftWhole ?
+            fpdb::tuple::util::Util::copyArrayRow(rightColumns[c], leftRecordBatch->num_rows()) :
+            fpdb::tuple::util::Util::copyArrayWhole(rightColumns[c], leftRecordBatch->num_rows());
+    if (!expCopiedArray.has_value()) {
+      return tl::make_unexpected(expCopiedArray.error());
     }
-    outputArrays.emplace_back(column->chunk(0));
+    outArrays.emplace_back(*expCopiedArray);
   }
 
-  /*
-   * right part: append values regularly
-   */
-  // create right appenders
-  vector<shared_ptr<ArrayAppender>> rightAppenders{(uint) rightOutputSchema_->num_fields()};
-  for (int c = 0; c < rightOutputSchema_->num_fields(); ++c) {
-    auto expectedAppender = ArrayAppenderBuilder::make(rightOutputSchema_->field(c)->type());
-    if (!expectedAppender.has_value())
-      return tl::make_unexpected(expectedAppender.error());
-    rightAppenders[c] = expectedAppender.value();
-  }
-
-  // append right values
-  for (int64_t rr = 0; rr < rightRecordBatch->num_rows(); ++rr) {
-    for (int64_t lr = 0; lr < leftRecordBatch->num_rows(); ++lr) {
-      for (int c = 0; c < rightOutputSchema_->num_fields(); ++c) {
-        int colId = neededRightColumnIndexes_[c];
-        auto appendResult = rightAppenders[c]->appendValue(rightColumns[colId], (size_t) rr);
-        if (!appendResult.has_value()) {
-          return tl::make_unexpected(appendResult.error());
-        }
-      }
-    }
-  }
-
-  // finalize right arrays
-  for (const auto &rightAppender: rightAppenders) {
-    auto expectedArray = rightAppender->finalize();
-    if (!expectedArray.has_value()) {
-      return tl::make_unexpected(expectedArray.error());
-    }
-    const auto &array = expectedArray.value();
-
-    // check whether num_rows is consistent
-    if (!outputNumRows.has_value()) {
-      outputNumRows = array->length();
-    } else {
-      if (outputNumRows.value() != array->length()) {
-        return tl::make_unexpected(fmt::format("Inconsistent num_rows of output columns during cartesian product, "
-                                               "should be {}, but get {}", outputNumRows.value(), array->length()));
-      }
-    }
-    outputArrays.emplace_back(array);
-  }
-
-  // create output record batch
-  if (!outputNumRows.has_value()) {
-    return tl::make_unexpected("No output num_rows");
-  }
-  return arrow::RecordBatch::Make(outputSchema_, outputNumRows.value(), outputArrays);
+  return arrow::RecordBatch::Make(outputSchema_, leftRecordBatch->num_rows() * rightRecordBatch->num_rows(), outArrays);
 }
 
 tl::expected<arrow::ArrayVector, string> RecordBatchNestedLoopJoiner::filter(const shared_ptr<arrow::RecordBatch> &recordBatch,

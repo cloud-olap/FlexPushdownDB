@@ -35,7 +35,7 @@ function deploy() {
   cp -r "$resource_dir"/ "$resource_deploy_dir"/
 
   # libs
-  lib_names=("aws-cpp-sdk_ep" "caf_ep" "graphviz_ep")
+  lib_names=("caf_ep" "graphviz_ep")
   lib_suffix="install/lib"
   lib_root_dir="$build_dir""/_deps"
   lib_deploy_root_dir="$deploy_dir""/libs"
@@ -54,7 +54,7 @@ function deploy() {
   echo -e "done\n"
 
   # 2. deploy organized package for each node
-  echo "Sending built files to cluster nodes..."
+  echo "Deploying on cluster nodes (built files, aws credentials, etc.)..."
 
   if [ "${is_compute}" = true ]; then
     node_ips=("${compute_ips[@]}")
@@ -63,10 +63,11 @@ function deploy() {
   fi
   for node_ip in "${node_ips[@]}"
   do
-    echo -n "  Sending to ""$node_ip""... "
+    echo -n "  Deploying on ""$node_ip""... "
     check_or_add_to_known_hosts "$node_ip"
     run_command "$pem_path" "$node_ip" rm -rf "$deploy_dir"
     scp -rqi "$pem_path" "$deploy_dir"/ ubuntu@"$node_ip":"$deploy_dir"/
+    scp -qi "$pem_path" "$credentials_path" ubuntu@"$node_ip":"$credentials_path"
     echo "  done"
   done
 

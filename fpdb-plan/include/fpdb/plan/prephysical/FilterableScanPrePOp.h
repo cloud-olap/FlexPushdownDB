@@ -26,6 +26,8 @@ public:
   void setPredicate(const shared_ptr<fpdb::expression::gandiva::Expression> &predicate);
 
 private:
+  bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const override;
+
   shared_ptr<fpdb::expression::gandiva::Expression> predicate_;
   shared_ptr<Table> table_;
 };

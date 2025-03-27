@@ -7,6 +7,7 @@
 
 #include "fpdb/store/server/flight/TicketObject.hpp"
 #include <nlohmann/json.hpp>
+#include <optional>
 
 namespace fpdb::store::server::flight {
 
@@ -22,6 +23,8 @@ public:
 
   long query_id() const;
   const std::string& op() const;
+  const std::optional<std::string> &consumer() const;
+  void set_consumer(const std::string &consumer);
 
   tl::expected<std::string, std::string> serialize(bool pretty) override;
 
@@ -29,7 +32,8 @@ public:
 
 private:
   long query_id_;
-  std::string op_;
+  std::string op_;    // producer of the bitmap
+  std::optional<std::string> consumer_ = std::nullopt;   // used when the bitmap is specific to the consumer
 
 };
 

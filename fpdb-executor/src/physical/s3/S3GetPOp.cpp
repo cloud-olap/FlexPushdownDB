@@ -4,8 +4,9 @@
 
 #include <fpdb/executor/physical/s3/S3GetPOp.h>
 #include <fpdb/executor/physical/Globals.h>
-#include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/cache/LoadResponseMessage.h>
+#include <fpdb/executor/message/NetworkMetricsMessage.h>
+#include <fpdb/expression/gandiva/Cast.h>
 #include <fpdb/tuple/csv/CSVFormat.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <fpdb/tuple/arrow/ArrowInputStream.h>
@@ -16,6 +17,7 @@
 #include <arrow/io/buffered.h>
 #include <arrow/io/memory.h>
 #include <arrow/type_fwd.h>
+#include <arrow/filesystem/s3fs.h>
 #include <parquet/arrow/reader.h>
 #include <aws/core/auth/AWSAuthSigner.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
@@ -81,15 +83,15 @@ bool S3GetPOp::parallelTuplesetCreationSupported() {
   // We only supports combining uncompressed CSV in parallel,
   // though in the future we will support Parquet, this will require
   // different code than CSV though so it hasn't been done yet.
-  if (s3Object_.find("gz") != std::string::npos ||
-      s3Object_.find("bz2") != std::string::npos ||
-      s3Object_.find("csv") == std::string::npos) {
-    return false;
+  if (table_->getFormat()->getType() == tuple::FileFormatType::CSV &&
+      s3Object_.find("gz") == std::string::npos &&
+      s3Object_.find("bz2") == std::string::npos) {
+    return true;
   }
-  return true;
+  return false;
 }
 
-std::shared_ptr<TupleSet> S3GetPOp::readCSVFile(std::shared_ptr<arrow::io::InputStream> &arrowInputStream) {
+std::shared_ptr<TupleSet> S3GetPOp::parseCSVFileArrowImpl(std::shared_ptr<arrow::io::InputStream> &arrowInputStream) {
   auto ioContext = arrow::io::IOContext();
   auto parse_options = arrow::csv::ParseOptions::Defaults();
   auto read_options = arrow::csv::ReadOptions::Defaults();
@@ -124,7 +126,115 @@ std::shared_ptr<TupleSet> S3GetPOp::readCSVFile(std::shared_ptr<arrow::io::Input
   return *expTupleSet;
 }
 
-std::shared_ptr<TupleSet> S3GetPOp::readParquetFile(std::basic_iostream<char, std::char_traits<char>> &retrievedFile) {
+std::shared_ptr<TupleSet> S3GetPOp::readParquetFile() {
+  if (SCAN_S3_PARQUET_PARTIAL_COLUMNS) {
+    return readParquetFilePartialColumns();
+  } else {
+    return readParquetFileFull();
+  }
+}
+
+// TODO: currently S3ScanStats are not injected into this
+std::shared_ptr<TupleSet> S3GetPOp::readParquetFilePartialColumns() {
+  // create S3 options, using config from awsClient_
+  const auto &awsInternalConfig = awsClient_->getAwsInternalConfig();
+  arrow::fs::S3Options s3Options;
+  s3Options.region = awsInternalConfig->region;
+  if (awsInternalConfig->scheme == Aws::Http::Scheme::HTTP) {
+    s3Options.scheme = "http";
+  } else {
+    s3Options.scheme = "https";
+  }
+  s3Options.credentials_provider = fpdb::aws::AWSClient::defaultAwsCredentialProvider();
+
+  // make S3 file system
+  auto expS3fs = arrow::fs::S3FileSystem::Make(s3Options);
+  if (!expS3fs.ok()) {
+    ctx()->notifyError(expS3fs.status().message());
+    return nullptr;
+  }
+  auto s3fs = *expS3fs;
+
+  // make random access file as input
+  auto path = s3Bucket_ + "/" + s3Object_;
+  auto expFile = s3fs->OpenInputFile(path);
+  if (!expFile.ok()) {
+    ctx()->notifyError(expFile.status().message());
+    return nullptr;
+  }
+
+  // create the reader
+  std::unique_ptr<::parquet::arrow::FileReader> parquetReader;
+  ::arrow::Status status = ::parquet::arrow::OpenFile(*expFile,
+                                                      ::arrow::default_memory_pool(),
+                                                      &parquetReader);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+    return nullptr;
+  }
+  parquetReader->set_use_threads(false);
+
+  // read the file
+  std::shared_ptr<arrow::Table> tableData;
+  std::vector<int> columnIndices;
+  for (const auto &columnName: projectColumnNames_) {
+    auto columnIndex = table_->getSchema()->GetFieldIndex(ColumnName::canonicalize(columnName));
+    if (columnIndex == -1) {
+      ctx()->notifyError(fmt::format("Read Parquet Error: column {} not found", columnName));
+      return nullptr;
+    }
+    columnIndices.emplace_back(columnIndex);
+  }
+  status = parquetReader->ReadTable(columnIndices, &tableData);
+  if (!status.ok()) {
+    ctx()->notifyError(status.message());
+    return nullptr;
+  }
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+          metrics::NetworkMetrics((*expFile)->GetBytesRead(), 0, 0), this->name());;
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
+
+  return TupleSet::make(tableData);
+}
+
+// TODO: currently S3ScanStats are not injected into this
+std::shared_ptr<TupleSet> S3GetPOp::readParquetFileFull() {
+  // S3 Get to scan full object
+  GetObjectRequest getObjectRequest;
+  getObjectRequest.SetBucket(Aws::String(s3Bucket_));
+  getObjectRequest.SetKey(Aws::String(s3Object_));
+  GetObjectOutcome getObjectOutcome;
+  int maxRetryAttempts = 100;
+  int attempts = 0;
+  while (true) {
+    attempts++;
+    getObjectOutcome = awsClient_->getS3Client()->GetObject(getObjectRequest);
+    if (getObjectOutcome.IsSuccess()) {
+      break;
+    }
+    if (attempts > maxRetryAttempts) {
+      const auto& err = getObjectOutcome.GetError();
+      ctx()->notifyError(fmt::format("{}, {} after {} retries", err.GetMessage(), name(), maxRetryAttempts));
+    }
+    // Something went wrong with AWS API on our end or remotely, wait and try again
+    std::this_thread::sleep_for (std::chrono::milliseconds(minimumSleepRetryTimeMS));
+  }
+  auto getResult = getObjectOutcome.GetResultWithOwnership();
+  int64_t resultSize = getResult.GetContentLength();
+  Aws::IOStream &retrievedFile = getResult.GetBody();
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+          metrics::NetworkMetrics(resultSize, 0, 0), this->name());;
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
+
+  // parse returned data
   std::string parquetFileString(std::istreambuf_iterator<char>(retrievedFile), {});
   auto bufferedReader = std::make_shared<arrow::io::BufferReader>(parquetFileString);
 
@@ -149,7 +259,7 @@ std::shared_ptr<TupleSet> S3GetPOp::readParquetFile(std::basic_iostream<char, st
   return TupleSet::make(table);
 }
 
-std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
+std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequestCSV() {
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object_));
@@ -204,49 +314,48 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
   }
   std::chrono::steady_clock::time_point startConversionTime = std::chrono::steady_clock::now();
   Aws::IOStream &retrievedFile = getResult.GetBody();
-  if (s3Object_.find("csv") != std::string::npos) {
-    std::shared_ptr<arrow::io::InputStream> inputStream;
-    auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
-    if (s3Object_.find("gz") != std::string::npos) {
+
+  // parse CSV input
+  std::shared_ptr<arrow::io::InputStream> inputStream;
+  auto csvFormat = std::static_pointer_cast<csv::CSVFormat>(table_->getFormat());
+  if (s3Object_.find("gz") != std::string::npos) {
 #ifdef __AVX2__
-      auto parser = CSVToArrowSIMDStreamParser(DefaultS3ConversionBufferSize,
-                                               retrievedFile,
-                                               true,
-                                               table_->getSchema(),
-                                               outputSchema,
-                                               true,
-                                               csvFormat->getFieldDelimiter());
-      try {
-        tupleSet = parser.constructTupleSet();
-      } catch (const std::runtime_error &err) {
-        ctx()->notifyError(err.what());
-      }
-#else
-      inputStream = std::make_shared<ArrowGzipInputStream2>(retrievedFile);
-      tupleSet = readCSVFile(inputStream);
-#endif
-    } else {
-#ifdef __AVX2__
-      auto parser = CSVToArrowSIMDStreamParser(DefaultS3ConversionBufferSize,
-                                               retrievedFile,
-                                               true,
-                                               table_->getSchema(),
-                                               outputSchema,
-                                               false,
-                                               csvFormat->getFieldDelimiter());
-      try {
-        tupleSet = parser.constructTupleSet();
-      } catch (const std::runtime_error &err) {
-        ctx()->notifyError(err.what());
-      }
-#else
-      inputStream = std::make_shared<ArrowInputStream>(retrievedFile);
-      tupleSet = readCSVFile(inputStream);
-#endif
+    auto parser = CSVToArrowSIMDStreamParser(DefaultS3ConversionBufferSize,
+                                             retrievedFile,
+                                             true,
+                                             table_->getSchema(),
+                                             outputSchema,
+                                             true,
+                                             csvFormat->getFieldDelimiter());
+    try {
+      tupleSet = parser.constructTupleSet();
+    } catch (const std::runtime_error &err) {
+      ctx()->notifyError(err.what());
     }
-  } else { // (s3Object_.find("parquet") != std::string::npos)
-    tupleSet = readParquetFile(retrievedFile);
+#else
+    inputStream = std::make_shared<ArrowGzipInputStream2>(retrievedFile);
+    tupleSet = parseCSVFileArrowImpl(inputStream);
+#endif
+  } else {
+#ifdef __AVX2__
+    auto parser = CSVToArrowSIMDStreamParser(DefaultS3ConversionBufferSize,
+                                             retrievedFile,
+                                             true,
+                                             table_->getSchema(),
+                                             outputSchema,
+                                             false,
+                                             csvFormat->getFieldDelimiter());
+    try {
+      tupleSet = parser.constructTupleSet();
+    } catch (const std::runtime_error &err) {
+      ctx()->notifyError(err.what());
+    }
+#else
+    inputStream = std::make_shared<ArrowInputStream>(retrievedFile);
+    tupleSet = parseCSVFileArrowImpl(inputStream);
+#endif
   }
+
   GetConvertLock.lock();
   activeGetConversions--;
   GetConvertLock.unlock();
@@ -258,7 +367,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetFullRequest() {
   return tupleSet;
 }
 
-GetObjectResult S3GetPOp::s3GetRequestOnly(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset) {
+GetObjectResult S3GetPOp::s3GetRequestOnlyCSV(const std::string &s3Object, uint64_t startOffset, uint64_t endOffset) {
   GetObjectRequest getObjectRequest;
   getObjectRequest.SetBucket(Aws::String(s3Bucket_));
   getObjectRequest.SetKey(Aws::String(s3Object));
@@ -301,8 +410,8 @@ GetObjectResult S3GetPOp::s3GetRequestOnly(const std::string &s3Object, uint64_t
 }
 
 #ifdef __AVX2__
-void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint64_t startOffset, uint64_t endOffset) {
-  GetObjectResult getObjectResult = s3GetRequestOnly(s3Object, startOffset, endOffset);
+void S3GetPOp::s3GetIndividualReqCSV(int reqNum, const std::string &s3Object, uint64_t startOffset, uint64_t endOffset) {
+  GetObjectResult getObjectResult = s3GetRequestOnlyCSV(s3Object, startOffset, endOffset);
   if (parallelTuplesetCreationSupported()) {
     // Generate parser, and process initial input store partial in a separate vector that we will
     // pass in at the end once all threads are joined.
@@ -365,7 +474,7 @@ void S3GetPOp::s3GetIndividualReq(int reqNum, const std::string &s3Object, uint6
   }
 }
 
-std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCSV150MB) {
+std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqsCSV(bool tempFixForAirmettleCSV150MB) {
   int totalReqs = 0;
   uint64_t currentStartOffset = 0;
 
@@ -383,7 +492,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCS
 //      SPDLOG_CRITICAL("SubObject: {}", s3SubObject);
       threadVector.emplace_back(std::thread([&, totalReqs, s3SubObject]() {
           // Airmettle has no range scan, so set to 0
-          s3GetIndividualReq(totalReqs, s3SubObject, 0, 0);
+          s3GetIndividualReqCSV(totalReqs, s3SubObject, 0, 0);
       }));
     }
     if (s3ObjectIndex == 399) {
@@ -391,7 +500,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCS
 //      SPDLOG_CRITICAL("SubObject: {}", s3SubObject);
       threadVector.emplace_back(std::thread([&, totalReqs, s3SubObject]() {
           // Airmettle has no range scan, so set to 0
-          s3GetIndividualReq(totalReqs, s3SubObject, 0, 0);
+          s3GetIndividualReqCSV(totalReqs, s3SubObject, 0, 0);
       }));
     }
   }
@@ -409,7 +518,7 @@ std::shared_ptr<TupleSet> S3GetPOp::s3GetParallelReqs(bool tempFixForAirmettleCS
         reqEndOffset = finishOffset_;
       }
       threadVector.emplace_back(std::thread([&, totalReqs, currentStartOffset, reqEndOffset]() {
-        s3GetIndividualReq(totalReqs, s3Object_, currentStartOffset, reqEndOffset);
+        s3GetIndividualReqCSV(totalReqs, s3Object_, currentStartOffset, reqEndOffset);
       }));
       currentStartOffset = reqEndOffset + 1;
     }
@@ -480,23 +589,32 @@ std::shared_ptr<TupleSet> S3GetPOp::readTuples() {
   if (getProjectColumnNames().empty()) {
     readTupleSet = TupleSet::makeWithEmptyTable();
   } else {
-
-    SPDLOG_DEBUG("Reading From S3: {}", name());
-
-    // Read columns from s3
+    // Read columns from s3, distinguish between CSV and parquet
+    if (table_->getFormat()->getType() == tuple::FileFormatType::CSV) {
 #ifdef __AVX2__
-    if (awsClient_->getAwsConfig()->getS3ClientType() == S3ClientType::S3 && parallelTuplesetCreationSupported()
-        && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
-      readTupleSet = s3GetParallelReqs(false);
-    } else if (awsClient_->getAwsConfig()->getS3ClientType() == AIRMETTLE && parallelTuplesetCreationSupported()) {
-      readTupleSet = s3GetParallelReqs(true);
-    }
-    else {
-      readTupleSet = s3GetFullRequest();
-    }
+      if (awsClient_->getAwsConfig()->getS3ClientType() == S3ClientType::S3 && parallelTuplesetCreationSupported()
+          && (finishOffset_ - startOffset_ > DefaultS3RangeSize)) {
+        readTupleSet = s3GetParallelReqsCSV(false);
+      } else if (awsClient_->getAwsConfig()->getS3ClientType() == AIRMETTLE && parallelTuplesetCreationSupported()) {
+        readTupleSet = s3GetParallelReqsCSV(true);
+      } else {
+        readTupleSet = s3GetFullRequestCSV();
+      }
 #else
-    readTupleSet = s3GetFullRequest();
+      readTupleSet = s3GetFullRequestCSV();
 #endif
+    } else if (table_->getFormat()->getType() == FileFormatType::PARQUET) {
+      // read Parquet object using Arrow S3 file system
+      readTupleSet = readParquetFile();
+
+      // convert date32 to date64 for parquet
+      auto expCastTupleSet = expression::gandiva::Cast::castDate32ToDate64(readTupleSet);
+      if (!expCastTupleSet.has_value()) {
+        ctx()->notifyError(expCastTupleSet.error());
+      } else {
+        readTupleSet = *expCastTupleSet;
+      }
+    }
 
     // Store the read columns in the cache, if this operator is to load segments to cache
     if (toCache_) {

@@ -31,6 +31,8 @@ public:
   void clear() override;
   void produce(const shared_ptr<PhysicalOp> &op) override;
 
+  void recordPredTransCard(const executor::cache::PredTransCardCache::PredTransCardKey &key);
+
 private:
   void onStart();
   void onComplete(const CompleteMessage &);
@@ -38,27 +40,23 @@ private:
 
   tl::expected<void, string> splitAndSend();
   tl::expected<void, string> bufferInput(const shared_ptr<TupleSet>& tupleSet);
-  tl::expected<vector<shared_ptr<TupleSet>>, string> split();
   void send(const vector<shared_ptr<TupleSet>> &tupleSets);
 
   vector<string> consumerVec_;
   std::optional<shared_ptr<TupleSet>> inputTupleSet_;
+  bool sentResult_ = false;
+
+  // to record runtime cardinalities
+  executor::cache::PredTransCardCache::PredTransCardInfo ptCardInfo_;
+  int64_t numRows_ = 0;
 
 // caf inspect
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, SplitPOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("consumerVec", op.consumerVec_));
+    return inspect_base(f, op,
+                        f.field("consumerVec", op.consumerVec_),
+                        f.field("ptCardInfo", op.ptCardInfo_));
   }
 };
 

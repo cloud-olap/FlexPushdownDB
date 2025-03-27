@@ -4,6 +4,7 @@
 
 #include <fpdb/executor/physical/group/GroupArrowKernel.h>
 #include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
+#include <fpdb/executor/physical/aggregate/function/StddevReduce.h>
 #include <fpdb/tuple/arrow/exec/DummyNode.h>
 #include <arrow/compute/exec/exec_plan.h>
 
@@ -63,8 +64,9 @@ tl::expected<shared_ptr<TupleSet>, std::string> GroupArrowKernel::finalise() {
     outputTupleSet = TupleSet::make(*expOutputTable);
   }
 
-  // for functions which are Avg or AvgReduce, we need to divide intermediate sum column by intermediate count column
-  return finalizeAvg(outputTupleSet);
+  // for functions require extra compute regarding the intermediate columns
+  // e.g., Avg or AvgReduce, we need to divide intermediate sum column by intermediate count column
+  return finalizeIntermediate(outputTupleSet);
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
@@ -104,6 +106,36 @@ GroupArrowKernel::evaluateExpr(const std::shared_ptr<TupleSet> &tupleSet) {
       avgFunction->setAggColumnDataType(tupleSet);
     }
 
+    // for STDDEV_REDUCE, just return the original tupleSet
+    // because all columns are needed and there is no expr
+    // need to specially handle STDDEV_REDUCE because it has three aggregate columns and no expr
+    else if (function->getType() == AggregateFunctionType::STDDEV_REDUCE) {
+      auto stddevFunction = std::static_pointer_cast<StddevReduce>(function);
+      // intermediate sum column
+      auto expIntermediateSumColumn = stddevFunction->getIntermediateSumColumn(tupleSet);
+      if (!expIntermediateSumColumn.has_value()) {
+        return tl::make_unexpected(expIntermediateSumColumn.error());
+      }
+      outputFields.emplace_back((*expIntermediateSumColumn).first);
+      outputColumns.emplace_back((*expIntermediateSumColumn).second);
+      // intermediate count column
+      auto expIntermediateCountColumn = stddevFunction->getIntermediateCountColumn(tupleSet);
+      if (!expIntermediateCountColumn.has_value()) {
+        return tl::make_unexpected(expIntermediateCountColumn.error());
+      }
+      outputFields.emplace_back((*expIntermediateCountColumn).first);
+      outputColumns.emplace_back((*expIntermediateCountColumn).second);
+      // intermediate sum of squares column
+      auto expIntermediateSumOfSquaresColumn = stddevFunction->getIntermediateSumOfSquaresColumn(tupleSet);
+      if (!expIntermediateSumOfSquaresColumn.has_value()) {
+        return tl::make_unexpected(expIntermediateSumOfSquaresColumn.error());
+      }
+      outputFields.emplace_back((*expIntermediateSumOfSquaresColumn).first);
+      outputColumns.emplace_back((*expIntermediateSumOfSquaresColumn).second);
+      // need to set explicitly
+      stddevFunction->setAggColumnDataType(tupleSet);
+    }
+
     else {
       std::shared_ptr<arrow::ChunkedArray> outputColumn;
       // need to specially handel count(*) because it has no expr
@@ -126,7 +158,10 @@ GroupArrowKernel::evaluateExpr(const std::shared_ptr<TupleSet> &tupleSet) {
 
 tl::expected<void, std::string> GroupArrowKernel::doGroup(const std::shared_ptr<TupleSet> &tupleSet) {
   // make arrow exec plan if not yet
-  makeArrowExecPlan(tupleSet->schema());
+  auto res = makeArrowExecPlan(tupleSet->schema());
+  if (!res.has_value()) {
+    return tl::make_unexpected(res.error());
+  }
 
   // read tupleSet into batches
   auto reader = std::make_shared<arrow::TableBatchReader>(*tupleSet->table());
@@ -154,7 +189,7 @@ tl::expected<void, std::string> GroupArrowKernel::doGroup(const std::shared_ptr<
 }
 
 tl::expected<std::shared_ptr<TupleSet>, std::string>
-GroupArrowKernel::finalizeAvg(const std::shared_ptr<TupleSet> &tupleSet) {
+GroupArrowKernel::finalizeIntermediate(const std::shared_ptr<TupleSet> &tupleSet) {
   // group columns
   auto expGroupColumns = getGroupColumns(tupleSet);
   if (!expGroupColumns.has_value()) {
@@ -164,35 +199,47 @@ GroupArrowKernel::finalizeAvg(const std::shared_ptr<TupleSet> &tupleSet) {
   auto outputColumns = expGroupColumns->second;
 
   for (const auto &function: aggregateFunctions_) {
-    // not an Avg or AvgReduce function
-    if (function->getType() != AggregateFunctionType::AVG && function->getType() != AggregateFunctionType::AVG_REDUCE) {
-      auto outputColumnName = function->getOutputColumnName();
-
-      auto aggregateField = tupleSet->schema()->GetFieldByName(outputColumnName);
-      if (aggregateField == nullptr) {
-        return tl::make_unexpected(
-                fmt::format("Aggregate output field '{}' not found in finalized table", outputColumnName));
+    switch (function->getType()) {
+      case AggregateFunctionType::AVG:
+      case AggregateFunctionType::AVG_REDUCE: {
+        // related to Avg/AvgReduce, need to do extra computation regarding intermediate columns
+        auto avgFunction = std::static_pointer_cast<AvgBase>(function);
+        outputFields.emplace_back(arrow::field(avgFunction->getOutputColumnName(), avgFunction->returnType()));
+        auto expOutputColumn = avgFunction->finalize(tupleSet);
+        if (!expOutputColumn.has_value()) {
+          return tl::make_unexpected(expOutputColumn.error());
+        }
+        outputColumns.emplace_back(*expOutputColumn);
+        break;
       }
-      outputFields.emplace_back(aggregateField);
-
-      auto aggregateColumn = tupleSet->table()->GetColumnByName(outputColumnName);
-      if (aggregateColumn == nullptr) {
-        return tl::make_unexpected(
-                fmt::format("Aggregate output column '{}' not found in finalized table", outputColumnName));
+      case AggregateFunctionType::STDDEV:
+      case AggregateFunctionType::STDDEV_REDUCE: {
+        // related to Stddev/StddevReduce, need to do extra computation regarding intermediate columns
+        auto stddevFunction = std::static_pointer_cast<StddevBase>(function);
+        outputFields.emplace_back(arrow::field(stddevFunction->getOutputColumnName(), stddevFunction->returnType()));
+        auto expOutputColumn = stddevFunction->finalize(tupleSet);
+        if (!expOutputColumn.has_value()) {
+          return tl::make_unexpected(expOutputColumn.error());
+        }
+        outputColumns.emplace_back(*expOutputColumn);
+        break;
       }
-      outputColumns.emplace_back(aggregateColumn);
-    }
-
-    // is an Avg or AvgReduce function
-    else {
-      auto avgFunction = std::static_pointer_cast<AvgBase>(function);
-      outputFields.emplace_back(arrow::field(avgFunction->getOutputColumnName(), avgFunction->returnType()));
-
-      auto expOutputColumn = avgFunction->finalize(tupleSet);
-      if (!expOutputColumn.has_value()) {
-        return tl::make_unexpected(expOutputColumn.error());
+      default: {
+        // not related to Avg/Stddev or its reduce, the intermediate column is the output 
+        auto outputColumnName = function->getOutputColumnName();
+        auto aggregateField = tupleSet->schema()->GetFieldByName(outputColumnName);
+        if (aggregateField == nullptr) {
+          return tl::make_unexpected(
+                  fmt::format("Aggregate output field '{}' not found in finalized table", outputColumnName));
+        }
+        outputFields.emplace_back(aggregateField);
+        auto aggregateColumn = tupleSet->table()->GetColumnByName(outputColumnName);
+        if (aggregateColumn == nullptr) {
+          return tl::make_unexpected(
+                  fmt::format("Aggregate output column '{}' not found in finalized table", outputColumnName));
+        }
+        outputColumns.emplace_back(aggregateColumn);
       }
-      outputColumns.emplace_back(*expOutputColumn);
     }
   }
 

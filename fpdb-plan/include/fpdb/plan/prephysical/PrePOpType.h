@@ -17,6 +17,7 @@ enum PrePOpType {
   SORT,
   LIMIT_SORT,
   PROJECT,
+  UNION_ALL,
   SEPARABLE_SUPER
 };
 

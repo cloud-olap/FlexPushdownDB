@@ -1,7 +1,7 @@
 //
 // Created by Yifei Yang on 11/1/21.
 //
-#include <optional>
+
 #include <fpdb/plan/calcite/CalcitePlanJsonDeserializer.h>
 #include <fpdb/plan/prephysical/JoinType.h>
 #include <fpdb/plan/Util.h>
@@ -29,8 +29,10 @@
 #include <fpdb/expression/gandiva/Like.h>
 #include <fpdb/expression/gandiva/DateExtract.h>
 #include <fpdb/expression/gandiva/IsNull.h>
+#include <fpdb/expression/gandiva/IsNotNull.h>
 #include <fpdb/expression/gandiva/Substr.h>
 #include <fpdb/expression/gandiva/Cast.h>
+#include <fpdb/expression/gandiva/Concat.h>
 #include <fpdb/tuple/ColumnName.h>
 
 #include <fmt/format.h>
@@ -83,6 +85,9 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeDfs(json &jObj
     return deserializeFilterOrFilterableScan(jObj);
   } else if (opName == "EnumerableTableScan") {
     return deserializeTableScan(jObj);
+  } else if (opName == "EnumerableUnion") {
+    // It's guaranteed that we only have union with `all` = true here.
+    return deserializeUnionAll(jObj);
   } else {
     throw runtime_error(fmt::format("Unsupported PrePhysicalOp type, {}", opName));
   }
@@ -305,6 +310,9 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
   if (opName == "IS_NULL") {
     const auto &expr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
     return isNull(expr);
+  } else if (opName == "IS_NOT_NULL") {
+    const auto &expr = deserializeExpression(jObj["operands"].get<vector<json>>()[0]);
+    return isNotNull(expr);
   } else {
     throw runtime_error(fmt::format("Unsupported null expression type, {}, from: {}", opName, to_string(jObj)));
   }
@@ -326,17 +334,27 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
   return cast(expr, type);
 }
 
+shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::deserializeConcatOperation(const json &jObj) {
+  const auto &operandsJArr = jObj["operands"].get<vector<json>>();
+  vector<shared_ptr<fpdb::expression::gandiva::Expression>> operands;
+  operands.reserve(operandsJArr.size());
+  for (const auto &operandJObj: operandsJArr) {
+    operands.emplace_back(deserializeExpression(operandJObj));
+  }
+  return concat(operands);
+}
+
 shared_ptr<::arrow::DataType> CalcitePlanJsonDeserializer::deserializeDataType(const json &jObj) {
   const auto &type = jObj["type"].get<std::string>();
 
-  if(type == "INTEGER"){
+  // TODO: Add more types
+  if (type == "INTEGER" || type == "BIGINT"){
     return ::arrow::int64();
   }
-  // TODO: Add more types
-//  else if(type == "INTEGER"){
-//    return ::arrow::int64();
-//  }
-  else{
+  else if (type == "DECIMAL"){
+    return ::arrow::float64();
+  }
+  else {
     throw runtime_error(fmt::format("Unrecognized data type, {}, from: {}", type, to_string(jObj)));
   }
 }
@@ -366,7 +384,7 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
     return deserializeExtractOperation(jObj);
   }
   // is null
-  else if (opName == "IS_NULL") {
+  else if (opName == "IS_NULL" || opName == "IS_NOT_NULL") {
     return deserializeNullOperation(opName, jObj);
   }
   else if (opName == "SUBSTRING") {
@@ -374,6 +392,9 @@ shared_ptr<fpdb::expression::gandiva::Expression> CalcitePlanJsonDeserializer::d
   }
   else if (opName == "CAST") {
     return deserializeCastOperation(jObj);
+  }
+  else if (opName == "||") {
+    return deserializeConcatOperation(jObj);
   }
   // invalid
   else {
@@ -411,33 +432,79 @@ unordered_map<string, string> CalcitePlanJsonDeserializer::deserializeColumnRena
   return renames;
 }
 
-pair<vector<string>, vector<string>> CalcitePlanJsonDeserializer::deserializeHashJoinCondition(const json &jObj) {
+CalcitePlanJsonDeserializer::HashJoinConditionRes
+CalcitePlanJsonDeserializer::deserializeHashJoinCondition(const json &jObj, uint prePOpId,
+                                                          int* leftInputExprId, int* rightInputExprId) {
+  HashJoinConditionRes res;
+  auto &joinColumnNames = res.joinColumnNames_;
+  auto &joinInputExprs = res.inputExprs_;
+  auto &joinInputExprNames = res.inputExprNames_;
   const string &opName = jObj["op"].get<string>();
   if (opName == "AND") {
     vector<string> leftColumnNames, rightColumnNames;
-    auto childJObj1 = jObj["operands"].get<vector<json>>()[0];
-    auto childJObj2 = jObj["operands"].get<vector<json>>()[1];
-    const auto &childJoinColumns1 = deserializeHashJoinCondition(childJObj1);
-    const auto &childJoinColumns2 = deserializeHashJoinCondition(childJObj2);
-    leftColumnNames.insert(leftColumnNames.end(), childJoinColumns1.first.begin(), childJoinColumns1.first.end());
-    leftColumnNames.insert(leftColumnNames.end(), childJoinColumns2.first.begin(), childJoinColumns2.first.end());
-    rightColumnNames.insert(rightColumnNames.end(), childJoinColumns1.second.begin(), childJoinColumns1.second.end());
-    rightColumnNames.insert(rightColumnNames.end(), childJoinColumns2.second.begin(), childJoinColumns2.second.end());
-    return make_pair(leftColumnNames, rightColumnNames);
+    const auto &childJArr = jObj["operands"].get<vector<json>>();
+    for (const auto &childJObj: childJArr) {
+      const auto &childRes = deserializeHashJoinCondition(childJObj, prePOpId, leftInputExprId, rightInputExprId);
+      const auto &childJoinColumnNames = childRes.joinColumnNames_;
+      const auto &childJoinInputExprs = childRes.inputExprs_;
+      const auto &childJoinInputExprNames = childRes.inputExprNames_;
+      joinColumnNames.first.insert(joinColumnNames.first.end(),
+              childJoinColumnNames.first.begin(), childJoinColumnNames.first.end());
+      joinColumnNames.second.insert(joinColumnNames.second.end(),
+              childJoinColumnNames.second.begin(), childJoinColumnNames.second.end());
+      joinInputExprs.first.insert(joinInputExprs.first.end(),
+              childJoinInputExprs.first.begin(), childJoinInputExprs.first.end());
+      joinInputExprs.second.insert(joinInputExprs.second.end(),
+              childJoinInputExprs.second.begin(), childJoinInputExprs.second.end());
+      joinInputExprNames.first.insert(joinInputExprNames.first.end(),
+              childJoinInputExprNames.first.begin(), childJoinInputExprNames.first.end());
+      joinInputExprNames.second.insert(joinInputExprNames.second.end(),
+              childJoinInputExprNames.second.begin(), childJoinInputExprNames.second.end());
+    }
   }
 
   else if (opName == "EQUALS") {
+    // left
     auto leftJObj = jObj["operands"].get<vector<json>>()[0];
+    if (leftJObj.contains("inputRef")) {
+      auto leftColumnName = ColumnName::canonicalize(leftJObj["inputRef"].get<string>());
+      joinColumnNames.first.emplace_back(leftColumnName);
+    } else if (leftJObj.contains("op")) {
+      auto leftInputExprName = fmt::format("{}{}[{}]",
+              HashJoinPrePOp::HASH_JOIN_LEFT_INPUT_EXPR_PREFIX, *leftInputExprId++, prePOpId);
+      auto leftInputExpr = deserializeOperation(leftJObj);
+      joinColumnNames.first.emplace_back(leftInputExprName);
+      joinInputExprs.first.emplace_back(leftInputExpr);
+      joinInputExprNames.first.emplace_back(leftInputExprName);
+    } else {
+      throw runtime_error(fmt::format("Invalid hash join condition left operand, neither 'inputRef' nor 'op', from: {}",
+                                      to_string(jObj)));
+    }
+
+    // right
     auto rightJObj = jObj["operands"].get<vector<json>>()[1];
-    auto leftColumnName = ColumnName::canonicalize(leftJObj["inputRef"].get<string>());
-    auto rightColumnName = ColumnName::canonicalize(rightJObj["inputRef"].get<string>());
-    return make_pair(vector<string>{leftColumnName}, vector<string>{rightColumnName});
+    if (rightJObj.contains("inputRef")) {
+      auto rightColumnName = ColumnName::canonicalize(rightJObj["inputRef"].get<string>());
+      joinColumnNames.second.emplace_back(rightColumnName);
+    } else if (rightJObj.contains("op")) {
+      auto rightInputExprName = fmt::format("{}{}[{}]",
+              HashJoinPrePOp::HASH_JOIN_RIGHT_INPUT_EXPR_PREFIX, *rightInputExprId++, prePOpId);
+      auto rightInputExpr = deserializeOperation(rightJObj);
+      joinColumnNames.second.emplace_back(rightInputExprName);
+      joinInputExprs.second.emplace_back(rightInputExpr);
+      joinInputExprNames.second.emplace_back(rightInputExprName);
+    } else {
+      throw runtime_error(fmt::format("Invalid hash join condition right operand, neither 'inputRef' nor 'op', from: {}",
+                                      to_string(jObj)));
+    }
   }
 
   else {
     throw runtime_error(fmt::format("Invalid hash join condition operation type, {}, from: {}",
                                     opName, to_string(jObj)));
   }
+
+  return res;
 }
 
 void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PrePhysicalOp> &op,
@@ -488,13 +555,13 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
     vector<pair<string, string>> projectColumnNamePairs;
     set<string> projectColumnNames;
     for (const auto &column: rightFieldNames) {
-      const auto &renameIt = rightFieldRenames.find(column);
       const auto &canonColumn = ColumnName::canonicalize(column);
+      const auto &renameIt = rightFieldRenames.find(canonColumn);
       if (renameIt == rightFieldRenames.end()) {
         projectColumnNamePairs.emplace_back(make_pair(canonColumn, canonColumn));
         projectColumnNames.emplace(canonColumn);
       } else {
-        const auto &renameColumn = ColumnName::canonicalize(renameIt->second);
+        const auto &renameColumn = renameIt->second;
         projectColumnNamePairs.emplace_back(make_pair(canonColumn, renameColumn));
         projectColumnNames.emplace(renameColumn);
       }
@@ -512,6 +579,81 @@ void CalcitePlanJsonDeserializer::addProjectForJoinColumnRenames(shared_ptr<PreP
     calibratedProducers.emplace_back(rightProducer);
   }
 
+  op->setProducers(calibratedProducers);
+}
+
+void CalcitePlanJsonDeserializer::addProjectForJoinInputExprs(const shared_ptr<PrePhysicalOp> &hashJoinPrePOp,
+                                                              const HashJoinConditionRes &joinCondRes) {
+  const auto &joinInputExprs = joinCondRes.inputExprs_;
+  const auto &joinInputExprNames = joinCondRes.inputExprNames_;
+  if (!joinInputExprs.first.empty() || !joinInputExprs.second.empty()) {
+    auto producers = hashJoinPrePOp->getProducers();
+    if (!joinInputExprs.first.empty()) {
+      const auto &producer = producers[0];
+      vector<pair<string, string>> projectColumnNamePairs;
+      set<string> projectColumnNames{joinInputExprNames.first.begin(), joinInputExprNames.first.end()};
+      for (const auto &column: producer->getProjectColumnNames()) {
+        projectColumnNamePairs.emplace_back(make_pair(column, column));
+        projectColumnNames.emplace(column);
+      }
+      shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                           producer->getRowCount(),
+                                                                           joinInputExprs.first,
+                                                                           joinInputExprNames.first,
+                                                                           projectColumnNamePairs);
+      projectPrePOp->setProjectColumnNames(projectColumnNames);
+      projectPrePOp->setProducers({producer});
+      producers[0] = projectPrePOp;
+    }
+    if (!joinInputExprs.second.empty()) {
+      const auto &producer = producers[1];
+      vector<pair<string, string>> projectColumnNamePairs;
+      set<string> projectColumnNames{joinInputExprNames.second.begin(), joinInputExprNames.second.end()};
+      for (const auto &column: producer->getProjectColumnNames()) {
+        projectColumnNamePairs.emplace_back(make_pair(column, column));
+        projectColumnNames.emplace(column);
+      }
+      shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                           producer->getRowCount(),
+                                                                           joinInputExprs.second,
+                                                                           joinInputExprNames.second,
+                                                                           projectColumnNamePairs);
+      projectPrePOp->setProjectColumnNames(projectColumnNames);
+      projectPrePOp->setProducers({producer});
+      producers[1] = projectPrePOp;
+    }
+    hashJoinPrePOp->setProducers(producers);
+  }
+}
+
+void CalcitePlanJsonDeserializer::addProjectForUnionInputRenames(shared_ptr<PrePhysicalOp> &op,
+                                                                 const vector<shared_ptr<PrePhysicalOp>> &producers,
+                                                                 const json &jObj) {
+  vector<shared_ptr<PrePhysicalOp>> calibratedProducers;
+  const auto &inputsRenamesJArr = jObj["inputFieldRenames"].get<vector<vector<json>>>();
+  for (size_t i = 0; i < producers.size(); ++i) {
+    const auto &inputRenamesJArr = inputsRenamesJArr[i];
+    if (inputRenamesJArr.empty()) {
+      calibratedProducers.emplace_back(producers[i]);
+    } else {
+      vector<pair<string, string>> projectColumnNamePairs;
+      set<string> projectColumnNames;
+      for (const auto &renameJObj: inputRenamesJArr) {
+        string oldName = ColumnName::canonicalize(renameJObj["old"].get<string>());
+        string newName = ColumnName::canonicalize(renameJObj["new"].get<string>());
+        projectColumnNamePairs.emplace_back(make_pair(oldName, newName));
+        projectColumnNames.emplace(newName);
+      }
+      shared_ptr<ProjectPrePOp> projectPrePOp = make_shared<ProjectPrePOp>(pOpIdGenerator_.fetch_add(1),
+                                                                           producers[i]->getRowCount(),
+                                                                           vector<shared_ptr<fpdb::expression::gandiva::Expression>>(),
+                                                                           vector<string>(),
+                                                                           projectColumnNamePairs);
+      projectPrePOp->setProjectColumnNames(projectColumnNames);
+      projectPrePOp->setProducers({producers[i]});
+      calibratedProducers.emplace_back(projectPrePOp);
+    }
+  }
   op->setProducers(calibratedProducers);
 }
 
@@ -610,6 +752,12 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
       aggFunctionType = AVG;
     } else if (aggFunctionStr == "COUNT") {
       aggFunctionType = COUNT;
+    } else if (aggFunctionStr == "SINGLE_VALUE") {
+      aggFunctionType = ONE;
+    } else if (aggFunctionStr == "STDDEV" || aggFunctionStr == "STDDEV_SAMP") {
+      aggFunctionType = STDDEV_SAMP;
+    } else if (aggFunctionStr == "STDDEV_POP") {
+      aggFunctionType = STDDEV_POP;
     } else {
       throw runtime_error(fmt::format("Unsupported aggregation function type, {}, from: {}",
                                       aggFunctionStr, to_string(aggregationJObj)));
@@ -617,23 +765,42 @@ shared_ptr<PrePhysicalOp> CalcitePlanJsonDeserializer::deserializeAggregateOrGro
 
     // aggregate expr if any (count may not have)
     shared_ptr<fpdb::expression::gandiva::Expression> aggFieldExpr;
+    struct {
+      json project_;
+      vector<json> fieldExprsJArr_;
+      shared_ptr<unordered_map<string, size_t>> fieldIdx_;
+      bool valid_ = false;
+    } inputProjectInfo;    // used only when some input agg column is expr
     if (aggregationJObj.contains("aggInputField")) {
       const string &aggInputColumnName = ColumnName::canonicalize(aggregationJObj["aggInputField"].get<string>());
       if (aggInputColumnName.substr(0, 2) == "$f") {
         // it's not just a column, need to get it from the input Project op
-        auto inputProjectJObj = jObj["inputs"].get<vector<json>>()[0];
-        size_t aggInputProjectFieldId = stoul(aggInputColumnName.substr(2, aggInputColumnName.length() - 2));
-        auto aggFieldExprJObj = inputProjectJObj["fields"].get<vector<json>>()[aggInputProjectFieldId]["expr"];
+        if (!inputProjectInfo.valid_) {
+          inputProjectInfo.project_ = jObj["inputs"].get<vector<json>>()[0];
+          inputProjectInfo.fieldExprsJArr_ = inputProjectInfo.project_["fields"].get<vector<json>>();
+          inputProjectInfo.fieldIdx_ = make_shared<unordered_map<string, size_t>>();
+          for (size_t i = 0; i < inputProjectInfo.fieldExprsJArr_.size(); ++i) {
+            inputProjectInfo.fieldIdx_->emplace(inputProjectInfo.fieldExprsJArr_[i]["name"].get<string>(), i);
+          }
+          inputProjectInfo.valid_ = true;
+        }
+        auto projectFieldIt = inputProjectInfo.fieldIdx_->find(aggInputColumnName);
+        if (projectFieldIt == inputProjectInfo.fieldIdx_->end()) {
+          throw runtime_error(fmt::format("Agg field expr not found for `{}`, from: {}",
+                                          aggInputColumnName, to_string(jObj)));
+        }
+        size_t aggInputProjectFieldId = projectFieldIt->second;
+        const auto &aggFieldExprJObj = inputProjectInfo.fieldExprsJArr_[aggInputProjectFieldId]["expr"];
         aggFieldExpr = deserializeExpression(aggFieldExprJObj);
 
         // need to let the input Project op know the expr has been consumed
         json consumedProjectFieldIdJArr;
-        if (inputProjectJObj.contains("consumedFieldsId")) {
-          consumedProjectFieldIdJArr = inputProjectJObj["consumedFieldsId"].get<vector<size_t>>();
+        if (inputProjectInfo.project_.contains("consumedFieldsId")) {
+          consumedProjectFieldIdJArr = inputProjectInfo.project_["consumedFieldsId"].get<vector<size_t>>();
         }
         consumedProjectFieldIdJArr.emplace_back(aggInputProjectFieldId);
-        inputProjectJObj["consumedFieldsId"] = consumedProjectFieldIdJArr;
-        jObj["inputs"] = vector<json>{inputProjectJObj};
+        inputProjectInfo.project_["consumedFieldsId"] = consumedProjectFieldIdJArr;
+        jObj["inputs"] = vector<json>{inputProjectInfo.project_};
       } else {
         // it's just a column
         aggFieldExpr = fpdb::expression::gandiva::col(aggInputColumnName);
@@ -789,7 +956,10 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
     throw runtime_error("Invalid hash join, no join condition");
   }
   const auto &joinCondJObj = jObj["condition"];
-  const pair<vector<string>, vector<string>> &joinColumnNames = deserializeHashJoinCondition(joinCondJObj);
+  uint prePOpId = pOpIdGenerator_.fetch_add(1);
+  int leftInputExprId = 0, rightInputExprId = 0;
+  const auto &joinCondRes = deserializeHashJoinCondition(joinCondJObj, prePOpId, &leftInputExprId, &rightInputExprId);
+  const auto &joinColumnNames = joinCondRes.joinColumnNames_;
 
   // deserialize pushable
   if (!jObj.contains("pushable")) {
@@ -797,7 +967,7 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   }
   bool pushable = jObj["pushable"].get<bool>();
 
-  shared_ptr<PrePhysicalOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(pOpIdGenerator_.fetch_add(1),
+  shared_ptr<PrePhysicalOp> hashJoinPrePOp = make_shared<HashJoinPrePOp>(prePOpId,
                                                                          rowCount,
                                                                          joinType,
                                                                          joinColumnNames.first,
@@ -807,6 +977,9 @@ shared_ptr<prephysical::HashJoinPrePOp> CalcitePlanJsonDeserializer::deserialize
   // deserialize producers
   const auto &producers = deserializeProducers(jObj);
   addProjectForJoinColumnRenames(hashJoinPrePOp, producers, jObj);
+
+  // if there is any join input expr, then we need to add a project op prior to the join
+  addProjectForJoinInputExprs(hashJoinPrePOp, joinCondRes);
 
   return static_pointer_cast<HashJoinPrePOp>(hashJoinPrePOp);
 }
@@ -903,6 +1076,25 @@ shared_ptr<prephysical::FilterableScanPrePOp> CalcitePlanJsonDeserializer::deser
           pOpIdGenerator_.fetch_add(1), rowCount, table);
   filterableScanPrePOp->setProjectColumnNames(columnNameSet);
   return filterableScanPrePOp;
+}
+
+shared_ptr<prephysical::UnionAllPrePOp> CalcitePlanJsonDeserializer::deserializeUnionAll(const json &jObj) {
+  // deserialize common fields
+  auto commonFields = deserializeCommon(jObj);
+  double rowCount = std::get<0>(commonFields);
+
+  shared_ptr<PrePhysicalOp> unionAllPrePOp =
+          make_shared<UnionAllPrePOp>(pOpIdGenerator_.fetch_add(1), rowCount);
+
+  // deserialize producers
+  const auto &producers = deserializeProducers(jObj);
+
+  // Rename input column names if needed
+  addProjectForUnionInputRenames(unionAllPrePOp, producers, jObj);
+  // Producers may be changed so need to re-access
+  unionAllPrePOp->setProjectColumnNames(unionAllPrePOp->getProducers()[0]->getProjectColumnNames());
+
+  return static_pointer_cast<UnionAllPrePOp>(unionAllPrePOp);
 }
 
 }

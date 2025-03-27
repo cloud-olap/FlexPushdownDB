@@ -42,10 +42,8 @@ public:
 
   bool closed() const override;
 
-  int64_t getBytesRead() const;
-
 private:
-  tl::expected<int64_t, std::string> read(int64_t nbytes, char* out);
+  tl::expected<int64_t, std::string> read(int64_t nbytes, uint8_t* out);
 
   std::string bucket_;
   std::string object_;
@@ -53,7 +51,6 @@ private:
   int64_t position_ = 0;
   std::shared_ptr<::grpc::Channel> channel_;
   std::shared_ptr<FileService::Stub> stub_;
-  int64_t bytesRead_ = 0;
 };
 
 }

@@ -46,6 +46,16 @@ protected:
 
   // for metrics of adaptive pushdown
   bool getAdaptPushdownMetrics_ = false;
+
+  // inspect fields in base class
+  template <class Inspector, class... Fields>
+  friend bool inspect_base_file_scan(Inspector& f, FileScanAbstractPOp& op, Fields&&... fs) {
+    return inspect_base(f, op,
+                        f.field("kernel", op.kernel_),
+                        f.field("scanOnStart", op.scanOnStart_),
+                        f.field("toCache", op.toCache_),
+                        std::forward<Fields>(fs)...);
+  }
 };
 
 }

@@ -21,7 +21,6 @@ public:
                 const vector<pair<string, string>> &projectColumnNamePairs);
 
   string getTypeString() override;
-
   set<string> getUsedColumnNames() override;
   void setProjectColumnNames(const set<string> &projectColumnNames) override;
 
@@ -31,6 +30,7 @@ public:
 
 private:
   void updateProjectColumnNamePairs(const set<string> &projectColumnNames);
+  bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const override;
 
   vector<shared_ptr<fpdb::expression::gandiva::Expression>> exprs_;
   vector<string> exprNames_;

@@ -34,8 +34,14 @@ public:
   string getStoreTypeName() const;
 
   void addTable(const shared_ptr<ObjStoreTable> &objStoreTable);
+  bool isFKey(const string &fTable, const vector<string> &fKey,
+              const string &pTable, const vector<string> &pKey) const override;
 
 private:
+  bool isFKeyImpl(const string &fTable, const vector<string> &fKey,
+                  const string &pTable, const vector<string> &pKey,
+                  bool allRefReversed) const;
+
   ObjStoreType storeType_;
   string bucket_;
   unordered_map<string, shared_ptr<ObjStoreTable>> tableMap_;

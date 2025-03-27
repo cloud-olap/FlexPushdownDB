@@ -90,7 +90,7 @@ void ProjectPOp::bufferTuples(const TupleSetMessage &message) {
     if (!expTable.ok()) {
       ctx()->notifyError(expTable.status().message());
     }
-    tuples_->table(*expTable);
+    tuples_ = TupleSet::make(*expTable);
   }
 }
 
@@ -119,13 +119,14 @@ void ProjectPOp::projectAndSendTuples() {
       if (!expProjExprTuples.has_value()) {
         ctx()->notifyError(expProjExprTuples.error());
       }
-      const auto &projExprTuples = *expProjExprTuples;
+      auto projExprTuples = *expProjExprTuples;
 
       // Rename
       auto renameRes = projExprTuples->renameColumns(exprNames_);
       if (!renameRes.has_value()) {
         ctx()->notifyError(renameRes.error());
       }
+      projExprTuples = *renameRes;
 
       // Add columns
       for (int c = 0; c < projExprTuples->numColumns(); ++c) {

@@ -24,6 +24,8 @@ public:
 
   string getTypeName() const override;
   string getName() const override;
+  bool isFKey(const string &fTable, const vector<string> &fKey,
+              const string &pTable, const vector<string> &pKey) const override;
 
 };
 

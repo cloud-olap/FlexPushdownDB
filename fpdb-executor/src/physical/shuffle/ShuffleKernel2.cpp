@@ -29,6 +29,11 @@ tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string>
 ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
                         size_t numSlots,
                         const std::shared_ptr<TupleSet> &tupleSet) {
+  // handle special case
+  if (numSlots == 1) {
+    return std::vector<std::shared_ptr<TupleSet>>{tupleSet};
+  }
+
   // make hasher
   auto expHasher = RecordBatchHasher::make(tupleSet->schema(), columnNames);
   if (!expHasher.has_value()) {
@@ -73,9 +78,7 @@ ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
     expRecordBatch = reader.Next();
     if (!expRecordBatch.ok()) {
       // clear
-      free(hashes);
-      delete[] partitionRowIdInfos;
-      free(mergedIndices);
+      clear(numSlots, hashes, partitionRowIdInfos, mergedIndices);
       return tl::make_unexpected(expRecordBatch.status().message());
     }
     recordBatch = *expRecordBatch;
@@ -95,9 +98,7 @@ ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
   auto expTable = arrow::compute::Take(tupleSet->table(), indicesArray);
   if (!expTable.ok()) {
     // clear
-    free(hashes);
-    delete[] partitionRowIdInfos;
-    free(mergedIndices);
+    clear(numSlots, hashes, partitionRowIdInfos, mergedIndices);
     return tl::make_unexpected(expTable.status().message());
   }
   auto table = (*expTable).table();
@@ -121,11 +122,18 @@ ShuffleKernel2::shuffle(const std::vector<std::string> &columnNames,
   }
 
   // clear
+  clear(numSlots, hashes, partitionRowIdInfos, mergedIndices);
+  return outputTupleSets;
+}
+
+void ShuffleKernel2::clear(size_t numSlots, uint32_t* hashes,
+                           PartitionRowIdInfo* partitionRowIdInfos, int64_t* mergedIndices) {
   free(hashes);
+  for (size_t i = 0; i < numSlots; ++i) {
+    partitionRowIdInfos[i].clear();
+  }
   delete[] partitionRowIdInfos;
   free(mergedIndices);
-
-  return outputTupleSets;
 }
 
 }

@@ -5,6 +5,7 @@
 #ifndef FPDB_FPDB_MAIN_INCLUDE_FPDB_MAIN_EXECCONFIG_H
 #define FPDB_FPDB_MAIN_INCLUDE_FPDB_MAIN_EXECCONFIG_H
 
+#include <fpdb/executor/physical/Globals.h>
 #include <fpdb/cache/policy/CachingPolicy.h>
 #include <fpdb/plan/Mode.h>
 #include <fpdb/catalogue/Catalogue.h>
@@ -31,12 +32,16 @@ public:
              bool showOpTimes,
              bool showScanMetrics,
              int CAFServerPort,
-             bool isDistributed);
+             bool isDistributed,
+             join::DistJoinType distJoinType,
+             DistPredTransType distPredTransType);
 
   static shared_ptr<ExecConfig> parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                 const shared_ptr<ObjStoreConnector> &objStoreConnector);
   static int parseCAFServerPort();
   static int parseFlightPort();
+  static join::DistJoinType parseDistJoinType(const string& stringToParse);
+  static DistPredTransType parseDistPredTransType(const string& stringToParse);
 
   const shared_ptr<Mode> &getMode() const;
   const shared_ptr<CachingPolicy> &getCachingPolicy() const;
@@ -47,6 +52,8 @@ public:
   bool showScanMetrics() const;
   int getCAFServerPort() const;
   bool isDistributed() const;
+  join::DistJoinType getDistJoinType() const;
+  DistPredTransType getDistPredTransType() const;
 
 private:
   static size_t parseCacheSize(const string& stringToParse);
@@ -64,6 +71,8 @@ private:
   bool showScanMetrics_;
   int CAFServerPort_;
   bool isDistributed_;
+  join::DistJoinType distJoinType_;
+  DistPredTransType distPredTransType_;
 
 };
 

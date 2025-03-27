@@ -176,19 +176,17 @@ std::shared_ptr<TupleSet> SelectPOp::flight_select(){
 
   ::arrow::flight::Ticket ticket{ticket_str};
 
-  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-  st = flight_client.DoGet(ticket, &reader);
-  if(!st.ok()){
-    throw std::runtime_error(st.message());
+  auto expReader = flight_client.DoGet(ticket);
+  if (!expReader.ok()) {
+    throw std::runtime_error(expReader.status().message());
   }
 
-  std::shared_ptr<::arrow::Table> table;
-  st = reader->ReadAll(&table);
-  if(!st.ok()){
-    throw std::runtime_error(st.message());
+  auto expTable = (*expReader)->ToTable();
+  if (!expTable.ok()) {
+    throw std::runtime_error(expTable.status().message());
   }
 
-  return TupleSet::make(table);
+  return TupleSet::make(*expTable);
 }
 
 std::shared_ptr<TupleSet> SelectPOp::s3Select(uint64_t startOffset, uint64_t endOffset) {

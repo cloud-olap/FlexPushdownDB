@@ -17,7 +17,13 @@ inline bool ENABLE_CO_LOCATED_JOIN_PUSHDOWN;
  * For predicate transfer.
  */
 inline bool ENABLE_PRED_TRANS = false;
-inline bool ENABLE_JOIN_ORIGIN_LOCAL_FILTER_EXPANSION = true;   // expand "local filters" (group/sort/project..) before joins
+// expand "local filters" (filter but not attached to scan / limit sort / group) before joins,
+// this may not always be benificial, which depends on whether it's better to run BF or this op on unfiltered data first
+// currently set them empiricially, i.e. "filter/limit sort" almost can always reduce cardinality but it may not be the
+// case for "group"
+inline bool ENABLE_JOIN_ORIGIN_LOCAL_FILTER_EXPANSION_FILTER = true;
+inline bool ENABLE_JOIN_ORIGIN_LOCAL_FILTER_EXPANSION_LIMIT_SORT = true;
+inline bool ENABLE_JOIN_ORIGIN_LOCAL_FILTER_EXPANSION_GROUP = false;
 
 }
 

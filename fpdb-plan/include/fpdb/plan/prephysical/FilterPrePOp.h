@@ -15,12 +15,13 @@ public:
   FilterPrePOp(uint id, double rowCount, const shared_ptr<fpdb::expression::gandiva::Expression> &predicate);
 
   string getTypeString() override;
-
   set<string> getUsedColumnNames() override;
 
   const shared_ptr<fpdb::expression::gandiva::Expression> &getPredicate() const;
 
 private:
+  bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const override;
+
   shared_ptr<fpdb::expression::gandiva::Expression> predicate_;
 };
 

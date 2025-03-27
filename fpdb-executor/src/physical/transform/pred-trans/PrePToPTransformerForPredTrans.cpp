@@ -23,25 +23,17 @@ PrePToPTransformerForPredTrans::PrePToPTransformerForPredTrans(
         const shared_ptr<ObjStoreConnector> &objStoreConnector,
         const shared_ptr<Mode> &mode,
         int parallelDegree,
-        int numNodes):
-  PrePToPTransformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode, parallelDegree, numNodes) {
+        int numNodes,
+        // used by adapt exec
+        long queryId,
+        bool isDistributed,
+        void* executor):
+  PrePToPTransformer(prePhysicalPlan, catalogueEntry, objStoreConnector, mode,
+                     parallelDegree, numNodes, queryId, isDistributed, executor) {
   type_ = PrePToPTransformerType::PRED_TRANS;
-}
-
-std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform(
-        const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-        const shared_ptr<CatalogueEntry> &catalogueEntry,
-        const shared_ptr<ObjStoreConnector> &objStoreConnector,
-        const shared_ptr<Mode> &mode,
-        int parallelDegree,
-        int numNodes) {
-  // currently pushdown is not supported
   if (mode->id() == ModeId::PUSHDOWN_ONLY || mode->id() == ModeId::HYBRID) {
     throw std::runtime_error("Predicate transfer with pushdown is not supported");
   }
-  PrePToPTransformerForPredTrans transformer(prePhysicalPlan, catalogueEntry, objStoreConnector,
-                                             mode, parallelDegree, numNodes);
-  return transformer.transform();
 }
 
 std::shared_ptr<PhysicalPlan> PrePToPTransformerForPredTrans::transform() {
@@ -67,13 +59,6 @@ void PrePToPTransformerForPredTrans::transformPredTrans() {
 
   // predicate transfer ordering
   PredTransOrder::orderPredTrans(PRED_TRANS_ORDER_TYPE, this, joinOrigins);
-
-#if SHOW_DEBUG_METRICS == true
-  // classify ops so far into pred-trans phase
-  for (const auto &op: physicalOps_) {
-    op.second->setInPredTransPhase(true);
-  }
-#endif
 }
 
 std::vector<std::shared_ptr<PhysicalOp>>

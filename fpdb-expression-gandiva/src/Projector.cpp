@@ -106,10 +106,10 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> Projector::evaluate(const T
    * and return an empty tupleset
    */
   if (tupleSet.table()->num_columns() > 0 && tupleSet.table()->num_rows() == 0) {
-    auto resultSchema = fpdb::tuple::Schema::make(getResultSchema());
+    auto resultSchema = fpdb::tuple::Schema::make(resultSchema_);
     auto resultColumns = resultSchema->makeColumns();
     auto resultArrays = Column::columnVectorToArrowChunkedArrayVector(resultColumns);
-    auto resultTable = ::arrow::Table::Make(getResultSchema(), resultArrays);
+    auto resultTable = ::arrow::Table::Make(resultSchema_, resultArrays);
     resultTupleSet = TupleSet::make(resultTable);
   }
 
@@ -124,6 +124,7 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> Projector::evaluate(const T
       return tl::make_unexpected(res.message());
     }
 
+    arrow::RecordBatchVector projectedBatches;
     while (batch) {
 
       res = batch->ValidateFull();
@@ -131,29 +132,30 @@ tl::expected<std::shared_ptr<TupleSet>, std::string> Projector::evaluate(const T
         return tl::make_unexpected(res.message());
       }
 
-      // Evaluate expressions against a batch
-      auto expOutputs = evaluate(*batch);
-      if (!expOutputs.has_value()) {
-        return tl::make_unexpected(expOutputs.error());
-      }
-
-      auto batchResultTuples = TupleSet::make(getResultSchema(), *expOutputs);
-
-      // Concatenate the batch result to the full results
-      if (resultTupleSet) {
-        const auto &appendResult = resultTupleSet->append(batchResultTuples);
-        if (!appendResult.has_value()) {
-          return tl::make_unexpected(appendResult.error());
+      // Evaluate expressions against a batch, skip empty batches which will cause exception in gandiva
+      if (batch->num_rows() > 0) {
+        auto expOutputs = evaluate(*batch);
+        if(!expOutputs.has_value()) {
+          return tl::make_unexpected(expOutputs.error());
         }
+
+        projectedBatches.emplace_back(arrow::RecordBatch::Make(resultSchema_, batch->num_rows(), *expOutputs));
       }
-      else
-        resultTupleSet = batchResultTuples;
 
       res = reader.ReadNext(&batch);
-
       if (!res.ok()) {
         return tl::make_unexpected(res.message());
       }
+    }
+
+    if (projectedBatches.empty()) {
+      resultTupleSet = TupleSet::make(resultSchema_);
+    } else {
+      auto expResultTupleSet = arrow::Table::FromRecordBatches(projectedBatches);
+      if (!expResultTupleSet.ok()) {
+        return tl::make_unexpected(expResultTupleSet.status().message());
+      }
+      resultTupleSet = TupleSet::make(*expResultTupleSet);
     }
   }
 

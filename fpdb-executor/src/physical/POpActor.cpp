@@ -28,13 +28,13 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
   ctx->operatorActor(self);
 
   return {
-	  [=](GetProcessingTimeAtom) {
-		auto start = std::chrono::steady_clock::now();
-		auto finish = std::chrono::steady_clock::now();
-		auto elapsedTime = std::chrono::duration_cast<std::chrono::nanoseconds>(finish - start).count();
-		self->incrementProcessingTime(elapsedTime);
-		return self->getProcessingTime();
-	  },
+    [=](GetProcessingTimeAtom) {
+      // exclude network time here
+      return self->getProcessingTime() - self->getNetworkTime();
+    },
+    [=](GetNetworkTimeAtom) {
+      return self->getNetworkTime();
+    },
 	  [=](const fpdb::executor::message::Envelope &msg) {
 
 		auto start = std::chrono::steady_clock::now();
@@ -47,17 +47,34 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 		if (msg.message().type() == MessageType::CONNECT) {
 		  auto connectMessage = dynamic_cast<const message::ConnectMessage &>(msg.message());
 
-		  for (const auto &element: connectMessage.connections()) {
-        auto localEntry = LocalPOpDirectoryEntry(element.getName(),
-                                element.getActorHandle(),
-                                element.getConnectionType(),
-                                element.getNodeId(),
-                                false);
+                  // clear old connections if needed
+                  if (connectMessage.clear()) {
+                    self->operator_()->clearConnections();
+                    self->operator_()->ctx()->operatorMap().clear();
+                    // need to also set "producers_" and "consumers_" since by default only localOpEntry is added
+                    std::set<std::string> producers, consumers;
+                    for (const auto &element: connectMessage.connections()) {
+                      if (element.getConnectionType() == POpRelationshipType::Producer) {
+                        producers.emplace(element.getName());
+                      } else {
+                        consumers.emplace(element.getName());
+                      }
+                    }
+                    self->operator_()->setProducers(producers);
+                    self->operator_()->setConsumers(consumers);
+                  }
 
-        auto result = self->operator_()->ctx()->operatorMap().insert(localEntry);
-        if (!result.has_value()) {
-          self->operator_()->ctx()->notifyError(result.error());
-        }
+		  for (const auto &element: connectMessage.connections()) {
+                    auto localEntry = LocalPOpDirectoryEntry(element.getName(),
+                                            element.getActorHandle(),
+                                            element.getConnectionType(),
+                                            element.getNodeId(),
+                                            false);
+
+                    auto result = self->operator_()->ctx()->operatorMap().insert(localEntry);
+                    if (!result.has_value()) {
+                      self->operator_()->ctx()->notifyError(result.error());
+                    }
 		  }
 		}
 		else if (msg.message().type() == MessageType::START) {
@@ -100,23 +117,32 @@ POpActor::POpActor(::caf::actor_config &cfg, std::shared_ptr<PhysicalOp> opBehav
 }
 
 void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) {
-  if (msg.message().type() == MessageType::TUPLESET_READY_REMOTE
-      && opBehaviour_->getType() != POpType::SHUFFLE_BATCH_LOAD) {    // ShuffleBatchLoadPOp handles this itself
+  if (msg.message().type() == MessageType::TUPLESET_READY_REMOTE &&
+      opBehaviour_->getType() != POpType::FPDB_STORE_SHUFFLE_BATCH_LOAD &&  // ShuffleBatchLoadPOp handles this itself
+      opBehaviour_->getType() != POpType::BATCH_EXCHANGE_RR_FORWARD) {      // BatchExchangeRRForwardPOp handles this itself
+    auto start = std::chrono::steady_clock::now();
+
     const auto &typedMessage = dynamic_cast<const TupleSetReadyRemoteMessage &>(msg.message());
-    auto tupleSet = read_remote_table(typedMessage.getHost(), typedMessage.getPort(), typedMessage.sender());
+    auto tupleSet = read_remote_table(typedMessage.getHost(), typedMessage.getPort(),
+                                      typedMessage.sender(), typedMessage.getOriginalConsumer());
 
     // metrics
 #if SHOW_DEBUG_METRICS == true
     std::shared_ptr<Message> execMetricsMsg;
+    int64_t tupleSetSize = tupleSet->size();
     if (typedMessage.isFromStore()) {
-      execMetricsMsg = std::make_shared<TransferMetricsMessage>(metrics::TransferMetrics(tupleSet->size(), 0, 0),
-                                                                opBehaviour_->name());
+      execMetricsMsg = std::make_shared<NetworkMetricsMessage>(metrics::NetworkMetrics(tupleSetSize, 0, 0),
+                                                               opBehaviour_->name());
     } else {
-      execMetricsMsg = std::make_shared<TransferMetricsMessage>(metrics::TransferMetrics(0, 0, tupleSet->size()),
-                                                                opBehaviour_->name());
+      execMetricsMsg = std::make_shared<NetworkMetricsMessage>(metrics::NetworkMetrics(0, 0, tupleSetSize),
+                                                               opBehaviour_->name());
     }
     opBehaviour_->ctx()->notifyRoot(execMetricsMsg);
 #endif
+
+    auto finish = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::nanoseconds>(finish - start).count();
+    networkTime_ += elapsedTime;
 
     std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(tupleSet, typedMessage.sender());
     on_regular_message(Envelope(tupleSetMessage));
@@ -135,30 +161,31 @@ void POpActor::on_regular_message(const fpdb::executor::message::Envelope &msg) 
 }
 
 std::shared_ptr<TupleSet>
-POpActor::read_remote_table(const std::string &host, int port, const std::string &sender) {
+POpActor::read_remote_table(const std::string &host, int port, const std::string &sender,
+                            const std::optional<std::string> &originalConsumer) {
   // make flight client and connect
   auto client = flight::GlobalFlightClients.getFlightClient(host, port);
 
+  // use originalConsumer if it has value
+  auto consumer = originalConsumer.has_value() ? *originalConsumer : opBehaviour_->name();
+
   // send request to store
-  auto ticketObj = fpdb::store::server::flight::GetTableTicket::make(opBehaviour_->getQueryId(),
-                                                                     sender,
-                                                                     opBehaviour_->name());
+  auto ticketObj = fpdb::store::server::flight::GetTableTicket::make(opBehaviour_->getQueryId(), sender, consumer);
   auto expTicket = ticketObj->to_ticket(false);
   if (!expTicket.has_value()) {
     opBehaviour_->ctx()->notifyError(expTicket.error());
   }
 
-  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-  auto status = client->DoGet(*expTicket, &reader);
-  if (!status.ok()) {
-    opBehaviour_->ctx()->notifyError(status.message());
+  auto expReader = client->DoGet(*expTicket);
+  if (!expReader.ok()) {
+    opBehaviour_->ctx()->notifyError(expReader.status().message());
   }
 
-  std::shared_ptr<::arrow::Table> table;
-  status = reader->ReadAll(&table);
-  if (!status.ok()) {
-    opBehaviour_->ctx()->notifyError(status.message());
+  auto expTable = (*expReader)->ToTable();
+  if (!expTable.ok()) {
+    opBehaviour_->ctx()->notifyError(expTable.status().message());
   }
+  auto table = *expTable;
 
   // return
   if (table == nullptr) {
@@ -187,8 +214,16 @@ long POpActor::getProcessingTime() const {
   return processingTime_;
 }
 
+long POpActor::getNetworkTime() const {
+  return networkTime_;
+}
+
 void POpActor::incrementProcessingTime(long time) {
   processingTime_ += time;
+}
+
+void POpActor::incrementNetworkTime(long time) {
+  networkTime_ += time;
 }
 
 void POpActor::on_exit() {

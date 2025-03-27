@@ -37,6 +37,9 @@ CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardHitsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, GetCrtQueryNumShardMissesAtom)
 CAF_ADD_ATOM(SegmentCacheActor, ClearMetricsAtom)
 CAF_ADD_ATOM(SegmentCacheActor, MetricsAtom)
+CAF_ADD_ATOM(SegmentCacheActor, AssignCacheAtom)
+CAF_ADD_TYPE_ID(SegmentCacheActor, (std::shared_ptr<SegmentCache>))
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<SegmentCache>); // this is currently only used in single-node exec
 CAF_END_TYPE_ID_BLOCK(SegmentCacheActor)
 
 namespace fpdb::executor::cache {
@@ -44,6 +47,7 @@ namespace fpdb::executor::cache {
 struct SegmentCacheActorState {
   std::string name = "segment-cache";
   std::shared_ptr<SegmentCache> cache;
+  bool ownership = true;    // if "cache" is assigned from existing state, then there is no ownership
 };
 
 class SegmentCacheActor {
@@ -59,6 +63,7 @@ public:
   static void store(const StoreRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
   static void weight(const WeightRequestMessage &msg, stateful_actor<SegmentCacheActorState> *self);
   static void metrics(const CacheMetricsMessage &msg, stateful_actor<SegmentCacheActorState> *self);
+  static void assignCache(const std::shared_ptr<SegmentCache> &cache, stateful_actor<SegmentCacheActorState> *self);
 
 private:
   static void stop(stateful_actor<SegmentCacheActorState> *self);

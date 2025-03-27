@@ -5,6 +5,7 @@
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/shuffle/ShuffleKernel.h>
 #include <fpdb/executor/physical/shuffle/ShuffleKernel2.h>
+#include <fpdb/executor/physical/split/SplitKernel.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/tuple/TupleSet.h>
 #include <fpdb/tuple/ColumnBuilder.h>
@@ -43,7 +44,7 @@ void ShufflePOp::onReceive(const Envelope &msg) {
     auto completeMessage = dynamic_cast<const CompleteMessage &>(msg.message());
     this->onComplete(completeMessage);
   } else {
-    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}" + msg.message().getTypeString(), name()));
+    ctx()->notifyError(fmt::format("Unrecognized message type: {}, {}", msg.message().getTypeString(), name()));
   }
 }
 
@@ -70,6 +71,29 @@ void ShufflePOp::clearConsumerVec() {
 void ShufflePOp::produce(const shared_ptr<PhysicalOp> &operator_) {
   PhysicalOp::produce(operator_);
   consumerVec_.emplace_back(operator_->name());
+}
+
+void ShufflePOp::enableDistBatchExchange(const std::string &batchExchange,
+                                         const vector<string> &batchExchangeConsumers) {
+  if (consumers_.find(batchExchange) == consumers_.end()) {
+    throw std::runtime_error("\"batchExchange\" not in the consumer set yet");
+  }
+  isDistPreShuffle_ = true;
+  batchExchange_ = batchExchange;
+  consumerVec_ = batchExchangeConsumers;
+}
+
+void ShufflePOp::produceAddiConsumerVec(const vector<shared_ptr<PhysicalOp>> &addiConsumerOps) {
+  if (addiConsumerOps.size() != consumerVec_.size()) {
+    throw std::runtime_error(fmt::format("sizes of additional consumers and original consumers mismatch, "
+                                         "should be '{}', but got '{}'", consumerVec_.size(), addiConsumerOps.size()));
+  }
+  vector<string> addiConsumerVec;
+  for (const auto &op: addiConsumerOps) {
+    PhysicalOp::produce(op);
+    addiConsumerVec.emplace_back(op->name());
+  }
+  addiConsumerVecs_.emplace_back(addiConsumerVec);
 }
 
 void ShufflePOp::onStart() {
@@ -119,8 +143,21 @@ tl::expected<void, string> ShufflePOp::send(int partitionIndex, bool force) {
 
     if (!isSeparated_) {
       // If at compute side, do it regularly (send tupleSet to the consumer)
-      shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, name_);
-      ctx()->send(tupleSetMessage, consumer);
+      if (isDistPreShuffle_) {
+        // when batch exchange is enabled
+        shared_ptr<Message> tupleSetBufferMessage = make_shared<TupleSetBufferMessage>(
+                tupleSet, consumerVec_[partitionIndex], name_);
+        ctx()->send(tupleSetBufferMessage, batchExchange_);
+      } else {
+        // otherwise, do it regularly
+        shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, name_);
+        ctx()->send(tupleSetMessage, consumer);
+      }
+      // Send to additional consumers if any
+      for (uint i = 0; i < addiConsumerVecs_.size(); ++i) {
+        shared_ptr<Message> tupleSetMessage = make_shared<TupleSetMessage>(tupleSet, name_);
+        ctx()->send(tupleSetMessage, addiConsumerVecs_[i][partitionIndex]);
+      }
     } else {
       // If at storage side, send tupleSet to the root to buffer it
       shared_ptr<Message> tupleSetBufferMessage = make_shared<TupleSetBufferMessage>(tupleSet, consumer, name_);
@@ -140,22 +177,49 @@ void ShufflePOp::onTupleSet(const TupleSetMessage &message) {
   // Check empty
   if (tupleSet->numRows() == 0){
     for (size_t s = 0; s < consumerVec_.size(); ++s) {
-      shuffledTupleSets.emplace_back(tupleSet);
+      shuffledTupleSets.emplace_back(TupleSet::make(tupleSet->schema()));
     }
   }
 
   else {
-    // Shuffle the tuple set
-    tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string> expectedShuffledTupleSets;
-    if (USE_SHUFFLE_KERNEL_2) {
-      expectedShuffledTupleSets = ShuffleKernel2::shuffle(shuffleColumnNames_, consumerVec_.size(), tupleSet);
+    // Shuffle the tuple set, need to handle the case when overflow is happening,
+    // i.e., byte size of input `tupleSet` is larger than int32 max
+    auto expNoOverflowTupleSets = split::SplitKernel::splitForOverFlow(tupleSet);
+    if (!expNoOverflowTupleSets.has_value()) {
+      ctx()->notifyError(expNoOverflowTupleSets.error());
+      return;
+    }
+    const auto &noOverflowTupleSets = *expNoOverflowTupleSets;
+    if (noOverflowTupleSets.size() == 1) {
+      auto expShuffledTupleSets = shuffle(noOverflowTupleSets[0]);
+      if (!expShuffledTupleSets.has_value()) {
+        ctx()->notifyError(expShuffledTupleSets.error());
+        return;
+      }
+      shuffledTupleSets = *expShuffledTupleSets;
     } else {
-      expectedShuffledTupleSets = ShuffleKernel::shuffle(shuffleColumnNames_, consumerVec_.size(), *tupleSet);
+      std::vector<std::vector<std::shared_ptr<TupleSet>>> shuffledTupleSetPieces;
+      shuffledTupleSetPieces.resize(consumerVec_.size());
+      shuffledTupleSets.resize(consumerVec_.size());
+      for (const auto &noOverflowTupleSet: noOverflowTupleSets) {
+        auto expShuffledTupleSets = shuffle(noOverflowTupleSet);
+        if (!expShuffledTupleSets.has_value()) {
+          ctx()->notifyError(expShuffledTupleSets.error());
+          return;
+        }
+        for (size_t i = 0; i < consumerVec_.size(); ++i) {
+          shuffledTupleSetPieces[i].emplace_back((*expShuffledTupleSets)[i]);
+        }
+      }
+      for (size_t i = 0; i < consumerVec_.size(); ++i) {
+        auto expConcatTupleSet = TupleSet::concatenate(shuffledTupleSetPieces[i]);
+        if (!expConcatTupleSet.has_value()) {
+          ctx()->notifyError(expConcatTupleSet.error());
+          return;
+        }
+        shuffledTupleSets[i] = *expConcatTupleSet;
+      }
     }
-    if (!expectedShuffledTupleSets.has_value()) {
-      ctx()->notifyError(fmt::format("{}, {}", expectedShuffledTupleSets.error(), name()));
-    }
-    shuffledTupleSets = expectedShuffledTupleSets.value();
   }
 
   // Send the shuffled tuple sets to consumers
@@ -167,6 +231,13 @@ void ShufflePOp::onTupleSet(const TupleSetMessage &message) {
       ctx()->notifyError(bufferAndSendResult.error());
     ++partitionIndex;
   }
+}
+
+tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string>
+ShufflePOp::shuffle(const std::shared_ptr<TupleSet> &tupleSet) {
+  return USE_SHUFFLE_KERNEL_2 ?
+          ShuffleKernel2::shuffle(shuffleColumnNames_, consumerVec_.size(), tupleSet) :
+          ShuffleKernel::shuffle(shuffleColumnNames_, consumerVec_.size(), *tupleSet);
 }
 
 void ShufflePOp::clear() {

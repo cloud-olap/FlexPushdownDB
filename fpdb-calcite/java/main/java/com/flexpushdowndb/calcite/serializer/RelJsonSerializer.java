@@ -54,6 +54,8 @@ public final class RelJsonSerializer {
       jo = serializeEnumerableSort((EnumerableSort) relNode);
     } else if (relNode instanceof EnumerableLimitSort) {
       jo = serializeEnumerableLimitSort((EnumerableLimitSort) relNode);
+    } else if (relNode instanceof EnumerableUnion) {
+      jo = serializeEnumerableUnion((EnumerableUnion) relNode);
     } else {
       throw new UnsupportedOperationException("Serialize unsupported RelNode: " + relNode.getClass().getSimpleName());
     }
@@ -201,6 +203,9 @@ public final class RelJsonSerializer {
         int aggFieldId = aggCall.getArgList().get(0);
         aggCallJObj.put("aggInputField", inputFieldNames.get(aggFieldId));
       }
+      if (aggCall.filterArg >= 0) {
+        throw new UnsupportedOperationException("Unexpected AggCall with a `filterArg`");
+      }
       aggListJArr.put(aggCallJObj);
       ++outputFieldId;
     }
@@ -241,6 +246,49 @@ public final class RelJsonSerializer {
     jo.put("limit", RexJsonSerializer.serialize(limitSort.fetch, null, limitSort.getCluster().getRexBuilder()));
     // input operators
     jo.put("inputs", serializeRelInputs(limitSort));
+    return jo;
+  }
+
+  private JSONObject serializeEnumerableUnion(EnumerableUnion union) {
+    JSONObject jo = serializeCommon(union);
+    // check `all` = true, if `all` = false then the original union should be converted into a union
+    // with `all` = true and an aggregate on top
+    if (!union.all) {
+      throw new UnsupportedOperationException("Unexpected EnumerableUnion with `all` = false");
+    }
+
+    // Inputs may have used different column names, and we may need to rename if not consistent
+    // The column names of the first input are the standard
+    JSONArray inputsRenamesJArr = new JSONArray();
+    List<String> outputFieldNames = union.getRowType().getFieldNames();
+    for (RelNode input: union.getInputs()) {
+      JSONArray inputRenamesJArr = new JSONArray();
+      List<String> inputFieldNames = input.getRowType().getFieldNames();
+      assert outputFieldNames.size() == inputFieldNames.size();
+      boolean rename = false;
+      for (int i = 0; i < outputFieldNames.size(); i++) {
+        String inputFieldName = inputFieldNames.get(i);
+        String outputFieldName = outputFieldNames.get(i);
+        if (!inputFieldName.equals(outputFieldName)) {
+          rename = true;
+          break;
+        }
+      }
+      if (rename) {
+        for (int i = 0; i < outputFieldNames.size(); i++) {
+          String inputFieldName = inputFieldNames.get(i);
+          String outputFieldName = outputFieldNames.get(i);
+          inputRenamesJArr.put(new JSONObject()
+                  .put("old", inputFieldName)
+                  .put("new", outputFieldName));
+        }
+      }
+      inputsRenamesJArr.put(inputRenamesJArr);
+    }
+    jo.put("inputFieldRenames", inputsRenamesJArr);
+
+    // input operators
+    jo.put("inputs", serializeRelInputs(union));
     return jo;
   }
 

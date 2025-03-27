@@ -25,11 +25,22 @@ const std::string& GetBitmapTicket::op() const {
   return op_;
 }
 
+const std::optional<std::string> &GetBitmapTicket::consumer() const {
+  return consumer_;
+}
+
+void GetBitmapTicket::set_consumer(const std::string &consumer) {
+  consumer_ = consumer;
+}
+
 tl::expected<std::string, std::string> GetBitmapTicket::serialize(bool pretty) {
   nlohmann::json document;
   document.emplace(TypeJSONName.data(), type()->name());
   document.emplace(QueryIdJSONName.data(), query_id_);
   document.emplace(OpJSONName.data(), op_);
+  if (consumer_.has_value()) {
+    document.emplace(ConsumerJSONName.data(), *consumer_);
+  }
   return document.dump(pretty ? 2 : -1);
 }
 
@@ -43,8 +54,14 @@ tl::expected<std::shared_ptr<GetBitmapTicket>, std::string> GetBitmapTicket::fro
     return tl::make_unexpected(fmt::format("Op not specified in GetBitmapTicket JSON '{}'", to_string(jObj)));
   }
   auto op = jObj[OpJSONName.data()].get<std::string>();
+  auto getBitmapTicket = GetBitmapTicket::make(query_id, op);
 
-  return GetBitmapTicket::make(query_id, op);
+  if (jObj.contains(ConsumerJSONName.data())) {
+    auto consumer = jObj[ConsumerJSONName.data()].get<std::string>();
+    getBitmapTicket->set_consumer(consumer);
+  }
+
+  return getBitmapTicket;
 }
 
 }

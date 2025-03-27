@@ -127,6 +127,7 @@ PhysicalPlanSerializer::serializeAggregatePOp(const std::shared_ptr<aggregate::A
     functionsJArr.emplace_back(function->toJson());
   }
   jObj.emplace("functions", functionsJArr);
+  jObj.emplace("isReduce", aggregatePOp->isReduce());
 
   return jObj;
 }
@@ -156,10 +157,10 @@ tl::expected<::nlohmann::json, std::string> PhysicalPlanSerializer::serializeBlo
 
   const auto &kernel = bloomFilterCreatePOp->getKernel();
   jObj.emplace("bloomFilterColumnNames", kernel->getColumnNames());
-  jObj.emplace("desiredFalsePositiveRate", kernel->getType() == BloomFilterCreateKernelType::BLOOM_FILTER_KERNEL ?
+  jObj.emplace("desiredFalsePositiveRate", kernel->getType() == BloomFilterCreateKernelType::VANILLA_KERNEL ?
         std::static_pointer_cast<BloomFilterCreateKernel>(kernel)->getDesiredFalsePositiveRate() :
         BloomFilter::DefaultDesiredFalsePositiveRate);
-  jObj.emplace("bloomFilterUsePOps", bloomFilterCreatePOp->getBloomFilterUsePOps());
+  jObj.emplace("bloomFilterUsePOp", bloomFilterCreatePOp->getBloomFilterUsePOp());
   jObj.emplace("passTupleSetConsumers", bloomFilterCreatePOp->getPassTupleSetConsumers());
 
   return jObj;

@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/message/Message.h>
 #include <memory>
+#include <optional>
 
 namespace fpdb::executor::message {
 
@@ -19,7 +20,8 @@ public:
   explicit TupleSetReadyRemoteMessage(const std::string &host,
                                       int port,
                                       bool isFromStore,
-                                      const std::string &sender);
+                                      const std::string &sender,
+                                      const std::optional<std::string> &originalConsumer = std::nullopt);
   TupleSetReadyRemoteMessage() = default;
   TupleSetReadyRemoteMessage(const TupleSetReadyRemoteMessage&) = default;
   TupleSetReadyRemoteMessage& operator=(const TupleSetReadyRemoteMessage&) = default;
@@ -30,11 +32,13 @@ public:
   const std::string &getHost() const;
   int getPort() const;
   bool isFromStore() const;
+  const std::optional<std::string> &getOriginalConsumer() const;
 
 private:
   std::string host_;
   int port_;
   bool isFromStore_;
+  std::optional<std::string> originalConsumer_;    // used when the op fetching the remote data is not the original consumer
 
 // caf inspect
 public:
@@ -44,7 +48,8 @@ public:
                                 f.field("sender", msg.sender_),
                                 f.field("host", msg.host_),
                                 f.field("port", msg.port_),
-                                f.field("isFromStore", msg.isFromStore_));
+                                f.field("isFromStore", msg.isFromStore_),
+                                f.field("originalConsumer", msg.originalConsumer_));
   }
 };
 

@@ -1,0 +1,96 @@
+{
+  "name": "item",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "i_item_sk",
+      "type": "int64"
+    },
+    {
+      "name": "i_item_id",
+      "type": "string"
+    },
+    {
+      "name": "i_rec_start_date",
+      "type": "date"
+    },
+    {
+      "name": "i_rec_end_date",
+      "type": "date"
+    },
+    {
+      "name": "i_item_desc",
+      "type": "string"
+    },
+    {
+      "name": "i_current_price",
+      "type": "double"
+    },
+    {
+      "name": "i_wholesale_cost",
+      "type": "double"
+    },
+    {
+      "name": "i_brand_id",
+      "type": "int64"
+    },
+    {
+      "name": "i_brand",
+      "type": "string"
+    },
+    {
+      "name": "i_class_id",
+      "type": "int64"
+    },
+    {
+      "name": "i_class",
+      "type": "string"
+    },
+    {
+      "name": "i_category_id",
+      "type": "int64"
+    },
+    {
+      "name": "i_category",
+      "type": "string"
+    },
+    {
+      "name": "i_manufact_id",
+      "type": "int64"
+    },
+    {
+      "name": "i_manufact",
+      "type": "string"
+    },
+    {
+      "name": "i_size",
+      "type": "string"
+    },
+    {
+      "name": "i_formulation",
+      "type": "string"
+    },
+    {
+      "name": "i_color",
+      "type": "string"
+    },
+    {
+      "name": "i_units",
+      "type": "string"
+    },
+    {
+      "name": "i_container",
+      "type": "string"
+    },
+    {
+      "name": "i_manager_id",
+      "type": "int64"
+    },
+    {
+      "name": "i_product_name",
+      "type": "string"
+    }
+  ]
+}

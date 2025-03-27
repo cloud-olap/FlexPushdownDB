@@ -2,7 +2,6 @@
 // Created by Yifei Yang on 7/15/20.
 //
 
-#include <optional>
 #include "fpdb/expression/gandiva/StringLiteral.h"
 #include <gandiva/tree_expr_builder.h>
 #include <fmt/format.h>
@@ -61,6 +60,14 @@ tl::expected<std::shared_ptr<StringLiteral>, std::string> StringLiteral::fromJso
     value = jObj["value"].get<std::string>();
   }
   return std::make_shared<StringLiteral>(value);
+}
+
+bool StringLiteral::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<StringLiteral>(other);
+  return value_ == typedOther->value_;
 }
 
 std::shared_ptr<Expression> fpdb::expression::gandiva::str_lit(const std::optional<std::string> &value){

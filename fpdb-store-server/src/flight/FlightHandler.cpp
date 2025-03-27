@@ -71,6 +71,9 @@ tl::expected<void, std::string> FlightHandler::init() {
   // init vars for bitmap caches
   init_bitmap_cache();
 
+  // init adapt_pushdown_manager
+  init_adapt_pushdown_manager();
+
   // NOTE: This appears to swallow the signal and not allow anything else to handle it
   //  this->SetShutdownOnSignals({SIGTERM});
 
@@ -253,7 +256,8 @@ tl::expected<std::unique_ptr<FlightInfo>, ::arrow::Status> FlightHandler::get_fl
   auto ticket_object = SelectObjectContentTicket::make(select_object_content_cmd->query_id(),
                                                        select_object_content_cmd->fpdb_store_super_pop(),
                                                        select_object_content_cmd->query_plan_string(),
-                                                       select_object_content_cmd->parallel_degree());
+                                                       select_object_content_cmd->parallel_degree(),
+                                                       ReqExtraInfo() /*unused*/);
   auto exp_ticket = ticket_object->to_ticket(false);
   if (!exp_ticket.has_value()) {
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_ticket.error()));
@@ -341,7 +345,8 @@ tl::expected<std::unique_ptr<FlightDataStream>, ::arrow::Status> FlightHandler::
   auto exp_table = run_select_object_content(select_object_content_ticket->query_id(),
                                              select_object_content_ticket->fpdb_store_super_pop(),
                                              select_object_content_ticket->query_plan_string(),
-                                             select_object_content_ticket->parallel_degree());
+                                             select_object_content_ticket->parallel_degree(),
+                                             select_object_content_ticket->extra_info());
   if (!exp_table.has_value()) {
     return tl::make_unexpected(exp_table.error());
   }
@@ -359,23 +364,58 @@ tl::expected<std::shared_ptr<arrow::Table>, ::arrow::Status>
 FlightHandler::run_select_object_content(long query_id,
                                          const std::string &fpdb_store_super_pop,
                                          const std::string &query_plan_string,
-                                         int parallel_degree) {
-  // adaptive pushdown
-  std::shared_ptr<AdaptPushdownReqInfo> req;
+                                         int parallel_degree,
+                                         const ReqExtraInfo &extra_info) {
+  // adaptive pushdown, check if need to fall back as pullup
+  std::shared_ptr<AdaptPushdownReqInfo> req;        // for adapt_pushdown_manager
+  std::shared_ptr<AdaptPushdownReqInfo2> req2;      // for adapt_pushdown_manager2
+  std::shared_ptr<AdaptPushdownReqInfo3> req3;      // for adapt_pushdown_manager3
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
-    req = std::make_shared<AdaptPushdownReqInfo>(query_id,
-                                                 fpdb_store_super_pop,
-                                                 parallel_degree);
-    // check if need to fall back as pullup
-    auto exp_exec_as_pushdown = adapt_pushdown_manager_.receiveOne(req);
-    if (!exp_exec_as_pushdown.has_value()) {
-      return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_exec_as_pushdown.error()));
+    switch (AdaptPushdownManagerV) {
+      case AdaptPushdownManagerVersion::V1: {
+        req = std::make_shared<AdaptPushdownReqInfo>(query_id,
+                                                     fpdb_store_super_pop,
+                                                     parallel_degree);
+        auto adapt_res = adapt_pushdown_manager_.receiveOne(req);
+        if (!adapt_res.has_value()) {
+          return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, adapt_res.error()));
+        }
+        if (!(*adapt_res)) {
+          return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
+        }
+        // admitted, check if need to wait
+        adapt_pushdown_manager_.admitOne(req);
+        break;
+      }
+      case AdaptPushdownManagerVersion::V2: {
+        req2 = std::make_shared<AdaptPushdownReqInfo2>(query_id,
+                                                       fpdb_store_super_pop,
+                                                       parallel_degree);
+        auto adapt_res2 = adapt_pushdown_manager2_.receiveOne(req2);
+        if (!adapt_res2.has_value()) {
+          return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, adapt_res2.error()));
+        }
+        if (req2->isPushedBack_) {
+          return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
+        }
+        // admitted, wait is already checked in "receiveOne()" so noop here
+        break;
+      }
+      case AdaptPushdownManagerVersion::V3: {
+        req3 = std::make_shared<AdaptPushdownReqInfo3>(query_id,
+                                                       fpdb_store_super_pop,
+                                                       extra_info);
+        auto adapt_res3 = adapt_pushdown_manager3_->receiveOne(req3);
+        if (!adapt_res3.has_value()) {
+          return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, adapt_res3.error()));
+        }
+        if (req3->isPushedBack_) {
+          return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
+        }
+        // admitted, wait is already checked in "receiveOne()" so noop here
+        break;
+      }
     }
-    if (!(*exp_exec_as_pushdown)) {
-      return tl::make_unexpected(MakeFlightError(ReqRejectStatusCode, "Resource limited"));
-    }
-    // execute as pushdown
-    adapt_pushdown_manager_.admitOne(req);
   }
 
   // deserialize the query plan
@@ -383,7 +423,20 @@ FlightHandler::run_select_object_content(long query_id,
                                                                  getStoreRootPath(update_scan_drive_id()));
   if (!exp_physical_plan.has_value()) {
     if (ENABLE_ADAPTIVE_PUSHDOWN) {
-      adapt_pushdown_manager_.finishOne(req);
+      switch (AdaptPushdownManagerV) {
+        case AdaptPushdownManagerVersion::V1: {
+          adapt_pushdown_manager_.finishOne(req);
+          break;
+        }
+        case AdaptPushdownManagerVersion::V2: {
+          adapt_pushdown_manager2_.finishOne(req2);
+          break;
+        }
+        case AdaptPushdownManagerVersion::V3: {
+          adapt_pushdown_manager3_->finishOne(req3);
+          break;
+        }
+      }
     }
     return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_physical_plan.error()));
   }
@@ -400,8 +453,8 @@ FlightHandler::run_select_object_content(long query_id,
     const auto &consumerToBloomFilterInfo = op->getConsumerToBloomFilterInfo();
     for (const auto &consumerToBloomFilterIt: consumerToBloomFilterInfo) {
       auto bloom_filter_info = consumerToBloomFilterIt.second;
-      auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(query_id,
-                                                                       bloom_filter_info->bloomFilterCreatePOp_);
+      auto bloom_filter_key = executor::cache::BloomFilterCache::generateBloomFilterKey(
+              query_id, bloom_filter_info->bloomFilterCreatePOp_);
       std::shared_ptr<bloomfilter::BloomFilterBase> bloom_filter;
       // check "consumed_bloom_filters" first
       auto consumed_bf_it = consumed_bloom_filters.find(bloom_filter_key);
@@ -411,7 +464,20 @@ FlightHandler::run_select_object_content(long query_id,
         auto exp_bloom_filter = bloom_filter_cache_.consumeBloomFilter(bloom_filter_key);
         if (!exp_bloom_filter.has_value()) {
           if (ENABLE_ADAPTIVE_PUSHDOWN) {
-            adapt_pushdown_manager_.finishOne(req);
+            switch (AdaptPushdownManagerV) {
+              case AdaptPushdownManagerVersion::V1: {
+                adapt_pushdown_manager_.finishOne(req);
+                break;
+              }
+              case AdaptPushdownManagerVersion::V2: {
+                adapt_pushdown_manager2_.finishOne(req2);
+                break;
+              }
+              case AdaptPushdownManagerVersion::V3: {
+                adapt_pushdown_manager3_->finishOne(req3);
+                break;
+              }
+            }
           }
           return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bloom_filter.error()));
         }
@@ -449,7 +515,8 @@ FlightHandler::run_select_object_content(long query_id,
             auto bitmap_key = BitmapCache::generateBitmapKey(query_id, sender);
             put_bitmap_into_cache(bitmap_key, bitmap, BitmapType::FILTER_STORAGE, true);
           });
-  const auto &result_table = execution->execute()->table();
+  execution->execute();
+  const auto &result_table = execution->getQueryResult()->table();
 
 #if SHOW_DEBUG_METRICS == true
   // save metrics of bytes disk read
@@ -460,7 +527,20 @@ FlightHandler::run_select_object_content(long query_id,
 
   // return query result
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
-    adapt_pushdown_manager_.finishOne(req);
+    switch (AdaptPushdownManagerV) {
+      case AdaptPushdownManagerVersion::V1: {
+        adapt_pushdown_manager_.finishOne(req);
+        break;
+      }
+      case AdaptPushdownManagerVersion::V2: {
+        adapt_pushdown_manager2_.finishOne(req2);
+        break;
+      }
+      case AdaptPushdownManagerVersion::V3: {
+        adapt_pushdown_manager3_->finishOne(req3);
+        break;
+      }
+    }
   }
   return result_table;
 }
@@ -588,6 +668,10 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
       auto clear_bitmap_cmd = std::static_pointer_cast<ClearBitmapCmd>(cmd_object);
       return do_put_clear_bitmap(context, clear_bitmap_cmd);
     }
+    case CmdTypeId::CLEAR_TABLE: {
+      auto clear_table_cmd = std::static_pointer_cast<ClearTableCmd>(cmd_object);
+      return do_put_clear_table(context, clear_table_cmd);
+    }
     case CmdTypeId::PUT_ADAPT_PUSHDOWN_METRICS: {
       auto put_adapt_pushdown_metrics = std::static_pointer_cast<PutAdaptPushdownMetricsCmd>(cmd_object);
       return do_put_put_adapt_pushdown_metrics(context, put_adapt_pushdown_metrics);
@@ -599,6 +683,14 @@ FlightHandler::do_put_for_cmd(const ServerCallContext& context,
     case CmdTypeId::SET_ADAPT_PUSHDOWN: {
       auto set_adapt_pushdown = std::static_pointer_cast<SetAdaptPushdownCmd>(cmd_object);
       return do_put_set_adapt_pushdown(context, set_adapt_pushdown);
+    }
+    case CmdTypeId::PUSHBACK_COMPLETE: {
+      auto pushback_complete = std::static_pointer_cast<PushbackCompleteCmd>(cmd_object);
+      return do_put_pushback_complete(context, pushback_complete);
+    }
+    case CmdTypeId::SET_NUM_REQ_TO_TAIL: {
+      auto set_num_req_to_tail = std::static_pointer_cast<SetNumReqToTailCmd>(cmd_object);
+      return do_put_set_num_req_to_tail(context, set_num_req_to_tail);
     }
     default: {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
@@ -616,7 +708,8 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_select_object_content(
   auto exp_table = run_select_object_content(select_object_content_cmd->query_id(),
                                              select_object_content_cmd->fpdb_store_super_pop(),
                                              select_object_content_cmd->query_plan_string(),
-                                             select_object_content_cmd->parallel_degree());
+                                             select_object_content_cmd->parallel_degree(),
+                                             ReqExtraInfo() /*unused*/);
   if (!exp_table.has_value()) {
     return tl::make_unexpected(exp_table.error());
   }
@@ -631,11 +724,11 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
   auto bitmap_type = put_bitmap_cmd->bitmap_type();
 
   // read bitmap record batch
-  ::arrow::RecordBatchVector recordBatches;
-  auto status = reader->ReadAll(&recordBatches);
-  if (!status.ok()) {
-    return tl::make_unexpected(status);
+  auto exp_record_batches = reader->ToRecordBatches();
+  if (!exp_record_batches.ok()) {
+    return tl::make_unexpected(exp_record_batches.status());
   }
+  auto record_batches = *exp_record_batches;
 
   // treat filter bitmap and bloom filter bitmap separately
   if (bitmap_type == BitmapType::BLOOM_FILTER_COMPUTE) {
@@ -659,25 +752,26 @@ FlightHandler::do_put_put_bitmap(const ServerCallContext&,
     auto bloom_filter = *exp_bloom_filter;
 
     // bloom filter bitmap
-    auto res = bloom_filter->saveBitmapRecordBatches(recordBatches);
+    auto res = bloom_filter->saveBitmapRecordBatches(record_batches);
     if (!res.has_value()) {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, res.error()));
     }
 
     // bloom filter key
-    auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
+    auto bloom_filter_key = executor::cache::BloomFilterCache::generateBloomFilterKey(
+            put_bitmap_cmd->query_id(), put_bitmap_cmd->op());
 
     // put bloom filter
     bloom_filter_cache_.produceBloomFilter(bloom_filter_key, bloom_filter, *num_copies);
   } else {
     // check if only contains one batch
-    if (recordBatches.size() != 1) {
+    if (record_batches.size() != 1) {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed,
               "RecordBatch stream for filter bitmap should only contain one recordBatch"));
     }
 
     // record batch to bitmap
-    auto exp_bitmap = ArrowSerializer::recordBatch_to_bitmap(recordBatches[0]);
+    auto exp_bitmap = ArrowSerializer::recordBatch_to_bitmap(record_batches[0]);
     if (!exp_bitmap.has_value()) {
       return tl::make_unexpected(MakeFlightError(FlightStatusCode::Failed, exp_bitmap.error()));
     }
@@ -701,7 +795,7 @@ FlightHandler::do_put_clear_bitmap(const ServerCallContext&,
   auto bitmap_type = clear_bitmap_cmd->bitmap_type();
   if (bitmap_type == BitmapType::BLOOM_FILTER_COMPUTE) {
     // bloom filter key
-    auto bloom_filter_key = BloomFilterCache::generateBloomFilterKey(query_id, op);
+    auto bloom_filter_key = executor::cache::BloomFilterCache::generateBloomFilterKey(query_id, op);
     // just consumer the bloom filter
     bloom_filter_cache_.consumeBloomFilter(bloom_filter_key);
   } else {
@@ -714,11 +808,36 @@ FlightHandler::do_put_clear_bitmap(const ServerCallContext&,
   return {};
 }
 
+tl::expected<void, ::arrow::Status>
+FlightHandler::do_put_clear_table(const ServerCallContext&,
+                                  const std::shared_ptr<ClearTableCmd>& clear_table_cmd) {
+  auto query_id = clear_table_cmd->query_id();
+  auto producer = clear_table_cmd->producer();
+  auto consumer = clear_table_cmd->consumer();
+  auto table_key = executor::cache::TableCache::generateTableKey(query_id, producer, consumer);
+  // just consumer the table
+  get_table_from_cache(table_key, false);
+  return {};
+}
+
 tl::expected<void, ::arrow::Status> FlightHandler::do_put_put_adapt_pushdown_metrics(
         const ServerCallContext&,
         const std::shared_ptr<PutAdaptPushdownMetricsCmd>& put_adapt_pushdown_metrics_cmd) {
   // save metrics of adaptive pushdown
-  adapt_pushdown_manager_.addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
+  switch (AdaptPushdownManagerV) {
+    case AdaptPushdownManagerVersion::V1: {
+      adapt_pushdown_manager_.addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
+      break;
+    }
+    case AdaptPushdownManagerVersion::V2: {
+      adapt_pushdown_manager2_.addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
+      break;
+    }
+    case AdaptPushdownManagerVersion::V3: {
+      adapt_pushdown_manager3_->addAdaptPushdownMetrics(put_adapt_pushdown_metrics_cmd->getAdaptPushdownMetrics());
+      break;
+    }
+  }
 
   return {};
 }
@@ -727,7 +846,20 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_clear_adapt_pushdown_m
         const ServerCallContext&,
         const std::shared_ptr<ClearAdaptPushdownMetricsCmd>&) {
   // clear metrics of adaptive pushdown
-  adapt_pushdown_manager_.clearAdaptPushdownMetrics();
+  switch (AdaptPushdownManagerV) {
+    case AdaptPushdownManagerVersion::V1: {
+      adapt_pushdown_manager_.clearAdaptPushdownMetrics();
+      break;
+    }
+    case AdaptPushdownManagerVersion::V2: {
+      adapt_pushdown_manager2_.clearAdaptPushdownMetrics();
+      break;
+    }
+    case AdaptPushdownManagerVersion::V3: {
+      adapt_pushdown_manager3_->clearAdaptPushdownMetrics();
+      break;
+    }
+  }
 
   // also reset to use the default actor_system
   use_adapt_pushdown_actor_system_vec_ = false;
@@ -750,8 +882,49 @@ tl::expected<void, ::arrow::Status> FlightHandler::do_put_set_adapt_pushdown(
   }
 
   // clear number of fall pack requests
-  adapt_pushdown_manager_.clearNumFallBackReqs();
+  if (AdaptPushdownManagerV == AdaptPushdownManagerVersion::V1) {
+    adapt_pushdown_manager_.clearNumFallBackReqs();
+  }
 
+  return {};
+}
+
+tl::expected<void, ::arrow::Status> FlightHandler::do_put_pushback_complete(
+          const ServerCallContext&,
+          const std::shared_ptr<PushbackCompleteCmd>& pushback_complete_cmd) {
+  // adapt_pushdown_manager v2 and v3 require this
+  switch (AdaptPushdownManagerV) {
+    case AdaptPushdownManagerVersion::V2: {
+      auto req2 = std::make_shared<AdaptPushdownReqInfo2>(pushback_complete_cmd->query_id(),
+                                                          pushback_complete_cmd->op());
+      req2->isPushedBack_ = true;
+      adapt_pushdown_manager2_.finishOne(req2);
+      break;
+    }
+    case AdaptPushdownManagerVersion::V3: {
+      auto req3 = std::make_shared<AdaptPushdownReqInfo3>(pushback_complete_cmd->query_id(),
+                                                          pushback_complete_cmd->op(),
+                                                          ReqExtraInfo() /*unused*/);
+      req3->isPushedBack_ = true;
+      adapt_pushdown_manager3_->finishOne(req3);
+      break;
+    }
+    default: {
+      return tl::make_unexpected(MakeFlightError(
+              FlightStatusCode::Failed, "PushbackCompleteCmd should not be called when using AdaptPushdownManager v1"));
+    }
+  }
+  return {};
+}
+
+tl::expected<void, ::arrow::Status> FlightHandler::do_put_set_num_req_to_tail(
+        const ServerCallContext&,
+        const std::shared_ptr<SetNumReqToTailCmd> set_num_req_to_tail_cmd) {
+  // only adapt_pushdown_manager v3 requires this
+  if (AdaptPushdownManagerV != AdaptPushdownManagerVersion::V3) {
+    return {};
+  }
+  adapt_pushdown_manager3_->setNumReqToTail(set_num_req_to_tail_cmd->numReqToTail());
   return {};
 }
 
@@ -844,6 +1017,17 @@ void FlightHandler::init_bitmap_cache() {
     bitmap_cache_map_[bitmap_type] = std::make_shared<BitmapCache>();
     bitmap_mutex_map_[bitmap_type] = std::make_shared<std::mutex>();
     bitmap_cvs_map_[bitmap_type] = std::unordered_map<std::string, std::shared_ptr<std::condition_variable_any>>();
+  }
+}
+
+void FlightHandler::init_adapt_pushdown_manager() {
+  // for adapt_pushdown_manager v3
+  if (AdaptPushdownManagerV == AdaptPushdownManagerVersion::V3) {
+    if (EnablePaAwareAdaptPushdown) {
+      adapt_pushdown_manager3_ = std::make_shared<AdaptPushdownManager3Pa>();
+    } else {
+      adapt_pushdown_manager3_ = std::make_shared<AdaptPushdownManager3>();
+    }
   }
 }
 

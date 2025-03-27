@@ -196,4 +196,184 @@ TEST_CASE ("tpch-sf10-distributed-22" * doctest::skip(false || SKIP_SUITE)) {
 
 }
 
+TEST_SUITE ("tpch-sf10-parquet-distributed" * doctest::skip(SKIP_SUITE)) {
+
+TEST_CASE ("tpch-sf10-parquet-distributed-01" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/01.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-02" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/02.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-03" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/03.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-04" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/04.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-05" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-06" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/06.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-07" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/07.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-08" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/08.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-09" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/09.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-10" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/10.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-11" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/11.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-12" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/12.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-13" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/13.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-14" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/14.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-15" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/15.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-16" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/16.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-17" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/17.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-18" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/18.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-19" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/19.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-20" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/20.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-21" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/21.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+TEST_CASE ("tpch-sf10-parquet-distributed-22" * doctest::skip(false || SKIP_SUITE)) {
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/22.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::S3));
+}
+
+}
+
 }

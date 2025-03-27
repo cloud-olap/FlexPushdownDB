@@ -64,6 +64,20 @@ public:
    */
   void produce(const shared_ptr<PhysicalOp> &operator_) override;
 
+  /**
+   * Set this op to be "pre-shuffle" in dist exec that shuffles data to nodes instead of threads
+   * @param batchExchange
+   * @param batchExchangeConsumers
+   */
+  void enableDistBatchExchange(const std::string &batchExchange,
+                               const vector<string> &batchExchangeConsumers);
+
+  /**
+   * Add an additional set of consumers to fetch shuffle results, need to guarantee its size is same as "consumerVec_"
+   * @param addConsumerVec
+   */
+  void produceAddiConsumerVec(const vector<shared_ptr<PhysicalOp>> &addiConsumerOps);
+
 private:
   /**
    * Start message handler
@@ -82,6 +96,12 @@ private:
   void onTupleSet(const TupleSetMessage &message);
 
   /**
+   * Shuffle one tupleSet
+   */
+  tl::expected<std::vector<std::shared_ptr<TupleSet>>, std::string>
+  shuffle(const std::shared_ptr<TupleSet> &tupleSet);
+
+  /**
    * Adds the tuple set to the outbound buffer for the given slot
    * @param tupleSet
    * @param partitionIndex
@@ -98,25 +118,36 @@ private:
   [[nodiscard]] tl::expected<void, string> send(int partitionIndex, bool force);
 
   vector<string> shuffleColumnNames_;
-  vector<string> consumerVec_;
+  vector<string> consumerVec_;    // this always decides how many slots we shuffle to,
+                                  // but may not be direct shuffle result receivers
+
+  /**
+   * Whether to enable batch exchange, if true,
+   *  1. this op will be pre-shuffle in dist exec, i.e., shuffle to all nodes instead of all threads
+   *  2. "consumerVec_" will be the receiver in different nodes
+   *  3. shuffled data is always sent to the single "batchExchange_", in the form of "TupleSetBufferMessage"
+   */
+  bool isDistPreShuffle_ = false;
+  std::string batchExchange_;
+
+  /**
+   * Sometimes the same shuffle results need to be sent to another additional set of consumers,
+   * need to guarantee each set of additional consumers is the same size of "consumerVec_"
+   */
+  vector<vector<string>> addiConsumerVecs_;
+
   vector<std::optional<shared_ptr<TupleSet>>> buffers_;
 
 // caf inspect
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, ShufflePOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("shuffleColumnNames", op.shuffleColumnNames_),
-                               f.field("consumerVec", op.consumerVec_));
+    return inspect_base(f, op,
+                        f.field("shuffleColumnNames", op.shuffleColumnNames_),
+                        f.field("consumerVec", op.consumerVec_),
+                        f.field("isDistPreShuffle", op.isDistPreShuffle_),
+                        f.field("batchExchange", op.batchExchange_),
+                        f.field("addiConsumerVecs", op.addiConsumerVecs_));
   }
 };
 

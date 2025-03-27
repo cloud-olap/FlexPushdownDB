@@ -7,13 +7,15 @@
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterBase.h>
 #include <fpdb/tuple/arrow/exec/BloomFilter.h>
-#include <fpdb/tuple/RecordBatchHasher.h>
 #include <fpdb/tuple/TupleSet.h>
 
 using namespace fpdb::tuple;
 
 namespace fpdb::executor::physical::bloomfilter {
 
+/**
+ * Wrapper of single-threaded Arrow's Bloom filter
+ */
 class ArrowBloomFilter: public BloomFilterBase {
 
 public:
@@ -43,13 +45,14 @@ private:
   std::vector<std::string> columnNames_;
 
   std::shared_ptr<arrow::compute::BlockedBloomFilter> blockedBloomFilter_;
-  std::shared_ptr<RecordBatchHasher> hasher_;
 
 // caf inspect (currently bloom filter is never sent across compute nodes, so this is never called)
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, ArrowBloomFilter& bf) {
-    return f.object(bf).fields(f.field("capacity", bf.capacity_),
+    return f.object(bf).fields(f.field("type", bf.type_),
+                               f.field("capacity", bf.capacity_),
+                               f.field("valid", bf.valid_),
                                f.field("columnNames", bf.columnNames_));
   }
 };

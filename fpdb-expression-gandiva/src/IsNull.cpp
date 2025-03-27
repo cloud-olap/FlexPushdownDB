@@ -51,6 +51,14 @@ tl::expected<std::shared_ptr<IsNull>, std::string> IsNull::fromJson(const nlohma
   return std::make_shared<IsNull>(*expExpr);
 }
 
+bool IsNull::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<IsNull>(other);
+  return equals(expr_, typedOther->expr_);
+}
+
 shared_ptr<Expression> isNull(const shared_ptr<Expression> &expr) {
   return make_shared<IsNull>(expr);
 }

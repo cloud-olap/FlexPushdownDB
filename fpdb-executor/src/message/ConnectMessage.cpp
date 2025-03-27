@@ -7,9 +7,11 @@
 namespace fpdb::executor::message {
 
 ConnectMessage::ConnectMessage(std::vector<POpConnection> connections,
-							   std::string from) :
-	Message(CONNECT, std::move(from)),
-	connections_(std::move(connections)) {}
+                               bool clear,
+                               std::string from) :
+  Message(CONNECT, std::move(from)),
+  connections_(std::move(connections)),
+  clear_(clear) {}
 
 std::string ConnectMessage::getTypeString() const {
   return "ConnectMessage";
@@ -17,6 +19,10 @@ std::string ConnectMessage::getTypeString() const {
 
 const std::vector<POpConnection> &ConnectMessage::connections() const {
   return connections_;
+}
+
+bool ConnectMessage::clear() const {
+  return clear_;
 }
 
 }

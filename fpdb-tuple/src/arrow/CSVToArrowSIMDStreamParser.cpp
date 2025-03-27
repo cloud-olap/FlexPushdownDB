@@ -155,11 +155,15 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
         for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
           uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
           uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-          assert(endingIndex >= startingIndex);
-          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+          assert(endingIndex >= startingIndex - 2);
+          std::string str(buffer_ + startingIndex, (endingIndex >= startingIndex) ? (endingIndex - startingIndex + 1) : 0);
 
-          int val = std::stoi(str);
-          status = builder->Append(val);
+          if (str == "") {
+            status = builder->AppendNull();
+          } else {
+            int val = std::stoi(str);
+            status = builder->Append(val);
+          }
           if (!status.ok()) {
             throw std::runtime_error(status.message());
           }
@@ -172,11 +176,15 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
         for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
           uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
           uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-          assert(endingIndex >= startingIndex);
-          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+          assert(endingIndex >= startingIndex - 2);
+          std::string str(buffer_ + startingIndex, (endingIndex >= startingIndex) ? (endingIndex - startingIndex + 1) : 0);
 
-          long val = std::stol(str);
-          status = builder->Append(val);
+          if (str == "") {
+            status = builder->AppendNull();
+          } else {
+            long val = std::stol(str);
+            status = builder->Append(val);
+          }
           if (!status.ok()) {
             throw std::runtime_error(status.message());
           }
@@ -189,11 +197,15 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
         for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
           uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
           uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-          assert(endingIndex >= startingIndex);
-          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+          assert(endingIndex >= startingIndex - 2);
+          std::string str(buffer_ + startingIndex, (endingIndex >= startingIndex) ? (endingIndex - startingIndex + 1) : 0);
 
-          double val = std::stod(str);
-          status = builder->Append(val);
+          if (str == "") {
+            status = builder->AppendNull();
+          } else {
+            double val = std::stod(str);
+            status = builder->Append(val);
+          }
           if (!status.ok()) {
             throw std::runtime_error(status.message());
           }
@@ -206,8 +218,8 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
         for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
           uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
           uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-          assert(endingIndex >= startingIndex);
-          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+          assert(endingIndex >= startingIndex - 2);
+          std::string str(buffer_ + startingIndex, (endingIndex >= startingIndex) ? (endingIndex - startingIndex + 1) : 0);
 
           status = builder->Append(str);
           if (!status.ok()) {
@@ -222,14 +234,18 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
         for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
           uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
           uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-          assert(endingIndex >= startingIndex);
-          std::string str(buffer_ + startingIndex, endingIndex - startingIndex + 1);
+          assert(endingIndex >= startingIndex - 2);
+          std::string str(buffer_ + startingIndex, (endingIndex >= startingIndex) ? (endingIndex - startingIndex + 1) : 0);
 
-          bool val = false;
-          if (str == "true" || str == "TRUE" || str == "1") {
-            val = true;
+          if (str == "") {
+            status = builder->AppendNull();
+          } else {
+            bool val = false;
+            if (str == "true" || str == "TRUE" || str == "1") {
+              val = true;
+            }
+            status = builder->Append(val);
           }
-          status = builder->Append(val);
           if (!status.ok()) {
             throw std::runtime_error(status.message());
           }
@@ -243,13 +259,17 @@ void CSVToArrowSIMDStreamParser::dumpToArrayBuilderColumnWise(ParsedCSV & pcsv) 
         for (size_t pcsvIndex = pcsvStartingIndex; pcsvIndex < rows * inputNumColumns_ - 1 + inputNumColumns_; pcsvIndex += inputNumColumns_) {
           uint64_t startingIndex = pcsv.indexes[pcsvIndex] + startEndOffset;
           uint64_t endingIndex = pcsv.indexes[pcsvIndex + 1] - startEndOffset;
-          uint64_t length = endingIndex - startingIndex + 1;
-          assert(endingIndex >= startingIndex);
+          uint64_t length = (endingIndex >= startingIndex) ? (endingIndex - startingIndex + 1) : 0;
+          assert(endingIndex >= startingIndex - 2);
           std::string str(buffer_ + startingIndex, length);
 
-          int64_t val;
-          (*parser)(str.c_str(), length, arrow::TimeUnit::MILLI, &val);
-          status = builder->Append(val);
+          if (str == "") {
+            status = builder->AppendNull();
+          } else {
+            int64_t val;
+            (*parser)(str.c_str(), length, arrow::TimeUnit::MILLI, &val);
+            status = builder->Append(val);
+          }
           if (!status.ok()) {
             throw std::runtime_error(status.message());
           }

@@ -139,3 +139,11 @@ std::string BinaryExpression::genAliasForComparison(const std::string& compOp) {
 [[maybe_unused]] void BinaryExpression::setRight(const std::shared_ptr<Expression> &right) {
   right_ = right;
 }
+
+bool BinaryExpression::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<BinaryExpression>(other);
+  return equals(left_, typedOther->left_) && equals(right_, typedOther->right_);
+}

@@ -6,6 +6,8 @@
 #define FPDB_FPDB_EXECUTOR_INCLUDE_FPDB_EXECUTOR_PHYSICAL_GLOBALS_H
 
 #include <fpdb/executor/physical/transform/pred-trans/PredTransOrder.h>
+#include <fpdb/executor/physical/transform/pred-trans/DistPredTransType.h>
+#include <fpdb/executor/physical/join/DistJoinType.h>
 #include <stdint.h>
 #include <string>
 
@@ -44,15 +46,29 @@ inline constexpr int variableSleepRetryTimeMS = 15;
 /**
  * System parameters
  */
-inline bool USE_BLOOM_FILTER = true;
+inline bool USE_BLOOM_FILTER = false;
 inline bool USE_ARROW_GROUP_BY_IMPL = true;
 inline bool USE_ARROW_HASH_JOIN_IMPL = true;
 inline bool USE_ARROW_BLOOM_FILTER_IMPL = true;
 inline bool USE_TWO_PHASE_GROUP_BY = true;
 inline bool USE_SHUFFLE_KERNEL_2 = true;
-inline bool USE_SHUFFLE_BATCH_LOAD = false;     // evaluation shows this is not beneficial, need to revisit later on
-inline bool USE_FLIGHT_COMM = true;
-inline constexpr int64_t BLOOM_FILTER_MAX_INPUT_SIZE = 20000000;  // won't create bloom filter if input is too large
+inline constexpr bool ENABLE_DIST_BCAST_BATCH_EXCHANGE = true;     // whether to batch exchange bcast data in dist join
+inline constexpr bool ENABLE_DIST_SHUFFLE_BATCH_EXCHANGE = true;   // whether to batch exchange shuffle data in dist join
+inline constexpr int64_t DIST_EXCHANGE_BATCH_SIZE = 10000;     // num rows in a batch when exchanging data in dist exec
+inline constexpr bool ENABLE_PARALLEL_BATCH_EXCHANGE = false;  // use multiple actors to receive exchanged batches in a single node
+                                                               // evaluation shows not beneficial for all queries, need to revisit
+inline constexpr int BATCH_EXCHANGE_PARALLEL_DEGREE = 4;    // num of threads to read using a same flight client when doing batch exchange
+inline constexpr bool ENABLE_SHUFFLE_PUSHDOWN_BATCH_LOAD = false;   // whether to batch results during shuffle pushdown,
+                                                                    // evaluation shows not beneficial, need to revisit
+inline constexpr bool USE_FLIGHT_COMM = true;
+inline constexpr int64_t BLOOM_FILTER_MAX_INPUT_SIZE = 20000000;  // won't create bloom filter if input is too large,
+                                                                  // only for vanilla bloom filter
+inline constexpr bool SCAN_S3_PARQUET_PARTIAL_COLUMNS = true;    // currently using s3fs to read partial Parquet columns causes
+                                                        // "AWS Error [code 15]: No response body."
+inline join::DistJoinType DIST_JOIN_TYPE = join::DistJoinType::PTION;
+inline constexpr bool USE_DOUBLE_EXEC_ADAPT = true;     // perform adapt exec based on cardinalities of the old run
+                                                        // instead of real adapt exec
+inline bool TEMP_FIX_TPCH_Q21 = false;   // BCAST hangs at TPC-H Q21 SF100
 
 /**
  * Pushdown parameters used by FPDB store (co-located join is set in fpdb-plan)
@@ -72,6 +88,11 @@ static constexpr std::string_view PushdownOpNamePrefix = "FPDBStoreSuper";
  */
 inline PredTransOrderType PRED_TRANS_ORDER_TYPE = PredTransOrderType::SMALL_TO_LARGE;
 inline bool ENABLE_YANNAKAKIS = false;      // only used by BFSPredTransOrder
+inline DistPredTransType DIST_PRED_TRANS_TYPE = DistPredTransType::BCAST_BF;
+inline constexpr bool USE_DIST_GLOBAL_BF = true;  // when constructing global BF, construct a single one across
+                                                  // the entire cluster (true), or each node constructs one (false)
+inline constexpr bool USE_PARALLEL_DIST_GLOBAL_BF_MERGE = true;  // whether to perform dist global bf merge in parallel
+inline bool PRUNE_PRED_TRANS = false;       // whether to prune unuseful pred-trans steps
 
 }
 

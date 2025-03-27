@@ -33,7 +33,7 @@ RemoteCSVReader::readRange(const std::vector<std::string> &columnNames, int64_t 
 
   // read
   auto expTupleSet = CSVReader::readRangeImpl(columnNames, startPos, finishPos, inputStream);
-  bytesReadRemote_ += inputStream->getBytesRead();
+  bytesReadRemote_ += inputStream->GetBytesRead();
 
   // close
   close(inputStream);
@@ -77,7 +77,7 @@ RemoteCSVReader::readUsingSimdParser(const std::vector<std::string> &columnNames
 #endif
 
   // close
-  bytesReadRemote_ += arrowInputStream->getBytesRead();
+  bytesReadRemote_ += arrowInputStream->GetBytesRead();
   close(arrowInputStream);
   free(out);
   return expTupleSet;
@@ -90,7 +90,7 @@ RemoteCSVReader::readUsingArrowApi(const std::vector<std::string> &columnNames) 
 
   // read
   auto expTupleSet = CSVReader::readUsingArrowApiImpl(columnNames, inputStream);
-  bytesReadRemote_ += inputStream->getBytesRead();
+  bytesReadRemote_ += inputStream->GetBytesRead();
 
   // close
   close(inputStream);

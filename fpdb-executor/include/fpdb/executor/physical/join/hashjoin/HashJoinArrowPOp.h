@@ -31,6 +31,7 @@ public:
   void clear() override;
   void clearProducers() override;
   std::string getTypeString() const override;
+  void setProjectColumnNames(const std::vector<std::string> &projectColumnNames) override;
 
   const HashJoinArrowKernel &getKernel() const;
   const std::set<std::string> &getBuildProducers() const;
@@ -41,6 +42,8 @@ public:
   void addProbeProducer(const std::shared_ptr<PhysicalOp> &probeProducer);
   void clearBuildProducers();
   void clearProbeProducers();
+
+  void recordOutputCard(const executor::cache::OutputCardCache::OutputCardKey &key, bool build);
 
 #if SHOW_DEBUG_METRICS == true
   int64_t getNumRowsBuild() const;
@@ -58,32 +61,25 @@ private:
   std::set<std::string> probeProducers_;
 
   HashJoinArrowKernel kernel_;
-  bool sentResult = false;
+  bool sentResult_ = false;
   int numCompletedBuildProducers_ = 0;
   int numCompletedProbeProducers_ = 0;
 
-#if SHOW_DEBUG_METRICS == true
+  // to record runtime cardinalities
   int64_t numRowsBuild_ = 0;
   int64_t numRowsProbe_ = 0;
-#endif
+  executor::cache::OutputCardCache::OutputCardInfo buildOutputCardInfo_, probeOutputCardInfo_;
 
 // caf inspect
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, HashJoinArrowPOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("buildProducers", op.buildProducers_),
-                               f.field("probeProducers", op.probeProducers_),
-                               f.field("kernel", op.kernel_));
+    return inspect_base(f, op,
+                        f.field("buildProducers", op.buildProducers_),
+                        f.field("probeProducers", op.probeProducers_),
+                        f.field("kernel", op.kernel_),
+                        f.field("buildOutputCardInfo", op.buildOutputCardInfo_),
+                        f.field("probeOutputCardInfo", op.probeOutputCardInfo_));
   }
 };
 

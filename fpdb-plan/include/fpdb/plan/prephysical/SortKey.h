@@ -18,6 +18,9 @@ public:
   SortKey() = default;
   SortKey(const SortKey&) = default;
   SortKey& operator=(const SortKey&) = default;
+
+  static bool equals(const SortKey &k1, const SortKey &k2);
+  static bool equals(const std::vector<SortKey> &k1, const std::vector<SortKey> &k2);
   
   const std::string &getName() const;
   SortOrder getOrder() const;

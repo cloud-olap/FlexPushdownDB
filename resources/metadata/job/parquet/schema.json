@@ -1,0 +1,695 @@
+{
+  "schemaName": "job/parquet/",
+  "tables": [
+    {
+      "name": "aka_name",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "person_id",
+          "type": "int64"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "imdb_index",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "name_pcode_cf",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "surname_pcode",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "md5sum",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "aka_title",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "imdb_index",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "kind_id",
+          "type": "int64"
+        },
+        {
+          "name": "production_year",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "phonetic_code",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "episode_of_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "season_nr",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "episode_nr",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "md5sum",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "cast_info",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "person_id",
+          "type": "int64"
+        },
+        {
+          "name": "movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "person_role_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "nr_order",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "role_id",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "name": "char_name",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "imdb_index",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "imdb_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "surname_pcode",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "md5sum",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "comp_cast_type",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "kind",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "company_name",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "country_code",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "imdb_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "name_pcode_sf",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "md5sum",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "company_type",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "kind",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "complete_cast",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "movie_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "subject_id",
+          "type": "int64"
+        },
+        {
+          "name": "status_id",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "name": "info_type",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "info",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "keyword",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "keyword",
+          "type": "string"
+        },
+        {
+          "name": "phonetic_code",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "kind_type",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "kind",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "link_type",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "link",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "movie_companies",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "company_id",
+          "type": "int64"
+        },
+        {
+          "name": "company_type_id",
+          "type": "int64"
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "movie_info_idx",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "info_type_id",
+          "type": "int64"
+        },
+        {
+          "name": "info",
+          "type": "string"
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "movie_keyword",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "keyword_id",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "name": "movie_link",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "linked_movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "link_type_id",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "name": "name",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "imdb_index",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "imdb_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "gender",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "name_pcode_cf",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "surname_pcode",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "md5sum",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "role_type",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "role",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "title",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "imdb_index",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "kind_id",
+          "type": "int64"
+        },
+        {
+          "name": "production_year",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "imdb_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "phonetic_code",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "episode_of_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "season_nr",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "episode_nr",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "series_year",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "md5sum",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "movie_info",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "movie_id",
+          "type": "int64"
+        },
+        {
+          "name": "info_type_id",
+          "type": "int64"
+        },
+        {
+          "name": "info",
+          "type": "string"
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "name": "person_info",
+      "format": {
+        "name": "parquet"
+      },
+      "numPartitions": 1,
+      "fields": [
+        {
+          "name": "id",
+          "type": "int64",
+          "unique": true
+        },
+        {
+          "name": "person_id",
+          "type": "int64"
+        },
+        {
+          "name": "info_type_id",
+          "type": "int64"
+        },
+        {
+          "name": "info",
+          "type": "string"
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

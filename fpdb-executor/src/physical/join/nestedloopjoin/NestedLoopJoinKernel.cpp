@@ -27,12 +27,11 @@ tl::expected<void, string> bufferInput(std::optional<shared_ptr<TupleSet>> &buff
                                        const shared_ptr<TupleSet> &incomingTupleSet) {
   if (!buffer.has_value()) {
     buffer = incomingTupleSet;
-    return {};
   } else if (incomingTupleSet->numRows() > 0) {
-    return buffer.value()->append(incomingTupleSet);
-  } else {
-    return {};
+    auto expConcatenatedTupleSet = TupleSet::concatenate({*buffer, incomingTupleSet});
+    buffer = *expConcatenatedTupleSet;
   }
+  return {};
 }
 
 tl::expected<shared_ptr<TupleSet>, string> NestedLoopJoinKernel::join(const shared_ptr<TupleSet> &leftTupleSet,

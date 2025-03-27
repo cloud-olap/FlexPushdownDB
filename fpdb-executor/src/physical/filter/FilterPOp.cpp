@@ -2,7 +2,6 @@
 // Created by matt on 6/5/20.
 //
 
-#include <optional>
 #include <fpdb/executor/physical/filter/FilterPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
 #include <fpdb/executor/physical/Globals.h>
@@ -186,10 +185,11 @@ void FilterPOp::onCompleteRegular() {
     }
   }
 
-  // send segment weights if required
-  if (!weightedSegmentKeys_.empty() && totalNumRows_ > 0 && *isApplicable_) {
-    sendSegmentWeight();
-  }
+  // FIXME: unsure why this is the crash point with distributed predicate transfer, so currently disable it
+//  // send segment weights if required
+//  if (!weightedSegmentKeys_.empty() && totalNumRows_ > 0 && *isApplicable_) {
+//    sendSegmentWeight();
+//  }
 
   // complete
   ctx()->notifyComplete();
@@ -220,10 +220,11 @@ void FilterPOp::onCompleteBitmapPushdown() {
       }
     }
 
-    // send segment weights if required
-    if (!weightedSegmentKeys_.empty() && totalNumRows_ > 0 && *isApplicable_) {
-      sendSegmentWeight();
-    }
+    // FIXME: unsure why this is the crash point with distributed predicate transfer, so currently disable it
+//    // send segment weights if required
+//    if (!weightedSegmentKeys_.empty() && totalNumRows_ > 0 && *isApplicable_) {
+//      sendSegmentWeight();
+//    }
 
     // complete
     ctx()->notifyComplete();
@@ -243,10 +244,11 @@ void FilterPOp::bufferReceived(const std::shared_ptr<fpdb::tuple::TupleSet>& tup
   if (!received_.has_value()) {
     received_ = tupleSet;
   } else {
-    auto result = (*received_)->append(tupleSet);
-    if (!result.has_value()) {
-      ctx()->notifyError(result.error());
+    auto expConcatenatedTupleSet = TupleSet::concatenate({*received_, tupleSet});
+    if (!expConcatenatedTupleSet.has_value()) {
+      ctx()->notifyError(expConcatenatedTupleSet.error());
     }
+    received_ = *expConcatenatedTupleSet;
   }
 }
 
@@ -254,10 +256,11 @@ void FilterPOp::bufferFiltered(const std::shared_ptr<fpdb::tuple::TupleSet>& tup
   if (!filtered_.has_value()) {
     filtered_ = tupleSet;
   } else {
-    auto result = (*filtered_)->append(tupleSet);
-    if (!result.has_value()) {
-      ctx()->notifyError(result.error());
+    auto expConcatenatedTupleSet = TupleSet::concatenate({*filtered_, tupleSet});
+    if (!expConcatenatedTupleSet.has_value()) {
+      ctx()->notifyError(expConcatenatedTupleSet.error());
     }
+    filtered_ = *expConcatenatedTupleSet;
   }
 }
 
@@ -309,7 +312,10 @@ void FilterPOp::buildFilter() {
     }
     auto outputSchema = arrow::schema(outputFields);
 
-    filter_.value()->compile(inputSchema, outputSchema);
+    auto res = filter_.value()->compile(inputSchema, outputSchema);
+    if (!res.has_value()) {
+      ctx()->notifyError(res.error());
+    }
   }
 }
 
@@ -560,30 +566,28 @@ void FilterPOp::putBitmapToFPDBStore() {
     ctx()->notifyError(expCmd.error());
   }
   auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
-  std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
-  std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-  auto status = client->DoPut(descriptor, recordBatch->schema(), &writer, &metadataReader);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
+  auto doPutRes = client->DoPut(descriptor, recordBatch->schema());
+  if (!doPutRes.ok()) {
+    ctx()->notifyError(doPutRes.status().message());
   }
 
-  status = writer->WriteRecordBatch(*recordBatch);
+  auto status = (*doPutRes).writer->WriteRecordBatch(*recordBatch);
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
-  status = writer->DoneWriting();
+  status = (*doPutRes).writer->DoneWriting();
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
-  status = writer->Close();
+  status = (*doPutRes).writer->Close();
   if (!status.ok()) {
     ctx()->notifyError(status.message());
   }
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
-          metrics::TransferMetrics(0, fpdb::tuple::util::Util::getSize(recordBatch), 0), name_);
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+          metrics::NetworkMetrics(0, fpdb::tuple::util::Util::getSize(recordBatch), 0), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 
@@ -605,17 +609,16 @@ void FilterPOp::getBitmapFromFPDBStore() {
     ctx()->notifyError(expTicket.error());
   }
 
-  std::unique_ptr<::arrow::flight::FlightStreamReader> reader;
-  auto status = client->DoGet(*expTicket, &reader);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
+  auto expReader = client->DoGet(*expTicket);
+  if (!expReader.ok()) {
+    ctx()->notifyError(expReader.status().message());
   }
 
-  arrow::RecordBatchVector recordBatches;
-  status = reader->ReadAll(&recordBatches);
-  if (!status.ok()) {
-    ctx()->notifyError(status.message());
+  auto expRecordBatches = (*expReader)->ToRecordBatches();
+  if (!expRecordBatches.ok()) {
+    ctx()->notifyError(expRecordBatches.status().message());
   }
+  auto recordBatches = *expRecordBatches;
   if (recordBatches.size() != 1) {
     ctx()->notifyError("Bitmap recordBatch stream should only contain one recordBatch");
   }
@@ -629,8 +632,8 @@ void FilterPOp::getBitmapFromFPDBStore() {
 
   // metrics
 #if SHOW_DEBUG_METRICS == true
-  std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
-          metrics::TransferMetrics(fpdb::tuple::util::Util::getSize(recordBatches[0]), 0, 0), name_);
+  std::shared_ptr<Message> execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+          metrics::NetworkMetrics(fpdb::tuple::util::Util::getSize(recordBatches[0]), 0, 0), name_);
   ctx()->notifyRoot(execMetricsMsg);
 #endif
 }

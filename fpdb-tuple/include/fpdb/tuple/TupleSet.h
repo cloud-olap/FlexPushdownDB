@@ -52,24 +52,16 @@ public:
 
   bool valid() const;
   bool validate() const;
-  void clear();
   int64_t numRows() const;
   int numColumns() const;
   size_t size() const;
   std::shared_ptr<arrow::Schema> schema() const;
   std::shared_ptr<arrow::Table> table() const;
-  void table(const std::shared_ptr<arrow::Table> &table);
 
   /**
    * Concatenate tupleSets.
    */
   static tl::expected<std::shared_ptr<TupleSet>, std::string> concatenate(const std::vector<std::shared_ptr<TupleSet>>& tupleSets);
-
-  /**
-   * Append tupleSets.
-   */
-  tl::expected<void, std::string> append(const std::vector<std::shared_ptr<TupleSet>>& tupleSet);
-  tl::expected<void, std::string> append(const std::shared_ptr<TupleSet>& tupleSet);
 
   /**
    * Get column.
@@ -98,25 +90,25 @@ public:
   /**
    * Rename columns.
    */
-  tl::expected<void, std::string> renameColumns(const std::vector<std::string>& columnNames);
-  tl::expected<void, std::string> renameColumns(const std::unordered_map<std::string, std::string> &columnRenames);
   tl::expected<std::shared_ptr<TupleSet>, std::string>
-          renameColumnsWithNewTupleSet(const std::vector<std::string>& columnNames);
+          renameColumns(const std::vector<std::string>& columnNames) const;
+  tl::expected<std::shared_ptr<TupleSet>, std::string>
+          renameColumns(const std::unordered_map<std::string, std::string> &columnRenames) const;
 
   /**
    * Invokes combineChunks on the underlying table
    *
    * @return
    */
-  tl::expected<void, std::string> combine();
+  tl::expected<std::shared_ptr<TupleSet>, std::string> combine() const;
 
   /**
    * Returns the tuple set pretty printed as a string
    *
    * @return
    */
-  std::string showString();
-  std::string showString(TupleSetShowOptions options);
+  std::string showString() const;
+  std::string showString(TupleSetShowOptions options) const;
 
   /**
    * Returns a short string representing the tuple set
@@ -130,7 +122,7 @@ public:
    * @return
    */
   std::shared_ptr<arrow::Scalar> visit(const std::function<std::shared_ptr<arrow::Scalar>(
-          std::shared_ptr<arrow::Scalar>, arrow::RecordBatch &)>& fn);
+          std::shared_ptr<arrow::Scalar>, arrow::RecordBatch &)>& fn) const;
 
   /**
    * Returns an element from the tupleset given and column name and row number.
@@ -142,7 +134,7 @@ public:
    * @return
    */
   template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
-  tl::expected<C_TYPE, std::string> value(const std::string &columnName, int row){
+  tl::expected<C_TYPE, std::string> value(const std::string &columnName, int row) const {
     return TableHelper::value<ARROW_TYPE, C_TYPE>(columnName, row, *table_);
   }
 
@@ -152,7 +144,7 @@ public:
    * @param row
    * @return
    */
-  tl::expected<std::string, std::string> stringValue(const std::string &columnName, int row){
+  tl::expected<std::string, std::string> stringValue(const std::string &columnName, int row) const {
 	  return TableHelper::value<::arrow::StringType, std::string>(columnName, row, *table_);
   }
 
@@ -167,7 +159,7 @@ public:
    * @return
    */
   template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
-  tl::expected<C_TYPE, std::string> value(int column, int row){
+  tl::expected<C_TYPE, std::string> value(int column, int row) const {
 	return TableHelper::value<ARROW_TYPE, C_TYPE>(column, row, *table_);
   }
 
@@ -181,7 +173,7 @@ public:
    * @return
    */
   template<typename ARROW_TYPE, typename C_TYPE = typename ARROW_TYPE::c_type>
-  tl::expected<std::shared_ptr<std::vector<C_TYPE>>, std::string> vector(const std::string &columnName){
+  tl::expected<std::shared_ptr<std::vector<C_TYPE>>, std::string> vector(const std::string &columnName) const {
 	return TableHelper::vector<ARROW_TYPE, C_TYPE>(*table_->GetColumnByName(columnName));
   }
 
@@ -189,6 +181,8 @@ private:
   static std::vector<std::shared_ptr<arrow::Table>>
   tupleSetVectorToArrowTableVector(const std::vector<std::shared_ptr<TupleSet>> &tupleSets);
 
+  // all the member functions should NOT modify this variable
+  // but we cannot mark it as const since CAF serialization needs to assign it during deserialization
   std::shared_ptr<arrow::Table> table_;
 
 // caf inspect

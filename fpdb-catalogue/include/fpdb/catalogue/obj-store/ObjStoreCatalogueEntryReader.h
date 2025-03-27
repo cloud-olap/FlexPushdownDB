@@ -41,6 +41,11 @@ private:
                          unordered_map<string, shared_ptr<FileFormat>> &formatMap,
                          unordered_map<string, vector<shared_ptr<ObjStorePartition>>> &partitionMap);
 
+  static void readColRefs(const string &schemaName,
+                          const unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
+                          filesystem::path metadataPath,
+                          unordered_map<string, vector<ColRef>> &colRefMap);
+
   static void readStats(const json &statsJObj,
                         unordered_map<string, unordered_map<string, int>> &apxColumnLengthMapMap,
                         unordered_map<string, int> &apxRowLengthMap);

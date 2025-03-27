@@ -57,6 +57,15 @@ bool LocalPOpDirectory::allComplete(const POpRelationshipType &operatorRelations
   }
 }
 
+void LocalPOpDirectory::clear() {
+  destroyActorHandles();
+  entries_.clear();
+  numProducers = 0;
+  numConsumers = 0;
+  numProducersComplete = 0;
+  numConsumersComplete = 0;
+}
+
 void LocalPOpDirectory::destroyActorHandles(){
   for(auto &entry: entries_){
 	entry.second.destroyActor();

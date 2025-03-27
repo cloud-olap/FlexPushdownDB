@@ -1,0 +1,28 @@
+{
+  "name": "movie_companies",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "company_id",
+      "type": "int64"
+    },
+    {
+      "name": "company_type_id",
+      "type": "int64"
+    },
+    {
+      "name": "note",
+      "type": "string"
+    }
+  ]
+}

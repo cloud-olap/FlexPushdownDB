@@ -4,12 +4,15 @@
 
 #include "AdaptPushdownTestUtil.h"
 #include "TestUtil.h"
+#include <fpdb/main/ExecConfig.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/flight/FlightClients.h>
+#include <fpdb/executor/flight/FlightHandler.h>
 #include <fpdb/store/server/flight/Util.hpp>
-#include <fpdb/store/server/flight/ClearAdaptPushdownMetricsCmd.hpp>
-#include <fpdb/store/server/flight/SetAdaptPushdownCmd.hpp>
+#include <fpdb/store/server/flight/adaptive/ClearAdaptPushdownMetricsCmd.hpp>
+#include <fpdb/store/server/flight/adaptive/SetAdaptPushdownCmd.hpp>
 #include <fpdb/store/client/FPDBStoreClientConfig.h>
+#include <fpdb/util/Color.h>
 #include <arrow/flight/api.h>
 #include <doctest/doctest.h>
 #include "thread"
@@ -17,10 +20,21 @@
 namespace fpdb::main::test {
 
 void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string &schemaName,
-                                                               const std::string &queryFileName,
+                                                               const std::vector<std::string> &queryFileNames,
                                                                const std::vector<int> &maxThreadsVec,
                                                                int parallelDegree,
-                                                               bool startFPDBStore) {
+                                                               bool startFPDBStore,
+                                                               bool useHeuristicJoinOrdering) {
+  // start daemon flight server if pushback double-exec is enabled
+  std::future<tl::expected<void, std::basic_string<char>>> flight_future;
+  if (store::server::flight::EnablePushbackTailReqDoubleExec) {
+    auto res = executor::flight::FlightHandler::startDaemonFlightServer(
+            main::ExecConfig::parseFlightPort(), flight_future);
+    if (!res.has_value()) {
+      throw std::runtime_error(res.error());
+    }
+  }
+
   // save old configs
   bool oldEnableAdaptPushdown = fpdb::executor::physical::ENABLE_ADAPTIVE_PUSHDOWN;
   int oldMaxThreads = fpdb::store::server::flight::MaxThreads;
@@ -31,78 +45,98 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
   }
 
   // run pullup and pushdown once as gandiva cache makes the subsequent runs faster than the first run
-  std::cout << "Start run (pullup)" << std::endl;
+  std::cout << GREEN << "Start run (pullup)" << RESET << std::endl;
   REQUIRE(TestUtil::e2eNoStartCalciteServer(schemaName,
-                                            {queryFileName},
+                                            queryFileNames,
                                             parallelDegree,
                                             false,
                                             ObjStoreType::FPDB_STORE,
-                                            Mode::pullupMode()));
-  std::cout << "Start run (pushdown)" << std::endl;
+                                            Mode::pullupMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            useHeuristicJoinOrdering));
+  std::cout << GREEN << "Start run (pushdown)" << RESET << std::endl;
   REQUIRE(TestUtil::e2eNoStartCalciteServer(schemaName,
-                                            {queryFileName},
+                                            queryFileNames,
                                             parallelDegree,
                                             false,
                                             ObjStoreType::FPDB_STORE,
-                                            Mode::pushdownOnlyMode()));
+                                            Mode::pushdownOnlyMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            useHeuristicJoinOrdering));
 
   // collect adaptive pushdown metrics for pullup
-  std::cout << "Collect metrics run (pullup)" << std::endl;
+  std::cout << GREEN << "Collect metrics run (pullup)" << RESET << std::endl;
   TestUtil testUtil(schemaName,
-                    {queryFileName},
+                    queryFileNames,
                     parallelDegree,
                     false,
                     ObjStoreType::FPDB_STORE,
                     Mode::pullupMode());
   testUtil.setCollAdaptPushdownMetrics(true);
+  testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
   REQUIRE_NOTHROW(testUtil.runTest());
 
   // collect adaptive pushdown metrics for pushdown
-  std::cout << "Collect metrics run (pushdown)" << std::endl;
+  std::cout << GREEN << "Collect metrics run (pushdown)" << RESET << std::endl;
   testUtil = TestUtil(schemaName,
-                      {queryFileName},
+                      queryFileNames,
                       parallelDegree,
                       false,
                       ObjStoreType::FPDB_STORE,
                       Mode::pushdownOnlyMode());
   testUtil.setCollAdaptPushdownMetrics(true);
+  testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
   REQUIRE_NOTHROW(testUtil.runTest());
 
   // measurement runs
   for (int maxThreads: maxThreadsVec) {
-    std::cout << fmt::format("Max threads at storage side: {}\n", maxThreads) << std::endl;
+    std::cout << BLUE << fmt::format("Max threads at storage side: {}\n", maxThreads) << RESET << std::endl;
 
     // pullup baseline run
-    std::cout << "Pullup baseline run" << std::endl;
+    std::cout << GREEN << "Pullup baseline run" << RESET << std::endl;
     testUtil = TestUtil(schemaName,
-                        {queryFileName},
+                        queryFileNames,
                         parallelDegree,
                         false,
                         ObjStoreType::FPDB_STORE,
                         Mode::pullupMode());
+    testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
+    if (queryFileNames.size() > 1) {
+      testUtil.setConcurrent(true);
+    }
     set_pushdown_flags(false, maxThreads, !startFPDBStore);
     std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
 
     // pushdown baseline run
-    std::cout << "Pushdown baseline run" << std::endl;
+    std::cout << GREEN << "Pushdown baseline run" << RESET << std::endl;
     testUtil = TestUtil(schemaName,
-                        {queryFileName},
+                        queryFileNames,
                         parallelDegree,
                         false,
                         ObjStoreType::FPDB_STORE,
                         Mode::pushdownOnlyMode());
+    testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
+    if (queryFileNames.size() > 1) {
+      testUtil.setConcurrent(true);
+    }
     std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
 
     // adaptive pushdown test run
-    std::cout << "Adaptive pushdown run" << std::endl;
+    std::cout << GREEN << "Adaptive pushdown run" << RESET << std::endl;
     testUtil = TestUtil(schemaName,
-                        {queryFileName},
+                        queryFileNames,
                         parallelDegree,
                         false,
                         ObjStoreType::FPDB_STORE,
                         Mode::pushdownOnlyMode());
+    testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
+    if (queryFileNames.size() > 1) {
+      testUtil.setConcurrent(true);
+    }
     set_pushdown_flags(true, maxThreads, !startFPDBStore);
     std::this_thread::sleep_for(1s);
     REQUIRE_NOTHROW(testUtil.runTest());
@@ -115,6 +149,11 @@ void AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query(const std::string
   // stop fpdb-store if local
   if (startFPDBStore) {
     TestUtil::stopFPDBStoreServer();
+  }
+
+  // stop daemon flight server if pushback double-exec is enabled
+  if (store::server::flight::EnablePushbackTailReqDoubleExec) {
+    executor::flight::FlightHandler::stopDaemonFlightServer(flight_future);
   }
 }
 
@@ -132,7 +171,6 @@ void AdaptPushdownTestUtil::send_cmd_to_storage(const std::shared_ptr<fpdb::stor
   auto expCmd = cmdObj->serialize(false);
   if (!expCmd.has_value()) {
     throw std::runtime_error(expCmd.error());
-    return;
   }
 
   // send to each fpdb-store node
@@ -140,17 +178,13 @@ void AdaptPushdownTestUtil::send_cmd_to_storage(const std::shared_ptr<fpdb::stor
   for (const auto &host: fpdbStoreClientConfig->getHosts()) {
     auto client = flight::GlobalFlightClients.getFlightClient(host, fpdbStoreClientConfig->getFlightPort());
     auto descriptor = ::arrow::flight::FlightDescriptor::Command(*expCmd);
-    std::unique_ptr<arrow::flight::FlightStreamWriter> writer;
-    std::unique_ptr<arrow::flight::FlightMetadataReader> metadataReader;
-    auto status = client->DoPut(descriptor, nullptr, &writer, &metadataReader);
-    if (!status.ok()) {
-      throw std::runtime_error(status.message());
-      return;
+    auto doPutRes = client->DoPut(descriptor, nullptr);
+    if (!doPutRes.ok()) {
+      throw std::runtime_error(doPutRes.status().message());
     }
-    status = writer->Close();
+    auto status = (*doPutRes).writer->Close();
     if (!status.ok()) {
       throw std::runtime_error(status.message());
-      return;
     }
   }
 }

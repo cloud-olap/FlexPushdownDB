@@ -50,33 +50,20 @@ public:
                                       ObjStoreType objStoreType,
                                       const shared_ptr<Mode> &mode = Mode::pullupMode(),
                                       CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
-                                      size_t cacheSize = 1L * 1024 * 1024 * 1024);
+                                      size_t cacheSize = 1L * 1024 * 1024 * 1024,
+                                      bool useHeuristicJoinOrdering = true);
 
   /**
-   * Test with single thread execution
+   * Test in a single node, with given number of threads to use, 0 means by default
    */
-  static bool e2eNoStartCalciteServerSingleThread(const string &schemaName,
-                                                  const vector<string> &queryFileNames,
-                                                  int parallelDegree,
-                                                  bool isDistributed,
-                                                  ObjStoreType objStoreType,
-                                                  const shared_ptr<Mode> &mode = Mode::pullupMode(),
-                                                  CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
-                                                  size_t cacheSize = 1L * 1024 * 1024 * 1024,
-                                                  bool useHeuristicJoinOrdering = true);
-
-  /**
-   * Temp test for disabling heuristic join ordering by calcite
-   */
-  static bool e2eNoStartCalciteServerNoHeuristicJoinOrdering(
-          const string &schemaName,
-          const vector<string> &queryFileNames,
-          int parallelDegree,
-          bool isDistributed,
-          ObjStoreType objStoreType,
-          const shared_ptr<Mode> &mode = Mode::pullupMode(),
-          CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
-          size_t cacheSize = 1L * 1024 * 1024 * 1024);
+  static bool e2eNoStartCalciteServerSingleNode(const string &schemaName,
+                                                const vector<string> &queryFileNames,
+                                                ObjStoreType objStoreType,
+                                                int numThreads = 0,
+                                                const shared_ptr<Mode> &mode = Mode::pullupMode(),
+                                                CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
+                                                size_t cacheSize = 1L * 1024 * 1024 * 1024,
+                                                bool useHeuristicJoinOrdering = true);
 
   static void writeQueryToFile(const std::string queryFileName, const std::string query);
   static void removeQueryFile(const std::string queryFileName);
@@ -89,27 +76,30 @@ public:
            int parallelDegree,
            bool isDistributed,
            ObjStoreType objStoreType,
-           const shared_ptr<Mode> &mode,
+           const shared_ptr<Mode> &mode = Mode::pullupMode(),
            CachingPolicyType cachingPolicyType = CachingPolicyType::NONE,
            size_t cacheSize = 1L * 1024 * 1024 * 1024);
 
   double getCrtQueryHitRatio() const;
-  void setUseThreads(bool useThreads);
+  void setNumThreads(int numThreads);
   void setUseHeuristicJoinOrdering(bool useHeuristicJoinOrdering);
   void setFixLayoutIndices(const set<int> &fixLayoutIndices);
   void setCollAdaptPushdownMetrics(bool collAdaptPushdownMetrics);
+  void setConcurrent(bool concurrent);
+  void setShowResults(bool showResults);
+  void setCache(const std::shared_ptr<SegmentCache> &cache);
 
   void runTest();
 
 private:
-  void readPushdownFlags();
+  void readTestUtilConfig();
   void makeObjStoreConnector();
   void makeCatalogueEntry();
   void makeCachingPolicy();
   void makeCalciteClient();
   void connect();
   void makeExecutor();
-  void executeQueryFile(const string &queryFileName);
+  void executeQueryFile(long queryId, const string &queryFileName);
   void stop();
 
   static std::shared_ptr<fpdb::store::server::Server> fpdbStoreServer_;
@@ -119,7 +109,8 @@ private:
   // input parameters
   std::string schemaName_;
   vector<string> queryFileNames_;
-  int parallelDegree_;
+  int parallelDegree_;    // how many concurrent actors for to spawn for a specific operator (e.g., join)
+                          // this is different from "numThreads_" below
   bool isDistributed_;
   ObjStoreType objStoreType_;
   shared_ptr<Mode> mode_;
@@ -136,9 +127,11 @@ private:
   shared_ptr<::caf::actor_system> actorSystem_;
   vector<::caf::node_id> nodes_;
   shared_ptr<Executor> executor_;
+  shared_ptr<std::atomic<long>> queryCounter_;
 
-  // whether allowed using multiple threads, default to true
-  bool useThreads_ = true;
+  // how many actual threads (in actor system schedule) to use to run queries, 0 means by default
+  // this is different from "parallelDegree_" above
+  int numThreads_ = 0;
 
   // whether to use heuristic join ordering by calcite, true by default
   bool useHeuristicJoinOrdering_ = true;
@@ -151,6 +144,15 @@ private:
 
   // used to collect adaptive pushdown metrics
   bool collAdaptPushdownMetrics_ = false;
+
+  // whether to run queries concurrently
+  bool concurrent_ = false;
+
+  // whether to show query results
+  bool showResults_ = true;
+
+  // whether to start the cache from existing content, currently only support single-node
+  std::shared_ptr<SegmentCache> cache_ = nullptr;
 };
 
 }

@@ -62,7 +62,11 @@ Cast::castDate32ToDate64(const std::shared_ptr<TupleSet> &tupleSet) {
     return tl::make_unexpected(expConvertedSubTupleSet.error());
   }
   auto convertedSubTupleSet = *expConvertedSubTupleSet;
-  convertedSubTupleSet->renameColumns(subTupleSetToConvert->schema()->field_names());
+  auto renameRes = convertedSubTupleSet->renameColumns(subTupleSetToConvert->schema()->field_names());
+  if (!renameRes.has_value()) {
+    return tl::make_unexpected(renameRes.error());
+  }
+  convertedSubTupleSet = *renameRes;
 
   // make result tupleSet
   int convertedColumnId = 0;
@@ -77,6 +81,24 @@ Cast::castDate32ToDate64(const std::shared_ptr<TupleSet> &tupleSet) {
   }
 
   return TupleSet::make(resultColumns);
+}
+
+bool Cast::getCastDirection(const std::shared_ptr<arrow::DataType>& type1,
+                            const std::shared_ptr<arrow::DataType>& type2) {
+  static const std::unordered_map<arrow::Type::type, int> castOrders = {
+    {arrow::int32()->id(), 0},
+    {arrow::int64()->id(), 1},
+    {arrow::float64()->id(), 2}
+  };
+  auto it1 = castOrders.find(type1->id());
+  if (it1 == castOrders.end()) {
+    throw std::runtime_error(fmt::format("Type not found in `castOrders`: '{}'", type1->name()));
+  }
+  auto it2 = castOrders.find(type2->id());
+  if (it2 == castOrders.end()) {
+    throw std::runtime_error(fmt::format("Type not found in `castOrders`: '{}'", type2->name()));
+  }
+  return it1->second < it2->second;
 }
 
 ::gandiva::NodePtr Cast::buildGandivaExpression() {
@@ -105,7 +127,8 @@ Cast::castDate32ToDate64(const std::shared_ptr<TupleSet> &tupleSet) {
     return castFunction;
   }
 
-  else if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::int64()->id()) {
+  else if (dataType_->id() == arrow::int64()->id() &&
+          (fromArrowType->id() == arrow::utf8()->id() || fromArrowType->id() == arrow::float64()->id())) {
     // Not supported directly by Gandiva, need to cast string to decimal and then that to int64
 
     auto castDecimalFunctionName = "castDECIMAL";
@@ -123,7 +146,8 @@ Cast::castDate32ToDate64(const std::shared_ptr<TupleSet> &tupleSet) {
     return castFunction;
   }
 
-  else if (fromArrowType->id() == arrow::utf8()->id() && dataType_->id() == arrow::int32()->id()) {
+  else if (dataType_->id() == arrow::int32()->id() &&
+          (fromArrowType->id() == arrow::utf8()->id() || fromArrowType->id() == arrow::float64()->id())) {
     // Not supported directly by Gandiva, need to cast string to decimal to int64 and then that to int32
 
     auto castDecimalFunctionName = "castDECIMAL";
@@ -147,6 +171,11 @@ Cast::castDate32ToDate64(const std::shared_ptr<TupleSet> &tupleSet) {
 
   else if (fromArrowType->id() == arrow::date32()->id() && dataType_->id() == arrow::date64()->id()) {
     return ::gandiva::TreeExprBuilder::MakeFunction("castDATE", {paramGandivaExpression}, dataType_);
+  }
+
+  else if (dataType_->id() == arrow::float64()->id() &&
+      (fromArrowType->id() == arrow::int32()->id() || fromArrowType->id() == arrow::int64()->id())) {
+    return ::gandiva::TreeExprBuilder::MakeFunction("castFloat8", {paramGandivaExpression}, dataType_);
   }
 
   else {
@@ -202,7 +231,15 @@ tl::expected<std::shared_ptr<Cast>, std::string> Cast::fromJson(const nlohmann::
   return std::make_shared<Cast>(*expExpr, dataType);
 }
 
+bool Cast::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<Cast>(other);
+  return equals(expr_, typedOther->expr_) && dataType_->id() == typedOther->dataType_->id();
+}
+
 std::shared_ptr<Expression> fpdb::expression::gandiva::cast(const std::shared_ptr<Expression>& expr,
-                                                              const std::shared_ptr<arrow::DataType> &type) {
+                                                            const std::shared_ptr<arrow::DataType> &type) {
   return std::make_shared<Cast>(expr, type);
 }

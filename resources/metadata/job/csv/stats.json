@@ -1,0 +1,152 @@
+{
+  "schemaName": "job/csv/",
+  "tables": [
+    {
+      "name": "aka_name",
+      "stats": {
+        "rowCount": 901343,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "aka_title",
+      "stats": {
+        "rowCount": 361472,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "cast_info",
+      "stats": {
+        "rowCount": 36244344,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "char_name",
+      "stats": {
+        "rowCount": 3140339,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "comp_cast_type",
+      "stats": {
+        "rowCount": 4,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "company_name",
+      "stats": {
+        "rowCount": 234997,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "company_type",
+      "stats": {
+        "rowCount": 4,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "complete_cast",
+      "stats": {
+        "rowCount": 135086,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "info_type",
+      "stats": {
+        "rowCount": 113,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "keyword",
+      "stats": {
+        "rowCount": 134170,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "kind_type",
+      "stats": {
+        "rowCount": 7,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "link_type",
+      "stats": {
+        "rowCount": 18,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "movie_companies",
+      "stats": {
+        "rowCount": 2609129,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "movie_info_idx",
+      "stats": {
+        "rowCount": 1380035,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "movie_keyword",
+      "stats": {
+        "rowCount": 4523930,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "movie_link",
+      "stats": {
+        "rowCount": 29997,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "name",
+      "stats": {
+        "rowCount": 4167491,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "role_type",
+      "stats": {
+        "rowCount": 12,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "title",
+      "stats": {
+        "rowCount": 2528312,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "movie_info",
+      "stats": {
+        "rowCount": 14835720,
+        "apxColumnLength": {}
+      }
+    },
+    {
+      "name": "person_info",
+      "stats": {
+        "rowCount": 2963664,
+        "apxColumnLength": {}
+      }
+    }
+  ]
+}

@@ -33,12 +33,14 @@ tl::expected<void, string> HashJoinProbeAbstractKernel::putProbeTupleSet(const s
 
   if (!probeTupleSet_.has_value()) {
     probeTupleSet_ = tupleSet;
-    return {};
   } else if (tupleSet->numRows() > 0) {
-    return probeTupleSet_.value()->append(tupleSet);
-  } else {
-    return {};
+    auto expConcatenatedTupleSet = TupleSet::concatenate({*probeTupleSet_, tupleSet});
+    if (!expConcatenatedTupleSet.has_value()) {
+      return tl::make_unexpected(expConcatenatedTupleSet.error());
+    }
+    probeTupleSet_ = *expConcatenatedTupleSet;
   }
+  return {};
 }
 
 tl::expected<void, string> HashJoinProbeAbstractKernel::buffer(const shared_ptr<TupleSet> &tupleSet) {

@@ -1,0 +1,24 @@
+{
+  "name": "movie_link",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "linked_movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "link_type_id",
+      "type": "int64"
+    }
+  ]
+}

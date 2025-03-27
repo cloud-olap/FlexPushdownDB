@@ -1,0 +1,24 @@
+{
+  "name": "complete_cast",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "subject_id",
+      "type": "int64"
+    },
+    {
+      "name": "status_id",
+      "type": "int64"
+    }
+  ]
+}

@@ -32,6 +32,10 @@ JoinType HashJoinArrowKernel::getJoinType() const {
   return joinType_;
 }
 
+void HashJoinArrowKernel::setNeededColumnNames(const std::set<std::string> &neededColumnNames) {
+  neededColumnNames_ = neededColumnNames;
+}
+
 tl::expected<void, std::string> HashJoinArrowKernel::joinBuildTupleSet(const std::shared_ptr<TupleSet> &tupleSet) {
   // buffer input schema and make output schema
   if (!buildInputSchema_.has_value()) {
@@ -307,7 +311,7 @@ HashJoinArrowKernel::consumeInput(const std::shared_ptr<TupleSet> &tupleSet, boo
   // rename input columns if needed
   auto renamedTupleSet = tupleSet;
   if (semiJoinInputRename_.needRename_ && semiJoinInputRename_.renameBuild_ == isBuildSide) {
-    auto expRenamedTupleSet = tupleSet->renameColumnsWithNewTupleSet(semiJoinInputRename_.renames_);
+    auto expRenamedTupleSet = tupleSet->renameColumns(semiJoinInputRename_.renames_);
     if (!expRenamedTupleSet.has_value()) {
       return tl::make_unexpected(expRenamedTupleSet.error());
     }
@@ -378,17 +382,27 @@ tl::expected<void, std::string> HashJoinArrowKernel::bufferInput(const std::shar
     buffer = tupleSet;
     return {};
   } else {
-    return (*buffer)->append(tupleSet);
+    // use concatenate to produce a new tupleSet, since the input may be used elsewhere
+    auto expNewBuffer = TupleSet::concatenate({*buffer, tupleSet});
+    if (!expNewBuffer.has_value()) {
+      return tl::make_unexpected(expNewBuffer.error());
+    }
+    buffer = *expNewBuffer;
+    return {};
   }
 }
 
 tl::expected<void, std::string> HashJoinArrowKernel::bufferOutput(const std::shared_ptr<TupleSet> &tupleSet) {
   if (!outputBuffer_.has_value()) {
     outputBuffer_ = tupleSet;
-    return {};
   } else {
-    return (*outputBuffer_)->append(tupleSet);
+    auto expConcatenatedTupleSet = TupleSet::concatenate({*outputBuffer_, tupleSet});
+    if (!expConcatenatedTupleSet.has_value()) {
+      return tl::make_unexpected(expConcatenatedTupleSet.error());
+    }
+    outputBuffer_ = *expConcatenatedTupleSet;
   }
+  return {};
 }
 
 void HashJoinArrowKernel::getSemiJoinInputRename() {

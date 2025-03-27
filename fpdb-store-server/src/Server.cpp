@@ -63,12 +63,12 @@ tl::expected<void, std::string> Server::init() {
   signal_handler_->start();
 
   // Init the flight handler
-  ::arrow::flight::Location server_location;
-  st = ::arrow::flight::Location::ForGrpcTcp("0.0.0.0", flight_port_, &server_location);
-  if(!st.ok()) {
-    return tl::make_unexpected(fmt::format("Could not start FlightHandler, {}", st.message()));
+  auto exp_server_location = ::arrow::flight::Location::ForGrpcTcp("0.0.0.0", flight_port_);
+  if (!exp_server_location.ok()) {
+    return tl::make_unexpected(
+            fmt::format("Could not start FlightHandler, {}",exp_server_location.status().message()));
   }
-  flight_handler_ = std::make_unique<FlightHandler>(server_location,
+  flight_handler_ = std::make_unique<FlightHandler>(*exp_server_location,
                                                     actor_manager_->actor_system(),
                                                     store_root_path_prefix_,
                                                     num_drives_);

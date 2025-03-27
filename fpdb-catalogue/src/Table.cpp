@@ -11,12 +11,14 @@ namespace fpdb::catalogue {
 Table::Table(string name,
              const shared_ptr<arrow::Schema>& schema,
              const shared_ptr<fpdb::tuple::FileFormat>& format,
+             const vector<ColRef>& colRefs,
              const unordered_map<string, int> &apxColumnLengthMap,
              int apxRowLength,
              const unordered_set<string> &zonemapColumnNames) :
   name_(std::move(name)),
   schema_(schema),
   format_(format),
+  colRefs_(colRefs),
   apxColumnLengthMap_(apxColumnLengthMap),
   apxRowLength_(apxRowLength),
   zonemapColumnNames_(zonemapColumnNames) {}
@@ -31,6 +33,10 @@ const shared_ptr<arrow::Schema> &Table::getSchema() const {
 
 const shared_ptr<fpdb::tuple::FileFormat> &Table::getFormat() const {
   return format_;
+}
+
+const vector<ColRef> &Table::getColRefs() const {
+  return colRefs_;
 }
 
 vector<string> Table::getColumnNames() const {

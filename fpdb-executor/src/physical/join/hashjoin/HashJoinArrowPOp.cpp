@@ -38,6 +38,11 @@ void HashJoinArrowPOp::clearProducers() {
   probeProducers_.clear();
 }
 
+void HashJoinArrowPOp::setProjectColumnNames(const std::vector<std::string> &projectColumnNames) {
+  kernel_.setNeededColumnNames({projectColumnNames.begin(), projectColumnNames.end()});
+  PhysicalOp::setProjectColumnNames(projectColumnNames);
+}
+
 const HashJoinArrowKernel &HashJoinArrowPOp::getKernel() const {
   return kernel_;
 }
@@ -103,8 +108,27 @@ void HashJoinArrowPOp::onComplete(const CompleteMessage &message) {
     send();
 
     // check if never sent result
-    if (!sentResult) {
+    if (!sentResult_) {
       sendEmpty();
+    }
+
+#if SHOW_DEBUG_METRICS == true
+    // send hash join metrics
+    if (executor::metrics::SHOW_HASH_JOIN_METRICS) {
+      std::shared_ptr<Message> hjMetricsMsg = std::make_shared<HashJoinMetricsMessage>(
+              executor::metrics::HashJoinMetrics(numRowsBuild_, numRowsProbe_, 0, 0), name_);
+      ctx()->notifyRoot(hjMetricsMsg);
+    }
+#endif
+
+    // record cardinality if needed
+    if (buildOutputCardInfo_.collect_) {
+      auto outputCardMessage = std::make_shared<OutputCardMessage>(buildOutputCardInfo_.key_, numRowsBuild_, name_);
+      ctx()->notifyRoot(outputCardMessage);
+    }
+    if (probeOutputCardInfo_.collect_) {
+      auto outputCardMessage = std::make_shared<OutputCardMessage>(probeOutputCardInfo_.key_, numRowsProbe_, name_);
+      ctx()->notifyRoot(outputCardMessage);
     }
 
     // complete
@@ -119,14 +143,10 @@ void HashJoinArrowPOp::onTupleSet(const TupleSetMessage &message) {
   // put input into kernel according to build/probe side
   tl::expected<void, string> result;
   if (buildProducers_.find(sender) != buildProducers_.end()) {
-#if SHOW_DEBUG_METRICS == true
     numRowsBuild_ += tupleSet->numRows();
-#endif
     result = kernel_.joinBuildTupleSet(tupleSet);
   } else if (probeProducers_.find(sender) != probeProducers_.end()) {
-#if SHOW_DEBUG_METRICS == true
     numRowsProbe_ += tupleSet->numRows();
-#endif
     result = kernel_.joinProbeTupleSet(tupleSet);
   } else {
     ctx()->notifyError(fmt::format("Unknown sender '{}', neither build nor probe producer", sender));
@@ -147,7 +167,7 @@ void HashJoinArrowPOp::send() {
     // already been projected inside kernel, so no need to do it here
     std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(*outputBuffer, name_);
     ctx()->tell(tupleSetMessage);
-    sentResult = true;
+    sentResult_ = true;
     kernel_.clearOutputBuffer();
   }
 }
@@ -156,14 +176,21 @@ void HashJoinArrowPOp::sendEmpty() {
   auto outputSchema = kernel_.getOutputSchema();
   if (!outputSchema.has_value()) {
     ctx()->notifyError("Output schema not set yet on completing");
+    return;
   }
   std::shared_ptr<Message> tupleSetMessage = std::make_shared<TupleSetMessage>(TupleSet::make(*outputSchema), name_);
   ctx()->tell(tupleSetMessage);
-  sentResult = true;
+  sentResult_ = true;
 }
 
 void HashJoinArrowPOp::clear() {
   kernel_.clear();
+}
+
+void HashJoinArrowPOp::recordOutputCard(const executor::cache::OutputCardCache::OutputCardKey &key, bool build) {
+  auto& info = build ? buildOutputCardInfo_ : probeOutputCardInfo_;
+  info.collect_ = true;
+  info.key_ = key;
 }
 
 #if SHOW_DEBUG_METRICS == true

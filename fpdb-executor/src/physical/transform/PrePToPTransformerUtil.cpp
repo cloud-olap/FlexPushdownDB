@@ -8,9 +8,15 @@
 #include <fpdb/executor/physical/aggregate/function/MinMax.h>
 #include <fpdb/executor/physical/aggregate/function/Avg.h>
 #include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
+#include <fpdb/executor/physical/aggregate/function/One.h>
+#include <fpdb/executor/physical/aggregate/function/Stddev.h>
+#include <fpdb/executor/physical/aggregate/function/StddevReduce.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreFileScanPOp.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreSuperPOp.h>
+#include <fpdb/executor/physical/split/SplitPOp.h>
+#include <fpdb/executor/physical/broadcast/BroadcastPOp.h>
 #include <fpdb/expression/gandiva/Column.h>
+#include <fpdb/expression/gandiva/Multiply.h>
 #include <queue>
 
 namespace fpdb::executor::physical {
@@ -59,13 +65,43 @@ void PrePToPTransformerUtil::connectManyToMany(vector<shared_ptr<PhysicalOp>> &p
   }
 }
 
+void PrePToPTransformerUtil::connectManyToOneByGroup(vector<vector<shared_ptr<PhysicalOp>>> &producers,
+                                                     vector<shared_ptr<PhysicalOp>> &consumers) {
+  if (producers.size() != consumers.size()) {
+    throw std::runtime_error("Num groups not match between producers and consumers (many-one)");
+  }
+  for (uint i = 0; i < producers.size(); ++i) {
+    connectManyToOne(producers[i], consumers[i]);
+  }
+}
+
+void PrePToPTransformerUtil::connectOneToManyByGroup(vector<shared_ptr<PhysicalOp>> &producers,
+                                                     vector<vector<shared_ptr<PhysicalOp>>> &consumers) {
+  if (producers.size() != consumers.size()) {
+    throw std::runtime_error("Num groups not match between producers and consumers (one-many)");
+  }
+  for (uint i = 0; i < producers.size(); ++i) {
+    connectOneToMany(producers[i], consumers[i]);
+  }
+}
+
+void PrePToPTransformerUtil::connectManyToManyByGroup(vector<vector<shared_ptr<PhysicalOp>>> &producers,
+                                                      vector<vector<shared_ptr<PhysicalOp>>> &consumers) {
+  if (producers.size() != consumers.size()) {
+    throw std::runtime_error("Num groups not match between producers and consumers (many-many)");
+  }
+  for (uint i = 0; i < producers.size(); ++i) {
+    connectManyToMany(producers[i], consumers[i]);
+  }
+}
+
 vector<shared_ptr<aggregate::AggregateFunction>>
 PrePToPTransformerUtil::transformAggFunction(const string &outputColumnName,
                                          const shared_ptr<AggregatePrePFunction> &prePFunction,
                                          bool hasReduceOp) {
   switch (prePFunction->getType()) {
     case plan::prephysical::SUM: {
-      return {make_shared<aggregate::Sum>(outputColumnName, prePFunction->getExpression())};
+      return {make_shared<aggregate::Sum>(outputColumnName, prePFunction->getExpression(), false)};
     }
     case plan::prephysical::COUNT: {
       return {make_shared<aggregate::Count>(outputColumnName, prePFunction->getExpression())};
@@ -80,13 +116,40 @@ PrePToPTransformerUtil::transformAggFunction(const string &outputColumnName,
       if (hasReduceOp) {
         auto sumFunc = make_shared<aggregate::Sum>(
                 AggregatePrePFunction::AVG_INTERMEDIATE_SUM_COLUMN_PREFIX + outputColumnName,
-                prePFunction->getExpression());
+                prePFunction->getExpression(),
+                false);
         auto countFunc = make_shared<aggregate::Count>(
                 AggregatePrePFunction::AVG_INTERMEDIATE_COUNT_COLUMN_PREFIX + outputColumnName,
                 prePFunction->getExpression());
         return {sumFunc, countFunc};
       } else {
         return {make_shared<aggregate::Avg>(outputColumnName, prePFunction->getExpression())};
+      }
+    }
+    case plan::prephysical::ONE: {
+      return {make_shared<aggregate::One>(outputColumnName, prePFunction->getExpression())};
+    }
+    case plan::prephysical::STDDEV_SAMP:
+    case plan::prephysical::STDDEV_POP: {
+      if (hasReduceOp) {
+        const auto &expr = prePFunction->getExpression();
+        auto sumFunc = make_shared<aggregate::Sum>(
+                AggregatePrePFunction::STDDEV_INTERMEDIATE_SUM_COLUMN_PREFIX + outputColumnName,
+                expr,
+                false);
+        auto countFunc = make_shared<aggregate::Count>(
+                AggregatePrePFunction::STDDEV_INTERMEDIATE_COUNT_COLUMN_PREFIX + outputColumnName,
+                expr);
+        auto squareExpr = fpdb::expression::gandiva::times(expr, expr);
+        auto sumOfSquaresFunc = make_shared<aggregate::Sum>(
+                AggregatePrePFunction::STDDEV_INTERMEDIATE_SUM_OF_SQUARES_COLUMN_PREFIX + outputColumnName,
+                squareExpr,
+                false);
+        return {sumFunc, countFunc, sumOfSquaresFunc};
+      } else {
+        aggregate::StddevType stddevType = prePFunction->getType() == plan::prephysical::STDDEV_SAMP ?
+                                           aggregate::StddevType::SAMP : aggregate::StddevType::POP;
+        return {make_shared<aggregate::Stddev>(stddevType, outputColumnName, prePFunction->getExpression())};
       }
     }
     default: {
@@ -102,7 +165,8 @@ PrePToPTransformerUtil::transformAggReduceFunction(const string &outputColumnNam
     case plan::prephysical::SUM:
     case plan::prephysical::COUNT: {
       return make_shared<aggregate::Sum>(outputColumnName,
-                                         fpdb::expression::gandiva::col(outputColumnName));
+                                         fpdb::expression::gandiva::col(outputColumnName),
+                                         prePFunction->getType() == plan::prephysical::COUNT);
     }
     case plan::prephysical::MIN: {
       return make_shared<aggregate::MinMax>(true,
@@ -115,7 +179,17 @@ PrePToPTransformerUtil::transformAggReduceFunction(const string &outputColumnNam
                                             fpdb::expression::gandiva::col(outputColumnName));
     }
     case plan::prephysical::AVG: {
-      return make_shared<aggregate::AvgReduce>(outputColumnName,nullptr);
+      return make_shared<aggregate::AvgReduce>(outputColumnName, nullptr);
+    }
+    case plan::prephysical::ONE: {
+      return make_shared<aggregate::One>(outputColumnName,
+                                         fpdb::expression::gandiva::col(outputColumnName));
+    }
+    case plan::prephysical::STDDEV_SAMP:
+    case plan::prephysical::STDDEV_POP: {
+      aggregate::StddevType stddevType = prePFunction->getType() == plan::prephysical::STDDEV_SAMP ?
+                                          aggregate::StddevType::SAMP : aggregate::StddevType::POP;
+      return make_shared<aggregate::StddevReduce>(stddevType, outputColumnName, nullptr);
     }
     default: {
       throw runtime_error(fmt::format("Unsupported aggregate function type for parallel execution: {}", prePFunction->getTypeString()));
@@ -221,6 +295,114 @@ PrePToPTransformerUtil::getHostToNumOps(const vector<shared_ptr<PhysicalOp>> &fp
     hostToNumOps[host]++;
   }
   return hostToNumOps;
+}
+
+vector<vector<shared_ptr<PhysicalOp>>>
+PrePToPTransformerUtil::groupByNodeId(const vector<shared_ptr<PhysicalOp>> &ops,
+                                      int numNodes) {
+  vector<vector<shared_ptr<PhysicalOp>>> res(numNodes, vector<shared_ptr<PhysicalOp>>{});
+  for (const auto &op: ops) {
+    res[op->getNodeId()].emplace_back(op);
+  }
+  return res;
+}
+
+vector<shared_ptr<PhysicalOp>>
+PrePToPTransformerUtil::unGroupByNodeId(const vector<vector<shared_ptr<PhysicalOp>>> &ops) {
+  vector<shared_ptr<PhysicalOp>> res;
+  for (const auto &opVec: ops) {
+    res.insert(res.end(), opVec.begin(), opVec.end());
+  }
+  return res;
+}
+
+bool PrePToPTransformerUtil::spreadTableToAllNodes(uint prePOpId,
+                                                   unordered_map<string, shared_ptr<PhysicalOp>> &ops,
+                                                   vector<vector<shared_ptr<PhysicalOp>>> &upConn,
+                                                   vector<vector<shared_ptr<PhysicalOp>>> &res) {
+  // no need for single-node exec
+  uint numNodes = upConn.size();
+  if (numNodes == 1) {
+    return false;
+  }
+
+  // divide nodes into two parts, with and without table data
+  vector<uint> withTableNodes, noTableNodes;
+  for (uint i = 0; i < numNodes; ++i) {
+    if (upConn[i].empty()) {
+      noTableNodes.push_back(i);
+    } else {
+      withTableNodes.push_back(i);
+    }
+  }
+
+  // no need to spread if all nodes have table data
+  if (noTableNodes.empty()) {
+    return false;
+  }
+
+  // loop to feed on "noTableNodes"
+  res.resize(numNodes);
+  vector<shared_ptr<PhysicalOp>> newOps;
+  uint numWithTableNodes = withTableNodes.size();
+  uint posInWithTableNodes = 0;
+  unordered_map<uint, vector<shared_ptr<PhysicalOp>>> fromNodeSplits;       // split ops in "fromNode"
+  for (uint toNode: noTableNodes) {
+    // circular traversal of "withTableNodes"
+    uint fromNode = withTableNodes[posInWithTableNodes++ % numWithTableNodes];
+    // make split and broadcast ops for fromNode if not yet
+    vector<shared_ptr<PhysicalOp>> split;
+    auto fromIt = fromNodeSplits.find(fromNode);
+    if (fromIt != fromNodeSplits.end()) {
+      split = fromIt->second;
+    } else {
+      // make split
+      for (const auto &upConnOp: upConn[fromNode]) {
+        split.emplace_back(make_shared<split::SplitPOp>(
+                fmt::format("Split[{}]-<node{}>-{}", prePOpId, fromNode, upConnOp->name()),
+                vector<string>{}, /* unused */
+                fromNode));
+      }
+      fromNodeSplits[fromNode] = split;
+      connectOneToOne(upConn[fromNode], split);
+      newOps.insert(newOps.end(), split.begin(), split.end());
+      // make broadcast ops for fromNode itself (here each broadcast op simply forwards table to a single consumer)
+      vector<shared_ptr<PhysicalOp>> broadcast;
+      for (const auto &upConnOp: upConn[fromNode]) {
+        broadcast.emplace_back(make_shared<broadcast::BroadcastPOp>(
+                fmt::format("Broadcast[{}]-<node{}->{}>-{}", prePOpId, fromNode, fromNode, upConnOp->name()),
+                vector<string>{} /* unused */,
+                fromNode));
+      }
+      connectOneToOne(split, broadcast);
+      newOps.insert(newOps.end(), broadcast.begin(), broadcast.end());
+      // put into res
+      res[fromNode] = broadcast;
+    }
+    // make broadcast ops for toNode (here each broadcast op simply forwards table to a single consumer)
+    vector<shared_ptr<PhysicalOp>> broadcast;
+    for (const auto &upConnOp: upConn[fromNode]) {
+      broadcast.emplace_back(make_shared<broadcast::BroadcastPOp>(
+              fmt::format("Broadcast[{}]-<node{}->{}>-{}", prePOpId, fromNode, toNode, upConnOp->name()),
+              vector<string>{} /* unused */,
+              toNode));
+    }
+    connectOneToOne(split, broadcast);
+    newOps.insert(newOps.end(), broadcast.begin(), broadcast.end());
+    // put into res
+    res[toNode] = broadcast;
+  }
+  
+  // loop on "withTableNodes" that are not used as any "fromNode"
+  for (uint node: withTableNodes) {
+    if (fromNodeSplits.find(node) == fromNodeSplits.end()) {
+      res[node] = upConn[node];
+    }
+  }
+
+  // add new ops and return
+  addPhysicalOps(newOps, ops);
+  return true;
 }
   
 }

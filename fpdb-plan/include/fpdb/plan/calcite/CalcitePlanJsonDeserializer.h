@@ -5,7 +5,6 @@
 #ifndef FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_CALCITEPLANJSONDESERIALIZER_H
 #define FPDB_FPDB_PLAN_INCLUDE_FPDB_PLAN_CALCITEPLANJSONDESERIALIZER_H
 
-#include <optional>
 #include <fpdb/plan/prephysical/PrePhysicalPlan.h>
 #include <fpdb/plan/prephysical/PrePhysicalOp.h>
 #include <fpdb/plan/prephysical/SortPrePOp.h>
@@ -17,6 +16,7 @@
 #include <fpdb/plan/prephysical/NestedLoopJoinPrePOp.h>
 #include <fpdb/plan/prephysical/FilterPrePOp.h>
 #include <fpdb/plan/prephysical/FilterableScanPrePOp.h>
+#include <fpdb/plan/prephysical/UnionAllPrePOp.h>
 #include <fpdb/catalogue/CatalogueEntry.h>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -60,12 +60,27 @@ private:
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeNullOperation(const string &opName, const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeSubstrOperation(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeCastOperation(const json &jObj);
+  shared_ptr<fpdb::expression::gandiva::Expression> deserializeConcatOperation(const json &jObj);
   shared_ptr<::arrow::DataType> deserializeDataType(const json &jObj);
   shared_ptr<fpdb::expression::gandiva::Expression> deserializeExpression(const json &jObj);
 
   unordered_map<string, string> deserializeColumnRenames(const vector<json> &jArr);
-  pair<vector<string>, vector<string>> deserializeHashJoinCondition(const json &jObj);
+  using HashJoinColumnNames = pair<vector<string>, vector<string>>;
+  using HashJoinInputExprs = pair<vector<shared_ptr<fpdb::expression::gandiva::Expression>>,
+                                  vector<shared_ptr<fpdb::expression::gandiva::Expression>>>;
+  struct HashJoinConditionRes {
+    HashJoinColumnNames joinColumnNames_;
+    HashJoinInputExprs inputExprs_;
+    HashJoinColumnNames inputExprNames_;
+  };
+  HashJoinConditionRes deserializeHashJoinCondition(const json &jObj, uint prePOpId,
+                                                    int* leftInputExprId, int* rightInputExprId);
   void addProjectForJoinColumnRenames(shared_ptr<PrePhysicalOp> &op,
+                                      const vector<shared_ptr<PrePhysicalOp>> &producers,
+                                      const json &jObj);
+  void addProjectForJoinInputExprs(const shared_ptr<PrePhysicalOp> &hashJoinPrePOp,
+                                   const HashJoinConditionRes &joinCondRes);
+  void addProjectForUnionInputRenames(shared_ptr<PrePhysicalOp> &op,
                                       const vector<shared_ptr<PrePhysicalOp>> &producers,
                                       const json &jObj);
   vector<SortKey> deserializeSortKeys(const json &jObj);
@@ -78,6 +93,7 @@ private:
   shared_ptr<NestedLoopJoinPrePOp> deserializeNestedLoopJoin(const json &jObj);
   shared_ptr<PrePhysicalOp> deserializeFilterOrFilterableScan(const json &jObj);
   shared_ptr<FilterableScanPrePOp> deserializeTableScan(const json &jObj);
+  shared_ptr<UnionAllPrePOp> deserializeUnionAll(const json &jObj);
 
   string planJsonString_;
   shared_ptr<CatalogueEntry> catalogueEntry_;

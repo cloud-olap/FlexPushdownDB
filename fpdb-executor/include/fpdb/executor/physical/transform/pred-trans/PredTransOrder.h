@@ -15,8 +15,12 @@ namespace fpdb::executor::physical {
 enum PredTransOrderType {
   SMALL_TO_LARGE,
   BFS,
+  LIP,
   UNKNOWN
 };
+
+using POpVec = std::vector<std::shared_ptr<PhysicalOp>>;
+using JoinOriginSet = std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred>;
 
 class PredTransOrder {
 
@@ -24,7 +28,7 @@ public:
   static void orderPredTrans(
           PredTransOrderType type,
           PrePToPTransformerForPredTrans* transformer,
-          const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash, JoinOriginPtrPred> &joinOrigins);
+          const JoinOriginSet &joinOrigins);
 
   PredTransOrder(PredTransOrderType type,
                  PrePToPTransformerForPredTrans* transformer);
@@ -37,8 +41,7 @@ private:
    * Make the order of predicate transfer
    * Updated parameters: physicalOps, prePOpToTransRes
    */
-  virtual void orderPredTrans(const std::unordered_set<std::shared_ptr<JoinOrigin>, JoinOriginPtrHash,
-          JoinOriginPtrPred> &joinOrigins) = 0;
+  virtual void orderPredTrans(const JoinOriginSet &joinOrigins) = 0;
 
   PredTransOrderType type_;
 
@@ -46,19 +49,19 @@ protected:
   // basic unit for predicate transfer, i.e. ops (scan/local filter, BF create/use) corresponding to a single scan op
   // a unit can be viewed as a vertical chain from scan/local filter to subsequent BF use ops.
   struct PredTransUnitBase {
-    uint prePOpId_;       // the prephysical op id of the corresponding FilterableScanPrePOp
-    std::shared_ptr<PhysicalOp> origUpConnOp_;    // the start of the vertical chain, also as the identifier
-    std::shared_ptr<PhysicalOp> currUpConnOp_;    // the end of the vertical chain
+    uint prePOpId_;       // identifier, the prephysical op id of the corresponding FilterableScanPrePOp
+    std::vector<POpVec> origUpConn_;    // the start of the vertical chain, ops are per node
+    std::vector<POpVec> currUpConn_;    // the end of the vertical chain, ops are per node
 
-    PredTransUnitBase(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp):
-      prePOpId_(prePOpId), origUpConnOp_(upConnOp), currUpConnOp_(upConnOp) {}
+    PredTransUnitBase(uint prePOpId, const std::vector<POpVec> &upConn):
+      prePOpId_(prePOpId), origUpConn_(upConn), currUpConn_(upConn) {}
 
     size_t hash() const {
-      return std::hash<std::string>()(origUpConnOp_->name());
+      return prePOpId_;
     }
 
     bool equalTo(const std::shared_ptr<PredTransUnitBase> &other) const {
-      return origUpConnOp_->name() == other->origUpConnOp_->name();
+      return prePOpId_ == other->prePOpId_;
     }
   };
 
@@ -76,10 +79,11 @@ protected:
   // in SmallToLargePredTransOrder this is unique for each join origin (up to 4 ops share one)
   // in BFSPredTransOrder this is unique for each pair of bf create/use (2 ops share one), and also used for hash-join
   // ops for vanilla Yannakakis
+  // in LIPPredTransOrder this is unique for each LIP filter
   std::atomic<uint> ptOpIdGen_ = 0;
 
-  // keep track of the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan
-  std::unordered_map<std::string, std::shared_ptr<PredTransUnitBase>> origUpConnOpToPTUnit_;
+  // map prePOpId to the ops that generate the input tables (predicate-transfer filtered) for Phase 2 plan
+  std::unordered_map<uint, std::shared_ptr<PredTransUnitBase>> origUpConnToPTUnit_;
 };
 
 }

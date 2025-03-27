@@ -19,6 +19,7 @@ public:
   ObjStoreTable(const string &name,
           const shared_ptr<arrow::Schema> &schema,
           const shared_ptr<fpdb::tuple::FileFormat> &format,
+          const vector<ColRef> &colRefs,
           const unordered_map<string, int> &apxColumnLengthMap,
           int apxRowLength,
           const unordered_set<string> &zonemapColumnNames,

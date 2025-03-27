@@ -15,7 +15,7 @@
 #include <fpdb/executor/physical/aggregate/AggregatePOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/cache/CacheLoadPOp.h>
-#include <fpdb/executor/physical/collect/CollectPOp.h>
+#include <fpdb/executor/physical/broadcast/BroadcastPOp.h>
 #include <fpdb/executor/physical/merge/MergePOp.h>
 #include <fpdb/executor/physical/shuffle/ShufflePOp.h>
 #include <fpdb/executor/physical/join/hashjoin/HashJoinArrowPOp.h>
@@ -85,7 +85,8 @@ pair<vector<shared_ptr<PhysicalOp>>, vector<shared_ptr<PhysicalOp>>> PrePToFPDBS
       reducePOp = make_shared<aggregate::AggregatePOp>(fmt::format("Aggregate[{}]-Reduce", aggregatePrePOp->getId()),
                                                        projectColumnNames,
                                                        0,
-                                                       aggReduceFunctions);
+                                                       aggReduceFunctions,
+                                                       true);
     }
   }
 
@@ -341,12 +342,12 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(vector<shared_p
       opMap->erase(producer->name());
     }
 
-    // CollectPOps to combine tables from multiple FPDBStoreTableCacheLoadPOps that belong to the same shuffle piece
-    vector<shared_ptr<PhysicalOp>> collectPOps;
+    // BroadcastPOps to combine tables from multiple FPDBStoreTableCacheLoadPOps that belong to the same shuffle piece
+    vector<shared_ptr<PhysicalOp>> broadcastPOps;
     for (int i = 0; i < computeParallelDegree * numComputeNodes; ++i) {
-      collectPOps.emplace_back(make_shared<collect::CollectPOp>(fmt::format("Collect[{}]-{}", prePOpId, i),
-                                                                vector<string>{},  // never used
-                                                                i % numComputeNodes));
+      broadcastPOps.emplace_back(make_shared<broadcast::BroadcastPOp>(fmt::format("Broadcast[{}]-{}", prePOpId, i),
+                                                                      vector<string>{},  // never used
+                                                                       i % numComputeNodes));
     }
 
     // new FPDBStoreTableCacheLoadPOps and add separablePOPs to FPDBStoreSuperPOps,
@@ -368,7 +369,7 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(vector<shared_p
         // connect FPDBStoreSuperPOp to this
         PrePToPTransformerUtil::connectOneToOne(fpdbStoreSuperPOp, newFPDBStoreTableCacheLoadPOp);
         // connect this to CollectPOp
-        PrePToPTransformerUtil::connectOneToOne(newFPDBStoreTableCacheLoadPOp, collectPOps[j]);
+        PrePToPTransformerUtil::connectOneToOne(newFPDBStoreTableCacheLoadPOp, broadcastPOps[j]);
       }
 
       // add separablePOps to FPDBStoreSuperPOps
@@ -391,8 +392,8 @@ PrePToFPDBStorePTransformer::addSeparablePOpWithHashJoinPushdown(vector<shared_p
       separablePOpsOffset += rootNumProducers;
     }
     auto addiPOps = newFPDBStoreTableCacheLoadPOps;
-    addiPOps.insert(addiPOps.end(), collectPOps.begin(), collectPOps.end());
-    return {collectPOps, addiPOps};
+    addiPOps.insert(addiPOps.end(), broadcastPOps.begin(), broadcastPOps.end());
+    return {broadcastPOps, addiPOps};
   } else {
     // regular case (when separablePOps are not shuffle)
     uint separablePOpsOffset = 0;
@@ -473,7 +474,7 @@ PrePToFPDBStorePTransformer::transformPushdownOnlyToHybrid(const vector<shared_p
     unordered_map<string, shared_ptr<PhysicalOp>> storePOpMap = typedFPDBStoreSuperPOp->getSubPlan()->getPhysicalOps();
     unordered_map<string, shared_ptr<PhysicalOp>> localPOpMap;
     unordered_map<string, string> storePOpRenames;
-    optional<shared_ptr<merge::MergePOp>> mergePOp1, mergePOp2;
+    std::optional<shared_ptr<merge::MergePOp>> mergePOp1, mergePOp2;
 
     // get predicateColumnNames needed for hybrid execution, this may be different for some fpdbStoreSuperPOps
     // so we need to get it for each one
@@ -1084,6 +1085,11 @@ PrePToFPDBStorePTransformer::transformAggregate(const shared_ptr<AggregatePrePOp
       if (prePFunction->getType() == AggregatePrePFunctionType::AVG) {
         parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_INTERMEDIATE_SUM_COLUMN_PREFIX + aggOutputColumnName);
         parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::AVG_INTERMEDIATE_COUNT_COLUMN_PREFIX + aggOutputColumnName);
+      } else if (prePFunction->getType() == AggregatePrePFunctionType::STDDEV_SAMP ||
+                 prePFunction->getType() == AggregatePrePFunctionType::STDDEV_POP) {
+        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::STDDEV_INTERMEDIATE_SUM_COLUMN_PREFIX + aggOutputColumnName);
+        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::STDDEV_INTERMEDIATE_COUNT_COLUMN_PREFIX + aggOutputColumnName);
+        parallelAggProjectColumnNames.emplace_back(AggregatePrePFunction::STDDEV_INTERMEDIATE_SUM_OF_SQUARES_COLUMN_PREFIX + aggOutputColumnName);
       } else {
         parallelAggProjectColumnNames.emplace_back(aggOutputColumnName);
       }
@@ -1108,7 +1114,8 @@ PrePToFPDBStorePTransformer::transformAggregate(const shared_ptr<AggregatePrePOp
             fmt::format("Aggregate[{}]-{}", prePOpId, i),
             parallelAggProjectColumnNames,
             upConnPOps[i]->getNodeId(),
-            aggFunctions);
+            aggFunctions,
+            upConnPOps.size() == 1 ? true : false);
     aggregatePOps.emplace_back(aggregatePOp);
     // update for hash join pushdown
     if (hashJoinTransInfo_.enabled_) {

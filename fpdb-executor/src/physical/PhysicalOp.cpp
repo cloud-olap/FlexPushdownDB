@@ -3,6 +3,11 @@
 //
 
 #include <fpdb/executor/physical/PhysicalOp.h>
+#include <fpdb/executor/physical/bloomfilter/BloomFilterBase.h>
+#include <fpdb/executor/flight/FlightClients.h>
+#include <fpdb/executor/message/NetworkMetricsMessage.h>
+#include <fpdb/store/server/flight/GetBitmapTicket.hpp>
+#include <fpdb/tuple/util/Util.h>
 #include <spdlog/spdlog.h>
 #include <cassert>               // for assert
 #include <utility>               // for move
@@ -150,25 +155,88 @@ const metrics::PredTransMetrics::PTMetricsInfo &PhysicalOp::getPTMetricsInfo() c
   return ptMetricsInfo_;
 }
 
-bool PhysicalOp::inPredTransPhase() const {
-  return inPredTransPhase_;
+const metrics::PredTransCSMetrics::PTCSMetricsInfo &PhysicalOp::getPTCSMetricsInfo() const {
+  return ptCSMetricsInfo_;
 }
 
-void PhysicalOp::setCollPredTransMetrics(uint prePOpId,
-                                         metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType) {
-  ptMetricsInfo_.collPredTransMetrics_ = true;
-  ptMetricsInfo_.prePOpId_ = prePOpId;
-  ptMetricsInfo_.ptMetricsType_ = ptMetricsType;
+metrics::PredTransMetrics::PTPhaseType PhysicalOp::getPTPhaseType() const {
+  return ptPhaseType_;
+}
+
+void PhysicalOp::setCollPredTransMetrics(const metrics::PredTransMetrics::PTMetricsInfo &ptMetricsInfo) {
+  ptMetricsInfo_ = ptMetricsInfo;
 }
 
 void PhysicalOp::unsetCollPredTransMetrics() {
   ptMetricsInfo_.collPredTransMetrics_ = false;
 }
 
-void PhysicalOp::setInPredTransPhase(bool inPredTransPhase) {
-  inPredTransPhase_ = inPredTransPhase;
+void PhysicalOp::setPTPhaseType(metrics::PredTransMetrics::PTPhaseType ptPhaseType) {
+  ptPhaseType_ = ptPhaseType;
+}
+
+void PhysicalOp::setCollPredTransCSMetrics(const metrics::PredTransCSMetrics::PTCSMetricsInfo &ptCSMetricsInfo) {
+  ptCSMetricsInfo_ = ptCSMetricsInfo;
 }
 #endif
+
+void PhysicalOp::sendPTCardMessage(const executor::cache::PredTransCardCache::PredTransCardInfo &ptCardInfo,
+                                   int64_t numRows, std::optional<double> keyLen) {
+  if (ptCardInfo.collect_) {
+    executor::cache::PredTransCardCache::PredTransCardValue value(numRows, keyLen);
+    auto ptCardMessage = std::make_shared<PredTransCardMessage>(ptCardInfo.key_, value, name_);
+    ctx()->notifyRoot(ptCardMessage);
+  }
+}
+
+void PhysicalOp::readRemoteBloomFilter(void* bloomFilter, const std::string &sender,
+                                       const RemoteInfo &remoteInfo, bool remoteConsumerSpecific) {
+  // fetch bitmap using Flight, record network time here
+  auto start = std::chrono::steady_clock::now();
+
+  auto client = flight::GlobalFlightClients.getFlightClient(remoteInfo.host_, remoteInfo.port_);
+  auto ticketObj = store::server::flight::GetBitmapTicket::make(queryId_, sender);
+  if (remoteConsumerSpecific) {
+    ticketObj->set_consumer(name_);
+  }
+  auto expTicket = ticketObj->to_ticket(false);
+  if (!expTicket.has_value()) {
+    ctx()->notifyError(expTicket.error());
+    return;
+  }
+  auto expReader = client->DoGet(*expTicket);
+  if (!expReader.ok()) {
+    ctx()->notifyError(expReader.status().message());
+    return;
+  }
+  auto expRecordBatches = (*expReader)->ToRecordBatches();
+  if (!expRecordBatches.ok()) {
+    ctx()->notifyError(expRecordBatches.status().message());
+    return;
+  }
+
+  auto finish = std::chrono::steady_clock::now();
+  auto elapsedTime = std::chrono::duration_cast<std::chrono::nanoseconds>(finish - start).count();
+  ctx()->operatorActor()->incrementNetworkTime(elapsedTime);
+
+  // save bitmap into the bloom filter
+  auto res = ((BloomFilterBase*)bloomFilter)->saveBitmapRecordBatches(*expRecordBatches);
+  if (!res.has_value()) {
+    ctx()->notifyError(res.error());
+    return;
+  }
+
+  // metrics
+#if SHOW_DEBUG_METRICS == true
+  int64_t recordBatchesSize = 0;
+  for (const auto &batch: *expRecordBatches) {
+    recordBatchesSize += fpdb::tuple::util::Util::getSize(batch);
+  }
+  std::shared_ptr<Message> execMetricsMsg =
+    std::make_shared<NetworkMetricsMessage>(metrics::NetworkMetrics(0, 0, recordBatchesSize), name_);
+  ctx()->notifyRoot(execMetricsMsg);
+#endif
+}
 
 } // namespace
 

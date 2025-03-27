@@ -9,7 +9,7 @@ namespace fpdb::executor::physical::bloomfilter {
 
 BloomFilterCreateKernel::BloomFilterCreateKernel(const std::vector<std::string> &columnNames,
                                                  double desiredFalsePositiveRate):
-  BloomFilterCreateAbstractKernel(BloomFilterCreateKernelType::BLOOM_FILTER_KERNEL, columnNames),
+  BloomFilterCreateAbstractKernel(BloomFilterCreateKernelType::VANILLA_KERNEL, columnNames),
   desiredFalsePositiveRate_(desiredFalsePositiveRate) {}
 
 std::shared_ptr<BloomFilterCreateKernel> BloomFilterCreateKernel::make(const std::vector<std::string> &columnNames,

@@ -1,0 +1,90 @@
+{
+  "schemaName": "job/parquet/",
+  "numNodes": 1,
+  "objectMap": [
+    {
+      "object": "aka_name.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "aka_title.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "cast_info.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "char_name.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "comp_cast_type.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "company_name.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "company_type.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "complete_cast.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "info_type.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "keyword.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "kind_type.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "link_type.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_companies.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_info_idx.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_keyword.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_link.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "name.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "role_type.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "title.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_info.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "person_info.parquet",
+      "nodeId": 0
+    }
+  ]
+}

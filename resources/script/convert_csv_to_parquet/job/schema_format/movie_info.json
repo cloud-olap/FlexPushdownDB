@@ -1,0 +1,28 @@
+{
+  "name": "movie_info",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "movie_id",
+      "type": "int64"
+    },
+    {
+      "name": "info_type_id",
+      "type": "int64"
+    },
+    {
+      "name": "info",
+      "type": "string"
+    },
+    {
+      "name": "note",
+      "type": "string"
+    }
+  ]
+}

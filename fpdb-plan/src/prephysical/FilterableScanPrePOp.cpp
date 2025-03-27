@@ -44,4 +44,18 @@ void FilterableScanPrePOp::setPredicate(const shared_ptr<fpdb::expression::gandi
   predicate_ = predicate;
 }
 
+bool FilterableScanPrePOp::equalTo(const std::shared_ptr<PrePhysicalOp> &other) const {
+  // self
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<FilterableScanPrePOp>(other);
+  if (!(table_->getName() == typedOther->table_->getName() &&
+       expression::gandiva::Expression::equals(predicate_, typedOther->predicate_))) {
+    return false;
+  }
+  // producers
+  return equals(producers_, typedOther->producers_);
+}
+
 }

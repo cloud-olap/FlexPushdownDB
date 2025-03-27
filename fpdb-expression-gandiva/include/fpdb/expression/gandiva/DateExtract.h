@@ -30,6 +30,8 @@ public:
   static tl::expected<std::shared_ptr<DateExtract>, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override;
+
   shared_ptr<Expression> dateExpr_;
   DateIntervalType intervalType_;
 

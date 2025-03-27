@@ -23,8 +23,12 @@ public:
   Expression() = default;
   Expression(const Expression&) = default;
   Expression& operator=(const Expression&) = default;
-
   virtual ~Expression() = default;
+
+  static bool equals(const std::shared_ptr<Expression> &e1,
+                     const std::shared_ptr<Expression> &e2);
+  static bool equals(const std::vector<std::shared_ptr<Expression>> &e1,
+                     const std::vector<std::shared_ptr<Expression>> &e2);
 
   virtual std::set<std::string> involvedColumnNames() = 0;
 
@@ -42,6 +46,9 @@ public:
 protected:
   ExpressionType type_;
   ::gandiva::NodePtr gandivaExpression_;
+
+private:
+  virtual bool equalTo(const std::shared_ptr<Expression> &other) const = 0;
 
 };
 

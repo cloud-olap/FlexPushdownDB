@@ -11,6 +11,9 @@
 #include <fpdb/executor/physical/aggregate/function/Sum.h>
 #include <fpdb/executor/physical/aggregate/function/Avg.h>
 #include <fpdb/executor/physical/aggregate/function/AvgReduce.h>
+#include <fpdb/executor/physical/aggregate/function/One.h>
+#include <fpdb/executor/physical/aggregate/function/Stddev.h>
+#include <fpdb/executor/physical/aggregate/function/StddevReduce.h>
 #include <fpdb/caf/CAFUtil.h>
 
 using namespace fpdb::executor::physical::aggregate;
@@ -23,6 +26,9 @@ CAF_ADD_TYPE_ID(AggregateFunction, (MinMax))
 CAF_ADD_TYPE_ID(AggregateFunction, (Sum))
 CAF_ADD_TYPE_ID(AggregateFunction, (Avg))
 CAF_ADD_TYPE_ID(AggregateFunction, (AvgReduce))
+CAF_ADD_TYPE_ID(AggregateFunction, (One))
+CAF_ADD_TYPE_ID(AggregateFunction, (Stddev))
+CAF_ADD_TYPE_ID(AggregateFunction, (StddevReduce))
 CAF_END_TYPE_ID_BLOCK(AggregateFunction)
 
 // Variant-based approach on AggregateFunctionPtr
@@ -39,7 +45,10 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
           type_id_v<MinMax>,
           type_id_v<Sum>,
           type_id_v<Avg>,
-          type_id_v<AvgReduce>
+          type_id_v<AvgReduce>,
+          type_id_v<One>,
+          type_id_v<Stddev>,
+          type_id_v<StddevReduce>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -56,6 +65,12 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
       return 4;
     else if (x->getType() == AVG_REDUCE)
       return 5;
+    else if (x->getType() == ONE)
+      return 6;
+    else if (x->getType() == STDDEV)
+      return 7;
+    else if (x->getType() == STDDEV_REDUCE)
+      return 8;
     else return -1;
   }
 
@@ -73,6 +88,12 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
         return f(dynamic_cast<Avg &>(*x));
       case 5:
         return f(dynamic_cast<AvgReduce &>(*x));
+      case 6:
+        return f(dynamic_cast<One &>(*x));
+      case 7:
+        return f(dynamic_cast<Stddev &>(*x));
+      case 8:
+        return f(dynamic_cast<StddevReduce &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -123,6 +144,21 @@ struct variant_inspector_traits<AggregateFunctionPtr> {
       }
       case type_id_v<AvgReduce>: {
         auto tmp = AvgReduce{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<One>: {
+        auto tmp = One{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<Stddev>: {
+        auto tmp = Stddev{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<StddevReduce>: {
+        auto tmp = StddevReduce{};
         continuation(tmp);
         return true;
       }

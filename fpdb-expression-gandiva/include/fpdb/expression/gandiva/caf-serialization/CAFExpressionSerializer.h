@@ -5,7 +5,6 @@
 #ifndef FPDB_FPDB_EXPRESSION_GANDIVA_INCLUDE_FPDB_EXPRESSION_GANDIVA_CAFSERIALIZATION_CAFEXPRESSIONSERIALIZER_H
 #define FPDB_FPDB_EXPRESSION_GANDIVA_INCLUDE_FPDB_EXPRESSION_GANDIVA_CAFSERIALIZATION_CAFEXPRESSIONSERIALIZER_H
 
-#include <optional>
 #include <fpdb/expression/gandiva/Add.h>
 #include <fpdb/expression/gandiva/And.h>
 #include <fpdb/expression/gandiva/Cast.h>
@@ -19,6 +18,7 @@
 #include <fpdb/expression/gandiva/If.h>
 #include <fpdb/expression/gandiva/In.h>
 #include <fpdb/expression/gandiva/IsNull.h>
+#include <fpdb/expression/gandiva/IsNotNull.h>
 #include <fpdb/expression/gandiva/LessThan.h>
 #include <fpdb/expression/gandiva/LessThanOrEqualTo.h>
 #include <fpdb/expression/gandiva/Like.h>
@@ -30,6 +30,7 @@
 #include <fpdb/expression/gandiva/StringLiteral.h>
 #include <fpdb/expression/gandiva/Substr.h>
 #include <fpdb/expression/gandiva/Subtract.h>
+#include <fpdb/expression/gandiva/Concat.h>
 #include <fpdb/caf/CAFUtil.h>
 
 using namespace fpdb::expression::gandiva;
@@ -55,6 +56,7 @@ CAF_ADD_TYPE_ID(Expression, (In<arrow::DoubleType, double>))
 CAF_ADD_TYPE_ID(Expression, (In<arrow::Date64Type, int64_t>))
 CAF_ADD_TYPE_ID(Expression, (In<arrow::StringType, string>))
 CAF_ADD_TYPE_ID(Expression, (IsNull))
+CAF_ADD_TYPE_ID(Expression, (IsNotNull))
 CAF_ADD_TYPE_ID(Expression, (LessThan))
 CAF_ADD_TYPE_ID(Expression, (LessThanOrEqualTo))
 CAF_ADD_TYPE_ID(Expression, (Like))
@@ -70,6 +72,7 @@ CAF_ADD_TYPE_ID(Expression, (Or))
 CAF_ADD_TYPE_ID(Expression, (StringLiteral))
 CAF_ADD_TYPE_ID(Expression, (Substr))
 CAF_ADD_TYPE_ID(Expression, (Subtract))
+CAF_ADD_TYPE_ID(Expression, (Concat))
 CAF_END_TYPE_ID_BLOCK(Expression)
 
 // Variant-based approach on OperatorPtr
@@ -99,6 +102,7 @@ struct variant_inspector_traits<ExpressionPtr> {
           type_id_v<In<arrow::Date64Type, int64_t>>,
           type_id_v<In<arrow::StringType, string>>,
           type_id_v<IsNull>,
+          type_id_v<IsNotNull>,
           type_id_v<LessThan>,
           type_id_v<LessThanOrEqualTo>,
           type_id_v<Like>,
@@ -113,7 +117,8 @@ struct variant_inspector_traits<ExpressionPtr> {
           type_id_v<Or>,
           type_id_v<StringLiteral>,
           type_id_v<Substr>,
-          type_id_v<Subtract>
+          type_id_v<Subtract>,
+          type_id_v<Concat>
   };
 
   // Returns which type in allowed_types corresponds to x.
@@ -154,36 +159,40 @@ struct variant_inspector_traits<ExpressionPtr> {
       return 16;
     else if (x->getType() == IS_NULL)
       return 17;
-    else if (x->getType() == LESS_THAN)
+    else if (x->getType() == IS_NOT_NULL)
       return 18;
-    else if (x->getType() == LESS_THAN_OR_EQUAL_TO)
+    else if (x->getType() == LESS_THAN)
       return 19;
-    else if (x->getType() == LIKE)
+    else if (x->getType() == LESS_THAN_OR_EQUAL_TO)
       return 20;
-    else if (x->getType() == MULTIPLY)
+    else if (x->getType() == LIKE)
       return 21;
-    else if (x->getType() == NOT)
+    else if (x->getType() == MULTIPLY)
       return 22;
-    else if (x->getType() == NOT_EQUAL_TO)
+    else if (x->getType() == NOT)
       return 23;
-    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Int32>")
+    else if (x->getType() == NOT_EQUAL_TO)
       return 24;
-    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Int64>")
+    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Int32>")
       return 25;
-    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Double>")
+    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Int64>")
       return 26;
-    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Boolean>")
+    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Double>")
       return 27;
-    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Date64>")
+    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Boolean>")
       return 28;
-    else if (x->getType() == OR)
+    else if (x->getType() == NUMERIC_LITERAL && x->getTypeString() == "NumericLiteral<Date64>")
       return 29;
-    else if (x->getType() == STRING_LITERAL)
+    else if (x->getType() == OR)
       return 30;
-    else if (x->getType() == SUBSTR)
+    else if (x->getType() == STRING_LITERAL)
       return 31;
-    else if (x->getType() == SUBTRACT)
+    else if (x->getType() == SUBSTR)
       return 32;
+    else if (x->getType() == SUBTRACT)
+      return 33;
+    else if (x->getType() == CONCAT)
+      return 34;
     else
       return -1;
   }
@@ -227,35 +236,39 @@ struct variant_inspector_traits<ExpressionPtr> {
       case 17:
         return f(dynamic_cast<IsNull &>(*x));
       case 18:
-        return f(dynamic_cast<LessThan &>(*x));
+        return f(dynamic_cast<IsNotNull &>(*x));
       case 19:
-        return f(dynamic_cast<LessThanOrEqualTo &>(*x));
+        return f(dynamic_cast<LessThan &>(*x));
       case 20:
-        return f(dynamic_cast<Like &>(*x));
+        return f(dynamic_cast<LessThanOrEqualTo &>(*x));
       case 21:
-        return f(dynamic_cast<Multiply &>(*x));
+        return f(dynamic_cast<Like &>(*x));
       case 22:
-        return f(dynamic_cast<Not &>(*x));
+        return f(dynamic_cast<Multiply &>(*x));
       case 23:
-        return f(dynamic_cast<NotEqualTo &>(*x));
+        return f(dynamic_cast<Not &>(*x));
       case 24:
-        return f(dynamic_cast<NumericLiteral<arrow::Int32Type> &>(*x));
+        return f(dynamic_cast<NotEqualTo &>(*x));
       case 25:
-        return f(dynamic_cast<NumericLiteral<arrow::Int64Type> &>(*x));
+        return f(dynamic_cast<NumericLiteral<arrow::Int32Type> &>(*x));
       case 26:
-        return f(dynamic_cast<NumericLiteral<arrow::DoubleType> &>(*x));
+        return f(dynamic_cast<NumericLiteral<arrow::Int64Type> &>(*x));
       case 27:
-        return f(dynamic_cast<NumericLiteral<arrow::BooleanType> &>(*x));
+        return f(dynamic_cast<NumericLiteral<arrow::DoubleType> &>(*x));
       case 28:
-        return f(dynamic_cast<NumericLiteral<arrow::Date64Type> &>(*x));
+        return f(dynamic_cast<NumericLiteral<arrow::BooleanType> &>(*x));
       case 29:
-        return f(dynamic_cast<Or &>(*x));
+        return f(dynamic_cast<NumericLiteral<arrow::Date64Type> &>(*x));
       case 30:
-        return f(dynamic_cast<StringLiteral &>(*x));
+        return f(dynamic_cast<Or &>(*x));
       case 31:
-        return f(dynamic_cast<Substr &>(*x));
+        return f(dynamic_cast<StringLiteral &>(*x));
       case 32:
+        return f(dynamic_cast<Substr &>(*x));
+      case 33:
         return f(dynamic_cast<Subtract &>(*x));
+      case 34:
+        return f(dynamic_cast<Concat &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -369,6 +382,11 @@ struct variant_inspector_traits<ExpressionPtr> {
         continuation(tmp);
         return true;
       }
+      case type_id_v<IsNotNull>: {
+        auto tmp = IsNotNull{};
+        continuation(tmp);
+        return true;
+      }
       case type_id_v<LessThan>: {
         auto tmp = LessThan{};
         continuation(tmp);
@@ -441,6 +459,11 @@ struct variant_inspector_traits<ExpressionPtr> {
       }
       case type_id_v<Subtract>: {
         auto tmp = Subtract{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<Concat>: {
+        auto tmp = Concat{};
         continuation(tmp);
         return true;
       }

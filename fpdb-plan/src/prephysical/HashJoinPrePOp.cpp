@@ -29,6 +29,16 @@ set<string> HashJoinPrePOp::getUsedColumnNames() {
   return usedColumnNames;
 }
 
+void HashJoinPrePOp::switchSide() {
+  auto expReversedJoinType = reverseJoinType(joinType_);
+  if (!expReversedJoinType.has_value()) {
+    throw std::runtime_error(expReversedJoinType.error());
+  }
+  joinType_ = *expReversedJoinType;
+  std::swap(leftColumnNames_, rightColumnNames_);
+  std::swap(producers_[0], producers_[1]);
+}
+
 JoinType HashJoinPrePOp::getJoinType() const {
   return joinType_;
 }
@@ -47,6 +57,20 @@ bool HashJoinPrePOp::isPushable() const {
 
 int HashJoinPrePOp::getNumJoinColumnPairs() const {
   return leftColumnNames_.size();
+}
+
+bool HashJoinPrePOp::equalTo(const std::shared_ptr<PrePhysicalOp> &other) const {
+  // self
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<HashJoinPrePOp>(other);
+  if (!(joinType_ == typedOther->joinType_ && leftColumnNames_ == typedOther->leftColumnNames_ &&
+       rightColumnNames_ == typedOther->rightColumnNames_)) {
+    return false;
+  }
+  // producers
+  return equals(producers_, typedOther->producers_);
 }
 
 }

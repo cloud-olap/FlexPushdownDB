@@ -1,0 +1,16 @@
+{
+  "name": "info_type",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "info",
+      "type": "string"
+    }
+  ]
+}

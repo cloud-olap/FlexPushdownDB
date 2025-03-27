@@ -23,4 +23,9 @@ string LocalFSCatalogueEntry::getName() const {
   return fmt::format("local-fs://{}", getSchemaName());
 }
 
+bool LocalFSCatalogueEntry::isFKey(const string &, const vector<string> &,
+                                   const string &, const vector<string> &) const {
+  throw std::runtime_error("Checking foreign-key in local-fs is unsupported.");
+}
+
 }

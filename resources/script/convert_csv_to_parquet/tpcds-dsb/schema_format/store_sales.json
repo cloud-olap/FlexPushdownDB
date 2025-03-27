@@ -1,0 +1,100 @@
+{
+  "name": "store_sales",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "ss_sold_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_sold_time_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_item_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_customer_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_cdemo_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_hdemo_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_addr_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_store_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_promo_sk",
+      "type": "int64"
+    },
+    {
+      "name": "ss_ticket_number",
+      "type": "int64"
+    },
+    {
+      "name": "ss_quantity",
+      "type": "int64"
+    },
+    {
+      "name": "ss_wholesale_cost",
+      "type": "double"
+    },
+    {
+      "name": "ss_list_price",
+      "type": "double"
+    },
+    {
+      "name": "ss_sales_price",
+      "type": "double"
+    },
+    {
+      "name": "ss_ext_discount_amt",
+      "type": "double"
+    },
+    {
+      "name": "ss_ext_sales_price",
+      "type": "double"
+    },
+    {
+      "name": "ss_ext_wholesale_cost",
+      "type": "double"
+    },
+    {
+      "name": "ss_ext_list_price",
+      "type": "double"
+    },
+    {
+      "name": "ss_ext_tax",
+      "type": "double"
+    },
+    {
+      "name": "ss_coupon_amt",
+      "type": "double"
+    },
+    {
+      "name": "ss_net_paid",
+      "type": "double"
+    },
+    {
+      "name": "ss_net_paid_inc_tax",
+      "type": "double"
+    },
+    {
+      "name": "ss_net_profit",
+      "type": "double"
+    }
+  ]
+}

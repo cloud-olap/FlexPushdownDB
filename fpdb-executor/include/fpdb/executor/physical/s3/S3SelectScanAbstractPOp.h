@@ -95,6 +95,20 @@ protected:
   // locks on shared variables when requests are split.
   std::shared_ptr<std::mutex> splitReqLock_;
   std::map<int, std::shared_ptr<arrow::Table>> splitReqNumToTable_;
+
+  // inspect fields in base class
+  template <class Inspector, class... Fields>
+  friend bool inspect_base_s3_select_scan(Inspector& f, S3SelectScanAbstractPOp& op, Fields&&... fs) {
+    return inspect_base(f, op,
+                        f.field("s3Bucket", op.s3Bucket_),
+                        f.field("s3Object", op.s3Object_),
+                        f.field("startOffset", op.startOffset_),
+                        f.field("finishOffset", op.finishOffset_),
+                        f.field("table", op.table_),
+                        f.field("scanOnStart", op.scanOnStart_),
+                        f.field("toCache", op.toCache_),
+                        std::forward<Fields>(fs)...);
+  }
 };
 
 }

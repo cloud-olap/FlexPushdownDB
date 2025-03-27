@@ -1,0 +1,106 @@
+{
+  "schemaName": "dsb-sf1/parquet/",
+  "numNodes": 1,
+  "objectMap": [
+    {
+      "object": "call_center.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "catalog_page.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "catalog_returns.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "catalog_sales.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "customer.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "customer_address.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "customer_demographics.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "date_dim.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "dbgen_version.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "household_demographics.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "income_band.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "inventory.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "item.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "promotion.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "reason.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "ship_mode.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "store.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "store_returns.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "store_sales.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "time_dim.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "warehouse.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "web_page.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "web_returns.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "web_sales.parquet",
+      "nodeId": 0
+    },
+    {
+      "object": "web_site.parquet",
+      "nodeId": 0
+    }
+  ]
+}

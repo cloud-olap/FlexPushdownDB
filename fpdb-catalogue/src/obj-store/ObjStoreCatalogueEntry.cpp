@@ -66,4 +66,50 @@ string ObjStoreCatalogueEntry::getStoreTypeName() const {
   }
 }
 
+bool ObjStoreCatalogueEntry::isFKey(const string &fTable, const vector<string> &fKey,
+                                    const string &pTable, const vector<string> &pKey) const {
+  return isFKeyImpl(fTable, fKey, pTable, pKey, false) ||
+         isFKeyImpl(fTable, fKey, pTable, pKey, true);
+}
+
+bool ObjStoreCatalogueEntry::isFKeyImpl(const string &fTable, const vector<string> &fKey,
+                                        const string &pTable, const vector<string> &pKey,
+                                        bool allRefReversed) const {
+  if (fKey.size() != pKey.size()) {
+    throw std::runtime_error("size of pk and fk mismatch when checking pk-fk.");
+  }
+  for (const auto &colRef: getTable(fTable)->getColRefs()) {
+    // skip entries that do not match "allRefReserved"
+    if (colRef.allRefReversed_ != allRefReversed) {
+      continue;
+    }
+
+    // check if this entry contains "fKey", skip if not
+    bool entryValid = true;
+    vector<string> extractedColRefPKey;
+    for (const auto &fCol: fKey) {
+      auto it = colRef.fKey_.find(fCol);
+      if (it == colRef.fKey_.end()) {
+        entryValid = false;
+        break;
+      }
+      extractedColRefPKey.emplace_back(colRef.pKey_[it->second]);
+    }
+    if (!entryValid) {
+      continue;
+    }
+
+    // check this ColRef
+    if (colRef.pTable_ == pTable && extractedColRefPKey == pKey) {
+      return true;
+    }
+
+    // check transitive
+    if (isFKeyImpl(colRef.pTable_, extractedColRefPKey, pTable, pKey, allRefReversed)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }

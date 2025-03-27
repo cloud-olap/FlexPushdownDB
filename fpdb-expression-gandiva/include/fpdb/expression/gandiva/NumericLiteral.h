@@ -24,7 +24,8 @@ public:
   explicit NumericLiteral(std::optional<C_TYPE> value, std::optional<DateIntervalType> intervalType) :
     Expression(NUMERIC_LITERAL),
     value_(value),
-    intervalType_(intervalType) {}
+    intervalType_(intervalType),
+    valueTypeId_(::arrow::TypeTraits<ARROW_TYPE>::type_singleton()->id()) {}
   NumericLiteral() = default;
   NumericLiteral(const NumericLiteral&) = default;
   NumericLiteral& operator=(const NumericLiteral&) = default;
@@ -110,8 +111,20 @@ public:
   }
 
 private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override {
+    if (type_ != other->getType()) {
+      return false;
+    }
+    auto typedOther = std::static_pointer_cast<NumericLiteral>(other);
+    if (valueTypeId_ != typedOther->valueTypeId_) {
+      return false;
+    }
+    return intervalType_ == typedOther->intervalType_ && value_ == typedOther->value_;
+  }
+  
   std::optional<C_TYPE> value_;
   std::optional<DateIntervalType> intervalType_;    // denote whether this literal is used as an interval
+  arrow::Type::type valueTypeId_;    // used by "equalTo()" which is at planning time
 
 // caf inspect
 public:

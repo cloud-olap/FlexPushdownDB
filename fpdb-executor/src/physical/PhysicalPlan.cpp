@@ -7,6 +7,7 @@
 #include <fpdb/executor/physical/file/RemoteFileScanPOp.h>
 #include <fpdb/executor/physical/collate/CollatePOp.h>
 #include <fpdb/executor/physical/transform/PrePToPTransformerUtil.h>
+#include <sstream>
 
 namespace fpdb::executor::physical {
 
@@ -197,6 +198,30 @@ tl::expected<void, string> PhysicalPlan::fallBackToPullup(const std::string &hos
   }
 
   return {};
+}
+
+std::string PhysicalPlan::printOps() {
+  std::stringstream ss;
+  ss << "[Operators]" << endl;
+  std::vector<std::string> ops;
+  std::unordered_map<std::string, int> opToNodeId;
+  for (const auto &op: physicalOps_) {
+    ops.emplace_back(op.first);
+    opToNodeId[op.first] = op.second->getNodeId();
+  }
+  std::sort(ops.begin(), ops.end());
+  for (const auto &op: ops) {
+    ss << "  " << op << fmt::format(" (node {})", opToNodeId[op]) << endl;
+    ss << "    " << "[Producers]" << endl;
+    for (const auto &producer: physicalOps_[op]->producers()) {
+      ss << "      " << producer << fmt::format(" (node {})", opToNodeId[producer]) << endl;
+    }
+    ss << "    " << "[Consumers]" << endl;
+    for (const auto &consumer: physicalOps_[op]->consumers()) {
+      ss << "      " << consumer << fmt::format(" (node {})", opToNodeId[consumer]) << endl;
+    }
+  }
+  return ss.str();
 }
 
 }

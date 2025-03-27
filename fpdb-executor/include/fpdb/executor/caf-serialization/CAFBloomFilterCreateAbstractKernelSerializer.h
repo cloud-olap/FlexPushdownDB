@@ -7,6 +7,7 @@
 
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateKernel.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateArrowKernel.h>
+#include <fpdb/executor/physical/bloomfilter/GlobalBloomFilterCreateArrowKernel.h>
 #include <fpdb/caf/CAFUtil.h>
 
 using namespace fpdb::executor::physical::bloomfilter;
@@ -16,6 +17,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(BloomFilterCreateAbstractKernel, fpdb::caf::CAFUtil::Blo
 CAF_ADD_TYPE_ID(BloomFilterCreateAbstractKernel, (BloomFilterCreateAbstractKernelPtr))
 CAF_ADD_TYPE_ID(BloomFilterCreateAbstractKernel, (BloomFilterCreateKernel))
 CAF_ADD_TYPE_ID(BloomFilterCreateAbstractKernel, (BloomFilterCreateArrowKernel))
+CAF_ADD_TYPE_ID(BloomFilterCreateAbstractKernel, (GlobalBloomFilterCreateArrowKernel))
 CAF_END_TYPE_ID_BLOCK(BloomFilterCreateAbstractKernel)
 
 // Variant-based approach on BloomFilterCreateAbstractKernelPtr
@@ -29,17 +31,22 @@ struct variant_inspector_traits<BloomFilterCreateAbstractKernelPtr> {
   static constexpr type_id_t allowed_types[] = {
           type_id_v<none_t>,
           type_id_v<BloomFilterCreateKernel>,
-          type_id_v<BloomFilterCreateArrowKernel>
+          type_id_v<BloomFilterCreateArrowKernel>,
+          type_id_v<GlobalBloomFilterCreateArrowKernel>
   };
 
   // Returns which type in allowed_types corresponds to x.
   static auto type_index(const value_type &x) {
     if (!x)
       return 0;
-    else if (x->getType() == BloomFilterCreateKernelType::BLOOM_FILTER_KERNEL)
+    else if (x->getType() == BloomFilterCreateKernelType::VANILLA_KERNEL)
       return 1;
-    else
+    else if (x->getType() == BloomFilterCreateKernelType::ARROW_KERNEL)
       return 2;
+    else if (x->getType() == BloomFilterCreateKernelType::GLOBAL_ARROW_KERNEL)
+      return 3;
+    else
+      return 4;
   }
 
   // Applies f to the value of x.
@@ -50,6 +57,8 @@ struct variant_inspector_traits<BloomFilterCreateAbstractKernelPtr> {
         return f(dynamic_cast<BloomFilterCreateKernel &>(*x));
       case 2:
         return f(dynamic_cast<BloomFilterCreateArrowKernel &>(*x));
+      case 3:
+        return f(dynamic_cast<GlobalBloomFilterCreateArrowKernel &>(*x));
       default: {
         none_t dummy;
         return f(dummy);
@@ -85,6 +94,11 @@ struct variant_inspector_traits<BloomFilterCreateAbstractKernelPtr> {
       }
       case type_id_v<BloomFilterCreateArrowKernel>: {
         auto tmp = BloomFilterCreateArrowKernel{};
+        continuation(tmp);
+        return true;
+      }
+      case type_id_v<GlobalBloomFilterCreateArrowKernel>: {
+        auto tmp = GlobalBloomFilterCreateArrowKernel{};
         continuation(tmp);
         return true;
       }

@@ -15,6 +15,7 @@
 
 CAF_BEGIN_TYPE_ID_BLOCK(POpActor, fpdb::caf::CAFUtil::POpActor_first_custom_type_id)
 CAF_ADD_ATOM(POpActor, GetProcessingTimeAtom)
+CAF_ADD_ATOM(POpActor, GetNetworkTimeAtom)
 CAF_END_TYPE_ID_BLOCK(POpActor)
 
 namespace fpdb::executor::physical {
@@ -36,17 +37,20 @@ public:
   }
 
   long getProcessingTime() const;
+  long getNetworkTime() const;
   void incrementProcessingTime(long time);
+  void incrementNetworkTime(long time);
   bool running_ = false;
   std::string name_;
   std::queue<fpdb::executor::message::Envelope> messageBuffer_;
 
 private:
-  std::shared_ptr<TupleSet> read_remote_table(const std::string &host, int port, const std::string &sender);
+  std::shared_ptr<TupleSet> read_remote_table(const std::string &host, int port, const std::string &sender,
+                                              const std::optional<std::string> &originalConsumer);
 
   std::shared_ptr<PhysicalOp> opBehaviour_;
-  long processingTime_ = 0;
-
+  long processingTime_ = 0;   // this includes network time below
+  long networkTime_ = 0;
 };
 
 }

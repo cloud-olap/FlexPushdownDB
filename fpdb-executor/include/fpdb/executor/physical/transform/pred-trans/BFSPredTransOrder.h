@@ -32,8 +32,8 @@ private:
     double rowCount_;
     std::vector<std::shared_ptr<PredTransNeighbor>> neighbors_;          // neighbors
 
-    PredTransUnit(uint prePOpId, const std::shared_ptr<PhysicalOp> &upConnOp, double rowCount):
-      base_(std::make_shared<PredTransUnitBase>(prePOpId, upConnOp)),
+    PredTransUnit(uint prePOpId, const std::vector<POpVec> &upConn, double rowCount):
+      base_(std::make_shared<PredTransUnitBase>(prePOpId, upConn)),
       rowCount_(rowCount) {}
   };
 

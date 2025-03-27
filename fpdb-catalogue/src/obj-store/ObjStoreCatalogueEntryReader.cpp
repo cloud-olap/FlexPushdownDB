@@ -11,6 +11,7 @@
 #include <fpdb/aws/S3Util.h>
 #include <fpdb/util/Util.h>
 #include <nlohmann/json.hpp>
+#include <optional>
 
 using namespace fpdb::store::server::file;
 using namespace fpdb::aws;
@@ -73,6 +74,7 @@ ObjStoreCatalogueEntryReader::readCatalogueEntryNoPartitionSize(ObjStoreType sto
 
   // member variables to make ObjStoreCatalogueEntry and S3Table
   unordered_map<string, shared_ptr<FileFormat>> formatMap;
+  unordered_map<string, vector<ColRef>> colRefMap;
   unordered_map<string, shared_ptr<arrow::Schema>> schemaMap;
   unordered_map<string, unordered_map<string, int>> apxColumnLengthMapMap;
   unordered_map<string, int> apxRowLengthMap;
@@ -81,6 +83,9 @@ ObjStoreCatalogueEntryReader::readCatalogueEntryNoPartitionSize(ObjStoreType sto
 
   // read schema
   readSchema(schemaJObj, bucket, schemaName, schemaMap, formatMap, partitionsMap);
+
+  // read foreign-keys if any
+  readColRefs(schemaName, schemaMap, catalogue->getMetadataPath(), colRefMap);
 
   // read stats
   readStats(statsJObj, apxColumnLengthMapMap, apxRowLengthMap);
@@ -99,6 +104,7 @@ ObjStoreCatalogueEntryReader::readCatalogueEntryNoPartitionSize(ObjStoreType sto
     shared_ptr<ObjStoreTable> table = make_shared<ObjStoreTable>(tableName,
                                                                  schemaMap.find(tableName)->second,
                                                                  formatMap.find(tableName)->second,
+                                                                 colRefMap.find(tableName)->second,
                                                                  apxColumnLengthMapMap.find(tableName)->second,
                                                                  apxRowLengthMap.find(tableName)->second,
                                                                  zoneMapColumnNamesMap.find(tableName)->second,
@@ -161,6 +167,47 @@ void ObjStoreCatalogueEntryReader::readSchema(
       }
     }
     partitionsMap.emplace(tableName, ObjStorePartitions);
+  }
+}
+
+std::optional<string> getFKeyMetadataFileName(const string &schemaName) {
+  // currently only add pk-fk constraints to tpch schema
+  static constexpr string_view JSON_SUFFIX = ".json";
+  static constexpr string_view TPCH_PREFIX = "tpch";
+  static constexpr string_view DSB_PREFIX = "dsb";
+  static constexpr string_view TPCDS_DSB_PREFIX = "tpcds-dsb";
+  if (schemaName.substr(0, TPCH_PREFIX.length()) == TPCH_PREFIX) {
+    return string(TPCH_PREFIX) + string(JSON_SUFFIX);
+  } else if (schemaName.substr(0, DSB_PREFIX.length()) == DSB_PREFIX) {
+    return string(TPCDS_DSB_PREFIX) + string(JSON_SUFFIX);
+  } else {
+    return std::nullopt;
+  }
+}
+
+void ObjStoreCatalogueEntryReader::readColRefs(
+        const string &schemaName,
+        const unordered_map<string, shared_ptr<arrow::Schema>> &schemaMap,
+        filesystem::path metadataPath,
+        unordered_map<string, vector<ColRef>> &colRefMap) {
+  auto optFKeyMetadataFileName = getFKeyMetadataFileName(schemaName);
+  if (optFKeyMetadataFileName.has_value()) {
+    json fKeyJObj = json::parse(readFile(metadataPath.append("fkey/" + *optFKeyMetadataFileName)));
+    for (const auto &fKeyEntry: fKeyJObj["fKeys"].get<vector<json>>()) {
+      const string &pTable = fKeyEntry["pTable"].get<string>();
+      const string &fTable = fKeyEntry["fTable"].get<string>();
+      const vector<string> &pKey = fKeyEntry["pKey"].get<vector<string>>();
+      const vector<string> &fKey = fKeyEntry["fKey"].get<vector<string>>();
+      bool allRefReversed = fKeyEntry["allRefReversed"].get<bool>();
+      colRefMap[fTable].emplace_back(ColRef(fKey, pTable, pKey, allRefReversed));
+    }
+  }
+  // fill for no fkey tables
+  for (const auto &it: schemaMap) {
+    const auto &table = it.first;
+    if (colRefMap.find(table) == colRefMap.end()) {
+      colRefMap[table] = {};
+    }
   }
 }
 

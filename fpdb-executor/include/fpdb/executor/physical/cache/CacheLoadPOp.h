@@ -80,26 +80,17 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, CacheLoadPOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("predicateColumnNames", op.predicateColumnNames_),
-                               f.field("projectColumnGroups", op.projectColumnGroups_),
-                               f.field("allColumnNames", op.allColumnNames_),
-                               f.field("partition", op.partition_),
-                               f.field("startOffset", op.startOffset_),
-                               f.field("finishOffset", op.finishOffset_),
-                               f.field("hitOperatorName", op.hitOperatorName_),
-                               f.field("missOperatorToCacheName", op.missOperatorToCacheName_),
-                               f.field("missOperatorToPushdownName", op.missOperatorToPushdownName_),
-                               f.field("objStoreConnector", op.objStoreConnector_));
+    return inspect_base(f, op,
+                        f.field("predicateColumnNames", op.predicateColumnNames_),
+                        f.field("projectColumnGroups", op.projectColumnGroups_),
+                        f.field("allColumnNames", op.allColumnNames_),
+                        f.field("partition", op.partition_),
+                        f.field("startOffset", op.startOffset_),
+                        f.field("finishOffset", op.finishOffset_),
+                        f.field("hitOperatorName", op.hitOperatorName_),
+                        f.field("missOperatorToCacheName", op.missOperatorToCacheName_),
+                        f.field("missOperatorToPushdownName", op.missOperatorToPushdownName_),
+                        f.field("objStoreConnector", op.objStoreConnector_));
   }
 };
 

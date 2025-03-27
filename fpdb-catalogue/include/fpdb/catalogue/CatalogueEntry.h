@@ -9,6 +9,7 @@
 #include <fpdb/catalogue/CatalogueEntryType.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace::std;
 
@@ -29,6 +30,8 @@ public:
   CatalogueEntryType getType() const;
   virtual string getTypeName() const = 0;
   virtual string getName() const = 0;
+  virtual bool isFKey(const string &fTable, const vector<string> &fKey,
+                      const string &pTable, const vector<string> &pKey) const = 0;
 
 private:
   CatalogueEntryType type_;

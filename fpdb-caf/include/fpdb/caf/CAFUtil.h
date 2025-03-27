@@ -46,6 +46,7 @@ public:
   inline static constexpr ::caf::type_id_t Mode_first_custom_type_id = ::caf::first_custom_type_id + 3100;
   inline static constexpr ::caf::type_id_t CachingPolicy_first_custom_type_id = ::caf::first_custom_type_id + 3200;
   inline static constexpr ::caf::type_id_t BloomFilterCreateAbstractKernel_first_custom_type_id = ::caf::first_custom_type_id + 3300;
+  inline static constexpr ::caf::type_id_t BlockedBloomFilter_first_custom_type_id = ::caf::first_custom_type_id + 3400;
 
 };
 

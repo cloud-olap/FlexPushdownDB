@@ -1,0 +1,90 @@
+{
+  "schemaName": "job/csv/",
+  "numNodes": 1,
+  "objectMap": [
+    {
+      "object": "aka_name.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "aka_title.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "cast_info.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "char_name.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "comp_cast_type.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "company_name.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "company_type.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "complete_cast.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "info_type.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "keyword.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "kind_type.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "link_type.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_companies.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_info_idx.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_keyword.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_link.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "name.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "role_type.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "title.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "movie_info.tbl",
+      "nodeId": 0
+    },
+    {
+      "object": "person_info.tbl",
+      "nodeId": 0
+    }
+  ]
+}

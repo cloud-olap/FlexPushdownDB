@@ -65,11 +65,15 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-04" * doctest::skip(fals
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/csv/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
-                                                                   false,
-                                                                   ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pullupMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
   TestUtil::stopFPDBStoreServer();
 }
 
@@ -295,12 +299,15 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-04" * doctest::sk
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-csv-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/csv/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
-                                                                   false,
-                                                                   ObjStoreType::FPDB_STORE,
-                                                                   Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/csv/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
   TestUtil::stopFPDBStoreServer();
 }
 
@@ -539,11 +546,15 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-04" * doctest::skip(
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/parquet/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
-                                                                   false,
-                                                                   ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pullupMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
   TestUtil::stopFPDBStoreServer();
 }
 
@@ -729,6 +740,20 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-multi-query" * docte
   TestUtil::stopFPDBStoreServer();
 }
 
+TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pullup-concurrent" * doctest::skip(false || SKIP_SUITE)) {
+  std::vector<std::string> queryFileNames{"tpch/original/01.sql", "tpch/original/02.sql"};
+
+  TestUtil::startFPDBStoreServer();
+  TestUtil testUtil("tpch-sf0.01/parquet/",
+                    queryFileNames,
+                    PARALLEL_FPDB_STORE_SAME_NODE,
+                    false,
+                    ObjStoreType::FPDB_STORE);
+  testUtil.setConcurrent(true);
+  REQUIRE_NOTHROW(testUtil.runTest());
+  TestUtil::stopFPDBStoreServer();
+}
+
 }
 
 TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only" * doctest::skip(SKIP_SUITE)) {
@@ -781,12 +806,15 @@ TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-04" * doctest
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-parquet-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
   TestUtil::startFPDBStoreServer();
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf0.01/parquet/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_FPDB_STORE_SAME_NODE,
-                                                                   false,
-                                                                   ObjStoreType::FPDB_STORE,
-                                                                   Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf0.01/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_FPDB_STORE_SAME_NODE,
+                                            false,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
   TestUtil::stopFPDBStoreServer();
 }
 
@@ -1056,7 +1084,15 @@ TEST_SUITE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown" * doctest::skip
 
 TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown-19" * doctest::skip(false || SKIP_SUITE)) {
   AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf0.01/parquet/",
-                                                            "tpch/original/19.sql",
+                                                            {"tpch/original/19.sql"},
+                                                            {(int) std::thread::hardware_concurrency(), 1},
+                                                            PARALLEL_FPDB_STORE_SAME_NODE,
+                                                            true);
+}
+
+TEST_CASE ("tpch-sf0.01-fpdb-store-same-node-adaptive-pushdown-concurrent" * doctest::skip(false || SKIP_SUITE)) {
+  AdaptPushdownTestUtil::run_adapt_pushdown_benchmark_query("tpch-sf0.01/parquet/",
+                                                            {"tpch/original/01.sql", "tpch/original/02.sql"},
                                                             {(int) std::thread::hardware_concurrency(), 1},
                                                             PARALLEL_FPDB_STORE_SAME_NODE,
                                                             true);

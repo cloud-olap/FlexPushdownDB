@@ -27,7 +27,7 @@ public:
           const std::shared_ptr<fpdb::catalogue::obj_store::FPDBStoreConnector> &fpdbStoreConnector);
   ~CollAdaptPushdownMetricsExecution() override = default;
 
-  shared_ptr<TupleSet> execute() override;
+  void execute() override;
 
 private:
   void preExecute() override;

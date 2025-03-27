@@ -32,6 +32,21 @@ public class TPCHTest {
   }
 
   @Test
+  public void testTPCH_Q05_jo1() throws Exception {
+    TestUtil.testNoHeuristicJoinOrdering("tpch-sf0.01/csv", "tpch/modified/05-jo1.sql", true);
+  }
+
+  @Test
+  public void testTPCH_Q05_jo2() throws Exception {
+    TestUtil.testNoHeuristicJoinOrdering("tpch-sf0.01/csv", "tpch/modified/05-jo2.sql", true);
+  }
+
+  @Test
+  public void testTPCH_Q05_jo3() throws Exception {
+    TestUtil.testNoHeuristicJoinOrdering("tpch-sf0.01/csv", "tpch/modified/05-jo3.sql", true);
+  }
+
+  @Test
   public void testTPCH_Q06() throws Exception {
     TestUtil.test("tpch-sf0.01/csv", "tpch/original/06.sql", true);
   }

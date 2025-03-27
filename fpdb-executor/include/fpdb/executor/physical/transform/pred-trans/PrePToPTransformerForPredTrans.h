@@ -19,29 +19,29 @@ namespace fpdb::executor::physical {
 class PrePToPTransformerForPredTrans: public PrePToPTransformer {
 
 public:
-  static std::shared_ptr<PhysicalPlan> transform(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
-                                                 const shared_ptr<CatalogueEntry> &catalogueEntry,
-                                                 const shared_ptr<ObjStoreConnector> &objStoreConnector,
-                                                 const shared_ptr<Mode> &mode,
-                                                 int parallelDegree,
-                                                 int numNodes);
-
   friend class SmallToLargePredTransOrder;
   friend class BFSPredTransOrder;
+  friend class LIPPredTransOrder;
   friend class PredTransOrder;
 
-private:
   PrePToPTransformerForPredTrans(const shared_ptr<PrePhysicalPlan> &prePhysicalPlan,
                                  const shared_ptr<CatalogueEntry> &catalogueEntry,
                                  const shared_ptr<ObjStoreConnector> &objStoreConnector,
                                  const shared_ptr<Mode> &mode,
                                  int parallelDegree,
-                                 int numNodes);
+                                 int numNodes,
+                                 // used by adapt exec
+                                 long queryId,
+                                 bool isDistributed,
+                                 void* executor);
+  ~PrePToPTransformerForPredTrans() override = default;
 
   /**
    * Main entry for transformation
    */
   std::shared_ptr<PhysicalPlan> transform() override;
+
+private:
   // basically just add a "transRes_" cache during the visit
   std::vector<std::shared_ptr<PhysicalOp>> transformDfs(const std::shared_ptr<PrePhysicalOp> &prePOp) override;
 

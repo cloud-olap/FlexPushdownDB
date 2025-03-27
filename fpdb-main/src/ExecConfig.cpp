@@ -26,7 +26,9 @@ ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
                        bool showOpTimes,
                        bool showScanMetrics,
                        int CAFServerPort,
-                       bool isDistributed) :
+                       bool isDistributed,
+                       join::DistJoinType distJoinType,
+                       DistPredTransType distPredTransType) :
   mode_(mode),
   cachingPolicy_(cachingPolicy),
   s3Bucket_(move(s3Bucket)),
@@ -35,7 +37,9 @@ ExecConfig::ExecConfig(const shared_ptr<Mode> &mode,
   showOpTimes_(showOpTimes),
   showScanMetrics_(showScanMetrics),
   CAFServerPort_(CAFServerPort),
-  isDistributed_(isDistributed) {}
+  isDistributed_(isDistributed),
+  distJoinType_(distJoinType),
+  distPredTransType_(distPredTransType) {}
 
 shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &catalogue,
                                                    const shared_ptr<ObjStoreConnector> &objStoreConnector) {
@@ -50,6 +54,8 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
   bool showScanMetrics = parseBool(configMap["SHOW_SCAN_METRICS"]);
   int CAFServerPort = stoi(configMap["CAF_SERVER_PORT"]);
   bool isDistributed = parseBool(configMap["IS_DISTRIBUTED"]);
+  join::DistJoinType distJoinType = parseDistJoinType(configMap["DIST_JOIN_TYPE"]);
+  DistPredTransType distPredTransType = parseDistPredTransType(configMap["DIST_PRED_TRANS_TYPE"]);
 
   // catalogue entry
   shared_ptr<CatalogueEntry> catalogueEntry;
@@ -75,7 +81,9 @@ shared_ptr<ExecConfig> ExecConfig::parseExecConfig(const shared_ptr<Catalogue> &
                                  showOpTimes,
                                  showScanMetrics,
                                  CAFServerPort,
-                                 isDistributed);
+                                 isDistributed,
+                                 distJoinType,
+                                 distPredTransType);
 }
 
 int ExecConfig::parseCAFServerPort() {
@@ -86,6 +94,38 @@ int ExecConfig::parseCAFServerPort() {
 int ExecConfig::parseFlightPort() {
   unordered_map<string, string> configMap = readConfig("exec.conf");
   return stoi(configMap["FLIGHT_PORT"]);
+}
+
+join::DistJoinType ExecConfig::parseDistJoinType(const string& stringToParse) {
+  if (stringToParse == "PTION") {
+    return join::DistJoinType::PTION;
+  } else if (stringToParse == "BCAST") {
+    return join::DistJoinType::BCAST;
+  } else if (stringToParse == "COST_BASED_STATIC") {
+    return join::DistJoinType::COST_BASED_STATIC;
+  } else if (stringToParse == "COST_BASED_ADAPT") {
+    return join::DistJoinType::COST_BASED_ADAPT;
+  }
+  throw runtime_error(fmt::format("Unknown dist-join type: {}", stringToParse));
+}
+
+DistPredTransType ExecConfig::parseDistPredTransType(const string& stringToParse) {
+  if (stringToParse == "BCAST_BF") {
+    return DistPredTransType::BCAST_BF;
+  } else if (stringToParse == "BCAST_VAL") {
+    return DistPredTransType::BCAST_VAL;
+  } else if (stringToParse == "PTION_VAL") {
+    return DistPredTransType::PTION_VAL;
+  } else if (stringToParse == "PTION_SRC_BF_DST_VAL") {
+    return DistPredTransType::PTION_SRC_BF_DST_VAL;
+  } else if (stringToParse == "PTION_SRC_VAL_DST_BF") {
+    return DistPredTransType::PTION_SRC_VAL_DST_BF;
+  } else if (stringToParse == "SEMI_JOIN_RED") {
+    return DistPredTransType::SEMI_JOIN_RED;
+  } else if (stringToParse == "ADAPT") {
+    return DistPredTransType::ADAPT;
+  }
+  throw runtime_error(fmt::format("Unknown dist-pred-trans type: {}", stringToParse));
 }
 
 size_t ExecConfig::parseCacheSize(const string& stringToParse) {
@@ -174,6 +214,14 @@ int ExecConfig::getCAFServerPort() const {
 
 bool ExecConfig::isDistributed() const {
   return isDistributed_;
+}
+
+join::DistJoinType ExecConfig::getDistJoinType() const {
+  return distJoinType_;
+}
+
+DistPredTransType ExecConfig::getDistPredTransType() const {
+  return distPredTransType_;
 }
 
 }

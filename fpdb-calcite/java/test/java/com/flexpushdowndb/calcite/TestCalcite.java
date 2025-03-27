@@ -1,6 +1,7 @@
 package com.flexpushdowndb.calcite;
 
 import com.flexpushdowndb.calcite.rule.JoinSmallLeftRule;
+import com.flexpushdowndb.calcite.schema.FieldInfo;
 import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.TableImpl;
 import com.google.common.collect.ImmutableMap;
@@ -65,43 +66,43 @@ public class TestCalcite {
     // Prepare the schema
     TableImpl t1 = new TableImpl("T1",
             ImmutableMap.of(
-                    "A", SqlTypeName.INTEGER,
-                    "B", SqlTypeName.INTEGER,
-                    "C", SqlTypeName.INTEGER,
-                    "D", SqlTypeName.INTEGER,
-                    "E", SqlTypeName.INTEGER),
+                    "A", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "B", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "C", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "D", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "E", new FieldInfo(SqlTypeName.INTEGER, false, false)),
             88888);
     TableImpl t2 = new TableImpl("T2",
             ImmutableMap.of(
-                    "A", SqlTypeName.INTEGER,
-                    "B", SqlTypeName.INTEGER,
-                    "C", SqlTypeName.INTEGER,
-                    "D", SqlTypeName.INTEGER,
-                    "E", SqlTypeName.INTEGER),
+                    "A", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "B", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "C", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "D", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "E", new FieldInfo(SqlTypeName.INTEGER, false, false)),
             9999999);
     TableImpl t3 = new TableImpl("T3",
             ImmutableMap.of(
-                    "A", SqlTypeName.INTEGER,
-                    "B", SqlTypeName.INTEGER,
-                    "C", SqlTypeName.INTEGER,
-                    "D", SqlTypeName.INTEGER,
-                    "E", SqlTypeName.INTEGER),
+                    "A", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "B", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "C", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "D", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "E", new FieldInfo(SqlTypeName.INTEGER, false, false)),
             7777);
     TableImpl t4 = new TableImpl("T4",
             ImmutableMap.of(
-                    "A", SqlTypeName.INTEGER,
-                    "B", SqlTypeName.INTEGER,
-                    "C", SqlTypeName.INTEGER,
-                    "D", SqlTypeName.INTEGER,
-                    "E", SqlTypeName.INTEGER),
+                    "A", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "B", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "C", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "D", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "E", new FieldInfo(SqlTypeName.INTEGER, false, false)),
             666);
     TableImpl t5 = new TableImpl("T5",
             ImmutableMap.of(
-                    "A", SqlTypeName.INTEGER,
-                    "B", SqlTypeName.INTEGER,
-                    "C", SqlTypeName.INTEGER,
-                    "D", SqlTypeName.INTEGER,
-                    "E", SqlTypeName.INTEGER),
+                    "A", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "B", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "C", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "D", new FieldInfo(SqlTypeName.INTEGER, false, false),
+                    "E", new FieldInfo(SqlTypeName.INTEGER, false, false)),
             100);
     CalciteSchema rootSchema = CalciteSchema.createRootSchema(false, true);
     SchemaImpl schema1 = new SchemaImpl("a", ImmutableMap.of(), new HashMap<>());

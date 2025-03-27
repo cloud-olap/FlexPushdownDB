@@ -1,0 +1,24 @@
+{
+  "name": "inventory",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "inv_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "inv_item_sk",
+      "type": "int64"
+    },
+    {
+      "name": "inv_warehouse_sk",
+      "type": "int64"
+    },
+    {
+      "name": "inv_quantity_on_hand",
+      "type": "int64"
+    }
+  ]
+}

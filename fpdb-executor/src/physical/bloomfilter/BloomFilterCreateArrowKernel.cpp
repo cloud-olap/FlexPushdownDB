@@ -7,7 +7,7 @@
 namespace fpdb::executor::physical::bloomfilter {
 
 BloomFilterCreateArrowKernel::BloomFilterCreateArrowKernel(const std::vector<std::string> &columnNames):
-  BloomFilterCreateAbstractKernel(BloomFilterCreateKernelType::BLOOM_FILTER_ARROW_KERNEL, columnNames){}
+  BloomFilterCreateAbstractKernel(BloomFilterCreateKernelType::ARROW_KERNEL, columnNames){}
 
 std::shared_ptr<BloomFilterCreateArrowKernel>
 BloomFilterCreateArrowKernel::make(const std::vector<std::string> &columnNames) {

@@ -33,6 +33,13 @@ public:
                                vector<shared_ptr<PhysicalOp>> &consumers);
   static void connectManyToMany(vector<shared_ptr<PhysicalOp>> &producers,
                                 vector<shared_ptr<PhysicalOp>> &consumers);
+  // connect within each pair of group
+  static void connectManyToOneByGroup(vector<vector<shared_ptr<PhysicalOp>>> &producers,
+                                      vector<shared_ptr<PhysicalOp>> &consumers);
+  static void connectOneToManyByGroup(vector<shared_ptr<PhysicalOp>> &producers,
+                                      vector<vector<shared_ptr<PhysicalOp>>> &consumers);
+  static void connectManyToManyByGroup(vector<vector<shared_ptr<PhysicalOp>>> &producers,
+                                       vector<vector<shared_ptr<PhysicalOp>>> &consumers);
 
   /**
    * Transform aggregate and aggregate reduce function
@@ -99,6 +106,23 @@ public:
    * @return
    */
   static unordered_map<string, int> getHostToNumOps(const vector<shared_ptr<PhysicalOp>> &fpdbStoreSuperPOps);
+
+  /**
+   * Group/Ungroup operators by the node they reside
+   */
+  static vector<vector<shared_ptr<PhysicalOp>>> groupByNodeId(const vector<shared_ptr<PhysicalOp>> &ops,
+                                                              int numNodes);
+  static vector<shared_ptr<PhysicalOp>> unGroupByNodeId(const vector<vector<shared_ptr<PhysicalOp>>> &ops);
+
+  /**
+   * Spread output tables to all nodes such that each node can participate in processing the downstream,
+   * upConn.size() should be numNodes,
+   * return whether the spread is required, and the new up connect ops of each node is in "res"
+   */
+  static bool spreadTableToAllNodes(uint prePOpId,
+                                    unordered_map<string, shared_ptr<PhysicalOp>> &ops,
+                                    vector<vector<shared_ptr<PhysicalOp>>> &upConn,
+                                    vector<vector<shared_ptr<PhysicalOp>>> &res);
 
 };
 

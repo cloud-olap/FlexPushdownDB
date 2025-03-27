@@ -4,6 +4,7 @@ import com.flexpushdowndb.calcite.metadata.FPDBRelMdRowCount;
 import com.flexpushdowndb.calcite.metadata.FPDBRelMetadataProvider;
 import com.flexpushdowndb.calcite.rule.EnhancedFilterJoinRule;
 import com.flexpushdowndb.calcite.rule.JoinSmallLeftRule;
+import com.flexpushdowndb.calcite.rule.MinusToDistinctRule;
 import com.flexpushdowndb.calcite.schema.SchemaImpl;
 import com.flexpushdowndb.calcite.schema.SchemaReader;
 import com.flexpushdowndb.calcite.tools.MorePrograms;
@@ -74,8 +75,11 @@ public class Optimizer {
     // Decorrelate
     RelNode decorrelatedPlan = decorrelate(logicalPlan);
 
+    // Set-op heuristics
+    RelNode setOpHeuristicsPlan = setOpHeuristics(decorrelatedPlan);
+
     // Pre-join filter pushdown
-    RelNode preFilterPushdownPlan = filterPushdown(decorrelatedPlan);
+    RelNode preFilterPushdownPlan = filterPushdown(setOpHeuristicsPlan);
 
     // Join optimization
     RelNode joinOptPlan = joinOptimize(preFilterPushdownPlan, schemaName, useHeuristicJoinOrdering);
@@ -147,6 +151,21 @@ public class Optimizer {
                     CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                     EnhancedFilterJoinRule.WITH_FILTER,
                     EnhancedFilterJoinRule.NO_FILTER))
+            .build();
+    HepPlanner hepPlanner = new HepPlanner(hepProgram);
+    hepPlanner.setRoot(relNode);
+    return hepPlanner.findBestExp();
+  }
+
+  private RelNode setOpHeuristics(RelNode relNode) {
+    HepProgram hepProgram = new HepProgramBuilder()
+            .addRuleCollection(ImmutableList.of(
+                    CoreRules.UNION_MERGE,
+                    CoreRules.UNION_TO_DISTINCT,
+                    CoreRules.INTERSECT_MERGE,
+                    CoreRules.INTERSECT_TO_DISTINCT,
+                    CoreRules.MINUS_MERGE,
+                    MinusToDistinctRule.Config.DEFAULT.toRule()))
             .build();
     HepPlanner hepPlanner = new HepPlanner(hepProgram);
     hepPlanner.setRoot(relNode);
@@ -241,6 +260,8 @@ public class Optimizer {
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_SORT_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_LIMIT_RULE);
     ruleList.add(EnumerableRules.ENUMERABLE_SORTED_AGGREGATE_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_UNION_RULE);
+    ruleList.add(EnumerableRules.ENUMERABLE_INTERSECT_RULE);
     return ruleList;
   }
 

@@ -16,8 +16,9 @@ using namespace fpdb::tuple;
 namespace fpdb::executor::physical::bloomfilter {
 
 enum BloomFilterCreateKernelType {
-  BLOOM_FILTER_KERNEL,
-  BLOOM_FILTER_ARROW_KERNEL
+  VANILLA_KERNEL,
+  ARROW_KERNEL,
+  GLOBAL_ARROW_KERNEL
 };
 
 class BloomFilterCreateAbstractKernel {

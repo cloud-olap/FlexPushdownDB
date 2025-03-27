@@ -35,12 +35,10 @@ std::shared_ptr<arrow::Table> ArrowSerializer::bytes_to_table(const std::vector<
     throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_reader.status().message()));
 
   // Read the table
-  std::shared_ptr<arrow::Table> table;
-  status = (*maybe_reader)->ReadAll(&table);
-  if (!status.ok())
-    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", status.message()));
-
-  return table;
+  auto exp_table = (*maybe_reader)->ToTable();
+  if (!exp_table.ok())
+    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", exp_table.status().message()));
+  return *exp_table;
 }
 
 std::vector<std::uint8_t> ArrowSerializer::table_to_bytes(const std::shared_ptr<arrow::Table>& table) {
@@ -113,12 +111,10 @@ std::shared_ptr<arrow::Table> ArrowSerializer::align_table_by_copy(const std::sh
   if (!maybe_reader.ok())
     throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", maybe_reader.status().message()));
 
-  std::shared_ptr<arrow::Table> new_table;
-  status = (*maybe_reader)->ReadAll(&new_table);
-  if (!status.ok())
-    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", status.message()));
-
-  return new_table;
+  auto exp_new_table = (*maybe_reader)->ToTable();
+  if (!exp_new_table.ok())
+    throw std::runtime_error(fmt::format("Error converting bytes to Arrow table  |  error: {}", exp_new_table.status().message()));
+  return *exp_new_table;
 }
 
 std::shared_ptr<arrow::RecordBatch> ArrowSerializer::bytes_to_recordBatch(const std::vector<std::uint8_t>& bytes_vec) {

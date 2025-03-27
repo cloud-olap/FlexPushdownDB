@@ -53,11 +53,15 @@ TEST_CASE ("tpch-sf10-fpdb-store-distributed-csv-pullup-04" * doctest::skip(fals
 // FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-csv-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf10/csv/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_DIST_SF10,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pullupMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-csv-pullup-06" * doctest::skip(false || SKIP_SUITE)) {
@@ -235,11 +239,15 @@ TEST_CASE ("tpch-sf10-fpdb-store-distributed-parquet-pullup-04" * doctest::skip(
 // FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-parquet-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf10/parquet/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_DIST_SF10,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pullupMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-parquet-pullup-06" * doctest::skip(false || SKIP_SUITE)) {
@@ -421,12 +429,15 @@ TEST_CASE ("tpch-sf10-fpdb-store-distributed-csv-pushdown-only-04" * doctest::sk
 // FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-csv-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf10/csv/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_DIST_SF10,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE,
-                                                                   Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/csv/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-csv-pushdown-only-06" * doctest::skip(false || SKIP_SUITE)) {
@@ -625,12 +636,15 @@ TEST_CASE ("tpch-sf10-fpdb-store-distributed-parquet-pushdown-only-04" * doctest
 // FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-parquet-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf10/parquet/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_DIST_SF10,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE,
-                                                                   Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf10/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_DIST_SF10,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 TEST_CASE ("tpch-sf10-fpdb-store-distributed-parquet-pushdown-only-06" * doctest::skip(false || SKIP_SUITE)) {
@@ -889,11 +903,15 @@ TEST_CASE ("tpch-sf100-4-node-hash-part-fpdb-store-distributed-parquet-pullup-04
 // FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf100-4-node-hash-part-fpdb-store-distributed-parquet-pullup-05" * doctest::skip(false || SKIP_SUITE)) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf100-4-node-hash-part/parquet/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_DIST_SF100,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf100-4-node-hash-part/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_DIST_SF100,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pullupMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 TEST_CASE ("tpch-sf100-4-node-hash-part-fpdb-store-distributed-parquet-pullup-06" * doctest::skip(false || SKIP_SUITE)) {
@@ -1075,12 +1093,15 @@ TEST_CASE ("tpch-sf100-4-node-hash-part-fpdb-store-distributed-parquet-pushdown-
 // FIXME: not considering key-foreign key constraint with filtering leads to a bad query plan
 //  currently manually specify the join order
 TEST_CASE ("tpch-sf100-4-node-hash-part-fpdb-store-distributed-parquet-pushdown-only-05" * doctest::skip(false || SKIP_SUITE)) {
-  REQUIRE(TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering("tpch-sf100-4-node-hash-part/parquet/",
-                                                                   {"tpch/original/05.sql"},
-                                                                   PARALLEL_DIST_SF100,
-                                                                   true,
-                                                                   ObjStoreType::FPDB_STORE,
-                                                                   Mode::pushdownOnlyMode()));
+  REQUIRE(TestUtil::e2eNoStartCalciteServer("tpch-sf100-4-node-hash-part/parquet/",
+                                            {"tpch/original/05.sql"},
+                                            PARALLEL_DIST_SF100,
+                                            true,
+                                            ObjStoreType::FPDB_STORE,
+                                            Mode::pushdownOnlyMode(),
+                                            CachingPolicyType::NONE,
+                                            1L * 1024 * 1024 * 1024,
+                                            false));
 }
 
 TEST_CASE ("tpch-sf100-4-node-hash-part-fpdb-store-distributed-parquet-pushdown-only-06" * doctest::skip(false || SKIP_SUITE)) {

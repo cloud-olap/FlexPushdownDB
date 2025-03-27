@@ -17,12 +17,13 @@ public:
   SortPrePOp(uint id, double rowCount, const vector<SortKey> &sortKeys);
 
   string getTypeString() override;
-
   set<string> getUsedColumnNames() override;
 
   const vector<SortKey> &getSortKeys() const;
 
 private:
+  bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const override;
+
   vector<SortKey> sortKeys_;
 };
 

@@ -13,6 +13,8 @@
 #include <fpdb/executor/message/Envelope.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/executor/metrics/PredTransMetrics.h>
+#include <fpdb/executor/cache/CardCache.h>
+#include <fpdb/executor/Util.h>
 #include <caf/all.hpp>
 #include <string>
 #include <memory>
@@ -50,7 +52,7 @@ public:
 
   // setters
   void setName(const std::string &Name);
-  void setProjectColumnNames(const std::vector<std::string> &projectColumnNames);
+  virtual void setProjectColumnNames(const std::vector<std::string> &projectColumnNames);
   void setQueryId(long queryId);
   void setProducers(const std::set<std::string> &producers);
   void setConsumers(const std::set<std::string> &consumers);
@@ -74,17 +76,25 @@ public:
 
 #if SHOW_DEBUG_METRICS == true
   const metrics::PredTransMetrics::PTMetricsInfo &getPTMetricsInfo() const;
-  bool inPredTransPhase() const;
-  void setCollPredTransMetrics(uint prePOpId, metrics::PredTransMetrics::PTMetricsUnitType ptMetricsType);
+  metrics::PredTransMetrics::PTPhaseType getPTPhaseType() const;
+  const metrics::PredTransCSMetrics::PTCSMetricsInfo &getPTCSMetricsInfo() const;
+  void setCollPredTransMetrics(const metrics::PredTransMetrics::PTMetricsInfo &ptMetricsInfo);
   void unsetCollPredTransMetrics();
-  void setInPredTransPhase(bool inPredTransPhase);
+  void setPTPhaseType(metrics::PredTransMetrics::PTPhaseType ptPhaseType);
+  void setCollPredTransCSMetrics(const metrics::PredTransCSMetrics::PTCSMetricsInfo &ptCSMetricsInfo);
 #endif
+
+  void sendPTCardMessage(const executor::cache::PredTransCardCache::PredTransCardInfo &ptCardInfo,
+                         int64_t numRows, std::optional<double> keyLen);
 
   virtual void onReceive(const fpdb::executor::message::Envelope &msg) = 0;
   virtual void clear() = 0;
   void destroyActor();
 
 protected:
+  void readRemoteBloomFilter(void* bloomFilter, const std::string &sender,
+                             const RemoteInfo &remoteInfo, bool remoteConsumerSpecific);
+
   std::string name_;
   POpType type_;
   std::vector<std::string> projectColumnNames_;
@@ -103,8 +113,41 @@ protected:
 
 #if SHOW_DEBUG_METRICS == true
   metrics::PredTransMetrics::PTMetricsInfo ptMetricsInfo_;
-  bool inPredTransPhase_ = false;     // whether this operator is classified as pred-trans phase or exec phase
+  metrics::PredTransMetrics::PTPhaseType ptPhaseType_ = metrics::PredTransMetrics::PTPhaseType::OTHER;
+  metrics::PredTransCSMetrics::PTCSMetricsInfo ptCSMetricsInfo_;
 #endif
+
+  // inspect fields in base class
+  template <class Inspector, class... Fields>
+  friend bool inspect_base(Inspector& f, PhysicalOp& op, Fields&&... fs) {
+#if SHOW_DEBUG_METRICS == true
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
+                               f.field("ptMetricsInfo", op.ptMetricsInfo_),
+                               f.field("ptCSMetricsInfo", op.ptCSMetricsInfo_),
+                               std::forward<Fields>(fs)...);
+#else
+    return f.object(op).fields(f.field("name", op.name_),
+                               f.field("type", op.type_),
+                               f.field("projectColumnNames", op.projectColumnNames_),
+                               f.field("nodeId", op.nodeId_),
+                               f.field("queryId", op.queryId_),
+                               f.field("opContext", op.opContext_),
+                               f.field("producers", op.producers_),
+                               f.field("consumers", op.consumers_),
+                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
+                               f.field("isSeparated", op.isSeparated_),
+                               std::forward<Fields>(fs)...);
+#endif
+  }
 };
 
 } // namespace

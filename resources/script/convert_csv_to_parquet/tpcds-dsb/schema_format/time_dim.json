@@ -1,0 +1,48 @@
+{
+  "name": "time_dim",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "t_time_sk",
+      "type": "int64"
+    },
+    {
+      "name": "t_time_id",
+      "type": "string"
+    },
+    {
+      "name": "t_time",
+      "type": "int64"
+    },
+    {
+      "name": "t_hour",
+      "type": "int64"
+    },
+    {
+      "name": "t_minute",
+      "type": "int64"
+    },
+    {
+      "name": "t_second",
+      "type": "int64"
+    },
+    {
+      "name": "t_am_pm",
+      "type": "string"
+    },
+    {
+      "name": "t_shift",
+      "type": "string"
+    },
+    {
+      "name": "t_sub_shift",
+      "type": "string"
+    },
+    {
+      "name": "t_meal_time",
+      "type": "string"
+    }
+  ]
+}

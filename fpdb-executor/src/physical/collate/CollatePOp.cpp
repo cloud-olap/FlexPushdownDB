@@ -72,7 +72,7 @@ void CollatePOp::onComplete(const fpdb::executor::message::CompleteMessage &) {
       if (!res.ok()) {
         ctx()->notifyError(res.status().message());
       }
-      tuples_->table(*res);
+      tuples_ = TupleSet::make(*res);
       tables_.clear();
     }
 
@@ -137,7 +137,7 @@ void CollatePOp::onTupleSetRegular(const fpdb::executor::message::TupleSetMessag
       if (!res.ok()) {
         ctx()->notifyError(res.status().message());
       }
-      tuples_->table(*res);
+      tuples_ = TupleSet::make(*res);
       tables_.clear();
     }
   }

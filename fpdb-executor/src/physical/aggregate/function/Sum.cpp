@@ -9,8 +9,10 @@
 namespace fpdb::executor::physical::aggregate {
 
 Sum::Sum(const string &outputColumnName,
-         const shared_ptr<fpdb::expression::gandiva::Expression> &expression)
-  : AggregateFunction(SUM, outputColumnName, expression) {}
+         const shared_ptr<fpdb::expression::gandiva::Expression> &expression,
+         bool isCountReduce)
+  : AggregateFunction(SUM, outputColumnName, expression),
+    isCountReduce_(isCountReduce) {}
 
 std::string Sum::getTypeString() const {
   return "Sum";
@@ -60,6 +62,17 @@ Sum::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   return (*expFinalResultScalar).scalar();
 }
 
+tl::expected<shared_ptr<arrow::Scalar>, string> Sum::finalizeEmpty() const {
+  if (!isCountReduce_) {
+    return AggregateFunction::finalizeEmpty();
+  }
+  auto expScalar = arrow::MakeScalar(returnType(), 0);
+  if (!expScalar.ok()) {
+    return tl::make_unexpected(expScalar.status().message());
+  }
+  return *expScalar;
+}
+
 std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
 std::shared_ptr<arrow::Field>>> Sum::getArrowAggregateSignatures() {
   static auto defaultScalarAggregateOptions = arrow::compute::ScalarAggregateOptions::Defaults();
@@ -71,6 +84,10 @@ std::shared_ptr<arrow::Field>>> Sum::getArrowAggregateSignatures() {
           arrow::field(outputColumnName_, returnType())
   };
   return {aggregateSignature};
+}
+
+bool Sum::isCountReduce() const {
+  return isCountReduce_;
 }
 
 }

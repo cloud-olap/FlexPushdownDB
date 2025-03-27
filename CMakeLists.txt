@@ -10,7 +10,7 @@ include(CMakeUtils)
 
 setDefaults()
 
-set(FPDB_LLVM_VERSIONS "14.0" "13.0" "12.0" "11.1" "11.0" "10" CACHE STRING "")
+set(FPDB_LLVM_VERSIONS "13.0" "12.0" "11.1" "11.0" "10" CACHE STRING "")
 include(Configure_LLVM)
 
 
@@ -38,7 +38,6 @@ include(External_doctest)
 include(External_nanobench)
 include(External_caf)
 include(External_arrow)
-include(External_AWSCPPSDK)
 include(External_ANTLR)
 include(External_graphviz)
 include(External_expected)

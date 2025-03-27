@@ -64,6 +64,15 @@ tl::expected<std::shared_ptr<DateAdd>, std::string> DateAdd::fromJson(const nloh
   return std::make_shared<DateAdd>(expOperands->first, expOperands->second, *expIntervalType);
 }
 
+bool DateAdd::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<DateAdd>(other);
+  return equals(left_, typedOther->left_) && equals(right_, typedOther->right_) &&
+         intervalType_ == typedOther->intervalType_;
+}
+
 shared_ptr<Expression> datePlus(const shared_ptr<Expression>& left,
                                 const shared_ptr<Expression>& right,
                                 DateIntervalType intervalType) {

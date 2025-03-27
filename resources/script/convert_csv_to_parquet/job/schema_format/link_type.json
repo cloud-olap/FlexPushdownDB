@@ -1,0 +1,16 @@
+{
+  "name": "link_type",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "id",
+      "type": "int64"
+    },
+    {
+      "name": "link",
+      "type": "string"
+    }
+  ]
+}

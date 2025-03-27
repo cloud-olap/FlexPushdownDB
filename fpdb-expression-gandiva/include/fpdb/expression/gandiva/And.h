@@ -35,6 +35,8 @@ public:
   const vector<shared_ptr<Expression>> &getExprs() const;
 
 private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override;
+
   vector<shared_ptr<Expression>> exprs_;
 
 // caf inspect

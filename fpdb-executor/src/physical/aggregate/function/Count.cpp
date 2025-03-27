@@ -88,6 +88,14 @@ Count::finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) {
   return (*expFinalResultScalar).scalar();
 }
 
+tl::expected<shared_ptr<arrow::Scalar>, string> Count::finalizeEmpty() const {
+  auto expScalar = arrow::MakeScalar(returnType(), 0);
+  if (!expScalar.ok()) {
+    return tl::make_unexpected(expScalar.status().message());
+  }
+  return *expScalar;
+}
+
 std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
 std::shared_ptr<arrow::Field>>> Count::getArrowAggregateSignatures() {
   static auto countOnlyValidOptions = arrow::compute::CountOptions(arrow::compute::CountOptions::ONLY_VALID);

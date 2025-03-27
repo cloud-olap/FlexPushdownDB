@@ -18,8 +18,8 @@ target_include_directories(fpdb-aws PUBLIC include)
 target_link_libraries(fpdb-aws PUBLIC arrow_flight_static)
 target_link_libraries(fpdb-aws PUBLIC fpdb-util)
 target_link_libraries(fpdb-aws PUBLIC spdlog::spdlog)
-target_link_libraries(fpdb-aws PUBLIC aws-cpp-sdk-core)
-target_link_libraries(fpdb-aws PUBLIC aws-cpp-sdk-s3)
+target_link_libraries(fpdb-aws PUBLIC aws-sdk-core-static)
+target_link_libraries(fpdb-aws PUBLIC aws-sdk-s3-static)
 
 
 #-----------------------------------------------------------------------------------------------------------------------

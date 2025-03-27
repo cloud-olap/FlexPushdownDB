@@ -12,7 +12,10 @@ enum AggregateFunctionType {
   COUNT,
   MIN_MAX,
   AVG,
-  AVG_REDUCE
+  AVG_REDUCE,
+  ONE,
+  STDDEV,
+  STDDEV_REDUCE
 };
 
 }

@@ -20,13 +20,14 @@ public:
                   const vector<SortKey> &sortKeys);
 
   string getTypeString() override;
-
   set<string> getUsedColumnNames() override;
 
   int64_t getK() const;
   const vector<SortKey> &getSortKeys() const;
 
 private:
+  bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const override;
+
   int64_t k_;
   vector<SortKey> sortKeys_;
 };

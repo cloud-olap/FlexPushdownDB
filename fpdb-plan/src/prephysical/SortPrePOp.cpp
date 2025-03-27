@@ -29,4 +29,17 @@ const vector<SortKey> &SortPrePOp::getSortKeys() const {
   return sortKeys_;
 }
 
+bool SortPrePOp::equalTo(const std::shared_ptr<PrePhysicalOp> &other) const {
+  // self
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<SortPrePOp>(other);
+  if (!SortKey::equals(sortKeys_, typedOther->sortKeys_)) {
+    return false;
+  }
+  // producers
+  return equals(producers_, typedOther->producers_);
+}
+
 }

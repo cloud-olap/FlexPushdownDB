@@ -82,6 +82,15 @@ tl::expected<std::shared_ptr<Substr>, std::string> Substr::fromJson(const nlohma
   return std::make_shared<Substr>(*expExpr, *expFromLit, *expForLit);
 }
 
+bool Substr::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<Substr>(other);
+  return equals(expr_, typedOther->expr_) && equals(fromLit_, typedOther->fromLit_) &&
+         equals(forLit_, typedOther->forLit_);
+}
+
 shared_ptr<Expression> substr(const shared_ptr<Expression> &expr,
                               const shared_ptr<Expression> &fromLit,
                               const shared_ptr<Expression> &forLit) {

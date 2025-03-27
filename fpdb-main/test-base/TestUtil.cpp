@@ -53,10 +53,11 @@ TestUtil::TestUtil(const string &schemaName,
   objStoreType_(objStoreType),
   mode_(mode),
   cachingPolicyType_(cachingPolicyType),
-  cacheSize_(cacheSize) {
+  cacheSize_(cacheSize),
+  queryCounter_(make_shared<std::atomic<long>>(0)) {
 
-  // Set pushdown feature flags
-  readPushdownFlags();
+  // Set config params for tests
+  readTestUtilConfig();
 }
 
 bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
@@ -66,7 +67,8 @@ bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
                                        ObjStoreType objStoreType,
                                        const shared_ptr<Mode> &mode,
                                        CachingPolicyType cachingPolicyType,
-                                       size_t cacheSize) {
+                                       size_t cacheSize,
+                                       bool useHeuristicJoinOrdering) {
   TestUtil testUtil(schemaName,
                     queryFileNames,
                     parallelDegree,
@@ -75,33 +77,6 @@ bool TestUtil::e2eNoStartCalciteServer(const string &schemaName,
                     mode,
                     cachingPolicyType,
                     cacheSize);
-  try {
-    testUtil.runTest();
-    return true;
-  } catch (const runtime_error &err) {
-    cout << err.what() << endl;
-    return false;
-  }
-}
-
-bool TestUtil::e2eNoStartCalciteServerSingleThread(const string &schemaName,
-                                                   const vector<string> &queryFileNames,
-                                                   int parallelDegree,
-                                                   bool isDistributed,
-                                                   ObjStoreType objStoreType,
-                                                   const shared_ptr<Mode> &mode,
-                                                   CachingPolicyType cachingPolicyType,
-                                                   size_t cacheSize,
-                                                   bool useHeuristicJoinOrdering) {
-  TestUtil testUtil(schemaName,
-                    queryFileNames,
-                    parallelDegree,
-                    isDistributed,
-                    objStoreType,
-                    mode,
-                    cachingPolicyType,
-                    cacheSize);
-  testUtil.setUseThreads(false);
   testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
   try {
     testUtil.runTest();
@@ -112,20 +87,24 @@ bool TestUtil::e2eNoStartCalciteServerSingleThread(const string &schemaName,
   }
 }
 
-bool TestUtil::e2eNoStartCalciteServerNoHeuristicJoinOrdering(const string &schemaName,
-                                                              const vector<string> &queryFileNames, int parallelDegree,
-                                                              bool isDistributed, ObjStoreType objStoreType,
-                                                              const shared_ptr<Mode> &mode,
-                                                              CachingPolicyType cachingPolicyType, size_t cacheSize) {
+bool TestUtil::e2eNoStartCalciteServerSingleNode(const string &schemaName,
+                                                 const vector<string> &queryFileNames,
+                                                 ObjStoreType objStoreType,
+                                                 int numThreads,
+                                                 const shared_ptr<Mode> &mode,
+                                                 CachingPolicyType cachingPolicyType,
+                                                 size_t cacheSize,
+                                                 bool useHeuristicJoinOrdering) {
   TestUtil testUtil(schemaName,
                     queryFileNames,
-                    parallelDegree,
-                    isDistributed,
+                    numThreads,
+                    false,
                     objStoreType,
                     mode,
                     cachingPolicyType,
                     cacheSize);
-  testUtil.setUseHeuristicJoinOrdering(false);
+  testUtil.setNumThreads(numThreads);
+  testUtil.setUseHeuristicJoinOrdering(useHeuristicJoinOrdering);
   try {
     testUtil.runTest();
     return true;
@@ -188,8 +167,8 @@ double TestUtil::getCrtQueryHitRatio() const {
   return crtQueryHitRatio_;
 }
 
-void TestUtil::setUseThreads(bool useThreads) {
-  useThreads_ = useThreads;
+void TestUtil::setNumThreads(int numThreads) {
+  numThreads_ = numThreads;
 }
 
 void TestUtil::setUseHeuristicJoinOrdering(bool useHeuristicJoinOrdering) {
@@ -202,6 +181,18 @@ void TestUtil::setFixLayoutIndices(const set<int> &fixLayoutIndices) {
 
 void TestUtil::setCollAdaptPushdownMetrics(bool collAdaptPushdownMetrics) {
   collAdaptPushdownMetrics_ = collAdaptPushdownMetrics;
+}
+
+void TestUtil::setConcurrent(bool concurrent) {
+  concurrent_ = concurrent;
+}
+
+void TestUtil::setShowResults(bool showResults) {
+  showResults_ = showResults;
+}
+
+void TestUtil::setCache(const std::shared_ptr<SegmentCache> &cache) {
+  cache_ = cache;
 }
 
 void TestUtil::runTest() {
@@ -223,12 +214,24 @@ void TestUtil::runTest() {
   makeExecutor();
 
   // run queries
+  std::vector<std::thread> ths;
   for (uint i = 0; i < queryFileNames_.size(); ++i) {
-    executeQueryFile(queryFileNames_[i]);
+    long queryId = queryCounter_->fetch_add(1);
+    if (!concurrent_) {
+      executeQueryFile(queryId, queryFileNames_[i]);
+      // fix cache layout if needed, only available in serial runs
+      if (fixLayoutIndices_.find((int) i) != fixLayoutIndices_.end()) {
+        fpdb::cache::FIX_CACHE_LAYOUT = true;
+      }
+    } else {
+      ths.push_back(std::thread(&TestUtil::executeQueryFile, this, queryId, queryFileNames_[i]));
+    }
+  }
 
-    // fix cache layout if needed
-    if (fixLayoutIndices_.find((int) i) != fixLayoutIndices_.end()) {
-      fpdb::cache::FIX_CACHE_LAYOUT = true;
+  // wait for concurrent runs
+  if (concurrent_) {
+    for (auto &th: ths) {
+      th.join();
     }
   }
 
@@ -236,13 +239,19 @@ void TestUtil::runTest() {
   stop();
 }
 
-void TestUtil::readPushdownFlags() {
+void TestUtil::readTestUtilConfig() {
+  // pushdown flags
   unordered_map<string, string> configMap = readConfig("pushdown.conf");
   ENABLE_GROUP_BY_PUSHDOWN = parseBool(configMap["GROUP"]);
   ENABLE_SHUFFLE_PUSHDOWN = parseBool(configMap["SHUFFLE"]);
   ENABLE_BLOOM_FILTER_PUSHDOWN = parseBool(configMap["BLOOM_FILTER"]);
   ENABLE_FILTER_BITMAP_PUSHDOWN = parseBool(configMap["FILTER_BITMAP"]);
   ENABLE_CO_LOCATED_JOIN_PUSHDOWN = parseBool(configMap["CO_LOCATED_JOIN"]);
+  // some other params needed from exec config
+  configMap = readConfig("exec.conf");
+  DIST_JOIN_TYPE = ExecConfig::parseDistJoinType(configMap["DIST_JOIN_TYPE"]);
+  DIST_PRED_TRANS_TYPE = ExecConfig::parseDistPredTransType(configMap["DIST_PRED_TRANS_TYPE"]);
+  PRUNE_PRED_TRANS = parseBool(configMap["PRUNE_PRED_TRANS"]);
 }
 
 void TestUtil::makeObjStoreConnector() {
@@ -315,16 +324,17 @@ void TestUtil::makeCalciteClient() {
 }
 
 void TestUtil::connect() {
-  if (!actorSystemConfig_->nodeIps_.empty()) {
-    for (const auto &nodeIp: actorSystemConfig_->nodeIps_) {
-      auto expectedNode = actorSystem_->middleman().connect(nodeIp, actorSystemConfig_->port_);
-      if (!expectedNode) {
-        nodes_.clear();
-        throw runtime_error(
-                fmt::format("Failed to connected to server {}: {}", nodeIp, to_string(expectedNode.error())));
-      }
-      nodes_.emplace_back(*expectedNode);
+  if (actorSystemConfig_->nodeIps_.empty()) {
+    throw runtime_error("No executor node found in distributed execution");
+  }
+  for (const auto &nodeIp: actorSystemConfig_->nodeIps_) {
+    auto expectedNode = actorSystem_->middleman().connect(nodeIp, actorSystemConfig_->port_);
+    if (!expectedNode) {
+      nodes_.clear();
+      throw runtime_error(
+              fmt::format("Failed to connected to server {}: {}", nodeIp, to_string(expectedNode.error())));
     }
+    nodes_.emplace_back(*expectedNode);
   }
 }
 
@@ -333,8 +343,8 @@ void TestUtil::makeExecutor() {
   const auto &remoteIps = readRemoteIps();
   int CAFServerPort = ExecConfig::parseCAFServerPort();
   actorSystemConfig_ = make_shared<ActorSystemConfig>(CAFServerPort, remoteIps, false);
-  if (!useThreads_) {
-    actorSystemConfig_ -> set("caf.scheduler.max-threads", 1);
+  if (numThreads_ > 0) {
+    actorSystemConfig_ -> set("caf.scheduler.max-threads", numThreads_);
   }
   fpdb::executor::caf::CAFInit::initCAFGlobalMetaObjects();
   actorSystem_ = make_shared<::caf::actor_system>(*actorSystemConfig_);
@@ -346,10 +356,13 @@ void TestUtil::makeExecutor() {
   executor_ = make_shared<Executor>(actorSystem_,
                                     nodes_,
                                     mode_,
-                                    cachingPolicy_,
-                                    false,
-                                    false);
+                                    cachingPolicy_);
   executor_->start();
+
+  // ingest existing cache content if any
+  if (cache_) {
+    executor_->ingestCache(cache_);
+  }
 
   // make actor system for adaptive pushdown if needed
   if (ENABLE_ADAPTIVE_PUSHDOWN) {
@@ -357,8 +370,10 @@ void TestUtil::makeExecutor() {
   }
 }
 
-void TestUtil::executeQueryFile(const string &queryFileName) {
-  cout << "Query: " << queryFileName << endl;
+void TestUtil::executeQueryFile(long queryId, const string &queryFileName) {
+  ConcurrentOutputMutex.lock();
+  cout << fmt::format("Query: '{}' (id: {})", queryFileName, queryId) << endl;
+  ConcurrentOutputMutex.unlock();
 
   // Plan query
   string queryPath = std::filesystem::current_path()
@@ -379,28 +394,58 @@ void TestUtil::executeQueryFile(const string &queryFileName) {
   auto separableTransformer = make_shared<SeparablePrePOpTransformer>(catalogueEntry_);
   separableTransformer->transform(prePhysicalPlan);
 
-  // transform prephysical plan to physical plan
+  // transform prephysical plan to physical plan, and then execute
   int numNodes = isDistributed_ ? (int) nodes_.size() : 1;
-  auto physicalPlan = PrePToPTransformer::transform(prePhysicalPlan,
-                                                    catalogueEntry_,
-                                                    objStoreConnector_,
-                                                    mode_,
-                                                    parallelDegree_,
-                                                    numNodes);
-
-  // execute
-  const auto &execRes = objStoreConnector_->getStoreType() == ObjStoreType::FPDB_STORE ?
-                        executor_->execute(physicalPlan, isDistributed_, collAdaptPushdownMetrics_,
-                                           static_pointer_cast<FPDBStoreConnector>(objStoreConnector_)) :
-                        executor_->execute(physicalPlan, isDistributed_);
+  std::pair<std::shared_ptr<TupleSet>, long> execRes;
+  if (enableAdaptExec()) {
+    if (collAdaptPushdownMetrics_) {
+      throw std::runtime_error("Adaptive execution does not support collecting adaptive pushdown metrics.");
+    }
+    auto physicalPlan = PrePToPTransformer::transform(prePhysicalPlan,
+                                                      catalogueEntry_,
+                                                      objStoreConnector_,
+                                                      mode_,
+                                                      parallelDegree_,
+                                                      numNodes,
+                                                      queryId,
+                                                      isDistributed_,
+                                                      executor_.get());
+    if (USE_DOUBLE_EXEC_ADAPT) {
+      // still generate a static query plan in once, but produced adaptively based on cardinalities of old run
+      execRes = executor_->execute(queryId, physicalPlan, isDistributed_);
+    } else {
+      auto adaptPhysicalPlan = std::make_shared<AdaptPhysicalPlan>(physicalPlan->getPhysicalOps(),
+                                                                   std::unordered_set<std::string>{},
+                                                                   std::unordered_map<std::string, bool>{},
+                                                                   true, // consume all existing sink ops
+                                                                   physicalPlan->getRootPOpName());
+      executor_->execNextAdaptStage(queryId, adaptPhysicalPlan);
+      execRes = executor_->finishAdaptExec(queryId);
+    }
+  } else {
+    auto physicalPlan = PrePToPTransformer::transform(prePhysicalPlan,
+                                                      catalogueEntry_,
+                                                      objStoreConnector_,
+                                                      mode_,
+                                                      parallelDegree_,
+                                                      numNodes);
+    execRes = objStoreConnector_->getStoreType() == ObjStoreType::FPDB_STORE ?
+              executor_->execute(queryId, physicalPlan, isDistributed_, collAdaptPushdownMetrics_,
+                                 static_pointer_cast<FPDBStoreConnector>(objStoreConnector_)) :
+              executor_->execute(queryId, physicalPlan, isDistributed_);
+  }
 
   // show output
   stringstream ss;
-  ss << fmt::format("\nResult |\n{}", execRes.first->showString(
-          TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 100)));
-  ss << fmt::format("\nTime: {} secs\n\n", (double) (execRes.second) / 1000000000.0);
+  if (showResults_) {
+    ss << fmt::format("\nResult of '{}' (id: {}) |\n{}", queryFileName, queryId, execRes.first->showString(
+            TupleSetShowOptions(TupleSetShowOrientation::RowOriented, 100)));
+  }
+  ss << fmt::format("\nTime (id: {}): {} secs\n\n", queryId, (double) (execRes.second) / 1000000000.0);
   ss << endl;
+  ConcurrentOutputMutex.lock();
   cout << ss.str() << endl;
+  ConcurrentOutputMutex.unlock();
 
   // metrics used for checking in some unit tests
   crtQueryHitRatio_ = executor_->getCrtQueryHitRatio();

@@ -33,6 +33,8 @@ public:
   const std::optional<std::string> &value() const;
 
 private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override;
+
   std::optional<std::string> value_;
 
 // caf inspect

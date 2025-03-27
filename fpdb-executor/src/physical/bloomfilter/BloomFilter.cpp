@@ -14,7 +14,7 @@ using namespace fpdb::tuple;
 namespace fpdb::executor::physical::bloomfilter {
 
 BloomFilter::BloomFilter(int64_t capacity, double falsePositiveRate) :
-  BloomFilterBase(BloomFilterType::BLOOM_FILTER, capacity, capacity <= BLOOM_FILTER_MAX_INPUT_SIZE),
+  BloomFilterBase(BloomFilterType::VANILLA_BF, capacity, capacity <= BLOOM_FILTER_MAX_INPUT_SIZE),
   falsePositiveRate_(falsePositiveRate) {
 
   assert(falsePositiveRate >= 0.0 && falsePositiveRate <= 1.0);
@@ -27,7 +27,7 @@ BloomFilter::BloomFilter(int64_t capacity,
                          int64_t numBits,
                          const std::vector<std::shared_ptr<UniversalHashFunction>> &hashFunctions,
                          const std::vector<int64_t> &bitArray) :
-  BloomFilterBase(BloomFilterType::BLOOM_FILTER, capacity, valid),
+  BloomFilterBase(BloomFilterType::VANILLA_BF, capacity, valid),
   falsePositiveRate_(falsePositiveRate),
   numHashFunctions_(numHashFunctions),
   numBits_(numBits),

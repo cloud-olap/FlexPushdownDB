@@ -1,0 +1,44 @@
+{
+  "name": "catalog_page",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "cp_catalog_page_sk",
+      "type": "int64"
+    },
+    {
+      "name": "cp_catalog_page_id",
+      "type": "string"
+    },
+    {
+      "name": "cp_start_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "cp_end_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "cp_department",
+      "type": "string"
+    },
+    {
+      "name": "cp_catalog_number",
+      "type": "int64"
+    },
+    {
+      "name": "cp_catalog_page_number",
+      "type": "int64"
+    },
+    {
+      "name": "cp_description",
+      "type": "string"
+    },
+    {
+      "name": "cp_type",
+      "type": "string"
+    }
+  ]
+}

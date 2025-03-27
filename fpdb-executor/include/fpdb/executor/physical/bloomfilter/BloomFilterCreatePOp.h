@@ -9,6 +9,7 @@
 #include <fpdb/executor/physical/bloomfilter/BloomFilterCreateAbstractKernel.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilter.h>
 #include <fpdb/executor/physical/fpdb-store/FPDBStoreBloomFilterInfo.h>
+#include <fpdb/executor/message/GlobalArrowBloomFilterInitMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 
 namespace fpdb::executor::physical::bloomfilter {
@@ -20,6 +21,7 @@ public:
                                 const std::vector<std::string> &projectColumnNames,
                                 int nodeId,
                                 const std::vector<std::string> &bloomFilterColumnNames,
+                                bool isGlobal = false,
                                 double desiredFalsePositiveRate = BloomFilter::DefaultDesiredFalsePositiveRate);
   BloomFilterCreatePOp() = default;
   BloomFilterCreatePOp(const BloomFilterCreatePOp&) = default;
@@ -32,10 +34,10 @@ public:
   void produce(const std::shared_ptr<PhysicalOp> &op) override;
 
   const std::shared_ptr<BloomFilterCreateAbstractKernel> &getKernel() const;
-  const std::set<std::string> &getBloomFilterUsePOps() const;
+  const std::string &getBloomFilterUsePOp() const;
   const std::set<std::string> &getPassTupleSetConsumers() const;
 
-  void setBloomFilterUsePOps(const std::set<std::string> &bloomFilterUsePOps);
+  void setBloomFilterUsePOp(const std::string &bloomFilterUsePOp);
   void setPassTupleSetConsumers(const std::set<std::string> &passTupleSetConsumers);
   void addBloomFilterUsePOp(const std::shared_ptr<PhysicalOp> &bloomFilterUsePOp);
   void addFPDBStoreBloomFilterConsumer(const std::shared_ptr<PhysicalOp> &fpdbStoreBloomFilterConsumer);
@@ -48,12 +50,14 @@ public:
 private:
   void onStart();
   void onTupleSet(const TupleSetMessage &msg);
+  void onGlobalArrowBloomFilterInit(const GlobalArrowBloomFilterInitMessage &msg);
   void onComplete(const CompleteMessage &);
   void putBloomFilterToStore(const std::shared_ptr<BloomFilterBase> &bloomFilter);
   void notifyFPDBStoreBloomFilterUsers();
 
+  bool isGlobal_;   // set when building a global BF
   std::shared_ptr<BloomFilterCreateAbstractKernel> kernel_;
-  std::set<std::string> bloomFilterUsePOps_;
+  std::string bloomFilterUsePOp_;      // not used when building a global BF
   std::set<std::string> passTupleSetConsumers_;
 
   // set only when pushing down bloom filter
@@ -68,21 +72,13 @@ private:
 public:
   template <class Inspector>
   friend bool inspect(Inspector& f, BloomFilterCreatePOp& op) {
-    return f.object(op).fields(f.field("name", op.name_),
-                               f.field("type", op.type_),
-                               f.field("projectColumnNames", op.projectColumnNames_),
-                               f.field("nodeId", op.nodeId_),
-                               f.field("queryId", op.queryId_),
-                               f.field("opContext", op.opContext_),
-                               f.field("producers", op.producers_),
-                               f.field("consumers", op.consumers_),
-                               f.field("consumerToBloomFilterInfo", op.consumerToBloomFilterInfo_),
-                               f.field("isSeparated", op.isSeparated_),
-                               f.field("kernel", op.kernel_),
-                               f.field("bloomFilterUsePOps", op.bloomFilterUsePOps_),
-                               f.field("passTupleSetConsumers", op.passTupleSetConsumers_),
-                               f.field("bloomFilterInfo", op.bloomFilterInfo_),
-                               f.field("fpdbStoreBloomFilterConsumers", op.fpdbStoreBloomFilterConsumers_));
+    return inspect_base(f, op,
+                        f.field("isGlobal", op.isGlobal_),
+                        f.field("kernel", op.kernel_),
+                        f.field("bloomFilterUsePOp", op.bloomFilterUsePOp_),
+                        f.field("passTupleSetConsumers", op.passTupleSetConsumers_),
+                        f.field("bloomFilterInfo", op.bloomFilterInfo_),
+                        f.field("fpdbStoreBloomFilterConsumers", op.fpdbStoreBloomFilterConsumers_));
   }
 };
 

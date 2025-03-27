@@ -8,6 +8,9 @@
 #include <fpdb/executor/physical/aggregate/function/Count.h>
 #include <fpdb/executor/physical/aggregate/function/MinMax.h>
 #include <fpdb/executor/physical/aggregate/function/Sum.h>
+#include <fpdb/executor/physical/aggregate/function/One.h>
+#include <fpdb/executor/physical/aggregate/function/Stddev.h>
+#include <fpdb/executor/physical/aggregate/function/StddevReduce.h>
 #include <fpdb/expression/gandiva/Projector.h>
 #include <fpdb/expression/gandiva/Column.h>
 #include <utility>
@@ -52,6 +55,13 @@ set<string> AggregateFunction::involvedColumnNames() const {
   if (expression_) {
     jObj.emplace("expression", expression_->toJson());
   }
+  if (type_ == SUM) {
+    auto sum = reinterpret_cast<const Sum*>(this);
+    jObj.emplace("isCountReduce", sum->isCountReduce());
+  } else if (type_ == STDDEV || type_ == STDDEV_REDUCE) {
+    auto stddevBase = reinterpret_cast<const StddevBase*>(this);
+    jObj.emplace("stddevType", stddevBase->getStddevType());
+  }
   return jObj;
 }
 
@@ -79,16 +89,36 @@ tl::expected<std::shared_ptr<AggregateFunction>, std::string> AggregateFunction:
     bool isMin = (type == "Min");
     return std::make_shared<MinMax>(isMin, outputColumnName, expression);
   } else if (type == "Sum") {
-    return std::make_shared<Sum>(outputColumnName, expression);
+    if (!jObj.contains("isCountReduce")) {
+      return tl::make_unexpected(fmt::format("`isCountReduce` not specified in Sum aggregate function JSON '{}'", to_string(jObj)));
+    }
+    bool isCountReduce = jObj["isCountReduce"].get<bool>();
+    return std::make_shared<Sum>(outputColumnName, expression, isCountReduce);
   } else if (type == "Count") {
     return std::make_shared<Count>(outputColumnName, expression);
   } else if (type == "Avg") {
     return std::make_shared<Avg>(outputColumnName, expression);
   } else if (type == "AvgReduce") {
     return std::make_shared<AvgReduce>(outputColumnName, expression);
+  } else if (type == "One") {
+    return std::make_shared<One>(outputColumnName, expression);
+  } else if (type == "Stddev" || type == "StddevReduce") {
+    if (!jObj.contains("stddevType")) {
+      return tl::make_unexpected(fmt::format("`stddevType` not specified in Stddev/StddevReduce aggregate function JSON '{}'", to_string(jObj)));
+    }
+    StddevType stddevType = jObj["stddevType"].get<StddevType>();
+    if (type == "Stddev") {
+      return std::make_shared<Stddev>(stddevType, outputColumnName, expression);
+    } else {
+      return std::make_shared<StddevReduce>(stddevType, outputColumnName, expression);
+    }
   } else {
     return tl::make_unexpected(fmt::format("Unsupported aggregate function type: '{}'", type));
   }
+}
+
+tl::expected<shared_ptr<arrow::Scalar>, string> AggregateFunction::finalizeEmpty() const {
+  return arrow::MakeNullScalar(returnType());
 }
 
 tl::expected<void, string> AggregateFunction::compile(const shared_ptr<arrow::Schema> &schema) {

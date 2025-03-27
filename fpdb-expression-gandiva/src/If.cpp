@@ -3,6 +3,7 @@
 //
 
 #include <fpdb/expression/gandiva/If.h>
+#include <fpdb/expression/gandiva/Cast.h>
 #include <gandiva/tree_expr_builder.h>
 #include <fmt/format.h>
 
@@ -21,8 +22,23 @@ void If::compile(const shared_ptr<arrow::Schema> &schema) {
   thenExpr_->compile(schema);
   elseExpr_->compile(schema);
 
-  // FIXME: check return type between "then" and "else"
-  returnType_ = thenExpr_->getReturnType();
+  // check return type between "then" and "else" and cast if needed
+  const auto &thenType = thenExpr_->getReturnType();
+  const auto &elseType = elseExpr_->getReturnType();
+  if (thenType->id() == elseType->id()) {
+    returnType_ = thenExpr_->getReturnType();
+  } else {
+    if (Cast::getCastDirection(thenType, elseType)) {
+      thenExpr_ = cast(thenExpr_, elseType);
+      thenExpr_->compile(schema);
+      returnType_ = elseExpr_->getReturnType();
+    } else {
+      elseExpr_ = cast(elseExpr_, thenType);
+      elseExpr_->compile(schema);
+      returnType_ = thenExpr_->getReturnType();
+    }
+  }
+
   gandivaExpression_ = ::gandiva::TreeExprBuilder::MakeIf(ifExpr_->getGandivaExpression(),
                                                           thenExpr_->getGandivaExpression(),
                                                           elseExpr_->getGandivaExpression(),
@@ -81,6 +97,15 @@ tl::expected<std::shared_ptr<If>, std::string> If::fromJson(const nlohmann::json
   }
 
   return std::make_shared<If>(*expIfExpr, *expThenExpr, *expElseExpr);
+}
+
+bool If::equalTo(const std::shared_ptr<Expression> &other) const {
+  if (type_ != other->getType()) {
+    return false;
+  }
+  auto typedOther = std::static_pointer_cast<If>(other);
+  return equals(ifExpr_, typedOther->ifExpr_) && equals(thenExpr_, typedOther->thenExpr_) &&
+         equals(elseExpr_, typedOther->elseExpr_);
 }
 
 shared_ptr<Expression> if_(const shared_ptr<Expression> &ifExpr,

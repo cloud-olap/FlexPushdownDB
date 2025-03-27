@@ -13,7 +13,8 @@ class Sum : public AggregateFunction {
 
 public:
   Sum(const string &outputColumnName,
-      const shared_ptr<fpdb::expression::gandiva::Expression> &expression);
+      const shared_ptr<fpdb::expression::gandiva::Expression> &expression,
+      bool isCountReduce);
   Sum() = default;
   Sum(const Sum&) = default;
   Sum& operator=(const Sum&) = default;
@@ -26,11 +27,18 @@ public:
   tl::expected<shared_ptr<arrow::Scalar>, string>
   finalize(const vector<shared_ptr<AggregateResult>> &aggregateResults) override;
 
+  tl::expected<shared_ptr<arrow::Scalar>, string> finalizeEmpty() const override;
+
   std::vector<std::tuple<arrow::compute::internal::Aggregate, arrow::FieldRef, std::string,
   std::shared_ptr<arrow::Field>>> getArrowAggregateSignatures() override;
 
+  bool isCountReduce() const;
+
 private:
   constexpr static const char *const SUM_RESULT_KEY = "SUM";
+
+  // Whether this `Sum` is actually the reduce of `Count`
+  bool isCountReduce_;
 
 // caf inspect
 public:
@@ -38,7 +46,8 @@ public:
   friend bool inspect(Inspector& f, Sum& func) {
     return f.object(func).fields(f.field("type", func.type_),
                                  f.field("outputColumnName", func.outputColumnName_),
-                                 f.field("expression", func.expression_));
+                                 f.field("expression", func.expression_),
+                                 f.field("isCountReduce", func.isCountReduce_));
   }
 };
 

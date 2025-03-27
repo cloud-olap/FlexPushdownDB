@@ -1,0 +1,88 @@
+{
+  "name": "store_returns",
+  "format": {
+    "fieldDelimiter": "|"
+  },
+  "fields": [
+    {
+      "name": "sr_returned_date_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_return_time_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_item_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_customer_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_cdemo_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_hdemo_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_addr_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_store_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_reason_sk",
+      "type": "int64"
+    },
+    {
+      "name": "sr_ticket_number",
+      "type": "int64"
+    },
+    {
+      "name": "sr_return_quantity",
+      "type": "int64"
+    },
+    {
+      "name": "sr_return_amt",
+      "type": "double"
+    },
+    {
+      "name": "sr_return_tax",
+      "type": "double"
+    },
+    {
+      "name": "sr_return_amt_inc_tax",
+      "type": "double"
+    },
+    {
+      "name": "sr_fee",
+      "type": "double"
+    },
+    {
+      "name": "sr_return_ship_cost",
+      "type": "double"
+    },
+    {
+      "name": "sr_refunded_cash",
+      "type": "double"
+    },
+    {
+      "name": "sr_reversed_charge",
+      "type": "double"
+    },
+    {
+      "name": "sr_store_credit",
+      "type": "double"
+    },
+    {
+      "name": "sr_net_loss",
+      "type": "double"
+    }
+  ]
+}

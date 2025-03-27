@@ -11,7 +11,7 @@ FPDBStoreExecution::FPDBStoreExecution(long queryId,
                                        const std::shared_ptr<PhysicalPlan> &physicalPlan,
                                        TableCallBack tableCallBack,
                                        BitmapCallBack bitmapCallBack):
-  Execution(queryId, actorSystem, {}, nullptr, {}, physicalPlan, false),
+  Execution(queryId, actorSystem, {}, nullptr, {}, physicalPlan, false, nullptr),
   tableCallBack_(std::move(tableCallBack)),
   bitmapCallBack_(std::move(bitmapCallBack)) {}
 
@@ -56,15 +56,21 @@ void FPDBStoreExecution::join() {
               }
 
 #if SHOW_DEBUG_METRICS == true
-              case MessageType::TRANSFER_METRICS: {
-                auto transferMetricsMsg = ((TransferMetricsMessage &) msg);
-                debugMetrics_.add(transferMetricsMsg.getTransferMetrics());
+              case MessageType::NETWORK_METRICS: {
+                auto networkMetricsMsg = ((NetworkMetricsMessage &) msg);
+                debugMetrics_.add(networkMetricsMsg.getNetworkMetrics());
                 break;
               }
 
               case MessageType::DISK_METRICS: {
                 auto diskMetricsMsg = ((DiskMetricsMessage &) msg);
                 debugMetrics_.add(diskMetricsMsg.getDiskMetrics());
+                break;
+              }
+
+              case MessageType::PRED_TRANS_METRICS: {
+                auto ptMetricsMsg = ((PredTransMetricsMessage &) msg);
+                debugMetrics_.add(ptMetricsMsg.getPTMetrics());
                 break;
               }
 #endif

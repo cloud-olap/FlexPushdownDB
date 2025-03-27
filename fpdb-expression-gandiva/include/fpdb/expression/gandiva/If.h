@@ -29,6 +29,8 @@ public:
   static tl::expected<std::shared_ptr<If>, std::string> fromJson(const nlohmann::json &jObj);
 
 private:
+  bool equalTo(const std::shared_ptr<Expression> &other) const override;
+
   shared_ptr<Expression> ifExpr_;
   shared_ptr<Expression> thenExpr_;
   shared_ptr<Expression> elseExpr_;

@@ -21,6 +21,11 @@ public:
   PrePhysicalOp(uint id, PrePOpType type, double rowCount);
   virtual ~PrePhysicalOp() = default;
 
+  static bool equals(const std::shared_ptr<PrePhysicalOp> &p1,
+                     const std::shared_ptr<PrePhysicalOp> &p2);
+  static bool equals(const std::vector<std::shared_ptr<PrePhysicalOp>> &p1,
+                     const std::vector<std::shared_ptr<PrePhysicalOp>> &p2);
+
   uint getId() const;
   PrePOpType getType() const;
   virtual string getTypeString() = 0;
@@ -33,12 +38,15 @@ public:
   virtual void setProjectColumnNames(const set<string> &projectColumnNames);
   void setRowCount(double rowCount);
 
-private:
+protected:
   uint id_;
   PrePOpType type_;
   double rowCount_;   // estimated row count
   vector<shared_ptr<PrePhysicalOp>> producers_;
   set<string> projectColumnNames_;
+
+private:
+  virtual bool equalTo(const std::shared_ptr<PrePhysicalOp> &other) const = 0;
 };
 
 }

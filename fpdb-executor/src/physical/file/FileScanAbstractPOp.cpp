@@ -6,7 +6,7 @@
 #include <fpdb/executor/physical/file/LocalFileScanKernel.h>
 #include <fpdb/executor/physical/file/RemoteFileScanKernel.h>
 #include <fpdb/executor/physical/cache/CacheHelper.h>
-#include <fpdb/executor/message/TransferMetricsMessage.h>
+#include <fpdb/executor/message/NetworkMetricsMessage.h>
 #include <fpdb/executor/metrics/Globals.h>
 #include <fpdb/catalogue/local-fs/LocalFSPartition.h>
 #include <fpdb/catalogue/obj-store/ObjStorePartition.h>
@@ -113,8 +113,8 @@ std::shared_ptr<TupleSet> FileScanAbstractPOp::readTuples(const std::vector<std:
 #if SHOW_DEBUG_METRICS == true
   std::shared_ptr<Message> execMetricsMsg;
   if (type_ == POpType::REMOTE_FILE_SCAN) {
-    execMetricsMsg = std::make_shared<TransferMetricsMessage>(
-            metrics::TransferMetrics(kernel_->getBytesReadRemote(), 0, 0), this->name());
+    execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+            metrics::NetworkMetrics(kernel_->getBytesReadRemote(), 0, 0), this->name());
   } else {
     execMetricsMsg = std::make_shared<DiskMetricsMessage>(kernel_->getBytesReadLocal(), this->name());
   }

@@ -5,11 +5,11 @@
 #include <fpdb/executor/physical/POpContext.h>
 #include <fpdb/executor/physical/Globals.h>
 #include <fpdb/executor/physical/bloomfilter/BloomFilterUseKernel.h>
+#include <fpdb/executor/physical/bloomfilter/ArrowBloomFilter.h>
 #include <fpdb/executor/cache/SegmentCacheActor.h>
 #include <fpdb/executor/message/Message.h>
 #include <fpdb/executor/message/CompleteMessage.h>
 #include <fpdb/executor/message/TupleSetMessage.h>
-#include <fpdb/executor/message/TupleSetSizeMessage.h>
 #include <fpdb/executor/message/cache/LoadRequestMessage.h>
 #include <fpdb/executor/message/cache/CacheMetricsMessage.h>
 #include <fpdb/executor/flight/FlightHandler.h>
@@ -46,6 +46,7 @@ void POpContext::tell(const std::shared_ptr<Message> &msg,
     if (ptMetricsInfo.collPredTransMetrics_ && tupleSet->numColumns() > 0) {
       std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
               metrics::PredTransMetrics::PTMetricsUnit(ptMetricsInfo.prePOpId_,
+                                                       ptMetricsInfo.table_,
                                                        operatorActor_->operator_()->getTypeString(),
                                                        ptMetricsInfo.ptMetricsType_,
                                                        tupleSet->schema(),
@@ -92,6 +93,7 @@ void POpContext::send(const std::shared_ptr<message::Message> &msg, const std::s
       if (ptMetricsInfo.collPredTransMetrics_ && tupleSet->numColumns() > 0) {
         std::shared_ptr<Message> ptMetricsMessage = std::make_shared<PredTransMetricsMessage>(
                 metrics::PredTransMetrics::PTMetricsUnit(ptMetricsInfo.prePOpId_,
+                                                         ptMetricsInfo.table_,
                                                          operatorActor_->operator_()->getTypeString(),
                                                          ptMetricsInfo.ptMetricsType_,
                                                          tupleSet->schema(),
@@ -129,12 +131,19 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
     FlightHandler::daemonServer_->putTable(operatorActor_->operator_()->getQueryId(), operatorActor_->name_, consumer,
                                            std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->table());
 
+    // if "ENABLE_PARALLEL_BATCH_EXCHANGE", "BatchExchangePOp" needs to send also the original consumer name,
+    // since the sent "TupleSetReadyRemoteMessage" will be forwarded
+    auto originalConsumer = (ENABLE_PARALLEL_BATCH_EXCHANGE &&
+            operatorActor_->operator_()->getType() == POpType::BATCH_EXCHANGE) ?
+                    std::optional<std::string>(consumer) : std::nullopt;
+
     // send notification
     std::shared_ptr<Message> tupleSetReadyRemoteMessage = std::make_shared<TupleSetReadyRemoteMessage>(
             FlightHandler::daemonServer_->getHost(),
             FlightHandler::daemonServer_->getPort(),
             false,
-            operatorActor_->name_);
+            operatorActor_->name_,
+            originalConsumer);
     operatorActor_->anon_send(opEntry.getActor(), Envelope(tupleSetReadyRemoteMessage));
   } else {
     // send using actor's comm
@@ -144,8 +153,8 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
 #if SHOW_DEBUG_METRICS == true
     if (appliedMsg->type() == MessageType::TUPLESET
         && operatorActor_->operator_()->getNodeId() != opEntry.getNodeId()) {
-      std::shared_ptr<Message> execMetricsMsg = std::make_shared<TransferMetricsMessage>(
-              metrics::TransferMetrics(0, 0, std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->size()),
+      std::shared_ptr<Message> execMetricsMsg = std::make_shared<NetworkMetricsMessage>(
+              metrics::NetworkMetrics(0, 0, std::static_pointer_cast<TupleSetMessage>(appliedMsg)->tuples()->size()),
               operatorActor_->name_);
       operatorActor_->anon_send(rootActor_, Envelope(execMetricsMsg));
     }
@@ -157,11 +166,31 @@ void POpContext::send_regular(const std::shared_ptr<message::Message> &msg, cons
  * Send a CompleteMessage to all consumers and the root actor
  */
 void POpContext::notifyComplete() {
-  SPDLOG_DEBUG("Completing operator  |  source: {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name());
   if(complete_)
     notifyError(fmt::format("Cannot complete already completed operator {} ('{}')", this->operatorActor()->id(), this->operatorActor()->operator_()->name()));
 
   POpActor* operatorActor = this->operatorActor();
+
+#if SHOW_DEBUG_METRICS == true
+  // send PT case study metrics
+  auto ptCSMetricsInfo = operatorActor->operator_()->getPTCSMetricsInfo();
+  if (ptCSMetricsInfo.collPredTransCSMetrics_) {
+    if (ptCSMetricsInfo.bfTimeType_ == metrics::PredTransCSMetrics::PTCSMetricsBfTimeType::UNKNOWN) {
+      notifyError("`bfTimeType_` not set for `ptCSMetricsInfo`");
+      return;
+    }
+    metrics::PredTransCSMetrics::PTCSMetricsUnit ptCSMetricsUnit(ptCSMetricsInfo);
+    int64_t processingTime = operatorActor->getProcessingTime();
+    if (ptCSMetricsInfo.bfTimeType_ == metrics::PredTransCSMetrics::PTCSMetricsBfTimeType::BUILD) {
+      ptCSMetricsUnit.bfBuildTime_ = processingTime;
+    } else {
+      ptCSMetricsUnit.bfProbeTime_ = processingTime;
+    }
+    std::shared_ptr<Message> ptCSMetricsMsg = std::make_shared<PredTransCSMetricsMessage>(
+            ptCSMetricsUnit, operatorActor->operator_()->name());
+    notifyRoot(ptCSMetricsMsg);
+  }
+#endif
 
   std::shared_ptr<message::Message> msg = std::make_shared<message::CompleteMessage>(operatorActor->operator_()->name());
   message::Envelope e(msg);
@@ -256,24 +285,63 @@ std::shared_ptr<message::Message> POpContext::applyEmbeddedBloomFilter(const std
   }
 
   // apply bloom filter to the tupleSet
-  std::shared_ptr<TupleSet> tupleSet;
+  std::shared_ptr<TupleSet> tupleSet, filteredTupleSet;
   if (msg->type() == MessageType::TUPLESET) {
     tupleSet = std::static_pointer_cast<TupleSetMessage>(msg)->tuples();
   } else {
     tupleSet = std::static_pointer_cast<TupleSetBufferMessage>(msg)->tuples();
   }
-  auto expFilteredTupleSet = bloomfilter::BloomFilterUseKernel::filter(tupleSet,
-                                                                       *bloomFilterInfo->bloomFilter_,
-                                                                       bloomFilterInfo->columnNames_);
-  if (!expFilteredTupleSet.has_value()) {
-    notifyError((expFilteredTupleSet.error()));
+  if (tupleSet->numRows() == 0 || !(*bloomFilterInfo->bloomFilter_)->valid()) {
+    filteredTupleSet = tupleSet;
+  } else {
+    tl::expected<std::shared_ptr<TupleSet>, std::string> expFilteredTupleSet;
+    switch ((*bloomFilterInfo->bloomFilter_)->getType()) {
+      case BloomFilterType::VANILLA_BF: {
+        // column indices
+        auto expColumnIndices = BloomFilterUseKernel::makeColumnIndices(
+                tupleSet->schema(), bloomFilterInfo->columnNames_);
+        if (!expColumnIndices.has_value()) {
+          notifyError(expColumnIndices.error());
+          return nullptr;
+        }
+        // filter
+        expFilteredTupleSet = BloomFilterUseKernel::filter(
+                tupleSet,
+                std::static_pointer_cast<BloomFilter>(*bloomFilterInfo->bloomFilter_),
+                **expColumnIndices);
+        break;
+      }
+      case BloomFilterType::ARROW_BF: {
+        // hasher
+        auto expHasher = RecordBatchHasher::make(tupleSet->schema(), bloomFilterInfo->columnNames_);
+        if (!expHasher.has_value()) {
+          return nullptr;
+        }
+        // filter
+        expFilteredTupleSet = BloomFilterUseKernel::filter(
+                tupleSet,
+                std::static_pointer_cast<ArrowBloomFilter>(*bloomFilterInfo->bloomFilter_)->getBlockedBloomFilter(),
+                *expHasher);
+        break;
+      }
+      default: {
+        notifyError(
+                fmt::format("Unsupported embedded bloom filter type: {}", (*bloomFilterInfo->bloomFilter_)->getType()));
+        return nullptr;
+      }
+    }
+    if (!expFilteredTupleSet.has_value()) {
+      notifyError((expFilteredTupleSet.error()));
+      return nullptr;
+    }
+    filteredTupleSet = *expFilteredTupleSet;
   }
 
   // return message with filtered tupleSet
   if (msg->type() == MessageType::TUPLESET) {
-    return std::make_shared<TupleSetMessage>(*expFilteredTupleSet, msg->sender());
+    return std::make_shared<TupleSetMessage>(filteredTupleSet, msg->sender());
   } else {
-    return std::make_shared<TupleSetBufferMessage>(*expFilteredTupleSet,
+    return std::make_shared<TupleSetBufferMessage>(filteredTupleSet,
                                                    std::static_pointer_cast<TupleSetBufferMessage>(msg)->getConsumer(),
                                                    msg->sender());
   }
